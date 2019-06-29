@@ -6,5 +6,5 @@ set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 
 include_directories(${source_DIR}/include)
 
-add_library(lightswitch SHARED ${source_DIR}/lightswitch.cpp)
+add_library(lightswitch SHARED ${source_DIR}/lightswitch.cpp ${source_DIR}/core/arm/cpu.cpp)
 target_link_libraries(lightswitch ${source_DIR}/lib/${ANDROID_ABI}/libunicorn.a)
