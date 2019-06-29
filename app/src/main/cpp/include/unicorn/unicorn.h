@@ -26,12 +26,7 @@ typedef struct uc_struct uc_engine;
 
 typedef size_t uc_hook;
 
-#include "m68k.h"
-#include "x86.h"
-#include "arm.h"
 #include "arm64.h"
-#include "mips.h"
-#include "sparc.h"
 
 #ifdef __GNUC__
 #define DEFAULT_VISIBILITY __attribute__((visibility("default")))
