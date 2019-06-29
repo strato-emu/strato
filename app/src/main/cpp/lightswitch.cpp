@@ -20,13 +20,20 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     syslog(LOG_DEBUG, ">>> Tracing instruction at 0x%" PRIx64 ", instruction size = 0x%x\n", size);
 }
 
+static void hook_intr(uc_engine *uc, uint32_t intno, void *user_data)
+{
+    if (intno == 2) {
+
+    }
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_gq_cyuubi_lightswitch_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
     uc_engine *uc;
     uc_err err;
-    uc_hook trace1, trace2;
+    uc_hook trace1, trace2, intr;
 
     int64_t x11 = 0x12345678;        // X11 register
     int64_t x13 = 0x10000 + 0x8;     // X13 register
@@ -57,6 +64,8 @@ Java_gq_cyuubi_lightswitch_MainActivity_stringFromJNI(
 
     // tracing one instruction at ADDRESS with customized callback
     uc_hook_add(uc, &trace2, UC_HOOK_CODE, (void*)hook_code, NULL, ADDRESS, ADDRESS);
+
+    uc_hook_add(uc, &intr, UC_HOOK_INTR, (void*)hook_intr, NULL, 1, 0);
 
     // emulate machine code in infinite time (last param = 0), or when
     // finishing all the code.
