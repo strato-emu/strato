@@ -4,7 +4,7 @@
 
 #define MEM_BASE 0x80000000
 
-namespace mem {
+namespace core::mem {
     struct MemoryRegion {
         std::string label;
         uint64_t address;

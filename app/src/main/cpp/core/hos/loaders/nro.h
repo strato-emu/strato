@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace loader {
+namespace core::loader {
     struct NroSegmentHeader {
         uint32_t fileOffset;
         uint32_t size;

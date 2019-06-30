@@ -3,9 +3,9 @@
 #include <vector>
 #include "memory.h"
 
-std::vector<mem::MemoryRegion> memRegions;
+namespace core::mem {
+    std::vector<MemoryRegion> memRegions;
 
-namespace mem {
     bool Map(uc_engine* uc, uint64_t address, size_t size, std::string label) {
         void* ptr = mmap((void*)(address), size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0);
         if(!ptr)

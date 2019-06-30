@@ -2,7 +2,7 @@
 
 #include <unicorn/unicorn.h>
 
-namespace Core {
+namespace core {
     class Cpu {
     private:
         uc_engine *uc;

@@ -15,7 +15,7 @@ void ReadDataFromFile(std::string file, char* output, uint32_t offset, size_t si
     f.close();
 }
 
-namespace loader {
+namespace core::loader {
     bool LoadNro(std::string file) {
         syslog(LOG_INFO, "Loading NRO file %s\n", file.c_str());
 
