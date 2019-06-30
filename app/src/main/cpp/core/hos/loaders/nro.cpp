@@ -1,12 +1,9 @@
 #include <fstream>
-#include <string>
 #include <syslog.h>
 #include <sys/mman.h>
 #include <vector>
+#include "../../arm/memory.h"
 #include "nro.h"
-
-// TODO: Move memory to it's own file
-#define MEM_BASE 0x80000000
 
 void ReadDataFromFile(std::string file, char* output, uint32_t offset, size_t size)
 {
@@ -34,30 +31,22 @@ namespace loader {
         ro.resize(h.segments[1].size);
         data.resize(h.segments[2].size);
 
-        ReadDataFromFile(file, reinterpret_cast<char *>(text.data()),
-                                     h.segments[0].fileOffset, h.segments[0].size);
-        ReadDataFromFile(file, reinterpret_cast<char *>(ro.data()),
-                                     h.segments[1].fileOffset, h.segments[1].size);
-        ReadDataFromFile(file, reinterpret_cast<char *>(data.data()),
-                                     h.segments[2].fileOffset, h.segments[2].size);
+        ReadDataFromFile(file, reinterpret_cast<char *>(text.data()), h.segments[0].fileOffset, h.segments[0].size);
+        ReadDataFromFile(file, reinterpret_cast<char *>(ro.data()), h.segments[1].fileOffset, h.segments[1].size);
+        ReadDataFromFile(file, reinterpret_cast<char *>(data.data()), h.segments[2].fileOffset, h.segments[2].size);
 
-
-        if(!mmap((void*)(MEM_BASE),
-                 h.segments[0].size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0) ||
-           !mmap((void*)(MEM_BASE + h.segments[0].size),
-                 h.segments[1].size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0) ||
-           !mmap((void*)(MEM_BASE + h.segments[0].size + h.segments[1].size),
-                 h.segments[2].size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0) ||
-           !mmap((void*)(MEM_BASE + h.segments[0].size + h.segments[1].size + h.segments[2].size),
-                 h.bssSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0)) {
+        if( !mem::Map(nullptr, MEM_BASE, h.segments[0].size, ".text") ||
+            !mem::Map(nullptr, MEM_BASE + h.segments[0].size, h.segments[1].size, ".ro") ||
+            !mem::Map(nullptr, MEM_BASE + h.segments[0].size + h.segments[1].size, h.segments[2].size, ".data") ||
+            !mem::Map(nullptr, MEM_BASE + h.segments[0].size + h.segments[1].size + h.segments[2].size, h.bssSize, ".bss")) {
 
            syslog(LOG_ERR, "Failed mapping regions for executable");
            return false;
         }
 
-        std::memcpy((void*)(MEM_BASE), text.data(), text.size());
-        std::memcpy((void*)(MEM_BASE + h.segments[0].size), ro.data(), ro.size());
-        std::memcpy((void*)(MEM_BASE + h.segments[0].size + h.segments[1].size), data.data(), data.size());
+        mem::Write(text.data(), MEM_BASE, text.size());
+        mem::Write(ro.data(), MEM_BASE + h.segments[0].size, ro.size());
+        mem::Write(data.data(), MEM_BASE + h.segments[0].size + h.segments[1].size, data.size());
 
         return true;
     }

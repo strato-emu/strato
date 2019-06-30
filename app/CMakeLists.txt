@@ -9,6 +9,7 @@ include_directories(${source_DIR}/include)
 add_library(lightswitch SHARED
         ${source_DIR}/lightswitch.cpp
         ${source_DIR}/core/arm/cpu.cpp
+        ${source_DIR}/core/arm/memory.cpp
 
         ${source_DIR}/core/hos/loaders/nro.cpp
 )
