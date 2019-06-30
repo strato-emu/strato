@@ -14,7 +14,9 @@ namespace core {
         void SetRegister(uint32_t regid, uint64_t value);
 
         uc_engine *uc;
-    private:
-        void HookInterrupt(uc_engine *uc, uint32_t intno, void *user_data);
+//    private:
+//        void HookInterrupt(uc_engine *uc, uint32_t intno, void *user_data);
     };
+
+    Cpu* CpuContext();
 }

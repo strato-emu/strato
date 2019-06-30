@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <vector>
+#include "../../arm/cpu.h"
 #include "../../arm/memory.h"
 #include "nro.h"
 
@@ -35,10 +36,11 @@ namespace core::loader {
         ReadDataFromFile(file, reinterpret_cast<char *>(ro.data()),   header.segments[1].fileOffset, header.segments[1].size);
         ReadDataFromFile(file, reinterpret_cast<char *>(data.data()), header.segments[2].fileOffset, header.segments[2].size);
 
-        if( !memory::Map(nullptr, BASE_ADDRESS,  header.segments[0].size, ".text") ||
-            !memory::Map(nullptr, BASE_ADDRESS + header.segments[0].size,  header.segments[1].size, ".ro") ||
-            !memory::Map(nullptr, BASE_ADDRESS + header.segments[0].size + header.segments[1].size,  header.segments[2].size, ".data") ||
-            !memory::Map(nullptr, BASE_ADDRESS + header.segments[0].size + header.segments[1].size + header.segments[2].size, header.bssSize, ".bss")) {
+        uc_engine* uc = core::CpuContext()->uc;
+        if( !memory::Map(uc, BASE_ADDRESS,  header.segments[0].size, ".text") ||
+            !memory::Map(uc, BASE_ADDRESS + header.segments[0].size,  header.segments[1].size, ".ro") ||
+            !memory::Map(uc, BASE_ADDRESS + header.segments[0].size + header.segments[1].size,  header.segments[2].size, ".data") ||
+            !memory::Map(uc, BASE_ADDRESS + header.segments[0].size + header.segments[1].size + header.segments[2].size, header.bssSize, ".bss")) {
 
            syslog(LOG_ERR, "Failed mapping regions for executable");
            return false;
