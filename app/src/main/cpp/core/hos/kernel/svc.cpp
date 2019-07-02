@@ -1,12 +1,24 @@
 #include <cstdint>
+#include <string>
 #include <syslog.h>
 #include <utility>
 #include "core/arm/cpu.h"
+#include "core/arm/memory.h"
 #include "svc.h"
 
+using namespace core::cpu;
 namespace core::kernel {
+    static uint32_t OutputDebugString() {
+        std::string debug(GetRegister(UC_ARM64_REG_X1), '\0');
+        memory::Read((void*)debug.data(), GetRegister(UC_ARM64_REG_X0), GetRegister(UC_ARM64_REG_X1));
+
+        syslog(LOG_DEBUG, "svcOutputDebugString: %s", debug.c_str());
+        return 0;
+    }
+
     std::pair<int, uint32_t(*)()> svcTable[] =
     {
+            {0x00, nullptr},
             {0x01, nullptr},
             {0x02, nullptr},
             {0x03, nullptr},
@@ -45,7 +57,7 @@ namespace core::kernel {
             {0x24, nullptr},
             {0x25, nullptr},
             {0x26, nullptr},
-            {0x27, nullptr},
+            {0x27, OutputDebugString},
             {0x28, nullptr},
             {0x29, nullptr},
             {0x2a, nullptr},
