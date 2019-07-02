@@ -21,11 +21,14 @@ namespace core::kernel {
     {
         switch (GetRegister(UC_ARM64_REG_X1))
         {
-            case 12:
+            case 12: // AddressSpaceBaseAddr
                 SetRegister(UC_ARM64_REG_X1, BASE_ADDRESS);
                 break;
+            case 18: // TitleId
+                SetRegister(UC_ARM64_REG_X1, 0); // TODO: Add this
+                break;
             default:
-                syslog(LOG_ERR, "Unimplemented GetInfo id id1=%i,id2=%i", GetRegister(UC_ARM64_REG_X1), GetRegister(UC_ARM64_REG_X3));
+                syslog(LOG_ERR, "Unimplemented GetInfo ID! ID1 = %i, ID2 = %i", GetRegister(UC_ARM64_REG_X1), GetRegister(UC_ARM64_REG_X3));
                 return 0x177202;
         }
 

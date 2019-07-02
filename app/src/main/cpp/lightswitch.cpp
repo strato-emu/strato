@@ -11,7 +11,7 @@ Java_gq_cyuubi_lightswitch_MainActivity_stringFromJNI(
         jobject /* this */) {
 
     core::cpu::Initialize();
-    core::loader::LoadNro("/sdcard/test.nro");
+    core::loader::LoadNro("/sdcard/lawsofaviation.nro");
     core::cpu::Run(BASE_ADDRESS);
 
     std::string finished = "finished!";
