@@ -5,15 +5,12 @@
 #include <core/hos/loaders/nro.h>
 #include <core/arm/memory.h>
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_gq_cyuubi_lightswitch_MainActivity_stringFromJNI(
-        JNIEnv *env,
-        jobject /* this */) {
-
+extern "C"
+JNIEXPORT void JNICALL
+Java_gq_cyuubi_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring file_) {
+    const char *file = env->GetStringUTFChars(file_, 0);
     core::cpu::Initialize();
-    core::loader::LoadNro("/sdcard/lawsofaviation.nro");
+    core::loader::LoadNro(file);
     core::cpu::Run(BASE_ADDRESS);
-
-    std::string finished = "finished!";
-    return env->NewStringUTF(finished.c_str());
+    env->ReleaseStringUTFChars(file_, file);
 }

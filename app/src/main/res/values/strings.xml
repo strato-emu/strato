@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Lightswitch</string>
+    <!-- Toolbar -->
+    <string name="settings">Settings</string>
+    <string name="refresh">Refresh</string>
+    <!-- Main -->
+    <string name="request_string">The following permission</string>
+    <!-- Settings -->
+    <string name="search">Search</string>
+    <string name="search_location">Search Location</string>
+    <string name="localization">Localization</string>
+    <string name="localization_language">Language</string>
 </resources>
