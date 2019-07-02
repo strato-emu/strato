@@ -8,12 +8,24 @@
 
 using namespace core::cpu;
 namespace core::kernel {
-    static uint32_t OutputDebugString()
-    {
+    static uint32_t OutputDebugString() {
         std::string debug(GetRegister(UC_ARM64_REG_X1), '\0');
         memory::Read((void*)debug.data(), GetRegister(UC_ARM64_REG_X0), GetRegister(UC_ARM64_REG_X1));
 
         syslog(LOG_DEBUG, "svcOutputDebugString: %s", debug.c_str());
+        return 0;
+    }
+
+    static uint32_t GetInfo() {
+        switch(GetRegister(UC_ARM64_REG_X1)) {
+            case 12:
+                SetRegister(UC_ARM64_REG_X1, BASE_ADDRESS);
+                break;
+            default:
+                syslog(LOG_ERR, "Unimplemented GetInfo id id1=%i,id2=%i", GetRegister(UC_ARM64_REG_X1), GetRegister(UC_ARM64_REG_X3));
+                return 0x177202;
+        }
+
         return 0;
     }
 
@@ -60,7 +72,7 @@ namespace core::kernel {
             {0x26, nullptr},
             {0x27, OutputDebugString},
             {0x28, nullptr},
-            {0x29, nullptr},
+            {0x29, GetInfo},
             {0x2a, nullptr},
             {0x2b, nullptr},
             {0x2c, nullptr},
@@ -153,8 +165,11 @@ namespace core::kernel {
     {
         std::pair<int, uint32_t(*)()>* result = &(svcTable[svc]);
 
-        if (result->second)
-            return result->second();
+        if(result->second) {
+            uint32_t returnCode = result->second();
+            SetRegister(UC_ARM64_REG_W0, returnCode);
+            return returnCode;
+        }
         else
         {
             syslog(LOG_ERR, "Unimplemented SVC 0x%02x", svc);
