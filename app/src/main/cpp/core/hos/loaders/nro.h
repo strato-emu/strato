@@ -27,5 +27,5 @@ namespace core::loader {
         NroSegmentHeader extraSegments[3];
     };
 
-    bool LoadNro(std::string file);
+    bool LoadNro(std::string filePath);
 }

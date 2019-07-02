@@ -8,7 +8,8 @@
 
 using namespace core::cpu;
 namespace core::kernel {
-    static uint32_t OutputDebugString() {
+    static uint32_t OutputDebugString()
+    {
         std::string debug(GetRegister(UC_ARM64_REG_X1), '\0');
         memory::Read((void*)debug.data(), GetRegister(UC_ARM64_REG_X0), GetRegister(UC_ARM64_REG_X1));
 
@@ -152,7 +153,7 @@ namespace core::kernel {
     {
         std::pair<int, uint32_t(*)()>* result = &(svcTable[svc]);
 
-        if(result->second)
+        if (result->second)
             return result->second();
         else
         {

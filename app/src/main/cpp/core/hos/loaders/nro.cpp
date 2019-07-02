@@ -17,12 +17,14 @@ void ReadDataFromFile(std::string file, char* output, uint32_t offset, size_t si
 }
 
 namespace core::loader {
-    bool LoadNro(std::string file) {
-        syslog(LOG_INFO, "Loading NRO file %s\n", file.c_str());
+    bool LoadNro(std::string filePath)
+    {
+        syslog(LOG_INFO, "Loading NRO file %s\n", filePath.c_str());
 
         NroHeader header;
-        ReadDataFromFile(file, reinterpret_cast<char *>(&header), 0x0, sizeof(NroHeader));
-        if (header.magic != 0x304F524E) {
+        ReadDataFromFile(filePath, reinterpret_cast<char *>(&header), 0x0, sizeof(NroHeader));
+        if (header.magic != 0x304F524E)
+        {
             syslog(LOG_ERR, "Invalid NRO magic 0x%x\n", header.magic);
             return false;
         }
@@ -32,21 +34,21 @@ namespace core::loader {
         ro.resize  (header.segments[1].size);
         data.resize(header.segments[2].size);
 
-        ReadDataFromFile(file, reinterpret_cast<char *>(text.data()), header.segments[0].fileOffset, header.segments[0].size);
-        ReadDataFromFile(file, reinterpret_cast<char *>(ro.data()),   header.segments[1].fileOffset, header.segments[1].size);
-        ReadDataFromFile(file, reinterpret_cast<char *>(data.data()), header.segments[2].fileOffset, header.segments[2].size);
+        ReadDataFromFile(filePath, reinterpret_cast<char *>(text.data()), header.segments[0].fileOffset, header.segments[0].size);
+        ReadDataFromFile(filePath, reinterpret_cast<char *>(ro.data()),   header.segments[1].fileOffset, header.segments[1].size);
+        ReadDataFromFile(filePath, reinterpret_cast<char *>(data.data()), header.segments[2].fileOffset, header.segments[2].size);
 
-        if( !memory::Map(BASE_ADDRESS,  header.segments[0].size, ".text") ||
-            !memory::Map(BASE_ADDRESS + header.segments[0].size,  header.segments[1].size, ".ro") ||
-            !memory::Map(BASE_ADDRESS + header.segments[0].size + header.segments[1].size,  header.segments[2].size, ".data") ||
-            !memory::Map(BASE_ADDRESS + header.segments[0].size + header.segments[1].size + header.segments[2].size, header.bssSize, ".bss")) {
-
+        if (!memory::Map(BASE_ADDRESS, header.segments[0].size, ".text") ||
+            !memory::Map(BASE_ADDRESS + header.segments[0].size, header.segments[1].size, ".ro") ||
+            !memory::Map(BASE_ADDRESS + header.segments[0].size + header.segments[1].size, header.segments[2].size, ".data") ||
+            !memory::Map(BASE_ADDRESS + header.segments[0].size + header.segments[1].size + header.segments[2].size, header.bssSize, ".bss"))
+        {
            syslog(LOG_ERR, "Failed mapping regions for executable");
            return false;
         }
 
-        memory::Write(text.data(), BASE_ADDRESS,  text.size());
-        memory::Write(ro.data(),   BASE_ADDRESS + header.segments[0].size,  ro.size());
+        memory::Write(text.data(), BASE_ADDRESS, text.size());
+        memory::Write(ro.data(),   BASE_ADDRESS + header.segments[0].size, ro.size());
         memory::Write(data.data(), BASE_ADDRESS + header.segments[0].size + header.segments[1].size, data.size());
         return true;
     }
