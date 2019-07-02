@@ -15,6 +15,9 @@ namespace core {
         // Map stack memory
         memory::Map(uc, 0x3000000, 0x1000000, "stack");
         SetRegister(UC_ARM64_REG_SP, 0x3100000);
+        memory::Map(uc, 0x2000000, 0x1000, "tls");
+        SetRegister(UC_ARM64_REG_TPIDRRO_EL0, 0x2000000);
+
         currentContext = this;
     }
 
