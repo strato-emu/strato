@@ -12,7 +12,7 @@ namespace core::memory {
         void*       ptr;
     };
 
-    bool Map(uc_engine* uc, uint64_t address, size_t size, std::string label = {});
+    bool Map(uint64_t address, size_t size, std::string label = {});
 
     void Write(void* data, uint64_t offset, size_t size);
 
