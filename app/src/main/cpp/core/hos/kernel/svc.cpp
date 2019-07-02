@@ -168,7 +168,8 @@ namespace core::kernel {
     {
         std::pair<int, uint32_t(*)()>* result = &(svcTable[svc]);
 
-        if (result->second) {
+        if (result->second)
+        {
             uint32_t returnCode = result->second();
             SetRegister(UC_ARM64_REG_W0, returnCode);
             return returnCode;
