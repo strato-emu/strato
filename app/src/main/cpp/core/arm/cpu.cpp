@@ -8,10 +8,6 @@ namespace core::cpu {
 
     void HookInterrupt(uc_engine *uc, uint32_t intno, void *user_data);
 
-    uint64_t GetRegister(uint32_t regid);
-
-    void SetRegister(uint32_t regid, uint64_t value);
-
     bool Initialize() {
         uc_open(UC_ARCH_ARM64, UC_MODE_ARM, &uc);
 
