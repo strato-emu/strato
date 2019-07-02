@@ -1,6 +1,7 @@
 #include <sys/mman.h>
 #include "cpu.h"
 #include "memory.h"
+#include "core/hos/kernel/svc.h"
 
 // TODO: Handle Unicorn errors
 namespace core::cpu {
@@ -47,9 +48,8 @@ namespace core::cpu {
 
             uint32_t svcId = instr >> 5 & 0xFF;
 
-            // TODO: Handle SVCs
-            syslog(LOG_DEBUG, "SVC 0x%x called!", svcId);
-            uc_close(uc);
+            if(core::kernel::SvcHandler(svcId) == 0x177202)
+                uc_close(uc);
         } else {
             syslog(LOG_ERR, "Unhandled interrupt #%i", intno);
             uc_close(uc);
