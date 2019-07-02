@@ -2,8 +2,8 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <vector>
-#include "../../arm/cpu.h"
-#include "../../arm/memory.h"
+#include "core/arm/cpu.h"
+#include "core/arm/memory.h"
 #include "nro.h"
 
 void ReadDataFromFile(std::string file, char* output, uint32_t offset, size_t size)
