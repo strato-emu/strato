@@ -1,13 +1,9 @@
 package gq.cyuubi.lightswitch;
 
-import android.content.Context;
-import android.content.ContextWrapper;
-import android.os.Environment;
 import android.util.Log;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 
 final class TitleEntry {
