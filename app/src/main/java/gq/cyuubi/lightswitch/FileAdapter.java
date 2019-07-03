@@ -1,12 +1,17 @@
 package gq.cyuubi.lightswitch;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,13 +19,13 @@ import androidx.annotation.NonNull;
 import java.io.File;
 import java.util.ArrayList;
 
-class DataModel {
+class GameItem {
     File file;
     TitleEntry meta;
 
     int index;
 
-    public DataModel(File file) {
+    public GameItem(File file) {
         this.file = file;
         index = file.getName().lastIndexOf(".");
         meta = NroMeta.GetNroTitle(getPath());
@@ -32,10 +37,6 @@ class DataModel {
 
     public String getTitle() {
         return meta.getName() + " (" + getType() + ")";
-    }
-
-    public String getFileName() {
-        return file.getName();
     }
 
     public String getAuthor() {
@@ -51,33 +52,34 @@ class DataModel {
     }
 }
 
-public class FileAdapter extends ArrayAdapter<DataModel> implements View.OnClickListener {
-
+public class FileAdapter extends ArrayAdapter<GameItem> implements View.OnClickListener {
     Context mContext;
-    private ArrayList<DataModel> dataSet;
 
-    public FileAdapter(Context context, @NonNull ArrayList<DataModel> data) {
+    public FileAdapter(Context context, @NonNull ArrayList<GameItem> data) {
         super(context, R.layout.file_item, data);
-        this.dataSet = new ArrayList<>();
         this.mContext = context;
     }
 
     @Override
     public void onClick(View v) {
-
         int position = (Integer) v.getTag();
-        Object object = getItem(position);
-        DataModel dataModel = (DataModel) object;
+        GameItem dataModel = getItem(position);
         switch (v.getId()) {
             case R.id.icon:
-
+                Dialog builder = new Dialog(mContext);
+                builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                builder.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+                ImageView imageView = new ImageView(mContext);
+                imageView.setImageBitmap(dataModel.getIcon());
+                builder.addContentView(imageView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                builder.show();
                 break;
         }
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        DataModel dataModel = getItem(position);
+        GameItem dataModel = getItem(position);
         ViewHolder viewHolder;
         if (convertView == null) {
             viewHolder = new ViewHolder();
@@ -93,6 +95,8 @@ public class FileAdapter extends ArrayAdapter<DataModel> implements View.OnClick
         viewHolder.txtTitle.setText(dataModel.getTitle());
         viewHolder.txtSub.setText(dataModel.getAuthor());
         viewHolder.icon.setImageBitmap(dataModel.getIcon());
+        viewHolder.icon.setOnClickListener(this);
+        viewHolder.icon.setTag(position);
         return convertView;
     }
 

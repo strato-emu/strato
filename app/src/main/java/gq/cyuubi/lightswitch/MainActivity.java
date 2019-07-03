@@ -10,7 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -66,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.clear();
         List<File> files = findFile("nro", new File(sharedPreferences.getString("search_location", "")), null);
         for (File file : files) {
-            adapter.add(new DataModel(file));
+            adapter.add(new GameItem(file));
         }
     }
 
@@ -83,13 +82,13 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        adapter = new FileAdapter(this, new ArrayList<DataModel>());
+        adapter = new FileAdapter(this, new ArrayList<GameItem>());
         ListView game_list = findViewById(R.id.game_list);
         game_list.setAdapter(adapter);
         game_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String path = ((DataModel) parent.getItemAtPosition(position)).getPath();
+                String path = ((GameItem) parent.getItemAtPosition(position)).getPath();
                 notifyUser(getString(R.string.launch_string) + " " + path);
                 loadFile(path);
             }
