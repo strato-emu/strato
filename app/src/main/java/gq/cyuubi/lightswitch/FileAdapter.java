@@ -28,7 +28,7 @@ class GameItem {
     public GameItem(File file) {
         this.file = file;
         index = file.getName().lastIndexOf(".");
-        meta = NroMeta.GetNroTitle(getPath());
+        meta = NroMeta.getTitleEntry(getPath());
     }
 
     public Bitmap getIcon() {

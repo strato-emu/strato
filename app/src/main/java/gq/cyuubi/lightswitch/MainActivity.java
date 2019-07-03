@@ -51,7 +51,9 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         String file_str = file_i.getName();
                         if (ext.equalsIgnoreCase(file_str.substring(file_str.lastIndexOf(".") + 1))) {
-                            files.add(file_i);
+                            if(NroMeta.verifyFile(file_i.getAbsolutePath())) {
+                                files.add(file_i);
+                            }
                         }
                     } catch (StringIndexOutOfBoundsException e) {
                     }

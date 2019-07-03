@@ -32,7 +32,7 @@ final class TitleEntry {
 }
 
 public class NroMeta {
-    public static TitleEntry GetNroTitle(String file) {
+    public static TitleEntry getTitleEntry(String file) {
         try {
             RandomAccessFile f = new RandomAccessFile(file, "r");
             f.seek(0x18); // Skip to NroHeader.size
@@ -41,7 +41,7 @@ public class NroMeta {
             byte[] buffer = new byte[4];
             f.read(buffer);
             if (!(new String(buffer).equals("ASET")))
-                return null;
+                throw new IOException();
 
             f.skipBytes(0x4);
             long iconOffset = Long.reverseBytes(f.readLong());
@@ -57,7 +57,7 @@ public class NroMeta {
             long nacpOffset = Long.reverseBytes(f.readLong());
             long nacpSize = Long.reverseBytes(f.readLong());
             if (nacpOffset == 0 || nacpSize == 0)
-                return null;
+                throw new IOException();
             f.seek(asetOffset + nacpOffset);
             byte[] name = new byte[0x200];
             f.read(name);
@@ -69,5 +69,32 @@ public class NroMeta {
             Log.e("app_process64", "Error while loading ASET: " + e.getMessage());
             return null;
         }
+    }
+    public static boolean verifyFile(String file) {
+        try {
+            RandomAccessFile f = new RandomAccessFile(file, "r");
+            f.seek(0x18); // Skip to NroHeader.size
+            int asetOffset = Integer.reverseBytes(f.readInt());
+            f.seek(asetOffset); // Skip to the offset specified by NroHeader.size
+            byte[] buffer = new byte[4];
+            f.read(buffer);
+            if (!(new String(buffer).equals("ASET")))
+                return false;
+
+            f.skipBytes(0x4);
+            long iconOffset = Long.reverseBytes(f.readLong());
+            int iconSize = Integer.reverseBytes(f.readInt());
+            if (iconOffset == 0 || iconSize == 0)
+                return false;
+
+            f.seek(asetOffset + 0x18);
+            long nacpOffset = Long.reverseBytes(f.readLong());
+            long nacpSize = Long.reverseBytes(f.readLong());
+            if (nacpOffset == 0 || nacpSize == 0)
+                return false;
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 }
