@@ -21,6 +21,9 @@ namespace core::kernel {
     {
         switch (GetRegister(UC_ARM64_REG_X1))
         {
+            case 8: // IsCurrentProcessBeingDebugged
+                SetRegister(UC_ARM64_REG_X1, 0); // We're just lying to ourselves. Think about it
+                break;
             case 12: // AddressSpaceBaseAddr
                 SetRegister(UC_ARM64_REG_X1, BASE_ADDRESS);
                 break;
