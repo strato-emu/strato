@@ -1,22 +1,17 @@
 package gq.cyuubi.lightswitch;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -24,81 +19,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.material.snackbar.Snackbar;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-class DataModel {
-    File file;
-    int index;
-
-    public DataModel(File file) {
-        this.file = file;
-        index = file.getName().lastIndexOf(".");
-    }
-
-    public String getTitle() {
-        return getName() + "(" + getType() + ")";
-    }
-
-    public String getName() {
-        String name = "";
-        for (String str_i : file.getName().substring(0, index).split("_")) {
-            name += str_i.substring(0, 1).toUpperCase() + str_i.substring(1) + " ";
-        }
-        return name;
-    }
-
-    public String getType() {
-        return file.getName().substring(index + 1).toUpperCase();
-    }
-
-    public String getPath() {
-        return file.getAbsolutePath();
-    }
-}
-
-class FileAdapter extends ArrayAdapter<DataModel> {
-
-    Context mContext;
-    private ArrayList<DataModel> dataSet;
-
-    public FileAdapter(Context context, @NonNull ArrayList<DataModel> data) {
-        super(context, android.R.layout.simple_list_item_2, data);
-        this.dataSet = new ArrayList<>();
-        this.mContext = context;
-    }
-
-    @Override
-    public void add(DataModel object) {
-        super.add(object);
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        DataModel dataModel = getItem(position);
-        ViewHolder viewHolder;
-        if (convertView == null) {
-            viewHolder = new ViewHolder();
-            LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(android.R.layout.simple_list_item_2, parent, false);
-            viewHolder.txtTitle = convertView.findViewById(android.R.id.text1);
-            viewHolder.txtPath = convertView.findViewById(android.R.id.text2);
-            convertView.setTag(viewHolder);
-        } else {
-            viewHolder = (ViewHolder) convertView.getTag();
-        }
-        viewHolder.txtTitle.setText(dataModel.getTitle());
-        viewHolder.txtPath.setText(dataModel.getPath());
-
-        return convertView;
-    }
-
-    private static class ViewHolder {
-        TextView txtTitle;
-        TextView txtPath;
-    }
-}
 
 public class MainActivity extends AppCompatActivity {
 
@@ -108,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
 
     SharedPreferences sharedPreferences;
     FileAdapter adapter;
+
+    private void notifyUser(String text) {
+        Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show();
+        // Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+    }
 
     private List<File> findFile(String ext, File file, @Nullable List<File> files) {
         if (files == null) {
@@ -159,7 +89,9 @@ public class MainActivity extends AppCompatActivity {
         game_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                loadFile(((DataModel) parent.getItemAtPosition(position)).getPath());
+                String path = ((DataModel) parent.getItemAtPosition(position)).getPath();
+                notifyUser(getString(R.string.launch_string) + " " + path);
+                loadFile(path);
             }
         });
         refresh_files();
@@ -178,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             case R.id.action_refresh:
+                notifyUser(getString(R.string.refresh_string));
                 refresh_files();
                 return true;
             default:

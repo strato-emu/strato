@@ -4,7 +4,9 @@
     <string name="settings">Settings</string>
     <string name="refresh">Refresh</string>
     <!-- Main -->
-    <string name="request_string">The following permission</string>
+    <string name="refresh_string">The list of ROMs has been refreshed.</string>
+    <string name="launch_string">Launching</string>
+    <string name="icon">Icon</string>
     <!-- Settings -->
     <string name="search">Search</string>
     <string name="search_location">Search Location</string>
