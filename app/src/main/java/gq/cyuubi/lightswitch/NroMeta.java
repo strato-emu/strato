@@ -1,6 +1,9 @@
 package gq.cyuubi.lightswitch;
 
 import android.util.Log;
+import android.widget.ImageView;
+
+import com.squareup.picasso.Picasso;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -56,7 +59,7 @@ public class NroMeta {
         }
     }
 
-    public static String LoadImage(String file, MainActivity context) {
+    public static void LoadImage(String file, ImageView target, MainActivity context) {
         try {
             RandomAccessFile f = new RandomAccessFile(file, "r");
             f.seek(0x18); // Skip to NroHeader.size
@@ -65,24 +68,24 @@ public class NroMeta {
             byte[] buffer = new byte[4];
             f.read(buffer);
             if(!(new String(buffer).equals("ASET")))
-                return null;
+                return;
 
             f.skipBytes(0x4);
             long iconOffset = Long.reverseBytes(f.readLong());
             long iconSize = Long.reverseBytes(f.readLong());
             if(iconOffset == 0 || iconSize == 0)
-                return null;
+                return;
             f.seek(asetOffset + iconOffset);
 
             byte[] iconData = new byte[(int)iconSize];
             f.read(iconData);
 
             new FileOutputStream(context.getFilesDir() + "/tmp.jpg").write(iconData);
-            return context.getFilesDir() + "/tmp.jpg";
+            Picasso.with(context).load(context.getFilesDir() + "/tmp.jpg").into(target);
         }
         catch(IOException e) {
             Log.e("app_process64", "Error while loading ASET: " + e.getMessage());
-            return null;
+            return;
         }
     }
 }
