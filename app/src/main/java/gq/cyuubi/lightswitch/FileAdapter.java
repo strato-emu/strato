@@ -25,10 +25,13 @@ class GameItem {
 
     int index;
 
-    public GameItem(File file) {
+    public GameItem(File file, Context ctx) {
         this.file = file;
         index = file.getName().lastIndexOf(".");
         meta = NroMeta.getTitleEntry(getPath());
+        if(meta==null) {
+            meta = new TitleEntry(file.getName(), ctx.getString(R.string.aset_missing), null);
+        }
     }
 
     public Bitmap getIcon() {
@@ -39,7 +42,7 @@ class GameItem {
         return meta.getName() + " (" + getType() + ")";
     }
 
-    public String getAuthor() {
+    public String getSubTitle() {
         return meta.getAuthor();
     }
 
@@ -93,8 +96,11 @@ public class FileAdapter extends ArrayAdapter<GameItem> implements View.OnClickL
             viewHolder = (ViewHolder) convertView.getTag();
         }
         viewHolder.txtTitle.setText(dataModel.getTitle());
-        viewHolder.txtSub.setText(dataModel.getAuthor());
-        viewHolder.icon.setImageBitmap(dataModel.getIcon());
+        viewHolder.txtSub.setText(dataModel.getSubTitle());
+        Bitmap icon = dataModel.getIcon();
+        if(icon!=null) {
+            viewHolder.icon.setImageBitmap(icon);
+        }
         viewHolder.icon.setOnClickListener(this);
         viewHolder.icon.setTag(position);
         return convertView;

@@ -6,6 +6,7 @@
     <!-- Main -->
     <string name="refresh_string">The list of ROMs has been refreshed.</string>
     <string name="launch_string">Launching</string>
+    <string name="aset_missing">ASET Header Missing</string>
     <string name="icon">Icon</string>
     <!-- Settings -->
     <string name="search">Search</string>

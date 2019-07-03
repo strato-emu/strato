@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.clear();
         List<File> files = findFile("nro", new File(sharedPreferences.getString("search_location", "")), null);
         for (File file : files) {
-            adapter.add(new GameItem(file));
+            adapter.add(new GameItem(file, getApplicationContext()));
         }
     }
 
