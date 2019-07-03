@@ -100,9 +100,9 @@ public class FileAdapter extends ArrayAdapter<GameItem> implements View.OnClickL
         Bitmap icon = dataModel.getIcon();
         if(icon!=null) {
             viewHolder.icon.setImageBitmap(icon);
+            viewHolder.icon.setOnClickListener(this);
+            viewHolder.icon.setTag(position);
         }
-        viewHolder.icon.setOnClickListener(this);
-        viewHolder.icon.setTag(position);
         return convertView;
     }
 
