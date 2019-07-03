@@ -73,24 +73,10 @@ public class NroMeta {
     public static boolean verifyFile(String file) {
         try {
             RandomAccessFile f = new RandomAccessFile(file, "r");
-            f.seek(0x18); // Skip to NroHeader.size
-            int asetOffset = Integer.reverseBytes(f.readInt());
-            f.seek(asetOffset); // Skip to the offset specified by NroHeader.size
+            f.seek(0x10); // Skip to NroHeader.magic
             byte[] buffer = new byte[4];
             f.read(buffer);
-            if (!(new String(buffer).equals("ASET")))
-                return false;
-
-            f.skipBytes(0x4);
-            long iconOffset = Long.reverseBytes(f.readLong());
-            int iconSize = Integer.reverseBytes(f.readInt());
-            if (iconOffset == 0 || iconSize == 0)
-                return false;
-
-            f.seek(asetOffset + 0x18);
-            long nacpOffset = Long.reverseBytes(f.readLong());
-            long nacpSize = Long.reverseBytes(f.readLong());
-            if (nacpOffset == 0 || nacpSize == 0)
+            if (!(new String(buffer).equals("NRO0")))
                 return false;
         } catch (IOException e) {
             return false;
