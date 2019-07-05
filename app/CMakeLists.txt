@@ -12,6 +12,7 @@ add_library(lightswitch SHARED
         ${source_DIR}/core/arm/cpu.cpp
         ${source_DIR}/core/arm/memory.cpp
 
+	${source_DIR}/core/hos/kernel/kernel.cpp
 	${source_DIR}/core/hos/kernel/svc.cpp
         ${source_DIR}/core/hos/loaders/nro.cpp
 )
