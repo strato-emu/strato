@@ -681,7 +681,7 @@ uc_err uc_context_alloc(uc_engine *uc, uc_context **context);
 /*
  Free the memory allocated by uc_context_alloc & uc_mem_regions.
 
- @memory: memory allocated by uc_context_alloc (returned in *context), or
+ @mem: memory allocated by uc_context_alloc (returned in *context), or
        by uc_mem_regions (returned in *regions)
 
  @return UC_ERR_OK on success, or other value on failure (refer to uc_err enum
