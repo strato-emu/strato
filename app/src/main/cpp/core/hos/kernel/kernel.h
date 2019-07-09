@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <memory>
 
+#define SM_HANDLE 0xd000 // sm: is hardcoded for now
+
 namespace core::kernel
 {
     class KObject

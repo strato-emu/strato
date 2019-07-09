@@ -4,10 +4,40 @@
 #include <utility>
 #include "core/arm/cpu.h"
 #include "core/arm/memory.h"
+#include "kernel.h"
+#include "ipc.h"
 #include "svc.h"
 
 using namespace core::cpu;
 namespace core::kernel {
+    static uint32_t ConnectToNamedPort()
+    {
+        std::string port(8, '\0');
+        memory::Read((void*)port.data(), GetRegister(UC_ARM64_REG_X1), 8);
+
+        if(std::strcmp(port.c_str(), "sm:") == 0)
+            SetRegister(UC_ARM64_REG_W1, SM_HANDLE);
+        else
+        {
+            syslog(LOG_ERR, "svcConnectToNamedPort tried connecting to invalid port '%s'", port.c_str());
+            exit(0);
+        }
+
+        return 0;
+    }
+
+    static uint32_t SendSyncRequest()
+    {
+        syslog(LOG_INFO, "svcSendSyncRequest called for handle 0x%x, dumping TLS:", GetRegister(UC_ARM64_REG_X0));
+        uint8_t tls[0x100];
+        memory::Read(&tls, 0x2000000, 0x100);
+
+        core::kernel::IpcRequest* r = new core::kernel::IpcRequest(tls);
+
+        exit(0);
+        return 0;
+    }
+
     static uint32_t OutputDebugString()
     {
         std::string debug(GetRegister(UC_ARM64_REG_X1), '\0');
@@ -71,9 +101,9 @@ namespace core::kernel {
             {0x1c, nullptr},
             {0x1d, nullptr},
             {0x1e, nullptr},
-            {0x1f, nullptr},
+            {0x1f, ConnectToNamedPort},
             {0x20, nullptr},
-            {0x21, nullptr},
+            {0x21, SendSyncRequest},
             {0x22, nullptr},
             {0x23, nullptr},
             {0x24, nullptr},
