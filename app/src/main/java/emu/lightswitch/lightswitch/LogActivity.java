@@ -41,11 +41,6 @@ public class LogActivity extends AppCompatActivity {
         try {
             InputStream inputStream = new FileInputStream(log_file);
             reader = new BufferedReader(new InputStreamReader(inputStream));
-        } catch (FileNotFoundException e) {
-            Log.w("Logger", "IO Error during access of log file: " + e.getMessage());
-            Toast.makeText(getApplicationContext(), getString(R.string.file_missing), Toast.LENGTH_LONG).show();
-            finish();
-        }
         thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -82,6 +77,11 @@ public class LogActivity extends AppCompatActivity {
             }
         });
         thread.start();
+        } catch (FileNotFoundException e) {
+            Log.w("Logger", "IO Error during access of log file: " + e.getMessage());
+            Toast.makeText(getApplicationContext(), getString(R.string.file_missing), Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     @Override

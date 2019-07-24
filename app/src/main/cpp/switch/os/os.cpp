@@ -27,7 +27,7 @@ namespace lightSwitch::os {
                 SvcHandler(svcId, state);
             } else {
                 state.logger->write(Logger::ERROR, "An unhandled interrupt has occurred: {}", int_no);
-                exit(int_no);
+                state.cpu->StopExecution();
             }
         } catch (exception &e) {
             state.logger->write(Logger::WARN, "An exception occurred during an interrupt: {}", e.what());
