@@ -26,6 +26,17 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
+        android:key="category_log"
+        android:title="@string/logging">
+        <ListPreference
+            android:defaultValue="2"
+            android:entries="@array/log_level"
+            android:entryValues="@array/log_level_val"
+            app:key="log_level"
+            app:title="@string/log_level"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
         android:key="category_localization"
         android:title="@string/localization">
         <ListPreference

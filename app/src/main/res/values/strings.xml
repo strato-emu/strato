@@ -1,16 +1,29 @@
 <resources>
     <string name="app_name">Lightswitch</string>
-    <!-- Toolbar -->
+    <!-- Common -->
+    <string name="search">Search</string>
+    <!-- Toolbar Main -->
     <string name="settings">Settings</string>
+    <string name="log">Logger</string>
     <string name="refresh">Refresh</string>
     <!-- Main -->
-    <string name="refresh_string">The list of ROMs has been refreshed.</string>
-    <string name="launch_string">Launching</string>
+    <string name="refreshed">The list of ROMs has been refreshed.</string>
+    <string name="launching">Launching</string>
     <string name="aset_missing">ASET Header Missing</string>
     <string name="icon">Icon</string>
+    <string name="no_rom">Cannot find any ROMs</string>
+    <string name="nro">NROs</string>
+    <string name="nso">NSOs</string>
     <!-- Settings -->
-    <string name="search">Search</string>
     <string name="search_location">Search Location</string>
+    <string name="logging">Logging</string>
+    <string name="log_level">Log Level</string>
     <string name="localization">Localization</string>
     <string name="localization_language">Language</string>
+    <!-- Toolbar Logger -->
+    <string name="clear">Clear</string>
+    <!-- Logger -->
+    <string name="file_missing">The log file was not found</string>
+    <string name="io_error">An I/O error has occurred</string>
+    <string name="cleared">The logs have been cleared</string>
 </resources>

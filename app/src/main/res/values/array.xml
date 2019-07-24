@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="log_level">
+        <item>Error</item>
+        <item>Warn</item>
+        <item>Info</item>
+        <item>Debug</item>
+    </string-array>
+    <string-array name="log_level_val">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
     <string-array name="language_names">
         <item>System Language</item>
         <item>English</item>
     </string-array>
     <string-array name="language_values">
-    <item>sys</item>
-    <item>en</item>
-</string-array>
+        <item>sys</item>
+        <item>en</item>
+    </string-array>
 </resources>

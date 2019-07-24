@@ -1,0 +1,6 @@
+[submodule "app/libraries/tinyxml2"]
+	path = app/libraries/tinyxml2
+	url = https://github.com/leethomason/tinyxml2
+[submodule "app/libraries/fmt"]
+	path = app/libraries/fmt
+	url = https://github.com/fmtlib/fmt

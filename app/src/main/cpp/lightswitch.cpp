@@ -1,16 +1,50 @@
 #include <jni.h>
 #include <string>
-#include <syslog.h>
-#include <core/arm/cpu.h>
-#include <core/hos/loaders/nro.h>
-#include <core/arm/memory.h>
+#include <csignal>
+#include <thread>
+#include <pthread.h>
+#include "switch/device.h"
+#include "switch/common.h"
+
+std::thread *game_thread;
+
+void signal_handle(int sig_no) {
+    throw lightSwitch::exception("A signal has been raised: " + std::to_string(sig_no));
+}
+
+void thread_main(std::string rom_path, std::string pref_path, std::string log_path) {
+    auto log = std::make_shared<lightSwitch::Logger>(log_path);
+    log->write(lightSwitch::Logger::INFO, "Launching ROM {0}", rom_path);
+//    long long i = 0;
+//    while(true){
+//        log->write(lightSwitch::Logger::INFO, "#{0}", i);
+//        sleep(1);
+//        i++;
+//    }
+    auto settings = std::make_shared<lightSwitch::Settings>(pref_path);
+    try {
+        lightSwitch::device device(log, settings);
+        device.run(rom_path);
+        log->write(lightSwitch::Logger::INFO, "Emulation has ended!");
+    } catch (std::exception &e) {
+        log->write(lightSwitch::Logger::ERROR, e.what());
+    } catch (...) {
+        log->write(lightSwitch::Logger::ERROR, "An unknown exception has occurred.");
+    }
+}
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_gq_cyuubi_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring file_) {
-    const char *file = env->GetStringUTFChars(file_, 0);
-    core::cpu::Initialize();
-    core::loader::LoadNro(file);
-    core::cpu::Run(BASE_ADDRESS);
-    env->ReleaseStringUTFChars(file_, file);
+Java_emu_lightswitch_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring rom_path_,
+                                                       jstring pref_path_, jstring log_path_) {
+    const char *rom_path = env->GetStringUTFChars(rom_path_, 0);
+    const char *pref_path = env->GetStringUTFChars(pref_path_, 0);
+    const char *log_path = env->GetStringUTFChars(log_path_, 0);
+    // std::signal(SIGABRT, signal_handle);
+    if (game_thread) pthread_kill(game_thread->native_handle(), SIGABRT);
+    // Running on UI thread is not a good idea, any crashes and such will be propagated
+    game_thread = new std::thread(thread_main, std::string(rom_path, strlen(rom_path)), std::string(pref_path, strlen(pref_path)), std::string(log_path, strlen(log_path)));
+    env->ReleaseStringUTFChars(rom_path_, rom_path);
+    env->ReleaseStringUTFChars(pref_path_, pref_path);
+    env->ReleaseStringUTFChars(log_path_, log_path);
 }
