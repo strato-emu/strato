@@ -70,6 +70,7 @@ namespace lightSwitch {
         if (level == DEBUG)
             return;
 #endif
+        syslog(level_syslog[level], "%s", str.c_str());
         log_file << "1|" << level_str[level] << "|" << str << "\n";
         log_file.flush();
     }
