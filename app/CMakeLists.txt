@@ -10,7 +10,6 @@ add_subdirectory("libraries/fmt")
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 
-include_directories(libraries/unicorn/include)
 include_directories(${source_DIR})
 
 add_library(lightswitch SHARED
@@ -24,5 +23,5 @@ add_library(lightswitch SHARED
         ${source_DIR}/switch/common.cpp
         ${source_DIR}/switch/loader/nro.cpp
         )
-target_link_libraries(lightswitch ${CMAKE_SOURCE_DIR}/libraries/unicorn/libunicorn.a fmt tinyxml2)
+target_link_libraries(lightswitch fmt tinyxml2)
 target_compile_options(lightswitch PRIVATE -Wno-c++17-extensions)

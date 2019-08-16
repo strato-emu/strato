@@ -1,13 +1,10 @@
 #pragma once
 
 #include <string>
-#include <unicorn/unicorn.h>
 #include <map>
 
 namespace lightSwitch::hw {
     class Memory {
-    private:
-        uc_engine *uc;
     public:
         enum Region {
             stack, tls, text, rodata, data, bss
@@ -18,7 +15,7 @@ namespace lightSwitch::hw {
         };
         std::map<Region, RegionData> region_map;
 
-        Memory(uc_engine *uc_);
+        Memory();
 
         void Map(uint64_t address, size_t size, Region region);
 

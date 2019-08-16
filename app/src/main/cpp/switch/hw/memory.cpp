@@ -6,21 +6,18 @@
 
 namespace lightSwitch::hw {
     // TODO: Boundary checks
-    Memory::Memory(uc_engine *uc_) : uc(uc_) {
+    Memory::Memory() {
         // Map stack memory
-        Memory::Map(constant::stack_addr, constant::stack_size, stack);
+        // Memory::Map(constant::stack_addr, constant::stack_size, stack);
         // Map TLS memory
         Memory::Map(constant::tls_addr, constant::tls_size, tls);
     }
 
     void Memory::Map(uint64_t address, size_t size, Region region) {
         region_map.insert(std::pair<Region, RegionData>(region, {address, size}));
-        void *ptr = mmap((void *) address, size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0);
+        void *ptr = mmap((void *) address, size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON | MAP_FIXED, 0, 0);
         if (!ptr)
             throw exception("An occurred while mapping region");
-        uc_err err = uc_mem_map_ptr(uc, address, size, UC_PROT_ALL, (void *) address);
-        if (err)
-            throw exception("Unicorn failed to map region: " + std::string(uc_strerror(err)));
     }
 
     void Memory::Write(void *data, uint64_t offset, size_t size) {

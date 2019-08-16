@@ -15,7 +15,7 @@ namespace lightSwitch {
                 {"NRO", 1}
         };
     public:
-        device(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : cpu(new hw::Cpu()), memory(new hw::Memory(cpu->GetEngine())), state{cpu, memory, settings, logger}, os({cpu, memory, settings, logger}) {};
+        device(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : cpu(new hw::Cpu()), memory(new hw::Memory()), state{cpu, memory, settings, logger}, os({cpu, memory, settings, logger}) {};
 
         void run(std::string rom_file) {
             try {
@@ -27,7 +27,7 @@ namespace lightSwitch {
                     default:
                         break;
                 }
-                cpu->Execute(constant::base_addr);
+                cpu->Execute(hw::Memory::text, memory, os.SvcHandler, &state);
             } catch (std::out_of_range &e) {
                 throw exception("The ROM extension wasn't recognized.");
             }

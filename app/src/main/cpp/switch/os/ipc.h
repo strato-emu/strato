@@ -22,7 +22,7 @@ namespace lightSwitch::os::ipc {
             bool handle_desc : 1;
         } *req_info;
 
-        IpcRequest(uint8_t *tlsPtr, device_state& state);
+        IpcRequest(uint8_t *tlsPtr, device_state &state);
 
         template<typename T>
         T GetValue();
