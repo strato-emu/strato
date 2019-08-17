@@ -1,23 +1,34 @@
 #include <sys/mman.h>
-#include <syslog.h>
-#include <vector>
+#include <cerrno>
 #include "memory.h"
 #include "../constant.h"
 
 namespace lightSwitch::hw {
-    // TODO: Boundary checks
     Memory::Memory() {
-        // Map stack memory
-        // Memory::Map(constant::stack_addr, constant::stack_size, stack);
         // Map TLS memory
         Memory::Map(constant::tls_addr, constant::tls_size, tls);
     }
 
     void Memory::Map(uint64_t address, size_t size, Region region) {
-        region_map.insert(std::pair<Region, RegionData>(region, {address, size}));
         void *ptr = mmap((void *) address, size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON | MAP_FIXED, 0, 0);
-        if (!ptr)
-            throw exception("An occurred while mapping region");
+        if (ptr == MAP_FAILED)
+            throw exception("An occurred while mapping region at " + std::to_string(address));
+        region_map.insert(std::pair<Region, RegionData>(region, {address, size}));
+    }
+
+    void Memory::Remap(Region region, size_t size) {
+        RegionData region_data = region_map.at(region);
+        void *ptr = mremap((void *) region_data.address, region_data.size, size, 0);
+        if (ptr == MAP_FAILED)
+            throw exception("An occurred while unmapping region: " + std::string(strerror(errno)));
+        region_map[region].size = size;
+    }
+
+    void Memory::Unmap(Region region) {
+        RegionData region_data = region_map.at(region);
+        int err = munmap((void *) region_data.address, region_data.size);
+        if (err == -1)
+            throw exception("An occurred while unmapping region: " + std::string(strerror(errno)));
     }
 
     void Memory::Write(void *data, uint64_t offset, size_t size) {

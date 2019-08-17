@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../constant.h"
 #include <string>
 #include <map>
 
@@ -7,7 +8,7 @@ namespace lightSwitch::hw {
     class Memory {
     public:
         enum Region {
-            stack, tls, text, rodata, data, bss
+            heap, tls, text, rodata, data, bss
         };
         struct RegionData {
             uint64_t address;
@@ -18,6 +19,10 @@ namespace lightSwitch::hw {
         Memory();
 
         void Map(uint64_t address, size_t size, Region region);
+
+        void Remap(Region region, size_t size);
+
+        void Unmap(Region region);
 
         void Write(void *data, uint64_t offset, size_t size);
 
