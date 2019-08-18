@@ -34,28 +34,19 @@ namespace lightSwitch::hw {
         if (status == -1) throw std::runtime_error("Cannot resume process");
     }
 
-    void bin(unsigned n) {
-        unsigned i;
-        std::string s;
-        for (i = 1 << 31; i > 0; i = i / 2)
-            (n & i) ? s += "1" : s += "0";
-        s = s.substr(16);
-        syslog(LOG_WARNING, "%s", s.c_str());
-    }
-
-    void Cpu::WriteBreakpoint(uint64_t &address_, uint64_t &size) {
+    void Cpu::WriteBreakpoint(uint64_t address_, uint64_t size) {
         auto address = (uint32_t *) address_;
         for (uint64_t iter = 0; iter < size; iter++) {
             auto instr_svc = reinterpret_cast<instr::svc *>(address + iter);
             auto instr_mrs = reinterpret_cast<instr::mrs *>(address + iter);
             if (instr_svc->verify()) {
                 // syslog(LOG_WARNING, "Found SVC call: 0x%X, At location 0x%X", instr_svc->value, ((uint64_t)address)+iter);
-                instr::brk brk((uint16_t) instr_svc->value);
-                address[iter] = *(uint32_t *) (&brk);
+                instr::brk brk(reinterpret_cast<uint16_t>(instr_svc->value));
+                address[iter] = *reinterpret_cast<uint32_t *>(&brk);
             } else if (instr_mrs->verify() && instr_mrs->Sreg == constant::tpidrro_el0) {
                 // syslog(LOG_WARNING, "Found MRS call: 0x%X, At location 0x%X", instr_mrs->Xt, ((uint64_t)address)+iter);
-                instr::brk brk((uint16_t) (constant::svc_last + 1 + instr_mrs->Xt));
-                address[iter] = *(uint32_t *) (&brk);
+                instr::brk brk(reinterpret_cast<uint16_t>(constant::svc_last + 1 + instr_mrs->Xt));
+                address[iter] = *reinterpret_cast<uint32_t *>(&brk);
             }
         }
     }
@@ -75,7 +66,7 @@ namespace lightSwitch::hw {
                 auto instr = reinterpret_cast<instr::brk *>(ReadMemory(regs.pc));
                 if (instr->verify()) {
                     if (instr->value <= constant::svc_last) {
-                        svc_handler((uint16_t) instr->value, device);
+                        svc_handler(reinterpret_cast<uint16_t>(instr->value), device);
                         syslog(LOG_ERR, "SVC has been called 0x%X", instr->value);
                         if (stop) break;
                     } else if (instr->value > constant::svc_last && instr->value <= constant::svc_last + constant::num_regs) {
@@ -116,10 +107,10 @@ namespace lightSwitch::hw {
     }
 
     uint64_t Cpu::GetRegister(wreg reg_id) {
-        return ((uint32_t *) regs.regs)[wreg_lut[reg_id]];
+        return (reinterpret_cast<uint32_t *>(regs.regs))[wreg_lut[reg_id]];
     }
 
     void Cpu::SetRegister(wreg reg_id, uint32_t value) {
-        ((uint32_t *) regs.regs)[wreg_lut[reg_id]] = value;
+        (reinterpret_cast<uint32_t *>(regs.regs))[wreg_lut[reg_id]] = value;
     }
 }

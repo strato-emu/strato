@@ -35,8 +35,8 @@ void thread_main(std::string rom_path, std::string pref_path, std::string log_pa
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_emu_lightswitch_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring rom_path_,
-                                                       jstring pref_path_, jstring log_path_) {
+Java_emu_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring rom_path_,
+                                           jstring pref_path_, jstring log_path_) {
     const char *rom_path = env->GetStringUTFChars(rom_path_, 0);
     const char *pref_path = env->GetStringUTFChars(pref_path_, 0);
     const char *log_path = env->GetStringUTFChars(log_path_, 0);
