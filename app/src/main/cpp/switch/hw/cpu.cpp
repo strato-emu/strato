@@ -41,11 +41,11 @@ namespace lightSwitch::hw {
             auto instr_mrs = reinterpret_cast<instr::mrs *>(address + iter);
             if (instr_svc->verify()) {
                 // syslog(LOG_WARNING, "Found SVC call: 0x%X, At location 0x%X", instr_svc->value, ((uint64_t)address)+iter);
-                instr::brk brk(reinterpret_cast<uint16_t>(instr_svc->value));
+                instr::brk brk(static_cast<uint16_t>(instr_svc->value));
                 address[iter] = *reinterpret_cast<uint32_t *>(&brk);
             } else if (instr_mrs->verify() && instr_mrs->Sreg == constant::tpidrro_el0) {
                 // syslog(LOG_WARNING, "Found MRS call: 0x%X, At location 0x%X", instr_mrs->Xt, ((uint64_t)address)+iter);
-                instr::brk brk(reinterpret_cast<uint16_t>(constant::svc_last + 1 + instr_mrs->Xt));
+                instr::brk brk(static_cast<uint16_t>(constant::svc_last + 1 + instr_mrs->Xt));
                 address[iter] = *reinterpret_cast<uint32_t *>(&brk);
             }
         }
@@ -66,7 +66,7 @@ namespace lightSwitch::hw {
                 auto instr = reinterpret_cast<instr::brk *>(ReadMemory(regs.pc));
                 if (instr->verify()) {
                     if (instr->value <= constant::svc_last) {
-                        svc_handler(reinterpret_cast<uint16_t>(instr->value), device);
+                        svc_handler(static_cast<uint16_t>(instr->value), device);
                         syslog(LOG_ERR, "SVC has been called 0x%X", instr->value);
                         if (stop) break;
                     } else if (instr->value > constant::svc_last && instr->value <= constant::svc_last + constant::num_regs) {
