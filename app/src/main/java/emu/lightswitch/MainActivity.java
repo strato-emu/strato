@@ -1,4 +1,4 @@
-package emu.lightswitch.lightswitch;
+package emu.lightswitch;
 
 import android.Manifest;
 import android.content.Intent;

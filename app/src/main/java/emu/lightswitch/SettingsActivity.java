@@ -1,4 +1,4 @@
-package emu.lightswitch.lightswitch;
+package emu.lightswitch;
 
 import android.os.Bundle;
 import androidx.appcompat.app.ActionBar;
