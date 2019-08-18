@@ -107,10 +107,10 @@ namespace lightSwitch::hw {
     }
 
     uint64_t Cpu::GetRegister(wreg reg_id) {
-        return (reinterpret_cast<uint32_t *>(regs.regs))[wreg_lut[reg_id]];
+        return (reinterpret_cast<uint32_t *>(&regs.regs))[wreg_lut[reg_id]];
     }
 
     void Cpu::SetRegister(wreg reg_id, uint32_t value) {
-        (reinterpret_cast<uint32_t *>(regs.regs))[wreg_lut[reg_id]] = value;
+        (reinterpret_cast<uint32_t *>(&regs.regs))[wreg_lut[reg_id]] = value;
     }
 }
