@@ -1,5 +1,4 @@
 #include "kernel.h"
-#include "svc.h"
 
 namespace lightSwitch::os {
     Kernel::Kernel(device_state state_) : state(state_) {}
