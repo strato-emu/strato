@@ -9,7 +9,7 @@ namespace lightSwitch::os {
         if (svc::svcTable[svc])
             (*svc::svcTable[svc])(state);
         else {
-            state.logger->write(Logger::ERROR, "Unimplemented SVC 0x{0:x}", svc);
+            state.logger->write(Logger::ERROR, "Unimplemented SVC 0x{0:X}", svc);
             state.cpu->StopExecution();
         }
     }

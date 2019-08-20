@@ -13,12 +13,12 @@ namespace lightSwitch::os::ipc {
         data_pos = ((data_pos - 1) & ~(15U)) + 16; // ceil data_pos with multiples 16
         data_ptr = &tls_ptr[data_pos + sizeof(command_struct)];
 
-        state.logger->write(Logger::DEBUG, "Type: 0x{:x}", (uint8_t) req_info->type);
+        state.logger->write(Logger::DEBUG, "Type: 0x{:X}", (uint8_t) req_info->type);
         state.logger->write(Logger::DEBUG, "X descriptors: {}", (uint8_t) req_info->x_no);
         state.logger->write(Logger::DEBUG, "A descriptors: {}", (uint8_t) req_info->a_no);
         state.logger->write(Logger::DEBUG, "B descriptors: {}", (uint8_t) req_info->b_no);
         state.logger->write(Logger::DEBUG, "W descriptors: {}", (uint8_t) req_info->w_no);
-        state.logger->write(Logger::DEBUG, "Raw data offset: 0x{:x}", data_pos);
+        state.logger->write(Logger::DEBUG, "Raw data offset: 0x{:X}", data_pos);
         state.logger->write(Logger::DEBUG, "Raw data size: {}", (uint16_t) req_info->data_sz);
         state.logger->write(Logger::DEBUG, "Payload Command ID: {}", *((uint32_t *) &tls_ptr[data_pos + 8]));
     }

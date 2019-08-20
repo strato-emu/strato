@@ -6,26 +6,18 @@
 #include "switch/device.h"
 #include "switch/common.h"
 
-std::thread *game_thread;
-
-void signal_handle(int sig_no) {
-    throw lightSwitch::exception("A signal has been raised: " + std::to_string(sig_no));
-}
+std::thread *emu_thread;
 
 void thread_main(std::string rom_path, std::string pref_path, std::string log_path) {
     auto log = std::make_shared<lightSwitch::Logger>(log_path);
     log->write(lightSwitch::Logger::INFO, "Launching ROM {0}", rom_path);
-//    long long i = 0;
-//    while(true){
-//        log->write(lightSwitch::Logger::INFO, "#{0}", i);
-//        sleep(1);
-//        i++;
-//    }
+
     auto settings = std::make_shared<lightSwitch::Settings>(pref_path);
     try {
         lightSwitch::device device(log, settings);
         device.run(rom_path);
-        log->write(lightSwitch::Logger::INFO, "Emulation has ended!");
+
+        log->write(lightSwitch::Logger::INFO, "Emulation has ended.");
     } catch (std::exception &e) {
         log->write(lightSwitch::Logger::ERROR, e.what());
     } catch (...) {
@@ -40,10 +32,11 @@ Java_emu_lightswitch_MainActivity_loadFile(JNIEnv *env, jobject instance, jstrin
     const char *rom_path = env->GetStringUTFChars(rom_path_, 0);
     const char *pref_path = env->GetStringUTFChars(pref_path_, 0);
     const char *log_path = env->GetStringUTFChars(log_path_, 0);
-    // std::signal(SIGABRT, signal_handle);
-    if (game_thread) pthread_kill(game_thread->native_handle(), SIGABRT);
+
+    if (emu_thread) pthread_kill(emu_thread->native_handle(), SIGABRT);
+
     // Running on UI thread is not a good idea, any crashes and such will be propagated
-    game_thread = new std::thread(thread_main, std::string(rom_path, strlen(rom_path)), std::string(pref_path, strlen(pref_path)), std::string(log_path, strlen(log_path)));
+    emu_thread = new std::thread(thread_main, std::string(rom_path, strlen(rom_path)), std::string(pref_path, strlen(pref_path)), std::string(log_path, strlen(log_path)));
     env->ReleaseStringUTFChars(rom_path_, rom_path);
     env->ReleaseStringUTFChars(pref_path_, pref_path);
     env->ReleaseStringUTFChars(log_path_, log_path);

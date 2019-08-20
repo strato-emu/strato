@@ -23,7 +23,6 @@ namespace lightSwitch {
 
     namespace instr {
         // https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction
-        // For some reason if value is set to uint16_t it isn't read correctly ?
         struct brk {
             brk(uint16_t val) {
                 start = 0x0; // First 5 bits of an BRK instruction are 0
@@ -35,9 +34,9 @@ namespace lightSwitch {
                 return (start == 0x0 && end == 0x6A1);
             }
 
-            uint8_t start:5;
-            uint32_t value:16;
-            uint16_t end:11;
+            uint8_t start : 5;
+            uint32_t value : 16;
+            uint16_t end : 11;
         };
 
         // https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/svc-supervisor-call
@@ -46,9 +45,9 @@ namespace lightSwitch {
                 return (start == 0x1 && end == 0x6A0);
             }
 
-            uint8_t start:5;
-            uint32_t value:16;
-            uint16_t end:11;
+            uint8_t start : 5;
+            uint32_t value : 16;
+            uint16_t end : 11;
         };
 
         // https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/mrs-move-system-register
@@ -57,16 +56,12 @@ namespace lightSwitch {
                 return (end == 0xD53);
             }
 
-            uint8_t Xt:5;
-            uint32_t Sreg:15;
-            uint16_t end:12;
+            uint8_t dst_reg : 5;
+            uint32_t src_reg : 15;
+            uint16_t end : 12;
         };
     };
 
-    enum xreg {
-        x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30
-    };
-    enum wreg {
-        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23, w24, w25, w26, w27, w28, w29, w30
-    };
+    enum xreg { x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30 };
+    enum wreg { w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23, w24, w25, w26, w27, w28, w29, w30 };
 }

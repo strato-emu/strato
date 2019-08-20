@@ -63,9 +63,8 @@ namespace lightSwitch {
 
     struct device_state {
         std::shared_ptr<hw::Cpu> cpu;
-        std::shared_ptr<hw::Memory> mem;
+        std::shared_ptr<hw::Memory> memory;
         std::shared_ptr<Settings> settings;
         std::shared_ptr<Logger> logger;
     };
-    //typedef std::shared_ptr<device_state_struct> device_state;
 }

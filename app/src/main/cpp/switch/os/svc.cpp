@@ -7,28 +7,35 @@
 namespace lightSwitch::os::svc {
     void ConnectToNamedPort(device_state &state) {
         char port[constant::port_size]{0};
-        state.mem->Read(port, state.cpu->GetRegister(xreg::x1), constant::port_size);
+        state.memory->Read(port, state.cpu->GetRegister(xreg::x1), constant::port_size);
+
         if (std::strcmp(port, "sm:") == 0)
             state.cpu->SetRegister(wreg::w1, constant::sm_handle);
         else {
             state.logger->write(Logger::ERROR, "svcConnectToNamedPort tried connecting to invalid port \"{0}\"", port);
             state.cpu->StopExecution();
         }
+
         state.cpu->SetRegister(wreg::w0, 0);
     }
 
     void SendSyncRequest(device_state &state) {
-        state.logger->write(Logger::DEBUG, "svcSendSyncRequest called for handle 0x{0:x}.", state.cpu->GetRegister(xreg::x0));
+        state.logger->write(Logger::DEBUG, "svcSendSyncRequest called for handle 0x{0:X}.", state.cpu->GetRegister(xreg::x0));
+
         uint8_t tls[constant::tls_ipc_size];
-        state.mem->Read(&tls, constant::tls_addr, constant::tls_ipc_size);
+        state.memory->Read(&tls, constant::tls_addr, constant::tls_ipc_size);
+
         ipc::IpcRequest request(tls, state);
+
         state.cpu->SetRegister(wreg::w0, 0);
     }
 
     void OutputDebugString(device_state &state) {
         std::string debug(state.cpu->GetRegister(xreg::x1), '\0');
-        state.mem->Read((void *) debug.data(), state.cpu->GetRegister(xreg::x0), state.cpu->GetRegister(xreg::x1));
-        state.logger->write(Logger::INFO, "ROM Output: {0}", debug.c_str());
+        state.memory->Read((void *) debug.data(), state.cpu->GetRegister(xreg::x0), state.cpu->GetRegister(xreg::x1));
+
+        state.logger->write(Logger::INFO, "svcOutputDebugString: {0}", debug.c_str());
+
         state.cpu->SetRegister(wreg::w0, 0);
     }
 

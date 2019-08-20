@@ -13,7 +13,7 @@
 namespace lightSwitch::hw {
     class Cpu {
     private:
-        bool stop = false;
+        bool halt = false;
         long status = 0;
         pid_t child;
         iovec iov;
