@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include "switch/common.h"
 
 namespace lightSwitch::os::ipc {

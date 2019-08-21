@@ -1,7 +1,6 @@
 #include <sys/mman.h>
 #include <cerrno>
 #include "memory.h"
-#include "../constant.h"
 
 namespace lightSwitch::hw {
     Memory::Memory() {

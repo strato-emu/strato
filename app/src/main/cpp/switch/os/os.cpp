@@ -14,7 +14,9 @@ namespace lightSwitch::os {
         }
     }
 
-    void OS::HandleSvc(uint16_t svc) {
-        SvcHandler(svc, &state);
+    uint32_t OS::NewHandle(KObjectPtr obj) {
+        handles.insert({handle_index, obj});
+        state.logger->write(Logger::DEBUG, "Creating new handle 0x{0:x}", handle_index);
+        return handle_index++;
     }
 }

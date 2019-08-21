@@ -7,6 +7,12 @@
 namespace lightSwitch {
     typedef std::runtime_error exception;
 
+#ifdef NDEBUG
+    constexpr bool debug_build = 0;
+#else
+    constexpr bool debug_build = 1;
+#endif
+
     namespace constant {
         constexpr uint64_t base_addr = 0x80000000;
         constexpr uint64_t stack_addr = 0x3000000;

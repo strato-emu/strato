@@ -9,7 +9,6 @@
 #include <fmt/format.h>
 #include "hw/cpu.h"
 #include "hw/memory.h"
-#include "constant.h"
 
 namespace lightSwitch {
     class Settings {

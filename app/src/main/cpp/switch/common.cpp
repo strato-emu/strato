@@ -66,10 +66,8 @@ namespace lightSwitch {
     }
 
     void Logger::write(Logger::LogLevel level, std::string str) {
-#ifdef NDEBUG
-        if (level == DEBUG)
+        if (level == DEBUG && debug_build)
             return;
-#endif
         syslog(level_syslog[level], "%s", str.c_str());
         log_file << "1|" << level_str[level] << "|" << str << "\n";
         log_file.flush();

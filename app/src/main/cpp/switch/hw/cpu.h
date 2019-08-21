@@ -7,18 +7,18 @@
 #include <sys/wait.h>
 #include <linux/uio.h>
 #include <linux/elf.h>
-#include <switch/constant.h>
+#include "../constant.h"
 #include "memory.h"
 
 namespace lightSwitch::hw {
     class Cpu {
     private:
-        bool halt = false;
         long status = 0;
+        int pid_status = 0;
         pid_t child;
         iovec iov;
         user_pt_regs regs;
-        uint64_t tls;
+        uint64_t tls = constant::tls_addr;
 
         static pid_t ExecuteChild(uint64_t address);
 

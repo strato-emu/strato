@@ -21,7 +21,7 @@ namespace lightSwitch {
             if (rom_ext == "nro") loader::NroLoader loader(rom_file, state);
             else throw exception("Unsupported ROM extension.");
 
-            cpu->Execute(hw::Memory::text, memory, os.SvcHandler, &state);
+            cpu->Execute(hw::Memory::text, memory, std::bind(&os::OS::SvcHandler, std::ref(os), std::placeholders::_1, std::placeholders::_2), &state);
         }
     };
 };

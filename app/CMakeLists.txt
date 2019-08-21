@@ -16,7 +16,6 @@ add_library(lightswitch SHARED
         ${source_DIR}/lightswitch.cpp
         ${source_DIR}/switch/os/os.cpp
         ${source_DIR}/switch/os/ipc.cpp
-        ${source_DIR}/switch/os/kernel.cpp
         ${source_DIR}/switch/os/svc.cpp
         ${source_DIR}/switch/hw/cpu.cpp
         ${source_DIR}/switch/hw/memory.cpp
