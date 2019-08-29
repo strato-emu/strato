@@ -1,5 +1,6 @@
 package emu.lightswitch;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.FileObserver;
@@ -14,8 +15,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
+import org.json.JSONObject;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 import static java.lang.Thread.interrupted;
 
@@ -37,7 +43,7 @@ public class LogActivity extends AppCompatActivity {
         final ListView log_list = this.findViewById(R.id.log_list);
         adapter = new LogAdapter(this, Integer.parseInt(prefs.getString("log_level", "3")), getResources().getStringArray(R.array.log_level));
         log_list.setAdapter(adapter);
-        log_file = new File(getApplicationInfo().dataDir + "/log.bin");
+        log_file = new File(getApplicationInfo().dataDir + "/lightswitch.log");
         try {
             InputStream inputStream = new FileInputStream(log_file);
             reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -110,8 +116,8 @@ public class LogActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.action_clear:
                 try {
-                    FileWriter file = new FileWriter(log_file, false);
-                    file.close();
+                    FileWriter fileWriter = new FileWriter(log_file, false);
+                    fileWriter.close();
                 } catch (IOException e) {
                     Log.w("Logger", "IO Error while clearing the log file: " + e.getMessage());
                     Toast.makeText(getApplicationContext(), getString(R.string.io_error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -119,6 +125,46 @@ public class LogActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), getString(R.string.cleared), Toast.LENGTH_LONG).show();
                 finish();
                 return true;
+            case R.id.action_share_log:
+                Thread share_thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            URL url = new URL("https://hastebin.com/documents");
+                            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                            urlConnection.setRequestMethod("POST");
+                            OutputStream outputStream = new BufferedOutputStream(urlConnection.getOutputStream());
+                            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+                            FileReader fileReader = new FileReader(log_file);
+                            int chr;
+                            while ((chr = fileReader.read()) != -1) {
+                                bufferedWriter.write(chr);
+                            }
+                            bufferedWriter.flush();
+                            bufferedWriter.close();
+                            outputStream.close();
+                            //urlConnection.connect();
+                            InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
+                            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                            String key = new JSONObject(bufferedReader.lines().collect(Collectors.joining())).getString("key");
+                            bufferedReader.close();
+                            inputStream.close();
+                            urlConnection.disconnect();
+                            String result = "https://hastebin.com/" + key;
+                            Intent sharingIntent = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, result);
+                            startActivity(Intent.createChooser(sharingIntent, "Share log url with:"));
+                        } catch (Exception e) {
+                            runOnUiThread(new Runnable() {@Override public void run() {Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();}});
+                            e.printStackTrace();
+                        }
+                    }});
+                share_thread.start();
+                try {
+                    share_thread.join();
+                } catch (InterruptedException e) {
+                    Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
+                }
             default:
                 return super.onOptionsItemSelected(item);
         }

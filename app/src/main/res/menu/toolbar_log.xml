@@ -8,6 +8,11 @@
             app:showAsAction="ifRoom|withText"
             app:actionViewClass="androidx.appcompat.widget.SearchView"/>
     <item
+            android:id="@+id/action_share_log"
+            android:icon="@drawable/ic_share"
+            android:title="@string/share"
+            app:showAsAction="ifRoom"/>
+    <item
             android:id="@+id/action_clear"
             android:icon="@drawable/ic_clear"
             android:title="@string/clear"

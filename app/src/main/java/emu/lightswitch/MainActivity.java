@@ -111,9 +111,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (adapter.getItemViewType(position) == ContentType.Item) {
-                    String path = ((GameItem) parent.getItemAtPosition(position)).getPath();
-                    notifyUser(getString(R.string.launching) + " " + path);
-                    loadFile(path, getApplicationInfo().dataDir + "/shared_prefs/" + getApplicationInfo().packageName + "_preferences.xml", getApplicationInfo().dataDir + "/log.bin");
+                    GameItem item = ((GameItem) parent.getItemAtPosition(position));
+                    notifyUser(getString(R.string.launching) + " " + item.getTitle());
+                    loadFile(item.getPath(), getApplicationInfo().dataDir + "/shared_prefs/" + getApplicationInfo().packageName + "_preferences.xml", getApplicationInfo().dataDir + "/lightswitch.log");
                 }
             }
         });

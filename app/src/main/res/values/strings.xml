@@ -22,8 +22,10 @@
     <string name="localization_language">Language</string>
     <!-- Toolbar Logger -->
     <string name="clear">Clear</string>
+    <string name="share">Share</string>
     <!-- Logger -->
     <string name="file_missing">The log file was not found</string>
     <string name="io_error">An I/O error has occurred</string>
+    <string name="share_error">An error has occurred while sharing</string>
     <string name="cleared">The logs have been cleared</string>
 </resources>
