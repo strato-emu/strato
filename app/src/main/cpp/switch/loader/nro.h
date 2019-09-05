@@ -9,7 +9,7 @@ namespace lightSwitch::loader {
         struct NroSegmentHeader {
             uint32_t offset;
             uint32_t size;
-        };
+        }; //!< The structure of a single Segment descriptor in the NRO's header
 
         struct NroHeader {
             uint32_t : 32;
@@ -33,11 +33,13 @@ namespace lightSwitch::loader {
             NroSegmentHeader api_info;
             NroSegmentHeader dynstr;
             NroSegmentHeader dynsym;
-        };
-
-        void Load(device_state state);
+        }; //!< A bit-field struct to read the header of an NRO directly
 
     public:
-        NroLoader(std::string file_path, device_state state) : Loader(file_path, state) { Load(state); };
+        /**
+         * @param file_path The path to the ROM file
+         * @param state The state of the device
+         */
+        NroLoader(std::string file_path, const device_state &state);
     };
 }

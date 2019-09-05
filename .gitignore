@@ -89,3 +89,10 @@ fabric.properties
 
 # Android Studio captures folder
 captures/
+
+# VSCode
+.vscode/
+
+# Android Studio
+.cxx/
+

@@ -2,13 +2,9 @@
 
 #include "ipc.h"
 #include "../common.h"
-
-// https://switchbrew.org/wiki/SVC
+#include "switch/os.h"
 
 namespace lightSwitch::constant {
-    constexpr uint64_t sm_handle = 0xd000; // sm: is hardcoded for now
-    constexpr uint32_t tls_ipc_size = 0x100;
-    constexpr uint8_t port_size = 0x8;
     namespace infoState {
         // 1.0.0+
         constexpr uint8_t AllowedCpuIdBitmask = 0x0;
@@ -32,40 +28,99 @@ namespace lightSwitch::constant {
         constexpr uint8_t PersonalMmHeapSize = 0x10;
         constexpr uint8_t PersonalMmHeapUsage = 0x11;
         constexpr uint8_t TitleId = 0x12;
+        // 4.0.0+
+        constexpr uint8_t PrivilegedProcessId = 0x13;
         // 5.0.0+
         constexpr uint8_t UserExceptionContextAddr = 0x14;
         // 6.0.0+
         constexpr uint8_t TotalMemoryAvailableWithoutMmHeap = 0x15;
         constexpr uint8_t TotalMemoryUsedWithoutMmHeap = 0x16;
     };
+    namespace status {
+        constexpr uint32_t success = 0x0; //!< "Success"
+        constexpr uint32_t unimpl = 0x177202; //!< "Unimplemented behaviour"
+    }
 };
 
-namespace lightSwitch::os::svc {
-    void ConnectToNamedPort(device_state &state);
+namespace lightSwitch::kernel::svc {
+    /**
+     * Set the process heap to a given size (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
+     */
+    void SetHeapSize(device_state &state);
 
-    void SendSyncRequest(device_state &state);
-
-    void OutputDebugString(device_state &state);
-
-    void GetInfo(device_state &state);
-
+    /**
+     * Exits the current process (https://switchbrew.org/wiki/SVC#svcExitProcess)
+     */
     void ExitProcess(device_state &state);
 
+    /**
+     * Create a thread in the current process (https://switchbrew.org/wiki/SVC#svcCreateThread)
+     */
+    void CreateThread(device_state &state);
+
+    /**
+     * Starts the thread for the provided handle (https://switchbrew.org/wiki/SVC#svcStartThread)
+     */
+    void StartThread(device_state &state);
+
+    /**
+     * Exits the current thread (https://switchbrew.org/wiki/SVC#svcExitThread)
+     */
+    void ExitThread(device_state &state);
+
+    /**
+     * Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcGetThreadPriority)
+     */
+    void GetThreadPriority(device_state &state);
+
+    /**
+     * Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcSetThreadPriority)
+     */
+    void SetThreadPriority(device_state &state);
+
+    /**
+     * Closes the specified handle
+     */
+    void CloseHandle(device_state &state);
+
+    /**
+     * Connects to a named IPC port
+     */
+    void ConnectToNamedPort(device_state &state);
+
+    /**
+     * Send a synchronous IPC request to a service
+     */
+    void SendSyncRequest(device_state &state);
+
+    /**
+     * Outputs a debug string
+     */
+    void OutputDebugString(device_state &state);
+
+    /**
+     * Retrieves a piece of information (https://switchbrew.org/wiki/SVC#svcGetInfo)
+     */
+    void GetInfo(device_state &state);
+
+    /**
+     * The SVC Table maps all SVCs to their corresponding functions
+     */
     void static (*svcTable[0x80])(device_state &) = {
-            nullptr, // 0x00
-            nullptr, // 0x01
+            nullptr, // 0x00 (Does not exist)
+            SetHeapSize, // 0x01
             nullptr, // 0x02
             nullptr, // 0x03
             nullptr, // 0x04
             nullptr, // 0x05
             nullptr, // 0x06
             ExitProcess, // 0x07
-            nullptr, // 0x08
-            nullptr, // 0x09
-            nullptr, // 0x0a
+            CreateThread, // 0x08
+            StartThread, // 0x09
+            ExitThread, // 0x0a
             nullptr, // 0x0b
-            nullptr, // 0x0c
-            nullptr, // 0x0d
+            GetThreadPriority, // 0x0c
+            SetThreadPriority, // 0x0d
             nullptr, // 0x0e
             nullptr, // 0x0f
             nullptr, // 0x10
@@ -74,7 +129,7 @@ namespace lightSwitch::os::svc {
             nullptr, // 0x13
             nullptr, // 0x14
             nullptr, // 0x15
-            nullptr, // 0x16
+            CloseHandle, // 0x16
             nullptr, // 0x17
             nullptr, // 0x18
             nullptr, // 0x19

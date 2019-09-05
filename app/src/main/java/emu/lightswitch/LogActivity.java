@@ -143,7 +143,7 @@ public class LogActivity extends AppCompatActivity {
                             bufferedWriter.flush();
                             bufferedWriter.close();
                             outputStream.close();
-                            //urlConnection.connect();
+                            urlConnection.connect();
                             InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
                             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                             String key = new JSONObject(bufferedReader.lines().collect(Collectors.joining())).getString("key");
@@ -160,7 +160,7 @@ public class LogActivity extends AppCompatActivity {
                     }});
                 share_thread.start();
                 try {
-                    share_thread.join();
+                    share_thread.join(1000);
                 } catch (InterruptedException e) {
                     Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();
                     e.printStackTrace();

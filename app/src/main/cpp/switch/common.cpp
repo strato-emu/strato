@@ -3,13 +3,36 @@
 #include <syslog.h>
 
 namespace lightSwitch {
-    // Settings
+    namespace memory {
+        Permission::Permission() {
+            r = 0;
+            w = 0;
+            x = 0;
+        }
+
+        Permission::Permission(bool read, bool write, bool execute) {
+            r = read;
+            w = write;
+            x = execute;
+        }
+
+        bool Permission::operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); }
+
+        bool Permission::operator!=(const Permission &rhs) const { return !operator==(rhs); }
+
+        int Permission::get() const {
+            int perm = 0;
+            if (r) perm |= PROT_READ;
+            if (w) perm |= PROT_WRITE;
+            if (x) perm |= PROT_EXEC;
+            return perm;
+        }
+    }
+
     Settings::Settings(std::string pref_xml) {
         tinyxml2::XMLDocument pref;
-        if (pref.LoadFile(pref_xml.c_str())) {
-            syslog(LOG_ERR, "TinyXML2 Error: %s", pref.ErrorStr());
-            throw pref.ErrorID();
-        }
+        if (pref.LoadFile(pref_xml.c_str()))
+            throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
         tinyxml2::XMLElement *elem = pref.LastChild()->FirstChild()->ToElement();
         while (elem) {
             switch (elem->Value()[0]) {
@@ -55,26 +78,27 @@ namespace lightSwitch {
         }
     }
 
-    // Logger
-    Logger::Logger(std::string log_path) {
+    Logger::Logger(const std::string & log_path) {
         log_file.open(log_path, std::ios::app);
-        write_header("Logging started");
+        WriteHeader("Logging started");
     }
 
     Logger::~Logger() {
-        write_header("Logging ended");
+        WriteHeader("Logging ended");
     }
 
-    void Logger::write(Logger::LogLevel level, std::string str) {
-        if (level == DEBUG && debug_build)
-            return;
-        syslog(level_syslog[level], "%s", str.c_str());
-        log_file << "1|" << level_str[level] << "|" << str << "\n";
+    void Logger::WriteHeader(const std::string& str) {
+        syslog(LOG_ALERT, "%s", str.c_str());
+        log_file << "0|" << str << "\n";
         log_file.flush();
     }
 
-    void Logger::write_header(std::string str) {
-        log_file << "0|" << str << "\n";
+    void Logger::Write(const LogLevel level, const std::string& str)  {
+        #ifdef NDEBUG
+        if (level == DEBUG) return;
+        #endif
+        syslog(level_syslog[level], "%s", str.c_str());
+        log_file << "1|" << level_str[level] << "|" << str << "\n";
         log_file.flush();
     }
 }
