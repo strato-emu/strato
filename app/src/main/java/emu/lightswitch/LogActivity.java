@@ -9,19 +9,35 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
+
 import org.json.JSONObject;
 
-import java.io.*;
-import java.net.HttpURLConnection;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import static java.lang.Thread.interrupted;
 
@@ -47,42 +63,42 @@ public class LogActivity extends AppCompatActivity {
         try {
             InputStream inputStream = new FileInputStream(log_file);
             reader = new BufferedReader(new InputStreamReader(inputStream));
-        thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                @SuppressWarnings("deprecation") // Required as FileObserver(File) is only on API level 29 also no AndroidX version present
-                FileObserver observer = new FileObserver(log_file.getPath()) {
-                    @Override
-                    public void onEvent(int event, String path) {
-                        if (event == FileObserver.MODIFY) {
-                            try {
-                                boolean done = false;
-                                while (!done) {
-                                    final String line = reader.readLine();
-                                    done = (line == null);
-                                    if (!done) {
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                adapter.add(line);
-                                            }
-                                        });
+            thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    @SuppressWarnings("deprecation") // Required as FileObserver(File) is only on API level 29 also no AndroidX version present
+                            FileObserver observer = new FileObserver(log_file.getPath()) {
+                        @Override
+                        public void onEvent(int event, String path) {
+                            if (event == FileObserver.MODIFY) {
+                                try {
+                                    boolean done = false;
+                                    while (!done) {
+                                        final String line = reader.readLine();
+                                        done = (line == null);
+                                        if (!done) {
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    adapter.add(line);
+                                                }
+                                            });
+                                        }
                                     }
+                                } catch (IOException e) {
+                                    Log.w("Logger", "IO Error during access of log file: " + e.getMessage());
+                                    Toast.makeText(getApplicationContext(), getString(R.string.io_error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 }
-                            } catch (IOException e) {
-                                Log.w("Logger", "IO Error during access of log file: " + e.getMessage());
-                                Toast.makeText(getApplicationContext(), getString(R.string.io_error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
                             }
                         }
-                    }
-                };
-                observer.onEvent(FileObserver.MODIFY, log_file.getPath());
-                observer.startWatching();
-                while (!interrupted()) ;
-                observer.stopWatching();
-            }
-        });
-        thread.start();
+                    };
+                    observer.onEvent(FileObserver.MODIFY, log_file.getPath());
+                    observer.startWatching();
+                    while (!interrupted()) ;
+                    observer.stopWatching();
+                }
+            });
+            thread.start();
         } catch (FileNotFoundException e) {
             Log.w("Logger", "IO Error during access of log file: " + e.getMessage());
             Toast.makeText(getApplicationContext(), getString(R.string.file_missing), Toast.LENGTH_LONG).show();
@@ -129,10 +145,15 @@ public class LogActivity extends AppCompatActivity {
                 Thread share_thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        HttpsURLConnection urlConnection = null;
                         try {
                             URL url = new URL("https://hastebin.com/documents");
-                            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                            urlConnection = (HttpsURLConnection) url.openConnection();
                             urlConnection.setRequestMethod("POST");
+                            urlConnection.setRequestProperty("Host", "hastebin.com");
+                            urlConnection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                            urlConnection.setRequestProperty("Referer", "https://hastebin.com/");
+                            urlConnection.setRequestProperty("Connection", "keep-alive");
                             OutputStream outputStream = new BufferedOutputStream(urlConnection.getOutputStream());
                             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
                             FileReader fileReader = new FileReader(log_file);
@@ -143,25 +164,34 @@ public class LogActivity extends AppCompatActivity {
                             bufferedWriter.flush();
                             bufferedWriter.close();
                             outputStream.close();
-                            urlConnection.connect();
+                            if (urlConnection.getResponseCode() != 200) {
+                                Log.e("LogUpload", "HTTPS Status Code: " + urlConnection.getResponseCode());
+                                throw new Exception();
+                            }
                             InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
                             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                             String key = new JSONObject(bufferedReader.lines().collect(Collectors.joining())).getString("key");
                             bufferedReader.close();
                             inputStream.close();
-                            urlConnection.disconnect();
                             String result = "https://hastebin.com/" + key;
                             Intent sharingIntent = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, result);
                             startActivity(Intent.createChooser(sharingIntent, "Share log url with:"));
                         } catch (Exception e) {
-                            runOnUiThread(new Runnable() {@Override public void run() {Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();}});
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();}
+                            });
                             e.printStackTrace();
+                        } finally {
+                            assert urlConnection != null;
+                            urlConnection.disconnect();
                         }
-                    }});
+                    }
+                });
                 share_thread.start();
                 try {
                     share_thread.join(1000);
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     Toast.makeText(getApplicationContext(), getString(R.string.share_error), Toast.LENGTH_LONG).show();
                     e.printStackTrace();
                 }

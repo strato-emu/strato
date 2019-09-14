@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
 project(Lightswitch VERSION 1 LANGUAGES CXX)
-set_property(GLOBAL PROPERTY CMAKE_CXX_STANDARD 17 PROPERTY CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(BUILD_TESTING OFF)
 set(CMAKE_CXX_STANDARD 17)
@@ -25,6 +24,8 @@ add_library(lightswitch SHARED
         ${source_DIR}/switch/kernel/service.cpp
         ${source_DIR}/switch/kernel/types/KProcess.cpp
         ${source_DIR}/switch/kernel/types/KThread.cpp
+        ${source_DIR}/switch/kernel/types/KSharedMemory.cpp
+        ${source_DIR}/switch/kernel/types/KPrivateMemory.cpp
         )
 target_link_libraries(lightswitch fmt tinyxml2 android)
 target_compile_options(lightswitch PRIVATE -Wno-c++17-extensions)

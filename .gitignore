@@ -61,7 +61,8 @@ build/
 local.properties
 
 # External native build folder generated in Android Studio 2.2 and later
-.externalNativeBuild
+.externalNativeBuild/
+.cxx/
 
 # IntelliJ
 out/
@@ -93,6 +94,5 @@ captures/
 # VSCode
 .vscode/
 
-# Android Studio
-.cxx/
-
+# Discord plugin for IntelliJ IDEA
+.idea\discord.xml

@@ -32,6 +32,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_lightswitch_MainActivity_loadFile(JNI
     if (emu_thread) {
         halt = true;  // This'll cause execution to stop after the next breakpoint
         emu_thread->join();
+        halt = false; // Or the current instance will halt immediately
     }
 
     // Running on UI thread is not a good idea as the UI will remain unresponsive

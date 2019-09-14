@@ -12,11 +12,12 @@ namespace lightSwitch::kernel {
      * The OS class manages the interaction between OS components and the underlying hardware in NCE
      */
     class OS {
-    private:
+      private:
         device_state state; //!< The state of the device
 
-    public:
-        std::unordered_map<pid_t, std::shared_ptr<type::KProcess>> process_map; //!< The state of the device
+      public:
+        std::unordered_map<pid_t, std::shared_ptr<type::KProcess>> process_map; //!< A mapping from a process's PID to it's corresponding PID (Threads have their own PID too, so there are overlapping values)
+        std::vector<pid_t> process_vec; //!< A vector of all processes by their main thread's PID
         std::shared_ptr<type::KProcess> this_process; //!< The corresponding KProcess object of the process that's called an SVC
         std::shared_ptr<type::KThread> this_thread; //!< The corresponding KThread object of the thread that's called an SVC
 
@@ -38,7 +39,7 @@ namespace lightSwitch::kernel {
          * @param stack_size The size of the main stack
          * @return An instance of the KProcess of the created process
          */
-        std::shared_ptr<type::KProcess> CreateProcess(uint64_t address, size_t stack_size);
+        std::shared_ptr<type::KProcess> CreateProcess(u64 address, size_t stack_size);
 
         /**
          * Kill a particular thread
@@ -50,12 +51,12 @@ namespace lightSwitch::kernel {
          * @param svc The ID of the SVC to be called
          * @param pid The PID of the process/thread calling the SVC
          */
-        void SvcHandler(uint16_t svc, pid_t pid);
+        void SvcHandler(u16 svc, pid_t pid);
 
         /**
-         * @param req The IPC request to be handled
+         * @param handle The handle of the object
          * @return The corresponding response returned by a service
          */
-        ipc::IpcResponse IpcHandler(ipc::IpcRequest &req);
+        ipc::IpcResponse IpcHandler(handle_t handle);
     };
 }

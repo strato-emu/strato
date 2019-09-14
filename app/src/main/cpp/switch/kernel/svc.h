@@ -4,116 +4,119 @@
 #include "../common.h"
 #include "switch/os.h"
 
-namespace lightSwitch::constant {
-    namespace infoState {
+namespace lightSwitch {
+    namespace constant::infoState {
         // 1.0.0+
-        constexpr uint8_t AllowedCpuIdBitmask = 0x0;
-        constexpr uint8_t AllowedThreadPriorityMask = 0x1;
-        constexpr uint8_t AliasRegionBaseAddr = 0x2;
-        constexpr uint8_t AliasRegionSize = 0x3;
-        constexpr uint8_t HeapRegionBaseAddr = 0x4;
-        constexpr uint8_t HeapRegionSize = 0x5;
-        constexpr uint8_t TotalMemoryAvailable = 0x6;
-        constexpr uint8_t TotalMemoryUsage = 0x7;
-        constexpr uint8_t IsCurrentProcessBeingDebugged = 0x8;
-        constexpr uint8_t ResourceLimit = 0x9;
-        constexpr uint8_t IdleTickCount = 0xA;
-        constexpr uint8_t RandomEntropy = 0xB;
+        constexpr u8 AllowedCpuIdBitmask = 0x0;
+        constexpr u8 AllowedThreadPriorityMask = 0x1;
+        constexpr u8 AliasRegionBaseAddr = 0x2;
+        constexpr u8 AliasRegionSize = 0x3;
+        constexpr u8 HeapRegionBaseAddr = 0x4;
+        constexpr u8 HeapRegionSize = 0x5;
+        constexpr u8 TotalMemoryAvailable = 0x6;
+        constexpr u8 TotalMemoryUsage = 0x7;
+        constexpr u8 IsCurrentProcessBeingDebugged = 0x8;
+        constexpr u8 ResourceLimit = 0x9;
+        constexpr u8 IdleTickCount = 0xA;
+        constexpr u8 RandomEntropy = 0xB;
         // 2.0.0+
-        constexpr uint8_t AddressSpaceBaseAddr = 0xC;
-        constexpr uint8_t AddressSpaceSize = 0xD;
-        constexpr uint8_t StackRegionBaseAddr = 0xE;
-        constexpr uint8_t StackRegionSize = 0xF;
+        constexpr u8 AddressSpaceBaseAddr = 0xC;
+        constexpr u8 AddressSpaceSize = 0xD;
+        constexpr u8 StackRegionBaseAddr = 0xE;
+        constexpr u8 StackRegionSize = 0xF;
         // 3.0.0+
-        constexpr uint8_t PersonalMmHeapSize = 0x10;
-        constexpr uint8_t PersonalMmHeapUsage = 0x11;
-        constexpr uint8_t TitleId = 0x12;
+        constexpr u8 PersonalMmHeapSize = 0x10;
+        constexpr u8 PersonalMmHeapUsage = 0x11;
+        constexpr u8 TitleId = 0x12;
         // 4.0.0+
-        constexpr uint8_t PrivilegedProcessId = 0x13;
+        constexpr u8 PrivilegedProcessId = 0x13;
         // 5.0.0+
-        constexpr uint8_t UserExceptionContextAddr = 0x14;
+        constexpr u8 UserExceptionContextAddr = 0x14;
         // 6.0.0+
-        constexpr uint8_t TotalMemoryAvailableWithoutMmHeap = 0x15;
-        constexpr uint8_t TotalMemoryUsedWithoutMmHeap = 0x16;
+        constexpr u8 TotalMemoryAvailableWithoutMmHeap = 0x15;
+        constexpr u8 TotalMemoryUsedWithoutMmHeap = 0x16;
     };
-    namespace status {
-        constexpr uint32_t success = 0x0; //!< "Success"
-        constexpr uint32_t unimpl = 0x177202; //!< "Unimplemented behaviour"
-    }
-};
+    namespace kernel::svc {
+        namespace structs {
 
-namespace lightSwitch::kernel::svc {
-    /**
-     * Set the process heap to a given size (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
-     */
-    void SetHeapSize(device_state &state);
+        }
 
-    /**
-     * Exits the current process (https://switchbrew.org/wiki/SVC#svcExitProcess)
-     */
-    void ExitProcess(device_state &state);
+        /**
+         * Set the process heap to a given size (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
+         */
+        void SetHeapSize(device_state &state);
 
-    /**
-     * Create a thread in the current process (https://switchbrew.org/wiki/SVC#svcCreateThread)
-     */
-    void CreateThread(device_state &state);
+        /**
+         * Query information about an address. Will always fetch the lowest page-aligned mapping that contains the provided address (https://switchbrew.org/wiki/SVC#svcQueryMemory)
+         */
+        void QueryMemory(device_state &state);
 
-    /**
-     * Starts the thread for the provided handle (https://switchbrew.org/wiki/SVC#svcStartThread)
-     */
-    void StartThread(device_state &state);
+        /**
+         * Exits the current process (https://switchbrew.org/wiki/SVC#svcExitProcess)
+         */
+        void ExitProcess(device_state &state);
 
-    /**
-     * Exits the current thread (https://switchbrew.org/wiki/SVC#svcExitThread)
-     */
-    void ExitThread(device_state &state);
+        /**
+         * Create a thread in the current process (https://switchbrew.org/wiki/SVC#svcCreateThread)
+         */
+        void CreateThread(device_state &state);
 
-    /**
-     * Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcGetThreadPriority)
-     */
-    void GetThreadPriority(device_state &state);
+        /**
+         * Starts the thread for the provided handle (https://switchbrew.org/wiki/SVC#svcStartThread)
+         */
+        void StartThread(device_state &state);
 
-    /**
-     * Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcSetThreadPriority)
-     */
-    void SetThreadPriority(device_state &state);
+        /**
+         * Exits the current thread (https://switchbrew.org/wiki/SVC#svcExitThread)
+         */
+        void ExitThread(device_state &state);
 
-    /**
-     * Closes the specified handle
-     */
-    void CloseHandle(device_state &state);
+        /**
+         * Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcGetThreadPriority)
+         */
+        void GetThreadPriority(device_state &state);
 
-    /**
-     * Connects to a named IPC port
-     */
-    void ConnectToNamedPort(device_state &state);
+        /**
+         * Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcSetThreadPriority)
+         */
+        void SetThreadPriority(device_state &state);
 
-    /**
-     * Send a synchronous IPC request to a service
-     */
-    void SendSyncRequest(device_state &state);
+        /**
+         * Closes the specified handle
+         */
+        void CloseHandle(device_state &state);
 
-    /**
-     * Outputs a debug string
-     */
-    void OutputDebugString(device_state &state);
+        /**
+         * Connects to a named IPC port
+         */
+        void ConnectToNamedPort(device_state &state);
 
-    /**
-     * Retrieves a piece of information (https://switchbrew.org/wiki/SVC#svcGetInfo)
-     */
-    void GetInfo(device_state &state);
+        /**
+         * Send a synchronous IPC request to a service
+         */
+        void SendSyncRequest(device_state &state);
 
-    /**
-     * The SVC Table maps all SVCs to their corresponding functions
-     */
-    void static (*svcTable[0x80])(device_state &) = {
+        /**
+         * Outputs a debug string
+         */
+        void OutputDebugString(device_state &state);
+
+        /**
+         * Retrieves a piece of information (https://switchbrew.org/wiki/SVC#svcGetInfo)
+         */
+        void GetInfo(device_state &state);
+
+        /**
+         * The SVC Table maps all SVCs to their corresponding functions
+         */
+        void static (*svcTable[0x80])(device_state &) = {
             nullptr, // 0x00 (Does not exist)
             SetHeapSize, // 0x01
             nullptr, // 0x02
             nullptr, // 0x03
             nullptr, // 0x04
             nullptr, // 0x05
-            nullptr, // 0x06
+            QueryMemory, // 0x06
             ExitProcess, // 0x07
             CreateThread, // 0x08
             StartThread, // 0x09
@@ -235,5 +238,6 @@ namespace lightSwitch::kernel::svc {
             nullptr, // 0x7d
             nullptr, // 0x7e
             nullptr // 0x7f
-    };
+        };
+    }
 }

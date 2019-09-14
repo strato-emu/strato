@@ -7,18 +7,18 @@ namespace lightSwitch::kernel::type {
      * KThread class is responsible for holding the state of a thread
      */
     class KThread : public KObject {
-    private:
+      private:
         KProcess *parent; //!< The parent process of this thread
-        const device_state& state; //!< The state of the device
-        uint64_t entry_point; //!< The address to start execution at
-        uint64_t entry_arg; //!< An argument to pass to the process on entry
+        const device_state &state; //!< The state of the device
+        u64 entry_point; //!< The address to start execution at
+        u64 entry_arg; //!< An argument to pass to the process on entry
 
-    public:
+      public:
         handle_t handle; //!< The handle of the current thread in it's parent process's handle table
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
-        uint64_t stack_top; //!< The top of the stack (Where it starts growing downwards from)
-        uint64_t tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
-        uint8_t priority; //!< Hold the priority of a thread in Nintendo format
+        u64 stack_top; //!< The top of the stack (Where it starts growing downwards from)
+        u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
+        u8 priority; //!< Hold the priority of a thread in Nintendo format
 
         /**
          * @param handle The handle of the current thread
@@ -31,7 +31,7 @@ namespace lightSwitch::kernel::type {
          * @param parent The parent process of this thread
          * @param arg An optional argument to pass to the process
          */
-        KThread(handle_t handle, pid_t pid, uint64_t entry_point, uint64_t entry_arg, uint64_t stack_top, uint64_t tls, uint8_t priority, KProcess *parent, const device_state &state);
+        KThread(handle_t handle, pid_t pid, u64 entry_point, u64 entry_arg, u64 stack_top, u64 tls, u8 priority, KProcess *parent, const device_state &state);
 
         /**
          * Kills the thread and deallocates the memory allocated for stack.
@@ -48,6 +48,6 @@ namespace lightSwitch::kernel::type {
          * We rescale the priority from Nintendo scale to that of Android.
          * @param priority The priority of the thread in Nintendo format
          */
-        void UpdatePriority(uint8_t priority);
+        void UpdatePriority(u8 priority);
     };
 }

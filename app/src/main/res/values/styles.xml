@@ -6,6 +6,7 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+
     <style name="ToolbarTheme">
         <!-- Query Text Color -->
         <item name="android:textColorPrimary">@android:color/white</item>

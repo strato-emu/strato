@@ -4,7 +4,4 @@
   <component name="DiscordProjectSettings">
     <option name="show" value="true" />
   </component>
-  <component name="ProjectNotificationSettings">
-    <option name="askShowProject" value="false" />
-  </component>
 </project>

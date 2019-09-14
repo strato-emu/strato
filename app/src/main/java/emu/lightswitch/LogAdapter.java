@@ -8,8 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
-import com.google.android.material.snackbar.Snackbar;
 
 class LogItem extends BaseItem {
     private String content;
@@ -60,8 +60,8 @@ public class LogAdapter extends HeaderAdapter<LogItem> implements View.OnLongCli
     @Override
     public boolean onLongClick(View view) {
         LogItem item = (LogItem) getItem(((ViewHolder) view.getTag()).position);
-        clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.getLevel() + ": " + item.getMessage()));
-        Toast.makeText(view.getContext(), "Copied to clipboard", Snackbar.LENGTH_LONG).show();
+        clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.getMessage() + " (" + item.getLevel() + ")"));
+        Toast.makeText(view.getContext(), "Copied to clipboard", Toast.LENGTH_LONG).show();
         return false;
     }
 

@@ -4,6 +4,8 @@
     <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
     <option name="SOFT_MARGINS" value="80,140" />
     <Objective-C>
+      <option name="INDENT_VISIBILITY_KEYWORDS" value="2" />
+      <option name="INDENT_PREPROCESSOR_DIRECTIVE" value="4" />
       <option name="INDENT_DIRECTIVE_AS_CODE" value="true" />
       <option name="KEEP_STRUCTURES_IN_ONE_LINE" value="true" />
       <option name="FUNCTION_PARAMETERS_WRAP" value="0" />
@@ -30,6 +32,12 @@
       <option name="KEEP_SIMPLE_CLASSES_IN_ONE_LINE" value="true" />
       <option name="KEEP_MULTIPLE_EXPRESSIONS_IN_ONE_LINE" value="true" />
       <option name="WRAP_LONG_LINES" value="true" />
+    </codeStyleSettings>
+    <codeStyleSettings language="ObjectiveC">
+      <indentOptions>
+        <option name="CONTINUATION_INDENT_SIZE" value="4" />
+        <option name="LABEL_INDENT_SIZE" value="-1" />
+      </indentOptions>
     </codeStyleSettings>
     <codeStyleSettings language="XML">
       <arrangement>

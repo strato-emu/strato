@@ -8,7 +8,9 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
+
 import androidx.annotation.NonNull;
+
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import me.xdrop.fuzzywuzzy.model.ExtractedResult;
 
@@ -67,10 +69,10 @@ abstract class HeaderAdapter<ItemType extends BaseItem> extends BaseAdapter impl
             header_array.add((String) item);
             type_array_uf.add(new ContentType(header_array.size() - 1, ContentType.Header));
         }
-        if(search_term.length()!=0)
+        if (search_term.length() != 0)
             this.getFilter().filter(search_term);
         else
-            type_array=type_array_uf;
+            type_array = type_array_uf;
     }
 
     public void save(File file) throws IOException {

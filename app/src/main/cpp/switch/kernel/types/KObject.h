@@ -4,12 +4,14 @@
 
 namespace lightSwitch::kernel::type {
     enum class KObjectType {
-        KThread, KProcess
+        KThread, KProcess, KSharedMemory
     };
+
     class KObject {
-    public:
-        uint32_t handle;
+      public:
+        u32 handle;
         KObjectType type;
+
         KObject(handle_t handle, KObjectType type) : handle(handle), type(type) {}
     };
 }

@@ -4,99 +4,130 @@
 #include "types/KProcess.h"
 
 namespace lightSwitch::kernel::ipc {
-    IpcRequest::IpcRequest(uint8_t *tls_ptr, device_state &state) : req_info((CommandStruct *) tls_ptr) {
-        state.logger->Write(Logger::DEBUG, "Enable handle descriptor: {0}", (bool) req_info->handle_desc);
-
-        data_offset = 8;
-        if (req_info->handle_desc) {
-            HandleDescriptor handledesc = *(HandleDescriptor *) (&tls_ptr[8]);
-            state.logger->Write(Logger::DEBUG, "Moving {} handles and copying {} handles (0x{:X})", uint8_t(handledesc.move_count), uint8_t(handledesc.copy_count), tls_ptr[2]);
-            data_offset += 4 + handledesc.copy_count * 4 + handledesc.move_count * 4;
-        }
-
-        if (req_info->x_no || req_info->a_no || req_info->b_no || req_info->w_no)
-            state.logger->Write(Logger::ERROR, "IPC - Descriptors");
-
-        // Align to 16 bytes
-        data_offset = ((data_offset - 1) & ~(15U)) + 16; // ceil data_offset with multiples 16
-        data_ptr = &tls_ptr[data_offset + sizeof(req_info)];
-
-        state.logger->Write(Logger::DEBUG, "Type: 0x{:X}", (uint8_t) req_info->type);
-        state.logger->Write(Logger::DEBUG, "X descriptors: {}", (uint8_t) req_info->x_no);
-        state.logger->Write(Logger::DEBUG, "A descriptors: {}", (uint8_t) req_info->a_no);
-        state.logger->Write(Logger::DEBUG, "B descriptors: {}", (uint8_t) req_info->b_no);
-        state.logger->Write(Logger::DEBUG, "W descriptors: {}", (uint8_t) req_info->w_no);
-        state.logger->Write(Logger::DEBUG, "Raw data offset: 0x{:X}", data_offset);
-        state.logger->Write(Logger::DEBUG, "Raw data size: {}", (uint16_t) req_info->data_sz);
-        state.logger->Write(Logger::DEBUG, "Payload Command ID: {0} (0x{0:X})", *((uint32_t *) &tls_ptr[data_offset + 8]));
-    }
-
-    template<typename T>
-    T IpcRequest::GetValue() {
-        data_offset += sizeof(T);
-        return *reinterpret_cast<T *>(&data_ptr[data_offset - sizeof(T)]);
-    }
-
-    IpcResponse::IpcResponse() : resp_info{0} {
-        tls_ptr = reinterpret_cast<uint32_t *>(new uint8_t[constant::tls_ipc_size]);
-    }
-
-    IpcResponse::~IpcResponse() {
-        delete[] tls_ptr;
-    }
-
-    void IpcResponse::Generate(device_state &state) {
-        state.logger->Write(Logger::DEBUG, "Moving {} handles and copying {} handles", moved_handles.size(), copied_handles.size());
-        resp_info.type = 0;
-        data_offset = 8;
-        if (!moved_handles.empty() || !copied_handles.empty()) {
-            resp_info.handle_desc = true;
-            HandleDescriptor handledesc{};
-            handledesc.copy_count = static_cast<uint8_t>(copied_handles.size());
-            handledesc.move_count = static_cast<uint8_t>(moved_handles.size());
-            *(HandleDescriptor *) &tls_ptr[2] = handledesc;
-
-            uint64_t handle_index = 0;
-            for (auto& copied_handle : copied_handles) {
-                state.logger->Write(Logger::DEBUG, "Copying handle to 0x{:X}", 12 + handle_index * 4);
-                tls_ptr[3 + handle_index] = copied_handle;
-                handle_index += 1;
+    IpcRequest::IpcRequest(bool is_domain, device_state &state) : is_domain(is_domain), state(state), tls() {
+        u8 *curr_ptr = tls.data();
+        state.this_process->ReadMemory(curr_ptr, state.this_thread->tls, constant::tls_ipc_size);
+        header = reinterpret_cast<CommandHeader *>(curr_ptr);
+        curr_ptr += sizeof(CommandHeader);
+        if (header->handle_desc) {
+            handle_desc = reinterpret_cast<HandleDescriptor *>(curr_ptr);
+            curr_ptr += sizeof(HandleDescriptor) + (handle_desc->send_pid ? sizeof(u8) : 0);
+            for (uint index = 0; handle_desc->copy_count > index; index++) {
+                copy_handles.push_back(*reinterpret_cast<handle_t *>(curr_ptr));
+                curr_ptr += sizeof(handle_t);
             }
-            for (auto& moved_handle : moved_handles) {
-                state.logger->Write(Logger::DEBUG, "Moving handle to 0x{:X}", 12 + handle_index * 4);
-                tls_ptr[3 + handle_index] = moved_handle;
-                handle_index += 1;
+            for (uint index = 0; handle_desc->move_count > index; index++) {
+                move_handles.push_back(*reinterpret_cast<handle_t *>(curr_ptr));
+                curr_ptr += sizeof(handle_t);
             }
-
-            data_offset += 4 + copied_handles.size() * 4 + moved_handles.size() * 4;
         }
-
-        state.logger->Write(Logger::DEBUG, "Data offset: 0x{:X}", data_offset);
-
-        // Align to 16 bytes
-        data_offset = ((data_offset - 1) & ~(15U)) + 16; // ceil data_offset with multiples 16
-
+        for (uint index = 0; header->x_no > index; index++) {
+            vec_buf_x.push_back(reinterpret_cast<BufferDescriptorX *>(curr_ptr));
+            curr_ptr += sizeof(BufferDescriptorX);
+        }
+        for (uint index = 0; header->a_no > index; index++) {
+            vec_buf_a.push_back(reinterpret_cast<BufferDescriptorABW *>(curr_ptr));
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        for (uint index = 0; header->b_no > index; index++) {
+            vec_buf_b.push_back(reinterpret_cast<BufferDescriptorABW *>(curr_ptr));
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        for (uint index = 0; header->w_no > index; index++) {
+            vec_buf_w.push_back(reinterpret_cast<BufferDescriptorABW *>(curr_ptr));
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        auto raw_ptr = reinterpret_cast<u8 *>((((reinterpret_cast<u64>(curr_ptr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::padding_sum - 1U)) + constant::padding_sum + reinterpret_cast<u64>(tls.data())); // Align to 16 bytes relative to start of TLS
         if (is_domain) {
-            tls_ptr[data_offset >> 2] = static_cast<uint32_t>(moved_handles.size());
-            data_offset += 0x10;
+            domain = reinterpret_cast<DomainHeaderRequest *>(raw_ptr);
+            payload = reinterpret_cast<PayloadHeader *>(raw_ptr + sizeof(DomainHeaderRequest));
+            cmd_arg_sz = domain->payload_sz - sizeof(PayloadHeader);
+        } else {
+            payload = reinterpret_cast<PayloadHeader *>(raw_ptr);
+            cmd_arg_sz = (header->raw_sz * sizeof(u32)) - (constant::padding_sum + sizeof(PayloadHeader));
         }
-
-        data_offset >>= 2;
-
-        // TODO: Calculate data size
-        resp_info.data_sz = static_cast<uint16_t>(16 + (is_domain ? 4 : 0)); // + data_words;
-        tls_ptr[data_offset] = constant::ipc_sfco;
-        tls_ptr[data_offset + 2] = error_code;
+        if (payload->magic != constant::sfci_magic) throw exception(fmt::format("Unexpected Magic in PayloadHeader: 0x{:X}", reinterpret_cast<u32>(payload->magic)));
+        cmd_arg = reinterpret_cast<u8 *>(payload) + sizeof(PayloadHeader);
+        curr_ptr += header->raw_sz * sizeof(u32);
+        if (header->c_flag == static_cast<u8>(BufferCFlag::SingleDescriptor)) {
+            vec_buf_c.push_back(reinterpret_cast<BufferDescriptorC *>(curr_ptr));
+        } else if (header->c_flag > static_cast<u8>(BufferCFlag::SingleDescriptor)) {
+            for (uint index = 0; (header->c_flag - 2) > index; index++) { // (c_flag - 2) C descriptors are present
+                vec_buf_c.push_back(reinterpret_cast<BufferDescriptorC *>(curr_ptr));
+                curr_ptr += sizeof(BufferDescriptorC);
+            }
+        }
     }
 
-    void IpcResponse::SetError(uint32_t _error_code) { error_code = _error_code; }
+    IpcResponse::IpcResponse(bool is_domain, device_state &state) : is_domain(is_domain), state(state) {}
 
-    template<typename T>
-    void IpcResponse::WriteValue() {
-
+    void IpcResponse::WriteTls() {
+        std::array<u8, constant::tls_ipc_size> tls{};
+        u8 *curr_ptr = tls.data();
+        auto header = reinterpret_cast<CommandHeader *>(curr_ptr);
+        header->x_no = static_cast<u8>(vec_buf_x.size());
+        header->a_no = static_cast<u8>(vec_buf_a.size());
+        header->b_no = static_cast<u8>(vec_buf_b.size());
+        header->w_no = static_cast<u8>(vec_buf_w.size());
+        header->raw_sz = static_cast<u32>((sizeof(PayloadHeader) + arg_vec.size() + constant::padding_sum + (is_domain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        if (!vec_buf_c.empty())
+            header->c_flag = (vec_buf_c.size() == 1) ? static_cast<u8>(BufferCFlag::SingleDescriptor) : static_cast<u8>(vec_buf_c.size() + static_cast<u8>(BufferCFlag::SingleDescriptor));
+        header->handle_desc = (!copy_handles.empty() || !move_handles.empty());
+        curr_ptr += sizeof(CommandHeader);
+        if (header->handle_desc) {
+            auto handle_desc = reinterpret_cast<HandleDescriptor *>(curr_ptr);
+            handle_desc->send_pid = false; // TODO: Figure this out ?
+            handle_desc->copy_count = static_cast<u8>(copy_handles.size());
+            handle_desc->move_count = static_cast<u8>(move_handles.size());
+            curr_ptr += sizeof(HandleDescriptor);
+            for (uint index = 0; handle_desc->copy_count > index; index++) {
+                *reinterpret_cast<handle_t *>(curr_ptr) = copy_handles[index];
+                curr_ptr += sizeof(handle_t);
+            }
+            for (uint index = 0; handle_desc->move_count > index; index++) {
+                *reinterpret_cast<handle_t *>(curr_ptr) = move_handles[index];
+                curr_ptr += sizeof(handle_t);
+            }
+        }
+        for (uint index = 0; header->x_no > index; index++) {
+            *reinterpret_cast<BufferDescriptorX *>(curr_ptr) = vec_buf_x[index];
+            curr_ptr += sizeof(BufferDescriptorX);
+        }
+        for (uint index = 0; header->a_no > index; index++) {
+            *reinterpret_cast<BufferDescriptorABW *>(curr_ptr) = vec_buf_a[index];
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        for (uint index = 0; header->b_no > index; index++) {
+            *reinterpret_cast<BufferDescriptorABW *>(curr_ptr) = vec_buf_b[index];
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        for (uint index = 0; header->w_no > index; index++) {
+            *reinterpret_cast<BufferDescriptorABW *>(curr_ptr) = vec_buf_w[index];
+            curr_ptr += sizeof(BufferDescriptorABW);
+        }
+        u64 padding = ((((reinterpret_cast<u64>(curr_ptr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::padding_sum - 1U)) + constant::padding_sum + (reinterpret_cast<u64>(tls.data()) - reinterpret_cast<u64>(curr_ptr))); // Calculate the amount of padding at the front
+        curr_ptr += padding;
+        PayloadHeader *payload;
+        if (is_domain) {
+            auto domain = reinterpret_cast<DomainHeaderResponse *>(curr_ptr);
+            domain->output_count = 0; // TODO: Figure this out
+            payload = reinterpret_cast<PayloadHeader *>(curr_ptr + sizeof(DomainHeaderResponse));
+        } else {
+            payload = reinterpret_cast<PayloadHeader *>(curr_ptr);
+        }
+        payload->magic = constant::sfco_magic;
+        payload->version = 1;
+        payload->value = error_code;
+        curr_ptr += sizeof(PayloadHeader);
+        if (!arg_vec.empty()) memcpy(curr_ptr, arg_vec.data(), arg_vec.size());
+        curr_ptr += arg_vec.size() + (constant::padding_sum - padding);
+        if (header->c_flag == static_cast<u8>(BufferCFlag::SingleDescriptor)) {
+            *reinterpret_cast<BufferDescriptorC *>(curr_ptr) = vec_buf_c[0];
+        } else if (header->c_flag > static_cast<u8>(BufferCFlag::SingleDescriptor)) {
+            for (uint index = 0; (header->c_flag - 2) > index; index++) {
+                *reinterpret_cast<BufferDescriptorC *>(curr_ptr) = vec_buf_c[index];
+                curr_ptr += sizeof(BufferDescriptorC);
+            }
+        }
     }
-
-    void IpcResponse::CopyHandle(uint32_t handle) { copied_handles.push_back(handle); }
-
-    void IpcResponse::MoveHandle(uint32_t handle) { moved_handles.push_back(handle); }
 }

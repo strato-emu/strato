@@ -5,7 +5,7 @@
 
 namespace lightSwitch::loader {
     class Loader {
-    protected:
+      protected:
         std::string file_path; //!< The path to the ROM file
         std::ifstream file; //!< An input stream from the file
 
@@ -17,13 +17,13 @@ namespace lightSwitch::loader {
          * @param size The amount to read in bytes
          */
         template<typename T>
-        void ReadOffset(T *output, uint32_t offset, size_t size) {
+        void ReadOffset(T *output, u32 offset, size_t size) {
             file.seekg(offset, std::ios_base::beg);
             file.read(reinterpret_cast<char *>(output), size);
         }
 
 
-    public:
+      public:
         /**
          * @param file_path_ The path to the ROM file
          */

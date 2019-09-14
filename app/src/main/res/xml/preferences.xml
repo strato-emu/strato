@@ -15,36 +15,36 @@
   -->
 
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+        xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-        android:key="category_search"
-        android:title="@string/search">
+            android:key="category_search"
+            android:title="@string/search">
         <EditTextPreference
-            android:defaultValue="/sdcard/"
-            app:key="search_location"
-            app:title="@string/search_location"
-            app:useSimpleSummaryProvider="true" />
+                android:defaultValue="/sdcard/"
+                app:key="search_location"
+                app:title="@string/search_location"
+                app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:key="category_log"
-        android:title="@string/logging">
+            android:key="category_log"
+            android:title="@string/logging">
         <ListPreference
-            android:defaultValue="2"
-            android:entries="@array/log_level"
-            android:entryValues="@array/log_level_val"
-            app:key="log_level"
-            app:title="@string/log_level"
-            app:useSimpleSummaryProvider="true" />
+                android:defaultValue="2"
+                android:entries="@array/log_level"
+                android:entryValues="@array/log_level_val"
+                app:key="log_level"
+                app:title="@string/log_level"
+                app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:key="category_localization"
-        android:title="@string/localization">
+            android:key="category_localization"
+            android:title="@string/localization">
         <ListPreference
-            android:defaultValue="sys"
-            android:entries="@array/language_names"
-            android:entryValues="@array/language_values"
-            app:key="localization_language"
-            app:title="@string/localization_language"
-            app:useSimpleSummaryProvider="true" />
+                android:defaultValue="sys"
+                android:entries="@array/language_names"
+                android:entryValues="@array/language_values"
+                app:key="localization_language"
+                app:title="@string/localization_language"
+                app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
