@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="SkylineCPP" pattern="file[app]:src/main/cpp//*&amp;&amp;!file[Lightswitch]:*&amp;&amp;!file[app]:*" />
+</component>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
-        package="emu.lightswitch">
+        package="emu.skyline">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
@@ -9,29 +9,29 @@
 
     <application
             android:allowBackup="true"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/logo_skyline"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
-            tools:ignore="GoogleAppIndexingWarning">
+            tools:ignore="GoogleAppIndexingWarning"
+            android:fullBackupContent="@xml/backup_descriptor">
         <activity
-                android:name=".LogActivity"
+                android:name="emu.skyline.LogActivity"
                 android:label="@string/log"
-                android:parentActivityName=".MainActivity">
+                android:parentActivityName="emu.skyline.MainActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="emu.lightswitch.MainActivity" />
+                    android:value="emu.skyline.MainActivity" />
         </activity>
         <activity
-                android:name=".SettingsActivity"
+                android:name="emu.skyline.SettingsActivity"
                 android:label="@string/settings"
-                android:parentActivityName=".MainActivity">
+                android:parentActivityName="emu.skyline.MainActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="emu.lightswitch.MainActivity" />
+                    android:value="emu.skyline.MainActivity" />
         </activity>
-        <activity android:name=".MainActivity">
+        <activity android:name="emu.skyline.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

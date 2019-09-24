@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(Lightswitch VERSION 1 LANGUAGES CXX)
+project(Skyline VERSION 1 LANGUAGES CXX)
 
 set(BUILD_TESTING OFF)
 set(CMAKE_CXX_STANDARD 17)
@@ -13,19 +13,24 @@ set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 
 include_directories(${source_DIR})
 
-add_library(lightswitch SHARED
-        ${source_DIR}/lightswitch.cpp
-        ${source_DIR}/switch/common.cpp
-        ${source_DIR}/switch/nce.cpp
-        ${source_DIR}/switch/os.cpp
-        ${source_DIR}/switch/loader/nro.cpp
-        ${source_DIR}/switch/kernel/ipc.cpp
-        ${source_DIR}/switch/kernel/svc.cpp
-        ${source_DIR}/switch/kernel/service.cpp
-        ${source_DIR}/switch/kernel/types/KProcess.cpp
-        ${source_DIR}/switch/kernel/types/KThread.cpp
-        ${source_DIR}/switch/kernel/types/KSharedMemory.cpp
-        ${source_DIR}/switch/kernel/types/KPrivateMemory.cpp
+add_library(skyline SHARED
+        ${source_DIR}/main.cpp
+        ${source_DIR}/skyline/common.cpp
+        ${source_DIR}/skyline/nce.cpp
+        ${source_DIR}/skyline/os.cpp
+        ${source_DIR}/skyline/loader/nro.cpp
+        ${source_DIR}/skyline/kernel/ipc.cpp
+        ${source_DIR}/skyline/kernel/svc.cpp
+        ${source_DIR}/skyline/kernel/types/KSyncObject.cpp
+        ${source_DIR}/skyline/kernel/types/KProcess.cpp
+        ${source_DIR}/skyline/kernel/types/KThread.cpp
+        ${source_DIR}/skyline/kernel/types/KSharedMemory.cpp
+        ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
+        ${source_DIR}/skyline/kernel/services/serviceman.cpp
+        ${source_DIR}/skyline/kernel/services/sm/sm.cpp
+        ${source_DIR}/skyline/kernel/services/set/sys.cpp
+        ${source_DIR}/skyline/kernel/services/apm/apm.cpp
+        ${source_DIR}/skyline/kernel/services/am/appletOE.cpp
         )
-target_link_libraries(lightswitch fmt tinyxml2 android)
-target_compile_options(lightswitch PRIVATE -Wno-c++17-extensions)
+target_link_libraries(skyline fmt tinyxml2)
+target_compile_options(skyline PRIVATE -Wno-c++17-extensions)
