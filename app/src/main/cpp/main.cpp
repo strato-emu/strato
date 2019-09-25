@@ -10,19 +10,22 @@ std::thread *EmuThread;
 bool Halt = false;
 
 void ThreadMain(const std::string romPath, const std::string prefPath, const std::string logPath) {
-    auto log = std::make_shared<skyline::Logger>(logPath);
+    auto logger = std::make_shared<skyline::Logger>(logPath);
     auto settings = std::make_shared<skyline::Settings>(prefPath);
-    settings->List(log);
+    //settings->List(log); // (Uncomment when you want to print out all settings strings)
+    auto start = std::chrono::steady_clock::now();
     try {
-        skyline::kernel::OS os(log, settings);
-        log->Write(skyline::Logger::Info, "Launching ROM {}", romPath);
+        skyline::kernel::OS os(logger, settings);
+        logger->Write(skyline::Logger::Info, "Launching ROM {}", romPath);
         os.Execute(romPath);
-        log->Write(skyline::Logger::Info, "Emulation has ended");
+        logger->Write(skyline::Logger::Info, "Emulation has ended");
     } catch (std::exception &e) {
-        log->Write(skyline::Logger::Error, e.what());
+        logger->Write(skyline::Logger::Error, e.what());
     } catch (...) {
-        log->Write(skyline::Logger::Error, "An unknown exception has occurred");
+        logger->Write(skyline::Logger::Error, "An unknown exception has occurred");
     }
+    auto end = std::chrono::steady_clock::now();
+    logger->Write(skyline::Logger::Info, "Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring romPathJni, jstring prefPathJni, jstring logPathJni) {

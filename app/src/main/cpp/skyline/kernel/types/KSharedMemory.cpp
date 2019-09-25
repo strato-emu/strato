@@ -1,10 +1,11 @@
 #include "KSharedMemory.h"
 #include "../../nce.h"
 #include "../../os.h"
-//#include <android/sharedmem.h>
-#include <cutils/ashmem.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+constexpr const char* ASHMEM_NAME_DEF = "dev/ashmem";
+constexpr int ASHMEM_SET_SIZE = 0x40087703;
 
 namespace skyline::kernel::type {
     u64 MapFunc(u64 address, size_t size, u64 perms, u64 fd) {

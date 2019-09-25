@@ -194,7 +194,7 @@ namespace skyline {
         template<typename S, typename... Args>
         void Write(Logger::LogLevel level, const S &formatStr, Args &&... args) {
             #ifdef NDEBUG
-            if (level == DEBUG) return;
+            if (level == Debug) return;
             #endif
             Write(level, fmt::format(formatStr, args...));
         }

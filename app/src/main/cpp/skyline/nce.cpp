@@ -63,7 +63,7 @@ namespace skyline {
                             WriteRegisters(currRegs);
                             ResumeProcess();
                         } else {
-                            state->logger->Write(Logger::Debug, "Thread threw unknown signal, PID: {}, Stop Signal: {}", currPid, strsignal(WSTOPSIG(status))); // NOLINT(hicpp-signed-bitwise)
+                            state->logger->Write(Logger::Warn, "Thread threw unknown signal, PID: {}, Stop Signal: {}", currPid, strsignal(WSTOPSIG(status))); // NOLINT(hicpp-signed-bitwise)
                             state->os->KillThread(currPid);
                         }
                     }

@@ -59,7 +59,7 @@ namespace skyline::kernel::type {
      */
     int ExecuteChild(void *) {
         ptrace(PTRACE_TRACEME);
-        asm volatile("Brk #0xFF"); // BRK #constant::brkRdy (So we know when the thread/process is ready)
+        asm volatile("BRK #0xFF"); // BRK #constant::brkRdy (So we know when the thread/process is ready)
         return 0;
     }
 

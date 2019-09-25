@@ -58,7 +58,7 @@ namespace skyline {
 
     void Logger::Write(const LogLevel level, const std::string &str) {
         #ifdef NDEBUG
-        if (level == DEBUG) return;
+        if (level == Debug) return;
         #endif
         syslog(levelSyslog[level], "%s", str.c_str());
         logFile << "1|" << levelStr[level] << "|" << str << "\n";
