@@ -97,7 +97,7 @@ namespace skyline::kernel::ipc {
         std::array<u8, constant::TlsIpcSize> tls{};
         u8 *currPtr = tls.data();
         auto header = reinterpret_cast<CommandHeader *>(currPtr);
-        header->raw_sz = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + constant::PaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        header->raw_sz = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(handle_t)) + constant::PaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
         header->handle_desc = (!copyHandles.empty() || !moveHandles.empty());
         currPtr += sizeof(CommandHeader);
 

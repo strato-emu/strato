@@ -14,7 +14,7 @@ namespace skyline::kernel::service {
      * @brief This contains an enum for every service that's present
      */
     enum class Service {
-        sm, set_sys, apm, apm_ISession, am_appletOE, am_IApplicationProxy
+        sm, set_sys, apm, apm_ISession, am_appletOE, am_IApplicationProxy, am_ICommonStateGetter, am_IApplicationFunctions, am_ISelfController, am_ILibraryAppletCreator
     };
 
     /**
@@ -41,7 +41,7 @@ namespace skyline::kernel::service {
       public:
         Service serviceType; //!< Which service this is
         uint numSessions{}; //<! The amount of active sessions
-        const bool hasLoop; //<! If the service has a loop or not
+        const bool asLoop; //<! If the service has a loop or not
 
         /**
          * @param state The state of the device
@@ -56,9 +56,12 @@ namespace skyline::kernel::service {
          */
         void HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
             try {
+                for(auto& i : vTable)
+                    state.logger->Write(Logger::Info, "Service has cmdid [0x{:X}]", i.first);
+
                 vTable.at(request.payload->value)(session, request, response);
             } catch (std::out_of_range&) {
-                state.logger->Write(Logger::Warn, "Cannot find function in service with type {}: 0x{:X}", serviceType, u32(request.payload->value));
+                state.logger->Write(Logger::Warn, "Cannot find function in service with type {0}: 0x{1:X} ({1})", serviceType, u32(request.payload->value));
             }
         };
 

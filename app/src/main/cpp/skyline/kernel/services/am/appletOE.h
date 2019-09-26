@@ -28,5 +28,40 @@ namespace skyline::kernel::service::am {
          * @brief This returns #ICommonStateGetter (https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter)
          */
         void GetCommonStateGetter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns #ISelfController (https://switchbrew.org/wiki/Applet_Manager_services#ISelfController)
+         */
+        void GetSelfController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns #ILibraryAppletCreator (https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletCreator)
+         */
+        void GetLibraryAppletCreator(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns #IApplicationFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IApplicationFunctions)
+         */
+        void GetApplicationFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+    };
+
+    class ICommonStateGetter : public BaseService {
+      public:
+        ICommonStateGetter(const DeviceState &state, ServiceManager &manager);
+    };
+
+    class ISelfController : public BaseService {
+      public:
+        ISelfController(const DeviceState &state, ServiceManager &manager);
+    };
+
+    class ILibraryAppletCreator : public BaseService {
+      public:
+        ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager);
+    };
+
+    class IApplicationFunctions : public BaseService {
+      public:
+        IApplicationFunctions(const DeviceState &state, ServiceManager &manager);
     };
 }

@@ -30,6 +30,18 @@ namespace skyline::kernel::service {
                 case Service::am_IApplicationProxy:
                     serviceMap[serviceType] = std::make_shared<am::IApplicationProxy>(state, *this);
                     break;
+                case Service::am_ICommonStateGetter:
+                    serviceMap[serviceType] = std::make_shared<am::ICommonStateGetter>(state, *this);
+                    break;
+                case Service::am_ISelfController:
+                    serviceMap[serviceType] = std::make_shared<am::ISelfController>(state, *this);
+                    break;
+                case Service::am_ILibraryAppletCreator:
+                    serviceMap[serviceType] = std::make_shared<am::ILibraryAppletCreator>(state, *this);
+                    break;
+                case Service::am_IApplicationFunctions:
+                    serviceMap[serviceType] = std::make_shared<am::IApplicationFunctions>(state, *this);
+                    break;
             }
             serviceObj = serviceMap[serviceType];
         } else
