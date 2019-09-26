@@ -35,6 +35,11 @@ namespace skyline::kernel::service::am {
         void GetSelfController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This returns #IWindowController (https://switchbrew.org/wiki/Applet_Manager_services#IWindowController)
+         */
+        void GetWindowController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This returns #ILibraryAppletCreator (https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletCreator)
          */
         void GetLibraryAppletCreator(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -53,6 +58,11 @@ namespace skyline::kernel::service::am {
     class ISelfController : public BaseService {
       public:
         ISelfController(const DeviceState &state, ServiceManager &manager);
+    };
+
+    class IWindowController : public BaseService {
+      public:
+        IWindowController(const DeviceState &state, ServiceManager &manager);
     };
 
     class ILibraryAppletCreator : public BaseService {

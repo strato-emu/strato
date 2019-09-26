@@ -14,7 +14,7 @@ namespace skyline::kernel::service {
      * @brief This contains an enum for every service that's present
      */
     enum class Service {
-        sm, set_sys, apm, apm_ISession, am_appletOE, am_IApplicationProxy, am_ICommonStateGetter, am_IApplicationFunctions, am_ISelfController, am_ILibraryAppletCreator
+        sm, set_sys, apm, apm_ISession, am_appletOE, am_IApplicationProxy, am_ICommonStateGetter, am_IApplicationFunctions, am_ISelfController, am_IWindowController, am_ILibraryAppletCreator
     };
 
     /**
@@ -24,7 +24,14 @@ namespace skyline::kernel::service {
         {"sm:", Service::sm},
         {"set:sys", Service::set_sys},
         {"apm", Service::apm},
+        {"apm:ISession", Service::apm_ISession},
         {"appletOE", Service::am_appletOE},
+        {"am:IApplicationProxy", Service::am_IApplicationProxy},
+        {"am:ICommonStateGetter", Service::am_ICommonStateGetter},
+        {"am:ISelfController", Service::am_ISelfController},
+        {"am:IWindowController", Service::am_IWindowController},
+        {"am:ILibraryAppletCreator", Service::am_ILibraryAppletCreator},
+        {"am:IApplicationFunctions", Service::am_IApplicationFunctions},
     };
 
     class ServiceManager;
@@ -41,13 +48,24 @@ namespace skyline::kernel::service {
       public:
         Service serviceType; //!< Which service this is
         uint numSessions{}; //<! The amount of active sessions
-        const bool asLoop; //<! If the service has a loop or not
+        const bool hasLoop; //<! If the service has a loop or not
 
         /**
          * @param state The state of the device
          * @param hasLoop If the service has a loop or not
+         * @param serviceType The type of the service
+         * @param serviceName The name of the service
+         * @param vTable The functions of the service
          */
         BaseService(const DeviceState &state, ServiceManager& manager, bool hasLoop, Service serviceType, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), hasLoop(hasLoop), serviceType(serviceType), vTable(vTable) {}
+
+        std::string getName() {
+            std::string serviceName = "";
+            for (const auto& [name, type] : ServiceString)
+                if(type == serviceType)
+                    serviceName = name;
+            return serviceName;
+        }
 
         /**
          * @brief This handles all IPC commands with type request to a service
@@ -56,12 +74,9 @@ namespace skyline::kernel::service {
          */
         void HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
             try {
-                for(auto& i : vTable)
-                    state.logger->Write(Logger::Info, "Service has cmdid [0x{:X}]", i.first);
-
                 vTable.at(request.payload->value)(session, request, response);
             } catch (std::out_of_range&) {
-                state.logger->Write(Logger::Warn, "Cannot find function in service with type {0}: 0x{1:X} ({1})", serviceType, u32(request.payload->value));
+                state.logger->Write(Logger::Warn, "Cannot find function in service '{0}' (Type: {1}): 0x{2:X} ({2})", getName(), serviceType, u32(request.payload->value));
             }
         };
 

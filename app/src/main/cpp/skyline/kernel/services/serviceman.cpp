@@ -33,6 +33,9 @@ namespace skyline::kernel::service {
                 case Service::am_ICommonStateGetter:
                     serviceMap[serviceType] = std::make_shared<am::ICommonStateGetter>(state, *this);
                     break;
+                case Service::am_IWindowController:
+                    serviceMap[serviceType] = std::make_shared<am::IWindowController>(state, *this);
+                    break;
                 case Service::am_ISelfController:
                     serviceMap[serviceType] = std::make_shared<am::ISelfController>(state, *this);
                     break;
@@ -55,11 +58,13 @@ namespace skyline::kernel::service {
     }
 
     void ServiceManager::NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response) {
+        auto serviceObject = GetService(serviceType);
         if (response.isDomain) {
-            session.domainTable[++session.handleIndex] = GetService(serviceType);
+            session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
         } else
-            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(GetService(serviceType), serviceType)->handle);
+            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(serviceObject, serviceType)->handle);
+        state.logger->Write(Logger::Debug, "Service has been registered: \"{}\"", serviceObject->getName());
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {

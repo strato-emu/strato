@@ -9,7 +9,7 @@ namespace skyline::kernel::service::apm {
         manager.NewService(Service::apm_ISession, session, response);
     }
 
-    ISession::ISession(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::apm, {
+    ISession::ISession(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::apm_ISession, {
         {0x0, SFunc(ISession::SetPerformanceConfiguration)},
         {0x1, SFunc(ISession::GetPerformanceConfiguration)}
     }) {}

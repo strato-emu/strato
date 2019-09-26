@@ -1,7 +1,7 @@
 #include "appletOE.h"
 
 namespace skyline::kernel::service::am {
-    appletOE::appletOE(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::apm, {
+    appletOE::appletOE(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_appletOE, {
         {0x0, SFunc(appletOE::OpenApplicationProxy)}
     }) {}
 
@@ -12,6 +12,7 @@ namespace skyline::kernel::service::am {
     IApplicationProxy::IApplicationProxy(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IApplicationProxy, {
         {0x0,   SFunc(IApplicationProxy::GetCommonStateGetter)},
         {0x1,   SFunc(IApplicationProxy::GetSelfController)},
+        {0x2,   SFunc(IApplicationProxy::GetWindowController)},
         {0xB,   SFunc(IApplicationProxy::GetLibraryAppletCreator)},
         {0x14,  SFunc(IApplicationProxy::GetApplicationFunctions)}
     }) {}
@@ -24,6 +25,10 @@ namespace skyline::kernel::service::am {
         manager.NewService(Service::am_ISelfController, session, response);
     }
 
+    void IApplicationProxy::GetWindowController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.NewService(Service::am_IWindowController, session, response);
+    }
+
     void IApplicationProxy::GetLibraryAppletCreator(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.NewService(Service::am_ILibraryAppletCreator, session, response);
     }
@@ -32,15 +37,18 @@ namespace skyline::kernel::service::am {
         manager.NewService(Service::am_IApplicationFunctions, session, response);
     }
 
-    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IApplicationProxy, {
+    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_ICommonStateGetter, {
     }) {}
 
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IApplicationProxy, {
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_ISelfController, {
     }) {}
 
-    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IApplicationProxy, {
+    IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IWindowController, {
     }) {}
 
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IApplicationProxy, {
+    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_ILibraryAppletCreator, {
+    }) {}
+
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IApplicationFunctions, {
     }) {}
 }
