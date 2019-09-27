@@ -4,6 +4,7 @@
 #include "set/sys.h"
 #include "apm/apm.h"
 #include "am/appletOE.h"
+#include "fatal/fatal.h"
 
 namespace skyline::kernel::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
@@ -14,6 +15,9 @@ namespace skyline::kernel::service {
             switch (serviceType) {
                 case Service::sm:
                     serviceMap[serviceType] = std::make_shared<sm::sm>(state, *this);
+                    break;
+                case Service::fatal_u:
+                    serviceMap[serviceType] = std::make_shared<fatal::fatalU>(state, *this);
                     break;
                 case Service::set_sys:
                     serviceMap[serviceType] = std::make_shared<set::sys>(state, *this);
@@ -36,6 +40,12 @@ namespace skyline::kernel::service {
                 case Service::am_IWindowController:
                     serviceMap[serviceType] = std::make_shared<am::IWindowController>(state, *this);
                     break;
+                case Service::am_IAudioController:
+                    serviceMap[serviceType] = std::make_shared<am::IAudioController>(state, *this);
+                    break;
+                case Service::am_IDisplayController:
+                    serviceMap[serviceType] = std::make_shared<am::IDisplayController>(state, *this);
+                    break;
                 case Service::am_ISelfController:
                     serviceMap[serviceType] = std::make_shared<am::ISelfController>(state, *this);
                     break;
@@ -44,6 +54,9 @@ namespace skyline::kernel::service {
                     break;
                 case Service::am_IApplicationFunctions:
                     serviceMap[serviceType] = std::make_shared<am::IApplicationFunctions>(state, *this);
+                    break;
+                case Service::am_IDebugFunctions:
+                    serviceMap[serviceType] = std::make_shared<am::IDebugFunctions>(state, *this);
                     break;
             }
             serviceObj = serviceMap[serviceType];

@@ -31,6 +31,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/services/set/sys.cpp
         ${source_DIR}/skyline/kernel/services/apm/apm.cpp
         ${source_DIR}/skyline/kernel/services/am/appletOE.cpp
+        ${source_DIR}/skyline/kernel/services/fatal/fatal.cpp
         )
 target_link_libraries(skyline fmt tinyxml2)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)

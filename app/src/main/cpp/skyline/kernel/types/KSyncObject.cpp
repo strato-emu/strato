@@ -5,8 +5,7 @@ namespace skyline::kernel::type {
     KSyncObject::KSyncObject(skyline::handle_t handle, pid_t pid, const skyline::DeviceState &state, skyline::kernel::type::KType type) : KObject(handle, pid, state, type) {}
 
     void KSyncObject::Signal() {
-        for (auto&[tid, process] : state.os->threadMap) {
-            auto &thread = process->threadMap.at(tid);
+        for (auto&[tid, thread] : state.os->threadMap.at(ownerPid)->threadMap) {
             if (thread->status == type::KThread::ThreadStatus::Waiting) {
                 for (auto &waitHandle : thread->waitHandles) {
                     if (handle == waitHandle) {

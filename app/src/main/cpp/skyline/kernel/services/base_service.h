@@ -14,7 +14,21 @@ namespace skyline::kernel::service {
      * @brief This contains an enum for every service that's present
      */
     enum class Service {
-        sm, set_sys, apm, apm_ISession, am_appletOE, am_IApplicationProxy, am_ICommonStateGetter, am_IApplicationFunctions, am_ISelfController, am_IWindowController, am_ILibraryAppletCreator
+        sm,
+        fatal_u,
+        set_sys,
+        apm,
+        apm_ISession,
+        am_appletOE,
+        am_IApplicationProxy,
+        am_ICommonStateGetter,
+        am_IApplicationFunctions,
+        am_ISelfController,
+        am_IWindowController,
+        am_IAudioController,
+        am_IDisplayController,
+        am_ILibraryAppletCreator,
+        am_IDebugFunctions,
     };
 
     /**
@@ -22,6 +36,7 @@ namespace skyline::kernel::service {
      */
     const static std::unordered_map<std::string, Service> ServiceString = {
         {"sm:", Service::sm},
+        {"fatal:u", Service::fatal_u},
         {"set:sys", Service::set_sys},
         {"apm", Service::apm},
         {"apm:ISession", Service::apm_ISession},
@@ -30,8 +45,11 @@ namespace skyline::kernel::service {
         {"am:ICommonStateGetter", Service::am_ICommonStateGetter},
         {"am:ISelfController", Service::am_ISelfController},
         {"am:IWindowController", Service::am_IWindowController},
+        {"am:IAudioController", Service::am_IAudioController},
+        {"am:IDisplayController", Service::am_IDisplayController},
         {"am:ILibraryAppletCreator", Service::am_ILibraryAppletCreator},
         {"am:IApplicationFunctions", Service::am_IApplicationFunctions},
+        {"am:IDebugFunctions", Service::am_IDebugFunctions},
     };
 
     class ServiceManager;
@@ -73,10 +91,17 @@ namespace skyline::kernel::service {
          * @param response The corresponding IpcResponse object
          */
         void HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+            std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)> function;
             try {
-                vTable.at(request.payload->value)(session, request, response);
+                function = vTable.at(request.payload->value);
             } catch (std::out_of_range&) {
                 state.logger->Write(Logger::Warn, "Cannot find function in service '{0}' (Type: {1}): 0x{2:X} ({2})", getName(), serviceType, u32(request.payload->value));
+                return;
+            }
+            try {
+                function(session, request, response);
+            } catch (std::exception& e) {
+                throw exception(e.what());
             }
         };
 

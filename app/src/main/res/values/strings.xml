@@ -14,12 +14,6 @@
     <string name="no_rom">Cannot find any ROMs</string>
     <string name="nro">NROs</string>
     <string name="nso">NSOs</string>
-    <!-- Settings -->
-    <string name="search_location">Search Location</string>
-    <string name="logging">Logging</string>
-    <string name="log_level">Log Level</string>
-    <string name="localization">Localization</string>
-    <string name="localization_language">Language</string>
     <!-- Toolbar Logger -->
     <string name="clear">Clear</string>
     <string name="share">Share</string>
@@ -28,4 +22,14 @@
     <string name="io_error">An I/O error has occurred</string>
     <string name="share_error">An error has occurred while sharing</string>
     <string name="cleared">The logs have been cleared</string>
+    <!-- Settings -->
+    <string name="search_location">Search Location</string>
+    <string name="logging">Logging</string>
+    <string name="log_level">Log Level</string>
+    <string name="localization">Localization</string>
+    <string name="localization_language">Language</string>
+    <string name="system">System</string>
+    <string name="use_docked">Use Docked Mode</string>
+    <string name="handheld_enabled">The system will emulate being in handheld mode</string>
+    <string name="docked_enabled">The system will emulate being in docked mode</string>
 </resources>

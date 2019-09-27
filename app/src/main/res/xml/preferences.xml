@@ -37,6 +37,16 @@
                 app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
+            android:key="category_system"
+            android:title="@string/system">
+        <CheckBoxPreference
+                app:key="operation_mode"
+                app:title="@string/use_docked"
+                android:defaultValue="true"
+                android:summaryOn="@string/docked_enabled"
+                android:summaryOff="@string/handheld_enabled"/>
+    </PreferenceCategory>
+    <PreferenceCategory
             android:key="category_localization"
             android:title="@string/localization">
         <ListPreference

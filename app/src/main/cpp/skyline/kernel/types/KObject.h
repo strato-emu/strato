@@ -7,7 +7,7 @@ namespace skyline::kernel::type {
      * @brief These types are used to perform runtime evaluation of a kernel object's type when converting from base class
      */
     enum class KType {
-        KThread, KProcess, KSharedMemory, KPrivateMemory, KSession
+        KThread, KProcess, KSharedMemory, KPrivateMemory, KSession, KEvent
     };
 
     /**

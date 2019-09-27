@@ -1,5 +1,4 @@
 #include <jni.h>
-#include <pthread.h>
 #include <csignal>
 #include <string>
 #include <thread>
@@ -12,7 +11,7 @@ bool Halt = false;
 void ThreadMain(const std::string romPath, const std::string prefPath, const std::string logPath) {
     auto logger = std::make_shared<skyline::Logger>(logPath);
     auto settings = std::make_shared<skyline::Settings>(prefPath);
-    //settings->List(log); // (Uncomment when you want to print out all settings strings)
+    //settings->List(logger); // (Uncomment when you want to print out all settings strings)
     auto start = std::chrono::steady_clock::now();
     try {
         skyline::kernel::OS os(logger, settings);

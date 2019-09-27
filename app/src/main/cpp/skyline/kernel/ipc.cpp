@@ -71,7 +71,7 @@ namespace skyline::kernel::ipc {
         }
 
         if (payload->magic != constant::SfciMagic)
-            state.logger->Write(Logger::Warn, "Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
+            state.logger->Write(Logger::Debug, "Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
 
         if (header->c_flag == static_cast<u8>(BufferCFlag::SingleDescriptor)) {
             vecBufC.push_back(reinterpret_cast<BufferDescriptorC *>(currPtr));
