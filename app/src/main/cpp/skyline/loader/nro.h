@@ -39,13 +39,19 @@ namespace skyline::loader {
             NroSegmentHeader api_info;
             NroSegmentHeader dynstr;
             NroSegmentHeader dynsym;
-        };
+        } header {};
 
       public:
         /**
          * @param filePath The path to the ROM file
+         */
+        NroLoader(std::string filePath);
+
+        /**
+         * This loads in the data of the main process
+         * @param process The process to load in the data
          * @param state The state of the device
          */
-        NroLoader(std::string filePath, const DeviceState &state);
+        void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
     };
 }

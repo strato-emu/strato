@@ -55,23 +55,23 @@ namespace skyline::memory {
      * @brief This holds certain attributes of a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryAttribute
      */
     struct MemoryAttribute {
-        bool isBorrowed : 1;
-        bool isIpcLocked : 1;
+        bool isBorrowed     : 1;
+        bool isIpcLocked    : 1;
         bool isDeviceShared : 1;
-        bool isUncached : 1;
+        bool isUncached     : 1;
     };
 
     /**
      * @brief This contains information about a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryInfo
      */
     struct MemoryInfo {
-        u64 baseAddress : 64;
-        u64 size : 64;
-        u64 type : 64;
+        u64 baseAddress;
+        u64 size;
+        u64 type;
         MemoryAttribute memoryAttribute;
         Permission perms;
-        u32 ipcRefCount : 32;
-        u32 deviceRefCount : 32;
+        u32 ipcRefCount;
+        u32 deviceRefCount;
         u32 : 32;
     };
     static_assert(sizeof(MemoryInfo) == 0x28);

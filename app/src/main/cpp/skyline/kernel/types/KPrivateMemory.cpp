@@ -1,9 +1,5 @@
 #include "KPrivateMemory.h"
-#include "../../nce.h"
-#include "../../os.h"
-#include <android/sharedmem.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <nce.h>
 
 namespace skyline::kernel::type {
     u64 MapPrivateFunc(u64 dstAddress, u64 srcAddress, size_t size, u64 perms) {
@@ -15,21 +11,17 @@ namespace skyline::kernel::type {
         return dstAddress;
     }
 
-    KPrivateMemory::KPrivateMemory(handle_t handle, pid_t pid, const DeviceState &state, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type) : state(state), address(dstAddress), size(size), permission(permission), type(type), KObject(handle, pid, state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, pid_t pid, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type) : state(state), owner(pid), address(dstAddress), size(size), permission(permission), type(type), KObject(state, KType::KPrivateMemory) {
         user_pt_regs fregs = {0};
         fregs.regs[0] = dstAddress;
         fregs.regs[1] = srcAddress;
         fregs.regs[2] = size;
         fregs.regs[3] = static_cast<u64>(permission.Get());
-        state.nce->ExecuteFunction(reinterpret_cast<void *>(MapPrivateFunc), fregs, ownerPid);
+        state.nce->ExecuteFunction(reinterpret_cast<void *>(MapPrivateFunc), fregs, pid);
         if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
             throw exception("An error occurred while mapping private region in child process");
         if (!this->address)
             this->address = fregs.regs[0];
-    }
-
-    u64 UnmapPrivateFunc(u64 address, size_t size) {
-        return static_cast<u64>(munmap(reinterpret_cast<void *>(address), size));
     }
 
     u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size) {
@@ -41,7 +33,7 @@ namespace skyline::kernel::type {
         fregs.regs[0] = address;
         fregs.regs[1] = size;
         fregs.regs[2] = newSize;
-        state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapPrivateFunc), fregs, ownerPid);
+        state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapPrivateFunc), fregs, owner);
         if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
             throw exception("An error occurred while remapping private region in child process");
         size = newSize;
@@ -56,7 +48,7 @@ namespace skyline::kernel::type {
         fregs.regs[0] = address;
         fregs.regs[1] = size;
         fregs.regs[2] = static_cast<u64>(newPerms.Get());
-        state.nce->ExecuteFunction(reinterpret_cast<void *>(UpdatePermissionPrivateFunc), fregs, ownerPid);
+        state.nce->ExecuteFunction(reinterpret_cast<void *>(UpdatePermissionPrivateFunc), fregs, owner);
         if (static_cast<int>(fregs.regs[0]) == -1)
             throw exception("An error occurred while updating private region's permissions in child process");
         permission = newPerms;
@@ -73,5 +65,18 @@ namespace skyline::kernel::type {
         info.ipcRefCount = ipcRefCount;
         info.deviceRefCount = deviceRefCount;
         return info;
+    }
+
+    u64 UnmapPrivateFunc(u64 address, size_t size) {
+        return static_cast<u64>(munmap(reinterpret_cast<void *>(address), size));
+    }
+
+    KPrivateMemory::~KPrivateMemory() {
+        try {
+        user_pt_regs fregs = {0};
+        fregs.regs[0] = address;
+        fregs.regs[1] = size;
+        state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapPrivateFunc), fregs, owner);
+        } catch (const std::exception&) {}
     }
 };

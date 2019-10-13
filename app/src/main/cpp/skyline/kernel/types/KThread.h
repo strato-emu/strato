@@ -13,8 +13,9 @@ namespace skyline::kernel::type {
         u64 entryArg; //!< An argument to pass to the process on entry
 
       public:
-        enum class ThreadStatus { Created, Running, Waiting, Runnable } status = ThreadStatus::Created; //!< The state of the thread
-        std::vector<handle_t> waitHandles; //!< A vector holding handles this thread is waiting for
+        enum class ThreadStatus { Created, Running, Sleeping, Waiting, Runnable } status = ThreadStatus::Created; //!< The state of the thread
+        handle_t handle; // The handle of the object in the handle table
+        std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding handles this thread is waiting for
         u64 timeoutEnd{}; //!< The time when a svcWaitSynchronization
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
@@ -22,9 +23,8 @@ namespace skyline::kernel::type {
         u8 priority; //!< Hold the priority of a thread in Nintendo format
 
         /**
-         * @param handle The handle of the current thread
-         * @param parent_pid The PID of the main thread
          * @param state The state of the device
+         * @param handle The handle of the current thread
          * @param self_pid The PID of this thread
          * @param entryPoint The address to start execution at
          * @param entryArg An argument to pass to the process on entry
@@ -33,7 +33,7 @@ namespace skyline::kernel::type {
          * @param priority The priority of the thread in Nintendo format
          * @param parent The parent process of this thread
          */
-        KThread(handle_t handle, pid_t parent_pid, const DeviceState &state, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent);
+        KThread(const DeviceState &state, handle_t handle, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent);
 
         /**
          * @brief Kills the thread and deallocates the memory allocated for stack.

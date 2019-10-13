@@ -1,50 +1,47 @@
-#include <cstdint>
-#include <string>
-#include <syslog.h>
-#include <utility>
 #include "svc.h"
-#include "../os.h"
+#include <os.h>
 
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
         auto heap = state.thisProcess->MapPrivateRegion(0, state.nce->GetRegister(Wreg::W1), {true, true, false}, memory::Type::Heap, memory::Region::Heap);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
-        state.nce->SetRegister(Xreg::X1, heap->address);
+        state.nce->SetRegister(Xreg::X1, heap.item->address);
         state.logger->Write(Logger::Debug, "Heap size was set to 0x{:X}", state.nce->GetRegister(Wreg::W1));
     }
 
     void QueryMemory(DeviceState &state) {
         memory::MemoryInfo memInf;
-        bool found{};
         u64 addr = state.nce->GetRegister(Xreg::X2);
-        for(auto& [region, sharedMem] : state.nce->memoryRegionMap) {
-            if (addr == sharedMem->address) {
-                memInf = sharedMem->GetInfo(state.thisProcess->mainThread);
-                found = true;
+        bool memFree = true;
+        for(const auto& [address, region] : state.thisProcess->memoryMap) {
+            if (addr >= address && addr < (address + region->size)) {
+                memInf = region->GetInfo();
+                memFree = false;
+                break;
             }
         }
-        if(!found) {
-            if (state.thisProcess->memoryMap.count(addr))
-                memInf = state.thisProcess->memoryMap.at(addr)->GetInfo();
-            else {
-                state.nce->SetRegister(Wreg::W0, constant::status::InvAddress);
-                return;
-            }
+        if (memFree) {
+            memInf = {
+                .baseAddress = static_cast<u64>(static_cast<u64>(addr / PAGE_SIZE) * PAGE_SIZE),
+                .size =  static_cast<u64>(-constant::BaseSize + 1),
+                .type = static_cast<u64>(memory::Type::Unmapped),
+                };
         }
         state.thisProcess->WriteMemory<memory::MemoryInfo>(memInf, state.nce->GetRegister(Xreg::X0));
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
     void CreateThread(DeviceState &state) {
-        // TODO: Check if the values supplied by the process are actually valid & Support Core Mask potentially ?
+        // TODO: Support Core Mask potentially
         auto thread = state.thisProcess->CreateThread(state.nce->GetRegister(Xreg::X1), state.nce->GetRegister(Xreg::X2), state.nce->GetRegister(Xreg::X3), static_cast<u8>(state.nce->GetRegister(Wreg::W4)));
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
         state.nce->SetRegister(Wreg::W1, thread->handle);
+        state.logger->Write(Logger::Info, "Creating a thread: {}", thread->handle);
     }
 
     void StartThread(DeviceState &state) {
         auto &object = state.thisProcess->handleTable.at(static_cast<const unsigned int &>(state.nce->GetRegister(Wreg::W0)));
-        if (object->handleType == type::KType::KThread)
+        if (object->objectType == type::KType::KThread)
             std::static_pointer_cast<type::KThread>(object)->Start();
         else
             throw exception("StartThread was called on a non-KThread object");
@@ -52,6 +49,19 @@ namespace skyline::kernel::svc {
 
     void ExitThread(DeviceState &state) {
         state.os->KillThread(state.thisThread->pid);
+    }
+
+    void SleepThread(DeviceState &state) {
+        auto in = state.nce->GetRegister(Xreg::X0);
+        switch(in) {
+            case 0:
+            case 1:
+            case 2:
+                state.thisThread->status = type::KThread::ThreadStatus::Runnable; // Will cause the application to awaken on the next iteration of the main loop
+            default:
+                state.thisThread->timeoutEnd = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() + in;
+                state.thisThread->status = type::KThread::ThreadStatus::Sleeping;
+        }
     }
 
     void GetThreadPriority(DeviceState &state) {
@@ -64,11 +74,17 @@ namespace skyline::kernel::svc {
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
+    void MapSharedMemory(DeviceState &state) {
+        auto object = state.thisProcess->GetHandle<type::KSharedMemory>(static_cast<handle_t>(state.nce->GetRegister(Wreg::W0)));
+        object->Map(state.nce->GetRegister(Xreg::X1), state.nce->GetRegister(Xreg::X2), state.thisProcess->mainThread);
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+    }
+
     void CloseHandle(DeviceState &state) {
         auto handle = static_cast<handle_t>(state.nce->GetRegister(Wreg::W0));
         state.logger->Write(Logger::Debug, "Closing handle: 0x{:X}", handle);
         auto &object = state.thisProcess->handleTable.at(handle);
-        switch (object->handleType) {
+        switch (object->objectType) {
             case (type::KType::KThread):
                 state.os->KillThread(std::static_pointer_cast<type::KThread>(object)->pid);
                 break;
@@ -88,8 +104,28 @@ namespace skyline::kernel::svc {
             state.nce->SetRegister(Wreg::W0, constant::status::MaxHandles);
             return;
         }
-        state.thisThread->waitHandles.reserve(numHandles);
-        state.thisProcess->ReadMemory(state.thisThread->waitHandles.data(), state.nce->GetRegister(Xreg::X1), numHandles * sizeof(handle_t));
+        std::vector<handle_t> waitHandles(numHandles);
+        state.thisProcess->ReadMemory(waitHandles.data(), state.nce->GetRegister(Xreg::X1), numHandles * sizeof(handle_t));
+        for (const auto& handle : waitHandles) {
+            auto object = state.thisProcess->handleTable.at(handle);
+            switch(object->objectType) {
+                case type::KType::KProcess:
+                case type::KType::KThread:
+                case type::KType::KEvent:
+                case type::KType::KSession:
+                    break;
+                default:
+                    state.nce->SetRegister(Wreg::W0, constant::status::InvHandle);
+                    return;
+            }
+            auto syncObject = std::static_pointer_cast<type::KSyncObject>(object);
+            if(syncObject->signalled) {
+                state.nce->SetRegister(Wreg::W0, constant::status::Success);
+                return;
+            }
+            state.thisThread->waitObjects.push_back(syncObject);
+            syncObject->waitThreads.push_back(state.thisThread->pid);
+        }
         state.thisThread->status = type::KThread::ThreadStatus::Waiting;
     }
 
@@ -111,7 +147,10 @@ namespace skyline::kernel::svc {
     void OutputDebugString(DeviceState &state) {
         std::string debug(state.nce->GetRegister(Xreg::X1), '\0');
         state.os->thisProcess->ReadMemory((void *) debug.data(), state.nce->GetRegister(Xreg::X0), state.nce->GetRegister(Xreg::X1));
-        state.logger->Write(Logger::Info, "svcOutputDebugString: {}", debug.c_str());
+        std::string::size_type pos = 0;
+        while ((pos = debug.find("\r\n", pos)) != std::string::npos)
+            debug.erase(pos, 2);
+        state.logger->Write(Logger::Info, "svcOutputDebugString: {}", debug);
         state.nce->SetRegister(Wreg::W0, 0);
     }
 
@@ -141,7 +180,7 @@ namespace skyline::kernel::svc {
                 state.nce->SetRegister(Xreg::X1, constant::TotalPhyMem);
                 break;
             case constant::infoState::TotalMemoryUsage:
-                state.nce->SetRegister(Xreg::X1, state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address + state.thisProcess->mainThreadStackSz + state.nce->GetSharedSize());
+                state.nce->SetRegister(Xreg::X1, state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address + state.thisProcess->mainThreadStackSz + state.thisProcess->GetProgramSize());
                 break;
             case constant::infoState::AddressSpaceBaseAddr:
                 state.nce->SetRegister(Xreg::X1, constant::BaseAddr);

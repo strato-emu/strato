@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../common.h"
-#include "../ipc.h"
+#include <common.h>
+#include <kernel/ipc.h>
 #include <functional>
 
 #define SFunc(function) std::bind(&function, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
@@ -29,6 +29,8 @@ namespace skyline::kernel::service {
         am_IDisplayController,
         am_ILibraryAppletCreator,
         am_IDebugFunctions,
+        hid,
+        hid_IAppletResource,
     };
 
     /**
@@ -50,6 +52,8 @@ namespace skyline::kernel::service {
         {"am:ILibraryAppletCreator", Service::am_ILibraryAppletCreator},
         {"am:IApplicationFunctions", Service::am_IApplicationFunctions},
         {"am:IDebugFunctions", Service::am_IDebugFunctions},
+        {"hid", Service::hid},
+        {"hid:IAppletResource", Service::hid_IAppletResource},
     };
 
     class ServiceManager;

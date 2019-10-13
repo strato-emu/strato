@@ -1,8 +1,7 @@
 #include "KProcess.h"
-#include "../../nce.h"
+#include <nce.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <utility>
 
 namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(u64 address) : address(address) {}
@@ -24,27 +23,24 @@ namespace skyline::kernel::type {
         return slot[constant::TlsSlots - 1];
     }
 
-    u64 KProcess::GetTlsSlot(bool init) {
-        if (!init)
+    u64 KProcess::GetTlsSlot() {
             for (auto &tlsPage: tlsPages) {
                 if (!tlsPage->Full())
                     return tlsPage->ReserveSlot();
             }
-        auto tlsMem = NewHandle<KPrivateMemory>(0, 0, PAGE_SIZE, memory::Permission(true, true, false), memory::Type::ThreadLocal);
+        auto tlsMem = NewHandle<KPrivateMemory>(mainThread, 0, 0, PAGE_SIZE, memory::Permission(true, true, false), memory::Type::ThreadLocal).item;
         memoryMap[tlsMem->address] = tlsMem;
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
         auto &tlsPage = tlsPages.back();
-        if (init)
+        if (tlsPages.empty())
             tlsPage->ReserveSlot(); // User-mode exception handling
         return tlsPage->ReserveSlot();
     }
 
-    KProcess::KProcess(handle_t handle, pid_t pid, const DeviceState &state, u64 entryPoint, u64 stackBase, u64 stackSize) : mainThread(pid), mainThreadStackSz(stackSize), KSyncObject(handle, pid, state, KType::KProcess) {
+    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize) : mainThread(pid), mainThreadStackSz(stackSize), KSyncObject(state, KType::KProcess) {
         state.nce->WaitRdy(pid);
-        threadMap[mainThread] = NewHandle<KThread>(pid, entryPoint, 0, stackBase + stackSize, GetTlsSlot(true), constant::DefaultPriority, this);
+        threadMap[pid] = NewHandle<KThread>(pid, entryPoint, 0, stackBase + stackSize, GetTlsSlot(), constant::DefaultPriority, this).item;
         MapPrivateRegion(0, constant::DefHeapSize, {true, true, true}, memory::Type::Heap, memory::Region::Heap);
-        for (auto &region : state.nce->memoryRegionMap)
-            region.second->InitiateProcess(pid);
         memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC); // NOLINT(hicpp-signed-bitwise)
         if (memFd == -1)
             throw exception(fmt::format("Cannot open file descriptor to /proc/{}/mem", pid));
@@ -55,16 +51,15 @@ namespace skyline::kernel::type {
     }
 
     /**
-     * Function executed by all child threads after cloning
+     * @brief Function executed by all child threads after cloning
      */
     int ExecuteChild(void *) {
-        ptrace(PTRACE_TRACEME);
         asm volatile("BRK #0xFF"); // BRK #constant::brkRdy (So we know when the thread/process is ready)
         return 0;
     }
 
     u64 CreateThreadFunc(u64 stackTop) {
-        pid_t pid = clone(&ExecuteChild, reinterpret_cast<void *>(stackTop), CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | CLONE_SYSVSEM, nullptr); // NOLINT(hicpp-signed-bitwise)
+        pid_t pid = clone(&ExecuteChild, reinterpret_cast<void *>(stackTop), CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO, nullptr); // NOLINT(hicpp-signed-bitwise)
         return static_cast<u64>(pid);
     }
 
@@ -75,8 +70,9 @@ namespace skyline::kernel::type {
         state.nce->ExecuteFunction((void *) CreateThreadFunc, fregs, mainThread);
         auto pid = static_cast<pid_t>(fregs.regs[0]);
         if (pid == -1)
-            throw exception(fmt::format("Cannot create thread: Address: {}, Stack Top: {}", entryPoint, stackTop));
-        threadMap[pid] = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(false), priority, this);
+            throw exception(fmt::format("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop));
+        threadMap[pid] = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this).item;
+        state.logger->Write(Logger::Info, "EP: 0x{:X}, EA: 0x{:X}, STP: 0x{:X}, PR: 0x{:X}, TLS: {}", entryPoint, entryArg, stackTop, priority, threadMap[pid]->tls);
         return threadMap[pid];
     }
 
@@ -88,10 +84,21 @@ namespace skyline::kernel::type {
         pwrite64(memFd, source, size, offset);
     }
 
-    std::shared_ptr<KPrivateMemory> KProcess::MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region) {
-        auto item = NewHandle<KPrivateMemory>(address, 0, size, perms, type);
-        memoryMap[item->address] = item;
-        memoryRegionMap[region] = item;
-        return item;
+    int KProcess::GetMemoryFd() const {
+        return memFd;
+    }
+
+    KProcess::HandleOut<KPrivateMemory> KProcess::MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region) {
+        auto mem = NewHandle<KPrivateMemory>(mainThread, address, 0, size, perms, type);
+        memoryMap[mem.item->address] = mem.item;
+        memoryRegionMap[region] = mem.item;
+        return mem;
+    }
+
+    size_t KProcess::GetProgramSize() {
+        size_t sharedSize = 0;
+        for (auto &region : memoryRegionMap)
+            sharedSize += region.second->size;
+        return sharedSize;
     }
 }

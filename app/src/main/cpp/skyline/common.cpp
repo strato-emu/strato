@@ -1,6 +1,5 @@
 #include "common.h"
 #include <tinyxml2.h>
-#include <syslog.h>
 
 namespace skyline {
     Settings::Settings(const std::string &prefXml) {
@@ -34,7 +33,7 @@ namespace skyline {
         return boolMap.at(key);
     }
 
-    void Settings::List(std::shared_ptr<Logger>& logger) {
+    void Settings::List(std::shared_ptr<Logger> logger) {
         for (auto& iter : stringMap)
             logger->Write(Logger::Info, "Key: {}, Value: {}, Type: String", iter.first, GetString(iter.first));
         for (auto& iter : boolMap)
@@ -56,7 +55,7 @@ namespace skyline {
         logFile.flush();
     }
 
-    void Logger::Write(const LogLevel level, const std::string &str) {
+    void Logger::Write(const LogLevel level, const std::string& str) {
         #ifdef NDEBUG
         if (level == Debug) return;
         #endif

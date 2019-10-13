@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../base_service.h"
-#include "../serviceman.h"
-#include "../../types/KProcess.h"
-#include "../../types/KEvent.h"
+#include <kernel/services/base_service.h>
+#include <kernel/services/serviceman.h>
+#include <kernel/types/KProcess.h>
+#include <kernel/types/KEvent.h>
 
 namespace skyline::kernel::service::am {
     /**

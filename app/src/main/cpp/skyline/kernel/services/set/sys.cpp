@@ -1,5 +1,5 @@
 #include "sys.h"
-#include "../../types/KProcess.h"
+#include <kernel/types/KProcess.h>
 
 namespace skyline::kernel::service::set {
     sys::sys(const DeviceState &state, ServiceManager& manager) : BaseService(state, manager, false, Service::set_sys, {{0x3, SFunc(sys::GetFirmwareVersion)}}) {}

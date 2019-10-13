@@ -41,8 +41,6 @@ namespace skyline {
         instr::Brk ReadBrk(u64 address, pid_t pid = 0) const;
 
       public:
-        std::map<memory::Region, std::shared_ptr<kernel::type::KSharedMemory>> memoryRegionMap; //!< A mapping from every Memory::Region to a shared pointer to it's corresponding kernel::type::KSharedMemory
-
         /**
          * @brief Initialize NCE by setting the device_state variable
          * @param state The state of the device
@@ -139,23 +137,5 @@ namespace skyline {
          * @param pid The PID of the process (Defaults to currPid)
          */
         void SetRegister(Sreg regId, u32 value, pid_t pid = 0);
-
-        /**
-         * @brief Map a chunk of shared memory (Use only when kernel should be owner process else create KSharedMemory directly)
-         * @param address The address to map to (Can be 0 if address doesn't matter)
-         * @param size The size of the chunk of memory
-         * @param localPermission The permissions of the memory for the kernel
-         * @param remotePermission The permissions of the memory for the processes
-         * @param type The type of the memory
-         * @param region The specific region this memory is mapped for
-         * @return A shared pointer to the kernel::type::KSharedMemory object
-         */
-        std::shared_ptr<kernel::type::KSharedMemory> MapSharedRegion(const u64 address, const size_t size, const memory::Permission localPermission, const memory::Permission remotePermission, const memory::Type type, const memory::Region region);
-
-        /**
-         * @brief Returns the total memory occupied by shared regions mapped using the kernel
-         * @return The total size of allocated shared memory by NCE::MapSharedRegion
-         */
-        size_t GetSharedSize();
     };
 }

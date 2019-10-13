@@ -18,7 +18,7 @@ namespace skyline::kernel {
         DeviceState state; //!< The state of the device
 
       public:
-        std::unordered_map<pid_t, std::shared_ptr<type::KProcess>> threadMap; //!< A mapping from a threat's PID to it's KProcess object
+        std::unordered_map<pid_t, std::shared_ptr<type::KProcess>> processMap; //!< A mapping from a threat's PID to it's KProcess object
         std::vector<pid_t> processVec; //!< A vector of all processes by their main thread's PID
         std::shared_ptr<type::KProcess> thisProcess; //!< The corresponding KProcess object of the process that's called an SVC
         std::shared_ptr<type::KThread> thisThread; //!< The corresponding KThread object of the thread that's called an SVC
@@ -53,8 +53,19 @@ namespace skyline::kernel {
         /**
          * @brief Handles a particular SuperVisor Call
          * @param svc The ID of the SVC to be called
-         * @param pid The PID of the process/thread calling the SVC
          */
-        void SvcHandler(u16 svc, pid_t pid);
+        void SvcHandler(u16 svc);
+
+        /**
+         * @brief Map a chunk of shared memory (Use only when kernel should be owner process else create KSharedMemory directly)
+         * @param address The address to map to (Can be 0 if address doesn't matter)
+         * @param size The size of the chunk of memory
+         * @param localPermission The permissions of the memory for the kernel
+         * @param remotePermission The permissions of the memory for the processes
+         * @param type The type of the memory
+         * @param region The specific region this memory is mapped for
+         * @return A shared pointer to the kernel::type::KSharedMemory object
+         */
+        std::shared_ptr<kernel::type::KSharedMemory> MapSharedKernel(const u64 address, const size_t size, const memory::Permission kernelPermission, const memory::Permission remotePermission, const memory::Type type);
     };
 }

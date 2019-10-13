@@ -9,10 +9,23 @@ namespace skyline::kernel::type {
     class KEvent : public KSyncObject {
       public:
         /**
-         * @param handle The handle of the object in the handle table
-         * @param pid The PID of the main thread
          * @param state The state of the device
          */
-        KEvent(skyline::handle_t handle, pid_t pid, const DeviceState &state) : KSyncObject(handle, pid, state, KType::KEvent) {}
+        KEvent(const DeviceState &state) : KSyncObject(state, KType::KEvent) {}
+
+        /**
+         * @brief Signals all threads waiting on this object
+         */
+        virtual inline void Signal() {
+            KSyncObject::Signal();
+            signalled = true;
+        }
+
+        /**
+         * @brief Resets the KEvent to an unsignalled state
+         */
+        inline void ResetSignal() {
+            signalled = false;
+        }
     };
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../base_service.h"
-#include "../serviceman.h"
+#include <kernel/services/base_service.h>
+#include <kernel/services/serviceman.h>
 
 namespace skyline::kernel::service::apm {
     /**

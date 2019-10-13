@@ -63,8 +63,9 @@ namespace skyline::kernel::service::am {
     }
 
     void ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        messageEvent = state.thisProcess->NewHandle<type::KEvent>();
-        response.copyHandles.push_back(messageEvent->handle);
+        auto event = state.thisProcess->NewHandle<type::KEvent>();
+        messageEvent = event.item;
+        response.copyHandles.push_back(event.handle);
     }
 
     void ICommonStateGetter::GetCurrentFocusState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

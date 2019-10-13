@@ -1,10 +1,10 @@
 #include <sys/resource.h>
 #include "KThread.h"
 #include "KProcess.h"
-#include "../../nce.h"
+#include <nce.h>
 
 namespace skyline::kernel::type {
-    KThread::KThread(handle_t handle, pid_t parent_pid, const DeviceState &state, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent) : pid(self_pid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), KSyncObject(handle, parent_pid, state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, handle_t handle, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent) : handle(handle), pid(self_pid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), KSyncObject(state, KType::KThread) {
         UpdatePriority(priority);
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../memory.h"
+#include <memory.h>
 #include "KObject.h"
 
 namespace skyline::kernel::type {
@@ -12,6 +12,7 @@ namespace skyline::kernel::type {
         const DeviceState &state; //!< The state of the device
 
       public:
+        pid_t owner; //!< The PID of the process owning this memory
         u64 address; //!< The address of the allocated memory
         size_t size; //!< The size of the allocated memory
         u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
@@ -21,21 +22,19 @@ namespace skyline::kernel::type {
 
         /**
          * @brief Constructor of a private memory object
-         * @param handle A handle to this object
-         * @param pid The PID of the main thread
          * @param state The state of the device
+         * @param pid The PID of the main
          * @param dstAddress The address to map to (If NULL then an arbitrary address is picked)
          * @param srcAddress The address to map from (If NULL then no copy is performed)
          * @param size The size of the allocation
          * @param permission The permissions for the allocated memory
+         * @param type The type of the memory
          */
-        KPrivateMemory(handle_t handle, pid_t pid, const DeviceState &state, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type);
+        KPrivateMemory(const DeviceState &state, pid_t pid, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type);
 
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it
-         * @param address The address of the mapped memory
-         * @param old_size The current size of the memory
-         * @param size The new size of the memory
+         * @param newSize The new size of the memory
          */
         void Resize(size_t newSize);
 
@@ -51,5 +50,10 @@ namespace skyline::kernel::type {
          * @return A Memory::MemoryInfo struct based on attributes of the memory
          */
         memory::MemoryInfo GetInfo();
+
+        /**
+         * @brief Destructor of private memory, it deallocates the memory
+         */
+        ~KPrivateMemory();
     };
 }

@@ -11,7 +11,7 @@ add_subdirectory("libraries/fmt")
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 
-include_directories(${source_DIR})
+include_directories(${source_DIR}/skyline)
 
 add_library(skyline SHARED
         ${source_DIR}/main.cpp
@@ -25,13 +25,15 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/types/KProcess.cpp
         ${source_DIR}/skyline/kernel/types/KThread.cpp
         ${source_DIR}/skyline/kernel/types/KSharedMemory.cpp
+        ${source_DIR}/skyline/kernel/types/KTransferMemory.cpp
         ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
         ${source_DIR}/skyline/kernel/services/serviceman.cpp
         ${source_DIR}/skyline/kernel/services/sm/sm.cpp
+        ${source_DIR}/skyline/kernel/services/fatal/fatal.cpp
         ${source_DIR}/skyline/kernel/services/set/sys.cpp
         ${source_DIR}/skyline/kernel/services/apm/apm.cpp
         ${source_DIR}/skyline/kernel/services/am/appletOE.cpp
-        ${source_DIR}/skyline/kernel/services/fatal/fatal.cpp
+        ${source_DIR}/skyline/kernel/services/hid/hid.cpp
         )
 target_link_libraries(skyline fmt tinyxml2)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)

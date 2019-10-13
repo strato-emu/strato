@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../nce.h"
+#include <nce.h>
+#include <kernel/types/KSession.h>
 #include "base_service.h"
-#include "../types/KSession.h"
 
 namespace skyline::kernel::service {
     /**
@@ -34,7 +34,7 @@ namespace skyline::kernel::service {
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to
          */
-        void NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response);
+        std::shared_ptr<BaseService> NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response);
 
         /**
          * @brief Closes an existing session to a service

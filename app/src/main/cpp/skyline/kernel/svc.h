@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ipc.h"
-#include "../common.h"
+#include <common.h>
 
 namespace skyline {
     namespace constant::infoState {
@@ -67,6 +67,11 @@ namespace skyline {
         void ExitThread(DeviceState &state);
 
         /**
+         * @brief Sleep for a specified amount of time, or yield thread (https://switchbrew.org/wiki/SVC#svcExitThread)
+         */
+        void SleepThread(DeviceState &state);
+
+        /**
          * @brief Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcGetThreadPriority)
          */
         void GetThreadPriority(DeviceState &state);
@@ -75,6 +80,11 @@ namespace skyline {
          * @brief Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcSetThreadPriority)
          */
         void SetThreadPriority(DeviceState &state);
+
+        /**
+         * @brief Maps the block supplied by the handle (https://switchbrew.org/wiki/SVC#svcMapSharedMemory)
+         */
+        void MapSharedMemory(DeviceState &state);
 
         /**
          * @brief Closes the specified handle
@@ -121,7 +131,7 @@ namespace skyline {
             CreateThread, // 0x08
             StartThread, // 0x09
             ExitThread, // 0x0a
-            nullptr, // 0x0b
+            SleepThread, // 0x0b
             GetThreadPriority, // 0x0c
             SetThreadPriority, // 0x0d
             nullptr, // 0x0e
@@ -129,7 +139,7 @@ namespace skyline {
             nullptr, // 0x10
             nullptr, // 0x11
             nullptr, // 0x12
-            nullptr, // 0x13
+            MapSharedMemory, // 0x13
             nullptr, // 0x14
             nullptr, // 0x15
             CloseHandle, // 0x16

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <string>
-#include "../os.h"
+#include <os.h>
+#include <kernel/types/KProcess.h>
 
 namespace skyline::loader {
     class Loader {
@@ -28,5 +29,12 @@ namespace skyline::loader {
          * @param file_path_ The path to the ROM file
          */
         Loader(std::string &filePath) : filePath(filePath), file(filePath, std::ios::binary | std::ios::beg) {}
+
+        /**
+         * This loads in the data of the main process
+         * @param process The process to load in the data
+         * @param state The state of the device
+         */
+        virtual void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
     };
 }

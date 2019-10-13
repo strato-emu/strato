@@ -1,8 +1,7 @@
 #include <sched.h>
 #include <linux/uio.h>
 #include <linux/elf.h>
-#include "os.h"
-#include "nce.h"
+#include <os.h>
 
 extern bool Halt;
 
@@ -34,8 +33,8 @@ namespace skyline {
 
     void NCE::Execute() {
         int status = 0;
-        while (!Halt && !state->os->threadMap.empty()) {
-            for (const auto &process : state->os->threadMap) {
+        while (!Halt && !state->os->processMap.empty()) {
+            for (const auto &process : state->os->processMap) { // NOLINT(performance-for-range-copy)
                 state->os->thisProcess = process.second;
                 state->os->thisThread = process.second->threadMap.at(process.first);
                 currPid = process.first;
@@ -48,8 +47,8 @@ namespace skyline {
                             if (instr.Verify()) {
                                 // We store the instruction value as the immediate value in BRK. 0x0 to 0x7F are SVC, 0x80 to 0x9E is MRS for TPIDRRO_EL0.
                                 if (instr.value <= constant::SvcLast) {
-                                    state->os->SvcHandler(static_cast<u16>(instr.value), currPid);
-                                    if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting)
+                                    state->os->SvcHandler(static_cast<u16>(instr.value));
+                                    if (state->thisThread->status != kernel::type::KThread::ThreadStatus::Running)
                                         continue;
                                 } else if (instr.value > constant::SvcLast && instr.value <= constant::SvcLast + constant::NumRegs) {
                                     // Catch MRS that reads the value of TPIDRRO_EL0 (TLS)
@@ -63,19 +62,25 @@ namespace skyline {
                             WriteRegisters(currRegs);
                             ResumeProcess();
                         } else {
-                            state->logger->Write(Logger::Warn, "Thread threw unknown signal, PID: {}, Stop Signal: {}", currPid, strsignal(WSTOPSIG(status))); // NOLINT(hicpp-signed-bitwise)
+                            try {
+                                ReadRegisters(currRegs);
+                                u32 instr = static_cast<u32>(ptrace(PTRACE_PEEKDATA, currPid, currRegs.pc, NULL));
+                                state->logger->Write(Logger::Warn, "Thread threw unknown signal, PID: {}, Stop Signal: {}, Instruction: 0x{:X}, PC: 0x{:X}", currPid, strsignal(WSTOPSIG(status)), instr, currRegs.pc); // NOLINT(hicpp-signed-bitwise)
+                            } catch (const exception &) {
+                                state->logger->Write(Logger::Warn, "Thread threw unknown signal, PID: {}, Stop Signal: {}", currPid, strsignal(WSTOPSIG(status))); // NOLINT(hicpp-signed-bitwise)
+                            }
                             state->os->KillThread(currPid);
                         }
                     }
-                } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting) {
+                } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting || state->thisThread->status == kernel::type::KThread::ThreadStatus::Sleeping) {
                     if (state->thisThread->timeoutEnd >= std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()) {
-                        state->thisThread->status = kernel::type::KThread::ThreadStatus::Running;
-                        SetRegister(Wreg::W0, constant::status::Timeout);
-                        currRegs.pc += sizeof(u32);
-                        WriteRegisters(currRegs);
-                        ResumeProcess();
+                        if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting)
+                            SetRegister(Wreg::W0, constant::status::Timeout);
+                        state->thisThread->status = kernel::type::KThread::ThreadStatus::Runnable;
                     }
-                } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Runnable) {
+                }
+                if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Runnable) {
+                    state->thisThread->waitObjects.clear();
                     state->thisThread->status = kernel::type::KThread::ThreadStatus::Running;
                     currRegs.pc += sizeof(u32);
                     WriteRegisters(currRegs);
@@ -97,7 +102,7 @@ namespace skyline {
         ReadRegisters(backupRegs, pid);
         funcRegs.pc = reinterpret_cast<u64>(func);
         funcRegs.sp = backupRegs.sp;
-        funcRegs.regs[static_cast<uint>(Xreg::X30)] = reinterpret_cast<u64>(BrkLr); // Set LR to 'brk_lr' so the application will hit a breakpoint after the function returns [LR is where the program goes after it returns from a function]
+        funcRegs.regs[static_cast<uint>(Xreg::X30)] = reinterpret_cast<u64>(BrkLr); // Set LR to 'brk_lr' so the application will hit a breakpoint after the function returns
         WriteRegisters(funcRegs, pid);
         ResumeProcess(pid);
         funcRegs = WaitRdy(pid);
@@ -191,19 +196,5 @@ namespace skyline {
             case Sreg::PState:
                 registerMap.at(pid).pstate = value;
         }
-    }
-
-    std::shared_ptr<kernel::type::KSharedMemory> NCE::MapSharedRegion(const u64 address, const size_t size, const memory::Permission localPermission, const memory::Permission remotePermission, const memory::Type type, const memory::Region region) {
-        auto item = std::make_shared<kernel::type::KSharedMemory>(0, 0, *state, size, localPermission, remotePermission, type);
-        item->Map(address);
-        memoryRegionMap[region] = item;
-        return item;
-    }
-
-    size_t NCE::GetSharedSize() {
-        size_t sharedSize = 0;
-        for (auto &region : memoryRegionMap)
-            sharedSize += region.second->size;
-        return sharedSize;
     }
 }

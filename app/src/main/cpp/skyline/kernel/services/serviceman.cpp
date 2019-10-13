@@ -1,10 +1,11 @@
 #include "serviceman.h"
-#include "../types/KProcess.h"
+#include <kernel/types/KProcess.h>
 #include "sm/sm.h"
 #include "set/sys.h"
 #include "apm/apm.h"
 #include "am/appletOE.h"
 #include "fatal/fatal.h"
+#include "hid/hid.h"
 
 namespace skyline::kernel::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
@@ -58,6 +59,12 @@ namespace skyline::kernel::service {
                 case Service::am_IDebugFunctions:
                     serviceMap[serviceType] = std::make_shared<am::IDebugFunctions>(state, *this);
                     break;
+                case Service::hid:
+                    serviceMap[serviceType] = std::make_shared<hid::hid>(state, *this);
+                    break;
+                case Service::hid_IAppletResource:
+                    serviceMap[serviceType] = std::make_shared<hid::IAppletResource>(state, *this);
+                    break;
             }
             serviceObj = serviceMap[serviceType];
         } else
@@ -67,17 +74,18 @@ namespace skyline::kernel::service {
     }
 
     handle_t ServiceManager::NewSession(const Service serviceType) {
-        return state.thisProcess->NewHandle<type::KSession>(GetService(serviceType), serviceType)->handle;
+        return state.thisProcess->NewHandle<type::KSession>(GetService(serviceType), serviceType).handle;
     }
 
-    void ServiceManager::NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response) {
+    std::shared_ptr<BaseService> ServiceManager::NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response) {
         auto serviceObject = GetService(serviceType);
         if (response.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
         } else
-            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(serviceObject, serviceType)->handle);
+            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(serviceObject, serviceType).handle);
         state.logger->Write(Logger::Debug, "Service has been registered: \"{}\"", serviceObject->getName());
+        return serviceObject;
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {

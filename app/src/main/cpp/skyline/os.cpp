@@ -1,9 +1,6 @@
 #include "os.h"
 #include "kernel/svc.h"
 #include "loader/nro.h"
-#include "nce.h"
-
-extern bool Halt;
 
 namespace skyline::kernel {
     OS::OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, thisProcess, thisThread, std::make_shared<NCE>(), settings, logger), serviceManager(state) {}
@@ -12,14 +9,13 @@ namespace skyline::kernel {
         state.nce->Initialize(state);
         std::string romExt = romFile.substr(romFile.find_last_of('.') + 1);
         std::transform(romExt.begin(), romExt.end(), romExt.begin(), [](unsigned char c) { return std::tolower(c); });
-
-        if (romExt == "nro")
-            loader::NroLoader loader(romFile, state);
-        else
+        auto process = CreateProcess(constant::BaseAddr, constant::DefStackSize);
+        if (romExt == "nro") {
+            loader::NroLoader loader(romFile);
+            loader.LoadProcessData(process, state);
+        } else
             throw exception("Unsupported ROM extension.");
-
-        auto mainProcess = CreateProcess(state.nce->memoryRegionMap.at(memory::Region::Text)->address, constant::DefStackSize);
-        mainProcess->threadMap.at(mainProcess->mainThread)->Start(); // The kernel itself is responsible for starting the main thread
+        process->threadMap.at(process->mainThread)->Start(); // The kernel itself is responsible for starting the main thread
         state.nce->Execute();
     }
 
@@ -40,38 +36,42 @@ namespace skyline::kernel {
             munmap(stack, stackSize);
             throw exception("Failed to create guard pages");
         }
-        pid_t pid = clone(&ExecuteChild, stack + stackSize, CLONE_FS | SIGCHLD, nullptr); // NOLINT(hicpp-signed-bitwise)
+        pid_t pid = clone(&ExecuteChild, stack + stackSize, CLONE_FILES  | CLONE_FS | SIGCHLD, nullptr); // NOLINT(hicpp-signed-bitwise)
         if (pid == -1)
             throw exception(fmt::format("Call to clone() has failed: {}", strerror(errno)));
-        std::shared_ptr<type::KProcess> process = std::make_shared<kernel::type::KProcess>(0, pid, state, address, reinterpret_cast<u64>(stack), stackSize);
-        threadMap[pid] = process;
+        std::shared_ptr<type::KProcess> process = std::make_shared<kernel::type::KProcess>(state, pid, address, reinterpret_cast<u64>(stack), stackSize);
+        processMap[pid] = process;
         processVec.push_back(pid);
         state.logger->Write(Logger::Debug, "Successfully created process with PID: {}", pid);
         return process;
     }
 
     void OS::KillThread(pid_t pid) {
-        auto process = threadMap.at(pid);
+        auto process = processMap.at(pid);
         if (process->mainThread == pid) {
             state.logger->Write(Logger::Debug, "Exiting process with PID: {}", pid);
             // Erasing all shared_ptr instances to the process will call the destructor
             // However, in the case these are not all instances of it we wouldn't want to call the destructor
             for (auto&[key, value]: process->threadMap)
-                threadMap.erase(key);
+                processMap.erase(key);
             processVec.erase(std::remove(processVec.begin(), processVec.end(), pid), processVec.end());
         } else {
             state.logger->Write(Logger::Debug, "Exiting thread with TID: {}", pid);
             process->handleTable.erase(process->threadMap[pid]->handle);
             process->threadMap.erase(pid);
-            threadMap.erase(pid);
+            processMap.erase(pid);
         }
     }
 
-    void OS::SvcHandler(u16 svc, pid_t pid) {
+    void OS::SvcHandler(u16 svc) {
         if (svc::SvcTable[svc]) {
             state.logger->Write(Logger::Debug, "SVC called 0x{:X}", svc);
             (*svc::SvcTable[svc])(state);
         } else
             throw exception(fmt::format("Unimplemented SVC 0x{:X}", svc));
+    }
+
+    std::shared_ptr<kernel::type::KSharedMemory> OS::MapSharedKernel(const u64 address, const size_t size, const memory::Permission kernelPermission, const memory::Permission remotePermission, const memory::Type type) {
+        return std::make_shared<kernel::type::KSharedMemory>(state, 0, address, size, kernelPermission, remotePermission, type);
     }
 }

@@ -35,6 +35,7 @@ namespace skyline {
         constexpr u64 BaseAddr = 0x8000000; //!< The address space base
         constexpr u64 MapAddr = BaseAddr + 0x80000000; //!< The address of the map region
         constexpr u64 BaseSize = 0x7FF8000000; //!< The size of the address space
+        constexpr u64 BaseEnd = BaseAddr + BaseSize; //!< The end of the address space
         constexpr u64 MapSize = 0x1000000000; //!< The size of the map region
         constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
         constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
@@ -231,7 +232,7 @@ namespace skyline {
         /**
          * @brief Writes all settings keys and values to syslog. This function is for development purposes.
          */
-        void List(std::shared_ptr<Logger> &logger);
+        void List(std::shared_ptr<Logger> logger);
     };
 
     // Predeclare some classes here as we use them in DeviceState

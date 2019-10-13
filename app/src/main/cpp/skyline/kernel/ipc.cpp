@@ -1,5 +1,3 @@
-#include <syslog.h>
-#include <cstdlib>
 #include "ipc.h"
 #include "types/KProcess.h"
 
@@ -13,7 +11,7 @@ namespace skyline::kernel::ipc {
 
         if (header->handle_desc) {
             handleDesc = reinterpret_cast<HandleDescriptor *>(currPtr);
-            currPtr += sizeof(HandleDescriptor) + (handleDesc->send_pid ? sizeof(u8) : 0);
+            currPtr += sizeof(HandleDescriptor) + (handleDesc->send_pid ? sizeof(u64) : 0);
             for (uint index = 0; handleDesc->copy_count > index; index++) {
                 copyHandles.push_back(*reinterpret_cast<handle_t *>(currPtr));
                 currPtr += sizeof(handle_t);
@@ -142,6 +140,8 @@ namespace skyline::kernel::ipc {
                 currPtr += sizeof(handle_t);
             }
         }
+
+        state.logger->Write(Logger::Debug, "Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->raw_sz), u32(payload->value), copyHandles.size(), moveHandles.size());
 
         state.thisProcess->WriteMemory(tls.data(), state.thisThread->tls, constant::TlsIpcSize);
     }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../common.h"
+#include <common.h>
 #include "KObject.h"
 
 namespace skyline::kernel::type {
@@ -9,18 +9,18 @@ namespace skyline::kernel::type {
    */
     class KSyncObject : public KObject {
       public:
+        bool signalled = false; //!< If the current object is signalled (Used by KEvent as it stays signalled till svcClearEvent or svcClearSignal is called)
+        std::vector<pid_t> waitThreads; //!< A vector of threads waiting on this object
+
         /**
-         * @param handle The handle of the object in the handle table
-         * @param pid The PID of the main thread
          * @param state The state of the device
          * @param type The type of the object
          */
-        KSyncObject(skyline::handle_t handle, pid_t pid, const DeviceState &state, skyline::kernel::type::KType type);
+        KSyncObject(const DeviceState &state, skyline::kernel::type::KType type);
 
-        // TODO: Rewrite this so that we store list of waiting threads instead
         /**
          * @brief A function for calling when a particular KSyncObject is signalled
          */
-        void Signal();
+        virtual void Signal();
     };
 }

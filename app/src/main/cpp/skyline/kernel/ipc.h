@@ -1,9 +1,7 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
 #include <array>
-#include "../common.h"
+#include <common.h>
 
 namespace skyline::kernel::ipc {
     /**
@@ -108,7 +106,6 @@ namespace skyline::kernel::ipc {
         u32 address_0_31  : 32;
 
         BufferDescriptorX(u64 address, u16 counter, u16 size) : size(size) {
-            // TODO: Test this, the AND mask might be the other way around
             address_0_31 = static_cast<u32>(address & 0x7FFFFFFF80000000);
             address_32_35 = static_cast<u16>(address & 0x78000000);
             address_36_38 = static_cast<u16>(address & 0x7000000);
