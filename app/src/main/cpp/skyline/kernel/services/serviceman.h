@@ -33,12 +33,21 @@ namespace skyline::kernel::service {
         handle_t NewSession(const Service serviceType);
 
         /**
-         * @brief Creates a new service and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
+         * @brief Creates a new service using it's type enum and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
          * @param serviceType The type of the service
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to
          */
         std::shared_ptr<BaseService> NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response);
+
+        /**
+         * @brief Registers a service object in the manager and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
+         * @param serviceObject An instance of the service
+         * @param session The session object of the command
+         * @param response The response object to write the handle or virtual handle to
+         */
+        void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response);
+
 
         /**
          * @brief Closes an existing session to a service

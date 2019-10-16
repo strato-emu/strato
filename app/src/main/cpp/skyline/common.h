@@ -49,6 +49,8 @@ namespace skyline {
         constexpr u16 SvcLast = 0x7F; //!< The index of the last SVC
         constexpr u16 BrkRdy = 0xFF; //!< This is reserved for our kernel's to know when a process/thread is ready
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
+        constexpr u32 CntpctEl0 = 0x5F01; //!< ID of CNTPCT_EL0 in MRS
+        constexpr u32 CntvctEl0 = 0x5F02; //!< ID of CNTVCT_EL0 in MRS
         // Kernel
         constexpr u64 MaxSyncHandles = 0x40; //!< The total amount of handles that can be passed to WaitSynchronization
         constexpr handle_t BaseHandleIndex = 0xD000; // The index of the base handle
@@ -82,13 +84,13 @@ namespace skyline {
          */
         struct Brk {
             /**
-             * Creates a BRK instruction with a specific immediate value, used for generating BRK opcodes
+             * @brief Creates a BRK instruction with a specific immediate value, used for generating BRK opcodes
              * @param val The immediate value of the instruction
              */
             Brk(u16 val) {
-                start = 0x0; // First 5 bits of an BRK instruction are 0
+                start = 0x0; // First 5 bits of a BRK instruction are 0
                 value = val;
-                end = 0x6A1; // Last 11 bits of an BRK instruction stored as u16
+                end = 0x6A1; // Last 11 bits of a BRK instruction stored as u16
             }
 
             /**
@@ -129,6 +131,17 @@ namespace skyline {
          * @brief A bit-field struct that encapsulates a MRS instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/mrs-move-system-register.
          */
         struct Mrs {
+            /**
+             * @brief Creates a MRS instruction, used for generating BRK opcodes
+             * @param srcReg The source system register
+             * @param dstReg The destination Xn register
+             */
+            Mrs(u32 srcReg, u8 dstReg) {
+                this->srcReg = srcReg;
+                this->dstReg = dstReg;
+                end = 0xD53; // Last 12 bits of a MRS instruction stored as u16
+            }
+
             /**
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid MRS instruction

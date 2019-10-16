@@ -31,6 +31,9 @@ namespace skyline::kernel::service {
         am_IDebugFunctions,
         hid,
         hid_IAppletResource,
+        time,
+        time_ISystemClock,
+        time_ITimeZoneService,
     };
 
     /**
@@ -54,6 +57,10 @@ namespace skyline::kernel::service {
         {"am:IDebugFunctions", Service::am_IDebugFunctions},
         {"hid", Service::hid},
         {"hid:IAppletResource", Service::hid_IAppletResource},
+        {"time:s", Service::time},
+        {"time:a", Service::time},
+        {"time:ISystemClock", Service::time_ISystemClock},
+        {"time:ITimeZoneService", Service::time_ITimeZoneService},
     };
 
     class ServiceManager;

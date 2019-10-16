@@ -20,9 +20,8 @@ namespace skyline::kernel::type {
         /**
          * @param state The state of the device
          * @param serviceObject A shared pointer to the service class
-         * @param serviceType The type of the service
          */
-        KSession(const DeviceState &state, std::shared_ptr<service::BaseService> &serviceObject, const service::Service &serviceType) : serviceObject(serviceObject), serviceType(serviceType), KSyncObject(state, KType::KSession) {}
+        KSession(const DeviceState &state, std::shared_ptr<service::BaseService> &serviceObject) : serviceObject(serviceObject), serviceType(serviceObject->serviceType), KSyncObject(state, KType::KSession) {}
 
         /**
          * This converts this session into a domain session (https://switchbrew.org/wiki/IPC_Marshalling#Domains)

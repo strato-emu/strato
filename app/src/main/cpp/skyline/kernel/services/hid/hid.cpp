@@ -23,7 +23,8 @@ namespace skyline::kernel::service::hid {
     }) {}
 
     void hid::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        resource = std::static_pointer_cast<IAppletResource>(manager.NewService(Service::hid_IAppletResource, session, response));
+        resource = std::make_shared<IAppletResource>(state, manager);
+        manager.RegisterService(resource, session, response);
     }
 
     void hid::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

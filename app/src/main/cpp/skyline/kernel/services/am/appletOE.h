@@ -180,7 +180,7 @@ namespace skyline::kernel::service::am {
         IApplicationFunctions(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This just returns 1 regardless of input (https://switchbrew.org/wiki/Applet_Manager_services#NotifyRunning)
+         * @brief This just returns a boolean true (https://switchbrew.org/wiki/Applet_Manager_services#NotifyRunning)
          */
         void NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };

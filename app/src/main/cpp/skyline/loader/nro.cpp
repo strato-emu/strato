@@ -37,9 +37,14 @@ namespace skyline::loader {
             if (instrSvc->Verify()) {
                 instr::Brk brk(static_cast<u16>(instrSvc->value));
                 *address = *reinterpret_cast<u32 *>(&brk);
-            } else if (instrMrs->Verify() && instrMrs->srcReg == constant::TpidrroEl0) {
-                instr::Brk brk(static_cast<u16>(constant::SvcLast + 1 + instrMrs->dstReg));
-                *address = *reinterpret_cast<u32 *>(&brk);
+            } else if (instrMrs->Verify()) {
+                if(instrMrs->srcReg == constant::TpidrroEl0) {
+                    instr::Brk brk(static_cast<u16>(constant::SvcLast + 1 + instrMrs->dstReg));
+                    *address = *reinterpret_cast<u32 *>(&brk);
+                } else if(instrMrs->srcReg == constant::CntpctEl0) {
+                    instr::Mrs mrs(constant::CntvctEl0, instrMrs->dstReg);
+                    *address = *reinterpret_cast<u32 *>(&mrs);
+                }
             }
         }
 
