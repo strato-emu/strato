@@ -13,10 +13,18 @@ namespace skyline::kernel::type {
         u64 entryArg; //!< An argument to pass to the process on entry
 
       public:
-        enum class ThreadStatus { Created, Running, Sleeping, Waiting, Runnable } status = ThreadStatus::Created; //!< The state of the thread
-        handle_t handle; // The handle of the object in the handle table
+        enum class ThreadStatus {
+            Created, //!< The thread has been created but has not been started yet
+            Running, //!< The thread is running currently
+            Sleeping, //!< The thread is sleeping due to svcSleepThread
+            WaitSync, //!< The thread is waiting for a KSyncObject signal
+            WaitMutex, //!< The thread is waiting on a Mutex
+            WaitCondVar, //!< The thread is waiting on a Conditional Variable
+            Runnable //!< The thread is ready to run after waiting
+        } status = ThreadStatus::Created; //!< The state of the thread
         std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding handles this thread is waiting for
-        u64 timeoutEnd{}; //!< The time when a svcWaitSynchronization
+        u64 timeout{}; //!< The end of a timeout for svcWaitSynchronization or the end of the sleep period for svcSleepThread
+        handle_t handle; // The handle of the object in the handle table
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
         u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread

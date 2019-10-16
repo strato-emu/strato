@@ -101,4 +101,42 @@ namespace skyline::kernel::type {
             sharedSize += region.second->size;
         return sharedSize;
     }
+
+    void KProcess::MutexLock(u64 address) {
+        auto mtxVec = state.thisProcess->mutexMap[address];
+        u32 mtxVal = state.thisProcess->ReadMemory<u32>(address);
+        if (mtxVec.empty()) {
+            mtxVal = (mtxVal & ~constant::mtxOwnerMask) | state.thisThread->handle;
+            state.thisProcess->WriteMemory(mtxVal, address);
+        } else {
+            for (auto thread = mtxVec.begin();; thread++) {
+                if ((*thread)->priority < state.thisThread->priority) {
+                    mtxVec.insert(thread, state.thisThread);
+                    break;
+                } else if (thread + 1 == mtxVec.end()) {
+                    mtxVec.push_back(state.thisThread);
+                    break;
+                }
+            }
+            state.thisThread->status = KThread::ThreadStatus::WaitMutex;
+        }
+    }
+
+    void KProcess::MutexUnlock(u64 address) {
+        auto mtxVec = state.thisProcess->mutexMap[address];
+        u32 mtxVal = state.thisProcess->ReadMemory<u32>(address);
+        if ((mtxVal & constant::mtxOwnerMask) != state.thisThread->pid)
+            throw exception("A non-owner thread tried to release a mutex");
+        if (mtxVec.empty()) {
+            mtxVal = 0;
+        } else {
+            auto &thread = mtxVec.front();
+            mtxVal = (mtxVal & ~constant::mtxOwnerMask) | thread->handle;
+            thread->status = KThread::ThreadStatus::Runnable;
+            mtxVec.erase(mtxVec.begin());
+            if (!mtxVec.empty())
+                mtxVal |= (~constant::mtxOwnerMask);
+        }
+        state.thisProcess->WriteMemory(mtxVal, address);
+    }
 }

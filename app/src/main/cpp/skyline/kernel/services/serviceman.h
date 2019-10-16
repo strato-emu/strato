@@ -11,8 +11,12 @@ namespace skyline::kernel::service {
     class ServiceManager {
       private:
         const DeviceState &state; //!< The state of the device
-        std::unordered_map<Service, std::shared_ptr<BaseService>> serviceMap; //!< A map from it's type to a BaseService object
+        std::vector<std::shared_ptr<BaseService>> serviceVec; //!< A vector with all of the services
 
+        /**
+         * @param serviceType The type of service requested
+         * @return A shared pointer to an instance of the service
+         */
         std::shared_ptr<BaseService> GetService(const Service serviceType);
 
       public:

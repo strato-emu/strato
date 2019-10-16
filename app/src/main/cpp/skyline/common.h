@@ -55,6 +55,7 @@ namespace skyline {
         constexpr u8 DefaultPriority = 31; //!< The default priority of a process
         constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
         constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
+        constexpr u32 mtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
         // IPC
         constexpr size_t TlsIpcSize = 0x100; //!< The size of the IPC command buffer in a TLS slot
         constexpr u8 PortSize = 0x8; //!< The size of a port name string
@@ -234,6 +235,14 @@ namespace skyline {
          */
         void List(std::shared_ptr<Logger> logger);
     };
+
+    /**
+     * @brief Returns the current time in nanoseconds
+     * @return The current time in nanoseconds
+     */
+    inline long long int GetCurrTimeNs() {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    }
 
     // Predeclare some classes here as we use them in DeviceState
     class NCE;

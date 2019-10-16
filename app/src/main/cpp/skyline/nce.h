@@ -112,7 +112,7 @@ namespace skyline {
          * @param pid The PID of the process (Defaults to currPid)
          * @return The value in the register
          */
-        u64 GetRegister(Wreg regId, pid_t pid = 0);
+        u32 GetRegister(Wreg regId, pid_t pid = 0);
 
         /**
          * @brief Set the value of a Wn register

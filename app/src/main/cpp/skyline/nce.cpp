@@ -72,9 +72,9 @@ namespace skyline {
                             state->os->KillThread(currPid);
                         }
                     }
-                } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting || state->thisThread->status == kernel::type::KThread::ThreadStatus::Sleeping) {
-                    if (state->thisThread->timeoutEnd >= std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()) {
-                        if (state->thisThread->status == kernel::type::KThread::ThreadStatus::Waiting)
+                } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitSync || state->thisThread->status == kernel::type::KThread::ThreadStatus::Sleeping || state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitCondVar) {
+                    if (state->thisThread->timeout >= GetCurrTimeNs()) {
+                        if (state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitSync || state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitCondVar)
                             SetRegister(Wreg::W0, constant::status::Timeout);
                         state->thisThread->status = kernel::type::KThread::ThreadStatus::Runnable;
                     }
@@ -166,7 +166,7 @@ namespace skyline {
         registerMap.at(pid ? pid : currPid).regs[static_cast<uint>(regId)] = value;
     }
 
-    u64 NCE::GetRegister(Wreg regId, pid_t pid) {
+    u32 NCE::GetRegister(Wreg regId, pid_t pid) {
         return (reinterpret_cast<u32 *>(&registerMap.at(pid ? pid : currPid).regs))[static_cast<uint>(regId) * 2];
     }
 

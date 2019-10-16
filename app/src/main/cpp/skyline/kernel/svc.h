@@ -97,6 +97,26 @@ namespace skyline {
         void WaitSynchronization(DeviceState &state);
 
         /**
+         * @brief Locks a specified mutex
+         */
+        void ArbitrateLock(DeviceState &state);
+
+        /**
+         * @brief Unlocks a specified mutex
+         */
+        void ArbitrateUnlock(DeviceState &state);
+
+        /**
+         * @brief Waits on a process-wide key (Conditional-Variable)
+         */
+        void WaitProcessWideKeyAtomic(DeviceState &state);
+
+        /**
+         * @brief Signals a process-wide key (Conditional-Variable)
+         */
+        void SignalProcessWideKey(DeviceState &state);
+
+        /**
          * @brief Connects to a named IPC port
          */
         void ConnectToNamedPort(DeviceState &state);
@@ -146,10 +166,10 @@ namespace skyline {
             nullptr, // 0x17
             WaitSynchronization, // 0x18
             nullptr, // 0x19
-            nullptr, // 0x1a
-            nullptr, // 0x1b
-            nullptr, // 0x1c
-            nullptr, // 0x1d
+            ArbitrateLock, // 0x1a
+            ArbitrateUnlock, // 0x1b
+            WaitProcessWideKeyAtomic, // 0x1c
+            SignalProcessWideKey, // 0x1d
             nullptr, // 0x1e
             ConnectToNamedPort, // 0x1f
             nullptr, // 0x20

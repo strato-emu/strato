@@ -69,7 +69,6 @@ namespace skyline::kernel::service {
 
       public:
         Service serviceType; //!< Which service this is
-        uint numSessions{}; //<! The amount of active sessions
         const bool hasLoop; //<! If the service has a loop or not
 
         /**

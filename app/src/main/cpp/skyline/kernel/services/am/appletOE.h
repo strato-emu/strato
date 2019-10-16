@@ -75,11 +75,13 @@ namespace skyline::kernel::service::am {
         std::shared_ptr<type::KEvent> messageEvent{};
 
         enum class ApplicationStatus : u8 {
-            InFocus = 1, OutOfFocus = 2
+            InFocus = 1, //!< The application is in foreground
+            OutOfFocus = 2 //!< The application is in the background
         };
 
         enum class OperationMode : u8 {
-            Handheld = 0, Docked = 1
+            Handheld = 0, //!< The device is in handheld mode
+            Docked = 1 //!< The device is in docked mode
         } operationMode;
       public:
         ICommonStateGetter(const DeviceState &state, ServiceManager &manager);

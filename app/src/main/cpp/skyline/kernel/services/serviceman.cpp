@@ -12,64 +12,60 @@ namespace skyline::kernel::service {
 
     std::shared_ptr<BaseService> ServiceManager::GetService(const Service serviceType) {
         std::shared_ptr<BaseService> serviceObj;
-        if (serviceMap.find(serviceType) == serviceMap.end()) {
-            switch (serviceType) {
+        switch (serviceType) {
                 case Service::sm:
-                    serviceMap[serviceType] = std::make_shared<sm::sm>(state, *this);
+                    serviceObj = std::make_shared<sm::sm>(state, *this);
                     break;
                 case Service::fatal_u:
-                    serviceMap[serviceType] = std::make_shared<fatal::fatalU>(state, *this);
+                    serviceObj = std::make_shared<fatal::fatalU>(state, *this);
                     break;
                 case Service::set_sys:
-                    serviceMap[serviceType] = std::make_shared<set::sys>(state, *this);
+                    serviceObj = std::make_shared<set::sys>(state, *this);
                     break;
                 case Service::apm:
-                    serviceMap[serviceType] = std::make_shared<apm::apm>(state, *this);
+                    serviceObj = std::make_shared<apm::apm>(state, *this);
                     break;
                 case Service::apm_ISession:
-                    serviceMap[serviceType] = std::make_shared<apm::ISession>(state, *this);
+                    serviceObj = std::make_shared<apm::ISession>(state, *this);
                     break;
                 case Service::am_appletOE:
-                    serviceMap[serviceType] = std::make_shared<am::appletOE>(state, *this);
+                    serviceObj = std::make_shared<am::appletOE>(state, *this);
                     break;
                 case Service::am_IApplicationProxy:
-                    serviceMap[serviceType] = std::make_shared<am::IApplicationProxy>(state, *this);
+                    serviceObj = std::make_shared<am::IApplicationProxy>(state, *this);
                     break;
                 case Service::am_ICommonStateGetter:
-                    serviceMap[serviceType] = std::make_shared<am::ICommonStateGetter>(state, *this);
+                    serviceObj = std::make_shared<am::ICommonStateGetter>(state, *this);
                     break;
                 case Service::am_IWindowController:
-                    serviceMap[serviceType] = std::make_shared<am::IWindowController>(state, *this);
+                    serviceObj = std::make_shared<am::IWindowController>(state, *this);
                     break;
                 case Service::am_IAudioController:
-                    serviceMap[serviceType] = std::make_shared<am::IAudioController>(state, *this);
+                    serviceObj = std::make_shared<am::IAudioController>(state, *this);
                     break;
                 case Service::am_IDisplayController:
-                    serviceMap[serviceType] = std::make_shared<am::IDisplayController>(state, *this);
+                    serviceObj = std::make_shared<am::IDisplayController>(state, *this);
                     break;
                 case Service::am_ISelfController:
-                    serviceMap[serviceType] = std::make_shared<am::ISelfController>(state, *this);
+                    serviceObj = std::make_shared<am::ISelfController>(state, *this);
                     break;
                 case Service::am_ILibraryAppletCreator:
-                    serviceMap[serviceType] = std::make_shared<am::ILibraryAppletCreator>(state, *this);
+                    serviceObj = std::make_shared<am::ILibraryAppletCreator>(state, *this);
                     break;
                 case Service::am_IApplicationFunctions:
-                    serviceMap[serviceType] = std::make_shared<am::IApplicationFunctions>(state, *this);
+                    serviceObj = std::make_shared<am::IApplicationFunctions>(state, *this);
                     break;
                 case Service::am_IDebugFunctions:
-                    serviceMap[serviceType] = std::make_shared<am::IDebugFunctions>(state, *this);
+                    serviceObj = std::make_shared<am::IDebugFunctions>(state, *this);
                     break;
                 case Service::hid:
-                    serviceMap[serviceType] = std::make_shared<hid::hid>(state, *this);
+                    serviceObj = std::make_shared<hid::hid>(state, *this);
                     break;
                 case Service::hid_IAppletResource:
-                    serviceMap[serviceType] = std::make_shared<hid::IAppletResource>(state, *this);
+                    serviceObj = std::make_shared<hid::IAppletResource>(state, *this);
                     break;
-            }
-            serviceObj = serviceMap[serviceType];
-        } else
-            serviceObj = serviceMap.at(serviceType);
-        serviceObj->numSessions++;
+        }
+        serviceVec.push_back(serviceObj);
         return serviceObj;
     }
 
@@ -89,20 +85,19 @@ namespace skyline::kernel::service {
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {
-        auto object = state.thisProcess->GetHandle<type::KSession>(handle);
-        if (object->serviceStatus == type::KSession::ServiceStatus::Open) {
-            if (object->isDomain) {
-                for (const auto &service : object->domainTable)
-                    if (!(service.second->numSessions--))
-                        serviceMap.erase(service.second->serviceType);
-            } else if (!(serviceMap.at(object->serviceType)->numSessions--))
-                serviceMap.erase(object->serviceType);
-            object->serviceStatus = type::KSession::ServiceStatus::Closed;
+        auto session = state.thisProcess->GetHandle<type::KSession>(handle);
+        if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
+            if (session->isDomain) {
+                for (const auto &[objectId, service] : session->domainTable)
+                    serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), service), serviceVec.end());
+            } else
+                serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), session->serviceObject), serviceVec.end());
+            session->serviceStatus = type::KSession::ServiceStatus::Closed;
         }
     };
 
     void ServiceManager::Loop() {
-        for (auto&[index, service] : serviceMap)
+        for (auto &service : serviceVec)
             if (service->hasLoop)
                 service->Loop();
     }
@@ -127,8 +122,7 @@ namespace skyline::kernel::service {
                                     service->HandleRequest(*session, request, response);
                                     break;
                                 case ipc::DomainCommand::CloseVHandle:
-                                    if (!(service->numSessions--))
-                                        serviceMap.erase(service->serviceType);
+                                    serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), service), serviceVec.end());
                                     session->domainTable.erase(request.domain->object_id);
                                     break;
                             }

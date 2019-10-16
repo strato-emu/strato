@@ -57,14 +57,20 @@ namespace skyline::kernel::type {
         int memFd; //!< The file descriptor to the memory of the process
 
       public:
-        enum class ProcessStatus { Created, CreatedAttached, Started, Crashed, StartedAttached, Exiting, Exited, DebugSuspended } status = ProcessStatus::Created; //!< The state of the process
+        enum class ProcessStatus {
+            Created, //!< The process was created but the main thread has not started yet
+            Started, //!< The process has been started
+            Exiting //!< The process is exiting
+        } status = ProcessStatus::Created; //!< The state of the process
         handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
         pid_t mainThread; //!< The PID of the main thread
         size_t mainThreadStackSz; //!< The size of the main thread's stack (All other threads map stack themselves so we don't know the size per-se)
-        std::map<u64, std::shared_ptr<KPrivateMemory>> memoryMap; //!< A mapping from every address to a shared pointer of it's corresponding KPrivateMemory, used to keep track of KPrivateMemory instances
-        std::map<memory::Region, std::shared_ptr<KPrivateMemory>> memoryRegionMap; //!< A mapping from every MemoryRegion to a shared pointer of it's corresponding KPrivateMemory
-        std::map<handle_t, std::shared_ptr<KObject>> handleTable; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
-        std::map<pid_t, std::shared_ptr<KThread>> threadMap; //!< A mapping from a PID to it's corresponding KThread object
+        std::unordered_map<u64, std::shared_ptr<KPrivateMemory>> memoryMap; //!< A mapping from every address to a shared pointer of it's corresponding KPrivateMemory, used to keep track of KPrivateMemory instances
+        std::unordered_map<memory::Region, std::shared_ptr<KPrivateMemory>> memoryRegionMap; //!< A mapping from every MemoryRegion to a shared pointer of it's corresponding KPrivateMemory
+        std::unordered_map<handle_t, std::shared_ptr<KObject>> handleTable; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
+        std::unordered_map<pid_t, std::shared_ptr<KThread>> threadMap; //!< A mapping from a PID to it's corresponding KThread object
+        std::unordered_map<u64, std::vector<std::shared_ptr<KThread>>> mutexMap; //!< A map from a mutex's address to a vector of threads waiting on it (Sorted by priority)
+        std::unordered_map<u64, std::vector<std::shared_ptr<KThread>>> condVarMap; //!< A map from a conditional variable's address to a vector of threads waiting on it (Sorted by priority)
         std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
 
         /**
@@ -223,5 +229,17 @@ namespace skyline::kernel::type {
                 throw exception(fmt::format("GetHandle was called with invalid handle: 0x{:X}", handle));
             }
         }
+
+        /**
+         * @brief This locks the Mutex at the specified address
+         * @param address The address of the mutex
+         */
+        void MutexLock(u64 address);
+
+        /**
+         * @brief This unlocks the Mutex at the specified address
+         * @param address The address of the mutex
+         */
+        void MutexUnlock(u64 address);
     };
 }

@@ -59,7 +59,7 @@ namespace skyline::kernel::svc {
             case 2:
                 state.thisThread->status = type::KThread::ThreadStatus::Runnable; // Will cause the application to awaken on the next iteration of the main loop
             default:
-                state.thisThread->timeoutEnd = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() + in;
+                state.thisThread->timeout = GetCurrTimeNs() + in;
                 state.thisThread->status = type::KThread::ThreadStatus::Sleeping;
         }
     }
@@ -98,7 +98,7 @@ namespace skyline::kernel::svc {
     }
 
     void WaitSynchronization(DeviceState &state) {
-        state.thisThread->timeoutEnd = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() + state.nce->GetRegister(Xreg::X3);
+        state.thisThread->timeout = GetCurrTimeNs() + state.nce->GetRegister(Xreg::X3);
         auto numHandles = state.nce->GetRegister(Wreg::W2);
         if (numHandles > constant::MaxSyncHandles) {
             state.nce->SetRegister(Wreg::W0, constant::status::MaxHandles);
@@ -126,7 +126,54 @@ namespace skyline::kernel::svc {
             state.thisThread->waitObjects.push_back(syncObject);
             syncObject->waitThreads.push_back(state.thisThread->pid);
         }
-        state.thisThread->status = type::KThread::ThreadStatus::Waiting;
+        state.thisThread->status = type::KThread::ThreadStatus::WaitSync;
+    }
+
+    void ArbitrateLock(DeviceState &state) {
+        if (state.nce->GetRegister(Wreg::W2) != state.thisThread->handle)
+            throw exception("A process requested locking a thread on behalf of another process");
+        state.thisProcess->MutexLock(state.nce->GetRegister(Xreg::X1));
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+    }
+
+    void ArbitrateUnlock(DeviceState &state) {
+        state.thisProcess->MutexUnlock(state.nce->GetRegister(Xreg::X0));
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+    }
+
+    void WaitProcessWideKeyAtomic(DeviceState &state) {
+        auto mtxAddr = state.nce->GetRegister(Xreg::X0);
+        if (state.nce->GetRegister(Wreg::W2) != state.thisThread->handle)
+            throw exception("svcWaitProcessWideKeyAtomic was called on behalf of another thread");
+        state.thisProcess->MutexUnlock(mtxAddr);
+        auto &cvarVec = state.thisProcess->condVarMap[state.nce->GetRegister(Xreg::X1)];
+        for (auto thread = cvarVec.begin();; thread++) {
+            if ((*thread)->priority < state.thisThread->priority) {
+                cvarVec.insert(thread, state.thisThread);
+                break;
+            } else if (thread + 1 == cvarVec.end()) {
+                cvarVec.push_back(state.thisThread);
+                break;
+            }
+        }
+        state.thisThread->status = type::KThread::ThreadStatus::WaitCondVar;
+        state.thisThread->timeout = GetCurrTimeNs() + state.nce->GetRegister(Xreg::X3);
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+    }
+
+    void SignalProcessWideKey(DeviceState &state) {
+        auto address = state.nce->GetRegister(Xreg::X0);
+        auto count = state.nce->GetRegister(Wreg::W1);
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+        if (!state.thisProcess->condVarMap.count(address))
+            return; // No threads to awaken
+        auto &cvarVec = state.thisProcess->condVarMap[address];
+        count = std::min(count, static_cast<u32>(cvarVec.size()));
+        for (uint index = 0; index < count; index++)
+            cvarVec[index]->status = type::KThread::ThreadStatus::Runnable;
+        cvarVec.erase(cvarVec.begin(), cvarVec.begin() + count);
+        if (cvarVec.empty())
+            state.thisProcess->condVarMap.erase(address);
     }
 
     void ConnectToNamedPort(DeviceState &state) {
@@ -150,7 +197,7 @@ namespace skyline::kernel::svc {
         std::string::size_type pos = 0;
         while ((pos = debug.find("\r\n", pos)) != std::string::npos)
             debug.erase(pos, 2);
-        state.logger->Write(Logger::Info, "svcOutputDebugString: {}", debug);
+        state.logger->Write(Logger::Info, "Debug Output: {}", debug);
         state.nce->SetRegister(Wreg::W0, 0);
     }
 
