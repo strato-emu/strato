@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
-project(Skyline VERSION 1 LANGUAGES CXX)
+project(Skyline VERSION 0.3 LANGUAGES CXX)
 
 set(BUILD_TESTING OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -flto=full")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -Wno-unused-command-line-argument")
 add_subdirectory("libraries/tinyxml2")
 add_subdirectory("libraries/fmt")
 
@@ -35,6 +34,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/services/am/appletOE.cpp
         ${source_DIR}/skyline/kernel/services/hid/hid.cpp
         ${source_DIR}/skyline/kernel/services/time/time.cpp
+        ${source_DIR}/skyline/kernel/services/fs/fs.cpp
         )
 target_link_libraries(skyline fmt tinyxml2)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)

@@ -34,6 +34,8 @@ namespace skyline::kernel::service {
         time,
         time_ISystemClock,
         time_ITimeZoneService,
+        fs_fsp,
+        fs_IFileSystem,
     };
 
     /**
@@ -61,6 +63,8 @@ namespace skyline::kernel::service {
         {"time:a", Service::time},
         {"time:ISystemClock", Service::time_ISystemClock},
         {"time:ITimeZoneService", Service::time_ITimeZoneService},
+        {"fsp-srv", Service::fs_fsp},
+        {"fs:IFileSystem", Service::fs_IFileSystem},
     };
 
     class ServiceManager;

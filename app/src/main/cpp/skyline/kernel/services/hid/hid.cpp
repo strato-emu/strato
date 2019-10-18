@@ -33,7 +33,7 @@ namespace skyline::kernel::service::hid {
             u64 appletUserId;
         } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
         styleSet = *reinterpret_cast<StyleSet *>(&input->styleSet);
-        state.logger->Write(Logger::Info, "Controller Support:   Pro-Controller: {}   Joy-Con: Handheld: {}, Dual: {}, L: {}, R: {}   GameCube: {}   PokeBall: {}   NES: {}   NES Handheld: {}   SNES: {}", static_cast<bool>(styleSet->pro_controller), static_cast<bool>(styleSet->joycon_handheld), static_cast<bool>(styleSet->joycon_dual), static_cast<bool>(styleSet->joycon_left), static_cast<bool>
+        state.logger->Write(Logger::Debug, "Controller Support:   Pro-Controller: {}   Joy-Con: Handheld: {}, Dual: {}, L: {}, R: {}   GameCube: {}   PokeBall: {}   NES: {}   NES Handheld: {}   SNES: {}", static_cast<bool>(styleSet->pro_controller), static_cast<bool>(styleSet->joycon_handheld), static_cast<bool>(styleSet->joycon_dual), static_cast<bool>(styleSet->joycon_left), static_cast<bool>
         (styleSet->joycon_right), static_cast<bool>(styleSet->gamecube), static_cast<bool>(styleSet->pokeball), static_cast<bool>(styleSet->nes), static_cast<bool>(styleSet->nes_handheld), static_cast<bool>(styleSet->snes));
     }
 

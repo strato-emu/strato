@@ -73,7 +73,7 @@ namespace skyline {
                         }
                     }
                 } else if (state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitSync || state->thisThread->status == kernel::type::KThread::ThreadStatus::Sleeping || state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitCondVar) {
-                    if (state->thisThread->timeout >= GetCurrTimeNs()) {
+                    if (state->thisThread->timeout <= GetCurrTimeNs()) {
                         if (state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitSync || state->thisThread->status == kernel::type::KThread::ThreadStatus::WaitCondVar)
                             SetRegister(Wreg::W0, constant::status::Timeout);
                         state->thisThread->status = kernel::type::KThread::ThreadStatus::Runnable;

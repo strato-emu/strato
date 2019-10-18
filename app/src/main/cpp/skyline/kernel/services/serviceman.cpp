@@ -7,6 +7,7 @@
 #include "fatal/fatal.h"
 #include "hid/hid.h"
 #include "time/timesrv.h"
+#include "fs/fs.h"
 
 namespace skyline::kernel::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
@@ -68,6 +69,9 @@ namespace skyline::kernel::service {
             case Service::time:
                 serviceObj = std::make_shared<time::time>(state, *this);
                 break;
+            case Service::fs_fsp:
+                serviceObj = std::make_shared<fs::fsp>(state, *this);
+                break;
             default:
                 throw exception("GetService called on missing object");
         }
@@ -81,23 +85,31 @@ namespace skyline::kernel::service {
 
     std::shared_ptr<BaseService> ServiceManager::NewService(const Service serviceType, type::KSession &session, ipc::IpcResponse &response) {
         auto serviceObject = GetService(serviceType);
+        handle_t handle{};
         if (response.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
-        } else
-            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(serviceObject).handle);
-        state.logger->Write(Logger::Debug, "Service has been created: \"{}\"", serviceObject->getName());
+            handle = session.handleIndex;
+        } else {
+            handle = state.thisProcess->NewHandle<type::KSession>(serviceObject).handle;
+            response.moveHandles.push_back(handle);
+        }
+        state.logger->Write(Logger::Debug, "Service has been created: \"{}\" (0x{:X})", serviceObject->getName(), handle);
         return serviceObject;
     }
 
-    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) {
+    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
         serviceVec.push_back(serviceObject);
+        handle_t handle{};
         if (response.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
-        } else
-            response.moveHandles.push_back(state.thisProcess->NewHandle<type::KSession>(serviceObject).handle);
-        state.logger->Write(Logger::Debug, "Service has been registered: \"{}\"", serviceObject->getName());
+            handle = session.handleIndex;
+        } else {
+            handle = state.thisProcess->NewHandle<type::KSession>(serviceObject).handle;
+            response.moveHandles.push_back(handle);
+        }
+        state.logger->Write(Logger::Debug, "Service has been registered: \"{}\" (0x{:X})", serviceObject->getName(), handle);
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {

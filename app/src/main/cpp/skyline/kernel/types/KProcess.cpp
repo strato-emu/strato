@@ -43,7 +43,7 @@ namespace skyline::kernel::type {
         MapPrivateRegion(0, constant::DefHeapSize, {true, true, true}, memory::Type::Heap, memory::Region::Heap);
         memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC); // NOLINT(hicpp-signed-bitwise)
         if (memFd == -1)
-            throw exception(fmt::format("Cannot open file descriptor to /proc/{}/mem", pid));
+            throw exception(fmt::format("Cannot open file descriptor to /proc/{}/mem, \"{}\"", pid, strerror(errno)));
     }
 
     KProcess::~KProcess() {

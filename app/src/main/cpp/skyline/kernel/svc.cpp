@@ -98,7 +98,6 @@ namespace skyline::kernel::svc {
     }
 
     void WaitSynchronization(DeviceState &state) {
-        state.thisThread->timeout = GetCurrTimeNs() + state.nce->GetRegister(Xreg::X3);
         auto numHandles = state.nce->GetRegister(Wreg::W2);
         if (numHandles > constant::MaxSyncHandles) {
             state.nce->SetRegister(Wreg::W0, constant::status::MaxHandles);
@@ -126,6 +125,7 @@ namespace skyline::kernel::svc {
             state.thisThread->waitObjects.push_back(syncObject);
             syncObject->waitThreads.push_back(state.thisThread->pid);
         }
+        state.thisThread->timeout = GetCurrTimeNs() + state.nce->GetRegister(Xreg::X3);
         state.thisThread->status = type::KThread::ThreadStatus::WaitSync;
     }
 
