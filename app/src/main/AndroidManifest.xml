@@ -14,7 +14,8 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
             tools:ignore="GoogleAppIndexingWarning"
-            android:fullBackupContent="@xml/backup_descriptor">
+            android:fullBackupContent="@xml/backup_descriptor"
+            android:requestLegacyExternalStorage="true">
         <activity
                 android:name="emu.skyline.LogActivity"
                 android:label="@string/log"
