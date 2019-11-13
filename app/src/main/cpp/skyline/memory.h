@@ -8,7 +8,7 @@ namespace skyline::memory {
      */
     struct Permission {
         /**
-         * @brief Constructor that initializes all permissions to false
+         * @brief This constructor initializes all permissions to false
          */
         Permission() {
             r = 0;
@@ -42,9 +42,12 @@ namespace skyline::memory {
          */
         int Get() const {
             int perm = 0;
-            if (r) perm |= PROT_READ;
-            if (w) perm |= PROT_WRITE;
-            if (x) perm |= PROT_EXEC;
+            if (r)
+                perm |= PROT_READ;
+            if (w)
+                perm |= PROT_WRITE;
+            if (x)
+                perm |= PROT_EXEC;
             return perm;
         };
 
@@ -59,6 +62,15 @@ namespace skyline::memory {
         bool isIpcLocked    : 1;
         bool isDeviceShared : 1;
         bool isUncached     : 1;
+    };
+
+    /**
+     * @brief This describes the properties of a region of the allocated memory
+     */
+    struct RegionInfo {
+        u64 address; //!< The starting address of the chunk of memory
+        u64 size; //!< The size of the chunk of memory
+        bool isUncached{}; //!< If the following region is uncached
     };
 
     /**

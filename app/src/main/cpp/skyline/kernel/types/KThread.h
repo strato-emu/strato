@@ -13,7 +13,7 @@ namespace skyline::kernel::type {
         u64 entryArg; //!< An argument to pass to the process on entry
 
       public:
-        enum class ThreadStatus {
+        enum class Status {
             Created, //!< The thread has been created but has not been started yet
             Running, //!< The thread is running currently
             Sleeping, //!< The thread is sleeping due to svcSleepThread
@@ -21,7 +21,7 @@ namespace skyline::kernel::type {
             WaitMutex, //!< The thread is waiting on a Mutex
             WaitCondVar, //!< The thread is waiting on a Conditional Variable
             Runnable //!< The thread is ready to run after waiting
-        } status = ThreadStatus::Created; //!< The state of the thread
+        } status = Status::Created; //!< The state of the thread
         std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding handles this thread is waiting for
         u64 timeout{}; //!< The end of a timeout for svcWaitSynchronization or the end of the sleep period for svcSleepThread
         handle_t handle; // The handle of the object in the handle table
@@ -49,9 +49,19 @@ namespace skyline::kernel::type {
         ~KThread();
 
         /**
-         * @brief Starts the current thread
+         * @brief This starts this thread
          */
         void Start();
+
+        /**
+         * @brief This causes this thread to sleep indefinitely (no-op if thread is already sleeping)
+         */
+        void Sleep();
+
+        /**
+         * @brief This wakes up the thread from it's sleep (no-op if thread is already awake)
+         */
+        void WakeUp();
 
         /**
          * @brief Update the priority level for the process.

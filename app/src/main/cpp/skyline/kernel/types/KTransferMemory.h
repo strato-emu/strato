@@ -42,7 +42,7 @@ namespace skyline::kernel::type {
         memory::MemoryInfo GetInfo();
 
         /**
-         * @brief Destructor of private memory, it deallocates the memory
+         * @brief The destructor of private memory, it deallocates the memory
          */
         ~KTransferMemory();
     };

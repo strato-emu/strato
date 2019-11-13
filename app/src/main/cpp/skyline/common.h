@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <android/native_window.h>
 
 namespace skyline {
     // Global typedefs
@@ -27,13 +28,13 @@ namespace skyline {
     typedef __int32_t i32;
     typedef __int16_t i16;
     typedef __int8_t i8;
-    typedef std::runtime_error exception; //!< This is used as the default exception
     typedef u32 handle_t; //!< The type of an handle
 
     namespace constant {
         // Memory
         constexpr u64 BaseAddr = 0x8000000; //!< The address space base
         constexpr u64 MapAddr = BaseAddr + 0x80000000; //!< The address of the map region
+        constexpr u64 HeapAddr = MapAddr + 0x1000000000; //!< The address of the heap region
         constexpr u64 BaseSize = 0x7FF8000000; //!< The size of the address space
         constexpr u64 BaseEnd = BaseAddr + BaseSize; //!< The end of the address space
         constexpr u64 MapSize = 0x1000000000; //!< The size of the map region
@@ -54,17 +55,24 @@ namespace skyline {
         // Kernel
         constexpr u64 MaxSyncHandles = 0x40; //!< The total amount of handles that can be passed to WaitSynchronization
         constexpr handle_t BaseHandleIndex = 0xD000; // The index of the base handle
+        constexpr handle_t ThreadSelf = 0xFFFF8000; //!< This is the handle used by threads to refer to themselves
         constexpr u8 DefaultPriority = 31; //!< The default priority of a process
         constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
         constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
-        constexpr u32 mtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
+        constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
         // IPC
         constexpr size_t TlsIpcSize = 0x100; //!< The size of the IPC command buffer in a TLS slot
         constexpr u8 PortSize = 0x8; //!< The size of a port name string
         constexpr u32 SfcoMagic = 0x4F434653; //!< SFCO in reverse, written to IPC messages
         constexpr u32 SfciMagic = 0x49434653; //!< SFCI in reverse, present in received IPC messages
-        constexpr u64 PaddingSum = 0x10; //!< The sum of the padding surrounding DataPayload
+        constexpr u64 IpcPaddingSum = 0x10; //!< The sum of the padding surrounding DataPayload
         constexpr handle_t BaseVirtualHandleIndex = 0x1; // The index of the base virtual handle
+        // GPU
+        constexpr u32 HandheldResolutionW = 1280; //!< The width component of the handheld resolution
+        constexpr u32 HandheldResolutionH = 720; //!< The height component of the handheld resolution
+        constexpr u32 DockedResolutionW = 1920; //!< The width component of the docked resolution
+        constexpr u32 DockedResolutionH = 1080; //!< The height component of the docked resolution
+        constexpr u32 TokenLength = 0x50; //!< The length of the token on BufferQueue parcels
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
@@ -75,6 +83,7 @@ namespace skyline {
             constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
             constexpr u32 Timeout = 0xEA01; //!< "Timeout while svcWaitSynchronization"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
+            constexpr u32 NoMessages = 0x680; //!< "No message available"
         }
     };
 
@@ -175,12 +184,14 @@ namespace skyline {
         static constexpr int levelSyslog[4] = {LOG_ERR, LOG_WARNING, LOG_INFO, LOG_DEBUG}; //!< This corresponds to LogLevel and provides it's equivalent for syslog
 
       public:
-        enum LogLevel { Error, Warn, Info, Debug }; //!< The level of a particular log
+        enum class LogLevel { Error, Warn, Info, Debug }; //!< The level of a particular log
+        LogLevel configLevel; //!< The level of logs to write
 
         /**
          * @param logPath The path to the log file
+         * @param configLevel The minimum level of logs to write
          */
-        Logger(const std::string &logPath);
+        Logger(const std::string &logPath, LogLevel configLevel);
 
         /**
          * Writes "Logging ended" as a header
@@ -198,20 +209,54 @@ namespace skyline {
          * @param level The level of the log
          * @param str The value to be written
          */
-        void Write(const LogLevel level, const std::string &str);
+        void Write(const LogLevel level, std::string str);
 
         /**
-         * @brief Write a log to the log file with libfmt formatting
-         * @param level The level of the log
+         * @brief Write an error log with libfmt formatting
          * @param formatStr The value to be written, with libfmt formatting
          * @param args The arguments based on format_str
          */
         template<typename S, typename... Args>
-        void Write(Logger::LogLevel level, const S &formatStr, Args &&... args) {
-            #ifdef NDEBUG
-            if (level == Debug) return;
-            #endif
-            Write(level, fmt::format(formatStr, args...));
+        inline void Error(const S &formatStr, Args &&... args) {
+            if (LogLevel::Error <= configLevel) {
+                Write(LogLevel::Error, fmt::format(formatStr, args...));
+            }
+        }
+
+        /**
+         * @brief Write a debug log with libfmt formatting
+         * @param formatStr The value to be written, with libfmt formatting
+         * @param args The arguments based on format_str
+         */
+        template<typename S, typename... Args>
+        inline void Warn(const S &formatStr, Args &&... args) {
+            if (LogLevel::Warn <= configLevel) {
+                Write(LogLevel::Warn, fmt::format(formatStr, args...));
+            }
+        }
+
+        /**
+         * @brief Write a debug log with libfmt formatting
+         * @param formatStr The value to be written, with libfmt formatting
+         * @param args The arguments based on format_str
+         */
+        template<typename S, typename... Args>
+        inline void Info(const S &formatStr, Args &&... args) {
+            if (LogLevel::Info <= configLevel) {
+                Write(LogLevel::Info, fmt::format(formatStr, args...));
+            }
+        }
+
+        /**
+         * @brief Write a debug log with libfmt formatting
+         * @param formatStr The value to be written, with libfmt formatting
+         * @param args The arguments based on format_str
+         */
+        template<typename S, typename... Args>
+        inline void Debug(const S &formatStr, Args &&... args) {
+            if (LogLevel::Debug <= configLevel) {
+                Write(LogLevel::Debug, fmt::format(formatStr, args...));
+            }
         }
     };
 
@@ -222,6 +267,7 @@ namespace skyline {
       private:
         std::map<std::string, std::string> stringMap; //!< A mapping from all keys to their corresponding string value
         std::map<std::string, bool> boolMap; //!< A mapping from all keys to their corresponding boolean value
+        std::map<std::string, int> intMap; //!< A mapping from all keys to their corresponding integer value
 
       public:
         /**
@@ -244,21 +290,44 @@ namespace skyline {
         bool GetBool(const std::string &key);
 
         /**
+         * @brief Retrieves a particular setting as a integer
+         * @param key The key of the setting
+         * @return The integer value of the setting
+         */
+        int GetInt(const std::string &key);
+
+        /**
          * @brief Writes all settings keys and values to syslog. This function is for development purposes.
          */
-        void List(std::shared_ptr<Logger> logger);
+        void List(const std::shared_ptr<Logger> &logger);
+    };
+
+    /**
+     * @brief This is a std::runtime_error with libfmt formatting
+     */
+    class exception : public std::runtime_error {
+      public:
+        /**
+         * @param formatStr The exception string to be written, with libfmt formatting
+         * @param args The arguments based on format_str
+         */
+        template<typename S, typename... Args>
+        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, args...)) {}
     };
 
     /**
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
-    inline long long int GetCurrTimeNs() {
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    inline u64 GetCurrTimeNs() {
+        return static_cast<u64>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
     }
 
     // Predeclare some classes here as we use them in DeviceState
     class NCE;
+    namespace gpu {
+        class GPU;
+    }
     namespace kernel {
         namespace type {
             class KProcess;
@@ -271,12 +340,13 @@ namespace skyline {
      * @brief This struct is used to hold the state of a device
      */
     struct DeviceState {
-        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<NCE> nce, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger) : os(os), nce(nce), settings(settings), logger(logger), thisProcess(thisProcess), thisThread(thisThread) {}
+        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, ANativeWindow *window, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
         kernel::OS *os; //!< This holds a reference to the OS class
         std::shared_ptr<kernel::type::KProcess> &thisProcess; //!< This holds a reference to the current process object
         std::shared_ptr<kernel::type::KThread> &thisThread; //!< This holds a reference to the current thread object
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
+        std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
         std::shared_ptr<Settings> settings; //!< This holds a reference to the Settings class
         std::shared_ptr<Logger> logger; //!< This holds a reference to the Logger class
     };

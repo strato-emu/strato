@@ -7,39 +7,39 @@ namespace skyline::loader {
     class NroLoader : public Loader {
       private:
         /**
-         * @brief The structure of a single Segment descriptor in the NRO's header
+         * @brief This holds a single data segment's offset and size
          */
         struct NroSegmentHeader {
-            u32 offset;
-            u32 size;
+            u32 offset; //!< The offset of the region
+            u32 size; //!< The size of the region
         };
 
         /**
-         * @brief A bit-field struct to read the header of an NRO directly
+         * @brief This holds the header of an NRO file
          */
         struct NroHeader {
             u32 : 32;
-            u32 mod_offset;
+            u32 modOffset; //!< The offset of the MOD metadata
             u64 : 64;
 
-            u32 magic;
-            u32 version;
-            u32 size;
-            u32 flags;
+            u32 magic; //!< The NRO magic "NRO0"
+            u32 version; //!< The version of the application
+            u32 size; //!< The size of the NRO
+            u32 flags; //!< The flags used with the NRO
 
-            NroSegmentHeader text;
-            NroSegmentHeader ro;
-            NroSegmentHeader data;
+            NroSegmentHeader text; //!< The .text segment header
+            NroSegmentHeader ro; //!< The .ro segment header
+            NroSegmentHeader data; //!< The .data segment header
 
-            u32 bssSize;
+            u32 bssSize; //!< The size of the bss segment
             u32 : 32;
-            u64 build_id[4];
+            u64 buildId[4]; //!< The build ID of the NRO
             u64 : 64;
 
-            NroSegmentHeader api_info;
-            NroSegmentHeader dynstr;
-            NroSegmentHeader dynsym;
-        } header {};
+            NroSegmentHeader apiInfo; //!< The .apiInfo segment header
+            NroSegmentHeader dynstr; //!< The .dynstr segment header
+            NroSegmentHeader dynsym; //!< The .dynsym segment header
+        } header{};
 
       public:
         /**

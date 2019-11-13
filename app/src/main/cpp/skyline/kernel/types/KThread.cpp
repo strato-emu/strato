@@ -14,8 +14,8 @@ namespace skyline::kernel::type {
 
     void KThread::Start() {
         if (pid == parent->mainThread)
-            parent->status = KProcess::ProcessStatus::Started;
-        status = ThreadStatus::Running;
+            parent->status = KProcess::Status::Started;
+        status = Status::Running;
         state.nce->StartProcess(entryPoint, entryArg, stackTop, handle, pid);
     }
 
@@ -23,6 +23,18 @@ namespace skyline::kernel::type {
         this->priority = priority;
         auto liPriority = static_cast<int8_t>(constant::PriorityAn.first + ((static_cast<float>(constant::PriorityAn.second - constant::PriorityAn.first) / static_cast<float>(constant::PriorityNin.second - constant::PriorityNin.first)) * (static_cast<float>(priority) - constant::PriorityNin.first))); // Resize range PriorityNin (Nintendo Priority) to PriorityAn (Android Priority)
         if (setpriority(PRIO_PROCESS, static_cast<id_t>(pid), liPriority) == -1)
-            throw exception(fmt::format("Couldn't set process priority to {} for PID: {}", liPriority, pid));
+            throw exception("Couldn't set process priority to {} for PID: {}", liPriority, pid);
+    }
+
+    void KThread::Sleep() {
+        if (status == Status::Running) {
+            status = Status::Sleeping;
+            timeout = 0;
+        }
+    }
+
+    void KThread::WakeUp() {
+        if (status == Status::Sleeping)
+            status = Status::Runnable;
     }
 }

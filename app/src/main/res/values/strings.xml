@@ -26,6 +26,9 @@
     <string name="search_location">Search Location</string>
     <string name="logging">Logging</string>
     <string name="log_level">Log Level</string>
+    <string name="log_compact">Compact Logs</string>
+    <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
+    <string name="log_compact_desc_off">The logs will be displayed in a verbose form factor</string>
     <string name="localization">Localization</string>
     <string name="localization_language">Language</string>
     <string name="system">System</string>

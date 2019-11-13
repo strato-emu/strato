@@ -10,13 +10,16 @@ namespace skyline::kernel::type {
     class KSharedMemory : public KObject {
       private:
         int fd; //!< A file descriptor to the underlying shared memory
-        struct ProcInf {
+
+      public:
+        /**
+         * @brief This holds the address and size of a process's mapping
+         */
+        struct ProcessInfo {
             u64 address;
             size_t size;
         };
-        std::unordered_map<pid_t, ProcInf> procInfMap; //!< Maps from a PID to where the memory was mapped to
-
-      public:
+        std::unordered_map<pid_t, ProcessInfo> procInfMap; //!< Maps from a PID to where the memory was mapped to
         pid_t owner; //!< The PID of the process owning this shared memory
         u64 kaddress; //!< The address of the allocated memory for the kernel
         size_t ksize; //!< The size of the allocated memory
@@ -66,7 +69,7 @@ namespace skyline::kernel::type {
         memory::MemoryInfo GetInfo(pid_t process);
 
         /**
-         * @brief Destructor of shared memory, it deallocates the memory from all processes
+         * @brief The destructor of shared memory, it deallocates the memory from all processes
          */
         ~KSharedMemory();
     };

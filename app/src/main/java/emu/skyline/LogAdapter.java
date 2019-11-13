@@ -15,7 +15,7 @@ class LogItem extends BaseItem {
     private final String content;
     private final String level;
 
-    LogItem(String content, String level) {
+    LogItem(final String content, final String level) {
         this.content = content;
         this.level = level;
     }
@@ -38,28 +38,32 @@ public class LogAdapter extends HeaderAdapter<LogItem> implements View.OnLongCli
     private final ClipboardManager clipboard;
     private final int debug_level;
     private final String[] level_str;
+    private final boolean compact;
 
-    LogAdapter(Context context, int debug_level, String[] level_str) {
+    LogAdapter(final Context context, final boolean compact, final int debug_level, final String[] level_str) {
         super(context);
         clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         this.debug_level = debug_level;
         this.level_str = level_str;
+        this.compact = compact;
     }
 
-    void add(final String log_line) {
-        String[] log_meta = log_line.split("\\|", 3);
-        if (log_meta[0].startsWith("1")) {
-            int level = Integer.parseInt(log_meta[1]);
-            if (level > this.debug_level) return;
-            super.add(new LogItem(log_meta[2], level_str[level]), ContentType.Item);
-        } else {
-            super.add(log_meta[1], ContentType.Header);
-        }
+    void add(String log_line) {
+        try {
+            final String[] log_meta = log_line.split("\\|", 3);
+            if (log_meta[0].startsWith("1")) {
+                final int level = Integer.parseInt(log_meta[1]);
+                if (level > debug_level) return;
+                add(new LogItem(log_meta[2].replace('\\', '\n'), level_str[level]), ContentType.Item);
+            } else {
+                add(log_meta[1], ContentType.Header);
+            }
+        } catch (final IndexOutOfBoundsException ignored) {}
     }
 
     @Override
-    public boolean onLongClick(View view) {
-        LogItem item = (LogItem) getItem(((ViewHolder) view.getTag()).position);
+    public boolean onLongClick(final View view) {
+        final LogItem item = (LogItem) getItem(((LogAdapter.ViewHolder) view.getTag()).position);
         clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.getMessage() + " (" + item.getLevel() + ")"));
         Toast.makeText(view.getContext(), "Copied to clipboard", Toast.LENGTH_LONG).show();
         return false;
@@ -67,32 +71,35 @@ public class LogAdapter extends HeaderAdapter<LogItem> implements View.OnLongCli
 
     @NonNull
     @Override
-    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
-        ViewHolder viewHolder;
-        int type = type_array.get(position).type;
+    public View getView(final int position, View convertView, @NonNull final ViewGroup parent) {
+        final LogAdapter.ViewHolder viewHolder;
+        final int type = type_array.get(position).type;
         if (convertView == null) {
+            viewHolder = new LogAdapter.ViewHolder();
+            final LayoutInflater inflater = LayoutInflater.from(HeaderAdapter.mContext);
             if (type == ContentType.Item) {
-                viewHolder = new ViewHolder();
-                LayoutInflater inflater = LayoutInflater.from(mContext);
-                convertView = inflater.inflate(R.layout.log_item, parent, false);
+                if (compact) {
+                    convertView = inflater.inflate(R.layout.log_item_compact, parent, false);
+                    viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
+                } else {
+                    convertView = inflater.inflate(R.layout.log_item, parent, false);
+                    viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
+                    viewHolder.txtSub = convertView.findViewById(R.id.text_subtitle);
+                }
                 convertView.setOnLongClickListener(this);
-                viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
-                viewHolder.txtSub = convertView.findViewById(R.id.text_subtitle);
-                convertView.setTag(viewHolder);
             } else {
-                viewHolder = new ViewHolder();
-                LayoutInflater inflater = LayoutInflater.from(mContext);
                 convertView = inflater.inflate(R.layout.section_item, parent, false);
                 viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
-                convertView.setTag(viewHolder);
             }
+            convertView.setTag(viewHolder);
         } else {
-            viewHolder = (ViewHolder) convertView.getTag();
+            viewHolder = (LogAdapter.ViewHolder) convertView.getTag();
         }
         if (type == ContentType.Item) {
-            LogItem data = (LogItem) getItem(position);
+            final LogItem data = (LogItem) getItem(position);
             viewHolder.txtTitle.setText(data.getMessage());
-            viewHolder.txtSub.setText(data.getLevel());
+            if (!compact)
+                viewHolder.txtSub.setText(data.getLevel());
         } else {
             viewHolder.txtTitle.setText((String) getItem(position));
         }

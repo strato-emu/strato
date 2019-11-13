@@ -144,6 +144,8 @@ namespace skyline::kernel::ipc {
             size_32_35 = static_cast<u8>(size & 0x78000000);
         }
 
+        std::vector<u8> Read(const DeviceState &state);
+
         inline u64 Address() const {
             return static_cast<u64>(address_0_31) | static_cast<u64>(address_32_35) << 32 | static_cast<u64>(address_36_38) << 36;
         }
@@ -160,7 +162,7 @@ namespace skyline::kernel::ipc {
      */
     struct BufferDescriptorC {
         u64 address : 48;
-        u16 size    : 16;
+        u32 size    : 16;
 
         BufferDescriptorC(u64 address, u16 size) : address(address), size(size) {}
     };
@@ -208,6 +210,7 @@ namespace skyline::kernel::ipc {
         const DeviceState &state; //!< The state of the device
 
       public:
+        bool nWrite{}; //!< This is to signal the IPC handler to not write this, as it will be manually written
         bool isDomain{}; //!< If this is a domain request
         u32 errorCode{}; //!< The error code to respond with, it is 0 (Success) by default
         std::vector<handle_t> copyHandles; //!< A vector of handles to copy

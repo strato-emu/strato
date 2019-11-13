@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="SkylineJava" pattern="file[app]:src/main/java//*" />
+</component>

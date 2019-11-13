@@ -42,7 +42,12 @@ namespace skyline {
         void SetHeapSize(DeviceState &state);
 
         /**
-         * @brief Query information about an address. Will always fetch the lowest page-aligned mapping that contains the provided address (https://switchbrew.org/wiki/SVC#svcQueryMemory)
+         * @brief Change attribute of page-aligned memory region. This is used to turn on/off caching for a given memory area. (https://switchbrew.org/wiki/SVC#svcSetMemoryAttribute)
+         */
+        void SetMemoryAttribute(DeviceState &state);
+
+        /**
+         * @brief Query information about an address (https://switchbrew.org/wiki/SVC#svcQueryMemory)
          */
         void QueryMemory(DeviceState &state);
 
@@ -92,9 +97,24 @@ namespace skyline {
         void CloseHandle(DeviceState &state);
 
         /**
+         * @brief Returns a handle to a KSharedMemory object (https://switchbrew.org/wiki/SVC#svcCreateTransferMemory)
+         */
+        void CreateTransferMemory(DeviceState &state);
+
+        /**
+         * @brief This resets a particular KEvent or KProcess which is signalled (https://switchbrew.org/wiki/SVC#svcResetSignal)
+         */
+        void ResetSignal(DeviceState &state);
+
+        /**
          * @brief Stalls a thread till a KSyncObject signals or the timeout has ended (https://switchbrew.org/wiki/SVC#svcWaitSynchronization)
          */
         void WaitSynchronization(DeviceState &state);
+
+        /**
+         * @brief This returns the value of CNTPCT_EL0 on the Switch (https://switchbrew.org/wiki/SVC#svcGetSystemTick)
+         */
+        void GetSystemTick(DeviceState &state);
 
         /**
          * @brief Locks a specified mutex
@@ -127,6 +147,11 @@ namespace skyline {
         void SendSyncRequest(DeviceState &state);
 
         /**
+         * @brief Retrieves the PID of a specific thread
+         */
+        void GetThreadId(DeviceState &state);
+
+        /**
          * @brief Outputs a debug string
          */
         void OutputDebugString(DeviceState &state);
@@ -143,7 +168,7 @@ namespace skyline {
             nullptr, // 0x00 (Does not exist)
             SetHeapSize, // 0x01
             nullptr, // 0x02
-            nullptr, // 0x03
+            SetMemoryAttribute, // 0x03
             nullptr, // 0x04
             nullptr, // 0x05
             QueryMemory, // 0x06
@@ -161,23 +186,23 @@ namespace skyline {
             nullptr, // 0x12
             MapSharedMemory, // 0x13
             nullptr, // 0x14
-            nullptr, // 0x15
+            CreateTransferMemory, // 0x15
             CloseHandle, // 0x16
-            nullptr, // 0x17
+            ResetSignal, // 0x17
             WaitSynchronization, // 0x18
             nullptr, // 0x19
             ArbitrateLock, // 0x1a
             ArbitrateUnlock, // 0x1b
             WaitProcessWideKeyAtomic, // 0x1c
             SignalProcessWideKey, // 0x1d
-            nullptr, // 0x1e
+            GetSystemTick, // 0x1e
             ConnectToNamedPort, // 0x1f
             nullptr, // 0x20
             SendSyncRequest, // 0x21
             nullptr, // 0x22
             nullptr, // 0x23
             nullptr, // 0x24
-            nullptr, // 0x25
+            GetThreadId, // 0x25
             nullptr, // 0x26
             OutputDebugString, // 0x27
             nullptr, // 0x28

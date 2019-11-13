@@ -21,20 +21,20 @@ import java.util.Objects;
 
 class GameItem extends BaseItem {
     private final File file;
-    transient private TitleEntry meta;
     private final int index;
+    private transient TitleEntry meta;
 
-    GameItem(File file) {
+    GameItem(final File file) {
         this.file = file;
         index = file.getName().lastIndexOf(".");
         meta = NroLoader.getTitleEntry(getPath());
         if (meta == null) {
-            meta = new TitleEntry(file.getName(), GameAdapter.mContext.getString(R.string.aset_missing), null);
+            meta = new TitleEntry(file.getName(), HeaderAdapter.mContext.getString(R.string.aset_missing), null);
         }
     }
 
     public boolean hasIcon() {
-        return !getSubTitle().equals(GameAdapter.mContext.getString(R.string.aset_missing));
+        return !getSubTitle().equals(HeaderAdapter.mContext.getString(R.string.aset_missing));
     }
 
     public Bitmap getIcon() {
@@ -71,10 +71,10 @@ class GameItem extends BaseItem {
 
 public class GameAdapter extends HeaderAdapter<GameItem> implements View.OnClickListener {
 
-    GameAdapter(Context context) { super(context); }
+    GameAdapter(final Context context) { super(context); }
 
     @Override
-    public void load(File file) throws IOException, ClassNotFoundException {
+    public void load(final File file) throws IOException, ClassNotFoundException {
         super.load(file);
         for (int i = 0; i < item_array.size(); i++)
             item_array.set(i, new GameItem(item_array.get(i).getFile()));
@@ -82,15 +82,15 @@ public class GameAdapter extends HeaderAdapter<GameItem> implements View.OnClick
     }
 
     @Override
-    public void onClick(View view) {
-        int position = (int) view.getTag();
+    public void onClick(final View view) {
+        final int position = (int) view.getTag();
         if (getItemViewType(position) == ContentType.Item) {
-            GameItem item = (GameItem) getItem(position);
+            final GameItem item = (GameItem) getItem(position);
             if (view.getId() == R.id.icon) {
-                Dialog builder = new Dialog(mContext);
+                final Dialog builder = new Dialog(HeaderAdapter.mContext);
                 builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
                 Objects.requireNonNull(builder.getWindow()).setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                ImageView imageView = new ImageView(mContext);
+                final ImageView imageView = new ImageView(HeaderAdapter.mContext);
                 assert item != null;
                 imageView.setImageBitmap(item.getIcon());
                 builder.addContentView(imageView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -101,39 +101,39 @@ public class GameAdapter extends HeaderAdapter<GameItem> implements View.OnClick
 
     @NonNull
     @Override
-    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
-        ViewHolder viewHolder;
-        int type = type_array.get(position).type;
+    public View getView(final int position, View convertView, @NonNull final ViewGroup parent) {
+        final GameAdapter.ViewHolder viewHolder;
+        final int type = type_array.get(position).type;
         if (convertView == null) {
             if (type == ContentType.Item) {
-                viewHolder = new ViewHolder();
-                LayoutInflater inflater = LayoutInflater.from(mContext);
+                viewHolder = new GameAdapter.ViewHolder();
+                final LayoutInflater inflater = LayoutInflater.from(HeaderAdapter.mContext);
                 convertView = inflater.inflate(R.layout.game_item, parent, false);
                 viewHolder.icon = convertView.findViewById(R.id.icon);
                 viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
                 viewHolder.txtSub = convertView.findViewById(R.id.text_subtitle);
                 convertView.setTag(viewHolder);
             } else {
-                viewHolder = new ViewHolder();
-                LayoutInflater inflater = LayoutInflater.from(mContext);
+                viewHolder = new GameAdapter.ViewHolder();
+                final LayoutInflater inflater = LayoutInflater.from(HeaderAdapter.mContext);
                 convertView = inflater.inflate(R.layout.section_item, parent, false);
                 viewHolder.txtTitle = convertView.findViewById(R.id.text_title);
                 convertView.setTag(viewHolder);
             }
         } else {
-            viewHolder = (ViewHolder) convertView.getTag();
+            viewHolder = (GameAdapter.ViewHolder) convertView.getTag();
         }
         if (type == ContentType.Item) {
-            GameItem data = (GameItem) getItem(position);
+            final GameItem data = (GameItem) getItem(position);
             viewHolder.txtTitle.setText(data.getTitle());
             viewHolder.txtSub.setText(data.getSubTitle());
-            Bitmap icon = data.getIcon();
+            final Bitmap icon = data.getIcon();
             if (icon != null) {
                 viewHolder.icon.setImageBitmap(icon);
                 viewHolder.icon.setOnClickListener(this);
                 viewHolder.icon.setTag(position);
             } else {
-                viewHolder.icon.setImageDrawable(mContext.getDrawable(R.drawable.ic_missing_icon));
+                viewHolder.icon.setImageDrawable(HeaderAdapter.mContext.getDrawable(R.drawable.ic_missing_icon));
                 viewHolder.icon.setOnClickListener(null);
             }
         } else {

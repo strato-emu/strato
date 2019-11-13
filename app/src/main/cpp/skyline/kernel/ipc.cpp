@@ -23,26 +23,43 @@ namespace skyline::kernel::ipc {
         }
 
         for (uint index = 0; header->x_no > index; index++) {
-            vecBufX.push_back(reinterpret_cast<BufferDescriptorX *>(currPtr));
+            auto bufX = reinterpret_cast<BufferDescriptorX *>(currPtr);
+            if (bufX->Address()) {
+                vecBufX.push_back(bufX);
+                state.logger->Debug("Buf X #{} AD: 0x{:X} SZ: 0x{:X} CTR: {}", index, u64(bufX->Address()), u16(bufX->size), u16(bufX->Counter()));
+            }
             currPtr += sizeof(BufferDescriptorX);
         }
 
         for (uint index = 0; header->a_no > index; index++) {
-            vecBufA.push_back(reinterpret_cast<BufferDescriptorABW *>(currPtr));
+            auto bufA = reinterpret_cast<BufferDescriptorABW *>(currPtr);
+            if (bufA->Address()) {
+                vecBufA.push_back(bufA);
+                state.logger->Debug("Buf A #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufA->Address()), u64(bufA->Size()));
+            }
             currPtr += sizeof(BufferDescriptorABW);
         }
 
         for (uint index = 0; header->b_no > index; index++) {
-            vecBufB.push_back(reinterpret_cast<BufferDescriptorABW *>(currPtr));
+            auto bufB = reinterpret_cast<BufferDescriptorABW *>(currPtr);
+            if (bufB->Address()) {
+                vecBufB.push_back(bufB);
+                state.logger->Debug("Buf B #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufB->Address()), u64(bufB->Size()));
+            }
             currPtr += sizeof(BufferDescriptorABW);
         }
 
         for (uint index = 0; header->w_no > index; index++) {
-            vecBufW.push_back(reinterpret_cast<BufferDescriptorABW *>(currPtr));
+            auto bufW = reinterpret_cast<BufferDescriptorABW *>(currPtr);
+            if (bufW->Address()) {
+                vecBufW.push_back(bufW);
+                state.logger->Debug("Buf W #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufW->Address()), u16(bufW->Size()));
+            }
             currPtr += sizeof(BufferDescriptorABW);
         }
 
-        currPtr = reinterpret_cast<u8 *>((((reinterpret_cast<u64>(currPtr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::PaddingSum - 1U)) + constant::PaddingSum + reinterpret_cast<u64>(tls.data())); // Align to 16 bytes relative to start of TLS
+        u64 padding = ((((reinterpret_cast<u64>(currPtr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::IpcPaddingSum - 1U)) + constant::IpcPaddingSum + (reinterpret_cast<u64>(tls.data()) - reinterpret_cast<u64>(currPtr))); // Calculate the amount of padding at the front
+        currPtr += padding;
 
         if (isDomain) {
             domain = reinterpret_cast<DomainHeaderRequest *>(currPtr);
@@ -64,29 +81,36 @@ namespace skyline::kernel::ipc {
             currPtr += sizeof(PayloadHeader);
 
             cmdArg = currPtr;
-            cmdArgSz = (header->raw_sz * sizeof(u32)) - (constant::PaddingSum + sizeof(PayloadHeader));
+            cmdArgSz = (header->raw_sz * sizeof(u32)) - (constant::IpcPaddingSum + sizeof(PayloadHeader));
             currPtr += cmdArgSz;
         }
 
-        if (payload->magic != constant::SfciMagic)
-            state.logger->Write(Logger::Debug, "Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
+        if (payload->magic != constant::SfciMagic && header->type != static_cast<u16>(CommandType::Control))
+            state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
+
+        currPtr += constant::IpcPaddingSum - padding;
 
         if (header->c_flag == static_cast<u8>(BufferCFlag::SingleDescriptor)) {
-            vecBufC.push_back(reinterpret_cast<BufferDescriptorC *>(currPtr));
+            auto bufC = reinterpret_cast<BufferDescriptorC *>(currPtr);
+            vecBufC.push_back(bufC);
+            state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", u64(bufC->address), u16(bufC->size));
         } else if (header->c_flag > static_cast<u8>(BufferCFlag::SingleDescriptor)) {
             for (uint index = 0; (header->c_flag - 2) > index; index++) { // (c_flag - 2) C descriptors are present
-                vecBufC.push_back(reinterpret_cast<BufferDescriptorC *>(currPtr));
-                state.logger->Write(Logger::Debug, "Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(vecBufC[index]->address), u16(vecBufC[index]->size));
+                auto bufC = reinterpret_cast<BufferDescriptorC *>(currPtr);
+                if (bufC->address) {
+                    vecBufC.push_back(bufC);
+                    state.logger->Debug("Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufC->address), u16(bufC->size));
+                }
                 currPtr += sizeof(BufferDescriptorC);
             }
         }
 
-        state.logger->Write(Logger::Debug, "Header: X No: {}, A No: {}, B No: {}, W No: {}, C No: {}, Raw Size: {}", u8(header->x_no), u8(header->a_no), u8(header->b_no), u8(header->w_no), u8(vecBufC.size()), u64(cmdArgSz));
+        state.logger->Debug("Header: X No: {}, A No: {}, B No: {}, W No: {}, C No: {}, Raw Size: {}", u8(header->x_no), u8(header->a_no), u8(header->b_no), u8(header->w_no), u8(vecBufC.size()), u64(cmdArgSz));
         if (header->handle_desc)
-            state.logger->Write(Logger::Debug, "Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", bool(handleDesc->send_pid), u32(handleDesc->copy_count), u32(handleDesc->move_count));
+            state.logger->Debug("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", bool(handleDesc->send_pid), u32(handleDesc->copy_count), u32(handleDesc->move_count));
         if (isDomain)
-            state.logger->Write(Logger::Debug, "Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->input_count, domain->object_id);
-        state.logger->Write(Logger::Debug, "Data Payload: Command ID: 0x{:X}", u32(payload->value));
+            state.logger->Debug("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->input_count, domain->object_id);
+        state.logger->Debug("Data Payload: Command ID: 0x{:X}", u32(payload->value));
     }
 
     IpcResponse::IpcResponse(bool isDomain, const DeviceState &state) : isDomain(isDomain), state(state) {}
@@ -95,7 +119,7 @@ namespace skyline::kernel::ipc {
         std::array<u8, constant::TlsIpcSize> tls{};
         u8 *currPtr = tls.data();
         auto header = reinterpret_cast<CommandHeader *>(currPtr);
-        header->raw_sz = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(handle_t)) + constant::PaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        header->raw_sz = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(handle_t)) + constant::IpcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
         header->handle_desc = (!copyHandles.empty() || !moveHandles.empty());
         currPtr += sizeof(CommandHeader);
 
@@ -116,7 +140,7 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        u64 padding = ((((reinterpret_cast<u64>(currPtr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::PaddingSum - 1U)) + constant::PaddingSum + (reinterpret_cast<u64>(tls.data()) - reinterpret_cast<u64>(currPtr))); // Calculate the amount of padding at the front
+        u64 padding = ((((reinterpret_cast<u64>(currPtr) - reinterpret_cast<u64>(tls.data())) - 1U) & ~(constant::IpcPaddingSum - 1U)) + constant::IpcPaddingSum + (reinterpret_cast<u64>(tls.data()) - reinterpret_cast<u64>(currPtr))); // Calculate the amount of padding at the front
         currPtr += padding;
 
         if (isDomain) {
@@ -134,15 +158,21 @@ namespace skyline::kernel::ipc {
             memcpy(currPtr, argVec.data(), argVec.size());
         currPtr += argVec.size();
 
-        if(isDomain) {
-            for (auto& domainObject : domainObjects) {
+        if (isDomain) {
+            for (auto &domainObject : domainObjects) {
                 *reinterpret_cast<handle_t *>(currPtr) = domainObject;
                 currPtr += sizeof(handle_t);
             }
         }
 
-        state.logger->Write(Logger::Debug, "Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->raw_sz), u32(payload->value), copyHandles.size(), moveHandles.size());
+        state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->raw_sz), u32(payload->value), copyHandles.size(), moveHandles.size());
 
         state.thisProcess->WriteMemory(tls.data(), state.thisThread->tls, constant::TlsIpcSize);
+    }
+
+    std::vector<u8> BufferDescriptorABW::Read(const DeviceState &state) {
+        std::vector<u8> vec(Size());
+        state.thisProcess->ReadMemory(vec.data(), Address(), Size());
+        return std::move(vec);
     }
 }

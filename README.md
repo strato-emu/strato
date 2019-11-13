@@ -1,4 +1,4 @@
-<h1>
+<h1 align="center">
     <img height="60%" width="60%" src="https://i.imgur.com/6PJ7Ml2.png"><br>
     <a href="https://discord.gg/XnbXNQM" target="_blank">
         <img src="https://img.shields.io/discord/545842171459272705?label=Discord&logo=Discord&logoColor=Violet">

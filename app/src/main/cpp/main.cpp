@@ -1,47 +1,115 @@
-#include <jni.h>
-#include <csignal>
-#include <string>
-#include <thread>
 #include "skyline/common.h"
 #include "skyline/os.h"
+#include <unistd.h>
+#include <jni.h>
+#include <android/native_window_jni.h>
+#include <android/native_activity.h>
+#include <csignal>
 
-std::thread *EmuThread;
-bool Halt = false;
+bool Halt{};
+uint faultCount{};
+ANativeActivity *Activity{};
+ANativeWindow *Window{};
+AInputQueue *Queue{};
+std::thread *uiThread{};
 
-void ThreadMain(const std::string romPath, const std::string prefPath, const std::string logPath) {
-    auto logger = std::make_shared<skyline::Logger>(logPath);
+void GameThread(const std::string &prefPath, const std::string &logPath, const std::string &romPath) {
+    while (!Window)
+        sched_yield();
+    setpriority(PRIO_PROCESS, static_cast<id_t>(getpid()), skyline::constant::PriorityAn.second);
     auto settings = std::make_shared<skyline::Settings>(prefPath);
+    auto logger = std::make_shared<skyline::Logger>(logPath, static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))));
     //settings->List(logger); // (Uncomment when you want to print out all settings strings)
     auto start = std::chrono::steady_clock::now();
     try {
-        skyline::kernel::OS os(logger, settings);
-        logger->Write(skyline::Logger::Info, "Launching ROM {}", romPath);
+        skyline::kernel::OS os(logger, settings, Window);
+        logger->Info("Launching ROM {}", romPath);
         os.Execute(romPath);
-        logger->Write(skyline::Logger::Info, "Emulation has ended");
+        logger->Info("Emulation has ended");
     } catch (std::exception &e) {
-        logger->Write(skyline::Logger::Error, e.what());
+        logger->Error(e.what());
     } catch (...) {
-        logger->Write(skyline::Logger::Error, "An unknown exception has occurred");
+        logger->Error("An unknown exception has occurred");
     }
     auto end = std::chrono::steady_clock::now();
-    logger->Write(skyline::Logger::Info, "Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    Window = nullptr;
+    Halt = true;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_MainActivity_loadFile(JNIEnv *env, jobject instance, jstring romPathJni, jstring prefPathJni, jstring logPathJni) {
-    const char *romPath = env->GetStringUTFChars(romPathJni, nullptr);
-    const char *prefPath = env->GetStringUTFChars(prefPathJni, nullptr);
-    const char *logPath = env->GetStringUTFChars(logPathJni, nullptr);
-
-    if (EmuThread) {
-        Halt = true;  // This'll cause execution to stop after the next breakpoint
-        EmuThread->join();
-        Halt = false; // Or the current instance will halt immediately
+void UIThread(const std::string &prefPath, const std::string &logPath, const std::string &romPath) {
+    while (!Queue)
+        sched_yield();
+    std::thread gameThread(GameThread, std::string(prefPath), std::string(logPath), std::string(romPath));
+    AInputEvent *event{};
+    while (!Halt) {
+        if (AInputQueue_getEvent(Queue, &event) >= -1) {
+            if (AKeyEvent_getKeyCode(event) == AKEYCODE_BACK)
+                Halt = true;
+            AInputQueue_finishEvent(Queue, event, true);
+        }
     }
+    Queue = nullptr;
+    gameThread.join();
+    Halt = false;
+    ANativeActivity_finish(Activity);
+}
 
-    // Running on UI thread is not a good idea as the UI will remain unresponsive
-    EmuThread = new std::thread(ThreadMain, std::string(romPath, strlen(romPath)), std::string(prefPath, strlen(prefPath)), std::string(logPath, strlen(logPath)));
+void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {
+    Window = window;
+}
 
-    env->ReleaseStringUTFChars(romPathJni, romPath);
-    env->ReleaseStringUTFChars(prefPathJni, prefPath);
-    env->ReleaseStringUTFChars(logPathJni, logPath);
+void onInputQueueCreated(ANativeActivity *activity, AInputQueue *queue) {
+    Queue = queue;
+}
+
+void onNativeWindowDestroyed(ANativeActivity *activity, ANativeWindow *window) {
+    Halt = true;
+    while (Window)
+        sched_yield();
+}
+
+void onInputQueueDestroyed(ANativeActivity *activity, AInputQueue *queue) {
+    Halt = true;
+    while (Queue)
+        sched_yield();
+}
+
+void signalHandler(int signal) {
+    syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
+    if (faultCount > 2)
+        pthread_kill(uiThread->native_handle(), SIGKILL);
+    else
+        ANativeActivity_finish(Activity);
+    faultCount++;
+}
+
+JNIEXPORT void ANativeActivity_onCreate(ANativeActivity *activity, void *savedState, size_t savedStateSize) {
+    Activity = activity;
+    Halt = false;
+    faultCount = 0;
+    JNIEnv *env = activity->env;
+    jobject intent = env->CallObjectMethod(activity->clazz, env->GetMethodID(env->GetObjectClass(activity->clazz), "getIntent", "()Landroid/content/Intent;"));
+    jclass icl = env->GetObjectClass(intent);
+    jmethodID gse = env->GetMethodID(icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+    auto jsRom = reinterpret_cast<jstring>(env->CallObjectMethod(intent, gse, env->NewStringUTF("rom")));
+    auto jsPrefs = reinterpret_cast<jstring>(env->CallObjectMethod(intent, gse, env->NewStringUTF("prefs")));
+    auto jsLog = reinterpret_cast<jstring>(env->CallObjectMethod(intent, gse, env->NewStringUTF("log")));
+    const char *romPath = env->GetStringUTFChars(jsRom, nullptr);
+    const char *prefPath = env->GetStringUTFChars(jsPrefs, nullptr);
+    const char *logPath = env->GetStringUTFChars(jsLog, nullptr);
+    std::signal(SIGTERM, signalHandler);
+    std::signal(SIGSEGV, signalHandler);
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGILL, signalHandler);
+    std::signal(SIGABRT, signalHandler);
+    std::signal(SIGFPE, signalHandler);
+    activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
+    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
+    activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
+    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
+    uiThread = new std::thread(UIThread, std::string(prefPath), std::string(logPath), std::string(romPath));
+    env->ReleaseStringUTFChars(jsRom, romPath);
+    env->ReleaseStringUTFChars(jsPrefs, prefPath);
+    env->ReleaseStringUTFChars(jsLog, logPath);
 }

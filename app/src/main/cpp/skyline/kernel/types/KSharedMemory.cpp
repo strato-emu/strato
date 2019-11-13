@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-constexpr const char* ASHMEM_NAME_DEF = "dev/ashmem";
+constexpr const char *ASHMEM_NAME_DEF = "dev/ashmem";
 constexpr int ASHMEM_SET_SIZE = 0x40087703;
 
 namespace skyline::kernel::type {
@@ -14,12 +14,12 @@ namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, pid_t pid, u64 kaddress, size_t ksize, const memory::Permission localPermission, const memory::Permission remotePermission, memory::Type type) : kaddress(kaddress), ksize(ksize), localPermission(localPermission), remotePermission(remotePermission), type(type), owner(pid), KObject(state, KType::KSharedMemory) {
         fd = open(ASHMEM_NAME_DEF, O_RDWR | O_CLOEXEC); // NOLINT(hicpp-signed-bitwise)
         if (fd < 0)
-            throw exception(fmt::format("An error occurred while opening {}: {}", ASHMEM_NAME_DEF, fd));
+            throw exception("An error occurred while opening {}: {}", ASHMEM_NAME_DEF, fd);
         if (ioctl(fd, ASHMEM_SET_SIZE, ksize) < 0) // NOLINT(hicpp-signed-bitwise)
-            throw exception(fmt::format("An error occurred while setting shared memory size: {}", ksize));
+            throw exception("An error occurred while setting shared memory size: {}", ksize);
         kaddress = MapSharedFunc(kaddress, ksize, static_cast<u64>(pid ? remotePermission.Get() : localPermission.Get()), static_cast<u64>(fd));
         if (kaddress == reinterpret_cast<u64>(MAP_FAILED)) // NOLINT(hicpp-signed-bitwise)
-            throw exception(fmt::format("An occurred while mapping shared region: {}", strerror(errno)));
+            throw exception("An occurred while mapping shared region: {}", strerror(errno));
     }
 
     u64 KSharedMemory::Map(u64 address, u64 size, pid_t process) {
@@ -43,13 +43,14 @@ namespace skyline::kernel::type {
     }
 
     KSharedMemory::~KSharedMemory() {
-        for (auto [process, procInf] : procInfMap) {
+        for (auto[process, procInf] : procInfMap) {
             try {
                 user_pt_regs fregs = {0};
                 fregs.regs[0] = procInf.address;
                 fregs.regs[1] = procInf.size;
                 state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapSharedFunc), fregs, process);
-            } catch (const std::exception&) {}
+            } catch (const std::exception &) {
+            }
         }
         UnmapSharedFunc(kaddress, ksize);
         close(fd);
@@ -60,7 +61,7 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::Resize(size_t newSize) {
-        for (auto& [process, procInf] : procInfMap) {
+        for (auto&[process, procInf] : procInfMap) {
             user_pt_regs fregs = {0};
             fregs.regs[0] = procInf.address;
             fregs.regs[1] = procInf.size;
@@ -71,7 +72,7 @@ namespace skyline::kernel::type {
             procInf.size = newSize;
         }
         if (RemapSharedFunc(kaddress, ksize, newSize) == reinterpret_cast<u64>(MAP_FAILED))
-            throw exception(fmt::format("An occurred while remapping shared region: {}", strerror(errno)));
+            throw exception("An occurred while remapping shared region: {}", strerror(errno));
         ksize = newSize;
     }
 
@@ -80,7 +81,7 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::UpdatePermission(bool local, memory::Permission newPerms) {
-        for (auto& [process, procInf] : procInfMap) {
+        for (auto&[process, procInf] : procInfMap) {
             if ((local && process == owner) || (!local && process != owner)) {
                 user_pt_regs fregs = {0};
                 fregs.regs[0] = procInf.address;
@@ -93,7 +94,7 @@ namespace skyline::kernel::type {
         }
         if ((local && owner == 0) || (!local && owner != 0))
             if (mprotect(reinterpret_cast<void *>(kaddress), ksize, newPerms.Get()) == -1)
-                throw exception(fmt::format("An occurred while updating shared region's permissions: {}", strerror(errno)));
+                throw exception("An occurred while updating shared region's permissions: {}", strerror(errno));
         if (local)
             localPermission = newPerms;
         else
@@ -102,8 +103,9 @@ namespace skyline::kernel::type {
 
     memory::MemoryInfo KSharedMemory::GetInfo(pid_t process) {
         memory::MemoryInfo info{};
-        info.baseAddress = kaddress;
-        info.size = ksize;
+        const auto &procInf = procInfMap.at(process);
+        info.baseAddress = procInf.address;
+        info.size = procInf.size;
         info.type = static_cast<u64>(type);
         info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
         info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);

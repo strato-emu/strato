@@ -3,6 +3,9 @@
     <option name="RIGHT_MARGIN" value="400" />
     <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
     <option name="SOFT_MARGINS" value="80,140" />
+    <AndroidXmlCodeStyleSettings>
+      <option name="ARRANGEMENT_SETTINGS_MIGRATED_TO_191" value="true" />
+    </AndroidXmlCodeStyleSettings>
     <Objective-C>
       <option name="INDENT_VISIBILITY_KEYWORDS" value="2" />
       <option name="INDENT_PREPROCESSOR_DIRECTIVE" value="4" />
@@ -48,6 +51,7 @@
         <pair source="cpp" header="h" fileNamingConvention="SNAKE_CASE" />
         <pair source="c" header="h" fileNamingConvention="SNAKE_CASE" />
         <pair source="cpp" header="h" fileNamingConvention="PASCAL_CASE" />
+        <pair source="cpp" header="h" fileNamingConvention="NONE" />
       </extensions>
     </Objective-C-extensions>
     <XML>

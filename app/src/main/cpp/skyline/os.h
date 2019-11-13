@@ -6,8 +6,9 @@
 #include "kernel/ipc.h"
 #include "kernel/types/KProcess.h"
 #include "kernel/types/KThread.h"
-#include "kernel/services/serviceman.h"
+#include "services/serviceman.h"
 #include "nce.h"
+#include "gpu.h"
 
 namespace skyline::kernel {
     /**
@@ -28,7 +29,7 @@ namespace skyline::kernel {
          * @param logger An instance of the Logger class
          * @param settings An instance of the Settings class
          */
-        OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings);
+        OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, ANativeWindow *window);
 
         /**
          * @brief Execute a particular ROM file. This launches a the main processes and calls the NCE class to handle execution.

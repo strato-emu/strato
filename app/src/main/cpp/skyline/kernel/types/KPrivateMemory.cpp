@@ -24,41 +24,48 @@ namespace skyline::kernel::type {
             this->address = fregs.regs[0];
     }
 
-    u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size) {
+    u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size, u64 perms) {
         return reinterpret_cast<u64>(mremap(reinterpret_cast<void *>(address), oldSize, size, 0));
     }
 
-    void KPrivateMemory::Resize(size_t newSize) {
+    u64 KPrivateMemory::Resize(size_t newSize, bool canMove) {
         user_pt_regs fregs = {0};
         fregs.regs[0] = address;
         fregs.regs[1] = size;
         fregs.regs[2] = newSize;
+        fregs.regs[3] = static_cast<u64>(PROT_READ | PROT_WRITE);
         state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapPrivateFunc), fregs, owner);
         if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
             throw exception("An error occurred while remapping private region in child process");
+        address = fregs.regs[0];
         size = newSize;
+        return address;
     }
 
     u64 UpdatePermissionPrivateFunc(u64 address, size_t size, u64 perms) {
         return static_cast<u64>(mprotect(reinterpret_cast<void *>(address), size, static_cast<int>(perms)));
     }
 
-    void KPrivateMemory::UpdatePermission(memory::Permission newPerms) {
+    void KPrivateMemory::UpdatePermission(memory::Permission permission) {
         user_pt_regs fregs = {0};
         fregs.regs[0] = address;
         fregs.regs[1] = size;
-        fregs.regs[2] = static_cast<u64>(newPerms.Get());
+        fregs.regs[2] = static_cast<u64>(permission.Get());
         state.nce->ExecuteFunction(reinterpret_cast<void *>(UpdatePermissionPrivateFunc), fregs, owner);
         if (static_cast<int>(fregs.regs[0]) == -1)
             throw exception("An error occurred while updating private region's permissions in child process");
-        permission = newPerms;
+        this->permission = permission;
     }
 
-    memory::MemoryInfo KPrivateMemory::GetInfo() {
+    memory::MemoryInfo KPrivateMemory::GetInfo(u64 address) {
         memory::MemoryInfo info{};
         info.baseAddress = address;
         info.size = size;
         info.type = static_cast<u64>(type);
+        for (const auto &region : regionInfoVec) {
+            if ((address >= region.address) && (address < (region.address + region.size)))
+                info.memoryAttribute.isUncached = region.isUncached;
+        }
         info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
         info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
         info.perms = permission;
@@ -73,10 +80,11 @@ namespace skyline::kernel::type {
 
     KPrivateMemory::~KPrivateMemory() {
         try {
-        user_pt_regs fregs = {0};
-        fregs.regs[0] = address;
-        fregs.regs[1] = size;
-        state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapPrivateFunc), fregs, owner);
-        } catch (const std::exception&) {}
+            user_pt_regs fregs = {0};
+            fregs.regs[0] = address;
+            fregs.regs[1] = size;
+            state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapPrivateFunc), fregs, owner);
+        } catch (const std::exception &) {
+        }
     }
 };

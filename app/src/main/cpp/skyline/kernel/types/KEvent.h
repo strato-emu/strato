@@ -17,8 +17,10 @@ namespace skyline::kernel::type {
          * @brief Signals all threads waiting on this object
          */
         virtual inline void Signal() {
-            KSyncObject::Signal();
-            signalled = true;
+            if (!signalled) {
+                KSyncObject::Signal();
+                signalled = true;
+            }
         }
 
         /**

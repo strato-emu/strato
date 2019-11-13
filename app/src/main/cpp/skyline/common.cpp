@@ -1,4 +1,6 @@
 #include "common.h"
+#include "nce.h"
+#include "gpu.h"
 #include <tinyxml2.h>
 
 namespace skyline {
@@ -10,37 +12,46 @@ namespace skyline {
         while (elem) {
             switch (elem->Value()[0]) {
                 case 's':
-                    stringMap.insert(
-                        std::pair<std::string, std::string>(elem->FindAttribute("name")->Value(), elem->GetText()));
+                    stringMap[elem->FindAttribute("name")->Value()] = elem->GetText();
                     break;
                 case 'b':
-                    boolMap.insert(std::pair<std::string, bool>(elem->FindAttribute("name")->Value(), elem->FindAttribute("value")->BoolValue()));
+                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->BoolValue();
+                    break;
+                case 'i':
+                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->IntValue();
+                    break;
                 default:
+                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
                     break;
             };
             if (elem->NextSibling())
                 elem = elem->NextSibling()->ToElement();
-            else break;
+            else
+                break;
         }
         pref.Clear();
     }
 
-    std::string Settings::GetString(const std::string& key) {
+    std::string Settings::GetString(const std::string &key) {
         return stringMap.at(key);
     }
 
-    bool Settings::GetBool(const std::string& key) {
+    bool Settings::GetBool(const std::string &key) {
         return boolMap.at(key);
     }
 
-    void Settings::List(std::shared_ptr<Logger> logger) {
-        for (auto& iter : stringMap)
-            logger->Write(Logger::Info, "Key: {}, Value: {}, Type: String", iter.first, GetString(iter.first));
-        for (auto& iter : boolMap)
-            logger->Write(Logger::Info, "Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
+    int Settings::GetInt(const std::string &key) {
+        return intMap.at(key);
     }
 
-    Logger::Logger(const std::string &logPath) {
+    void Settings::List(const std::shared_ptr<Logger> &logger) {
+        for (auto &iter : stringMap)
+            logger->Info("Key: {}, Value: {}, Type: String", iter.first, GetString(iter.first));
+        for (auto &iter : boolMap)
+            logger->Info("Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
+    }
+
+    Logger::Logger(const std::string &logPath, LogLevel configLevel) : configLevel(configLevel) {
         logFile.open(logPath, std::ios::app);
         WriteHeader("Logging started");
     }
@@ -55,12 +66,18 @@ namespace skyline {
         logFile.flush();
     }
 
-    void Logger::Write(const LogLevel level, const std::string& str) {
-        #ifdef NDEBUG
-        if (level == Debug) return;
-        #endif
-        syslog(levelSyslog[level], "%s", str.c_str());
-        logFile << "1|" << levelStr[level] << "|" << str << "\n";
+    void Logger::Write(const LogLevel level, std::string str) {
+        syslog(levelSyslog[static_cast<u8>(level)], "%s", str.c_str());
+        for (auto &character : str)
+            if (character == '\n')
+                character = '\\';
+        logFile << "1|" << levelStr[static_cast<u8>(level)] << "|" << str << "\n";
         logFile.flush();
+    }
+
+    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, ANativeWindow *window, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger) : os(os), settings(std::move(settings)), logger(std::move(logger)), thisProcess(thisProcess), thisThread(thisThread) {
+        // We assign these later as they may use the state in their constructor and we don't want null pointers
+        nce = std::move(std::make_shared<NCE>(*this));
+        gpu = std::move(std::make_shared<gpu::GPU>(*this, window));
     }
 }

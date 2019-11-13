@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ListView;
 
@@ -33,30 +34,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         System.loadLibrary("skyline");
     }
 
-    private SharedPreferences sharedPreferences = null;
-    private GameAdapter adapter = null;
+    private SharedPreferences sharedPreferences;
+    private GameAdapter adapter;
 
-    private void notifyUser(String text) {
+    private void notifyUser(final String text) {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show();
     }
 
-    private List<File> findFile(String ext, File file, @Nullable List<File> files) {
+    private List<File> findFile(final String ext, final File file, @Nullable List<File> files) {
         if (files == null)
             files = new ArrayList<>();
-        File[] list = file.listFiles();
+        final File[] list = file.listFiles();
         if (list != null) {
-            for (File file_i : list) {
+            for (final File file_i : list) {
                 if (file_i.isDirectory()) {
                     files = findFile(ext, file_i, files);
                 } else {
                     try {
-                        String file_str = file_i.getName();
+                        final String file_str = file_i.getName();
                         if (ext.equalsIgnoreCase(file_str.substring(file_str.lastIndexOf(".") + 1))) {
                             if (NroLoader.verifyFile(file_i.getAbsolutePath())) {
                                 files.add(file_i);
                             }
                         }
-                    } catch (StringIndexOutOfBoundsException e) {
+                    } catch (final StringIndexOutOfBoundsException e) {
                         Log.w("findFile", Objects.requireNonNull(e.getMessage()));
                     }
                 }
@@ -65,72 +66,75 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return files;
     }
 
-    private void RefreshFiles(boolean try_load) {
+    private void RefreshFiles(final boolean try_load) {
         if (try_load) {
             try {
                 adapter.load(new File(getApplicationInfo().dataDir + "/roms.bin"));
                 return;
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 Log.w("refreshFiles", "Ran into exception while loading: " + Objects.requireNonNull(e.getMessage()));
             }
         }
         adapter.clear();
-        List<File> files = findFile("nro", new File(sharedPreferences.getString("search_location", "")), null);
+        final List<File> files = findFile("nro", new File(sharedPreferences.getString("search_location", "")), null);
         if (!files.isEmpty()) {
             adapter.add(getString(R.string.nro), ContentType.Header);
-            for (File file : files)
+            for (final File file : files)
                 adapter.add(new GameItem(file), ContentType.Item);
         } else {
             adapter.add(getString(R.string.no_rom), ContentType.Header);
         }
         try {
             adapter.save(new File(getApplicationInfo().dataDir + "/roms.bin"));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             Log.w("refreshFiles", "Ran into exception while saving: " + Objects.requireNonNull(e.getMessage()));
         }
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
                 System.exit(0);
         }
         setContentView(R.layout.main_activity);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         setSupportActionBar(findViewById(R.id.toolbar));
-        FloatingActionButton log_fab = findViewById(R.id.log_fab);
+        final FloatingActionButton log_fab = findViewById(R.id.log_fab);
         log_fab.setOnClickListener(this);
         adapter = new GameAdapter(this);
-        ListView game_list = findViewById(R.id.game_list);
+        final ListView game_list = findViewById(R.id.game_list);
         game_list.setAdapter(adapter);
         game_list.setOnItemClickListener((parent, view, position, id) -> {
             if (adapter.getItemViewType(position) == ContentType.Item) {
-                GameItem item = ((GameItem) parent.getItemAtPosition(position));
-                notifyUser(getString(R.string.launching) + " " + item.getTitle());
-                loadFile(item.getPath(), getApplicationInfo().dataDir + "/shared_prefs/" + getApplicationInfo().packageName + "_preferences.xml", getApplicationInfo().dataDir + "/skyline.log");
+                final GameItem item = ((GameItem) parent.getItemAtPosition(position));
+                final Intent intent = new Intent(this, android.app.NativeActivity.class);
+                intent.putExtra("rom", item.getPath());
+                intent.putExtra("prefs", getApplicationInfo().dataDir + "/shared_prefs/" + getApplicationInfo().packageName + "_preferences.xml");
+                intent.putExtra("log", getApplicationInfo().dataDir + "/skyline.log");
+                startActivity(intent);
             }
         });
         RefreshFiles(true);
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_main, menu);
-        MenuItem mSearch = menu.findItem(R.id.action_search_main);
-        final SearchView searchView = (SearchView) mSearch.getActionView();
+        final MenuItem mSearch = menu.findItem(R.id.action_search_main);
+        SearchView searchView = (SearchView) mSearch.getActionView();
         searchView.setSubmitButtonEnabled(false);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            public boolean onQueryTextSubmit(String query) {
+            public boolean onQueryTextSubmit(final String query) {
                 searchView.clearFocus();
                 return false;
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
+            public boolean onQueryTextChange(final String newText) {
                 adapter.getFilter().filter(newText);
                 return true;
             }
@@ -138,13 +142,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return super.onCreateOptionsMenu(menu);
     }
 
-    public void onClick(View view) {
+    public void onClick(final View view) {
         if (view.getId() == R.id.log_fab)
             startActivity(new Intent(this, LogActivity.class));
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
                 startActivity(new Intent(this, SettingsActivity.class));
@@ -159,5 +163,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    public native void loadFile(String rom_path, String preference_path, String log_path);
+    public native void loadFile(String rom_path, String preference_path, String log_path, Surface surface);
 }

@@ -19,9 +19,9 @@ namespace skyline::kernel::type {
         u16 deviceRefCount{};  //!< The amount of reference to this memory for IPC
         memory::Permission permission; //!< The permissions for the allocated memory
         const memory::Type type; //!< The type of this memory allocation
+        std::vector<memory::RegionInfo> regionInfoVec; //!< This holds information about specific memory regions
 
         /**
-         * @brief Constructor of a private memory object
          * @param state The state of the device
          * @param pid The PID of the main
          * @param dstAddress The address to map to (If NULL then an arbitrary address is picked)
@@ -35,24 +35,26 @@ namespace skyline::kernel::type {
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it
          * @param newSize The new size of the memory
+         * @param canMove If the memory can move if there is not enough space at the current address
+         * @return The address the memory was remapped to
          */
-        void Resize(size_t newSize);
+        u64 Resize(size_t newSize, bool canMove);
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory
-         * @param perms The new permissions to be set for the memory
+         * @param permission The new permissions to be set for the memory
          */
-        void UpdatePermission(memory::Permission newPerms);
+        void UpdatePermission(memory::Permission permission);
 
         /**
          * @brief Returns a MemoryInfo object
-         * @param pid The PID of the requesting process
+         * @param address The specific address being queried (Used to fill MemoryAttribute)
          * @return A Memory::MemoryInfo struct based on attributes of the memory
          */
-        memory::MemoryInfo GetInfo();
+        memory::MemoryInfo GetInfo(u64 address);
 
         /**
-         * @brief Destructor of private memory, it deallocates the memory
+         * @brief The destructor of private memory, it deallocates the memory
          */
         ~KPrivateMemory();
     };

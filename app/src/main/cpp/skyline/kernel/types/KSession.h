@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <kernel/services/base_service.h>
+#include <services/base_service.h>
 #include "KSyncObject.h"
 
 namespace skyline::kernel::type {
@@ -14,7 +14,7 @@ namespace skyline::kernel::type {
         std::unordered_map<handle_t, std::shared_ptr<service::BaseService>> domainTable; //!< This maps from a virtual handle to it's service
         handle_t handleIndex = constant::BaseVirtualHandleIndex;
         const service::Service serviceType; //!< The type of the service
-        enum class ServiceStatus { Open, Closed } serviceStatus = ServiceStatus::Open; //!< If the session is open or closed
+        enum class ServiceStatus { Open, Closed } serviceStatus{ServiceStatus::Open}; //!< If the session is open or closed
         bool isDomain{}; //!< Holds if this is a domain session or not
 
         /**

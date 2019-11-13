@@ -16,7 +16,7 @@ namespace skyline {
       private:
         pid_t currPid = 0; //!< The PID of the process currently being handled, this is so the PID won't have to be passed into functions like ReadRegister redundantly
         std::unordered_map<pid_t, user_pt_regs> registerMap; //!< A map of all PIDs and their corresponding registers (Whenever they were last updated)
-        const DeviceState *state; //!< The state of the device
+        const DeviceState &state; //!< The state of the device
 
         /**
          * @brief Reads process registers into the `registers` variable
@@ -41,11 +41,7 @@ namespace skyline {
         instr::Brk ReadBrk(u64 address, pid_t pid = 0) const;
 
       public:
-        /**
-         * @brief Initialize NCE by setting the device_state variable
-         * @param state The state of the device
-         */
-        void Initialize(const DeviceState &state);
+        NCE(const DeviceState &state);
 
         /**
          * @brief Start the event loop of executing the program
@@ -89,6 +85,13 @@ namespace skyline {
          * @param pid The PID of the process (Defaults to currPid)
          */
         void StartProcess(u64 entryPoint, u64 entryArg, u64 stackTop, u32 handle, pid_t pid) const;
+
+        /**
+         * @brief This prints out a trace and the CPU context
+         * @param numHist The amount of previous instructions to print
+         * @param pid The PID of the process (Defaults to currPid)
+         */
+        void ProcessTrace(u16 numHist = 10, pid_t pid = 0);
 
         /**
          * @brief Get the value of a Xn register

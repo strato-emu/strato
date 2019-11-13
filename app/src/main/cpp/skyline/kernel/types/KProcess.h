@@ -2,8 +2,10 @@
 
 #include "KThread.h"
 #include "KPrivateMemory.h"
+#include "KTransferMemory.h"
 #include "KSharedMemory.h"
 #include "KSession.h"
+#include "KEvent.h"
 
 namespace skyline::kernel::type {
     /**
@@ -54,17 +56,16 @@ namespace skyline::kernel::type {
          */
         u64 GetTlsSlot();
 
-        int memFd; //!< The file descriptor to the memory of the process
-
       public:
-        enum class ProcessStatus {
+        enum class Status {
             Created, //!< The process was created but the main thread has not started yet
             Started, //!< The process has been started
             Exiting //!< The process is exiting
-        } status = ProcessStatus::Created; //!< The state of the process
+        } status = Status::Created; //!< The state of the process
         handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
         pid_t mainThread; //!< The PID of the main thread
         size_t mainThreadStackSz; //!< The size of the main thread's stack (All other threads map stack themselves so we don't know the size per-se)
+        int memFd; //!< The file descriptor to the memory of the process
         std::unordered_map<u64, std::shared_ptr<KPrivateMemory>> memoryMap; //!< A mapping from every address to a shared pointer of it's corresponding KPrivateMemory, used to keep track of KPrivateMemory instances
         std::unordered_map<memory::Region, std::shared_ptr<KPrivateMemory>> memoryRegionMap; //!< A mapping from every MemoryRegion to a shared pointer of it's corresponding KPrivateMemory
         std::unordered_map<handle_t, std::shared_ptr<KObject>> handleTable; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
@@ -79,8 +80,8 @@ namespace skyline::kernel::type {
          */
         template<typename objectClass>
         struct HandleOut {
-            std::shared_ptr<objectClass> item;
-            handle_t handle;
+            std::shared_ptr<objectClass> item; //!< A shared pointer to the object
+            handle_t handle; //!< The handle of the object in the process
         };
 
         /**
@@ -115,7 +116,7 @@ namespace skyline::kernel::type {
          * @return An object of type T with read data
          */
         template<typename Type>
-        Type ReadMemory(u64 address) const {
+        inline Type ReadMemory(u64 address) const {
             Type item{};
             ReadMemory(&item, address, sizeof(Type));
             return item;
@@ -128,7 +129,7 @@ namespace skyline::kernel::type {
          * @param address The address of the object
          */
         template<typename Type>
-        void WriteMemory(Type &item, u64 address) const {
+        inline void WriteMemory(Type &item, u64 address) const {
             WriteMemory(&item, address, sizeof(Type));
         }
 
@@ -166,25 +167,32 @@ namespace skyline::kernel::type {
         HandleOut<KPrivateMemory> MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region);
 
         /**
+         * @brief Unmap a chunk of process local memory (private memory)
+         * @param region The region of memory to unmap
+         * @return If the region was mapped at all
+         */
+        bool UnmapPrivateRegion(const memory::Region region);
+
+        /**
          * @brief Returns the total memory occupied by regions mapped for the process
          */
         size_t GetProgramSize();
 
-         /**
-          * @brief Creates a new handle to a KObject and adds it to the process handle_table
-          * @tparam objectClass The class of the kernel object to create
-          * @param args The arguments for the kernel object except handle, pid and state
-          * @return A shared pointer to the corresponding object
-          */
+        /**
+         * @brief Creates a new handle to a KObject and adds it to the process handle_table
+         * @tparam objectClass The class of the kernel object to create
+         * @param args The arguments for the kernel object except handle, pid and state
+         * @return A shared pointer to the corresponding object
+         */
         template<typename objectClass, typename ...objectArgs>
-         HandleOut<objectClass> NewHandle(objectArgs... args) {
-             std::shared_ptr<objectClass> item;
-             if constexpr (std::is_same<objectClass, KThread>())
-                 item = std::make_shared<objectClass>(state, handleIndex, args...);
-             else
-                 item = std::make_shared<objectClass>(state, args...);
-             handleTable[handleIndex] = std::static_pointer_cast<KObject>(item);
-             return {item, handleIndex++};
+        HandleOut<objectClass> NewHandle(objectArgs... args) {
+            std::shared_ptr<objectClass> item;
+            if constexpr (std::is_same<objectClass, KThread>())
+                item = std::make_shared<objectClass>(state, handleIndex, args...);
+            else
+                item = std::make_shared<objectClass>(state, args...);
+            handleTable[handleIndex] = std::static_pointer_cast<KObject>(item);
+            return {item, handleIndex++};
         }
 
         /**
@@ -193,7 +201,7 @@ namespace skyline::kernel::type {
          * @return The handle of the corresponding item in the handle table
          */
         template<typename objectClass>
-        handle_t InsertItem(std::shared_ptr<objectClass> item) {
+        handle_t InsertItem(std::shared_ptr<objectClass> &item) {
             handleTable[handleIndex] = std::static_pointer_cast<KObject>(item);
             return handleIndex++;
         }
@@ -210,13 +218,17 @@ namespace skyline::kernel::type {
             if constexpr(std::is_same<objectClass, KThread>())
                 objectType = KType::KThread;
             else if constexpr(std::is_same<objectClass, KProcess>())
-                 objectType = KType::KProcess;
+                objectType = KType::KProcess;
             else if constexpr(std::is_same<objectClass, KSharedMemory>())
-                 objectType = KType::KSharedMemory;
+                objectType = KType::KSharedMemory;
+            else if constexpr(std::is_same<objectClass, KTransferMemory>())
+                objectType = KType::KTransferMemory;
             else if constexpr(std::is_same<objectClass, KPrivateMemory>())
-                 objectType = KType::KPrivateMemory;
+                objectType = KType::KPrivateMemory;
             else if constexpr(std::is_same<objectClass, KSession>())
-                 objectType = KType::KSession;
+                objectType = KType::KSession;
+            else if constexpr(std::is_same<objectClass, KEvent>())
+                objectType = KType::KEvent;
             else
                 throw exception("KProcess::GetHandle couldn't determine object type");
             try {
@@ -224,9 +236,9 @@ namespace skyline::kernel::type {
                 if (item->objectType == objectType)
                     return std::static_pointer_cast<objectClass>(item);
                 else
-                    throw exception(fmt::format("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType));
+                    throw exception("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType);
             } catch (std::out_of_range) {
-                throw exception(fmt::format("GetHandle was called with invalid handle: 0x{:X}", handle));
+                throw exception("GetHandle was called with invalid handle: 0x{:X}", handle);
             }
         }
 
@@ -241,5 +253,10 @@ namespace skyline::kernel::type {
          * @param address The address of the mutex
          */
         void MutexUnlock(u64 address);
+
+        /**
+         * @brief This resets the object to an unsignalled state
+         */
+        void ResetSignal();
     };
 }

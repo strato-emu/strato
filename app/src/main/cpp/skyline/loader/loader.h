@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <os.h>
 #include <kernel/types/KProcess.h>
 
@@ -23,6 +22,31 @@ namespace skyline::loader {
             file.read(reinterpret_cast<char *>(output), size);
         }
 
+        /**
+         * @brief This patches specific parts of the code
+         * @param code A vector with the code to be patched
+         */
+        inline void PatchCode(std::vector<u8> &code) {
+            u32 *address = reinterpret_cast<u32 *>(code.data());
+            u32 *end = address + (code.size() / sizeof(u32));
+            while (address < end) {
+                auto instrSvc = reinterpret_cast<instr::Svc *>(address);
+                auto instrMrs = reinterpret_cast<instr::Mrs *>(address);
+                if (instrSvc->Verify()) {
+                    instr::Brk brk(static_cast<u16>(instrSvc->value));
+                    *address = *reinterpret_cast<u32 *>(&brk);
+                } else if (instrMrs->Verify()) {
+                    if (instrMrs->srcReg == constant::TpidrroEl0) {
+                        instr::Brk brk(static_cast<u16>(constant::SvcLast + 1 + instrMrs->dstReg));
+                        *address = *reinterpret_cast<u32 *>(&brk);
+                    } else if (instrMrs->srcReg == constant::CntpctEl0) {
+                        instr::Mrs mrs(constant::CntvctEl0, instrMrs->dstReg);
+                        *address = *reinterpret_cast<u32 *>(&mrs);
+                    }
+                }
+                address++;
+            }
+        }
 
       public:
         /**

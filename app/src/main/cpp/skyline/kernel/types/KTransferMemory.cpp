@@ -47,11 +47,8 @@ namespace skyline::kernel::type {
             if (reinterpret_cast<void *>(address) == MAP_FAILED)
                 throw exception("An error occurred while mapping transfer memory in kernel");
         }
-
         size_t copySz = std::min(size, cSize);
-
         if (process && owner) {
-            // TODO: Update when copy_file_range (http://man7.org/linux/man-pages/man2/copy_file_range.2.html) is added to bionic
             std::vector<u8> tempBuf(copySz);
             state.os->processMap.at(process)->ReadMemory(tempBuf.data(), cAddress, copySz);
             state.os->processMap.at(owner)->WriteMemory(tempBuf.data(), address, copySz);
@@ -62,7 +59,6 @@ namespace skyline::kernel::type {
         } else {
             throw exception("Transferring from kernel to kernel is not supported");
         }
-
         if (owner) {
             user_pt_regs fregs = {0};
             fregs.regs[0] = address;
@@ -75,7 +71,6 @@ namespace skyline::kernel::type {
             if (reinterpret_cast<void *>(UnmapTransferFunc(address, size)) == MAP_FAILED)
                 throw exception("An error occurred while unmapping transfer memory in kernel");
         }
-
         owner = process;
         cAddress = address;
         cSize = size;
@@ -96,7 +91,7 @@ namespace skyline::kernel::type {
     }
 
     KTransferMemory::~KTransferMemory() {
-        if(owner) {
+        if (owner) {
             try {
                 user_pt_regs fregs = {0};
                 fregs.regs[0] = cAddress;
