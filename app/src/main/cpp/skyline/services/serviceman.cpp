@@ -172,14 +172,14 @@ namespace skyline::kernel::service {
                 case ipc::CommandType::RequestWithContext:
                     if (session->isDomain) {
                         try {
-                            auto service = session->domainTable.at(request.domain->object_id);
+                            auto service = session->domainTable.at(request.domain->objectId);
                             switch (static_cast<ipc::DomainCommand>(request.domain->command)) {
                                 case ipc::DomainCommand::SendMessage:
                                     service->HandleRequest(*session, request, response);
                                     break;
                                 case ipc::DomainCommand::CloseVHandle:
                                     serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), service), serviceVec.end());
-                                    session->domainTable.erase(request.domain->object_id);
+                                    session->domainTable.erase(request.domain->objectId);
                                     break;
                             }
                         } catch (std::out_of_range &) {
@@ -193,7 +193,7 @@ namespace skyline::kernel::service {
 
                 case ipc::CommandType::Control:
                 case ipc::CommandType::ControlWithContext:
-                    state.logger->Debug("Control IPC Message: {}", request.payload->value);
+                    state.logger->Debug("Control IPC Message: 0x{:X}", request.payload->value);
                     switch (static_cast<ipc::ControlCommand>(request.payload->value)) {
                         case ipc::ControlCommand::ConvertCurrentObjectToDomain:
                             response.WriteValue(session->ConvertDomain());

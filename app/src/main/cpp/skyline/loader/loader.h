@@ -50,7 +50,7 @@ namespace skyline::loader {
 
       public:
         /**
-         * @param file_path_ The path to the ROM file
+         * @param filePath The path to the ROM file
          */
         Loader(std::string &filePath) : filePath(filePath), file(filePath, std::ios::binary | std::ios::beg) {}
 
