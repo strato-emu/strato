@@ -1,10 +1,7 @@
 #include "KSharedMemory.h"
 #include <nce.h>
-#include <fcntl.h>
+#include <android/sharedmem.h>
 #include <unistd.h>
-
-constexpr const char *ASHMEM_NAME_DEF = "dev/ashmem";
-constexpr int ASHMEM_SET_SIZE = 0x40087703;
 
 namespace skyline::kernel::type {
     u64 MapSharedFunc(u64 address, size_t size, u64 perms, u64 fd) {
@@ -12,11 +9,9 @@ namespace skyline::kernel::type {
     }
 
     KSharedMemory::KSharedMemory(const DeviceState &state, pid_t pid, u64 kaddress, size_t ksize, const memory::Permission localPermission, const memory::Permission remotePermission, memory::Type type) : kaddress(kaddress), ksize(ksize), localPermission(localPermission), remotePermission(remotePermission), type(type), owner(pid), KObject(state, KType::KSharedMemory) {
-        fd = open(ASHMEM_NAME_DEF, O_RDWR | O_CLOEXEC); // NOLINT(hicpp-signed-bitwise)
+        fd = ASharedMemory_create("", ksize);
         if (fd < 0)
-            throw exception("An error occurred while opening {}: {}", ASHMEM_NAME_DEF, fd);
-        if (ioctl(fd, ASHMEM_SET_SIZE, ksize) < 0) // NOLINT(hicpp-signed-bitwise)
-            throw exception("An error occurred while setting shared memory size: {}", ksize);
+            throw exception("An error occurred while creating shared memory: {}", fd);
         kaddress = MapSharedFunc(kaddress, ksize, static_cast<u64>(pid ? remotePermission.Get() : localPermission.Get()), static_cast<u64>(fd));
         if (kaddress == reinterpret_cast<u64>(MAP_FAILED)) // NOLINT(hicpp-signed-bitwise)
             throw exception("An occurred while mapping shared region: {}", strerror(errno));
