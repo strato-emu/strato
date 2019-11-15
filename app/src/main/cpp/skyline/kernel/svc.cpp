@@ -185,6 +185,7 @@ namespace skyline::kernel::svc {
         std::vector<handle_t> waitHandles(numHandles);
         state.thisProcess->ReadMemory(waitHandles.data(), state.nce->GetRegister(Xreg::X1), numHandles * sizeof(handle_t));
         std::string handleStr;
+        uint index{};
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
             auto object = state.thisProcess->handleTable.at(handle);
@@ -194,19 +195,22 @@ namespace skyline::kernel::svc {
                 case type::KType::KEvent:
                 case type::KType::KSession:
                     break;
-                default:
+                default: {
                     state.nce->SetRegister(Wreg::W0, constant::status::InvHandle);
+                    state.thisThread->ClearWaitObjects();
                     return;
+                }
             }
             auto syncObject = std::static_pointer_cast<type::KSyncObject>(object);
             if (syncObject->signalled) {
                 state.logger->Debug("Found signalled handle: 0x{:X}", handle);
                 state.nce->SetRegister(Wreg::W0, constant::status::Success);
-                state.nce->SetRegister(Wreg::W1, handle);
+                state.nce->SetRegister(Wreg::W1, index);
+                state.thisThread->ClearWaitObjects();
                 return;
             }
             state.thisThread->waitObjects.push_back(syncObject);
-            syncObject->waitThreads.emplace_back(state.thisThread->pid, handle);
+            syncObject->waitThreads.emplace_back(state.thisThread->pid, index);
         }
         state.logger->Debug("Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, state.nce->GetRegister(Xreg::X3));
         if (state.nce->GetRegister(Xreg::X3) != std::numeric_limits<u64>::max())

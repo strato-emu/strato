@@ -15,9 +15,9 @@ namespace skyline::kernel::type {
          */
         struct threadInfo {
             pid_t process; //!< The PID of the waiting thread
-            handle_t handle; //!< The handle in the process's handle table
+            u32 index; //!< The index of the object in the wait list
 
-            threadInfo(pid_t process, handle_t handle);
+            threadInfo(pid_t process, u32 index);
         };
         std::vector<threadInfo> waitThreads; //!< A vector of threads waiting on this object
 

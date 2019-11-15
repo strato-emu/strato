@@ -78,7 +78,7 @@ namespace skyline {
                     }
                 }
                 if (state.thisThread->status == kernel::type::KThread::Status::Runnable) {
-                    state.thisThread->waitObjects.clear();
+                    state.thisThread->ClearWaitObjects();
                     state.thisThread->status = kernel::type::KThread::Status::Running;
                     currRegs.pc += sizeof(u32);
                     WriteRegisters(currRegs);

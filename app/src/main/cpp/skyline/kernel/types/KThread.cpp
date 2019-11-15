@@ -37,4 +37,18 @@ namespace skyline::kernel::type {
         if (status == Status::Sleeping)
             status = Status::Runnable;
     }
+
+    void KThread::ClearWaitObjects() {
+        for (auto &object : waitObjects) {
+            auto iter = object->waitThreads.begin();
+            while (iter != object->waitThreads.end()) {
+                if (iter->process == pid) {
+                    object->waitThreads.erase(iter);
+                    break;
+                }
+                iter++;
+            }
+        }
+        waitObjects.clear();
+    }
 }

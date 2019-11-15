@@ -22,7 +22,7 @@ namespace skyline::kernel::type {
             WaitCondVar, //!< The thread is waiting on a Conditional Variable
             Runnable //!< The thread is ready to run after waiting
         } status = Status::Created; //!< The state of the thread
-        std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding handles this thread is waiting for
+        std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding the objects this thread is waiting for
         u64 timeout{}; //!< The end of a timeout for svcWaitSynchronization or the end of the sleep period for svcSleepThread
         handle_t handle; // The handle of the object in the handle table
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
@@ -62,6 +62,11 @@ namespace skyline::kernel::type {
          * @brief This wakes up the thread from it's sleep (no-op if thread is already awake)
          */
         void WakeUp();
+
+        /**
+         * @brief This clears all the objects in the waitObjects vector
+         */
+        void ClearWaitObjects();
 
         /**
          * @brief Update the priority level for the process.
