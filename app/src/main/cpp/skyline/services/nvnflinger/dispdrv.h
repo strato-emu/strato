@@ -4,7 +4,7 @@
 #include "services/serviceman.h"
 #include <gpu/parcel.h>
 
-namespace skyline::kernel::service::nvnflinger {
+namespace skyline::service::nvnflinger {
     /**
      * @brief This enumerates the functions called by TransactParcel for android.gui.IGraphicBufferProducer
      * @refitem https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#35

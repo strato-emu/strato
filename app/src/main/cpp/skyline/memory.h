@@ -70,7 +70,9 @@ namespace skyline::memory {
     struct RegionInfo {
         u64 address; //!< The starting address of the chunk of memory
         u64 size; //!< The size of the chunk of memory
-        bool isUncached{}; //!< If the following region is uncached
+        bool isUncached; //!< If the following region is uncached
+
+        RegionInfo(u64 address, u64 size, bool isUncached) : address(address), size(size), isUncached(isUncached) {}
     };
 
     /**

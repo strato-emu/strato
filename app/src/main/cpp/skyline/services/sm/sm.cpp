@@ -1,6 +1,6 @@
 #include "sm.h"
 
-namespace skyline::kernel::service::sm {
+namespace skyline::service::sm {
     sm::sm(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::sm, {
         {0x0, SFUNC(sm::Initialize)},
         {0x1, SFUNC(sm::GetService)}

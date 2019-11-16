@@ -5,7 +5,7 @@
 #include <gpu.h>
 #include <gpu/parcel.h>
 
-namespace skyline::kernel::service::vi {
+namespace skyline::service::vi {
     /**
      * @brief This service is used to get an handle to #IApplicationDisplayService (https://switchbrew.org/wiki/Display_services#vi:m)
      */

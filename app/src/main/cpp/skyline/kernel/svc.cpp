@@ -34,7 +34,7 @@ namespace skyline::kernel::svc {
                     break;
                 }
                 if (!subFound)
-                    region->regionInfoVec.push_back(memory::RegionInfo{.address=addr, .size=size, .isUncached=isUncached});
+                    region->regionInfoVec.emplace_back(addr, size, isUncached);
                 found = true;
                 break;
             }

@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::fatal {
+namespace skyline::service::fatal {
     /**
      * @brief fatal_u is used by applications to throw errors (https://switchbrew.org/wiki/Fatal_services#fatal:u)
      */

@@ -1,7 +1,7 @@
 #include "nvdrv.h"
 #include <kernel/types/KProcess.h>
 
-namespace skyline::kernel::service::nvdrv {
+namespace skyline::service::nvdrv {
     nvdrv::nvdrv(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvdrv, {
         {0x0, SFUNC(nvdrv::Open)},
         {0x1, SFUNC(nvdrv::Ioctl)},

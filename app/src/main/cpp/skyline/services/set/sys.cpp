@@ -1,7 +1,7 @@
 #include "sys.h"
 #include <kernel/types/KProcess.h>
 
-namespace skyline::kernel::service::set {
+namespace skyline::service::set {
     sys::sys(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::set_sys, {{0x3, SFUNC(sys::GetFirmwareVersion)}}) {}
 
     void sys::GetFirmwareVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

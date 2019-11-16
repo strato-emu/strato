@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::apm {
+namespace skyline::service::apm {
     /**
      * @brief apm is used to control performance modes of the device, this service however is mostly only used to open an ISession (https://switchbrew.org/wiki/PPC_services#apm)
      */

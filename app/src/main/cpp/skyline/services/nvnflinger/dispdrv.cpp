@@ -3,7 +3,7 @@
 #include <gpu.h>
 #include <android/native_window.h>
 
-namespace skyline::kernel::service::nvnflinger {
+namespace skyline::service::nvnflinger {
     dispdrv::dispdrv(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvnflinger_dispdrv, {
         {0x0, SFUNC(dispdrv::TransactParcel)},
         {0x1, SFUNC(dispdrv::AdjustRefcount)},

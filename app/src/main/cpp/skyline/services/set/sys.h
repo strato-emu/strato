@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::set {
+namespace skyline::service::set {
     /**
      * @brief set:sys or System Settings service provides access to system settings
      */

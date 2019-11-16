@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::sm {
+namespace skyline::service::sm {
     /**
      * @brief sm: or Service Manager is responsible for providing handles to services (https://switchbrew.org/wiki/Services_API)
      */

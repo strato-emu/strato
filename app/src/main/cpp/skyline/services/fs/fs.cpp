@@ -1,6 +1,6 @@
 #include "fs.h"
 
-namespace skyline::kernel::service::fs {
+namespace skyline::service::fs {
     fsp::fsp(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::fs_fsp, {
         {0x1, SFUNC(fsp::SetCurrentProcess)},
         {0x12, SFUNC(fsp::OpenSdCardFileSystem)}

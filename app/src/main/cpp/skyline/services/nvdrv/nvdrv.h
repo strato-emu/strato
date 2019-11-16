@@ -5,7 +5,7 @@
 #include <kernel/types/KTransferMemory.h>
 #include <gpu.h>
 
-namespace skyline::kernel::service::nvdrv {
+namespace skyline::service::nvdrv {
     /**
      * @brief nvdrv or INvDrvServices is used to access the Nvidia GPU inside the Switch (https://switchbrew.org/wiki/NV_services#nvdrv.2C_nvdrv:a.2C_nvdrv:s.2C_nvdrv:t)
      */

@@ -1,7 +1,7 @@
 #include "applet.h"
 #include "appletController.h"
 
-namespace skyline::kernel::service::am {
+namespace skyline::service::am {
     appletOE::appletOE(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_appletOE, {
         {0x0, SFUNC(appletOE::OpenApplicationProxy)}
     }) {}

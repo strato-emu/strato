@@ -1,6 +1,6 @@
 #include "apm.h"
 
-namespace skyline::kernel::service::apm {
+namespace skyline::service::apm {
     apm::apm(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::apm, {
         {0x0, SFUNC(apm::OpenSession)}
     }) {}

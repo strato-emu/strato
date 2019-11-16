@@ -3,7 +3,7 @@
 #include <services/nvnflinger/dispdrv.h>
 #include <gpu/display.h>
 
-namespace skyline::kernel::service::vi {
+namespace skyline::service::vi {
     vi_m::vi_m(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvdrv, {
         {0x2, SFUNC(vi_m::GetDisplayService)}
     }) {}

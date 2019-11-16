@@ -6,7 +6,7 @@
 #include <kernel/types/KEvent.h>
 #include <gpu.h>
 
-namespace skyline::kernel::service::am {
+namespace skyline::service::am {
     /**
      * @brief https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter
      */

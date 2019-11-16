@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::time {
+namespace skyline::service::time {
     /**
      * @brief The type of a #SystemClockType
      */

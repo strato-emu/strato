@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::fs {
+namespace skyline::service::fs {
     /**
      * @brief These are the possible types of the filesystem
      */

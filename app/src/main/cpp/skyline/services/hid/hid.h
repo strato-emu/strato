@@ -8,7 +8,7 @@ namespace skyline::constant {
     constexpr size_t hidSharedMemSize = 0x40000; //!< The size of HID Shared Memory (https://switchbrew.org/wiki/HID_Shared_Memory)
 }
 
-namespace skyline::kernel::service::hid {
+namespace skyline::service::hid {
     /**
      * @brief IAppletResource is used to get the handle to the HID shared memory (https://switchbrew.org/wiki/HID_services#IAppletResource)
      */

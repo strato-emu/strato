@@ -213,7 +213,7 @@ namespace skyline::gpu::device {
             try {
                 function = vTable.at(cmd);
             } catch (std::out_of_range &) {
-                state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", getName(), deviceType, cmd);
+                state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", getName(), cmd);
                 input.status = NvStatus::NotImplemented;
                 return;
             }

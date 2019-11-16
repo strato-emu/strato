@@ -1,6 +1,6 @@
 #include "appletController.h"
 
-namespace skyline::kernel::service::am {
+namespace skyline::service::am {
     void ICommonStateGetter::QueueMessage(ICommonStateGetter::Message message) {
         messageQueue.emplace(message);
         messageEvent->Signal();

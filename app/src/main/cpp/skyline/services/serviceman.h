@@ -4,14 +4,14 @@
 #include <kernel/types/KSession.h>
 #include "base_service.h"
 
-namespace skyline::kernel::service {
+namespace skyline::service {
     /**
      * @brief The ServiceManager class manages passing IPC requests to the right Service and running event loops of Services
      */
     class ServiceManager {
       private:
         const DeviceState &state; //!< The state of the device
-        std::vector<std::shared_ptr<BaseService>> serviceVec; //!< A vector with all of the services
+        std::unordered_map<Service, std::shared_ptr<BaseService>> serviceMap; //!< A mapping from a Service to the underlying object
 
         /**
          * @param serviceType The type of service requested
@@ -64,11 +64,5 @@ namespace skyline::kernel::service {
          * @param handle The handle of the object
          */
         void SyncRequestHandler(const handle_t handle);
-
-        /**
-         * @brief Duplicates a session
-         * @param handle The handle of the object
-         */
-        void CloneSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

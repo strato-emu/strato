@@ -13,10 +13,13 @@
 #include "vi/vi_m.h"
 #include "nvnflinger/dispdrv.h"
 
-namespace skyline::kernel::service {
+namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
 
     std::shared_ptr<BaseService> ServiceManager::GetService(const Service serviceType) {
+        if(serviceMap.count(serviceType)) {
+            return serviceMap.at(serviceType);
+        }
         std::shared_ptr<BaseService> serviceObj;
         switch (serviceType) {
             case Service::sm:
@@ -112,7 +115,7 @@ namespace skyline::kernel::service {
             default:
                 throw exception("GetService called on missing object, type: {}", serviceType);
         }
-        serviceVec.push_back(serviceObj);
+        serviceMap[serviceType] = serviceObj;
         return serviceObj;
     }
 
@@ -136,7 +139,6 @@ namespace skyline::kernel::service {
     }
 
     void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
-        serviceVec.push_back(serviceObject);
         handle_t handle{};
         if (response.isDomain) {
             session.domainTable[session.handleIndex] = serviceObject;
@@ -154,15 +156,15 @@ namespace skyline::kernel::service {
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
             if (session->isDomain) {
                 for (const auto &[objectId, service] : session->domainTable)
-                    serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), service), serviceVec.end());
+                    serviceMap.erase(service->serviceType);
             } else
-                serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), session->serviceObject), serviceVec.end());
+                serviceMap.erase(session->serviceObject->serviceType);
             session->serviceStatus = type::KSession::ServiceStatus::Closed;
         }
     };
 
     void ServiceManager::Loop() {
-        for (auto &service : serviceVec)
+        for (auto& [type, service] : serviceMap)
             if (service->hasLoop)
                 service->Loop();
     }
@@ -187,7 +189,7 @@ namespace skyline::kernel::service {
                                     service->HandleRequest(*session, request, response);
                                     break;
                                 case ipc::DomainCommand::CloseVHandle:
-                                    serviceVec.erase(std::remove(serviceVec.begin(), serviceVec.end(), service), serviceVec.end());
+                                    serviceMap.erase(service->serviceType);
                                     session->domainTable.erase(request.domain->objectId);
                                     break;
                             }
@@ -209,7 +211,7 @@ namespace skyline::kernel::service {
                             break;
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
-                            CloneSession(*session, request, response);
+                            response.WriteValue(state.thisProcess->InsertItem(session));
                             break;
                         case ipc::ControlCommand::QueryPointerBufferSize:
                             response.WriteValue<u32>(0x1000);
@@ -231,9 +233,5 @@ namespace skyline::kernel::service {
         } else
             state.logger->Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
         state.logger->Debug("====End====");
-    }
-
-    void ServiceManager::CloneSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        //NewService(session.serviceType, session, response);
     }
 }

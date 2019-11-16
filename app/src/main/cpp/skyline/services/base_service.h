@@ -10,7 +10,8 @@
 namespace skyline::kernel::type {
     class KSession;
 }
-namespace skyline::kernel::service {
+namespace skyline::service {
+    using namespace kernel;
     /**
      * @brief This contains an enum for every service that's present
      */

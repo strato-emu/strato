@@ -3,7 +3,7 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::kernel::service::am {
+namespace skyline::service::am {
     /**
      * @brief appletOE is used to open an application proxy (https://switchbrew.org/wiki/Applet_Manager_services#appletOE)
      */

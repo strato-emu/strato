@@ -1,6 +1,6 @@
 #include "timesrv.h"
 
-namespace skyline::kernel::service::time {
+namespace skyline::service::time {
     time::time(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::time, {
         {0x0, SFUNC(time::GetStandardUserSystemClock)},
         {0x1, SFUNC(time::GetStandardNetworkSystemClock)},
