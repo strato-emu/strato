@@ -33,6 +33,16 @@ namespace skyline::kernel::service::am {
          * @brief This returns #IApplicationProxy (https://switchbrew.org/wiki/Applet_Manager_services#OpenApplicationProxy)
          */
         void OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns #IOverlayAppletProxy (https://switchbrew.org/wiki/Applet_Manager_services#OpenOverlayAppletProxy)
+         */
+        void OpenOverlayAppletProxy(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response);
+
+        /**
+         * @brief This returns #ISystemAppletProxy (https://switchbrew.org/wiki/Applet_Manager_services#OpenSystemAppletProxy)
+         */
+        void OpenSystemAppletProxy(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response);
     };
 
     /**
@@ -76,6 +86,11 @@ namespace skyline::kernel::service::am {
          * @brief This returns #IDebugFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IDebugFunctions)
          */
         void GetDebugFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns #IAppletCommonFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions)
+         */
+        void GetAppletCommonFunctions(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response);
     };
 
     /**
@@ -89,6 +104,22 @@ namespace skyline::kernel::service::am {
          * @brief This returns #IApplicationFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IApplicationFunctions)
          */
         void GetApplicationFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+    };
+
+    /**
+     * @brief IOverlayAppletProxy returns handles to various services (https://switchbrew.org/wiki/Applet_Manager_services#IOverlayAppletProxy)
+     */
+    class IOverlayAppletProxy : public BaseProxy {
+      public:
+        IOverlayAppletProxy(const DeviceState& state, ServiceManager& manager);
+    };
+
+    /**
+     * @brief ISystemAppletProxy returns handles to various services (https://switchbrew.org/wiki/Applet_Manager_services#ISystemAppletProxy)
+     */
+    class ISystemAppletProxy : public BaseProxy {
+      public:
+        ISystemAppletProxy(const DeviceState& state, ServiceManager& manager);
     };
 
     /**

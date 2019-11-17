@@ -72,6 +72,11 @@ namespace skyline::kernel::service::am {
          * @brief This returns the current PerformanceMode (Same as operationMode but u32) (https://switchbrew.org/wiki/Applet_Manager_services#GetPerformanceMode)
          */
         void GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns the current display width and height in two u32s (https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution)
+         */
+        void GetDefaultDisplayResolution(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response);
     };
 
     /**
@@ -168,5 +173,13 @@ namespace skyline::kernel::service::am {
     class IDebugFunctions : public BaseService {
       public:
         IDebugFunctions(const DeviceState &state, ServiceManager &manager);
+    };
+
+    /**
+     * @brief This contains common various functions (https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions)
+     */
+    class IAppletCommonFunctions : public BaseService {
+      public:
+        IAppletCommonFunctions(const DeviceState& state, ServiceManager& manager);
     };
 }

@@ -46,6 +46,12 @@ namespace skyline::kernel::service {
             case Service::am_ILibraryAppletProxy:
                 serviceObj = std::make_shared<am::ILibraryAppletProxy>(state, *this);
                 break;
+            case Service::am_ISystemAppletProxy:
+                serviceObj = std::make_shared<am::ISystemAppletProxy>(state, *this);
+                break;
+            case Service::am_IOverlayAppletProxy:
+                serviceObj = std::make_shared<am::IOverlayAppletProxy>(state, *this);
+                break;
             case Service::am_ICommonStateGetter:
                 serviceObj = std::make_shared<am::ICommonStateGetter>(state, *this);
                 break;
@@ -69,6 +75,9 @@ namespace skyline::kernel::service {
                 break;
             case Service::am_IDebugFunctions:
                 serviceObj = std::make_shared<am::IDebugFunctions>(state, *this);
+                break;
+            case Service::am_IAppletCommonFunctions:
+                serviceObj = std::make_shared<am::IAppletCommonFunctions>(state, *this);
                 break;
             case Service::hid:
                 serviceObj = std::make_shared<hid::hid>(state, *this);
