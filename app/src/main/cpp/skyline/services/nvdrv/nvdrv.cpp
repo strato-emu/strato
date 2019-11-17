@@ -42,9 +42,10 @@ namespace skyline::service::nvdrv {
             u32 fd;
             u32 eventId;
         } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        state.logger->Info("QueryEvent: FD: {}, Event ID: {}", input->fd, input->eventId);
         auto event = std::make_shared<type::KEvent>(state);
-        response.copyHandles.push_back(state.thisProcess->InsertItem<type::KEvent>(event));
+        auto handle = state.thisProcess->InsertItem<type::KEvent>(event);
+        state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", input->fd, input->eventId, handle);
+        response.copyHandles.push_back(handle);
     }
 
     void nvdrv::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

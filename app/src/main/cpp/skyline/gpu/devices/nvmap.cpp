@@ -21,7 +21,7 @@ namespace skyline::gpu::device {
         handleTable[handleIndex] = std::make_shared<NvMapObject>(idIndex++, data.size);
         data.handle = handleIndex++;
         state.thisProcess->WriteMemory(data, buffer.output[0].address);
-        state.logger->Info("Create: Input: Size: 0x{:X}, Output: Handle: 0x{:X}, Status: {}", data.size, data.handle, buffer.status);
+        state.logger->Debug("Create: Input: Size: 0x{:X}, Output: Handle: 0x{:X}, Status: {}", data.size, data.handle, buffer.status);
     }
 
     void NvMap::FromId(skyline::gpu::device::IoctlBuffers &buffer) {
@@ -41,7 +41,7 @@ namespace skyline::gpu::device {
             state.thisProcess->WriteMemory(data, buffer.output[0].address);
         else
             buffer.status = NvStatus::BadValue;
-        state.logger->Info("FromId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
+        state.logger->Debug("FromId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
     }
 
     void NvMap::Alloc(IoctlBuffers &buffer) {
@@ -61,7 +61,7 @@ namespace skyline::gpu::device {
         object->kind = data.kind;
         object->address = data.address;
         object->status = NvMapObject::Status::Allocated;
-        state.logger->Info("Alloc: Input: Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}, Output: Status: {}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.address, buffer.status);
+        state.logger->Debug("Alloc: Input: Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}, Output: Status: {}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.address, buffer.status);
     }
 
     void NvMap::Free(skyline::gpu::device::IoctlBuffers &buffer) {
@@ -125,7 +125,7 @@ namespace skyline::gpu::device {
                 break;
         }
         state.thisProcess->WriteMemory(data, buffer.output[0].address);
-        state.logger->Info("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
+        state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
     }
 
     void NvMap::GetId(skyline::gpu::device::IoctlBuffers &buffer) {
@@ -135,6 +135,6 @@ namespace skyline::gpu::device {
         } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
         data.id = handleTable.at(data.handle)->id;
         state.thisProcess->WriteMemory(data, buffer.output[0].address);
-        state.logger->Info("GetId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
+        state.logger->Debug("GetId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
     }
 }

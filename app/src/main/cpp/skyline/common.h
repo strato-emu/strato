@@ -40,7 +40,8 @@ namespace skyline {
         constexpr u64 MapSize = 0x1000000000; //!< The size of the map region
         constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
         constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
-        constexpr size_t DefHeapSize = PAGE_SIZE; //!< The default amount of heap
+        constexpr size_t HeapSizeDiv = 0x200000; //!< The amount heap size has to be divisible by
+        constexpr size_t DefHeapSize = HeapSizeDiv; //!< The default amount of heap
         constexpr size_t TlsSlotSize = 0x200; //!< The size of a single TLS slot
         constexpr u8 TlsSlots = PAGE_SIZE / TlsSlotSize; //!< The amount of TLS slots in a single page
         // Loader
@@ -76,14 +77,18 @@ namespace skyline {
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
+            constexpr u32 NoMessages = 0x680; //!< "No message available"
             constexpr u32 ServiceInvName = 0xC15; //!< "Invalid name"
             constexpr u32 ServiceNotReg = 0xE15; //!< "Service not registered"
+            constexpr u32 InvSize = 0xCA01; //!< "Invalid size"
             constexpr u32 InvAddress = 0xCC01; //!< "Invalid address"
+            constexpr u32 InvPermission = 0xE001; //!< "Invalid Permission"
             constexpr u32 InvHandle = 0xE401; //!< "Invalid handle"
+            constexpr u32 InvCombination = 0xE801; //!< "Invalid combination"
             constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
-            constexpr u32 Timeout = 0xEA01; //!< "Timeout while svcWaitSynchronization"
+            constexpr u32 Timeout = 0xEA01; //!< "Timeout"
+            constexpr u32 NotFound = 0xF201; //!< "Not found"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
-            constexpr u32 NoMessages = 0x680; //!< "No message available"
         }
     };
 

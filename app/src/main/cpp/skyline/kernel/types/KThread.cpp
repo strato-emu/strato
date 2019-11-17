@@ -13,10 +13,12 @@ namespace skyline::kernel::type {
     }
 
     void KThread::Start() {
-        if (pid == parent->mainThread)
-            parent->status = KProcess::Status::Started;
-        status = Status::Running;
-        state.nce->StartProcess(entryPoint, entryArg, stackTop, handle, pid);
+        if(status == Status::Created) {
+            if (pid == parent->mainThread)
+                parent->status = KProcess::Status::Started;
+            status = Status::Running;
+            state.nce->StartProcess(entryPoint, entryArg, stackTop, handle, pid);
+        }
     }
 
     void KThread::UpdatePriority(u8 priority) {

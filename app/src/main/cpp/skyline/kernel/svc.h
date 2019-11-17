@@ -92,14 +92,14 @@ namespace skyline {
         void MapSharedMemory(DeviceState &state);
 
         /**
-         * @brief Closes the specified handle
-         */
-        void CloseHandle(DeviceState &state);
-
-        /**
          * @brief Returns a handle to a KSharedMemory object (https://switchbrew.org/wiki/SVC#svcCreateTransferMemory)
          */
         void CreateTransferMemory(DeviceState &state);
+
+        /**
+         * @brief Closes the specified handle
+         */
+        void CloseHandle(DeviceState &state);
 
         /**
          * @brief This resets a particular KEvent or KProcess which is signalled (https://switchbrew.org/wiki/SVC#svcResetSignal)
@@ -110,12 +110,6 @@ namespace skyline {
          * @brief Stalls a thread till a KSyncObject signals or the timeout has ended (https://switchbrew.org/wiki/SVC#svcWaitSynchronization)
          */
         void WaitSynchronization(DeviceState &state);
-
-        /**
-         * @brief This returns the value of CNTPCT_EL0 on the Switch (https://switchbrew.org/wiki/SVC#svcGetSystemTick)
-         */
-        void GetSystemTick(DeviceState &state);
-
         /**
          * @brief Locks a specified mutex
          */
@@ -135,6 +129,11 @@ namespace skyline {
          * @brief Signals a process-wide key (Conditional-Variable)
          */
         void SignalProcessWideKey(DeviceState &state);
+
+        /**
+         * @brief This returns the value of CNTPCT_EL0 on the Switch (https://switchbrew.org/wiki/SVC#svcGetSystemTick)
+         */
+        void GetSystemTick(DeviceState &state);
 
         /**
          * @brief Connects to a named IPC port

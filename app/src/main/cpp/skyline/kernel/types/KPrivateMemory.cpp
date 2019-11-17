@@ -24,8 +24,8 @@ namespace skyline::kernel::type {
             this->address = fregs.regs[0];
     }
 
-    u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size, u64 perms) {
-        return reinterpret_cast<u64>(mremap(reinterpret_cast<void *>(address), oldSize, size, 0));
+    u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size, u64 flags) {
+        return reinterpret_cast<u64>(mremap(reinterpret_cast<void *>(address), oldSize, size, static_cast<int>(flags)));
     }
 
     u64 KPrivateMemory::Resize(size_t newSize, bool canMove) {
@@ -33,7 +33,7 @@ namespace skyline::kernel::type {
         fregs.regs[0] = address;
         fregs.regs[1] = size;
         fregs.regs[2] = newSize;
-        fregs.regs[3] = static_cast<u64>(PROT_READ | PROT_WRITE);
+        fregs.regs[3] = canMove ? MREMAP_MAYMOVE : 0;
         state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapPrivateFunc), fregs, owner);
         if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
             throw exception("An error occurred while remapping private region in child process");

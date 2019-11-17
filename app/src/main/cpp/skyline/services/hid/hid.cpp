@@ -7,9 +7,9 @@ namespace skyline::service::hid {
     }) {}
 
     void IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        hidSharedMemory = state.os->MapSharedKernel(0, constant::hidSharedMemSize, memory::Permission(true, false, false), memory::Permission(true, true, false), memory::Type::SharedMemory);
+        hidSharedMemory = std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::hidSharedMemSize, memory::Permission(true, false, false), memory::Type::SharedMemory);
         auto handle = state.thisProcess->InsertItem<type::KSharedMemory>(hidSharedMemory);
-        state.logger->Info("Writing HID SHM: {}", handle);
+        state.logger->Debug("HID Shared Memory Handle: {}", handle);
         response.copyHandles.push_back(handle);
     }
 

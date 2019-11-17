@@ -62,15 +62,15 @@ namespace skyline::kernel {
         }
     }
 
-    void OS::SvcHandler(u16 svc) {
-        if (svc::SvcTable[svc]) {
-            state.logger->Debug("SVC called 0x{:X}", svc);
-            (*svc::SvcTable[svc])(state);
-        } else
-            throw exception("Unimplemented SVC 0x{:X}", svc);
-    }
-
-    std::shared_ptr<kernel::type::KSharedMemory> OS::MapSharedKernel(const u64 address, const size_t size, const memory::Permission kernelPermission, const memory::Permission remotePermission, const memory::Type type) {
-        return std::make_shared<kernel::type::KSharedMemory>(state, 0, address, size, kernelPermission, remotePermission, type);
+    void OS::SvcHandler(const u16 svc) {
+        try {
+            if (svc::SvcTable[svc]) {
+                state.logger->Debug("SVC called 0x{:X}", svc);
+                (*svc::SvcTable[svc])(state);
+            } else
+                throw exception("Unimplemented SVC 0x{:X}", svc);
+        } catch(const exception& e) {
+            throw exception("{} (SVC: {})", e.what(), svc);
+        }
     }
 }

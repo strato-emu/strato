@@ -55,18 +55,6 @@ namespace skyline::kernel {
          * @brief Handles a particular SuperVisor Call
          * @param svc The ID of the SVC to be called
          */
-        void SvcHandler(u16 svc);
-
-        /**
-         * @brief Map a chunk of shared memory (Use only when kernel should be owner process else create KSharedMemory directly)
-         * @param address The address to map to (Can be 0 if address doesn't matter)
-         * @param size The size of the chunk of memory
-         * @param localPermission The permissions of the memory for the kernel
-         * @param remotePermission The permissions of the memory for the processes
-         * @param type The type of the memory
-         * @param region The specific region this memory is mapped for
-         * @return A shared pointer to the kernel::type::KSharedMemory object
-         */
-        std::shared_ptr<kernel::type::KSharedMemory> MapSharedKernel(const u64 address, const size_t size, const memory::Permission kernelPermission, const memory::Permission remotePermission, const memory::Type type);
+        void SvcHandler(const u16 svc);
     };
 }

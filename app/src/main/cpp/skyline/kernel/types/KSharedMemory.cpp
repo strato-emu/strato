@@ -8,28 +8,26 @@ namespace skyline::kernel::type {
         return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_SHARED | ((address) ? MAP_FIXED : 0), static_cast<int>(fd), 0)); // NOLINT(hicpp-signed-bitwise)
     }
 
-    KSharedMemory::KSharedMemory(const DeviceState &state, pid_t pid, u64 kaddress, size_t ksize, const memory::Permission localPermission, const memory::Permission remotePermission, memory::Type type) : kaddress(kaddress), ksize(ksize), localPermission(localPermission), remotePermission(remotePermission), type(type), owner(pid), KObject(state, KType::KSharedMemory) {
-        fd = ASharedMemory_create("", ksize);
+    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::Type type) : type(type), KObject(state, KType::KSharedMemory) {
+        fd = ASharedMemory_create("", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
-        kaddress = MapSharedFunc(kaddress, ksize, static_cast<u64>(pid ? remotePermission.Get() : localPermission.Get()), static_cast<u64>(fd));
-        if (kaddress == reinterpret_cast<u64>(MAP_FAILED)) // NOLINT(hicpp-signed-bitwise)
+        address = MapSharedFunc(address, size, static_cast<u64>(permission.Get()), static_cast<u64>(fd));
+        if (address == reinterpret_cast<u64>(MAP_FAILED)) // NOLINT(hicpp-signed-bitwise)
             throw exception("An occurred while mapping shared region: {}", strerror(errno));
+        procInfMap[0] = {address, size, permission};
     }
 
-    u64 KSharedMemory::Map(u64 address, u64 size, pid_t process) {
+    u64 KSharedMemory::Map(u64 address, u64 size, memory::Permission permission, pid_t pid) {
         user_pt_regs fregs = {0};
         fregs.regs[0] = address;
         fregs.regs[1] = size;
-        if (process == owner)
-            fregs.regs[2] = static_cast<u64 >(localPermission.Get());
-        else
-            fregs.regs[2] = static_cast<u64>(remotePermission.Get());
+        fregs.regs[2] = static_cast<u64>(permission.Get());
         fregs.regs[3] = static_cast<u64>(fd);
-        state.nce->ExecuteFunction(reinterpret_cast<void *>(MapSharedFunc), fregs, process);
+        state.nce->ExecuteFunction(reinterpret_cast<void *>(MapSharedFunc), fregs, pid);
         if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
             throw exception("An error occurred while mapping shared region in child process");
-        procInfMap[process] = {fregs.regs[0], size};
+        procInfMap[pid] = {fregs.regs[0], size, permission};
         return fregs.regs[0];
     }
 
@@ -40,14 +38,15 @@ namespace skyline::kernel::type {
     KSharedMemory::~KSharedMemory() {
         for (auto[process, procInf] : procInfMap) {
             try {
-                user_pt_regs fregs = {0};
-                fregs.regs[0] = procInf.address;
-                fregs.regs[1] = procInf.size;
-                state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapSharedFunc), fregs, process);
-            } catch (const std::exception &) {
-            }
+                if(process) {
+                    user_pt_regs fregs = {0};
+                    fregs.regs[0] = procInf.address;
+                    fregs.regs[1] = procInf.size;
+                    state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapSharedFunc), fregs, process);
+                } else
+                    UnmapSharedFunc(procInf.address, procInf.size);
+            } catch (const std::exception &) {}
         }
-        UnmapSharedFunc(kaddress, ksize);
         close(fd);
     }
 
@@ -57,54 +56,53 @@ namespace skyline::kernel::type {
 
     void KSharedMemory::Resize(size_t newSize) {
         for (auto&[process, procInf] : procInfMap) {
-            user_pt_regs fregs = {0};
-            fregs.regs[0] = procInf.address;
-            fregs.regs[1] = procInf.size;
-            fregs.regs[2] = newSize;
-            state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapSharedFunc), fregs, process);
-            if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
-                throw exception("An error occurred while remapping shared region in child process");
+            if(process) {
+                user_pt_regs fregs = {0};
+                fregs.regs[0] = procInf.address;
+                fregs.regs[1] = procInf.size;
+                fregs.regs[2] = newSize;
+                state.nce->ExecuteFunction(reinterpret_cast<void *>(RemapSharedFunc), fregs, process);
+                if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
+                    throw exception("An error occurred while remapping shared region in child process");
+            } else {
+                if (RemapSharedFunc(procInf.address, procInf.size, newSize) == reinterpret_cast<u64>(MAP_FAILED))
+                    throw exception("An occurred while remapping shared region: {}", strerror(errno));
+            }
             procInf.size = newSize;
         }
-        if (RemapSharedFunc(kaddress, ksize, newSize) == reinterpret_cast<u64>(MAP_FAILED))
-            throw exception("An occurred while remapping shared region: {}", strerror(errno));
-        ksize = newSize;
     }
 
     u64 UpdatePermissionSharedFunc(u64 address, size_t size, u64 perms) {
         return static_cast<u64>(mprotect(reinterpret_cast<void *>(address), size, static_cast<int>(perms)));
     }
 
-    void KSharedMemory::UpdatePermission(bool local, memory::Permission newPerms) {
+    void KSharedMemory::UpdatePermission(pid_t pid, memory::Permission permission) {
         for (auto&[process, procInf] : procInfMap) {
-            if ((local && process == owner) || (!local && process != owner)) {
+            if(process) {
                 user_pt_regs fregs = {0};
                 fregs.regs[0] = procInf.address;
                 fregs.regs[1] = procInf.size;
-                fregs.regs[2] = static_cast<u64>(newPerms.Get());
+                fregs.regs[2] = static_cast<u64>(procInf.permission.Get());
                 state.nce->ExecuteFunction(reinterpret_cast<void *>(UpdatePermissionSharedFunc), fregs, process);
                 if (static_cast<int>(fregs.regs[0]) == -1)
                     throw exception("An error occurred while updating shared region's permissions in child process");
+            } else {
+                if (UpdatePermissionSharedFunc(procInf.address, procInf.size, static_cast<u64>(permission.Get())) == reinterpret_cast<u64>(MAP_FAILED))
+                    throw exception("An occurred while remapping shared region: {}", strerror(errno));
             }
+            procInf.permission = permission;
         }
-        if ((local && owner == 0) || (!local && owner != 0))
-            if (mprotect(reinterpret_cast<void *>(kaddress), ksize, newPerms.Get()) == -1)
-                throw exception("An occurred while updating shared region's permissions: {}", strerror(errno));
-        if (local)
-            localPermission = newPerms;
-        else
-            remotePermission = newPerms;
     }
 
-    memory::MemoryInfo KSharedMemory::GetInfo(pid_t process) {
+    memory::MemoryInfo KSharedMemory::GetInfo(pid_t pid) {
         memory::MemoryInfo info{};
-        const auto &procInf = procInfMap.at(process);
+        const auto &procInf = procInfMap.at(pid);
         info.baseAddress = procInf.address;
         info.size = procInf.size;
         info.type = static_cast<u64>(type);
         info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
         info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
-        info.perms = (process == owner) ? localPermission : remotePermission;
+        info.perms = procInf.permission;
         info.ipcRefCount = ipcRefCount;
         info.deviceRefCount = deviceRefCount;
         return info;
