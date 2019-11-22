@@ -1,7 +1,6 @@
 #include "dispdrv.h"
 #include <kernel/types/KProcess.h>
 #include <gpu.h>
-#include <android/native_window.h>
 
 namespace skyline::service::nvnflinger {
     dispdrv::dispdrv(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvnflinger_dispdrv, {

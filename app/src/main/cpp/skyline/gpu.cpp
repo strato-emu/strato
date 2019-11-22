@@ -12,6 +12,7 @@ namespace skyline::gpu {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
+        format = ANativeWindow_getFormat(window);
     }
 
     GPU::~GPU() {
@@ -23,38 +24,39 @@ namespace skyline::gpu {
             auto &buffer = bufferQueue.displayQueue.front();
             bufferQueue.displayQueue.pop();
             if (resolution != buffer->resolution || buffer->gbpBuffer.format != format) {
-                if (resolution != buffer->resolution && buffer->gbpBuffer.format != format) {
-                    ANativeWindow_setBuffersGeometry(window, buffer->resolution.width, buffer->resolution.height, buffer->gbpBuffer.format);
-                    resolution = buffer->resolution;
-                    format = buffer->gbpBuffer.format;
-                } else if (resolution != buffer->resolution) {
-                    ANativeWindow_setBuffersGeometry(window, buffer->resolution.width, buffer->resolution.height, format);
-                    resolution = buffer->resolution;
-                } else if (buffer->gbpBuffer.format != format) {
-                    ANativeWindow_setBuffersGeometry(window, resolution.width, resolution.height, buffer->gbpBuffer.format);
-                    format = buffer->gbpBuffer.format;
-                }
+                ANativeWindow_setBuffersGeometry(window, buffer->resolution.width, buffer->resolution.height, buffer->gbpBuffer.format);
+                resolution = buffer->resolution;
+                format = buffer->gbpBuffer.format;
             }
             buffer->UpdateBuffer();
-            auto bufferData = buffer->dataBuffer.data();
-            //madvise(bufferData, buffer->gbpBuffer.size, MADV_SEQUENTIAL); (Uncomment this after deswizzling while reading sequentially instead of writing sequentially)
+            u8 *inBuffer = buffer->dataBuffer.data();
+            madvise(inBuffer, buffer->gbpBuffer.size, MADV_SEQUENTIAL);
             ANativeWindow_Buffer windowBuffer;
             ARect rect;
             ANativeWindow_lock(window, &windowBuffer, &rect);
-            u32 *address = reinterpret_cast<u32 *>(windowBuffer.bits);
-            for (u32 y = 0; y < buffer->resolution.height; y++) {
-                for (u32 x = 0; x < buffer->resolution.width; x += 4, address += 4) {
-                    u32 position = (y & 0x7f) >> 4U;
-                    position += (x >> 4U) << 3U;
-                    position += (y >> 7U) * ((resolution.width >> 4U) << 3U);
-                    position *= 1024;
-                    position += ((y & 0xf) >> 3U) << 9U;
-                    position += ((x & 0xf) >> 3U) << 8U;
-                    position += ((y & 0x7) >> 1U) << 6U;
-                    position += ((x & 0x7) >> 2U) << 5U;
-                    position += (y & 0x1) << 4U;
-                    position += (x & 0x3) << 2U;
-                    std::memcpy(address, bufferData + position, sizeof(u32) * 4);
+            u8 *outBuffer = reinterpret_cast<u8 *>(windowBuffer.bits);
+            const u32 strideBytes = buffer->gbpBuffer.stride * buffer->bpp;
+            const u32 blockHeight = 1U << buffer->gbpBuffer.blockHeightLog2;
+            const u32 blockHeightPixels = 8U << buffer->gbpBuffer.blockHeightLog2;
+            const u32 widthBlocks = strideBytes >> 6U;
+            const u32 heightBlocks = ((resolution.height) + blockHeightPixels - 1) >> (3 + buffer->gbpBuffer.blockHeightLog2);
+            for (u32 blockY = 0; blockY < heightBlocks; blockY++) {
+                for (u32 blockX = 0; blockX < widthBlocks; blockX++) {
+                    for (u32 gobY = 0; gobY < blockHeight; gobY++) {
+                        const u32 x = blockX * constant::GobStride;
+                        const u32 y = blockY * blockHeightPixels + gobY * constant::GobHeight;
+                        if (y < resolution.height) {
+                            u8 *inBlock = inBuffer;
+                            u8 *outBlock = outBuffer + (y * strideBytes) + x;
+                            for (u32 i = 0; i < 32; i++) {
+                                const u32 yT = ((i >> 1) & 0x06) | (i & 0x01); // NOLINT(hicpp-signed-bitwise)
+                                const u32 xT = ((i << 3) & 0x10) | ((i << 1) & 0x20); // NOLINT(hicpp-signed-bitwise)
+                                std::memcpy(outBlock + (yT * strideBytes) + xT, inBlock, sizeof(u128));
+                                inBlock += sizeof(u128);
+                            }
+                        }
+                        inBuffer += constant::GobSize;
+                    }
                 }
             }
             ANativeWindow_unlockAndPost(window);

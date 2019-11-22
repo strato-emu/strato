@@ -90,8 +90,8 @@ namespace skyline::gpu {
      * @brief This represents conditions for the completion of an asynchronous graphics operation
      */
     struct Fence {
-        u32 syncptId;
-        u32 syncptValue;
+        u32 syncptId; //!< The ID of the syncpoint
+        u32 syncptValue; //!< The value of the syncpoint
     };
 
     /**
@@ -101,6 +101,7 @@ namespace skyline::gpu {
       public:
         const DeviceState &state; //!< The state of the device
         u32 slot; //!< The slot the buffer is in
+        u32 bpp; //!< The amount of bytes per pixel
         Resolution resolution; //!< The resolution of this buffer
         GbpBuffer gbpBuffer; //!< The information about the underlying buffer
         BufferStatus status{BufferStatus::Free}; //!< The status of this buffer
