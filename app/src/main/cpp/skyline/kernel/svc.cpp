@@ -26,13 +26,13 @@ namespace skyline::kernel::svc {
 
     void SetMemoryAttribute(DeviceState &state) {
         const u64 addr = state.nce->GetRegister(Xreg::X0);
-        if((addr & (PAGE_SIZE - 1))) {
+        if((addr & (PAGE_SIZE - 1U))) {
             state.nce->SetRegister(Wreg::W0, constant::status::InvAddress);
             state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: {}", addr);
             return;
         }
         const u64 size = state.nce->GetRegister(Xreg::X1);
-        if((size & (PAGE_SIZE - 1)) || !size) {
+        if((size & (PAGE_SIZE - 1U)) || !size) {
             state.nce->SetRegister(Wreg::W0, constant::status::InvSize);
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: {}", size ? "not page aligned" : "is zero", size);
             return;
@@ -127,22 +127,22 @@ namespace skyline::kernel::svc {
         u64 entryArg = state.nce->GetRegister(Xreg::X2);
         u64 stackTop = state.nce->GetRegister(Xreg::X3);
         u8 priority = static_cast<u8>(state.nce->GetRegister(Wreg::W4));
-        if(priority >= constant::PriorityNin.first && priority <= constant::PriorityNin.second) {
+        if((priority < constant::PriorityNin.first) && (priority > constant::PriorityNin.second)) { // NOLINT(misc-redundant-expression)
             state.nce->SetRegister(Wreg::W0, constant::status::InvAddress);
-            state.logger->Warn("svcSetHeapSize: 'priority' invalid: {}", priority);
+            state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
         auto thread = state.thisProcess->CreateThread(entryAddr, entryArg, stackTop, priority);
-        state.nce->SetRegister(Wreg::W0, constant::status::Success);
+        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddr, entryArg, stackTop, priority, thread->pid);
         state.nce->SetRegister(Wreg::W1, thread->handle);
-        state.logger->Info("svcCreateThread: Created thread with handle 0x{:X}", thread->handle);
+        state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
     void StartThread(DeviceState &state) {
         auto handle = state.nce->GetRegister(Wreg::W0);
         try {
             auto thread = state.thisProcess->GetHandle<type::KThread>(handle);
-            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, {}", handle, thread->pid);
+            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->pid);
             thread->Start();
         } catch (const std::exception&) {
             state.logger->Warn("svcStartThread: 'handle' invalid: 0x{:X}", handle);
@@ -257,17 +257,7 @@ namespace skyline::kernel::svc {
     void CloseHandle(DeviceState &state) {
         auto handle = static_cast<handle_t>(state.nce->GetRegister(Wreg::W0));
         try {
-            auto &object = state.thisProcess->handleTable.at(handle);
-            switch (object->objectType) {
-                case (type::KType::KThread):
-                    state.os->KillThread(std::static_pointer_cast<type::KThread>(object)->pid);
-                    break;
-                case (type::KType::KProcess):
-                    state.os->KillThread(std::static_pointer_cast<type::KProcess>(object)->mainThread);
-                    break;
-                default:
-                    state.thisProcess->handleTable.erase(handle);
-            }
+            state.thisProcess->handleTable.erase(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.nce->SetRegister(Wreg::W0, constant::status::Success);
         } catch(const std::exception&) {
@@ -408,7 +398,7 @@ namespace skyline::kernel::svc {
         auto count = state.nce->GetRegister(Wreg::W1);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
         if (!state.thisProcess->condVarMap.count(address)) {
-            state.logger->Warn("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
+            state.logger->Debug("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
             return;
         }
         auto &cvarVec = state.thisProcess->condVarMap.at(address);

@@ -17,18 +17,17 @@
 #include <android/native_window.h>
 
 namespace skyline {
-    // Global typedefs
-    typedef __uint128_t u128;
-    typedef __uint64_t u64;
-    typedef __uint32_t u32;
-    typedef __uint16_t u16;
-    typedef __uint8_t u8;
-    typedef __int128_t i128;
-    typedef __int64_t i64;
-    typedef __int32_t i32;
-    typedef __int16_t i16;
-    typedef __int8_t i8;
-    typedef u32 handle_t; //!< The type of an handle
+    using u128 = __uint128_t; //!< Unsigned 128-bit integer
+    using u64 = __uint64_t; //!< Unsigned 64-bit integer
+    using u32 = __uint32_t; //!< Unsigned 32-bit integer
+    using u16 = __uint16_t; //!< Unsigned 16-bit integer
+    using u8 = __uint8_t; //!< Unsigned 8-bit integer
+    using i128 = __int128_t; //!< Signed 128-bit integer
+    using i64 = __int64_t; //!< Signed 64-bit integer
+    using i32 = __int32_t; //!< Signed 32-bit integer
+    using i16 = __int16_t; //!< Signed 16-bit integer
+    using i8 = __int8_t; //!< Signed 8-bit integer
+    using handle_t = u32; //!< The type of a kernel handle
 
     namespace constant {
         // Memory
@@ -74,6 +73,9 @@ namespace skyline {
         constexpr u32 DockedResolutionW = 1920; //!< The width component of the docked resolution
         constexpr u32 DockedResolutionH = 1080; //!< The height component of the docked resolution
         constexpr u32 TokenLength = 0x50; //!< The length of the token on BufferQueue parcels
+        constexpr u32 GobHeight = 0x8; //!< The height of a blocklinear GOB
+        constexpr u32 GobStride = 0x40; //!< The stride of a blocklinear GOB
+        constexpr u32 GobSize = GobHeight * GobStride; //!< The size of a blocklinear GOB
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
@@ -94,7 +96,7 @@ namespace skyline {
 
     namespace instr {
         /**
-         * @brief A bit-field struct that encapsulates a BRK instruction. It can be used to generate as well as parse the instruction's opcode. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction.
+         * @brief A bit-field struct that encapsulates a BRK instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction.
          */
         struct Brk {
             /**
@@ -328,7 +330,6 @@ namespace skyline {
         return static_cast<u64>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
     }
 
-    // Predeclare some classes here as we use them in DeviceState
     class NCE;
     namespace gpu {
         class GPU;

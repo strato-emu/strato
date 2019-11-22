@@ -19,8 +19,8 @@ namespace skyline::kernel {
     }
 
     /**
-       * Function executed by all child processes after cloning
-       */
+      * Function executed by all child processes after cloning
+      */
     int ExecuteChild(void *) {
         ptrace(PTRACE_TRACEME);
         asm volatile("Brk #0xFF"); // BRK #constant::brkRdy (So we know when the thread/process is ready)
@@ -48,15 +48,15 @@ namespace skyline::kernel {
     void OS::KillThread(pid_t pid) {
         auto process = processMap.at(pid);
         if (process->mainThread == pid) {
-            state.logger->Debug("Exiting process with PID: {}", pid);
-            // Erasing all shared_ptr instances to the process will call the destructor
-            // However, in the case these are not all instances of it we wouldn't want to call the destructor
-            for (auto&[key, value]: process->threadMap)
+            state.logger->Debug("Killing process with PID: {}", pid);
+            for (auto&[key, value]: process->threadMap) {
+                value->Kill();
                 processMap.erase(key);
+            }
             processVec.erase(std::remove(processVec.begin(), processVec.end(), pid), processVec.end());
         } else {
-            state.logger->Debug("Exiting thread with TID: {}", pid);
-            process->handleTable.erase(process->threadMap[pid]->handle);
+            state.logger->Debug("Killing thread with TID: {}", pid);
+            process->threadMap.at(pid)->Kill();
             process->threadMap.erase(pid);
             processMap.erase(pid);
         }
@@ -70,7 +70,7 @@ namespace skyline::kernel {
             } else
                 throw exception("Unimplemented SVC 0x{:X}", svc);
         } catch(const exception& e) {
-            throw exception("{} (SVC: {})", e.what(), svc);
+            throw exception("{} (SVC: 0x{:X})", e.what(), svc);
         }
     }
 }

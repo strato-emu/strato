@@ -1,5 +1,6 @@
 #include "KProcess.h"
 #include <nce.h>
+#include <os.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -71,9 +72,10 @@ namespace skyline::kernel::type {
         auto pid = static_cast<pid_t>(fregs.regs[0]);
         if (pid == -1)
             throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
-        threadMap[pid] = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this).item;
-        state.logger->Debug("A new thread was created: EP: 0x{:X}, EA: 0x{:X}, STP: 0x{:X}, PR: 0x{:X}, TLS: {}", entryPoint, entryArg, stackTop, priority, threadMap[pid]->tls);
-        return threadMap[pid];
+        auto process = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this).item;
+        threadMap[pid] = process;
+        state.os->processMap[pid] = state.os->processMap[mainThread];
+        return process;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {

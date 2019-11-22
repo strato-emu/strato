@@ -20,7 +20,8 @@ namespace skyline::kernel::type {
             WaitSync, //!< The thread is waiting for a KSyncObject signal
             WaitMutex, //!< The thread is waiting on a Mutex
             WaitCondVar, //!< The thread is waiting on a Conditional Variable
-            Runnable //!< The thread is ready to run after waiting
+            Runnable, //!< The thread is ready to run after waiting
+            Dead //!< The thread is dead and not running
         } status = Status::Created; //!< The state of the thread
         std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding the objects this thread is waiting for
         u64 timeout{}; //!< The end of a timeout for svcWaitSynchronization or the end of the sleep period for svcSleepThread
@@ -49,9 +50,14 @@ namespace skyline::kernel::type {
         ~KThread();
 
         /**
-         * @brief This starts this thread
+         * @brief This starts this thread process
          */
         void Start();
+
+        /**
+         * @brief This kills the thread
+         */
+        void Kill();
 
         /**
          * @brief This causes this thread to sleep indefinitely (no-op if thread is already sleeping)

@@ -28,11 +28,12 @@ namespace skyline::kernel {
         /**
          * @param logger An instance of the Logger class
          * @param settings An instance of the Settings class
+         * @param window The ANativeWindow object to draw the screen to
          */
         OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, ANativeWindow *window);
 
         /**
-         * @brief Execute a particular ROM file. This launches a the main processes and calls the NCE class to handle execution.
+         * @brief Execute a particular ROM file. This launches the main process and calls the NCE class to handle execution.
          * @param romFile The path to the ROM file to execute
          */
         void Execute(const std::string &romFile);

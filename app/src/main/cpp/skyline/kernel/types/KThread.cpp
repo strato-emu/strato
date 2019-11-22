@@ -9,7 +9,7 @@ namespace skyline::kernel::type {
     }
 
     KThread::~KThread() {
-        kill(pid, SIGKILL);
+        Kill();
     }
 
     void KThread::Start() {
@@ -18,6 +18,14 @@ namespace skyline::kernel::type {
                 parent->status = KProcess::Status::Started;
             status = Status::Running;
             state.nce->StartProcess(entryPoint, entryArg, stackTop, handle, pid);
+        }
+    }
+
+    void KThread::Kill() {
+        if(status != Status::Dead) {
+            status = Status::Dead;
+            kill(pid, SIGKILL);
+            Signal();
         }
     }
 
