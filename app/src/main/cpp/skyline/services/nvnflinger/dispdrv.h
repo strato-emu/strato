@@ -51,13 +51,13 @@ namespace skyline::service::nvnflinger {
         void TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle)
-         */
-        void GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-
-        /**
          * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#AdjustRefcount)
          */
         void AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle)
+         */
+        void GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

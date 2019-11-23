@@ -2,9 +2,6 @@
 #include <nce.h>
 #include <os.h>
 
-constexpr const char *ASHMEM_NAME_DEF = "dev/ashmem";
-constexpr int ASHMEM_SET_SIZE = 0x40087703;
-
 namespace skyline::kernel::type {
     u64 MapTransferFunc(u64 address, size_t size, u64 perms) {
         return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0)); // NOLINT(hicpp-signed-bitwise)

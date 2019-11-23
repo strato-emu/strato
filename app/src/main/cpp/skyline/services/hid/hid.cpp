@@ -30,20 +30,16 @@ namespace skyline::service::hid {
     }
 
     void hid::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u32 styleSet;
-            u64 appletUserId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        styleSet = *reinterpret_cast<StyleSet *>(&input->styleSet);
-        state.logger->Debug("Controller Support:\nPro-Controller: {}\nJoy-Con: Handheld: {}, Dual: {}, L: {}, R: {}\nGameCube: {}\nPokeBall: {}\nNES: {}, NES Handheld: {}, SNES: {}", static_cast<bool>(styleSet->proController), static_cast<bool>(styleSet->joyconHandheld), static_cast<bool>(styleSet->joyconDual), static_cast<bool>(styleSet->joyconLeft), static_cast<bool>
-        (styleSet->joyconRight), static_cast<bool>(styleSet->gamecube), static_cast<bool>(styleSet->pokeball), static_cast<bool>(styleSet->nes), static_cast<bool>(styleSet->nesHandheld), static_cast<bool>(styleSet->snes));
+        auto styleSet = request.Pop<StyleSet>();
+        state.logger->Debug("Controller Support:\nPro-Controller: {}\nJoy-Con: Handheld: {}, Dual: {}, L: {}, R: {}\nGameCube: {}\nPokeBall: {}\nNES: {}, NES Handheld: {}, SNES: {}", static_cast<bool>(styleSet.proController), static_cast<bool>(styleSet.joyconHandheld), static_cast<bool>(styleSet.joyconDual), static_cast<bool>(styleSet.joyconLeft), static_cast<bool>
+        (styleSet.joyconRight), static_cast<bool>(styleSet.gamecube), static_cast<bool>(styleSet.pokeball), static_cast<bool>(styleSet.nes), static_cast<bool>(styleSet.nesHandheld), static_cast<bool>(styleSet.snes));
     }
 
     void hid::SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        const auto &buffer = request.vecBufX[0];
-        uint numId = buffer->size / sizeof(NpadId);
-        u64 address = buffer->Address();
-        for (uint i = 0; i < numId; i++) {
+        const auto &buffer = request.inputBuf.at(0);
+        size_t numId = buffer.size / sizeof(NpadId);
+        u64 address = buffer.address;
+        for (size_t i = 0; i < numId; i++) {
             auto id = state.thisProcess->ReadMemory<NpadId>(address);
             deviceMap[id] = JoyConDevice(id);
             address += sizeof(NpadId);
@@ -53,36 +49,21 @@ namespace skyline::service::hid {
     void hid::ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void hid::SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            NpadId controllerId;
-            u64 appletUserId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        deviceMap[input->controllerId].assignment = JoyConAssignment::Single;
+        deviceMap[request.Pop<NpadId>()].assignment = JoyConAssignment::Single;
     }
 
     void hid::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u64 appletUserId;
-            JoyConOrientation orientation;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        orientation = input->orientation;
+        orientation = request.Pop<JoyConOrientation>();
     }
 
     void hid::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            NpadId controllerId;
-            u64 appletUserId;
-            JoyConSide joyDeviceType;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        deviceMap[input->controllerId].assignment = JoyConAssignment::Single;
-        deviceMap[input->controllerId].side = input->joyDeviceType;
+        auto controllerId = request.Pop<NpadId>();
+        auto appletUserId = request.Pop<u64>();
+        deviceMap[controllerId].assignment = JoyConAssignment::Single;
+        deviceMap[controllerId].side = request.Pop<JoyConSide>();
     }
 
     void hid::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            NpadId controllerType;
-            u64 appletUserId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        deviceMap[input->controllerType].assignment = JoyConAssignment::Dual;
+        deviceMap[request.Pop<NpadId>()].assignment = JoyConAssignment::Dual;
     }
 }

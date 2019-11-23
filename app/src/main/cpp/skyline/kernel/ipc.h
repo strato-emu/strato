@@ -169,11 +169,69 @@ namespace skyline::kernel::ipc {
     static_assert(sizeof(BufferDescriptorC) == 8);
 
     /**
+     * @brief This enumerates the types of IPC buffers
+     */
+    enum class IpcBufferType {
+        X, //!< This is a type-X buffer
+        A, //!< This is a type-A buffer
+        B, //!< This is a type-B buffer
+        W, //!< This is a type-W buffer
+        C //!< This is a type-C buffer
+    };
+
+    /**
+     * @brief Describes a buffer by holding the address and size
+     */
+    struct IpcBuffer {
+        u64 address; //!< The address of the buffer
+        size_t size; //!< The size of the buffer
+        IpcBufferType type; //!< The type of the buffer
+
+        /**
+         * @param address The address of the buffer
+         * @param size The size of the buffer
+         * @param type The type of the buffer
+         */
+        IpcBuffer(u64 address, size_t size, IpcBufferType type);
+    };
+
+    /**
+     * @brief This holds an input IPC buffer
+     */
+    struct InputBuffer : public IpcBuffer {
+        /**
+         * @param aBuf The X Buffer Descriptor that has contains the input data
+         */
+        InputBuffer(kernel::ipc::BufferDescriptorX *xBuf);
+
+        /**
+         * @param aBuf The A or W Buffer Descriptor that has contains the input data
+         */
+        InputBuffer(kernel::ipc::BufferDescriptorABW *aBuf, IpcBufferType type = IpcBufferType::A);
+    };
+
+    /**
+     * @brief This holds an output IPC buffer
+     */
+    struct OutputBuffer : public IpcBuffer {
+        /**
+         * @param bBuf The B or W Buffer Descriptor that has to be outputted to
+         */
+        OutputBuffer(kernel::ipc::BufferDescriptorABW *bBuf, IpcBufferType type = IpcBufferType::B);
+
+        /**
+         * @param cBuf The C Buffer Descriptor that has to be outputted to
+         */
+        OutputBuffer(kernel::ipc::BufferDescriptorC *cBuf);
+    };
+
+    /**
      * @brief This class encapsulates an IPC Request (https://switchbrew.org/wiki/IPC_Marshalling)
      */
     class IpcRequest {
       private:
         const DeviceState &state; //!< The state of the device
+        u8 *payloadOffset; //!< This is the offset of the data read from the payload
 
       public:
         std::array<u8, constant::TlsIpcSize> tls; //!< A static-sized array where TLS data is actually copied to
@@ -187,17 +245,34 @@ namespace skyline::kernel::ipc {
         std::vector<handle_t> copyHandles; //!< A vector of handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
         std::vector<handle_t> moveHandles; //!< A vector of handles that should be moved from the server to the client process rather than copied
         std::vector<handle_t> domainObjects; //!< A vector of all input domain objects
-        std::vector<BufferDescriptorX *> vecBufX; //!< This is a vector of pointers to X Buffer Descriptors
-        std::vector<BufferDescriptorABW *> vecBufA; //!< This is a vector of pointers to A Buffer Descriptors
-        std::vector<BufferDescriptorABW *> vecBufB; //!< This is a vector of pointers to B Buffer Descriptors
-        std::vector<BufferDescriptorABW *> vecBufW; //!< This is a vector of pointers to W Buffer Descriptors
-        std::vector<BufferDescriptorC *> vecBufC; //!< This is a vector of pointers to C Buffer Descriptors
+        std::vector<InputBuffer> inputBuf; //!< This is a vector of input buffers
+        std::vector<OutputBuffer> outputBuf; //!< This is a vector of output buffers
 
         /**
          * @param isDomain If the following request is a domain request
          * @param state The state of the device
          */
         IpcRequest(bool isDomain, const DeviceState &state);
+
+        /**
+         * @brief This returns a reference to an item from the top of the payload
+         * @tparam ValueType The type of the object to read
+         */
+        template<typename ValueType>
+        inline ValueType& Pop() {
+            ValueType& value = *reinterpret_cast<ValueType*>(payloadOffset);
+            payloadOffset += sizeof(ValueType);
+            return value;
+        }
+
+        /**
+         * @brief This skips an object to pop off the top
+         * @tparam ValueType The type of the object to skip
+         */
+        template<typename ValueType>
+        inline void Skip() {
+            payloadOffset += sizeof(ValueType);
+        }
     };
 
     /**
@@ -225,10 +300,10 @@ namespace skyline::kernel::ipc {
         /**
          * @brief Writes an object to the payload
          * @tparam ValueType The type of the object to write
-         * @param value The object to be written
+         * @param value A reference to the object to be written
          */
         template<typename ValueType>
-        void WriteValue(const ValueType &value) {
+        inline void Push(const ValueType &value) {
             argVec.reserve(argVec.size() + sizeof(ValueType));
             auto item = reinterpret_cast<const u8 *>(&value);
             for (uint index = 0; sizeof(ValueType) > index; index++) {
@@ -240,6 +315,6 @@ namespace skyline::kernel::ipc {
         /**
          * @brief Writes this IpcResponse object's contents into TLS
          */
-        void WriteTls();
+        void WriteResponse();
     };
 }

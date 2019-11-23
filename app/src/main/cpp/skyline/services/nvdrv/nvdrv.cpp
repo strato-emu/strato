@@ -12,43 +12,39 @@ namespace skyline::service::nvdrv {
     }) {}
 
     void nvdrv::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto aBuf = request.vecBufA[0];
-        std::string path(aBuf->Size(), '\0');
-        state.thisProcess->ReadMemory(path.data(), aBuf->Address(), aBuf->Size());
-        response.WriteValue<u32>(state.gpu->OpenDevice(path));
-        response.WriteValue<u32>(constant::status::Success);
+        auto buffer = request.inputBuf.at(0);
+        std::string path(buffer.size, '\0');
+        state.thisProcess->ReadMemory(path.data(), buffer.address, buffer.size);
+        response.Push<u32>(state.gpu->OpenDevice(path));
+        response.Push<u32>(constant::status::Success);
     }
 
     void nvdrv::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u32 fd;
-            u32 cmd;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        state.gpu->Ioctl(input->fd, input->cmd, request, response);
+        auto fd = request.Pop<u32>();
+        auto cmd = request.Pop<u32>();
+        state.gpu->Ioctl(fd, cmd, request, response);
     }
 
     void nvdrv::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u32 fd = *reinterpret_cast<u32 *>(request.cmdArg);
         state.gpu->CloseDevice(fd);
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 
     void nvdrv::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 
     void nvdrv::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u32 fd;
-            u32 eventId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
+        auto fd = request.Pop<u32>();
+        auto eventId = request.Pop<u32>();
         auto event = std::make_shared<type::KEvent>(state);
         auto handle = state.thisProcess->InsertItem<type::KEvent>(event);
-        state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", input->fd, input->eventId, handle);
+        state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
         response.copyHandles.push_back(handle);
     }
 
     void nvdrv::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 }

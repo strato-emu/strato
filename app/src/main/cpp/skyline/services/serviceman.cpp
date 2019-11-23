@@ -199,7 +199,7 @@ namespace skyline::service {
                     } else
                         session->serviceObject->HandleRequest(*session, request, response);
                     if (!response.nWrite)
-                        response.WriteTls();
+                        response.WriteResponse();
                     break;
 
                 case ipc::CommandType::Control:
@@ -207,19 +207,19 @@ namespace skyline::service {
                     state.logger->Debug("Control IPC Message: 0x{:X}", request.payload->value);
                     switch (static_cast<ipc::ControlCommand>(request.payload->value)) {
                         case ipc::ControlCommand::ConvertCurrentObjectToDomain:
-                            response.WriteValue(session->ConvertDomain());
+                            response.Push(session->ConvertDomain());
                             break;
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
-                            response.WriteValue(state.thisProcess->InsertItem(session));
+                            response.Push(state.thisProcess->InsertItem(session));
                             break;
                         case ipc::ControlCommand::QueryPointerBufferSize:
-                            response.WriteValue<u32>(0x1000);
+                            response.Push<u32>(0x1000);
                             break;
                         default:
                             throw exception("Unknown Control Command: {}", request.payload->value);
                     }
-                    response.WriteTls();
+                    response.WriteResponse();
                     break;
 
                 case ipc::CommandType::Close:

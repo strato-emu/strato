@@ -3,9 +3,7 @@
 #include <kernel/types/KProcess.h>
 
 namespace skyline::gpu {
-    Parcel::Parcel(kernel::ipc::BufferDescriptorABW *buffer, const DeviceState &state) : Parcel(buffer->Address(), buffer->Size(), state) {}
-
-    Parcel::Parcel(kernel::ipc::BufferDescriptorX *buffer, const DeviceState &state) : Parcel(buffer->Address(), buffer->size, state) {}
+    Parcel::Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state) : Parcel(buffer.address, buffer.size, state) {}
 
     Parcel::Parcel(u64 address, u64 size, const DeviceState &state) : state(state) {
         state.thisProcess->ReadMemory(&header, address, sizeof(ParcelHeader));
@@ -19,12 +17,8 @@ namespace skyline::gpu {
 
     Parcel::Parcel(const DeviceState &state) : state(state) {}
 
-    u64 Parcel::WriteParcel(kernel::ipc::BufferDescriptorABW *buffer, pid_t process) {
-        return WriteParcel(buffer->Address(), buffer->Size(), process);
-    }
-
-    u64 Parcel::WriteParcel(kernel::ipc::BufferDescriptorC *buffer, pid_t process) {
-        return WriteParcel(buffer->address, buffer->size, process);
+    u64 Parcel::WriteParcel(kernel::ipc::OutputBuffer& buffer, pid_t process) {
+        return WriteParcel(buffer.address, buffer.size, process);
     }
 
     u64 Parcel::WriteParcel(u64 address, u64 maxSize, pid_t process) {

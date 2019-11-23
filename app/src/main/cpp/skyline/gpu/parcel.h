@@ -31,14 +31,7 @@ namespace skyline::gpu {
          * @param buffer The buffer that contains the parcel
          * @param state The state of the device
          */
-        Parcel(kernel::ipc::BufferDescriptorABW *buffer, const DeviceState &state);
-
-        /**
-         * @brief This constructor fills in the Parcel object with data from a IPC buffer
-         * @param buffer The buffer that contains the parcel
-         * @param state The state of the device
-         */
-        Parcel(kernel::ipc::BufferDescriptorX *buffer, const DeviceState &state);
+        Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state);
 
         /**
          * @brief This constructor fills in the Parcel object with data from a Parcel on a remote process
@@ -85,20 +78,12 @@ namespace skyline::gpu {
         }
 
         /**
-         * @brief Writes the Parcel object into a particular B buffer on a process
+         * @brief Writes the Parcel object into a particular output buffer on a process
          * @param buffer The buffer to write into
          * @param process The process to write the Parcel to
          * @return The total size of the message
          */
-        u64 WriteParcel(kernel::ipc::BufferDescriptorABW *buffer, pid_t process = 0);
-
-        /**
-         * @brief Writes the Parcel object into a particular C buffer on a process
-         * @param buffer The buffer to write into
-         * @param process The process to write the Parcel to
-         * @return The total size of the message
-         */
-        u64 WriteParcel(kernel::ipc::BufferDescriptorC *buffer, pid_t process = 0);
+        u64 WriteParcel(kernel::ipc::OutputBuffer& buffer, pid_t process = 0);
 
         /**
          * @brief Writes the Parcel object into the process's memory

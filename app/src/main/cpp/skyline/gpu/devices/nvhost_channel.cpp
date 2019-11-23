@@ -12,15 +12,15 @@ namespace skyline::gpu::device {
         {0x40084714, NFUNC(NvHostChannel::SetUserData)}
     }) {}
 
-    void NvHostChannel::SetNvmapFd(skyline::gpu::device::IoctlBuffers &buffer) {}
+    void NvHostChannel::SetNvmapFd(skyline::gpu::device::IoctlData &buffer) {}
 
-    void NvHostChannel::AllocObjCtx(skyline::gpu::device::IoctlBuffers &buffer) {}
+    void NvHostChannel::AllocObjCtx(skyline::gpu::device::IoctlData &buffer) {}
 
-    void NvHostChannel::ZcullBind(IoctlBuffers &buffer) {}
+    void NvHostChannel::ZcullBind(IoctlData &buffer) {}
 
-    void NvHostChannel::SetErrorNotifier(skyline::gpu::device::IoctlBuffers &buffer) {}
+    void NvHostChannel::SetErrorNotifier(skyline::gpu::device::IoctlData &buffer) {}
 
-    void NvHostChannel::SetPriority(skyline::gpu::device::IoctlBuffers &buffer) {
+    void NvHostChannel::SetPriority(skyline::gpu::device::IoctlData &buffer) {
         auto priority = state.thisProcess->ReadMemory<NvChannelPriority>(buffer.input[0].address);
         switch (priority) {
             case NvChannelPriority::Low:
@@ -35,8 +35,8 @@ namespace skyline::gpu::device {
         }
     }
 
-    void NvHostChannel::AllocGpfifoEx2(skyline::gpu::device::IoctlBuffers &buffer) {}
+    void NvHostChannel::AllocGpfifoEx2(skyline::gpu::device::IoctlData &buffer) {}
 
-    void NvHostChannel::SetUserData(skyline::gpu::device::IoctlBuffers &buffer) {}
+    void NvHostChannel::SetUserData(skyline::gpu::device::IoctlData &buffer) {}
 
 }

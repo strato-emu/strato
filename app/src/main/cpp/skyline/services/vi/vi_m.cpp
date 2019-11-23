@@ -16,7 +16,7 @@ namespace skyline::service::vi {
 
     void IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Stray Layer");
-        response.WriteValue<u64>(0); // There's only one layer
+        response.Push<u64>(0); // There's only one layer
         gpu::Parcel parcel(state);
         LayerParcel data{
             .type = 0x20,
@@ -25,7 +25,7 @@ namespace skyline::service::vi {
             .string = "dispdrv"
         };
         parcel.WriteData(data);
-        response.WriteValue<u64>(parcel.WriteParcel(request.vecBufB[0]));
+        response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
     }
 
     IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IApplicationDisplayService, {
@@ -61,7 +61,7 @@ namespace skyline::service::vi {
         std::string displayName(reinterpret_cast<char *>(request.cmdArg));
         state.logger->Debug("Setting display as: {}", displayName);
         state.gpu->SetDisplay(displayName);
-        response.WriteValue<u64>(0); // There's only one display
+        response.Push<u64>(0); // There's only one display
     }
 
     void IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -74,9 +74,9 @@ namespace skyline::service::vi {
             char displayName[0x40];
             u64 layerId;
             u64 userId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        state.logger->Debug("Opening Layer: Display Name: {}, Layer ID: {}, User ID: {}", input->displayName, input->layerId, input->userId);
-        std::string name(input->displayName);
+        } input = request.Pop<InputStruct>();
+        state.logger->Debug("Opening Layer: Display Name: {}, Layer ID: {}, User ID: {}", input.displayName, input.layerId, input.userId);
+        std::string name(input.displayName);
         gpu::Parcel parcel(state);
         LayerParcel data{
             .type = 0x20,
@@ -86,24 +86,22 @@ namespace skyline::service::vi {
         };
         parcel.WriteData(data);
         parcel.objects.resize(4);
-        response.WriteValue(parcel.WriteParcel(request.vecBufB[0]));
+        response.Push(parcel.WriteParcel(request.outputBuf.at(0)));
     }
 
     void IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u64 layerId = *reinterpret_cast<u64 *>(request.cmdArg);
+        u64 layerId = request.Pop<u64>();
         state.logger->Debug("Closing Layer: {}", layerId);
         if (state.gpu->layerStatus == gpu::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         state.gpu->layerStatus = gpu::LayerStatus::Uninitialized;
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 
     void IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u64 scalingMode;
-            u64 layerId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", input->scalingMode, input->layerId);
+        auto scalingMode = request.Pop<u64>();
+        auto layerId = request.Pop<u64>();
+        state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
     }
 
     void IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -118,7 +116,7 @@ namespace skyline::service::vi {
     }) {}
 
     void ISystemDisplayService::SetLayerZ(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 
     IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IManagerDisplayService, {
@@ -129,16 +127,13 @@ namespace skyline::service::vi {
     }) {}
 
     void IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct InputStruct {
-            u32 _unk0_;
-            u64 displayId;
-            u64 userId;
-        } *input = reinterpret_cast<InputStruct *>(request.cmdArg);
-        state.logger->Debug("Creating Managed Layer: {}", input->displayId);
+        request.Skip<u32>();
+        u64 displayId = request.Pop<u64>();
+        state.logger->Debug("Creating Managed Layer: {}", displayId);
         if (state.gpu->layerStatus == gpu::LayerStatus::Initialized)
             throw exception("The application is creating more than one layer");
         state.gpu->layerStatus = gpu::LayerStatus::Initialized;
-        response.WriteValue<u64>(0); // There's only one layer
+        response.Push<u64>(0); // There's only one layer
     }
 
     void IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -146,10 +141,10 @@ namespace skyline::service::vi {
         if (state.gpu->layerStatus == gpu::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         state.gpu->layerStatus = gpu::LayerStatus::Uninitialized;
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 
     void IManagerDisplayService::AddToLayerStack(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {
-        response.WriteValue<u32>(constant::status::Success);
+        response.Push<u32>(constant::status::Success);
     }
 }

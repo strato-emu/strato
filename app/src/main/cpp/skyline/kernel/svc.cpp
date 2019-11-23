@@ -460,6 +460,8 @@ namespace skyline::kernel::svc {
     void OutputDebugString(DeviceState &state) {
         std::string debug(state.nce->GetRegister(Xreg::X1), '\0');
         state.os->thisProcess->ReadMemory(debug.data(), state.nce->GetRegister(Xreg::X0), state.nce->GetRegister(Xreg::X1));
+        if(debug.back() == '\n')
+            debug.pop_back();
         state.logger->Info("Debug Output: {}", debug);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }

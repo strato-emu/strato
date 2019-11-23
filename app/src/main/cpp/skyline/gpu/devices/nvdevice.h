@@ -55,50 +55,6 @@ namespace skyline::gpu::device {
     };
 
     /**
-     * @brief Describes a buffer by holding the address and size
-     */
-    struct IoctlBuffer {
-        u64 address; //!< The address of the buffer
-        size_t size; //!< The size of the buffer
-
-        /**
-         * @param address The address of the buffer
-         * @param size The size of the buffer
-         */
-        IoctlBuffer(u64 address, size_t size) : address(address), size(size) {}
-    };
-
-    /**
-     * @brief Wrapper around IoctlBuffer that loads in the address from a A Buffer Descriptor
-     */
-    struct InputBuffer : public IoctlBuffer {
-        /**
-         * @param aBuf The A Buffer Descriptor that has contains the input data
-         */
-        InputBuffer(kernel::ipc::BufferDescriptorABW *aBuf) : IoctlBuffer(aBuf->Address(), aBuf->Size()) {}
-
-        /**
-         * @param aBuf The X Buffer Descriptor that has contains the input data
-         */
-        InputBuffer(kernel::ipc::BufferDescriptorX *xBuf) : IoctlBuffer(xBuf->Address(), xBuf->size) {}
-    };
-
-    /**
-     * @brief Wrapper around IoctlBuffer that loads in the address from a B Buffer Descriptor
-     */
-    struct OutputBuffer : public IoctlBuffer {
-        /**
-         * @param aBuf The B Buffer Descriptor that has to be outputted to
-         */
-        OutputBuffer(kernel::ipc::BufferDescriptorABW *bBuf) : IoctlBuffer(bBuf->Address(), bBuf->Size()) {}
-
-        /**
-         * @param xBuf The C Buffer Descriptor that has to be outputted to
-         */
-        OutputBuffer(kernel::ipc::BufferDescriptorC *cBuf) : IoctlBuffer(cBuf->address, cBuf->size) {}
-    };
-
-    /**
      * @brief This enumerates all the possible error codes returned by the Nvidia driver (https://switchbrew.org/wiki/NV_services#Errors)
      */
     enum NvStatus : u32 {
@@ -128,11 +84,11 @@ namespace skyline::gpu::device {
     };
 
     /**
-     * @brief This holds all the IoctlBuffer objects in a coherent container
+     * @brief This holds all the input and output data for an IOCTL function
      */
-    struct IoctlBuffers {
-        std::vector<InputBuffer> input; //!< A vector of all input IOCTL buffers
-        std::vector<OutputBuffer> output; //!< A vector of all output IOCTL buffers
+    struct IoctlData {
+        std::vector<kernel::ipc::InputBuffer> input; //!< A vector of all input IOCTL buffers
+        std::vector<kernel::ipc::OutputBuffer> output; //!< A vector of all output IOCTL buffers
         NvStatus status{NvStatus::Success}; //!< The error code that is returned to the application
 
         /**
@@ -140,19 +96,19 @@ namespace skyline::gpu::device {
          * @param input An input buffer
          * @param output An output buffer
          */
-        IoctlBuffers(InputBuffer input, OutputBuffer output) : input({input}), output({output}) {}
+        IoctlData(kernel::ipc::InputBuffer input, kernel::ipc::OutputBuffer output) : input({input}), output({output}) {}
 
         /**
          * @brief This constructor takes 1 input buffer, it's used for Ioctl sometimes
          * @param output An output buffer
          */
-        IoctlBuffers(InputBuffer input) : input({input}) {}
+        IoctlData(kernel::ipc::InputBuffer input) : input({input}) {}
 
         /**
          * @brief This constructor takes 1 output buffer, it's used for Ioctl sometimes
          * @param output An output buffer
          */
-        IoctlBuffers(OutputBuffer output) : output({output}) {}
+        IoctlData(kernel::ipc::OutputBuffer output) : output({output}) {}
 
         /**
          * @brief This constructor takes 2 input buffers and 1 output buffer, it's used for Ioctl1
@@ -160,7 +116,7 @@ namespace skyline::gpu::device {
          * @param input2 The second input buffer
          * @param output An output buffer
          */
-        IoctlBuffers(InputBuffer input1, InputBuffer input2, OutputBuffer output) : input({input1, input2}), output({output}) {}
+        IoctlData(kernel::ipc::InputBuffer input1, kernel::ipc::InputBuffer input2, kernel::ipc::OutputBuffer output) : input({input1, input2}), output({output}) {}
 
         /**
          * @brief This constructor takes 1 input buffer and 2 output buffers, it's used for Ioctl2
@@ -168,7 +124,7 @@ namespace skyline::gpu::device {
          * @param output1 The first output buffer
          * @param output2 The second output buffer
          */
-        IoctlBuffers(InputBuffer input, OutputBuffer output1, OutputBuffer output2) : input({input}), output({output1, output2}) {}
+        IoctlData(kernel::ipc::InputBuffer input, kernel::ipc::OutputBuffer output1, kernel::ipc::OutputBuffer output2) : input({input}), output({output1, output2}) {}
     };
 
     /**
@@ -177,7 +133,7 @@ namespace skyline::gpu::device {
     class NvDevice {
       protected:
         const DeviceState &state; //!< The state of the device
-        std::unordered_map<u32, std::function<void(IoctlBuffers &)>> vTable; //!< This holds the mapping from an Ioctl to the actual function
+        std::unordered_map<u32, std::function<void(IoctlData &)>> vTable; //!< This holds the mapping from an Ioctl to the actual function
 
       public:
         u16 refCount{1}; //!< The amount of handles to the device
@@ -188,7 +144,7 @@ namespace skyline::gpu::device {
          * @param deviceType The type of the device
          * @param vTable The functions in this device
          */
-        NvDevice(const DeviceState &state, NvDeviceType deviceType, std::unordered_map<u32, std::function<void(IoctlBuffers &)>> vTable) : state(state), deviceType(deviceType), vTable(vTable) {}
+        NvDevice(const DeviceState &state, NvDeviceType deviceType, std::unordered_map<u32, std::function<void(IoctlData &)>> vTable) : state(state), deviceType(deviceType), vTable(vTable) {}
 
         /**
          * @brief This returns the name of the current service
@@ -208,8 +164,8 @@ namespace skyline::gpu::device {
          * @param cmd The IOCTL command that was called
          * @param input The input to the IOCTL call
          */
-        void HandleIoctl(u32 cmd, IoctlBuffers &input) {
-            std::function<void(IoctlBuffers &)> function;
+        void HandleIoctl(u32 cmd, IoctlData &input) {
+            std::function<void(IoctlData &)> function;
             try {
                 function = vTable.at(cmd);
             } catch (std::out_of_range &) {

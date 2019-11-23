@@ -10,12 +10,12 @@ namespace skyline::gpu::device {
         {0x80084714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)}
     }) {}
 
-    void NvHostCtrlGpu::ZCullGetCtxSize(IoctlBuffers &buffer) {
+    void NvHostCtrlGpu::ZCullGetCtxSize(IoctlData &buffer) {
         u32 size = 0x1;
         state.thisProcess->WriteMemory(size, buffer.output[0].address);
     }
 
-    void NvHostCtrlGpu::ZCullGetInfo(skyline::gpu::device::IoctlBuffers &buffer) {
+    void NvHostCtrlGpu::ZCullGetInfo(skyline::gpu::device::IoctlData &buffer) {
         struct {
             u32 widthAlignPixels{0x20};
             u32 heightAlignPixels{0x20};
@@ -31,7 +31,7 @@ namespace skyline::gpu::device {
         state.thisProcess->WriteMemory(zCullInfo, buffer.output[0].address);
     }
 
-    void NvHostCtrlGpu::GetCharacteristics(IoctlBuffers &buffer) {
+    void NvHostCtrlGpu::GetCharacteristics(IoctlData &buffer) {
         struct GpuCharacteristics {
             u32 arch;                       // 0x120 (NVGPU_GPU_ARCH_GM200)
             u32 impl;                       // 0xB (NVGPU_GPU_IMPL_GM20B) or 0xE (NVGPU_GPU_IMPL_GM20B_B)
@@ -114,7 +114,7 @@ namespace skyline::gpu::device {
         state.thisProcess->WriteMemory(data, buffer.output[0].address);
     }
 
-    void NvHostCtrlGpu::GetTpcMasks(IoctlBuffers &buffer) {
+    void NvHostCtrlGpu::GetTpcMasks(IoctlData &buffer) {
         struct Data {
             u32 maskBufSize; // In
             u32 reserved[3]; // In
@@ -125,7 +125,7 @@ namespace skyline::gpu::device {
         state.thisProcess->WriteMemory(data, buffer.output[0].address);
     }
 
-    void NvHostCtrlGpu::GetActiveSlotMask(IoctlBuffers &buffer) {
+    void NvHostCtrlGpu::GetActiveSlotMask(IoctlData &buffer) {
         struct Data {
             u32 slot; // Out
             u32 mask; // Out

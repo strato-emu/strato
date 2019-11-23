@@ -41,31 +41,31 @@ namespace skyline::gpu::device {
         /**
          * @brief This creates an NvMapObject and returns an handle to it (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_CREATE)
          */
-        void Create(IoctlBuffers &buffer);
+        void Create(IoctlData &buffer);
 
         /**
          * @brief This returns the handle of an NvMapObject from it's ID (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID)
          */
-        void FromId(IoctlBuffers &buffer);
+        void FromId(IoctlData &buffer);
 
         /**
          * @brief This allocates memory for an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC)
          */
-        void Alloc(IoctlBuffers &buffer);
+        void Alloc(IoctlData &buffer);
 
         /**
          * @brief This frees previously allocated memory (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE)
          */
-        void Free(IoctlBuffers &buffer);
+        void Free(IoctlData &buffer);
 
         /**
          * @brief This returns a particular parameter from an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_PARAM)
          */
-        void Param(IoctlBuffers &buffer);
+        void Param(IoctlData &buffer);
 
         /**
          * @brief This returns the ID of an NvMapObject from it's handle (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID)
          */
-        void GetId(IoctlBuffers &buffer);
+        void GetId(IoctlData &buffer);
     };
 }

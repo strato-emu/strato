@@ -160,16 +160,14 @@ namespace skyline::gpu {
         struct WaitContext {
             std::shared_ptr<kernel::type::KThread> thread; //!< The thread that is waiting on a buffer
             DequeueIn input; //!< The input of DequeueBuffer
-            u64 address; //!< The address of the parcel buffer
-            u64 size; //!< The size of the parcel buffer
+            kernel::ipc::OutputBuffer buffer; //!< The output buffer to write the parcel into
 
             /**
              * @param thread The thread that is waiting on a buffer
              * @param input The input of DequeueBuffer
-             * @param address The address of the parcel buffer
-             * @param size The size of the parcel buffer
+             * @param buffer The output buffer to write the parcel into
              */
-            WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, u64 address, u64 size);
+            WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, kernel::ipc::OutputBuffer& buffer);
         };
         std::vector<WaitContext> waitVec; //!< A vector of shared pointers to threads waiting on a buffer
 
@@ -189,11 +187,10 @@ namespace skyline::gpu {
 
         /**
          * @brief This returns the slot of a free buffer
-         * @param address The address of the parcel buffer
-         * @param size The size of the parcel buffer
+         * @param buffer The output parcel buffer
          * @return If the process is waiting for a buffer or not
          */
-        bool DequeueBuffer(Parcel &in, Parcel &out, u64 address, u64 size);
+        bool DequeueBuffer(Parcel &in, Parcel &out, kernel::ipc::OutputBuffer& buffer);
 
         /**
          * @brief This queues a buffer to be displayed

@@ -34,7 +34,7 @@ namespace skyline::gpu {
         state.thisProcess->ReadMemory(dataBuffer.data(), nvBuffer->address + gbpBuffer.offset, gbpBuffer.size);
     }
 
-    BufferQueue::WaitContext::WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, u64 address, u64 size) : thread(std::move(thread)), input(input), address(address), size(size) {}
+    BufferQueue::WaitContext::WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, kernel::ipc::OutputBuffer& buffer) : thread(std::move(thread)), input(input), buffer(buffer) {}
 
     BufferQueue::DequeueOut::DequeueOut(u32 slot) : slot(slot), _unk0_(0x1), _unk1_(0x24) {}
 
@@ -49,7 +49,7 @@ namespace skyline::gpu {
         state.logger->Debug("RequestBuffer: Slot: {}", slot, sizeof(GbpBuffer));
     }
 
-    bool BufferQueue::DequeueBuffer(Parcel &in, Parcel &out, u64 address, u64 size) {
+    bool BufferQueue::DequeueBuffer(Parcel &in, Parcel &out, kernel::ipc::OutputBuffer& buffer) {
         auto *data = reinterpret_cast<DequeueIn *>(in.data.data() + constant::TokenLength);
         i64 slot{-1};
         for (auto &buffer : queue) {
@@ -60,7 +60,7 @@ namespace skyline::gpu {
         }
         if (slot == -1) {
             state.thisThread->Sleep();
-            waitVec.emplace_back(state.thisThread, *data, address, size);
+            waitVec.emplace_back(state.thisThread, *data, buffer);
             state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamps: {}, No Free Buffers", data->width, data->height, data->format, data->usage, data->timestamps);
             return true;
         }
@@ -130,12 +130,12 @@ namespace skyline::gpu {
         else {
             auto context = waitVec.begin();
             while (context != waitVec.end()) {
-                if (slot->resolution.width == context->input.width && slot->resolution.height == context->input.height && slot->gbpBuffer.format == context->input.format && slot->gbpBuffer.usage == context->input.usage) {
+                if (slot->resolution.width == context->input.width && slot->resolution.height == context->input.height && slot->gbpBuffer.usage == context->input.usage) {
                     context->thread->WakeUp();
                     gpu::Parcel out(state);
                     DequeueOut output(slotNo);
                     out.WriteData(output);
-                    out.WriteParcel(context->address, context->size, context->thread->pid);
+                    out.WriteParcel(context->buffer, context->thread->pid);
                     slot->status = BufferStatus::Dequeued;
                     waitVec.erase(context);
                     break;

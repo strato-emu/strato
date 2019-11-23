@@ -29,7 +29,7 @@ namespace skyline::service::time {
     }) {}
 
     void ISystemClock::GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.WriteValue<u64>(static_cast<u64>(std::time(nullptr)));
+        response.Push<u64>(static_cast<u64>(std::time(nullptr)));
     }
 
     ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::time_ITimeZoneService, {
@@ -46,7 +46,7 @@ namespace skyline::service::time {
             .minute = static_cast<u8>(calender.tm_min),
             .second = static_cast<u8>(calender.tm_sec)
         };
-        response.WriteValue(calendarTime);
+        response.Push(calendarTime);
         CalendarAdditionalInfo calendarInfo{
             .day_week = static_cast<u32>(calender.tm_wday),
             .day_month = static_cast<u32>(calender.tm_mday),
@@ -54,6 +54,6 @@ namespace skyline::service::time {
             .dst = static_cast<i32>(calender.tm_isdst),
             .utc_rel = static_cast<u32>(calender.tm_gmtoff)
         };
-        response.WriteValue(calendarInfo);
+        response.Push(calendarInfo);
     }
 }

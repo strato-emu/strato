@@ -22,36 +22,36 @@ namespace skyline::gpu::device {
         /**
          * @brief This sets the nvmap file descriptor (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD)
          */
-        void SetNvmapFd(IoctlBuffers &buffer);
+        void SetNvmapFd(IoctlData &buffer);
 
         /**
          * @brief This allocates a graphic context object (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX)
          */
-        void AllocObjCtx(IoctlBuffers &buffer);
+        void AllocObjCtx(IoctlData &buffer);
 
         /**
          * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ZCULL_BIND)
          */
-        void ZcullBind(IoctlBuffers &buffer);
+        void ZcullBind(IoctlData &buffer);
 
         /**
          * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_ERROR_NOTIFIER)
          */
-        void SetErrorNotifier(IoctlBuffers &buffer);
+        void SetErrorNotifier(IoctlData &buffer);
 
         /**
          * @brief This sets the priority of the channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_PRIORITY)
          */
-        void SetPriority(IoctlBuffers &buffer);
+        void SetPriority(IoctlData &buffer);
 
         /**
          * @brief This allocates a GPFIFO entry (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_GPFIFO_EX2)
          */
-        void AllocGpfifoEx2(IoctlBuffers &buffer);
+        void AllocGpfifoEx2(IoctlData &buffer);
 
         /**
          * @brief This sets the user specific data (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_USER_DATA)
          */
-        void SetUserData(IoctlBuffers &buffer);
+        void SetUserData(IoctlData &buffer);
     };
 }

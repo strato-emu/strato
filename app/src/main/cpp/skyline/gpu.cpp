@@ -122,24 +122,21 @@ namespace skyline::gpu {
     void GPU::Ioctl(u32 fd, u32 cmd, kernel::ipc::IpcRequest &request, kernel::ipc::IpcResponse &response) {
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
         try {
-            if (!request.vecBufA.empty() && !request.vecBufB.empty()) {
-                device::IoctlBuffers input(device::InputBuffer(request.vecBufA[0]), device::OutputBuffer(request.vecBufB[0]));
-                fdMap.at(fd)->HandleIoctl(cmd, input);
-                response.WriteValue<u32>(input.status);
-            } else if (!request.vecBufX.empty() && !request.vecBufC.empty()) {
-                device::IoctlBuffers input(device::InputBuffer(request.vecBufX[0]), device::OutputBuffer(request.vecBufC[0]));
-                fdMap.at(fd)->HandleIoctl(cmd, input);
-                response.WriteValue<u32>(input.status);
-            } else if (!request.vecBufX.empty()) {
-                device::IoctlBuffers input(device::InputBuffer(request.vecBufX[0]));
-                fdMap.at(fd)->HandleIoctl(cmd, input);
-                response.WriteValue<u32>(input.status);
-            } else if (!request.vecBufC.empty()) {
-                device::IoctlBuffers input(device::OutputBuffer(request.vecBufC[0]));
-                fdMap.at(fd)->HandleIoctl(cmd, input);
-                response.WriteValue<u32>(input.status);
-            } else
-                throw exception("Unknown IOCTL buffer configuration");
+            if(request.inputBuf.empty() || request.outputBuf.empty()) {
+                if(request.inputBuf.empty()) {
+                    device::IoctlData data(request.outputBuf.at(0));
+                    fdMap.at(fd)->HandleIoctl(cmd, data);
+                    response.Push<u32>(data.status);
+                } else {
+                    device::IoctlData data(request.inputBuf.at(0));
+                    fdMap.at(fd)->HandleIoctl(cmd, data);
+                    response.Push<u32>(data.status);
+                }
+            } else {
+                device::IoctlData data(request.inputBuf.at(0), request.outputBuf.at(0));
+                fdMap.at(fd)->HandleIoctl(cmd, data);
+                response.Push<u32>(data.status);
+            }
         } catch (const std::out_of_range &) {
             throw exception("IOCTL was requested on an invalid file descriptor");
         }
