@@ -52,15 +52,4 @@
                 app:key="operation_mode"
                 app:title="@string/use_docked" />
     </PreferenceCategory>
-    <PreferenceCategory
-            android:key="category_localization"
-            android:title="@string/localization">
-        <ListPreference
-                android:defaultValue="sys"
-                android:entries="@array/language_names"
-                android:entryValues="@array/language_values"
-                app:key="localization_language"
-                app:title="@string/localization_language"
-                app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

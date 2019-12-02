@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion 29
@@ -12,6 +14,9 @@ android {
         ndk {
             abiFilters "arm64-v8a"
         }
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
     buildTypes {
         release {
@@ -51,4 +56,9 @@ dependencies {
     implementation 'androidx.preference:preference:1.1.0'
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'me.xdrop:fuzzywuzzy:1.2.0'
+    implementation "androidx.core:core-ktx:1.1.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+repositories {
+    mavenCentral()
 }

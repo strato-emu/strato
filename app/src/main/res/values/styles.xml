@@ -7,12 +7,4 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="ToolbarTheme">
-        <!-- Query Text Color -->
-        <item name="android:textColorPrimary">@android:color/white</item>
-        <!-- Hint Color -->
-        <item name="android:textColorHint">@android:color/darker_gray</item>
-        <!-- Icon Color -->
-        <item name="android:tint">@android:color/white</item>
-    </style>
 </resources>
