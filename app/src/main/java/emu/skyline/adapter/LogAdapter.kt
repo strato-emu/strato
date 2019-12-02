@@ -73,7 +73,7 @@ internal class LogAdapter internal constructor(val context: Context, val compact
             viewHolder.txtTitle!!.text = item.title
         }
         viewHolder.position = position
-        return view!!
+        return view
     }
 
     private class ViewHolder {

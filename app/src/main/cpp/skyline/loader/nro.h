@@ -45,7 +45,7 @@ namespace skyline::loader {
         /**
          * @param filePath The path to the ROM file
          */
-        NroLoader(std::string filePath);
+        NroLoader(const int romFd);
 
         /**
          * This loads in the data of the main process

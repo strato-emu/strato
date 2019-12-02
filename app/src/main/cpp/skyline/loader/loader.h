@@ -2,12 +2,12 @@
 
 #include <os.h>
 #include <kernel/types/KProcess.h>
+#include <unistd.h>
 
 namespace skyline::loader {
     class Loader {
       protected:
-        std::string filePath; //!< The path to the ROM file
-        std::ifstream file; //!< An input stream from the file
+        const int romFd; //!< An FD to the ROM file
 
         /**
          * @brief Read the file at a particular offset
@@ -17,9 +17,8 @@ namespace skyline::loader {
          * @param size The amount to read in bytes
          */
         template<typename T>
-        void ReadOffset(T *output, u32 offset, size_t size) {
-            file.seekg(offset, std::ios_base::beg);
-            file.read(reinterpret_cast<char *>(output), size);
+        void ReadOffset(T *output, u64 offset, size_t size) {
+            pread64(romFd, output, size, offset);
         }
 
         /**
@@ -52,7 +51,7 @@ namespace skyline::loader {
         /**
          * @param filePath The path to the ROM file
          */
-        Loader(std::string &filePath) : filePath(filePath), file(filePath, std::ios::binary | std::ios::beg) {}
+        Loader(const int romFd) : romFd(romFd) {}
 
         /**
          * This loads in the data of the main process

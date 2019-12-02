@@ -2,7 +2,7 @@
 #include "nro.h"
 
 namespace skyline::loader {
-    NroLoader::NroLoader(std::string filePath) : Loader(filePath) {
+    NroLoader::NroLoader(const int romFd) : Loader(romFd) {
         ReadOffset((u32 *) &header, 0x0, sizeof(NroHeader));
         if (header.magic != constant::NroMagic)
             throw exception("Invalid NRO magic! 0x{0:X}", header.magic);

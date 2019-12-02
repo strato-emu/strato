@@ -3,14 +3,12 @@
 #include "loader/nro.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, ANativeWindow *window) : state(this, thisProcess, thisThread, window, settings, logger), serviceManager(state) {}
+    OS::OS(std::shared_ptr<JvmManager>& jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, thisProcess, thisThread, jvmManager, settings, logger), serviceManager(state) {}
 
-    void OS::Execute(const std::string &romFile) {
-        std::string romExt = romFile.substr(romFile.find_last_of('.') + 1);
-        std::transform(romExt.begin(), romExt.end(), romExt.begin(), [](unsigned char c) { return std::tolower(c); });
+    void OS::Execute(const int romFd, const TitleFormat romType) {
         auto process = CreateProcess(constant::BaseAddr, constant::DefStackSize);
-        if (romExt == "nro") {
-            loader::NroLoader loader(romFile);
+        if (romType == TitleFormat::NRO) {
+            loader::NroLoader loader(romFd);
             loader.LoadProcessData(process, state);
         } else
             throw exception("Unsupported ROM extension.");

@@ -31,7 +31,7 @@ namespace skyline::gpu {
         /**
          * @param window The ANativeWindow to render to
          */
-        GPU(const DeviceState &state, ANativeWindow *window);
+        GPU(const DeviceState &state);
 
         /**
          * @brief The destructor for the GPU class

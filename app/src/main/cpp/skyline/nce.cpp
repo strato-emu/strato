@@ -32,7 +32,7 @@ namespace skyline {
     void NCE::Execute() {
         int status = 0;
         while (!Halt && !state.os->processMap.empty()) {
-            for (const auto &process : state.os->processMap) { // NOLINT(performance-for-range-copy)
+            for (const auto &process : state.os->processMap) {
                 state.os->thisProcess = process.second;
                 state.os->thisThread = process.second->threadMap.at(process.first);
                 currPid = process.first;
@@ -87,6 +87,7 @@ namespace skyline {
             }
             state.os->serviceManager.Loop();
             state.gpu->Loop();
+            Halt = state.jvmManager->GetField<jboolean>("halt");
         }
         for (const auto &process : state.os->processMap) {
             state.os->KillThread(process.first);

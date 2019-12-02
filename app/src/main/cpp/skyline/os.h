@@ -30,13 +30,14 @@ namespace skyline::kernel {
          * @param settings An instance of the Settings class
          * @param window The ANativeWindow object to draw the screen to
          */
-        OS(std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, ANativeWindow *window);
+        OS(std::shared_ptr<JvmManager>& jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings);
 
         /**
          * @brief Execute a particular ROM file. This launches the main process and calls the NCE class to handle execution.
-         * @param romFile The path to the ROM file to execute
+         * @param romFd A FD to the ROM file to execute
+         * @param romType The type of the ROM file
          */
-        void Execute(const std::string &romFile);
+        void Execute(const int romFd, const TitleFormat romType);
 
         /**
          * @brief Creates a new process

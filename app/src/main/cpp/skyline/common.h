@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <string>
 #include <android/native_window.h>
+#include <jni.h>
 
 namespace skyline {
     using u128 = __uint128_t; //!< Unsigned 128-bit integer
@@ -92,6 +93,16 @@ namespace skyline {
             constexpr u32 NotFound = 0xF201; //!< "Not found"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
         }
+    };
+
+    /**
+     * @brief This enumerates the types of the ROM
+     * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.TitleFormat
+     */
+    enum class TitleFormat {
+        NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
+        XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
+        NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
     };
 
     namespace instr {
@@ -182,7 +193,7 @@ namespace skyline {
     enum class Sreg { Sp, Pc, PState };
 
     /**
-     * @brief The Logger class is to generate a log of the program
+     * @brief The Logger class is to write log output
      */
     class Logger {
       private:
@@ -195,13 +206,13 @@ namespace skyline {
         LogLevel configLevel; //!< The level of logs to write
 
         /**
-         * @param logPath The path to the log file
+         * @param logFd A FD to the log file
          * @param configLevel The minimum level of logs to write
          */
-        Logger(const std::string &logPath, LogLevel configLevel);
+        Logger(const int logFd, LogLevel configLevel);
 
         /**
-         * Writes "Logging ended" as a header
+         * @brief Writes the termination message to the log file
          */
         ~Logger();
 
@@ -278,9 +289,9 @@ namespace skyline {
 
       public:
         /**
-         * @param prefXml The path to the preference XML file
+         * @param preferenceFd An FD to the preference XML file
          */
-        Settings(const std::string &prefXml);
+        Settings(const int preferenceFd);
 
         /**
          * @brief Retrieves a particular setting as a string
@@ -323,6 +334,64 @@ namespace skyline {
     };
 
     /**
+     * @brief The JvmManager class is used to simplify transactions with the Java component
+     */
+    class JvmManager {
+      public:
+        JNIEnv *env; //!< A pointer to the JNI environment
+        jobject instance; //!< A reference to the activity
+        jclass instanceClass; //!< The class of the activity
+
+        /**
+         * @param env A pointer to the JNI environment
+         * @param instance A reference to the activity
+         */
+        JvmManager(JNIEnv *env, jobject instance);
+
+        /**
+         * @brief Retrieves a specific field of the given type from the activity
+         * @tparam objectType The type of the object in the field
+         * @param key The name of the field in the activity class
+         * @return The contents of the field as objectType
+         */
+        template<typename objectType>
+        objectType GetField(const char *key) {
+            if constexpr(std::is_same<objectType, jboolean>())
+                return env->GetBooleanField(instance, env->GetFieldID(instanceClass, key, "Z"));
+            else if constexpr(std::is_same<objectType, jbyte>())
+                return env->GetByteField(instance, env->GetFieldID(instanceClass, key, "B"));
+            else if constexpr(std::is_same<objectType, jchar>())
+                return env->GetCharField(instance, env->GetFieldID(instanceClass, key, "C"));
+            else if constexpr(std::is_same<objectType, jshort>())
+                return env->GetShortField(instance, env->GetFieldID(instanceClass, key, "S"));
+            else if constexpr(std::is_same<objectType, jint>())
+                return env->GetIntField(instance, env->GetFieldID(instanceClass, key, "I"));
+            else if constexpr(std::is_same<objectType, jlong>())
+                return env->GetLongField(instance, env->GetFieldID(instanceClass, key, "J"));
+            else if constexpr(std::is_same<objectType, jfloat>())
+                return env->GetFloatField(instance, env->GetFieldID(instanceClass, key, "F"));
+            else if constexpr(std::is_same<objectType, jdouble>())
+                return env->GetDoubleField(instance, env->GetFieldID(instanceClass, key, "D"));
+        }
+
+        /**
+         * @brief Retrieves a specific field from the activity as a jobject
+         * @param key The name of the field in the activity class
+         * @param signature The signature of the field
+         * @return A jobject of the contents of the field
+         */
+        jobject GetField(const char *key, const char *signature);
+
+        /**
+         * @brief Checks if a specific field from the activity is null or not
+         * @param key The name of the field in the activity class
+         * @param signature The signature of the field
+         * @return If the field is null or not
+         */
+        bool CheckNull(const char *key, const char *signature);
+    };
+
+    /**
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
@@ -346,13 +415,14 @@ namespace skyline {
      * @brief This struct is used to hold the state of a device
      */
     struct DeviceState {
-        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, ANativeWindow *window, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
+        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
         kernel::OS *os; //!< This holds a reference to the OS class
         std::shared_ptr<kernel::type::KProcess> &thisProcess; //!< This holds a reference to the current process object
         std::shared_ptr<kernel::type::KThread> &thisThread; //!< This holds a reference to the current thread object
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
+        std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class
         std::shared_ptr<Settings> settings; //!< This holds a reference to the Settings class
         std::shared_ptr<Logger> logger; //!< This holds a reference to the Logger class
     };

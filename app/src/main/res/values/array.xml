@@ -12,12 +12,4 @@
         <item>2</item>
         <item>3</item>
     </string-array>
-    <string-array name="language_names">
-        <item>System Language</item>
-        <item>English</item>
-    </string-array>
-    <string-array name="language_values">
-        <item>sys</item>
-        <item>en</item>
-    </string-array>
 </resources>

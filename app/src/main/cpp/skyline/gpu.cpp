@@ -4,11 +4,12 @@
 #include "gpu/devices/nvhost_channel.h"
 #include "gpu/devices/nvhost_as_gpu.h"
 #include <kernel/types/KProcess.h>
+#include <android/native_window_jni.h>
 
 extern bool Halt;
 
 namespace skyline::gpu {
-    GPU::GPU(const DeviceState &state, ANativeWindow *window) : state(state), window(window), bufferQueue(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+    GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvmManager->env, state.jvmManager->GetField("surface", "Landroid/view/Surface;"))), bufferQueue(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
@@ -20,6 +21,18 @@ namespace skyline::gpu {
     }
 
     void GPU::Loop() {
+        if(state.jvmManager->CheckNull("surface", "Landroid/view/Surface;")) {
+            while (state.jvmManager->CheckNull("surface", "Landroid/view/Surface;")) {
+                if(state.jvmManager->GetField<jboolean>("halt"))
+                    return;
+                sched_yield();
+            }
+            window = ANativeWindow_fromSurface(state.jvmManager->env, state.jvmManager->GetField("surface", "Landroid/view/Surface;"));
+            ANativeWindow_acquire(window);
+            resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
+            resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
+            format = ANativeWindow_getFormat(window);
+        }
         if (!bufferQueue.displayQueue.empty()) {
             auto &buffer = bufferQueue.displayQueue.front();
             bufferQueue.displayQueue.pop();

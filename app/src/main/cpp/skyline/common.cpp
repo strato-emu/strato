@@ -4,9 +4,9 @@
 #include <tinyxml2.h>
 
 namespace skyline {
-    Settings::Settings(const std::string &prefXml) {
+    Settings::Settings(const int preferenceFd) {
         tinyxml2::XMLDocument pref;
-        if (pref.LoadFile(prefXml.c_str()))
+        if (pref.LoadFile(fdopen(preferenceFd, "r")))
             throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
         tinyxml2::XMLElement *elem = pref.LastChild()->FirstChild()->ToElement();
         while (elem) {
@@ -51,8 +51,8 @@ namespace skyline {
             logger->Info("Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
     }
 
-    Logger::Logger(const std::string &logPath, LogLevel configLevel) : configLevel(configLevel) {
-        logFile.open(logPath, std::ios::app);
+    Logger::Logger(const int logFd, LogLevel configLevel) : configLevel(configLevel) {
+        logFile.__open(logFd, std::ios::app);
         WriteHeader("Logging started");
     }
 
@@ -75,9 +75,20 @@ namespace skyline {
         logFile.flush();
     }
 
-    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, ANativeWindow *window, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger) : os(os), settings(std::move(settings)), logger(std::move(logger)), thisProcess(thisProcess), thisThread(thisThread) {
-        // We assign these later as they may use the state in their constructor and we don't want null pointers
+    JvmManager::JvmManager(JNIEnv *env, jobject instance) : env(env), instance(instance), instanceClass(env->GetObjectClass(instance)) {}
+
+    jobject JvmManager::GetField(const char *key, const char *signature) {
+        return env->GetObjectField(instance, env->GetFieldID(instanceClass, key, signature));
+    }
+
+    bool JvmManager::CheckNull(const char *key, const char *signature) {
+        return env->IsSameObject(env->GetObjectField(instance, env->GetFieldID(instanceClass, key, signature)), nullptr);
+    }
+
+    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
+        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), thisProcess(thisProcess), thisThread(thisThread) {
+        // We assign these later as they use the state in their constructor and we don't want null pointers
         nce = std::move(std::make_shared<NCE>(*this));
-        gpu = std::move(std::make_shared<gpu::GPU>(*this, window));
+        gpu = std::move(std::make_shared<gpu::GPU>(*this));
     }
 }
