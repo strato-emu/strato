@@ -3,7 +3,6 @@
         xmlns:tools="http://schemas.android.com/tools"
         package="emu.skyline">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -13,13 +12,19 @@
 
     <application
             android:allowBackup="true"
+            android:extractNativeLibs="false"
             android:fullBackupContent="@xml/backup_descriptor"
             android:icon="@drawable/logo_skyline"
             android:label="@string/app_name"
-            android:requestLegacyExternalStorage="true"
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
-            tools:ignore="GoogleAppIndexingWarning">
+            tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
+        <activity android:name="emu.skyline.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
                 android:name="emu.skyline.LogActivity"
                 android:label="@string/log"
@@ -36,10 +41,14 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.MainActivity" />
         </activity>
+        <activity android:name="emu.skyline.utility.FolderActivity">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="emu.skyline.SettingsActivity" />
+        </activity>
         <activity
-                android:name="android.app.NativeActivity"
+                android:name="emu.skyline.GameActivity"
                 android:configChanges="orientation|screenSize"
-                android:parentActivityName="emu.skyline.MainActivity"
                 android:screenOrientation="landscape">
             <meta-data
                     android:name="android.app.lib_name"
@@ -47,12 +56,6 @@
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.MainActivity" />
-        </activity>
-        <activity android:name="emu.skyline.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
     </application>
 

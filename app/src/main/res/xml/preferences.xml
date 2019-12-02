@@ -19,8 +19,7 @@
     <PreferenceCategory
             android:key="category_search"
             android:title="@string/search">
-        <EditTextPreference
-                android:defaultValue="/sdcard/"
+        <emu.skyline.utility.FolderPreference
                 app:key="search_location"
                 app:title="@string/search_location"
                 app:useSimpleSummaryProvider="true" />
