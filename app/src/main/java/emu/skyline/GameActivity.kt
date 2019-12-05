@@ -28,6 +28,8 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
     private var halt: Boolean = false
 
     private external fun executeRom(romString: String, romType: Int, romFd: Int, preferenceFd: Int, logFd: Int)
+    private external fun lockMutex()
+    private external fun unlockMutex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +64,9 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
 
     override fun surfaceCreated(holder: SurfaceHolder?) {
         Log.d("surfaceCreated", "Holder: ${holder.toString()}")
+        lockMutex()
         surface = holder!!.surface
+        unlockMutex()
     }
 
     override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
@@ -71,7 +75,9 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
 
     override fun surfaceDestroyed(holder: SurfaceHolder?) {
         Log.d("surfaceDestroyed", "Holder: ${holder.toString()}")
+        lockMutex()
         surface = null
+        unlockMutex()
     }
 
     override fun onInputQueueCreated(queue: InputQueue?) {

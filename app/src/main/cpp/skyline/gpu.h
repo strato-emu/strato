@@ -17,6 +17,7 @@ namespace skyline::gpu {
         u32 fdIndex{}; //!< Holds the index of a file descriptor
         std::unordered_map<device::NvDeviceType, std::shared_ptr<device::NvDevice>> deviceMap; //!< A map from a NvDeviceType to the NvDevice object
         std::unordered_map<u32, std::shared_ptr<device::NvDevice>> fdMap; //!< A map from an FD to a shared pointer to it's NvDevice object
+        bool surfaceUpdate{}; //!< If the surface needs to be updated
         double prevTime{};
 
       public:

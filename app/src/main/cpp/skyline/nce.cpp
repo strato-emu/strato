@@ -1,9 +1,11 @@
 #include <sched.h>
 #include <linux/uio.h>
 #include <linux/elf.h>
-#include <os.h>
+#include "os.h"
+#include "jvm.h"
 
 extern bool Halt;
+extern std::mutex jniMtx;
 
 namespace skyline {
     void NCE::ReadRegisters(user_pt_regs &registers, pid_t pid) const {
@@ -32,6 +34,7 @@ namespace skyline {
     void NCE::Execute() {
         int status = 0;
         while (!Halt && !state.os->processMap.empty()) {
+            jniMtx.lock();
             for (const auto &process : state.os->processMap) {
                 state.os->thisProcess = process.second;
                 state.os->thisThread = process.second->threadMap.at(process.first);
@@ -88,6 +91,7 @@ namespace skyline {
             state.os->serviceManager.Loop();
             state.gpu->Loop();
             Halt = state.jvmManager->GetField<jboolean>("halt");
+            jniMtx.unlock();
         }
         for (const auto &process : state.os->processMap) {
             state.os->KillThread(process.first);

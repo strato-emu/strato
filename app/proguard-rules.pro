@@ -6,4 +6,4 @@
     void writeObject(java.io.ObjectOutputStream);
     void readObject(java.io.ObjectInputStream);
 }
--keepclassmembernames class emu.skyline.GameActivity { *; }
+-keep class emu.skyline.GameActivity { *; }

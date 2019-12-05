@@ -73,6 +73,7 @@ internal abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHea
     open fun load(file: File) {
         val fileObj = FileInputStream(file)
         val input = ObjectInputStream(fileObj)
+        @Suppress("UNCHECKED_CAST")
         elementArray = input.readObject() as ArrayList<BaseElement?>
         input.close()
         fileObj.close()
@@ -126,7 +127,7 @@ internal abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHea
                             keyArray.add(item.key()!!.toLowerCase(Locale.getDefault()))
                         }
                     }
-                    val topResults = FuzzySearch.extractTop(searchTerm, keyArray, searchTerm.length)
+                    val topResults = FuzzySearch.extractSorted(searchTerm, keyArray)
                     val avgScore: Int = topResults.sumBy { it.score } / topResults.size
                     for (result in topResults)
                         if (result.score > avgScore)
@@ -139,6 +140,7 @@ internal abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHea
 
             override fun publishResults(charSequence: CharSequence, results: FilterResults) {
                 if (results.values is ArrayList<*>) {
+                    @Suppress("UNCHECKED_CAST")
                     visibleArray = results.values as ArrayList<Int>
                     notifyDataSetChanged()
                 }

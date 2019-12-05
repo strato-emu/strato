@@ -1,11 +1,12 @@
 #include "skyline/common.h"
 #include "skyline/os.h"
+#include "skyline/jvm.h"
 #include <unistd.h>
-#include <android/native_window_jni.h>
 #include <csignal>
 
-bool Halt{};
-uint FaultCount{};
+bool Halt;
+uint FaultCount;
+std::mutex jniMtx;
 
 void signalHandler(int signal) {
     syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
@@ -17,6 +18,9 @@ void signalHandler(int signal) {
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, jobject instance, jstring romJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
+    Halt = false;
+    FaultCount = 0;
+
     std::signal(SIGTERM, signalHandler);
     std::signal(SIGSEGV, signalHandler);
     std::signal(SIGINT, signalHandler);
@@ -48,4 +52,12 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
 
     auto end = std::chrono::steady_clock::now();
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+}
+
+extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_lockMutex(JNIEnv *env, jobject instance) {
+    jniMtx.lock();
+}
+
+extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_unlockMutex(JNIEnv *env, jobject instance) {
+    jniMtx.unlock();
 }

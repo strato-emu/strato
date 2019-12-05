@@ -75,16 +75,6 @@ namespace skyline {
         logFile.flush();
     }
 
-    JvmManager::JvmManager(JNIEnv *env, jobject instance) : env(env), instance(instance), instanceClass(env->GetObjectClass(instance)) {}
-
-    jobject JvmManager::GetField(const char *key, const char *signature) {
-        return env->GetObjectField(instance, env->GetFieldID(instanceClass, key, signature));
-    }
-
-    bool JvmManager::CheckNull(const char *key, const char *signature) {
-        return env->IsSameObject(env->GetObjectField(instance, env->GetFieldID(instanceClass, key, signature)), nullptr);
-    }
-
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
         : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), thisProcess(thisProcess), thisThread(thisThread) {
         // We assign these later as they use the state in their constructor and we don't want null pointers

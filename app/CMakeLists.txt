@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(Skyline VERSION 0.3)
 
+set(BUILD_TESTS OFF)
 set(BUILD_TESTING OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -10,8 +11,10 @@ if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_definitions(NDEBUG)
 endif()
 
+set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
 add_subdirectory("libraries/tinyxml2")
 add_subdirectory("libraries/fmt")
+set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 include_directories(${source_DIR}/skyline)
 
@@ -19,6 +22,7 @@ add_library(skyline SHARED
         ${source_DIR}/main.cpp
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/nce.cpp
+        ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/display.cpp
         ${source_DIR}/skyline/gpu/parcel.cpp
