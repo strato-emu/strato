@@ -2,8 +2,8 @@
 <resources>
     <color name="colorPrimary">#FFFF0000</color>
     <color name="colorPrimaryDark">#BFFF0000</color>
-    <color name="colorOnPrimary">#DFFFFFFF</color>
+    <color name="colorOnPrimary">#D7000000</color>
     <color name="colorSecondary">#FFFF0000</color>
     <color name="colorSecondaryDark">#BFFF0000</color>
-    <color name="colorOnSecondary">#DFFFFFFF</color>
+    <color name="colorOnSecondary">#DF000000</color>
 </resources>

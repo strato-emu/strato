@@ -12,4 +12,14 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+    <string-array name="app_theme">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>Use System Default</item>
+    </string-array>
+    <string-array name="app_theme_val">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 </resources>

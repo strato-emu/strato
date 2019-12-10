@@ -13,7 +13,7 @@
             android:layout_marginStart="5dp"
             android:layout_marginTop="2dp"
             android:layout_marginEnd="5dp"
-            android:textColor="@color/colorPrimary"
+            android:textColor="?colorSecondary"
             android:textSize="13sp" />
 
 </RelativeLayout>

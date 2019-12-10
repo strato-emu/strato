@@ -17,16 +17,19 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-            android:key="category_search"
-            android:title="@string/search">
+            android:key="category_emulator"
+            android:title="@string/emulator">
         <emu.skyline.utility.FolderPreference
                 app:key="search_location"
                 app:title="@string/search_location"
                 app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
-    <PreferenceCategory
-            android:key="category_log"
-            android:title="@string/logging">
+        <emu.skyline.utility.ThemePreference
+                android:defaultValue="2"
+                android:entries="@array/app_theme"
+                android:entryValues="@array/app_theme_val"
+                app:key="app_theme"
+                app:title="@string/theme"
+                app:useSimpleSummaryProvider="true" />
         <ListPreference
                 android:defaultValue="2"
                 android:entries="@array/log_level"

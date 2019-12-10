@@ -21,8 +21,8 @@
     <string name="share_error">An error has occurred while sharing</string>
     <string name="cleared">The logs have been cleared</string>
     <!-- Settings -->
+    <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
-    <string name="logging">Logging</string>
     <string name="log_level">Log Level</string>
     <string name="log_compact">Compact Logs</string>
     <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
@@ -31,4 +31,5 @@
     <string name="use_docked">Use Docked Mode</string>
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
     <string name="docked_enabled">The system will emulate being in docked mode</string>
+    <string name="theme">Theme</string>
 </resources>

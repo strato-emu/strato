@@ -13,7 +13,7 @@
             android:layout_alignParentTop="false"
             android:layout_centerVertical="true"
             android:contentDescription="@string/icon"
-            android:src="@drawable/ic_missing_icon" />
+            android:src="@drawable/ic_missing" />
 
     <TextView
             android:id="@+id/text_title"

@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemClickListener
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
@@ -27,6 +28,7 @@ import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
 import java.io.IOException
 import java.util.*
+
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
@@ -67,21 +69,30 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 Log.w("refreshFiles", "Ran into exception while loading: " + e.message)
             }
         }
-        adapter.clear()
-        val entries: List<TitleEntry> = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!, ArrayList())
-        if (entries.isNotEmpty()) {
-            adapter.addHeader(getString(R.string.nro))
-            for (entry in entries)
-                adapter.addItem(GameItem(entry))
-        } else {
-            adapter.addHeader(getString(R.string.no_rom))
-        }
         try {
-            adapter.save(File(applicationInfo.dataDir + "/roms.bin"))
-        } catch (e: IOException) {
-            Log.w("refreshFiles", "Ran into exception while saving: " + e.message)
+            adapter.clear()
+            val entries: List<TitleEntry> = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!, ArrayList())
+            if (entries.isNotEmpty()) {
+                adapter.addHeader(getString(R.string.nro))
+                for (entry in entries)
+                    adapter.addItem(GameItem(entry))
+            } else {
+                adapter.addHeader(getString(R.string.no_rom))
+            }
+            try {
+                adapter.save(File(applicationInfo.dataDir + "/roms.bin"))
+            } catch (e: IOException) {
+                Log.w("refreshFiles", "Ran into exception while saving: " + e.message)
+            }
+            sharedPreferences.edit().putBoolean("refresh_required", false).apply()
+        } catch (e: IllegalArgumentException) {
+            sharedPreferences.edit().remove("search_location").apply()
+            val intent = intent
+            finish()
+            startActivity(intent)
+        } catch (e: Exception) {
+            notifyUser(e.message!!)
         }
-        sharedPreferences.edit().putBoolean("refresh_required", false).apply()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +100,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.main_activity)
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        AppCompatDelegate.setDefaultNightMode(when ((sharedPreferences.getString("app_theme", "2")?.toInt())) {
+            0 -> AppCompatDelegate.MODE_NIGHT_NO
+            1 -> AppCompatDelegate.MODE_NIGHT_YES
+            2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
+        })
         setSupportActionBar(toolbar)
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
