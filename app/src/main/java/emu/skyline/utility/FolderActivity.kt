@@ -17,8 +17,10 @@ class FolderActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 1) {
+                val uri = data!!.data!!
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 PreferenceManager.getDefaultSharedPreferences(this).edit()
-                        .putString("search_location", data!!.data.toString())
+                        .putString("search_location", uri.toString())
                         .putBoolean("refresh_required", true)
                         .apply()
                 finish()

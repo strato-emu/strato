@@ -4,25 +4,26 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemClickListener
-import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.GameAdapter
 import emu.skyline.adapter.GameItem
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
 import emu.skyline.loader.TitleEntry
+import emu.skyline.loader.TitleFormat
 import emu.skyline.utility.RandomAccessDocument
+import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
 import java.io.IOException
 import java.util.*
@@ -88,12 +89,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.main_activity)
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        setSupportActionBar(findViewById(R.id.toolbar))
-        val logFab = findViewById<FloatingActionButton>(R.id.log_fab)
-        logFab.setOnClickListener(this)
-        val gameList = findViewById<ListView>(R.id.game_list)
-        gameList.adapter = adapter
-        gameList.onItemClickListener = OnItemClickListener { parent: AdapterView<*>, _: View?, position: Int, _: Long ->
+        setSupportActionBar(toolbar)
+        open_fab.setOnClickListener(this)
+        log_fab.setOnClickListener(this)
+        game_list.adapter = adapter
+        game_list.onItemClickListener = OnItemClickListener { parent: AdapterView<*>, _: View?, position: Int, _: Long ->
             val item = parent.getItemAtPosition(position)
             if (item is GameItem) {
                 val intent = Intent(this, GameActivity::class.java)
@@ -104,7 +104,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            this.startActivityForResult(intent, 1)
+            intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            startActivityForResult(intent, 1)
         } else
             refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
     }
@@ -129,7 +130,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(view: View) {
-        if (view.id == R.id.log_fab) startActivity(Intent(this, LogActivity::class.java))
+        when (view.id) {
+            R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
+            R.id.open_fab -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.type = "*/*"
+                startActivityForResult(intent, 2)
+            }
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -149,16 +158,38 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
-        if(sharedPreferences.getBoolean("refresh_required", false))
+        if (sharedPreferences.getBoolean("refresh_required", false))
             refreshFiles(false)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
-            if (requestCode == 1) {
-                sharedPreferences.edit().putString("search_location", data!!.data.toString()).apply()
-                refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
+            when (requestCode) {
+                1 -> {
+                    val uri = data!!.data!!
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    sharedPreferences.edit().putString("search_location", uri.toString()).apply()
+                    refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
+                }
+                2 -> {
+                    try {
+                        val intent = Intent(this, GameActivity::class.java)
+                        val uri = data!!.data!!
+                        intent.putExtra("romUri", uri)
+                        var uriStr = ""
+                        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                            val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            cursor.moveToFirst()
+                            uriStr = cursor.getString(nameIndex)
+                        }
+                        val type = TitleFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).toUpperCase(Locale.ROOT))
+                        intent.putExtra("romType", type)
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        notifyUser(e.message!!)
+                    }
+                }
             }
         }
     }
