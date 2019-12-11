@@ -16,7 +16,7 @@ import android.widget.TextView
 import emu.skyline.R
 import emu.skyline.loader.TitleEntry
 
-internal class GameItem(val meta: TitleEntry) : BaseItem() {
+class GameItem(val meta: TitleEntry) : BaseItem() {
     val icon: Bitmap?
         get() = meta.icon
 

@@ -29,7 +29,7 @@ fun getTitleFormat(uri: Uri, contentResolver: ContentResolver): TitleFormat {
     return TitleFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).toUpperCase(Locale.ROOT))
 }
 
-internal class TitleEntry(var name: String, var author: String, var romType: TitleFormat, var valid: Boolean, @Transient var uri: Uri, @Transient var icon: Bitmap) : Serializable {
+class TitleEntry(var name: String, var author: String, var romType: TitleFormat, var valid: Boolean, var uri: Uri, var icon: Bitmap) : Serializable {
     constructor(context: Context, author: String, romType: TitleFormat, valid: Boolean, uri: Uri) : this("", author, romType, valid, uri, context.resources.getDrawable(R.drawable.ic_missing, context.theme).toBitmap(256, 256)) {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)

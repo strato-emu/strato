@@ -21,6 +21,7 @@ import emu.skyline.adapter.GameItem
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
 import emu.skyline.loader.TitleEntry
+import emu.skyline.utility.GameDialog
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
@@ -31,7 +32,7 @@ import java.util.*
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
     private var adapter = GameAdapter(this)
-    private fun notifyUser(text: String) {
+    fun notifyUser(text: String) {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
     }
 
@@ -115,6 +116,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 intent.data = item.uri
                 startActivity(intent)
             }
+        }
+        game_list.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, _, position, _ ->
+            val item = parent.getItemAtPosition(position)
+            if (item is GameItem) {
+                val dialog = GameDialog(item)
+                dialog.show(supportFragmentManager, "game")
+            }
+            true
         }
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
