@@ -13,7 +13,7 @@ class ThemePreference : ListPreference {
     constructor(context: Context?) : super(context)
 
     override fun callChangeListener(newValue: Any?): Boolean {
-        AppCompatDelegate.setDefaultNightMode(when((newValue as String).toInt()) {
+        AppCompatDelegate.setDefaultNightMode(when ((newValue as String).toInt()) {
             0 -> AppCompatDelegate.MODE_NIGHT_NO
             1 -> AppCompatDelegate.MODE_NIGHT_YES
             2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM

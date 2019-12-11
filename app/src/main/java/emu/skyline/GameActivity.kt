@@ -9,6 +9,7 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import emu.skyline.loader.getTitleFormat
 import kotlinx.android.synthetic.main.game_activity.*
 import java.io.File
 import java.lang.reflect.Method
@@ -34,8 +35,8 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.game_activity)
-        rom = intent.getParcelableExtra("romUri")!!
-        val romType = intent.getIntExtra("romType", 0)
+        rom = intent.data!!
+        val romType = getTitleFormat(rom, contentResolver).ordinal
         romFd = contentResolver.openFileDescriptor(rom, "r")!!
         val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
         preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)

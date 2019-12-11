@@ -51,11 +51,40 @@
                 android:configChanges="orientation|screenSize"
                 android:screenOrientation="landscape">
             <meta-data
-                    android:name="android.app.lib_name"
-                    android:value="skyline" />
-            <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.MainActivity" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                        android:mimeType="application/nro"
+                        android:pathPattern=".*\\.nro"
+                        android:scheme="content"
+                        tools:ignore="AppLinkUrlError" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                        android:mimeType="text/plain"
+                        android:pathPattern=".*\\.nro"
+                        android:scheme="content"
+                        tools:ignore="AppLinkUrlError" />
+                <data
+                        android:mimeType="application/octet-stream"
+                        android:pathPattern=".*\\.nro"
+                        android:scheme="content"
+                        tools:ignore="AppLinkUrlError" />
+                <data
+                        android:mimeType="application/nro"
+                        android:scheme="content"
+                        tools:ignore="AppLinkUrlError" />
+            </intent-filter>
         </activity>
     </application>
 

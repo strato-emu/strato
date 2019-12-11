@@ -1,5 +1,6 @@
 package emu.skyline.loader
 
+import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -12,9 +13,20 @@ import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
+import java.util.*
 
 enum class TitleFormat {
     NRO, XCI, NSP
+}
+
+fun getTitleFormat(uri: Uri, contentResolver: ContentResolver): TitleFormat {
+    var uriStr = ""
+    contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        cursor.moveToFirst()
+        uriStr = cursor.getString(nameIndex)
+    }
+    return TitleFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).toUpperCase(Locale.ROOT))
 }
 
 internal class TitleEntry(var name: String, var author: String, var romType: TitleFormat, var valid: Boolean, @Transient var uri: Uri, @Transient var icon: Bitmap) : Serializable {

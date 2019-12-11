@@ -4,7 +4,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -22,7 +21,6 @@ import emu.skyline.adapter.GameItem
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
 import emu.skyline.loader.TitleEntry
-import emu.skyline.loader.TitleFormat
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
@@ -114,8 +112,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val item = parent.getItemAtPosition(position)
             if (item is GameItem) {
                 val intent = Intent(this, GameActivity::class.java)
-                intent.putExtra("romUri", item.uri)
-                intent.putExtra("romType", item.meta.romType.ordinal)
+                intent.data = item.uri
                 startActivity(intent)
             }
         }
@@ -191,18 +188,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
                 2 -> {
                     try {
+                        val uri = (data!!.data!!)
                         val intent = Intent(this, GameActivity::class.java)
-                        val uri = data!!.data!!
-                        intent.putExtra("romUri", uri)
-                        var uriStr = ""
-                        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                            val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                            cursor.moveToFirst()
-                            uriStr = cursor.getString(nameIndex)
-                        }
-                        val type = TitleFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).toUpperCase(Locale.ROOT))
-                        intent.putExtra("romType", type)
-                        startActivity(intent)
+                        intent.data = uri
+                        if (resultCode != 0)
+                            startActivityForResult(intent, resultCode)
+                        else
+                            startActivity(intent)
                     } catch (e: Exception) {
                         notifyUser(e.message!!)
                     }
