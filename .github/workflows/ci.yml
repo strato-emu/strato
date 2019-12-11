@@ -1,0 +1,73 @@
+name: CI
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: circleci/android:api-29-ndk
+      options: -u root
+    env:
+      JVM_OPTS: -Xmx6G
+
+    steps:
+    - name: Git Checkout
+      uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: Restore Gradle Cache
+      uses: actions/cache@v1.0.3
+      with:
+        path: /root/.gradle/
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Restore CXX Cache
+      uses: actions/cache@v1.0.3
+      with:
+        path: app/.cxx/
+        key: ${{ runner.os }}-cxx-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-cxx-
+
+    - name: Setup Environment for Gradle
+      run: chmod +x gradlew
+
+    - name: Install CMake from Android SDK Manager
+      run: yes | sdkmanager --install "cmake;3.10.2.4988404" | grep -v = || true
+
+    - name: Android Lint
+      run: ./gradlew --stacktrace lint
+
+    - name: Upload Lint Report
+      uses: actions/upload-artifact@v1
+      with:
+        name: lint-result.html
+        path: app/build/reports/lint-results.html
+
+    - name: Android Assemble
+      run: ./gradlew assemble
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v1
+      with:
+        name: app-debug.apk
+        path: app/build/outputs/apk/debug/
+
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v1
+      with:
+        name: app-release.apk
+        path: app/build/outputs/apk/release/
+
+    - name: Upload R8 Mapping
+      uses: actions/upload-artifact@v1
+      with:
+        name: mapping.txt
+        path: app/build/outputs/mapping/release/
+
+    - name: Delete Build Folder
+      run: rm -rf app/build/
