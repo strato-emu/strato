@@ -47,7 +47,7 @@ namespace skyline {
         // Loader
         constexpr u32 NroMagic = 0x304F524E; //!< "NRO0" in reverse, this is written at the start of every NRO file
         // NCE
-        constexpr u8 NumRegs = 31; //!< The amount of registers that ARMv8 has
+        constexpr u8 NumRegs = 30; //!< The amount of registers that ARMv8 has
         constexpr u16 SvcLast = 0x7F; //!< The index of the last SVC
         constexpr u16 BrkRdy = 0xFF; //!< This is reserved for our kernel's to know when a process/thread is ready
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
@@ -103,86 +103,6 @@ namespace skyline {
         NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
         XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
         NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
-    };
-
-    namespace instr {
-        /**
-         * @brief A bit-field struct that encapsulates a BRK instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction.
-         */
-        struct Brk {
-            /**
-             * @brief Creates a BRK instruction with a specific immediate value, used for generating BRK opcodes
-             * @param val The immediate value of the instruction
-             */
-            Brk(u16 val) {
-                start = 0x0; // First 5 bits of a BRK instruction are 0
-                value = val;
-                end = 0x6A1; // Last 11 bits of a BRK instruction stored as u16
-            }
-
-            /**
-             * @brief Returns if the opcode is valid or not
-             * @return If the opcode represents a valid BRK instruction
-             */
-            bool Verify() {
-                return (start == 0x0 && end == 0x6A1);
-            }
-
-            u8 start : 5;
-            u32 value : 16;
-            u16 end : 11;
-        };
-
-        static_assert(sizeof(Brk) == sizeof(u32));
-
-        /**
-         * @brief A bit-field struct that encapsulates a SVC instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/svc-supervisor-call.
-         */
-        struct Svc {
-            /**
-             * @brief Returns if the opcode is valid or not
-             * @return If the opcode represents a valid SVC instruction
-             */
-            bool Verify() {
-                return (start == 0x1 && end == 0x6A0);
-            }
-
-            u8 start : 5;
-            u32 value : 16;
-            u16 end : 11;
-        };
-
-        static_assert(sizeof(Svc) == sizeof(u32));
-
-        /**
-         * @brief A bit-field struct that encapsulates a MRS instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/mrs-move-system-register.
-         */
-        struct Mrs {
-            /**
-             * @brief Creates a MRS instruction, used for generating BRK opcodes
-             * @param srcReg The source system register
-             * @param dstReg The destination Xn register
-             */
-            Mrs(u32 srcReg, u8 dstReg) {
-                this->srcReg = srcReg;
-                this->dstReg = dstReg;
-                end = 0xD53; // Last 12 bits of a MRS instruction stored as u16
-            }
-
-            /**
-             * @brief Returns if the opcode is valid or not
-             * @return If the opcode represents a valid MRS instruction
-             */
-            bool Verify() {
-                return (end == 0xD53);
-            }
-
-            u8 dstReg : 5;
-            u32 srcReg : 15;
-            u16 end : 12;
-        };
-
-        static_assert(sizeof(Mrs) == sizeof(u32));
     };
 
     /**

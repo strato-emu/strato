@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -Wno-unused-command-line-argument")
+enable_language(ASM)
 if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_definitions(NDEBUG)
 endif()
@@ -21,6 +22,7 @@ include_directories(${source_DIR}/skyline)
 add_library(skyline SHARED
         ${source_DIR}/main.cpp
         ${source_DIR}/skyline/common.cpp
+        ${source_DIR}/skyline/guest.S
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/gpu.cpp

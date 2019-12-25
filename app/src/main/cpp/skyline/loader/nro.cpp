@@ -17,11 +17,12 @@ namespace skyline::loader {
         ReadOffset(rodata.data(), header.ro.offset, header.ro.size);
         ReadOffset(data.data(), header.data.offset, header.data.size);
 
-        PatchCode(text);
+        std::vector<u32> patch = state.nce->PatchCode(text, header.text.size + header.ro.size + header.data.size + header.bssSize);
 
         u64 textSize = text.size();
         u64 rodataSize = rodata.size();
         u64 dataSize = data.size();
+        u64 patchSize = patch.size() * sizeof(u32);
 
         process->MapPrivateRegion(constant::BaseAddr, textSize, {true, true, true}, memory::Type::CodeStatic, memory::Region::Text); // R-X
         state.logger->Debug("Successfully mapped region .text @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr, textSize);
@@ -35,8 +36,12 @@ namespace skyline::loader {
         process->MapPrivateRegion(constant::BaseAddr + textSize + rodataSize + dataSize, header.bssSize, {true, true, true}, memory::Type::CodeMutable, memory::Region::Bss); // RWX
         state.logger->Debug("Successfully mapped region .bss @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize + rodataSize + dataSize, header.bssSize);
 
+        process->MapPrivateRegion(constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize, {true, true, true}, memory::Type::CodeStatic, memory::Region::Text); // RWX
+        state.logger->Debug("Successfully mapped region .patch @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize);
+
         process->WriteMemory(text.data(), constant::BaseAddr, textSize);
         process->WriteMemory(rodata.data(), constant::BaseAddr + textSize, rodataSize);
         process->WriteMemory(data.data(), constant::BaseAddr + textSize + rodataSize, dataSize);
+        process->WriteMemory(patch.data(), constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize);
     }
 }

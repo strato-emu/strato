@@ -9,6 +9,9 @@
 #include "kernel/types/KSharedMemory.h"
 
 namespace skyline {
+    namespace instr {
+        struct Brk;
+    }
     /**
      * @brief The NCE (Native Code Execution) class is responsible for managing the state of catching instructions and directly controlling processes/threads
      */
@@ -140,5 +143,11 @@ namespace skyline {
          * @param pid The PID of the process (Defaults to currPid)
          */
         void SetRegister(Sreg regId, u32 value, pid_t pid = 0);
+
+        /**
+         * @brief This patches specific parts of the code
+         * @param code A vector with the code to be patched
+         */
+        std::vector<u32> PatchCode(std::vector<u8> &code, i64 offset);
     };
 }
