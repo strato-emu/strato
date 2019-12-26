@@ -4,6 +4,21 @@
 #include <tinyxml2.h>
 
 namespace skyline {
+    void Mutex::lock() {
+        while (flag.exchange(true, std::memory_order_relaxed));
+        std::atomic_thread_fence(std::memory_order_acquire);
+    }
+
+    void Mutex::unlock() {
+        std::atomic_thread_fence(std::memory_order_release);
+        flag.store(false, std::memory_order_relaxed);
+    }
+
+    bool Mutex::try_lock() {
+        bool fal = false;
+        return flag.compare_exchange_strong(fal, true, std::memory_order_relaxed);
+    }
+
     Settings::Settings(const int preferenceFd) {
         tinyxml2::XMLDocument pref;
         if (pref.LoadFile(fdopen(preferenceFd, "r")))

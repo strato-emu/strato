@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <syslog.h>
+#import <thread>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -113,7 +114,31 @@ namespace skyline {
     enum class Sreg { Sp, Pc, PState };
 
     /**
-     * @brief The Logger class is to write log output
+     * @brief The Mutex class is a wrapper around an atomic bool used for synchronization
+     */
+    class Mutex {
+        std::atomic<bool> flag{false}; //!< This atomic bool holds the status of the lock
+
+      public:
+        /**
+         * @brief Wait on and lock the mutex
+         */
+        void lock();
+
+        /**
+         * @brief Lock the mutex if it is unlocked else return
+         * @return If the mutex was successfully locked or not
+         */
+        bool try_lock();
+
+        /**
+         * @brief Unlock the mutex if it is held by this thread
+         */
+        void unlock();
+    };
+
+    /**
+     * @brief The Logger class is to write log output to file and logcat
      */
     class Logger {
       private:

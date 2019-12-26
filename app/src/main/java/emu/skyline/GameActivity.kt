@@ -24,13 +24,12 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
     private lateinit var preferenceFd: ParcelFileDescriptor
     private lateinit var logFd: ParcelFileDescriptor
     private var surface: Surface? = null
-    private var inputQueue: Long? = null
+    private var inputQueue: Long = 0L
     private lateinit var gameThread: Thread
-    private var halt: Boolean = false
 
     private external fun executeRom(romString: String, romType: Int, romFd: Int, preferenceFd: Int, logFd: Int)
-    private external fun lockMutex()
-    private external fun unlockMutex()
+    private external fun setHalt(halt: Boolean)
+    private external fun setSurface(surface: Surface?)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +55,7 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
 
     override fun onDestroy() {
         super.onDestroy()
-        halt = true
+        setHalt(true)
         gameThread.join()
         romFd.close()
         preferenceFd.close()
@@ -65,9 +64,8 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
 
     override fun surfaceCreated(holder: SurfaceHolder?) {
         Log.d("surfaceCreated", "Holder: ${holder.toString()}")
-        lockMutex()
         surface = holder!!.surface
-        unlockMutex()
+        setSurface(surface)
     }
 
     override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
@@ -76,9 +74,8 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
 
     override fun surfaceDestroyed(holder: SurfaceHolder?) {
         Log.d("surfaceDestroyed", "Holder: ${holder.toString()}")
-        lockMutex()
         surface = null
-        unlockMutex()
+        setSurface(surface)
     }
 
     override fun onInputQueueCreated(queue: InputQueue?) {
@@ -86,10 +83,12 @@ class GameActivity : AppCompatActivity(), SurfaceHolder.Callback, InputQueue.Cal
         val clazz = Class.forName("android.view.InputQueue")
         val method: Method = clazz.getMethod("getNativePtr")
         inputQueue = method.invoke(queue)!! as Long
+        //setQueue(inputQueue)
     }
 
     override fun onInputQueueDestroyed(queue: InputQueue?) {
         Log.d("onInputQueueDestroyed", "InputQueue: ${queue.toString()}")
-        inputQueue = null
+        inputQueue = 0L
+        //setQueue(inputQueue)
     }
 }

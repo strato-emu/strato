@@ -5,8 +5,9 @@
 #include <csignal>
 
 bool Halt;
+jobject Surface;
 uint FaultCount;
-std::mutex jniMtx;
+skyline::Mutex jniMtx;
 
 void signalHandler(int signal) {
     syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
@@ -54,10 +55,19 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_lockMutex(JNIEnv *env, jobject instance) {
+extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_setHalt(JNIEnv *env, jobject instance, jboolean halt) {
     jniMtx.lock();
+    Halt = halt;
+    jniMtx.unlock();
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_unlockMutex(JNIEnv *env, jobject instance) {
+extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_setSurface(JNIEnv *env, jobject instance, jobject surface) {
+    jniMtx.lock();
+    if(!env->IsSameObject(Surface, nullptr))
+        env->DeleteGlobalRef(Surface);
+    if(!env->IsSameObject(surface, nullptr))
+        Surface = env->NewGlobalRef(surface);
+    else
+        Surface = surface;
     jniMtx.unlock();
 }

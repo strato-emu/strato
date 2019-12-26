@@ -8,9 +8,10 @@
 #include <android/native_window_jni.h>
 
 extern bool Halt;
+extern jobject Surface;
 
 namespace skyline::gpu {
-    GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvmManager->env, state.jvmManager->GetField("surface", "Landroid/view/Surface;"))), bufferQueue(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+    GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvmManager->GetEnv(), Surface)), bufferQueue(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
@@ -23,16 +24,16 @@ namespace skyline::gpu {
 
     void GPU::Loop() {
         if (surfaceUpdate) {
-            if (!state.jvmManager->CheckNull("surface", "Landroid/view/Surface;")) {
-                window = ANativeWindow_fromSurface(state.jvmManager->env, state.jvmManager->GetField("surface", "Landroid/view/Surface;"));
-                ANativeWindow_acquire(window);
-                resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
-                resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
-                format = ANativeWindow_getFormat(window);
-            } else
+            if (state.jvmManager->CheckNull(Surface))
                 return;
+            window = ANativeWindow_fromSurface(state.jvmManager->GetEnv(), Surface);
+            ANativeWindow_acquire(window);
+            resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
+            resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
+            format = ANativeWindow_getFormat(window);
+            surfaceUpdate = true;
         } else
-            surfaceUpdate = state.jvmManager->CheckNull("surface", "Landroid/view/Surface;");
+            surfaceUpdate = state.jvmManager->CheckNull(Surface);
         if (!bufferQueue.displayQueue.empty()) {
             auto &buffer = bufferQueue.displayQueue.front();
             bufferQueue.displayQueue.pop();

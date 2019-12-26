@@ -9,7 +9,7 @@ namespace skyline {
      */
     class JvmManager {
       public:
-        JNIEnv *env; //!< A pointer to the JNI environment
+        JavaVM *vm{}; //!< A pointer to the Java VM
         jobject instance; //!< A reference to the activity
         jclass instanceClass; //!< The class of the activity
 
@@ -20,6 +20,21 @@ namespace skyline {
         JvmManager(JNIEnv *env, jobject instance);
 
         /**
+         * @brief Attach the current thread to the Java VM
+         */
+        void AttachThread();
+
+        /**
+         * @brief Detach the current thread to the Java VM
+         */
+        void DetachThread();
+
+        /**
+         * @brief Returns a pointer to the JNI environment for the current thread
+         */
+        JNIEnv* GetEnv();
+
+        /**
          * @brief Retrieves a specific field of the given type from the activity
          * @tparam objectType The type of the object in the field
          * @param key The name of the field in the activity class
@@ -27,6 +42,7 @@ namespace skyline {
          */
         template<typename objectType>
         inline objectType GetField(const char *key) {
+            JNIEnv *env = GetEnv();
             if constexpr(std::is_same<objectType, jboolean>())
                 return env->GetBooleanField(instance, env->GetFieldID(instanceClass, key, "Z"));
             else if constexpr(std::is_same<objectType, jbyte>())
@@ -60,5 +76,12 @@ namespace skyline {
          * @return If the field is null or not
          */
         bool CheckNull(const char *key, const char *signature);
+
+        /**
+         * @brief Checks if a specific jobject is null or not
+         * @param object The jobject to check
+         * @return If the object is null or not
+         */
+        bool CheckNull(jobject &object);
     };
 }

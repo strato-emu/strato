@@ -6,10 +6,9 @@
 #include "guest.h"
 
 extern bool Halt;
-extern std::mutex jniMtx;
+extern skyline::Mutex jniMtx;
 
 namespace skyline {
-
     namespace instr {
         /**
          * @brief A bit-field struct that encapsulates a BRK instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction.
@@ -205,7 +204,7 @@ namespace skyline {
     void NCE::Execute() {
         int status = 0;
         while (!Halt && !state.os->processMap.empty()) {
-            jniMtx.lock();
+            std::lock_guard jniGd(jniMtx);
             for (const auto &process : state.os->processMap) {
                 state.os->thisProcess = process.second;
                 state.os->thisThread = process.second->threadMap.at(process.first);
@@ -263,8 +262,6 @@ namespace skyline {
             }
             state.os->serviceManager.Loop();
             state.gpu->Loop();
-            Halt = state.jvmManager->GetField<jboolean>("halt");
-            jniMtx.unlock();
         }
         for (const auto &process : state.os->processMap) {
             state.os->KillThread(process.first);
@@ -406,8 +403,7 @@ namespace skyline {
         u32 *end = address + (code.size() / sizeof(u32));
         i64 patchOffset = offset;
 
-        std::vector<u32> patch;
-        patch.resize((guest::saveCtxSize + guest::loadCtxSize) / sizeof(u32));
+        std::vector<u32> patch((guest::saveCtxSize + guest::loadCtxSize) / sizeof(u32));
         std::memcpy(patch.data(), reinterpret_cast<void*>(&guest::saveCtx), guest::saveCtxSize);
         offset += guest::saveCtxSize;
 
