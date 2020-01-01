@@ -9,7 +9,7 @@ namespace skyline::kernel::type {
     void KSyncObject::Signal() {
         for (const auto &info : waitThreads) {
             state.nce->SetRegister(Wreg::W1, info.index);
-            state.os->processMap.at(info.process)->threadMap.at(info.process)->status = KThread::Status::Runnable;
+            state.process->threadMap.at(info.process)->status = KThread::Status::Runnable;
         }
         waitThreads.clear();
     }

@@ -14,7 +14,7 @@ namespace skyline::kernel::ipc {
 
     IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain), state(state), tls() {
         u8 *currPtr = tls.data();
-        state.thisProcess->ReadMemory(currPtr, state.thisThread->tls, constant::TlsIpcSize);
+        state.process->ReadMemory(currPtr, state.thread->tls, constant::TlsIpcSize);
 
         header = reinterpret_cast<CommandHeader *>(currPtr);
         currPtr += sizeof(CommandHeader);
@@ -184,12 +184,12 @@ namespace skyline::kernel::ipc {
 
         state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->rawSize), u32(payload->value), copyHandles.size(), moveHandles.size());
 
-        state.thisProcess->WriteMemory(tls.data(), state.thisThread->tls, constant::TlsIpcSize);
+        state.process->WriteMemory(tls.data(), state.thread->tls, constant::TlsIpcSize);
     }
 
     std::vector<u8> BufferDescriptorABW::Read(const DeviceState &state) {
         std::vector<u8> vec(Size());
-        state.thisProcess->ReadMemory(vec.data(), Address(), Size());
+        state.process->ReadMemory(vec.data(), Address(), Size());
         return std::move(vec);
     }
 }

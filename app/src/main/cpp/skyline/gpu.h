@@ -18,7 +18,7 @@ namespace skyline::gpu {
         std::unordered_map<device::NvDeviceType, std::shared_ptr<device::NvDevice>> deviceMap; //!< A map from a NvDeviceType to the NvDevice object
         std::unordered_map<u32, std::shared_ptr<device::NvDevice>> fdMap; //!< A map from an FD to a shared pointer to it's NvDevice object
         bool surfaceUpdate{}; //!< If the surface needs to be updated
-        double prevTime{};
+        double prevTime{}; //!< The time passed from the last frame
 
       public:
         DisplayId displayId{DisplayId::Null}; //!< The ID of this display

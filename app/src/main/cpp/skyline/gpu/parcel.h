@@ -80,18 +80,16 @@ namespace skyline::gpu {
         /**
          * @brief Writes the Parcel object into a particular output buffer on a process
          * @param buffer The buffer to write into
-         * @param process The process to write the Parcel to
          * @return The total size of the message
          */
-        u64 WriteParcel(kernel::ipc::OutputBuffer& buffer, pid_t process = 0);
+        u64 WriteParcel(kernel::ipc::OutputBuffer& buffer);
 
         /**
          * @brief Writes the Parcel object into the process's memory
          * @param address The address to write the Parcel object to
          * @param maxSize The maximum size of the Parcel
-         * @param process The process to write the Parcel to
          * @return The total size of the message
          */
-        u64 WriteParcel(u64 address, u64 maxSize, pid_t process = 0);
+        u64 WriteParcel(u64 address, u64 maxSize);
     };
 }

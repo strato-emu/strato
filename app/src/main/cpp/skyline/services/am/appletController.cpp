@@ -20,7 +20,7 @@ namespace skyline::service::am {
     }
 
     void ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.thisProcess->InsertItem(messageEvent);
+        auto handle = state.process->InsertItem(messageEvent);
         state.logger->Debug("Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }
@@ -86,7 +86,7 @@ namespace skyline::service::am {
     }) {}
 
     void IWindowController::GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push(static_cast<u64>(state.thisProcess->mainThread));
+        response.Push(static_cast<u64>(state.process->pid));
     }
 
     void IWindowController::AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}

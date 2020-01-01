@@ -8,7 +8,7 @@ namespace skyline::service::hid {
 
     void IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         hidSharedMemory = std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::hidSharedMemSize, memory::Permission(true, false, false), memory::Type::SharedMemory);
-        auto handle = state.thisProcess->InsertItem<type::KSharedMemory>(hidSharedMemory);
+        auto handle = state.process->InsertItem<type::KSharedMemory>(hidSharedMemory);
         state.logger->Debug("HID Shared Memory Handle: {}", handle);
         response.copyHandles.push_back(handle);
     }
@@ -40,7 +40,7 @@ namespace skyline::service::hid {
         size_t numId = buffer.size / sizeof(NpadId);
         u64 address = buffer.address;
         for (size_t i = 0; i < numId; i++) {
-            auto id = state.thisProcess->ReadMemory<NpadId>(address);
+            auto id = state.process->ReadMemory<NpadId>(address);
             deviceMap[id] = JoyConDevice(id);
             address += sizeof(NpadId);
         }

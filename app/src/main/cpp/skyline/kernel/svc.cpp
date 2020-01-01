@@ -12,12 +12,12 @@ namespace skyline::kernel::svc {
         }
         std::shared_ptr<type::KPrivateMemory> heap;
         try {
-            heap = state.thisProcess->memoryRegionMap.at(memory::Region::Heap);
+            heap = state.process->memoryRegionMap.at(memory::Region::Heap);
             heap->Resize(size, true);
         } catch (const exception &) {
             state.logger->Warn("svcSetHeapSize: Falling back to recreating memory");
-            state.thisProcess->UnmapPrivateRegion(memory::Region::Heap);
-            heap = state.thisProcess->MapPrivateRegion(constant::HeapAddr, size, {true, true, false}, memory::Type::Heap, memory::Region::Heap).item;
+            state.process->UnmapPrivateRegion(memory::Region::Heap);
+            heap = state.process->MapPrivateRegion(constant::HeapAddr, size, {true, true, false}, memory::Type::Heap, memory::Region::Heap).item;
         }
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
         state.nce->SetRegister(Xreg::X1, heap->address);
@@ -47,7 +47,7 @@ namespace skyline::kernel::svc {
         }
         memory::MemoryAttribute attribute = *reinterpret_cast<memory::MemoryAttribute*>(&maskedValue);
         bool found = false;
-        for (const auto&[address, region] : state.thisProcess->memoryMap) {
+        for (const auto&[address, region] : state.process->memoryMap) {
             if (addr >= address && addr < (address + region->size)) {
                 bool subFound = false;
                 for (auto &subregion : region->regionInfoVec) {
@@ -72,54 +72,53 @@ namespace skyline::kernel::svc {
     }
 
     void QueryMemory(DeviceState &state) {
-        memory::MemoryInfo memInf;
+        memory::MemoryInfo memInfo{};
         u64 addr = state.nce->GetRegister(Xreg::X2);
         bool found = false;
-        for (const auto&[address, region] : state.thisProcess->memoryMap) {
+        for (const auto&[address, region] : state.process->memoryMap) {
             if (addr >= address && addr < (address + region->size)) {
-                memInf = region->GetInfo(addr);
+                memInfo = region->GetInfo(addr);
                 found = true;
                 break;
             }
         }
         if (!found) {
-            for (const auto &object : state.thisProcess->handleTable) {
+            for (const auto &object : state.process->handleTable) {
                 if (object.second->objectType == type::KType::KSharedMemory) {
-                    const auto &mem = state.thisProcess->GetHandle<type::KSharedMemory>(object.first);
-                    if (mem->procInfMap.count(state.thisProcess->mainThread)) {
-                        const auto &map = mem->procInfMap.at(state.thisProcess->mainThread);
-                        if (addr >= map.address && addr < (map.address + map.size)) {
-                            memInf = mem->GetInfo(state.thisProcess->mainThread);
+                    const auto &mem = state.process->GetHandle<type::KSharedMemory>(object.first);
+                    if (mem->guest.valid()) {
+                        if (addr >= mem->guest.address && addr < (mem->guest.address + mem->guest.size)) {
+                            memInfo = mem->GetInfo();
                             found = true;
                             break;
                         }
                     }
                 } else if (object.second->objectType == type::KType::KTransferMemory) {
-                    const auto &mem = state.thisProcess->GetHandle<type::KTransferMemory>(object.first);
+                    const auto &mem = state.process->GetHandle<type::KTransferMemory>(object.first);
                     if (addr >= mem->cAddress && addr < (mem->cAddress + mem->cSize)) {
-                        memInf = mem->GetInfo();
+                        memInfo = mem->GetInfo();
                         found = true;
                         break;
                     }
                 }
             }
             if (!found) {
-                memInf = {
-                    .baseAddress = constant::BaseEnd,
-                    .size = static_cast<u64>(-constant::BaseEnd + 1),
+                memInfo = {
+                    .baseAddress = constant::BaseAddr,
+                    .size = static_cast<u64>(constant::BaseEnd),
                     .type = static_cast<u64>(memory::Type::Unmapped)
                 };
                 state.logger->Debug("svcQueryMemory: Cannot find block of address: 0x{:X}", addr);
             }
         }
-        state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: {}, Is Uncached: {}, Permissions: {}{}{}", memInf.baseAddress, memInf.size, memInf.type, static_cast<bool>(memInf.memoryAttribute.isUncached), memInf.perms.r ? "R" : "-", memInf.perms.w ? "W" : "-", memInf.perms.x ? "X" : "-");
-        state.thisProcess->WriteMemory<memory::MemoryInfo>(memInf, state.nce->GetRegister(Xreg::X0));
+        state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: {}, Is Uncached: {}, Permissions: {}{}{}", memInfo.baseAddress, memInfo.size, memInfo.type, static_cast<bool>(memInfo.memoryAttribute.isUncached), memInfo.r ? "R" : "-", memInfo.w ? "W" : "-", memInfo.x ? "X" : "-");
+        state.process->WriteMemory<memory::MemoryInfo>(memInfo, state.nce->GetRegister(Xreg::X0));
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
     void ExitProcess(DeviceState &state) {
-        state.logger->Debug("svcExitProcess: Exiting current process: {}", state.thisProcess->mainThread);
-        state.os->KillThread(state.thisProcess->mainThread);
+        state.logger->Debug("svcExitProcess: Exiting current process: {}", state.process->pid);
+        state.os->KillThread(state.process->pid);
     }
 
     void CreateThread(DeviceState &state) {
@@ -132,7 +131,7 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
-        auto thread = state.thisProcess->CreateThread(entryAddr, entryArg, stackTop, priority);
+        auto thread = state.process->CreateThread(entryAddr, entryArg, stackTop, priority);
         state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddr, entryArg, stackTop, priority, thread->pid);
         state.nce->SetRegister(Wreg::W1, thread->handle);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
@@ -141,7 +140,7 @@ namespace skyline::kernel::svc {
     void StartThread(DeviceState &state) {
         auto handle = state.nce->GetRegister(Wreg::W0);
         try {
-            auto thread = state.thisProcess->GetHandle<type::KThread>(handle);
+            auto thread = state.process->GetHandle<type::KThread>(handle);
             state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->pid);
             thread->Start();
         } catch (const std::exception&) {
@@ -151,8 +150,8 @@ namespace skyline::kernel::svc {
     }
 
     void ExitThread(DeviceState &state) {
-        state.logger->Debug("svcExitProcess: Exiting current thread: {}", state.thisThread->pid);
-        state.os->KillThread(state.thisThread->pid);
+        state.logger->Debug("svcExitProcess: Exiting current thread: {}", state.thread->pid);
+        state.os->KillThread(state.thread->pid);
     }
 
     void SleepThread(DeviceState &state) {
@@ -162,19 +161,19 @@ namespace skyline::kernel::svc {
             case 1:
             case 2:
                 state.logger->Debug("svcSleepThread: Yielding thread: {}", in);
-                state.thisThread->status = type::KThread::Status::Runnable; // Will cause the application to awaken on the next iteration of the main loop
+                state.thread->status = type::KThread::Status::Runnable; // Will cause the application to awaken on the next iteration of the main loop
                 break;
             default:
                 state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
-                state.thisThread->timeout = GetCurrTimeNs() + in;
-                state.thisThread->status = type::KThread::Status::Sleeping;
+                state.thread->timeout = GetCurrTimeNs() + in;
+                state.thread->status = type::KThread::Status::Sleeping;
         }
     }
 
     void GetThreadPriority(DeviceState &state) {
         auto handle = state.nce->GetRegister(Wreg::W0);
         try {
-            auto priority = state.thisProcess->GetHandle<type::KThread>(handle)->priority;
+            auto priority = state.process->GetHandle<type::KThread>(handle)->priority;
             state.nce->SetRegister(Wreg::W1, priority);
             state.nce->SetRegister(Wreg::W0, constant::status::Success);
             state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
@@ -188,7 +187,7 @@ namespace skyline::kernel::svc {
         auto handle = state.nce->GetRegister(Wreg::W0);
         auto priority = state.nce->GetRegister(Wreg::W1);
         try {
-            state.thisProcess->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
+            state.process->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
             state.nce->SetRegister(Wreg::W0, constant::status::Success);
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
         } catch (const std::exception&) {
@@ -199,7 +198,7 @@ namespace skyline::kernel::svc {
 
     void MapSharedMemory(DeviceState &state) {
         try {
-            auto object = state.thisProcess->GetHandle<type::KSharedMemory>(state.nce->GetRegister(Wreg::W0));
+            auto object = state.process->GetHandle<type::KSharedMemory>(state.nce->GetRegister(Wreg::W0));
             u64 addr = state.nce->GetRegister(Xreg::X1);
             if ((addr & (PAGE_SIZE - 1U))) {
                 state.nce->SetRegister(Wreg::W0, constant::status::InvAddress);
@@ -220,7 +219,7 @@ namespace skyline::kernel::svc {
                 return;
             }
             state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", addr, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
-            object->Map(addr, size, permission, state.thisProcess->mainThread);
+            object->Map(addr, size, permission);
             state.nce->SetRegister(Wreg::W0, constant::status::Success);
         } catch (const std::exception &) {
             state.logger->Warn("svcMapSharedMemory: 'handle' invalid: 0x{:X}", state.nce->GetRegister(Wreg::W0));
@@ -249,7 +248,7 @@ namespace skyline::kernel::svc {
             return;
         }
         state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", addr, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
-        auto shmem = state.thisProcess->NewHandle<type::KTransferMemory>(state.thisProcess->mainThread, addr, size, permission);
+        auto shmem = state.process->NewHandle<type::KTransferMemory>(state.process->pid, addr, size, permission);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
         state.nce->SetRegister(Wreg::W1, shmem.handle);
     }
@@ -257,7 +256,7 @@ namespace skyline::kernel::svc {
     void CloseHandle(DeviceState &state) {
         auto handle = static_cast<handle_t>(state.nce->GetRegister(Wreg::W0));
         try {
-            state.thisProcess->handleTable.erase(handle);
+            state.process->handleTable.erase(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.nce->SetRegister(Wreg::W0, constant::status::Success);
         } catch(const std::exception&) {
@@ -269,7 +268,7 @@ namespace skyline::kernel::svc {
     void ResetSignal(DeviceState &state) {
         auto handle = state.nce->GetRegister(Wreg::W0);
         try {
-            auto &object = state.thisProcess->handleTable.at(handle);
+            auto &object = state.process->handleTable.at(handle);
             switch (object->objectType) {
                 case (type::KType::KEvent):
                     std::static_pointer_cast<type::KEvent>(object)->ResetSignal();
@@ -299,12 +298,12 @@ namespace skyline::kernel::svc {
             return;
         }
         std::vector<handle_t> waitHandles(numHandles);
-        state.thisProcess->ReadMemory(waitHandles.data(), state.nce->GetRegister(Xreg::X1), numHandles * sizeof(handle_t));
+        state.process->ReadMemory(waitHandles.data(), state.nce->GetRegister(Xreg::X1), numHandles * sizeof(handle_t));
         std::string handleStr;
         uint index{};
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
-            auto object = state.thisProcess->handleTable.at(handle);
+            auto object = state.process->handleTable.at(handle);
             switch (object->objectType) {
                 case type::KType::KProcess:
                 case type::KType::KThread:
@@ -313,7 +312,7 @@ namespace skyline::kernel::svc {
                     break;
                 default: {
                     state.nce->SetRegister(Wreg::W0, constant::status::InvHandle);
-                    state.thisThread->ClearWaitObjects();
+                    state.thread->ClearWaitObjects();
                     return;
                 }
             }
@@ -322,19 +321,19 @@ namespace skyline::kernel::svc {
                 state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", handle);
                 state.nce->SetRegister(Wreg::W0, constant::status::Success);
                 state.nce->SetRegister(Wreg::W1, index);
-                state.thisThread->ClearWaitObjects();
+                state.thread->ClearWaitObjects();
                 return;
             }
-            state.thisThread->waitObjects.push_back(syncObject);
-            syncObject->waitThreads.emplace_back(state.thisThread->pid, index);
+            state.thread->waitObjects.push_back(syncObject);
+            syncObject->waitThreads.emplace_back(state.thread->pid, index);
         }
         auto timeout = state.nce->GetRegister(Xreg::X3);
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
         if (state.nce->GetRegister(Xreg::X3) != std::numeric_limits<u64>::max())
-            state.thisThread->timeout = GetCurrTimeNs() + timeout;
+            state.thread->timeout = GetCurrTimeNs() + timeout;
         else
-            state.thisThread->timeout = 0;
-        state.thisThread->status = type::KThread::Status::WaitSync;
+            state.thread->timeout = 0;
+        state.thread->status = type::KThread::Status::WaitSync;
     }
 
     void ArbitrateLock(DeviceState &state) {
@@ -345,10 +344,10 @@ namespace skyline::kernel::svc {
             return;
         }
         auto handle = state.nce->GetRegister(Wreg::W2);
-        if (handle != state.thisThread->handle)
+        if (handle != state.thread->handle)
             throw exception("svcArbitrateLock: Called from another thread");
         state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X} for thread 0x{:X}", addr, handle);
-        state.thisProcess->MutexLock(addr);
+        state.process->MutexLock(addr);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
@@ -360,7 +359,7 @@ namespace skyline::kernel::svc {
             return;
         }
         state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", addr);
-        state.thisProcess->MutexUnlock(addr);
+        state.process->MutexUnlock(addr);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
@@ -372,24 +371,24 @@ namespace skyline::kernel::svc {
             return;
         }
         auto handle = state.nce->GetRegister(Wreg::W2);
-        if (handle != state.thisThread->handle)
+        if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Called from another thread");
-        state.thisProcess->MutexUnlock(mtxAddr);
+        state.process->MutexUnlock(mtxAddr);
         auto condAddr = state.nce->GetRegister(Xreg::X1);
-        auto &cvarVec = state.thisProcess->condVarMap[condAddr];
+        auto &cvarVec = state.process->condVarMap[condAddr];
         for (auto thread = cvarVec.begin();; thread++) {
-            if ((*thread)->priority < state.thisThread->priority) {
-                cvarVec.insert(thread, state.thisThread);
+            if ((*thread)->priority < state.thread->priority) {
+                cvarVec.insert(thread, state.thread);
                 break;
             } else if (thread + 1 == cvarVec.end()) {
-                cvarVec.push_back(state.thisThread);
+                cvarVec.push_back(state.thread);
                 break;
             }
         }
         auto timeout = state.nce->GetRegister(Xreg::X3);
         state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x:{:X}, Timeout: {} ns", mtxAddr, condAddr, timeout);
-        state.thisThread->status = type::KThread::Status::WaitCondVar;
-        state.thisThread->timeout = GetCurrTimeNs() + timeout;
+        state.thread->status = type::KThread::Status::WaitCondVar;
+        state.thread->timeout = GetCurrTimeNs() + timeout;
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
     }
 
@@ -397,17 +396,17 @@ namespace skyline::kernel::svc {
         auto address = state.nce->GetRegister(Xreg::X0);
         auto count = state.nce->GetRegister(Wreg::W1);
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
-        if (!state.thisProcess->condVarMap.count(address)) {
+        if (!state.process->condVarMap.count(address)) {
             state.logger->Debug("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
             return;
         }
-        auto &cvarVec = state.thisProcess->condVarMap.at(address);
+        auto &cvarVec = state.process->condVarMap.at(address);
         count = std::min(count, static_cast<u32>(cvarVec.size()));
         for (uint index = 0; index < count; index++)
             cvarVec[index]->status = type::KThread::Status::Runnable;
         cvarVec.erase(cvarVec.begin(), cvarVec.begin() + count);
         if (cvarVec.empty())
-            state.thisProcess->condVarMap.erase(address);
+            state.process->condVarMap.erase(address);
         state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
     }
 
@@ -426,7 +425,7 @@ namespace skyline::kernel::svc {
 
     void ConnectToNamedPort(DeviceState &state) {
         char port[constant::PortSize + 1]{0};
-        state.os->thisProcess->ReadMemory(port, state.nce->GetRegister(Xreg::X1), constant::PortSize);
+        state.process->ReadMemory(port, state.nce->GetRegister(Xreg::X1), constant::PortSize);
         handle_t handle{};
         if (std::strcmp(port, "sm:") == 0)
             handle = state.os->serviceManager.NewSession(service::Service::sm);
@@ -449,9 +448,9 @@ namespace skyline::kernel::svc {
         pid_t pid{};
         auto handle = state.nce->GetRegister(Wreg::W1);
         if (handle != constant::ThreadSelf) {
-            pid = state.thisProcess->GetHandle<type::KThread>(handle)->pid;
+            pid = state.process->GetHandle<type::KThread>(handle)->pid;
         } else
-            pid = state.thisThread->pid;
+            pid = state.thread->pid;
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
         state.nce->SetRegister(Xreg::X1, static_cast<u64>(pid));
         state.nce->SetRegister(Wreg::W0, constant::status::Success);
@@ -459,7 +458,7 @@ namespace skyline::kernel::svc {
 
     void OutputDebugString(DeviceState &state) {
         std::string debug(state.nce->GetRegister(Xreg::X1), '\0');
-        state.os->thisProcess->ReadMemory(debug.data(), state.nce->GetRegister(Xreg::X0), state.nce->GetRegister(Xreg::X1));
+        state.process->ReadMemory(debug.data(), state.nce->GetRegister(Xreg::X0), state.nce->GetRegister(Xreg::X1));
         if(debug.back() == '\n')
             debug.pop_back();
         state.logger->Info("Debug Output: {}", debug);
@@ -485,16 +484,16 @@ namespace skyline::kernel::svc {
                 out = constant::MapSize;
                 break;
             case constant::infoState::HeapRegionBaseAddr:
-                out = state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address;
+                out = state.process->memoryRegionMap.at(memory::Region::Heap)->address;
                 break;
             case constant::infoState::HeapRegionSize:
-                out = state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->size;
+                out = state.process->memoryRegionMap.at(memory::Region::Heap)->size;
                 break;
             case constant::infoState::TotalMemoryAvailable:
                 out = constant::TotalPhyMem;
                 break;
             case constant::infoState::TotalMemoryUsage:
-                out = state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address + state.thisProcess->mainThreadStackSz + state.thisProcess->GetProgramSize();
+                out = state.process->memoryRegionMap.at(memory::Region::Heap)->address + state.process->mainThreadStackSz + state.process->GetProgramSize();
                 break;
             case constant::infoState::AddressSpaceBaseAddr:
                 out = constant::BaseAddr;
@@ -503,25 +502,25 @@ namespace skyline::kernel::svc {
                 out = constant::BaseSize;
                 break;
             case constant::infoState::StackRegionBaseAddr:
-                out = state.thisThread->stackTop;
+                out = state.thread->stackTop;
                 break;
             case constant::infoState::StackRegionSize:
-                out = state.thisProcess->mainThreadStackSz;
+                out = state.process->mainThreadStackSz;
                 break;
             case constant::infoState::PersonalMmHeapSize:
                 out = constant::TotalPhyMem;
                 break;
             case constant::infoState::PersonalMmHeapUsage:
-                out = state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address + state.thisProcess->mainThreadStackSz;
+                out = state.process->memoryRegionMap.at(memory::Region::Heap)->address + state.process->mainThreadStackSz;
                 break;
             case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
                 out = constant::TotalPhyMem; // TODO: NPDM specifies SystemResourceSize, subtract that from this
                 break;
             case constant::infoState::TotalMemoryUsedWithoutMmHeap:
-                out = state.os->thisProcess->memoryRegionMap.at(memory::Region::Heap)->address + state.thisProcess->mainThreadStackSz; // TODO: Same as above
+                out = state.process->memoryRegionMap.at(memory::Region::Heap)->address + state.process->mainThreadStackSz; // TODO: Same as above
                 break;
             case constant::infoState::UserExceptionContextAddr:
-                out = state.thisProcess->tlsPages[0]->Get(0);
+                out = state.process->tlsPages[0]->Get(0);
                 break;
             default:
                 state.logger->Warn("svcGetInfo: Unimplemented case ID0: {}, ID1: {}", id0, id1);

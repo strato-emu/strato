@@ -30,12 +30,12 @@ namespace skyline::memory {
         /**
          * @brief Equality operator between two Permission objects
          */
-        bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); };
+        inline bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); };
 
         /**
          * @brief Inequality operator between two Permission objects
          */
-        bool operator!=(const Permission &rhs) const { return !operator==(rhs); };
+        inline bool operator!=(const Permission &rhs) const { return !operator==(rhs); };
 
         /**
          * @return The value of the permission struct in mmap(2) format
@@ -51,18 +51,24 @@ namespace skyline::memory {
             return perm;
         };
 
-        bool r : 1, w : 1, x : 1;
+        bool r;
+        bool w;
+        bool x;
     };
 
     /**
      * @brief This holds certain attributes of a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryAttribute
      */
-    struct MemoryAttribute {
-        bool isBorrowed     : 1;
-        bool isIpcLocked    : 1;
-        bool isDeviceShared : 1;
-        bool isUncached     : 1;
+    union MemoryAttribute {
+        struct {
+            bool isBorrowed     : 1;
+            bool isIpcLocked    : 1;
+            bool isDeviceShared : 1;
+            bool isUncached     : 1;
+        };
+        u32 value;
     };
+    static_assert(sizeof(MemoryAttribute) == sizeof(u32));
 
     /**
      * @brief This describes the properties of a region of the allocated memory
@@ -81,12 +87,17 @@ namespace skyline::memory {
     struct MemoryInfo {
         u64 baseAddress;
         u64 size;
-        u64 type;
+        u32 type;
         MemoryAttribute memoryAttribute;
-        Permission perms;
+        union {
+            u32 _pad0_;
+            struct {
+                bool r : 1, w : 1, x : 1;
+            };
+        };
         u32 ipcRefCount;
         u32 deviceRefCount;
-        u32 : 32;
+        u32                          : 32;
     };
     static_assert(sizeof(MemoryInfo) == 0x28);
 

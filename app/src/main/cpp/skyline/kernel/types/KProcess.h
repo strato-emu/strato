@@ -63,7 +63,7 @@ namespace skyline::kernel::type {
             Exiting //!< The process is exiting
         } status = Status::Created; //!< The state of the process
         handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
-        pid_t mainThread; //!< The PID of the main thread
+        pid_t pid; //!< The PID of the main thread
         size_t mainThreadStackSz; //!< The size of the main thread's stack (All other threads map stack themselves so we don't know the size per-se)
         int memFd; //!< The file descriptor to the memory of the process
         std::unordered_map<u64, std::shared_ptr<KPrivateMemory>> memoryMap; //!< A mapping from every address to a shared pointer of it's corresponding KPrivateMemory, used to keep track of KPrivateMemory instances

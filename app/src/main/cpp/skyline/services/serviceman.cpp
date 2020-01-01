@@ -120,7 +120,7 @@ namespace skyline::service {
     }
 
     handle_t ServiceManager::NewSession(const Service serviceType) {
-        return state.thisProcess->NewHandle<type::KSession>(GetService(serviceType)).handle;
+        return state.process->NewHandle<type::KSession>(GetService(serviceType)).handle;
     }
 
     std::shared_ptr<BaseService> ServiceManager::NewService(const std::string &serviceName, type::KSession &session, ipc::IpcResponse &response) {
@@ -131,7 +131,7 @@ namespace skyline::service {
             response.domainObjects.push_back(session.handleIndex);
             handle = session.handleIndex;
         } else {
-            handle = state.thisProcess->NewHandle<type::KSession>(serviceObject).handle;
+            handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
         state.logger->Debug("Service has been created: \"{}\" (0x{:X})", serviceName, handle);
@@ -145,14 +145,14 @@ namespace skyline::service {
             response.domainObjects.push_back(session.handleIndex);
             handle = session.handleIndex++;
         } else {
-            handle = state.thisProcess->NewHandle<type::KSession>(serviceObject).handle;
+            handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->getName(), handle);
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {
-        auto session = state.thisProcess->GetHandle<type::KSession>(handle);
+        auto session = state.process->GetHandle<type::KSession>(handle);
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
             if (session->isDomain) {
                 for (const auto &[objectId, service] : session->domainTable)
@@ -170,7 +170,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::SyncRequestHandler(const handle_t handle) {
-        auto session = state.thisProcess->GetHandle<type::KSession>(handle);
+        auto session = state.process->GetHandle<type::KSession>(handle);
         state.logger->Debug("----Start----");
         state.logger->Debug("Handle is 0x{:X}", handle);
 
@@ -211,7 +211,7 @@ namespace skyline::service {
                             break;
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
-                            response.Push(state.thisProcess->InsertItem(session));
+                            response.Push(state.process->InsertItem(session));
                             break;
                         case ipc::ControlCommand::QueryPointerBufferSize:
                             response.Push<u32>(0x1000);

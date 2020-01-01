@@ -17,10 +17,10 @@ namespace skyline::gpu::device {
         struct Data {
             u32 size;   // In
             u32 handle; // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         handleTable[handleIndex] = std::make_shared<NvMapObject>(idIndex++, data.size);
         data.handle = handleIndex++;
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
         state.logger->Debug("Create: Input: Size: 0x{:X}, Output: Handle: 0x{:X}, Status: {}", data.size, data.handle, buffer.status);
     }
 
@@ -28,7 +28,7 @@ namespace skyline::gpu::device {
         struct Data {
             u32 id;     // In
             u32 handle; // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         bool found{};
         for (const auto &object : handleTable) {
             if (object.second->id == data.id) {
@@ -38,7 +38,7 @@ namespace skyline::gpu::device {
             }
         }
         if (found)
-            state.thisProcess->WriteMemory(data, buffer.output[0].address);
+            state.process->WriteMemory(data, buffer.output[0].address);
         else
             buffer.status = NvStatus::BadValue;
         state.logger->Debug("FromId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
@@ -53,7 +53,7 @@ namespace skyline::gpu::device {
             u8 kind;     // In
             u8 _pad0_[7];
             u64 address;  // InOut
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         auto &object = handleTable.at(data.handle);
         object->heapMask = data.heapMask;
         object->flags = data.flags;
@@ -71,7 +71,7 @@ namespace skyline::gpu::device {
             u32 address;  // Out
             u32 size;     // Out
             u64 flags;    // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         const auto &object = handleTable.at(data.handle);
         if (object.use_count() > 1) {
             data.address = static_cast<u32>(object->address);
@@ -82,7 +82,7 @@ namespace skyline::gpu::device {
         }
         data.size = object->size;
         handleTable.erase(data.handle);
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
     }
 
     void NvMap::Param(IoctlData &buffer) {
@@ -91,7 +91,7 @@ namespace skyline::gpu::device {
             u32 handle;          // In
             Parameter parameter; // In
             u32 result;          // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         auto &object = handleTable.at(data.handle);
         switch (data.parameter) {
             case Parameter::Size:
@@ -124,7 +124,7 @@ namespace skyline::gpu::device {
                 buffer.status = NvStatus::NotImplemented;
                 break;
         }
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
         state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
     }
 
@@ -132,9 +132,9 @@ namespace skyline::gpu::device {
         struct Data {
             u32 id;     // Out
             u32 handle; // In
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         data.id = handleTable.at(data.handle)->id;
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
         state.logger->Debug("GetId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
     }
 }

@@ -3,7 +3,7 @@
 #include "loader/nro.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<JvmManager>& jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, thisProcess, thisThread, jvmManager, settings, logger), serviceManager(state) {}
+    OS::OS(std::shared_ptr<JvmManager>& jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, thisThread, jvmManager, settings, logger), serviceManager(state) {}
 
     void OS::Execute(const int romFd, const TitleFormat romType) {
         auto process = CreateProcess(constant::BaseAddr, constant::DefStackSize);
@@ -12,7 +12,7 @@ namespace skyline::kernel {
             loader.LoadProcessData(process, state);
         } else
             throw exception("Unsupported ROM extension.");
-        process->threadMap.at(process->mainThread)->Start(); // The kernel itself is responsible for starting the main thread
+        process->threadMap.at(process->pid)->Start(); // The kernel itself is responsible for starting the main thread
         state.nce->Execute();
     }
 
@@ -36,27 +36,22 @@ namespace skyline::kernel {
         pid_t pid = clone(&ExecuteChild, stack + stackSize, CLONE_FILES | CLONE_FS | SIGCHLD, nullptr); // NOLINT(hicpp-signed-bitwise)
         if (pid == -1)
             throw exception("Call to clone() has failed: {}", strerror(errno));
-        std::shared_ptr<type::KProcess> process = std::make_shared<kernel::type::KProcess>(state, pid, address, reinterpret_cast<u64>(stack), stackSize);
-        processMap[pid] = process;
-        processVec.push_back(pid);
+        process = std::make_shared<kernel::type::KProcess>(state, pid, address, reinterpret_cast<u64>(stack), stackSize);
         state.logger->Debug("Successfully created process with PID: {}", pid);
         return process;
     }
 
     void OS::KillThread(pid_t pid) {
-        auto process = processMap.at(pid);
-        if (process->mainThread == pid) {
+        if (process->pid == pid) {
             state.logger->Debug("Killing process with PID: {}", pid);
             for (auto&[key, value]: process->threadMap) {
                 value->Kill();
-                processMap.erase(key);
             }
-            processVec.erase(std::remove(processVec.begin(), processVec.end(), pid), processVec.end());
+            process.reset();
         } else {
             state.logger->Debug("Killing thread with TID: {}", pid);
             process->threadMap.at(pid)->Kill();
             process->threadMap.erase(pid);
-            processMap.erase(pid);
         }
     }
 

@@ -12,7 +12,7 @@ namespace skyline::gpu::device {
 
     void NvHostCtrlGpu::ZCullGetCtxSize(IoctlData &buffer) {
         u32 size = 0x1;
-        state.thisProcess->WriteMemory(size, buffer.output[0].address);
+        state.process->WriteMemory(size, buffer.output[0].address);
     }
 
     void NvHostCtrlGpu::ZCullGetInfo(skyline::gpu::device::IoctlData &buffer) {
@@ -28,7 +28,7 @@ namespace skyline::gpu::device {
             u32 subregionHeightAlignPixels{0x40};
             u32 subregionCount{0x10};
         } zCullInfo;
-        state.thisProcess->WriteMemory(zCullInfo, buffer.output[0].address);
+        state.process->WriteMemory(zCullInfo, buffer.output[0].address);
     }
 
     void NvHostCtrlGpu::GetCharacteristics(IoctlData &buffer) {
@@ -73,7 +73,7 @@ namespace skyline::gpu::device {
             u64 gpuCharacteristicsBufSize;         // InOut
             u64 gpuCharacteristicsBufAddr;         // In
             GpuCharacteristics gpuCharacteristics; // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         data.gpuCharacteristics = {
             .arch = 0x120,
             .impl = 0xB,
@@ -111,7 +111,7 @@ namespace skyline::gpu::device {
             .grCompbitStoreBaseHw = 0x0
         };
         data.gpuCharacteristicsBufSize = 0xA0;
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
     }
 
     void NvHostCtrlGpu::GetTpcMasks(IoctlData &buffer) {
@@ -119,10 +119,10 @@ namespace skyline::gpu::device {
             u32 maskBufSize; // In
             u32 reserved[3]; // In
             u64 maskBuf;     // Out
-        } data = state.thisProcess->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
         if (data.maskBufSize)
             data.maskBuf = 0x3;
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
     }
 
     void NvHostCtrlGpu::GetActiveSlotMask(IoctlData &buffer) {
@@ -133,6 +133,6 @@ namespace skyline::gpu::device {
             .slot = 0x07,
             .mask = 0x01
         };
-        state.thisProcess->WriteMemory(data, buffer.output[0].address);
+        state.process->WriteMemory(data, buffer.output[0].address);
     }
 }

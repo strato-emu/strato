@@ -306,8 +306,8 @@ namespace skyline {
         DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
         kernel::OS *os; //!< This holds a reference to the OS class
-        std::shared_ptr<kernel::type::KProcess> &thisProcess; //!< This holds a reference to the current process object
-        std::shared_ptr<kernel::type::KThread> &thisThread; //!< This holds a reference to the current thread object
+        std::shared_ptr<kernel::type::KProcess> &process; //!< This holds a reference to the process object
+        std::shared_ptr<kernel::type::KThread> &thread; //!< This holds a reference to the current thread object
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
         std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class

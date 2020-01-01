@@ -64,7 +64,7 @@ namespace skyline::service::nvnflinger {
     }
 
     void dispdrv::GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        handle_t handle = state.thisProcess->InsertItem(state.gpu->bufferEvent);
+        handle_t handle = state.process->InsertItem(state.gpu->bufferEvent);
         state.logger->Debug("BufferEvent Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         response.Push<u32>(constant::status::Success);

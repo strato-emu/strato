@@ -12,7 +12,6 @@ namespace skyline::kernel::type {
         const DeviceState &state; //!< The state of the device
 
       public:
-        pid_t owner; //!< The PID of the process owning this memory
         u64 address; //!< The address of the allocated memory
         size_t size; //!< The size of the allocated memory
         u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
@@ -23,14 +22,14 @@ namespace skyline::kernel::type {
 
         /**
          * @param state The state of the device
-         * @param pid The PID of the main
          * @param dstAddress The address to map to (If NULL then an arbitrary address is picked)
          * @param srcAddress The address to map from (If NULL then no copy is performed)
          * @param size The size of the allocation
          * @param permission The permissions for the allocated memory
          * @param type The type of the memory
+         * @param pid The PID of the me
          */
-        KPrivateMemory(const DeviceState &state, pid_t pid, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type);
+        KPrivateMemory(const DeviceState &state, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type, const pid_t pid=0);
 
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it

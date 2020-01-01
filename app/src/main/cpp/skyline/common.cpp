@@ -91,7 +91,7 @@ namespace skyline {
     }
 
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
-        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), thisProcess(thisProcess), thisThread(thisThread) {
+        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(thisProcess), thread(thisThread) {
         // We assign these later as they use the state in their constructor and we don't want null pointers
         nce = std::move(std::make_shared<NCE>(*this));
         gpu = std::move(std::make_shared<gpu::GPU>(*this));

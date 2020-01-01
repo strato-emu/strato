@@ -31,7 +31,7 @@ namespace skyline::gpu {
     }
 
     void Buffer::UpdateBuffer() {
-        state.thisProcess->ReadMemory(dataBuffer.data(), nvBuffer->address + gbpBuffer.offset, gbpBuffer.size);
+        state.process->ReadMemory(dataBuffer.data(), nvBuffer->address + gbpBuffer.offset, gbpBuffer.size);
     }
 
     BufferQueue::WaitContext::WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, kernel::ipc::OutputBuffer& buffer) : thread(std::move(thread)), input(input), buffer(buffer) {}
@@ -59,8 +59,8 @@ namespace skyline::gpu {
             }
         }
         if (slot == -1) {
-            state.thisThread->Sleep();
-            waitVec.emplace_back(state.thisThread, *data, buffer);
+            state.thread->Sleep();
+            waitVec.emplace_back(state.thread, *data, buffer);
             state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamps: {}, No Free Buffers", data->width, data->height, data->format, data->usage, data->timestamps);
             return true;
         }
@@ -135,7 +135,7 @@ namespace skyline::gpu {
                     gpu::Parcel out(state);
                     DequeueOut output(slotNo);
                     out.WriteData(output);
-                    out.WriteParcel(context->buffer, context->thread->pid);
+                    out.WriteParcel(context->buffer);
                     slot->status = BufferStatus::Dequeued;
                     waitVec.erase(context);
                     break;

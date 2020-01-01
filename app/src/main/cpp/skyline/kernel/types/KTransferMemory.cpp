@@ -45,17 +45,12 @@ namespace skyline::kernel::type {
                 throw exception("An error occurred while mapping transfer memory in kernel");
         }
         size_t copySz = std::min(size, cSize);
-        if (process && owner) {
-            std::vector<u8> tempBuf(copySz);
-            state.os->processMap.at(process)->ReadMemory(tempBuf.data(), cAddress, copySz);
-            state.os->processMap.at(owner)->WriteMemory(tempBuf.data(), address, copySz);
-        } else if (process && !owner) {
-            state.os->processMap.at(process)->WriteMemory(reinterpret_cast<void *>(cAddress), address, copySz);
+        if (process && !owner) {
+            state.process->WriteMemory(reinterpret_cast<void *>(cAddress), address, copySz);
         } else if (!process && owner) {
-            state.os->processMap.at(owner)->ReadMemory(reinterpret_cast<void *>(address), cAddress, copySz);
-        } else {
+            state.process->ReadMemory(reinterpret_cast<void *>(address), cAddress, copySz);
+        } else
             throw exception("Transferring from kernel to kernel is not supported");
-        }
         if (owner) {
             user_pt_regs fregs = {0};
             fregs.regs[0] = address;
@@ -81,7 +76,9 @@ namespace skyline::kernel::type {
         info.type = static_cast<u64>(memory::Type::TransferMemory);
         info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
         info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
-        info.perms = permission;
+        info.r = permission.r;
+        info.w = permission.w;
+        info.x = permission.x;
         info.ipcRefCount = ipcRefCount;
         info.deviceRefCount = deviceRefCount;
         return info;

@@ -12,6 +12,7 @@ namespace skyline {
     namespace instr {
         struct Brk;
     }
+
     /**
      * @brief The NCE (Native Code Execution) class is responsible for managing the state of catching instructions and directly controlling processes/threads
      */

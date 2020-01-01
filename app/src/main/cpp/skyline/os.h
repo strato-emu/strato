@@ -19,9 +19,7 @@ namespace skyline::kernel {
         DeviceState state; //!< The state of the device
 
       public:
-        std::unordered_map<pid_t, std::shared_ptr<type::KProcess>> processMap; //!< A mapping from a threat's PID to it's KProcess object
-        std::vector<pid_t> processVec; //!< A vector of all processes by their main thread's PID
-        std::shared_ptr<type::KProcess> thisProcess; //!< The corresponding KProcess object of the process that's called an SVC
+        std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
         std::shared_ptr<type::KThread> thisThread; //!< The corresponding KThread object of the thread that's called an SVC
         service::ServiceManager serviceManager; //!< This manages all of the service functions
 

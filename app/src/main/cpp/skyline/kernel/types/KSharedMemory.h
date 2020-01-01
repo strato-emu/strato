@@ -15,12 +15,18 @@ namespace skyline::kernel::type {
         /**
          * @brief This holds the address and size of a process's mapping
          */
-        struct ProcessInfo {
+        struct MapInfo {
             u64 address;
             size_t size;
             memory::Permission permission;
-        };
-        std::unordered_map<pid_t, ProcessInfo> procInfMap; //!< Maps from a PID to where the memory was mapped to
+
+            /**
+             * @brief Returns if the object is valid
+             * @return If the MapInfo object is valid
+             */
+            inline bool valid() { return address && size && permission.Get(); }
+        } kernel, guest;
+
         u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
         u16 deviceRefCount{};  //!< The amount of reference to this memory for IPC
         memory::Type type; //!< The type of this memory allocation
@@ -35,33 +41,32 @@ namespace skyline::kernel::type {
         KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::Type type);
 
         /**
-         * @brief Maps the shared memory at an address
+         * @brief Maps the shared memory at an address in the guest
          * @param address The address to map to (If NULL an arbitrary address is picked)
          * @param size The amount of shared memory to map
          * @param permission The permission of the kernel process
-         * @param pid The PID of the process
          * @return The address of the allocation
          */
-        u64 Map(const u64 address, const u64 size, memory::Permission permission, pid_t pid);
+        u64 Map(const u64 address, const u64 size, memory::Permission permission);
 
         /**
          * @brief Resize a chunk of memory as to change the size occupied by it
-         * @param newSize The new size of the memory
+         * @param size The new size of the memory
          */
-        void Resize(size_t newSize);
+        void Resize(size_t size);
 
         /**
-         * Updates the permissions of a chunk of mapped memory
-         * @param pid The PID of the requesting process
+         * @brief Updates the permissions of a chunk of mapped memory
          * @param permission The new permissions to be set for the memory
+         * @param kernel Set the permissions for the kernel rather than the guest
          */
-        void UpdatePermission(pid_t pid, memory::Permission permission);
+        void UpdatePermission(memory::Permission permission, bool host=0);
 
         /**
-         * @param pid The PID of the requesting process
+         * @brief Creates a MemoryInfo struct from the current instance
          * @return A Memory::MemoryInfo struct based on attributes of the memory
          */
-        memory::MemoryInfo GetInfo(pid_t pid);
+        memory::MemoryInfo GetInfo();
 
         /**
          * @brief The destructor of shared memory, it deallocates the memory from all processes
