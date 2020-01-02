@@ -369,6 +369,9 @@ namespace skyline {
         }
         class OS;
     }
+    namespace audio {
+        class Audio;
+    }
 
     /**
      * @brief This struct is used to hold the state of a device
@@ -382,6 +385,7 @@ namespace skyline {
         thread_local static ThreadContext *ctx; //!< This holds the context of the thread
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
+        std::shared_ptr<audio::Audio> audio; //!< This holds a reference to the Audio class
         std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class
         std::shared_ptr<Settings> settings; //!< This holds a reference to the Settings class
         std::shared_ptr<Logger> logger; //!< This holds a reference to the Logger class

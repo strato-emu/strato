@@ -5,6 +5,7 @@
 #include "apm/apm.h"
 #include "am/applet.h"
 #include "am/appletController.h"
+#include "audout/audout.h"
 #include "fatal/fatal.h"
 #include "hid/hid.h"
 #include "time/timesrv.h"
@@ -81,6 +82,9 @@ namespace skyline::service {
                 break;
             case Service::am_IAppletCommonFunctions:
                 serviceObj = std::make_shared<am::IAppletCommonFunctions>(state, *this);
+                break;
+            case Service::audout_u:
+                serviceObj = std::make_shared<audout::audoutU>(state, *this);
                 break;
             case Service::hid:
                 serviceObj = std::make_shared<hid::hid>(state, *this);

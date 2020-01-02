@@ -15,12 +15,16 @@ endif()
 set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
 add_subdirectory("libraries/tinyxml2")
 add_subdirectory("libraries/fmt")
+add_subdirectory("libraries/oboe")
+include_directories (libraries/oboe/include)
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 include_directories(${source_DIR}/skyline)
 
 add_library(skyline SHARED
         ${source_DIR}/main.cpp
+        ${source_DIR}/skyline/audio.cpp
+        ${source_DIR}/skyline/audio/track.cpp
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/nce/guest.S
         ${source_DIR}/skyline/nce/guest.cpp
@@ -47,6 +51,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/serviceman.cpp
         ${source_DIR}/skyline/services/sm/sm.cpp
         ${source_DIR}/skyline/services/fatal/fatal.cpp
+        ${source_DIR}/skyline/services/audout/audout.cpp
         ${source_DIR}/skyline/services/set/sys.cpp
         ${source_DIR}/skyline/services/apm/apm.cpp
         ${source_DIR}/skyline/services/am/applet.cpp
@@ -59,5 +64,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/vi/vi_m.cpp
         )
 
-target_link_libraries(skyline vulkan android fmt tinyxml2)
+target_link_libraries(skyline vulkan android fmt tinyxml2 oboe)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)
