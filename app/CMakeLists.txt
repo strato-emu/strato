@@ -22,7 +22,8 @@ include_directories(${source_DIR}/skyline)
 add_library(skyline SHARED
         ${source_DIR}/main.cpp
         ${source_DIR}/skyline/common.cpp
-        ${source_DIR}/skyline/guest.S
+        ${source_DIR}/skyline/nce/guest.S
+        ${source_DIR}/skyline/nce/guest.cpp
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/gpu.cpp

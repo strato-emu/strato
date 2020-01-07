@@ -1,6 +1,7 @@
 #include "KTransferMemory.h"
 #include <nce.h>
 #include <os.h>
+#include <asm/unistd.h>
 
 namespace skyline::kernel::type {
     u64 MapTransferFunc(u64 address, size_t size, u64 perms) {
@@ -9,14 +10,17 @@ namespace skyline::kernel::type {
 
     KTransferMemory::KTransferMemory(const DeviceState &state, pid_t pid, u64 address, size_t size, const memory::Permission permission) : owner(pid), cSize(size), permission(permission), KObject(state, KType::KTransferMemory) {
         if (pid) {
-            user_pt_regs fregs = {0};
-            fregs.regs[0] = address;
-            fregs.regs[1] = size;
-            fregs.regs[2] = static_cast<u64 >(permission.Get());
-            state.nce->ExecuteFunction(reinterpret_cast<void *>(MapTransferFunc), fregs, pid);
-            if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
+            Registers fregs{};
+            fregs.x0 = address;
+            fregs.x1 = size;
+            fregs.x2 = static_cast<u64 >(permission.Get());
+            fregs.x3 = static_cast<u64>(MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0)); // NOLINT(hicpp-signed-bitwise)
+            fregs.x4 = static_cast<u64>(-1);
+            fregs.x8 = __NR_mmap;
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, pid);
+            if (fregs.x0 < 0)
                 throw exception("An error occurred while mapping shared region in child process");
-            cAddress = fregs.regs[0];
+            cAddress = fregs.x0;
         } else {
             address = MapTransferFunc(address, size, static_cast<u64>(permission.Get()));
             if (reinterpret_cast<void *>(address) == MAP_FAILED)
@@ -31,14 +35,18 @@ namespace skyline::kernel::type {
 
     u64 KTransferMemory::Transfer(pid_t process, u64 address, u64 size) {
         if (process) {
-            user_pt_regs fregs = {0};
-            fregs.regs[0] = address;
-            fregs.regs[1] = size;
-            fregs.regs[2] = static_cast<u64 >(permission.Get());
-            state.nce->ExecuteFunction(reinterpret_cast<void *>(MapTransferFunc), fregs, process);
-            if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
+            Registers fregs{};
+            fregs.x0 = address;
+            fregs.x1 = size;
+            fregs.x2 = static_cast<u64 >(permission.Get());
+            fregs.x3 = static_cast<u64>(MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0)); // NOLINT(hicpp-signed-bitwise)
+            fregs.x4 = static_cast<u64>(-1);
+            fregs.x8 = __NR_mmap;
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, process);
+            // state.nce->ExecuteFunction(reinterpret_cast<void *>(MapTransferFunc), fregs, process);
+            if (fregs.x0 < 0)
                 throw exception("An error occurred while mapping transfer memory in child process");
-            address = fregs.regs[0];
+            address = fregs.x0;
         } else {
             address = MapTransferFunc(address, size, static_cast<u64>(permission.Get()));
             if (reinterpret_cast<void *>(address) == MAP_FAILED)
@@ -52,12 +60,13 @@ namespace skyline::kernel::type {
         } else
             throw exception("Transferring from kernel to kernel is not supported");
         if (owner) {
-            user_pt_regs fregs = {0};
-            fregs.regs[0] = address;
-            fregs.regs[1] = size;
-            fregs.regs[2] = static_cast<u64 >(permission.Get());
-            state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapTransferFunc), fregs, owner);
-            if (reinterpret_cast<void *>(fregs.regs[0]) == MAP_FAILED)
+            Registers fregs{};
+            fregs.x0 = address;
+            fregs.x1 = size;
+            fregs.x8 = __NR_munmap;
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, owner);
+            // state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapTransferFunc), fregs, owner);
+            if (fregs.x0 < 0)
                 throw exception("An error occurred while unmapping transfer memory in child process");
         } else {
             if (reinterpret_cast<void *>(UnmapTransferFunc(address, size)) == MAP_FAILED)
@@ -87,12 +96,11 @@ namespace skyline::kernel::type {
     KTransferMemory::~KTransferMemory() {
         if (owner) {
             try {
-                user_pt_regs fregs = {0};
-                fregs.regs[0] = cAddress;
-                fregs.regs[1] = cSize;
-                state.nce->ExecuteFunction(reinterpret_cast<void *>(UnmapTransferFunc), fregs, owner);
-            } catch (const std::exception &) {
-            }
+                Registers fregs{};
+                fregs.x0 = cAddress;
+                fregs.x1 = cSize;
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, owner);
+            } catch (const std::exception &) {}
         } else
             UnmapTransferFunc(cAddress, cSize);
     }

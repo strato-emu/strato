@@ -22,6 +22,8 @@ namespace skyline::loader {
         }
 
       public:
+        u64 mainEntry{}; //!< The address of the actual entry point for the application
+
         /**
          * @param filePath The path to the ROM file
          */

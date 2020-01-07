@@ -23,13 +23,12 @@ namespace skyline::kernel::type {
         /**
          * @param state The state of the device
          * @param dstAddress The address to map to (If NULL then an arbitrary address is picked)
-         * @param srcAddress The address to map from (If NULL then no copy is performed)
          * @param size The size of the allocation
          * @param permission The permissions for the allocated memory
          * @param type The type of the memory
-         * @param pid The PID of the me
+         * @param thread The thread to execute the calls on
          */
-        KPrivateMemory(const DeviceState &state, u64 dstAddress, u64 srcAddress, size_t size, memory::Permission permission, const memory::Type type, const pid_t pid=0);
+        KPrivateMemory(const DeviceState &state, u64 dstAddress, size_t size, memory::Permission permission, const memory::Type type, std::shared_ptr<KThread> thread = 0);
 
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it

@@ -24,7 +24,7 @@ namespace skyline::gpu {
 
     void GPU::Loop() {
         if (surfaceUpdate) {
-            if (state.jvmManager->CheckNull(Surface))
+            if (Surface == nullptr)
                 return;
             window = ANativeWindow_fromSurface(state.jvmManager->GetEnv(), Surface);
             ANativeWindow_acquire(window);
@@ -33,7 +33,7 @@ namespace skyline::gpu {
             format = ANativeWindow_getFormat(window);
             surfaceUpdate = true;
         } else
-            surfaceUpdate = state.jvmManager->CheckNull(Surface);
+            surfaceUpdate = (Surface == nullptr);
         if (!bufferQueue.displayQueue.empty()) {
             auto &buffer = bufferQueue.displayQueue.front();
             bufferQueue.displayQueue.pop();

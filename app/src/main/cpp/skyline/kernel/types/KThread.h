@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KSyncObject.h"
+#include "KSharedMemory.h"
 
 namespace skyline::kernel::type {
     /**
@@ -23,6 +24,7 @@ namespace skyline::kernel::type {
             Runnable, //!< The thread is ready to run after waiting
             Dead //!< The thread is dead and not running
         } status = Status::Created; //!< The state of the thread
+        std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
         std::vector<std::shared_ptr<KSyncObject>> waitObjects; //!< A vector holding the objects this thread is waiting for
         u64 timeout{}; //!< The end of a timeout for svcWaitSynchronization or the end of the sleep period for svcSleepThread
         handle_t handle; // The handle of the object in the handle table
@@ -41,8 +43,9 @@ namespace skyline::kernel::type {
          * @param tls The address of the TLS slot assigned
          * @param priority The priority of the thread in Nintendo format
          * @param parent The parent process of this thread
+         * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KThread(const DeviceState &state, handle_t handle, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent);
+        KThread(const DeviceState &state, handle_t handle, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory>& tlsMemory);
 
         /**
          * @brief Kills the thread and deallocates the memory allocated for stack.

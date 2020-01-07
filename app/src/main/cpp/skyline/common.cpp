@@ -5,18 +5,15 @@
 
 namespace skyline {
     void Mutex::lock() {
-        while (flag.exchange(true, std::memory_order_relaxed));
-        std::atomic_thread_fence(std::memory_order_acquire);
+        while (flag.test_and_set(std::memory_order_acquire));
     }
 
     void Mutex::unlock() {
-        std::atomic_thread_fence(std::memory_order_release);
-        flag.store(false, std::memory_order_relaxed);
+        flag.clear(std::memory_order_release);
     }
 
     bool Mutex::try_lock() {
-        bool fal = false;
-        return flag.compare_exchange_strong(fal, true, std::memory_order_relaxed);
+        return !flag.test_and_set(std::memory_order_acquire);
     }
 
     Settings::Settings(const int preferenceFd) {
@@ -90,10 +87,13 @@ namespace skyline {
         logFile.flush();
     }
 
-    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
-        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(thisProcess), thread(thisThread) {
+    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
+        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(process) {
         // We assign these later as they use the state in their constructor and we don't want null pointers
         nce = std::move(std::make_shared<NCE>(*this));
         gpu = std::move(std::make_shared<gpu::GPU>(*this));
     }
+
+    thread_local std::shared_ptr<kernel::type::KThread> DeviceState::thread = 0;
+    thread_local ThreadContext* DeviceState::ctx = 0;
 }

@@ -11,24 +11,13 @@
 #include <memory>
 #include <fmt/format.h>
 #include <sys/mman.h>
-#include <sys/ptrace.h>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
-#include <android/native_window.h>
 #include <jni.h>
+#include "nce/guest_common.h"
 
 namespace skyline {
-    using u128 = __uint128_t; //!< Unsigned 128-bit integer
-    using u64 = __uint64_t; //!< Unsigned 64-bit integer
-    using u32 = __uint32_t; //!< Unsigned 32-bit integer
-    using u16 = __uint16_t; //!< Unsigned 16-bit integer
-    using u8 = __uint8_t; //!< Unsigned 8-bit integer
-    using i128 = __int128_t; //!< Signed 128-bit integer
-    using i64 = __int64_t; //!< Signed 64-bit integer
-    using i32 = __int32_t; //!< Signed 32-bit integer
-    using i16 = __int16_t; //!< Signed 16-bit integer
-    using i8 = __int8_t; //!< Signed 8-bit integer
     using handle_t = u32; //!< The type of a kernel handle
 
     namespace constant {
@@ -36,8 +25,7 @@ namespace skyline {
         constexpr u64 BaseAddr = 0x8000000; //!< The address space base
         constexpr u64 MapAddr = BaseAddr + 0x80000000; //!< The address of the map region
         constexpr u64 HeapAddr = MapAddr + 0x1000000000; //!< The address of the heap region
-        constexpr u64 BaseSize = 0x7FF8000000; //!< The size of the address space
-        constexpr u64 BaseEnd = BaseAddr + BaseSize; //!< The end of the address space
+        constexpr u64 BaseEnd = 0x7FFFFFFFFF; //!< The end of the address space
         constexpr u64 MapSize = 0x1000000000; //!< The size of the map region
         constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
         constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
@@ -52,6 +40,8 @@ namespace skyline {
         constexpr u16 SvcLast = 0x7F; //!< The index of the last SVC
         constexpr u16 BrkRdy = 0xFF; //!< This is reserved for our kernel's to know when a process/thread is ready
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
+        constexpr u32 CntfrqEl0 = 0x5F00; //!< ID of CNTFRQ_EL0 in MRS
+        constexpr u32 TegraX1Freq = 0x124F800; //!< The clock frequency of the Tegra X1
         constexpr u32 CntpctEl0 = 0x5F01; //!< ID of CNTPCT_EL0 in MRS
         constexpr u32 CntvctEl0 = 0x5F02; //!< ID of CNTVCT_EL0 in MRS
         // Kernel
@@ -107,17 +97,10 @@ namespace skyline {
     };
 
     /**
-     * Read about ARMv8 registers here: https://developer.arm.com/docs/100878/latest/registers
-     */
-    enum class Xreg { X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30 };
-    enum class Wreg { W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18, W19, W20, W21, W22, W23, W24, W25, W26, W27, W28, W29, W30 };
-    enum class Sreg { Sp, Pc, PState };
-
-    /**
      * @brief The Mutex class is a wrapper around an atomic bool used for synchronization
      */
     class Mutex {
-        std::atomic<bool> flag{false}; //!< This atomic bool holds the status of the lock
+        std::atomic_flag flag = ATOMIC_FLAG_INIT; //!< An atomic flag to hold the state of the mutex
 
       public:
         /**
@@ -303,11 +286,12 @@ namespace skyline {
      * @brief This struct is used to hold the state of a device
      */
     struct DeviceState {
-        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &thisProcess, std::shared_ptr<kernel::type::KThread> &thisThread, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
+        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
         kernel::OS *os; //!< This holds a reference to the OS class
         std::shared_ptr<kernel::type::KProcess> &process; //!< This holds a reference to the process object
-        std::shared_ptr<kernel::type::KThread> &thread; //!< This holds a reference to the current thread object
+        thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< This holds a reference to the current thread object
+        thread_local static ThreadContext* ctx; //!< This holds the context of the thread
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
         std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class

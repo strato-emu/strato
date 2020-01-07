@@ -7,7 +7,6 @@
 #include "kernel/types/KProcess.h"
 #include "kernel/types/KThread.h"
 #include "services/serviceman.h"
-#include "nce.h"
 #include "gpu.h"
 
 namespace skyline::kernel {
@@ -20,7 +19,6 @@ namespace skyline::kernel {
 
       public:
         std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
-        std::shared_ptr<type::KThread> thisThread; //!< The corresponding KThread object of the thread that's called an SVC
         service::ServiceManager serviceManager; //!< This manages all of the service functions
 
         /**
@@ -39,11 +37,12 @@ namespace skyline::kernel {
 
         /**
          * @brief Creates a new process
-         * @param address The address of the initial function
+         * @param entry The entry point for the new process
+         * @param argument The argument for the initial function
          * @param stackSize The size of the main stack
          * @return An instance of the KProcess of the created process
          */
-        std::shared_ptr<type::KProcess> CreateProcess(u64 address, size_t stackSize);
+        std::shared_ptr<type::KProcess> CreateProcess(u64 entry, u64 argument, size_t stackSize);
 
         /**
          * @brief Kill a particular thread

@@ -6,6 +6,7 @@ namespace skyline::loader {
         ReadOffset((u32 *) &header, 0x0, sizeof(NroHeader));
         if (header.magic != constant::NroMagic)
             throw exception("Invalid NRO magic! 0x{0:X}", header.magic);
+        mainEntry = constant::BaseAddr;
     }
 
     void NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
@@ -17,7 +18,7 @@ namespace skyline::loader {
         ReadOffset(rodata.data(), header.ro.offset, header.ro.size);
         ReadOffset(data.data(), header.data.offset, header.data.size);
 
-        std::vector<u32> patch = state.nce->PatchCode(text, header.text.size + header.ro.size + header.data.size + header.bssSize);
+        std::vector<u32> patch = state.nce->PatchCode(text, constant::BaseAddr, header.text.size + header.ro.size + header.data.size + header.bssSize);
 
         u64 textSize = text.size();
         u64 rodataSize = rodata.size();

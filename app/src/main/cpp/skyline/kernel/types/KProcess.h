@@ -91,8 +91,9 @@ namespace skyline::kernel::type {
          * @param entryPoint The address to start execution at
          * @param stackBase The base of the stack
          * @param stackSize The size of the stack
+         * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize);
+        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory>& tlsMemory);
 
         /**
          * Close the file descriptor to the process's memory

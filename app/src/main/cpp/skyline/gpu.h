@@ -4,6 +4,7 @@
 #include "kernel/types/KEvent.h"
 #include "gpu/display.h"
 #include "gpu/devices/nvdevice.h"
+#include <android/native_window.h>
 
 namespace skyline::gpu {
     /**
