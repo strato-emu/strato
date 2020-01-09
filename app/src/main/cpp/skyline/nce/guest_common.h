@@ -127,6 +127,7 @@ namespace skyline {
         WaitRun    = 3, //!< The thread should be ready to run
         WaitInit   = 4, //!< The thread is waiting to be initialized
         WaitFunc   = 5, //!< The kernel is waiting for the thread to run a function
+        GuestCrash = 6, //!< This is a notification to the kernel that the guest has crashed
     };
 
     /**

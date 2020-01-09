@@ -73,7 +73,7 @@ namespace skyline::kernel::svc {
 
     void QueryMemory(DeviceState &state) {
         memory::MemoryInfo memInfo{};
-        u64 addr = (state.ctx->registers.x2 & ~(PAGE_SIZE - 1));
+        u64 addr = (state.ctx->registers.x2 & ~(PAGE_SIZE-1));
         bool found = false;
         for (const auto&[address, region] : state.process->memoryMap) {
             if (addr >= address && addr < (address + region->size)) {

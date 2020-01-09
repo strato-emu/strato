@@ -106,6 +106,7 @@ namespace skyline::gpu {
         GbpBuffer gbpBuffer; //!< The information about the underlying buffer
         BufferStatus status{BufferStatus::Free}; //!< The status of this buffer
         std::vector<u8> dataBuffer; //!< The vector holding the actual pixel data
+        std::vector<u8> swizzBuffer; //!< The vector holding the swizzled pixel data
         std::shared_ptr<device::NvMap::NvMapObject> nvBuffer{}; //!< A shared pointer to the buffer's nvmap object
 
         /**
@@ -187,10 +188,8 @@ namespace skyline::gpu {
 
         /**
          * @brief This returns the slot of a free buffer
-         * @param buffer The output parcel buffer
-         * @return If the process is waiting for a buffer or not
          */
-        bool DequeueBuffer(Parcel &in, Parcel &out, kernel::ipc::OutputBuffer& buffer);
+        void DequeueBuffer(Parcel &in, Parcel &out);
 
         /**
          * @brief This queues a buffer to be displayed

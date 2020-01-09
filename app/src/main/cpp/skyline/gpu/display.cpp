@@ -49,25 +49,22 @@ namespace skyline::gpu {
         state.logger->Debug("RequestBuffer: Slot: {}", slot, sizeof(GbpBuffer));
     }
 
-    bool BufferQueue::DequeueBuffer(Parcel &in, Parcel &out, kernel::ipc::OutputBuffer& buffer) {
+    void BufferQueue::DequeueBuffer(Parcel &in, Parcel &out) {
         auto *data = reinterpret_cast<DequeueIn *>(in.data.data() + constant::TokenLength);
         i64 slot{-1};
-        for (auto &buffer : queue) {
-            if (buffer.second->status == BufferStatus::Free && buffer.second->resolution.width == data->width && buffer.second->resolution.height == data->height && buffer.second->gbpBuffer.usage == data->usage) {
-                slot = buffer.first;
-                buffer.second->status = BufferStatus::Dequeued;
+        while(slot == -1) {
+            for (auto &buffer : queue) {
+                if (buffer.second->status == BufferStatus::Free && buffer.second->resolution.width == data->width && buffer.second->resolution.height == data->height && buffer.second->gbpBuffer.usage == data->usage) {
+                    slot = buffer.first;
+                    buffer.second->status = BufferStatus::Dequeued;
+                    break;
+                }
             }
-        }
-        if (slot == -1) {
-            state.thread->Sleep();
-            waitVec.emplace_back(state.thread, *data, buffer);
-            state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamps: {}, No Free Buffers", data->width, data->height, data->format, data->usage, data->timestamps);
-            return true;
+            sched_yield();
         }
         DequeueOut output(static_cast<u32>(slot));
         out.WriteData(output);
         state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamps: {}, Slot: {}", data->width, data->height, data->format, data->usage, data->timestamps, slot);
-        return false;
     }
 
     void BufferQueue::QueueBuffer(Parcel &in, Parcel &out) {
@@ -85,6 +82,7 @@ namespace skyline::gpu {
         } *data = reinterpret_cast<Data *>(in.data.data() + constant::TokenLength);
         auto buffer = queue.at(data->slot);
         buffer->status = BufferStatus::Queued;
+        buffer->UpdateBuffer();
         displayQueue.emplace(buffer);
         state.gpu->bufferEvent->Signal();
         struct {

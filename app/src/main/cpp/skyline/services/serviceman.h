@@ -12,6 +12,7 @@ namespace skyline::service {
       private:
         const DeviceState &state; //!< The state of the device
         std::unordered_map<Service, std::shared_ptr<BaseService>> serviceMap; //!< A mapping from a Service to the underlying object
+        skyline::Mutex mutex; //!< This mutex is used to ensure concurrent access to services doesn't cause crashes
 
         /**
          * @param serviceType The type of service requested

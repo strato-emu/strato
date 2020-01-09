@@ -60,8 +60,9 @@ namespace skyline::kernel::type {
         info.size = size;
         info.type = static_cast<u32>(type);
         for (const auto &region : regionInfoVec)
-            if ((address >= region.address) && (address < (region.address + region.size)))
+            if ((address >= region.address) && (address < (region.address + region.size))) {
                 info.memoryAttribute.isUncached = region.isUncached;
+            }
         info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
         info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
         info.r = permission.r;
@@ -78,11 +79,13 @@ namespace skyline::kernel::type {
 
     KPrivateMemory::~KPrivateMemory() {
         try {
-            Registers fregs{};
-            fregs.x0 = address;
-            fregs.x1 = size;
-            fregs.x8 = __NR_munmap;
-            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread);
+            if(state.process) {
+                Registers fregs{};
+                fregs.x0 = address;
+                fregs.x1 = size;
+                fregs.x8 = __NR_munmap;
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
+            }
         } catch (const std::exception &) {}
     }
 };

@@ -120,10 +120,12 @@ namespace skyline::service {
     }
 
     handle_t ServiceManager::NewSession(const Service serviceType) {
+        std::lock_guard serviceGuard(mutex);
         return state.process->NewHandle<type::KSession>(GetService(serviceType)).handle;
     }
 
     std::shared_ptr<BaseService> ServiceManager::NewService(const std::string &serviceName, type::KSession &session, ipc::IpcResponse &response) {
+        std::lock_guard serviceGuard(mutex);
         auto serviceObject = GetService(ServiceString.at(serviceName));
         handle_t handle{};
         if (response.isDomain) {
@@ -139,6 +141,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
+        std::lock_guard serviceGuard(mutex);
         handle_t handle{};
         if (response.isDomain) {
             session.domainTable[session.handleIndex] = serviceObject;
@@ -152,6 +155,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {
+        std::lock_guard serviceGuard(mutex);
         auto session = state.process->GetHandle<type::KSession>(handle);
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
             if (session->isDomain) {
@@ -164,6 +168,7 @@ namespace skyline::service {
     };
 
     void ServiceManager::Loop() {
+        std::lock_guard serviceGuard(mutex);
         for (auto& [type, service] : serviceMap)
             if (service->hasLoop)
                 service->Loop();

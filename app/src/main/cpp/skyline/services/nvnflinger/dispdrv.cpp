@@ -20,11 +20,9 @@ namespace skyline::service::nvnflinger {
             case TransactionCode::RequestBuffer:
                 state.gpu->bufferQueue.RequestBuffer(in, out);
                 break;
-            case TransactionCode::DequeueBuffer: {
-                if (state.gpu->bufferQueue.DequeueBuffer(in, out, request.outputBuf.at(0)))
-                    return;
+            case TransactionCode::DequeueBuffer:
+                state.gpu->bufferQueue.DequeueBuffer(in, out);
                 break;
-            }
             case TransactionCode::QueueBuffer:
                 state.gpu->bufferQueue.QueueBuffer(in, out);
                 break;

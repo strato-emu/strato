@@ -42,12 +42,12 @@ namespace skyline::kernel::type {
 
     KSharedMemory::~KSharedMemory() {
         try {
-            if (guest.valid()) {
+            if (guest.valid() && state.process) {
                 Registers fregs{};
                 fregs.x0 = guest.address;
                 fregs.x1 = guest.size;
                 fregs.x8 = __NR_munmap;
-                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread->pid);
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
             }
             if (kernel.valid())
                 UnmapSharedFunc(kernel.address, kernel.size);

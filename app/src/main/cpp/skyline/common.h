@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <syslog.h>
+#include <mutex>
 #import <thread>
 #include <string>
 #include <sstream>
@@ -52,6 +53,7 @@ namespace skyline {
         constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
         constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
         constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
+        constexpr u32 CheckInterval = 10000000; //!< The amount of cycles to wait between checking if the guest thread is dead
         // IPC
         constexpr size_t TlsIpcSize = 0x100; //!< The size of the IPC command buffer in a TLS slot
         constexpr u8 PortSize = 0x8; //!< The size of a port name string

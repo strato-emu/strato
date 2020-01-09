@@ -96,10 +96,12 @@ namespace skyline::kernel::type {
     KTransferMemory::~KTransferMemory() {
         if (owner) {
             try {
-                Registers fregs{};
-                fregs.x0 = cAddress;
-                fregs.x1 = cSize;
-                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, owner);
+                if(state.process) {
+                    Registers fregs{};
+                    fregs.x0 = cAddress;
+                    fregs.x1 = cSize;
+                    state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
+                }
             } catch (const std::exception &) {}
         } else
             UnmapTransferFunc(cAddress, cSize);

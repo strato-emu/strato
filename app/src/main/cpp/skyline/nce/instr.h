@@ -396,5 +396,46 @@ namespace skyline {
             };
         };
         static_assert(sizeof(Mov) == sizeof(u32));
+
+        /**
+         * @brief A bit-field struct that encapsulates a FCVTZU (Scalar, Integer) instruction. See https://developer.arm.com/docs/ddi0602/d/simd-and-floating-point-instructions-alphabetic-order/fcvtzu-scalar-integer-floating-point-convert-to-unsigned-integer-rounding-toward-zero-scalar.
+         */
+        struct Fcvtzu {
+          public:
+            /**
+             * @brief Creates a FCVTZU (Scalar, Integer) instruction
+             * @param destReg The destination Xn register to store the value in
+             * @param srcReg The source Dn register to retrieve the value from
+             */
+            Fcvtzu(regs::X destReg, u8 srcReg) {
+                this->destReg = static_cast<u8>(destReg);
+                this->srcReg = static_cast<u8>(srcReg);
+                sig0 = 0xE40;
+                ftype = 1;
+                sig1 = 0x1E;
+                sf = 1;
+            }
+
+            /**
+             * @brief Returns if the opcode is valid or not
+             * @return If the opcode represents a valid FCVTZU instruction
+             */
+            inline bool Verify() {
+                return (sig0 == 0xE40 && sig1 == 0x1E);
+            }
+
+            union {
+                struct __attribute__((packed)) {
+                    u8 destReg : 5;
+                    u8 srcReg  : 5;
+                    u32 sig0   : 12;
+                    u8 ftype   : 2;
+                    u8 sig1    : 7;
+                    u8 sf      : 1;
+                };
+                u32 raw{};
+            };
+        };
+        static_assert(sizeof(Fcvtzu) == sizeof(u32));
     }
 }

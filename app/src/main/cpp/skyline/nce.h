@@ -27,6 +27,11 @@ namespace skyline {
         NCE(DeviceState &state);
 
         /**
+         * @brief The destructor for NCE, this calls join() on all the threads
+         */
+        ~NCE();
+
+        /**
          * @brief This function is the main event loop of the program
          */
         void Execute();

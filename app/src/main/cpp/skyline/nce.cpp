@@ -1,5 +1,4 @@
 #include <sched.h>
-#include <mutex>
 #include "os.h"
 #include "jvm.h"
 #include "nce/guest.h"
@@ -11,26 +10,42 @@ extern skyline::Mutex jniMtx;
 
 namespace skyline {
     void NCE::KernelThread(pid_t thread) {
-        state.thread = state.process->threadMap.at(thread);
-        state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->guest.address);
-        while (!Halt) {
-            if (state.ctx->state == ThreadState::WaitKernel) {
-                const u16 svc = static_cast<const u16>(state.ctx->commandId);
-                try {
-                    if (kernel::svc::SvcTable[svc]) {
-                        state.logger->Debug("SVC called 0x{:X}", svc);
-                        (*kernel::svc::SvcTable[svc])(state);
-                    } else
-                        throw exception("Unimplemented SVC 0x{:X}", svc);
-                } catch (const exception &e) {
-                    throw exception("{} (SVC: 0x{:X})", e.what(), svc);
+        try {
+            state.thread = state.process->threadMap.at(thread);
+            state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->guest.address);
+            while (!Halt) {
+                if (state.ctx->state == ThreadState::WaitKernel) {
+                    const u16 svc = static_cast<const u16>(state.ctx->commandId);
+                    try {
+                        if (kernel::svc::SvcTable[svc]) {
+                            state.logger->Debug("SVC called 0x{:X}", svc);
+                            (*kernel::svc::SvcTable[svc])(state);
+                        } else
+                            throw exception("Unimplemented SVC 0x{:X}", svc);
+                    } catch (const std::exception &e) {
+                        throw exception("{} (SVC: 0x{:X})", e.what(), svc);
+                    }
+                    state.ctx->state = ThreadState::WaitRun;
+                } else if (state.ctx->state == ThreadState::GuestCrash) {
+                    state.logger->Warn("Thread with PID {} has crashed due to signal: {}", thread, strsignal(state.ctx->commandId));
+                    ThreadTrace();
+                    break;
                 }
-                state.ctx->state = ThreadState::WaitRun;
             }
+        } catch (std::exception &e) {
+            state.logger->Error(e.what());
+        } catch (...) {
+            state.logger->Error("An unknown exception has occurred");
         }
+        state.os->KillThread(thread);
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}
+
+    NCE::~NCE() {
+        for (auto &thread : threadMap)
+            thread.second->join();
+    }
 
     void NCE::Execute() {
         while (!Halt && state.os->process) {
@@ -41,45 +56,38 @@ namespace skyline {
         Halt = false;
     }
 
-    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread>& thread) {
-        auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
-        u32 cmdId = ctx->commandId;
-        Registers registers = ctx->registers;
-        while(ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
-        ctx->registers = funcRegs;
+    void ExecuteFunctionCtx(ThreadCall call, Registers &funcRegs, ThreadContext *ctx) {
         ctx->commandId = static_cast<u32>(call);
+        Registers registers = ctx->registers;
+        while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
+        ctx->registers = funcRegs;
         ctx->state = ThreadState::WaitFunc;
-        while(ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
-        ctx->commandId = cmdId;
+        while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
         funcRegs = ctx->registers;
         ctx->registers = registers;
+    }
+
+    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread> &thread) {
+        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, pid_t pid) {
-        auto ctx = reinterpret_cast<ThreadContext *>(state.process->threadMap.at(pid)->ctxMemory->kernel.address);
-        ctx->commandId = static_cast<u32>(call);
-        Registers registers = ctx->registers;
-        while(ctx->state != ThreadState::WaitInit || ctx->state != ThreadState::WaitKernel);
-        ctx->registers = funcRegs;
-        ctx->state = ThreadState::WaitFunc;
-        while(ctx->state != ThreadState::WaitInit || ctx->state != ThreadState::WaitKernel);
-        funcRegs = ctx->registers;
-        ctx->registers = registers;
+        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(state.process->threadMap.at(pid)->ctxMemory->kernel.address));
     }
 
-    void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread>& thread) {
+    void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) {
         auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
-        while(ctx->state == ThreadState::NotReady);
+        while (ctx->state == ThreadState::NotReady);
     }
 
     void NCE::StartThread(u64 entryArg, u32 handle, std::shared_ptr<kernel::type::KThread> &thread) {
         auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
-        while(ctx->state != ThreadState::WaitInit);
+        while (ctx->state != ThreadState::WaitInit);
         ctx->tpidrroEl0 = thread->tls;
         ctx->registers.x0 = entryArg;
         ctx->registers.x1 = handle;
         ctx->state = ThreadState::WaitRun;
-        while(ctx->state != ThreadState::Running);
+        state.logger->Debug("Starting thread with PID: {}", thread->pid);
         threadMap[thread->pid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->pid);
     }
 
@@ -88,10 +96,10 @@ namespace skyline {
         std::string trace;
         std::string regStr;
         ctx = ctx ? ctx : state.ctx;
-        if(numHist) {
+        if (numHist) {
             std::vector<u32> instrs(numHist);
             u64 size = (sizeof(u32) * numHist);
-            u64 offset = ctx->pc - size;
+            u64 offset = ctx->pc - size + (2 * sizeof(u32));
             state.process->ReadMemory(instrs.data(), offset, size);
             for (auto &instr : instrs) {
                 instr = __builtin_bswap32(instr);
@@ -103,16 +111,17 @@ namespace skyline {
                 offset += sizeof(u32);
             }
         }
-        for (u16 index = 0; index < constant::NumRegs - 1; index+=2) {
-            regStr += fmt::format("\nX{}: 0x{:X}, X{}: 0x{:X}", index, ctx->registers.regs[index], index+1, ctx->registers.regs[index+1]);
+        for (u16 index = 0; index < constant::NumRegs - 1; index += 2) {
+            regStr += fmt::format("\nX{}: 0x{:X}, X{}: 0x{:X}", index, ctx->registers.regs[index], index + 1, ctx->registers.regs[index + 1]);
         }
-        if(numHist)
-            state.logger->Debug("Process Trace:{}\nRaw Instructions: 0x{}\nCPU Context:{}", trace, raw, regStr);
-        else
+        if (numHist) {
+            state.logger->Debug("Process Trace:{}", trace);
+            state.logger->Debug("Raw Instructions: 0x{}\nCPU Context:{}", raw, regStr);
+        } else
             state.logger->Warn("CPU Context:{}", regStr);
     }
 
-    const std::array<u32, 18> cntpctEl0X0 = {
+    const std::array<u32, 17> cntpctEl0X0 = {
         0xA9BF0BE1, // STP X1, X2, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -129,10 +138,10 @@ namespace skyline {
         0x9E790000, // FCVTZU X0, D0
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
-        0xA97F07C0, // LDP X1, X2, [LR, #-16]
+        0xA8C10BE1, // LDP X1, X2, [SP], #16
     };
 
-    const std::array<u32, 18> cntpctEl0X1 = {
+    const std::array<u32, 17> cntpctEl0X1 = {
         0xA9BF0BE0, // STP X0, X2, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -149,10 +158,10 @@ namespace skyline {
         0x9E790001, // FCVTZU X0, D0
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
-        0xA97F0BC0, // LDP X0, X2, [LR, #-16]
+        0xA8C10BE0, // LDP X0, X2, [SP], #16
     };
 
-    const std::array<u32, 18> cntpctEl0Xn = {
+    std::array<u32, 17> cntpctEl0Xn = {
         0xA9BF07E0, // STP X0, X1, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -166,10 +175,10 @@ namespace skyline {
         0x9E630021, // UCVTF D1, X1
         0x1E621800, // FDIV D0, D0, D2
         0x1E610800, // FMUL D0, D0, D1
-        0x9E790000, // FCVTZU Xn, D0
+        0x00000000, // FCVTZU Xn, D0 (Set at runtime)
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
-        0xA97F07C0, // LDP X0, X1, [LR, #-16]
+        0xA8C107E0, // LDP X0, X1, [SP], #16
     };
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
@@ -179,30 +188,29 @@ namespace skyline {
 
         std::vector<u32> patch((guest::saveCtxSize + guest::loadCtxSize + guest::svcHandlerSize) / sizeof(u32));
 
-        std::memcpy(patch.data(), reinterpret_cast<void*>(&guest::saveCtx), guest::saveCtxSize);
+        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::saveCtx), guest::saveCtxSize);
         offset += guest::saveCtxSize;
 
-        std::memcpy(reinterpret_cast<u8*>(patch.data()) + guest::saveCtxSize,
-                    reinterpret_cast<void*>(&guest::loadCtx), guest::loadCtxSize);
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize,
+                    reinterpret_cast<void *>(&guest::loadCtx), guest::loadCtxSize);
         offset += guest::loadCtxSize;
 
-        std::memcpy(reinterpret_cast<u8*>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize,
-                    reinterpret_cast<void*>(&guest::svcHandler), guest::svcHandlerSize);
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize,
+                    reinterpret_cast<void *>(&guest::svcHandler), guest::svcHandlerSize);
         offset += guest::svcHandlerSize;
 
-        for (u32* address = start;address < end;address++) {
+        for (u32 *address = start; address < end; address++) {
             auto instrSvc = reinterpret_cast<instr::Svc *>(address);
             auto instrMrs = reinterpret_cast<instr::Mrs *>(address);
 
             if (instrSvc->Verify()) {
-                u64 pc = baseAddress + (address - start);
                 instr::B bjunc(offset);
                 constexpr u32 strLr = 0xF81F0FFE; // STR LR, [SP, #-16]!
                 offset += sizeof(strLr);
                 instr::BL bSvCtx(patchOffset - offset);
                 offset += sizeof(bSvCtx);
 
-                auto movPc = instr::MoveU64Reg(regs::X0, pc);
+                auto movPc = instr::MoveU64Reg(regs::X0, baseAddress + (address - start));
                 offset += sizeof(u32) * movPc.size();
                 instr::Movz movCmd(regs::W1, static_cast<u16>(instrSvc->value));
                 offset += sizeof(movCmd);
@@ -219,18 +227,18 @@ namespace skyline {
                 *address = bjunc.raw;
                 patch.push_back(strLr);
                 patch.push_back(bSvCtx.raw);
-                for(auto& instr : movPc)
+                for (auto &instr : movPc)
                     patch.push_back(instr);
                 patch.push_back(movCmd.raw);
                 patch.push_back(bSvcHandler.raw);
                 patch.push_back(bLdCtx.raw);
                 patch.push_back(ldrLr);
                 patch.push_back(bret.raw);
-            }  else if (instrMrs->Verify()) {
+            } else if (instrMrs->Verify()) {
                 if (instrMrs->srcReg == constant::TpidrroEl0) {
                     instr::B bjunc(offset);
                     u32 strX0{};
-                    if(instrMrs->destReg != regs::X0) {
+                    if (instrMrs->destReg != regs::X0) {
                         strX0 = 0xF81F0FE0; // STR X0, [SP, #-16]!
                         offset += sizeof(strX0);
                     }
@@ -240,7 +248,7 @@ namespace skyline {
                     offset += sizeof(ldrTls);
                     u32 movXn{};
                     u32 ldrX0{};
-                    if(instrMrs->destReg != regs::X0) {
+                    if (instrMrs->destReg != regs::X0) {
                         movXn = instr::Mov(regs::X(instrMrs->destReg), regs::X0).raw;
                         offset += sizeof(movXn);
                         ldrX0 = 0xF84107E0; // LDR X0, [SP], #16
@@ -250,15 +258,21 @@ namespace skyline {
                     offset += sizeof(bret);
 
                     *address = bjunc.raw;
-                    if(strX0) patch.push_back(strX0);
+                    if (strX0)
+                        patch.push_back(strX0);
                     patch.push_back(mrsX0);
                     patch.push_back(ldrTls);
-                    if(movXn) patch.push_back(movXn);
-                    if(ldrX0) patch.push_back(ldrX0);
+                    if (movXn)
+                        patch.push_back(movXn);
+                    if (ldrX0)
+                        patch.push_back(ldrX0);
                     patch.push_back(bret.raw);
-                } if (instrMrs->srcReg == constant::CntpctEl0) {
+                } else if (instrMrs->srcReg == constant::CntpctEl0) {
+                    instr::Mrs mrs(constant::CntvctEl0, regs::X(instrMrs->destReg));
+                    *address = mrs.raw;
+                    /*
                     instr::B bjunc(offset);
-                    if(instrMrs->destReg == 0)
+                    if (instrMrs->destReg == 0)
                         offset += cntpctEl0X0.size() * sizeof(u32);
                     else if (instrMrs->destReg == 1)
                         offset += cntpctEl0X1.size() * sizeof(u32);
@@ -268,17 +282,20 @@ namespace skyline {
                     offset += sizeof(bret);
 
                     *address = bjunc.raw;
-                    if(instrMrs->destReg == 0)
-                        for(auto& instr : cntpctEl0X0)
+                    if (instrMrs->destReg == 0)
+                        for (auto &instr : cntpctEl0X0)
                             patch.push_back(instr);
                     else if (instrMrs->destReg == 1)
-                        for(auto& instr : cntpctEl0X1)
+                        for (auto &instr : cntpctEl0X1)
                             patch.push_back(instr);
-                    else
-                        for(auto& instr : cntpctEl0Xn)
+                    else {
+                        cntpctEl0Xn[13] = instr::Fcvtzu(regs::X(instrMrs->destReg), 0).raw;
+                        for (auto &instr : cntpctEl0Xn)
                             patch.push_back(instr);
+                    }
                     patch.push_back(bret.raw);
-                }  else if (instrMrs->srcReg == constant::CntfrqEl0) {
+                    */
+                } else if (instrMrs->srcReg == constant::CntfrqEl0) {
                     instr::B bjunc(offset);
                     auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), constant::TegraX1Freq);
                     offset += sizeof(u32) * movFreq.size();
@@ -286,7 +303,7 @@ namespace skyline {
                     offset += sizeof(bret);
 
                     *address = bjunc.raw;
-                    for(auto& instr : movFreq)
+                    for (auto &instr : movFreq)
                         patch.push_back(instr);
                     patch.push_back(bret.raw);
                 }

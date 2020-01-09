@@ -20,23 +20,23 @@ import emu.skyline.adapter.GameAdapter
 import emu.skyline.adapter.GameItem
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
-import emu.skyline.loader.TitleEntry
 import emu.skyline.utility.GameDialog
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
 import java.io.IOException
-import java.util.*
+import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
     private var adapter = GameAdapter(this)
+
     fun notifyUser(text: String) {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
     }
 
-    private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, entries: MutableList<TitleEntry>): MutableList<TitleEntry> {
+    private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, entries: Int = 0): Int {
         var mEntries = entries
         for (file in directory.listFiles()) {
             if (file.isDirectory) {
@@ -46,8 +46,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     if (file.name != null) {
                         if (ext.equals(file.name?.substring((file.name!!.lastIndexOf(".")) + 1), ignoreCase = true)) {
                             val document = RandomAccessDocument(this, file)
-                            if (loader.verifyFile(document))
-                                mEntries.add(loader.getTitleEntry(document, file.uri))
+                            if (loader.verifyFile(document)) {
+                                val entry = loader.getTitleEntry(document, file.uri)
+                                val header = (mEntries == 0)
+                                runOnUiThread {
+                                    if(header)
+                                        adapter.addHeader(getString(R.string.nro))
+                                    adapter.addItem(GameItem(entry))
+                                }
+                                mEntries++
+                            }
                             document.close()
                         }
                     }
@@ -68,29 +76,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 Log.w("refreshFiles", "Ran into exception while loading: " + e.message)
             }
         }
-        try {
-            adapter.clear()
-            val entries: List<TitleEntry> = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!, ArrayList())
-            if (entries.isNotEmpty()) {
-                adapter.addHeader(getString(R.string.nro))
-                for (entry in entries)
-                    adapter.addItem(GameItem(entry))
-            } else {
-                adapter.addHeader(getString(R.string.no_rom))
-            }
+        thread(start = true) {
             try {
-                adapter.save(File(applicationInfo.dataDir + "/roms.bin"))
-            } catch (e: IOException) {
-                Log.w("refreshFiles", "Ran into exception while saving: " + e.message)
+                runOnUiThread{adapter.clear()}
+                val entries = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                runOnUiThread {
+                    if (entries == 0)
+                        adapter.addHeader(getString(R.string.no_rom))
+                    try {
+                        adapter.save(File(applicationInfo.dataDir + "/roms.bin"))
+                    } catch (e: IOException) {
+                        Log.w("refreshFiles", "Ran into exception while saving: " + e.message)
+                    }
+                }
+                sharedPreferences.edit().putBoolean("refresh_required", false).apply()
+            } catch (e: IllegalArgumentException) {
+                runOnUiThread {
+                    sharedPreferences.edit().remove("search_location").apply()
+                    val intent = intent
+                    finish()
+                    startActivity(intent)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    notifyUser(e.message!!)
+                }
             }
-            sharedPreferences.edit().putBoolean("refresh_required", false).apply()
-        } catch (e: IllegalArgumentException) {
-            sharedPreferences.edit().remove("search_location").apply()
-            val intent = intent
-            finish()
-            startActivity(intent)
-        } catch (e: Exception) {
-            notifyUser(e.message!!)
         }
     }
 

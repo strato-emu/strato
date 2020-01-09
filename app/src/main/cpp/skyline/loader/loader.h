@@ -17,7 +17,7 @@ namespace skyline::loader {
          * @param size The amount to read in bytes
          */
         template<typename T>
-        void ReadOffset(T *output, u64 offset, size_t size) {
+        inline void ReadOffset(T *output, u64 offset, size_t size) {
             pread64(romFd, output, size, offset);
         }
 

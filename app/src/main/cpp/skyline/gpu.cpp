@@ -42,7 +42,6 @@ namespace skyline::gpu {
                 resolution = buffer->resolution;
                 format = buffer->gbpBuffer.format;
             }
-            buffer->UpdateBuffer();
             u8 *inBuffer = buffer->dataBuffer.data();
             madvise(inBuffer, buffer->gbpBuffer.size, MADV_SEQUENTIAL);
             ANativeWindow_Buffer windowBuffer;

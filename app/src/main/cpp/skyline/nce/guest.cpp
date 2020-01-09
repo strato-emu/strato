@@ -1,3 +1,6 @@
+#include <asm/siginfo.h>
+#include <signal.h>
+#include <common.h>
 #include "guest_common.h"
 
 #define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
@@ -88,30 +91,17 @@ namespace skyline::guest {
     }
 
     void svcHandler(u64 pc, u32 svc) {
-        volatile ThreadContext* ctx;
+        volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
         ctx->pc = pc;
         ctx->commandId = svc;
-        ctx->state = ThreadState::WaitKernel;
-        while(ctx->state == ThreadState::WaitKernel);
-        if(ctx->state == ThreadState::WaitRun) {
-            return;
-        } else {
+        while (true) {
             ctx->state = ThreadState::WaitKernel;
-            while(ctx->state == ThreadState::WaitKernel);
-        }
-    }
-
-    void entry(u64 address) {
-        volatile ThreadContext* ctx;
-        asm("MRS %0, TPIDR_EL0":"=r"(ctx));
-        while(true) {
-            ctx->state = ThreadState::WaitInit;
-            while (ctx->state == ThreadState::WaitInit);
+            while (ctx->state == ThreadState::WaitKernel);
             if (ctx->state == ThreadState::WaitRun)
-                break;
-            else if(ctx->state == ThreadState::WaitFunc) {
-                if(ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
+                return;
+            else if (ctx->state == ThreadState::WaitFunc) {
+                if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
                     saveCtxStack();
                     loadCtxTls();
                     asm("STR LR, [SP, #-16]!\n\t"
@@ -124,6 +114,47 @@ namespace skyline::guest {
                 }
             }
         }
+    }
+
+    void signalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
+        volatile ThreadContext *ctx;
+        asm("MRS %0, TPIDR_EL0":"=r"(ctx));
+        for (u8 index = 0; index < constant::NumRegs; index++)
+            ctx->registers.regs[index] = ucontext->uc_mcontext.regs[index];
+        ctx->pc = ucontext->uc_mcontext.pc;
+        ctx->commandId = static_cast<u32>(signal);
+        ctx->state = ThreadState::GuestCrash;
+        exit(0);
+    }
+
+    void entry(u64 address) {
+        volatile ThreadContext *ctx;
+        asm("MRS %0, TPIDR_EL0":"=r"(ctx));
+        while (true) {
+            ctx->state = ThreadState::WaitInit;
+            while (ctx->state == ThreadState::WaitInit);
+            if (ctx->state == ThreadState::WaitRun)
+                break;
+            else if (ctx->state == ThreadState::WaitFunc) {
+                if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
+                    saveCtxStack();
+                    loadCtxTls();
+                    asm("STR LR, [SP, #-16]!\n\t"
+                        "MOV LR, SP\n\t"
+                        "SVC #0\n\t"
+                        "MOV SP, LR\n\t"
+                        "LDR LR, [SP], #16");
+                    saveCtxTls();
+                    loadCtxStack();
+                }
+            }
+        }
+        struct sigaction sigact{
+            .sa_sigaction = reinterpret_cast<void (*)(int, struct siginfo *, void *)>(reinterpret_cast<void *>(signalHandler)),
+            .sa_flags = SA_SIGINFO,
+        };
+        for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
+            sigaction(signal, &sigact, nullptr);
         ctx->state = ThreadState::Running;
         asm("MOV LR, %0\n\t"
             "MOV X0, %1\n\t"
@@ -156,7 +187,7 @@ namespace skyline::guest {
             "MOV X27, XZR\n\t"
             "MOV X28, XZR\n\t"
             "MOV X29, XZR\n\t"
-            "RET" :: "r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0","x1","lr");
+            "RET"::"r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
         __builtin_unreachable();
     }
 }
