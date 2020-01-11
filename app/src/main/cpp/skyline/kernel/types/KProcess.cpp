@@ -3,6 +3,7 @@
 #include <os.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/uio.h>
 
 namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(u64 address) : address(address) {}
@@ -89,11 +90,31 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
-        pread64(memFd, destination, size, offset);
+        struct iovec local[1];
+        struct iovec remote[1];
+
+        remote[0].iov_base = reinterpret_cast<void*>(offset);
+        remote[0].iov_len = size;
+
+        local[0].iov_base = destination;
+        local[0].iov_len = size;
+
+        if (process_vm_readv(pid, local, 1, remote, 1, 0) < 0)
+            pread64(memFd, destination, size, offset);
     }
 
     void KProcess::WriteMemory(void *source, u64 offset, size_t size) const {
-        pwrite64(memFd, source, size, offset);
+        struct iovec local[1];
+        struct iovec remote[1];
+
+        remote[0].iov_base = reinterpret_cast<void*>(offset);
+        remote[0].iov_len = size;
+
+        local[0].iov_base = source;
+        local[0].iov_len = size;
+
+        if (process_vm_writev(pid, local, 1, remote, 1, 0) < 0)
+            pwrite64(memFd, source, size, offset);
     }
 
     KProcess::HandleOut<KPrivateMemory> KProcess::MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region) {
