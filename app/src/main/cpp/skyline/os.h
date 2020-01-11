@@ -49,11 +49,5 @@ namespace skyline::kernel {
          * @param pid The PID of the thread
          */
         void KillThread(pid_t pid);
-
-        /**
-         * @brief Handles a particular SuperVisor Call
-         * @param svc The ID of the SVC to be called
-         */
-        void SvcHandler(const u16 svc);
     };
 }

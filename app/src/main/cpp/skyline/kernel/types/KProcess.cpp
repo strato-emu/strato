@@ -90,30 +90,30 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
-        struct iovec local[1];
-        struct iovec remote[1];
+        struct iovec local {
+            .iov_base = destination,
+            .iov_len = size
+        };
+        struct iovec remote {
+            .iov_base = reinterpret_cast<void*>(offset),
+            .iov_len = size
+        };
 
-        remote[0].iov_base = reinterpret_cast<void*>(offset);
-        remote[0].iov_len = size;
-
-        local[0].iov_base = destination;
-        local[0].iov_len = size;
-
-        if (process_vm_readv(pid, local, 1, remote, 1, 0) < 0)
+        if (process_vm_readv(pid, &local, 1, &remote, 1, 0) < 0)
             pread64(memFd, destination, size, offset);
     }
 
     void KProcess::WriteMemory(void *source, u64 offset, size_t size) const {
-        struct iovec local[1];
-        struct iovec remote[1];
+        struct iovec local {
+            .iov_base = source,
+            .iov_len = size
+        };
+        struct iovec remote {
+            .iov_base = reinterpret_cast<void*>(offset),
+            .iov_len = size
+        };
 
-        remote[0].iov_base = reinterpret_cast<void*>(offset);
-        remote[0].iov_len = size;
-
-        local[0].iov_base = source;
-        local[0].iov_len = size;
-
-        if (process_vm_writev(pid, local, 1, remote, 1, 0) < 0)
+        if (process_vm_writev(pid, &local, 1, &remote, 1, 0) < 0)
             pwrite64(memFd, source, size, offset);
     }
 

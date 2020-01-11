@@ -129,6 +129,9 @@
       <option name="m_limit" value="64" />
     </inspection_tool>
     <inspection_tool class="CheckedExceptionClass" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="ClangTidyInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="useCustomListOfClangTidyChecks" value="false" />
+    </inspection_tool>
     <inspection_tool class="ClassComplexity" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="m_limit" value="80" />
     </inspection_tool>

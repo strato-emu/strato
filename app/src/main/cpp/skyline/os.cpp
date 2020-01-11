@@ -18,9 +18,7 @@ namespace skyline::kernel {
     }
 
     std::shared_ptr<type::KProcess> OS::CreateProcess(u64 entry, u64 argument, size_t stackSize) {
-        madvise(reinterpret_cast<void *>(constant::BaseAddr), constant::BaseEnd, MADV_DONTFORK);
         auto *stack = static_cast<u8 *>(mmap(nullptr, stackSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE | MAP_ANONYMOUS | MAP_STACK, -1, 0));
-        madvise(stack, reinterpret_cast<size_t>(stack) + stackSize, MADV_DOFORK);
         if (stack == MAP_FAILED)
             throw exception("Failed to allocate stack memory");
         if (mprotect(stack, PAGE_SIZE, PROT_NONE)) {
@@ -29,7 +27,6 @@ namespace skyline::kernel {
         }
         auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission(true, true, false), memory::Type::Reserved);
         tlsMem->guest = tlsMem->kernel;
-        madvise(reinterpret_cast<void *>(tlsMem->guest.address), tlsMem->guest.size, MADV_DOFORK);
         pid_t pid = clone(reinterpret_cast<int (*)(void *)>(&guest::entry), stack + stackSize, CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address));
         if (pid == -1)
             throw exception("Call to clone() has failed: {}", strerror(errno));
