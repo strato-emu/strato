@@ -110,6 +110,7 @@ namespace skyline {
          * @brief Stalls a thread till a KSyncObject signals or the timeout has ended (https://switchbrew.org/wiki/SVC#svcWaitSynchronization)
          */
         void WaitSynchronization(DeviceState &state);
+
         /**
          * @brief Locks a specified mutex
          */

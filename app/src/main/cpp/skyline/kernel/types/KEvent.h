@@ -14,16 +14,6 @@ namespace skyline::kernel::type {
         KEvent(const DeviceState &state) : KSyncObject(state, KType::KEvent) {}
 
         /**
-         * @brief Signals all threads waiting on this object
-         */
-        virtual inline void Signal() {
-            if (!signalled) {
-                KSyncObject::Signal();
-                signalled = true;
-            }
-        }
-
-        /**
          * @brief Resets the KEvent to an unsignalled state
          */
         inline void ResetSignal() {

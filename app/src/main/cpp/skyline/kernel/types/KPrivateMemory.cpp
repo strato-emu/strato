@@ -9,7 +9,7 @@ namespace skyline::kernel::type {
         fregs.x0 = dstAddress;
         fregs.x1 = size;
         fregs.x2 = static_cast<u64>(permission.Get());
-        fregs.x3 = static_cast<u64>(MAP_PRIVATE | MAP_ANONYMOUS | ((dstAddress) ? MAP_FIXED : 0)); // NOLINT(hicpp-signed-bitwise)
+        fregs.x3 = static_cast<u64>(MAP_PRIVATE | MAP_ANONYMOUS | ((dstAddress) ? MAP_FIXED : 0));
         fregs.x4 = static_cast<u64>(-1);
         fregs.x8 = __NR_mmap;
         state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, thread);
@@ -79,13 +79,14 @@ namespace skyline::kernel::type {
 
     KPrivateMemory::~KPrivateMemory() {
         try {
-            if(state.process) {
+            if (state.process) {
                 Registers fregs{};
                 fregs.x0 = address;
                 fregs.x1 = size;
                 fregs.x8 = __NR_munmap;
                 state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
             }
-        } catch (const std::exception &) {}
+        } catch (const std::exception &) {
+        }
     }
 };

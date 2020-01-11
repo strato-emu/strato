@@ -17,7 +17,7 @@ namespace skyline::gpu {
 
     Parcel::Parcel(const DeviceState &state) : state(state) {}
 
-    u64 Parcel::WriteParcel(kernel::ipc::OutputBuffer& buffer) {
+    u64 Parcel::WriteParcel(kernel::ipc::OutputBuffer &buffer) {
         return WriteParcel(buffer.address, buffer.size);
     }
 

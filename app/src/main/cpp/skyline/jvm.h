@@ -32,7 +32,7 @@ namespace skyline {
         /**
          * @brief Returns a pointer to the JNI environment for the current thread
          */
-        JNIEnv* GetEnv();
+        JNIEnv *GetEnv();
 
         /**
          * @brief Retrieves a specific field of the given type from the activity

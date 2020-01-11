@@ -6,6 +6,7 @@
 #include "KSharedMemory.h"
 #include "KSession.h"
 #include "KEvent.h"
+#include <condition_variable>
 
 namespace skyline::kernel::type {
     /**
@@ -70,10 +71,9 @@ namespace skyline::kernel::type {
         std::unordered_map<memory::Region, std::shared_ptr<KPrivateMemory>> memoryRegionMap; //!< A mapping from every MemoryRegion to a shared pointer of it's corresponding KPrivateMemory
         std::unordered_map<handle_t, std::shared_ptr<KObject>> handleTable; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
         std::unordered_map<pid_t, std::shared_ptr<KThread>> threadMap; //!< A mapping from a PID to it's corresponding KThread object
-        std::unordered_map<u64, std::vector<std::shared_ptr<KThread>>> mutexMap; //!< A map from a mutex's address to a vector of threads waiting on it (Sorted by priority)
-        std::unordered_map<u64, std::vector<std::shared_ptr<KThread>>> condVarMap; //!< A map from a conditional variable's address to a vector of threads waiting on it (Sorted by priority)
+        std::unordered_map<u64, pthread_mutex_t> mutexMap; //!< A map from a mutex's address to a vector of threads waiting on it
+        std::unordered_map<u64, pthread_cond_t> condVarMap; //!< A map from a conditional variable's address to a vector of threads waiting on it
         std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
-
         /**
          * This is used as the output for functions that return created kernel objects
          * @tparam objectClass The class of the kernel object
@@ -93,7 +93,7 @@ namespace skyline::kernel::type {
          * @param stackSize The size of the stack
          * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory>& tlsMemory);
+        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
         /**
          * Close the file descriptor to the process's memory
@@ -149,12 +149,6 @@ namespace skyline::kernel::type {
          * @param size The amount of memory to be written
          */
         void WriteMemory(void *source, u64 offset, size_t size) const;
-
-        /**
-         * @brief Returns the FD of the memory for the process
-         * @return The FD of the memory for the process
-         */
-        int GetMemoryFd() const;
 
         /**
          * @brief Map a chunk of process local memory (private memory)
@@ -258,6 +252,8 @@ namespace skyline::kernel::type {
         /**
          * @brief This resets the object to an unsignalled state
          */
-        void ResetSignal();
+        inline void ResetSignal() {
+            signalled = false;
+        }
     };
 }

@@ -38,7 +38,6 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/loader/nro.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp
         ${source_DIR}/skyline/kernel/svc.cpp
-        ${source_DIR}/skyline/kernel/types/KSyncObject.cpp
         ${source_DIR}/skyline/kernel/types/KProcess.cpp
         ${source_DIR}/skyline/kernel/types/KThread.cpp
         ${source_DIR}/skyline/kernel/types/KSharedMemory.cpp
@@ -59,5 +58,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/vi/vi_m.cpp
         )
 
-target_link_libraries(skyline vulkan GLESv3 EGL android fmt tinyxml2)
+target_link_libraries(skyline vulkan android fmt tinyxml2)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)

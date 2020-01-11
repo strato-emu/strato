@@ -10,7 +10,7 @@ namespace skyline::service::am {
         manager.RegisterService(SRVREG(IApplicationProxy), session, response);
     }
 
-    appletAE::appletAE(const DeviceState& state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_appletAE, {
+    appletAE::appletAE(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_appletAE, {
         {0x64, SFUNC(appletAE::OpenSystemAppletProxy)},
         {0xC8, SFUNC(appletAE::OpenLibraryAppletProxy)},
         {0xC9, SFUNC(appletAE::OpenLibraryAppletProxy)},
@@ -26,11 +26,11 @@ namespace skyline::service::am {
         manager.RegisterService(SRVREG(IApplicationProxy), session, response);
     }
 
-    void appletAE::OpenOverlayAppletProxy(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response) {
+    void appletAE::OpenOverlayAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IOverlayAppletProxy), session, response);
     }
 
-    void appletAE::OpenSystemAppletProxy(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response) {
+    void appletAE::OpenSystemAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISystemAppletProxy), session, response);
     }
 
@@ -64,7 +64,7 @@ namespace skyline::service::am {
         manager.RegisterService(SRVREG(IDebugFunctions), session, response);
     }
 
-    void BaseProxy::GetAppletCommonFunctions(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response) {
+    void BaseProxy::GetAppletCommonFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAppletCommonFunctions), session, response);
     }
 
@@ -93,7 +93,7 @@ namespace skyline::service::am {
         {0x3E8, SFUNC(BaseProxy::GetDebugFunctions)}
     }) {}
 
-    ISystemAppletProxy::ISystemAppletProxy(const DeviceState& state, ServiceManager& manager) : BaseProxy(state, manager, Service::am_ISystemAppletProxy, {
+    ISystemAppletProxy::ISystemAppletProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, Service::am_ISystemAppletProxy, {
         {0x0, SFUNC(BaseProxy::GetCommonStateGetter)},
         {0x1, SFUNC(BaseProxy::GetSelfController)},
         {0x2, SFUNC(BaseProxy::GetWindowController)},
@@ -104,7 +104,7 @@ namespace skyline::service::am {
         {0x3E8, SFUNC(BaseProxy::GetDebugFunctions)}
     }) {}
 
-    IOverlayAppletProxy::IOverlayAppletProxy(const DeviceState& state, ServiceManager& manager) : BaseProxy(state, manager, Service::am_IOverlayAppletProxy, {
+    IOverlayAppletProxy::IOverlayAppletProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, Service::am_IOverlayAppletProxy, {
         {0x0, SFUNC(BaseProxy::GetCommonStateGetter)},
         {0x1, SFUNC(BaseProxy::GetSelfController)},
         {0x2, SFUNC(BaseProxy::GetWindowController)},

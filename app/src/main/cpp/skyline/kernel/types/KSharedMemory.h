@@ -60,7 +60,7 @@ namespace skyline::kernel::type {
          * @param permission The new permissions to be set for the memory
          * @param kernel Set the permissions for the kernel rather than the guest
          */
-        void UpdatePermission(memory::Permission permission, bool host=0);
+        void UpdatePermission(memory::Permission permission, bool host = 0);
 
         /**
          * @brief Creates a MemoryInfo struct from the current instance

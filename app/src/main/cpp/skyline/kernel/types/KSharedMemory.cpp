@@ -7,7 +7,7 @@
 
 namespace skyline::kernel::type {
     u64 MapSharedFunc(u64 address, size_t size, u64 perms, u64 fd) {
-        return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_SHARED | ((address) ? MAP_FIXED : 0), static_cast<int>(fd), 0)); // NOLINT(hicpp-signed-bitwise)
+        return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_SHARED | ((address) ? MAP_FIXED : 0), static_cast<int>(fd), 0));
     }
 
     KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::Type type) : type(type), KObject(state, KType::KSharedMemory) {
@@ -15,7 +15,7 @@ namespace skyline::kernel::type {
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
         address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, permission.Get(), MAP_SHARED | ((address) ? MAP_FIXED : 0), static_cast<int>(fd), 0));
-        if (address == reinterpret_cast<u64>(MAP_FAILED)) // NOLINT(hicpp-signed-bitwise)
+        if (address == reinterpret_cast<u64>(MAP_FAILED))
             throw exception("An occurred while mapping shared region: {}", strerror(errno));
         kernel = {address, size, permission};
     }
@@ -25,9 +25,8 @@ namespace skyline::kernel::type {
         fregs.x0 = address;
         fregs.x1 = size;
         fregs.x2 = static_cast<u64>(permission.Get());
-        fregs.x3 = static_cast<u64>(MAP_SHARED | ((address) ? MAP_FIXED : 0)); // NOLINT(hicpp-signed-bitwise)
+        fregs.x3 = static_cast<u64>(MAP_SHARED | ((address) ? MAP_FIXED : 0));
         fregs.x4 = static_cast<u64>(fd);
-        fregs.x4 = static_cast<u64>(-1);
         fregs.x8 = __NR_mmap;
         state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread->pid);
         if (fregs.x0 < 0)
@@ -51,7 +50,8 @@ namespace skyline::kernel::type {
             }
             if (kernel.valid())
                 UnmapSharedFunc(kernel.address, kernel.size);
-        } catch (const std::exception &) {}
+        } catch (const std::exception &) {
+        }
         close(fd);
     }
 

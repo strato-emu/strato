@@ -13,11 +13,11 @@ namespace skyline::gpu {
         u32 width; //!< The width component of the resolution
         u32 height; //!< The height component of the resolution
 
-        bool operator==(const Resolution &r) {
+        inline bool operator==(const Resolution &r) {
             return (width == r.width) && (height == r.height);
         }
 
-        bool operator!=(const Resolution &r) {
+        inline bool operator!=(const Resolution &r) {
             return !operator==(r);
         }
     };
@@ -58,8 +58,7 @@ namespace skyline::gpu {
     enum class BufferStatus {
         Free,
         Dequeued,
-        Queued,
-        Acquired
+        Queued
     };
 
     /**
@@ -106,7 +105,6 @@ namespace skyline::gpu {
         GbpBuffer gbpBuffer; //!< The information about the underlying buffer
         BufferStatus status{BufferStatus::Free}; //!< The status of this buffer
         std::vector<u8> dataBuffer; //!< The vector holding the actual pixel data
-        std::vector<u8> swizzBuffer; //!< The vector holding the swizzled pixel data
         std::shared_ptr<device::NvMap::NvMapObject> nvBuffer{}; //!< A shared pointer to the buffer's nvmap object
 
         /**
@@ -123,54 +121,11 @@ namespace skyline::gpu {
     };
 
     /**
-     * @brief This holds the state of all the buffers used by the guest application
+     * @brief This is used to manage and queue up all display buffers to be shown
      */
     class BufferQueue {
       private:
         const DeviceState &state; //!< The state of the device
-
-        /**
-         * @brief This is the input struct for DequeueBuffer
-         */
-        struct DequeueIn {
-            u32 format;
-            u32 width;
-            u32 height;
-            u32 timestamps;
-            u32 usage;
-        };
-
-        /**
-         * @brief This is the output struct for DequeueBuffer
-         */
-        struct DequeueOut {
-            u32 slot; //!< The slot of the dequeued buffer
-            u32 _unk0_;
-            u32 _unk1_;
-            u32 _unk2_[11]{};
-
-            /**
-             * @param slot The slot of the dequeued buffer
-             */
-            DequeueOut(u32 slot);
-        };
-
-        /**
-         * @brief This holds the context of a thread waiting on a buffer
-         */
-        struct WaitContext {
-            std::shared_ptr<kernel::type::KThread> thread; //!< The thread that is waiting on a buffer
-            DequeueIn input; //!< The input of DequeueBuffer
-            kernel::ipc::OutputBuffer buffer; //!< The output buffer to write the parcel into
-
-            /**
-             * @param thread The thread that is waiting on a buffer
-             * @param input The input of DequeueBuffer
-             * @param buffer The output buffer to write the parcel into
-             */
-            WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, kernel::ipc::OutputBuffer& buffer);
-        };
-        std::vector<WaitContext> waitVec; //!< A vector of shared pointers to threads waiting on a buffer
 
       public:
         std::unordered_map<u32, std::shared_ptr<Buffer>> queue; //!< A vector of shared pointers to all the queued buffers
@@ -210,6 +165,8 @@ namespace skyline::gpu {
          * @brief This frees a buffer which is currently queued
          * @param slotNo The slot of the buffer
          */
-        void FreeBuffer(u32 slotNo);
+        inline void FreeBuffer(u32 slotNo) {
+            queue.at(slotNo)->status = BufferStatus::Free;
+        }
     };
 }

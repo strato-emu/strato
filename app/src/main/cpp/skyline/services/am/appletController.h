@@ -76,7 +76,7 @@ namespace skyline::service::am {
         /**
          * @brief This returns the current display width and height in two u32s (https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution)
          */
-        void GetDefaultDisplayResolution(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response);
+        void GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 
     /**
@@ -180,6 +180,6 @@ namespace skyline::service::am {
      */
     class IAppletCommonFunctions : public BaseService {
       public:
-        IAppletCommonFunctions(const DeviceState& state, ServiceManager& manager);
+        IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager);
     };
 }

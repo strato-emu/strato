@@ -3,7 +3,6 @@
 #include <os.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <asm/unistd.h>
 
 namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(u64 address) : address(address) {}
@@ -39,20 +38,21 @@ namespace skyline::kernel::type {
         return tlsPage->ReserveSlot();
     }
 
-    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory>& tlsMemory) : pid(pid), mainThreadStackSz(stackSize), KSyncObject(state, KType::KProcess) {
+    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), mainThreadStackSz(stackSize), KSyncObject(state, KType::KProcess) {
         auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stackBase + stackSize, 0, constant::DefaultPriority, this, tlsMemory).item;
         // Remove GetTlsSlot from KThread ctor and cleanup ctor in general
         threadMap[pid] = thread;
         state.nce->WaitThreadInit(thread);
         thread->tls = GetTlsSlot();
         MapPrivateRegion(constant::HeapAddr, constant::DefHeapSize, {true, true, false}, memory::Type::Heap, memory::Region::Heap);
-        memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC); // NOLINT(hicpp-signed-bitwise)
+        memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC);
         if (memFd == -1)
             throw exception("Cannot open file descriptor to /proc/{}/mem, \"{}\"", pid, strerror(errno));
     }
 
     KProcess::~KProcess() {
         close(memFd);
+        status = Status::Exiting;
     }
 
     /**
@@ -64,7 +64,7 @@ namespace skyline::kernel::type {
     }
 
     u64 CreateThreadFunc(u64 stackTop) {
-        pid_t pid = clone(&ExecuteChild, reinterpret_cast<void *>(stackTop), CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO, nullptr); // NOLINT(hicpp-signed-bitwise)
+        pid_t pid = clone(&ExecuteChild, reinterpret_cast<void *>(stackTop), CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO, nullptr);
         return static_cast<u64>(pid);
     }
 
@@ -85,7 +85,7 @@ namespace skyline::kernel::type {
         threadMap[pid] = process;
         return process;
         */
-        return 0;
+        return nullptr;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
@@ -94,10 +94,6 @@ namespace skyline::kernel::type {
 
     void KProcess::WriteMemory(void *source, u64 offset, size_t size) const {
         pwrite64(memFd, source, size, offset);
-    }
-
-    int KProcess::GetMemoryFd() const {
-        return memFd;
     }
 
     KProcess::HandleOut<KPrivateMemory> KProcess::MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region) {
@@ -123,44 +119,28 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::MutexLock(u64 address) {
-        auto mtxVec = state.process->mutexMap[address];
-        u32 mtxVal = state.process->ReadMemory<u32>(address);
-        if (mtxVec.empty()) {
+        try {
+            auto mtx = mutexMap.at(address);
+            pthread_mutex_lock(&mtx);
+            u32 mtxVal = ReadMemory<u32>(address);
             mtxVal = (mtxVal & ~constant::MtxOwnerMask) | state.thread->handle;
-            state.process->WriteMemory(mtxVal, address);
-        } else {
-            for (auto thread = mtxVec.begin();; thread++) {
-                if ((*thread)->priority < state.thread->priority) {
-                    mtxVec.insert(thread, state.thread);
-                    break;
-                } else if (thread + 1 == mtxVec.end()) {
-                    mtxVec.push_back(state.thread);
-                    break;
-                }
-            }
-            state.thread->status = KThread::Status::WaitMutex;
+            WriteMemory(mtxVal, address);
+        } catch (const std::out_of_range &) {
+            mutexMap[address] = PTHREAD_MUTEX_INITIALIZER;
         }
     }
 
     void KProcess::MutexUnlock(u64 address) {
-        auto mtxVec = state.process->mutexMap[address];
-        u32 mtxVal = state.process->ReadMemory<u32>(address);
-        if ((mtxVal & constant::MtxOwnerMask) != state.thread->pid)
-            throw exception("A non-owner thread tried to release a mutex");
-        if (mtxVec.empty()) {
+        try {
+            auto mtx = mutexMap.at(address);
+            u32 mtxVal = ReadMemory<u32>(address);
+            if ((mtxVal & constant::MtxOwnerMask) != state.thread->handle)
+                throw exception("A non-owner thread tried to release a mutex");
             mtxVal = 0;
-        } else {
-            auto &thread = mtxVec.front();
-            mtxVal = (mtxVal & ~constant::MtxOwnerMask) | thread->handle;
-            thread->status = KThread::Status::Runnable;
-            mtxVec.erase(mtxVec.begin());
-            if (!mtxVec.empty())
-                mtxVal |= (~constant::MtxOwnerMask);
+            WriteMemory(mtxVal, address);
+            pthread_mutex_unlock(&mtx);
+        } catch (const std::out_of_range &) {
+            mutexMap[address] = PTHREAD_MUTEX_INITIALIZER;
         }
-        state.process->WriteMemory(mtxVal, address);
-    }
-
-    void KProcess::ResetSignal() {
-        signalled = false;
     }
 }

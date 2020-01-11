@@ -16,6 +16,17 @@ namespace skyline {
         return !flag.test_and_set(std::memory_order_acquire);
     }
 
+    void GroupMutex::lock(Group group) {
+        auto none = Group::None;
+        while (!flag.compare_exchange_weak(none, group) && flag != group);
+        num++;
+    }
+
+    void GroupMutex::unlock() {
+        if (!--num)
+            flag.exchange(Group::None);
+    }
+
     Settings::Settings(const int preferenceFd) {
         tinyxml2::XMLDocument pref;
         if (pref.LoadFile(fdopen(preferenceFd, "r")))
@@ -95,5 +106,5 @@ namespace skyline {
     }
 
     thread_local std::shared_ptr<kernel::type::KThread> DeviceState::thread = 0;
-    thread_local ThreadContext* DeviceState::ctx = 0;
+    thread_local ThreadContext *DeviceState::ctx = 0;
 }

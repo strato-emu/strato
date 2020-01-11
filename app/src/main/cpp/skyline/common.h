@@ -42,7 +42,7 @@ namespace skyline {
         constexpr u16 BrkRdy = 0xFF; //!< This is reserved for our kernel's to know when a process/thread is ready
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
         constexpr u32 CntfrqEl0 = 0x5F00; //!< ID of CNTFRQ_EL0 in MRS
-        constexpr u32 TegraX1Freq = 0x124F800; //!< The clock frequency of the Tegra X1
+        constexpr u32 TegraX1Freq = 0x124F800; //!< The clock frequency of the Tegra X1 (19.2 MHz)
         constexpr u32 CntpctEl0 = 0x5F01; //!< ID of CNTPCT_EL0 in MRS
         constexpr u32 CntvctEl0 = 0x5F02; //!< ID of CNTVCT_EL0 in MRS
         // Kernel
@@ -111,7 +111,7 @@ namespace skyline {
         void lock();
 
         /**
-         * @brief Lock the mutex if it is unlocked else return
+         * @brief Try to lock the mutex if it is unlocked else return
          * @return If the mutex was successfully locked or not
          */
         bool try_lock();
@@ -120,6 +120,36 @@ namespace skyline {
          * @brief Unlock the mutex if it is held by this thread
          */
         void unlock();
+    };
+
+    /**
+     * @brief The GroupMutex class is a special type of mutex that allows two groups of users and only allows one group to run in parallel
+     */
+    class GroupMutex {
+      public:
+        /**
+         * @brief This enumeration holds all the possible owners of the mutex
+         */
+        enum class Group : u8 {
+            None = 0, //!< No group owns this mutex
+            Group1 = 1, //!< Group 1 owns this mutex
+            Group2 = 2 //!< Group 2 owns this mutex
+        };
+
+        /**
+         * @brief Wait on and lock the mutex
+         */
+        void lock(Group group = Group::Group1);
+
+        /**
+         * @brief Unlock the mutex
+         * @note Undefined behavior in case unlocked by thread in non-owner group
+         */
+        void unlock();
+
+      private:
+        std::atomic<Group> flag = Group::None; //!< An atomic flag to hold which group holds the mutex
+        std::atomic<u8> num = 0; //!< An atomic u8 keeping track of how many users are holding the mutex
     };
 
     /**
@@ -293,7 +323,7 @@ namespace skyline {
         kernel::OS *os; //!< This holds a reference to the OS class
         std::shared_ptr<kernel::type::KProcess> &process; //!< This holds a reference to the process object
         thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< This holds a reference to the current thread object
-        thread_local static ThreadContext* ctx; //!< This holds the context of the thread
+        thread_local static ThreadContext *ctx; //!< This holds the context of the thread
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
         std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class

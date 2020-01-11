@@ -1,6 +1,7 @@
 #include <asm/siginfo.h>
-#include <signal.h>
-#include <common.h>
+#include <csignal>
+#include <cstdlib>
+#include <initializer_list> // This is used implicitly
 #include "guest_common.h"
 
 #define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
@@ -95,11 +96,71 @@ namespace skyline::guest {
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
         ctx->pc = pc;
         ctx->commandId = svc;
+        if (svc == 0xB) { // svcSleepThread
+            switch (ctx->registers.x0) {
+                case 0:
+                case 1:
+                case 2: {
+                    asm("MOV X0, XZR\n\t"
+                        "MOV X1, XZR\n\t"
+                        "MOV X2, XZR\n\t"
+                        "MOV X3, XZR\n\t"
+                        "MOV X4, XZR\n\t"
+                        "MOV X5, XZR\n\t"
+                        "MOV X8, #124\n\t" // __NR_sched_yield
+                        "STR LR, [SP, #-16]!\n\t"
+                        "MOV LR, SP\n\t"
+                        "SVC #0\n\t"
+                        "MOV SP, LR\n\t"
+                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                    break;
+                }
+                default: {
+                    struct timespec spec = {
+                        .tv_sec = static_cast<time_t>(ctx->registers.x0 / 1000000000),
+                        .tv_nsec = static_cast<long>(ctx->registers.x0 % 1000000000)
+                    };
+                    volatile register __unused timespec *specPtr asm("x0") = &spec;
+                    asm("MOV X1, XZR\n\t"
+                        "MOV X2, XZR\n\t"
+                        "MOV X3, XZR\n\t"
+                        "MOV X4, XZR\n\t"
+                        "MOV X5, XZR\n\t"
+                        "MOV X8, #101\n\t" // __NR_nanosleep
+                        "STR LR, [SP, #-16]!\n\t"
+                        "MOV LR, SP\n\t"
+                        "SVC #0\n\t"
+                        "MOV SP, LR\n\t"
+                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                }
+            }
+            return;
+        } else if (svc == 0x1E) {
+            asm("STP X1, X2, [SP, #-16]!\n\t"
+                "STR Q0, [SP, #-16]!\n\t"
+                "STR Q1, [SP, #-16]!\n\t"
+                "STR Q2, [SP, #-16]!\n\t"
+                "MRS X1, CNTFRQ_EL0\n\t"
+                "MRS X2, CNTVCT_EL0\n\t"
+                "UCVTF D0, X0\n\t"
+                "MOV X1, 87411174408192\n\t"
+                "MOVK X1, 0x4172, LSL 48\n\t"
+                "FMOV D2, X1\n\t"
+                "UCVTF D1, X1\n\t"
+                "FDIV D0, D0, D2\n\t"
+                "FMUL D0, D0, D1\n\t"
+                "FCVTZU %0, D0\n\t"
+                "LDR Q2, [SP], #16\n\t"
+                "LDR Q1, [SP], #16\n\t"
+                "LDR Q0, [SP], #16\n\t"
+                "LDP X1, X2, [SP], #16"::"r"(ctx->registers.x0));
+            return;
+        }
         while (true) {
             ctx->state = ThreadState::WaitKernel;
             while (ctx->state == ThreadState::WaitKernel);
             if (ctx->state == ThreadState::WaitRun)
-                return;
+                break;
             else if (ctx->state == ThreadState::WaitFunc) {
                 if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
                     saveCtxStack();
@@ -114,17 +175,23 @@ namespace skyline::guest {
                 }
             }
         }
+        ctx->state = ThreadState::Running;
     }
 
     void signalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
-        for (u8 index = 0; index < constant::NumRegs; index++)
+        for (u8 index = 0; index < 30; index++)
             ctx->registers.regs[index] = ucontext->uc_mcontext.regs[index];
         ctx->pc = ucontext->uc_mcontext.pc;
         ctx->commandId = static_cast<u32>(signal);
-        ctx->state = ThreadState::GuestCrash;
-        exit(0);
+        ctx->faultAddress = ucontext->uc_mcontext.fault_address;
+        ctx->sp = ucontext->uc_mcontext.sp;
+        while (true) {
+            ctx->state = ThreadState::GuestCrash;
+            if (ctx->state == ThreadState::WaitRun)
+                exit(0);
+        }
     }
 
     void entry(u64 address) {

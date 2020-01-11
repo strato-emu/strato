@@ -259,8 +259,8 @@ namespace skyline::kernel::ipc {
          * @tparam ValueType The type of the object to read
          */
         template<typename ValueType>
-        inline ValueType& Pop() {
-            ValueType& value = *reinterpret_cast<ValueType*>(payloadOffset);
+        inline ValueType &Pop() {
+            ValueType &value = *reinterpret_cast<ValueType *>(payloadOffset);
             payloadOffset += sizeof(ValueType);
             return value;
         }

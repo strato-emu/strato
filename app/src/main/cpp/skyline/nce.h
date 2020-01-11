@@ -42,7 +42,7 @@ namespace skyline {
          * @param funcRegs A set of registers to run the function
          * @param thread The thread to execute the function on
          */
-        void ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread>& thread);
+        void ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread> &thread);
 
         /**
          * @brief Execute any arbitrary function on a particular child process
@@ -56,7 +56,7 @@ namespace skyline {
          * @brief Waits till a thread is ready to execute commands
          * @param thread The KThread to wait for initialization
          */
-        void WaitThreadInit(std::shared_ptr<kernel::type::KThread>& thread);
+        void WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread);
 
         /**
          * @brief Sets the X0 and X1 registers in a thread and starts it and it's kernel thread

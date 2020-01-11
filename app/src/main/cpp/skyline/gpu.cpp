@@ -62,8 +62,8 @@ namespace skyline::gpu {
                             u8 *inBlock = inBuffer;
                             u8 *outBlock = outBuffer + (y * strideBytes) + x;
                             for (u32 i = 0; i < 32; i++) {
-                                const u32 yT = ((i >> 1) & 0x06) | (i & 0x01); // NOLINT(hicpp-signed-bitwise)
-                                const u32 xT = ((i << 3) & 0x10) | ((i << 1) & 0x20); // NOLINT(hicpp-signed-bitwise)
+                                const u32 yT = ((i >> 1) & 0x06) | (i & 0x01);
+                                const u32 xT = ((i << 3) & 0x10) | ((i << 1) & 0x20);
                                 std::memcpy(outBlock + (yT * strideBytes) + xT, inBlock, sizeof(u128));
                                 inBlock += sizeof(u128);
                             }
@@ -135,8 +135,8 @@ namespace skyline::gpu {
     void GPU::Ioctl(u32 fd, u32 cmd, kernel::ipc::IpcRequest &request, kernel::ipc::IpcResponse &response) {
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
         try {
-            if(request.inputBuf.empty() || request.outputBuf.empty()) {
-                if(request.inputBuf.empty()) {
+            if (request.inputBuf.empty() || request.outputBuf.empty()) {
+                if (request.inputBuf.empty()) {
                     device::IoctlData data(request.outputBuf.at(0));
                     fdMap.at(fd)->HandleIoctl(cmd, data);
                     response.Push<u32>(data.status);

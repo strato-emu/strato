@@ -46,11 +46,11 @@ namespace skyline::service::am {
         response.Push<u32>(static_cast<u32>(operationMode));
     }
 
-    void ICommonStateGetter::GetDefaultDisplayResolution(type::KSession& session, ipc::IpcRequest& request, ipc::IpcResponse& response) {
+    void ICommonStateGetter::GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (operationMode == OperationMode::Handheld) {
             response.Push<u32>(constant::HandheldResolutionW);
             response.Push<u32>(constant::HandheldResolutionH);
-        }  else if (operationMode == OperationMode::Docked) {
+        } else if (operationMode == OperationMode::Docked) {
             response.Push<u32>(constant::DockedResolutionW);
             response.Push<u32>(constant::DockedResolutionH);
         }
@@ -111,6 +111,6 @@ namespace skyline::service::am {
     IDebugFunctions::IDebugFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IDebugFunctions, {
     }) {}
 
-    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState& state, ServiceManager& manager) : BaseService(state, manager, false, Service::am_IAppletCommonFunctions, {
+    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IAppletCommonFunctions, {
     }) {}
 }

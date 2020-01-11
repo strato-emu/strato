@@ -82,7 +82,7 @@ namespace skyline::gpu {
          * @param buffer The buffer to write into
          * @return The total size of the message
          */
-        u64 WriteParcel(kernel::ipc::OutputBuffer& buffer);
+        u64 WriteParcel(kernel::ipc::OutputBuffer &buffer);
 
         /**
          * @brief Writes the Parcel object into the process's memory

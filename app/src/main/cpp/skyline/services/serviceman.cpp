@@ -17,7 +17,7 @@ namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
 
     std::shared_ptr<BaseService> ServiceManager::GetService(const Service serviceType) {
-        if(serviceMap.count(serviceType)) {
+        if (serviceMap.count(serviceType)) {
             return serviceMap.at(serviceType);
         }
         std::shared_ptr<BaseService> serviceObj;
@@ -169,7 +169,7 @@ namespace skyline::service {
 
     void ServiceManager::Loop() {
         std::lock_guard serviceGuard(mutex);
-        for (auto& [type, service] : serviceMap)
+        for (auto&[type, service] : serviceMap)
             if (service->hasLoop)
                 service->Loop();
     }

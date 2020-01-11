@@ -1,4 +1,5 @@
 #include <sched.h>
+#include <unistd.h>
 #include "os.h"
 #include "jvm.h"
 #include "nce/guest.h"
@@ -6,14 +7,17 @@
 #include "kernel/svc.h"
 
 extern bool Halt;
-extern skyline::Mutex jniMtx;
+extern skyline::GroupMutex jniMtx;
 
 namespace skyline {
     void NCE::KernelThread(pid_t thread) {
         try {
             state.thread = state.process->threadMap.at(thread);
             state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->guest.address);
-            while (!Halt) {
+            while (true) {
+                std::lock_guard jniGd(jniMtx);
+                if (Halt)
+                    break;
                 if (state.ctx->state == ThreadState::WaitKernel) {
                     const u16 svc = static_cast<const u16>(state.ctx->commandId);
                     try {
@@ -29,6 +33,7 @@ namespace skyline {
                 } else if (state.ctx->state == ThreadState::GuestCrash) {
                     state.logger->Warn("Thread with PID {} has crashed due to signal: {}", thread, strsignal(state.ctx->commandId));
                     ThreadTrace();
+                    state.ctx->state = ThreadState::WaitRun;
                     break;
                 }
             }
@@ -37,7 +42,12 @@ namespace skyline {
         } catch (...) {
             state.logger->Error("An unknown exception has occurred");
         }
-        state.os->KillThread(thread);
+        if (thread == state.process->pid) {
+            jniMtx.lock(GroupMutex::Group::Group2);
+            state.os->KillThread(thread);
+            Halt = true;
+            jniMtx.unlock();
+        }
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}
@@ -48,15 +58,25 @@ namespace skyline {
     }
 
     void NCE::Execute() {
-        while (!Halt && state.os->process) {
+        while (true) {
             std::lock_guard jniGd(jniMtx);
+            if (Halt)
+                break;
             state.os->serviceManager.Loop();
             state.gpu->Loop();
         }
-        Halt = false;
+        jniMtx.lock(GroupMutex::Group::Group2);
+        Halt = true;
+        jniMtx.unlock();
     }
 
-    void ExecuteFunctionCtx(ThreadCall call, Registers &funcRegs, ThreadContext *ctx) {
+    /**
+     * This function will not work if optimizations are enabled as ThreadContext isn't volatile
+     * and due to that is not read on every iteration of the while loop.
+     * However, making ThreadContext or parts of it volatile slows down the applications as a whole.
+     * So, we opted to use the hacky solution and disable optimizations for this single function.
+     */
+    void ExecuteFunctionCtx(ThreadCall call, Registers &funcRegs, ThreadContext *ctx) __attribute__ ((optnone)) {
         ctx->commandId = static_cast<u32>(call);
         Registers registers = ctx->registers;
         while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
@@ -72,10 +92,13 @@ namespace skyline {
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, pid_t pid) {
-        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(state.process->threadMap.at(pid)->ctxMemory->kernel.address));
+        if (state.process->status != kernel::type::KProcess::Status::Exiting)
+            ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(state.process->threadMap.at(pid)->ctxMemory->kernel.address));
+        else
+            throw std::out_of_range("The KProcess object is missing");
     }
 
-    void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) {
+    void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) __attribute__ ((optnone)) {
         auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
         while (ctx->state == ThreadState::NotReady);
     }
@@ -98,7 +121,7 @@ namespace skyline {
         ctx = ctx ? ctx : state.ctx;
         if (numHist) {
             std::vector<u32> instrs(numHist);
-            u64 size = (sizeof(u32) * numHist);
+            u64 size = sizeof(u32) * numHist;
             u64 offset = ctx->pc - size + (2 * sizeof(u32));
             state.process->ReadMemory(instrs.data(), offset, size);
             for (auto &instr : instrs) {
@@ -111,17 +134,22 @@ namespace skyline {
                 offset += sizeof(u32);
             }
         }
+        if (ctx->faultAddress)
+            regStr += fmt::format("\nFault Address: 0x{:X}", ctx->faultAddress);
+        if (ctx->sp)
+            regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);
         for (u16 index = 0; index < constant::NumRegs - 1; index += 2) {
             regStr += fmt::format("\nX{}: 0x{:X}, X{}: 0x{:X}", index, ctx->registers.regs[index], index + 1, ctx->registers.regs[index + 1]);
         }
         if (numHist) {
             state.logger->Debug("Process Trace:{}", trace);
-            state.logger->Debug("Raw Instructions: 0x{}\nCPU Context:{}", raw, regStr);
+            state.logger->Debug("Raw Instructions: 0x{}", raw);
+            state.logger->Debug("CPU Context:{}", regStr);
         } else
-            state.logger->Warn("CPU Context:{}", regStr);
+            state.logger->Debug("CPU Context:{}", regStr);
     }
 
-    const std::array<u32, 17> cntpctEl0X0 = {
+    const std::array<u32, 18> cntpctEl0X0 = {
         0xA9BF0BE1, // STP X1, X2, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -138,10 +166,11 @@ namespace skyline {
         0x9E790000, // FCVTZU X0, D0
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
+        0x3CC107E0, // LDR Q0, [SP], #16
         0xA8C10BE1, // LDP X1, X2, [SP], #16
     };
 
-    const std::array<u32, 17> cntpctEl0X1 = {
+    const std::array<u32, 18> cntpctEl0X1 = {
         0xA9BF0BE0, // STP X0, X2, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -158,10 +187,11 @@ namespace skyline {
         0x9E790001, // FCVTZU X0, D0
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
+        0x3CC107E0, // LDR Q0, [SP], #16
         0xA8C10BE0, // LDP X0, X2, [SP], #16
     };
 
-    std::array<u32, 17> cntpctEl0Xn = {
+    std::array<u32, 18> cntpctEl0Xn = {
         0xA9BF07E0, // STP X0, X1, [SP, #-16]!
         0x3C9F0FE0, // STR Q0, [SP, #-16]!
         0x3C9F0FE1, // STR Q1, [SP, #-16]!
@@ -178,6 +208,7 @@ namespace skyline {
         0x00000000, // FCVTZU Xn, D0 (Set at runtime)
         0x3CC107E2, // LDR Q2, [SP], #16
         0x3CC107E1, // LDR Q1, [SP], #16
+        0x3CC107E0, // LDR Q0, [SP], #16
         0xA8C107E0, // LDP X0, X1, [SP], #16
     };
 
@@ -268,9 +299,6 @@ namespace skyline {
                         patch.push_back(ldrX0);
                     patch.push_back(bret.raw);
                 } else if (instrMrs->srcReg == constant::CntpctEl0) {
-                    instr::Mrs mrs(constant::CntvctEl0, regs::X(instrMrs->destReg));
-                    *address = mrs.raw;
-                    /*
                     instr::B bjunc(offset);
                     if (instrMrs->destReg == 0)
                         offset += cntpctEl0X0.size() * sizeof(u32);
@@ -294,7 +322,6 @@ namespace skyline {
                             patch.push_back(instr);
                     }
                     patch.push_back(bret.raw);
-                    */
                 } else if (instrMrs->srcReg == constant::CntfrqEl0) {
                     instr::B bjunc(offset);
                     auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), constant::TegraX1Freq);
@@ -311,6 +338,7 @@ namespace skyline {
             offset -= sizeof(u32);
             patchOffset -= sizeof(u32);
         }
+        patch.resize(patch.size() + PAGE_SIZE - 1 & ~(PAGE_SIZE - 1), 0x0);
         return patch;
     }
 }

@@ -17,7 +17,7 @@ namespace skyline::gpu {
             if (!nvBuffer)
                 throw exception("A QueueBuffer request has an invalid NVMap Handle ({}) and ID ({})", gbpBuffer.nvmapHandle, gbpBuffer.nvmapId);
         }
-        switch(gbpBuffer.format) {
+        switch (gbpBuffer.format) {
             case WINDOW_FORMAT_RGBA_8888:
             case WINDOW_FORMAT_RGBX_8888:
                 bpp = sizeof(u32);
@@ -34,10 +34,6 @@ namespace skyline::gpu {
         state.process->ReadMemory(dataBuffer.data(), nvBuffer->address + gbpBuffer.offset, gbpBuffer.size);
     }
 
-    BufferQueue::WaitContext::WaitContext(std::shared_ptr<kernel::type::KThread> thread, DequeueIn input, kernel::ipc::OutputBuffer& buffer) : thread(std::move(thread)), input(input), buffer(buffer) {}
-
-    BufferQueue::DequeueOut::DequeueOut(u32 slot) : slot(slot), _unk0_(0x1), _unk1_(0x24) {}
-
     BufferQueue::BufferQueue(const DeviceState &state) : state(state) {}
 
     void BufferQueue::RequestBuffer(Parcel &in, Parcel &out) {
@@ -50,9 +46,15 @@ namespace skyline::gpu {
     }
 
     void BufferQueue::DequeueBuffer(Parcel &in, Parcel &out) {
-        auto *data = reinterpret_cast<DequeueIn *>(in.data.data() + constant::TokenLength);
+        struct Data {
+            u32 format;
+            u32 width;
+            u32 height;
+            u32 timestamps;
+            u32 usage;
+        } *data = reinterpret_cast<Data *>(in.data.data() + constant::TokenLength);
         i64 slot{-1};
-        while(slot == -1) {
+        while (slot == -1) {
             for (auto &buffer : queue) {
                 if (buffer.second->status == BufferStatus::Free && buffer.second->resolution.width == data->width && buffer.second->resolution.height == data->height && buffer.second->gbpBuffer.usage == data->usage) {
                     slot = buffer.first;
@@ -62,7 +64,12 @@ namespace skyline::gpu {
             }
             sched_yield();
         }
-        DequeueOut output(static_cast<u32>(slot));
+        struct {
+            u32 slot;
+            u32 _unk_[13];
+        } output{
+            .slot = static_cast<u32>(slot)
+        };
         out.WriteData(output);
         state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamps: {}, Slot: {}", data->width, data->height, data->format, data->usage, data->timestamps, slot);
     }
@@ -118,28 +125,19 @@ namespace skyline::gpu {
         auto gbpBuffer = reinterpret_cast<GbpBuffer *>(pointer);
         queue[data->slot] = std::make_shared<Buffer>(state, data->slot, *gbpBuffer);
         state.gpu->bufferEvent->Signal();
-        state.logger->Debug("SetPreallocatedBuffer: Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}", data->slot, gbpBuffer->magic, gbpBuffer->width, gbpBuffer->height, gbpBuffer->stride, gbpBuffer->format, gbpBuffer->usage, gbpBuffer->index,gbpBuffer->nvmapId, gbpBuffer->nvmapHandle, gbpBuffer->offset, (1U << gbpBuffer->blockHeightLog2), gbpBuffer->size);
-    }
-
-    void BufferQueue::FreeBuffer(u32 slotNo) {
-        auto &slot = queue.at(slotNo);
-        if (waitVec.empty())
-            slot->status = BufferStatus::Free;
-        else {
-            auto context = waitVec.begin();
-            while (context != waitVec.end()) {
-                if (slot->resolution.width == context->input.width && slot->resolution.height == context->input.height && slot->gbpBuffer.usage == context->input.usage) {
-                    context->thread->WakeUp();
-                    gpu::Parcel out(state);
-                    DequeueOut output(slotNo);
-                    out.WriteData(output);
-                    out.WriteParcel(context->buffer);
-                    slot->status = BufferStatus::Dequeued;
-                    waitVec.erase(context);
-                    break;
-                }
-                context++;
-            }
-        }
+        state.logger->Debug("SetPreallocatedBuffer: Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}",
+                            data->slot,
+                            gbpBuffer->magic,
+                            gbpBuffer->width,
+                            gbpBuffer->height,
+                            gbpBuffer->stride,
+                            gbpBuffer->format,
+                            gbpBuffer->usage,
+                            gbpBuffer->index,
+                            gbpBuffer->nvmapId,
+                            gbpBuffer->nvmapHandle,
+                            gbpBuffer->offset,
+                            (1U << gbpBuffer->blockHeightLog2),
+                            gbpBuffer->size);
     }
 }

@@ -4,7 +4,7 @@
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
         const u32 size = state.ctx->registers.w1;
-        if(size%constant::HeapSizeDiv != 0) {
+        if (size % constant::HeapSizeDiv != 0) {
             state.ctx->registers.x1 = 0;
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcSetHeapSize: 'size' not divisible by 2MB: {}", size);
@@ -26,13 +26,13 @@ namespace skyline::kernel::svc {
 
     void SetMemoryAttribute(DeviceState &state) {
         const u64 addr = state.ctx->registers.x0;
-        if((addr & (PAGE_SIZE - 1U))) {
+        if ((addr & (PAGE_SIZE - 1U))) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: {}", addr);
             return;
         }
         const u64 size = state.ctx->registers.x1;
-        if((size & (PAGE_SIZE - 1U)) || !size) {
+        if ((size & (PAGE_SIZE - 1U)) || !size) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: {}", size ? "not page aligned" : "is zero", size);
             return;
@@ -40,12 +40,12 @@ namespace skyline::kernel::svc {
         u32 mask = state.ctx->registers.w2;
         u32 value = state.ctx->registers.w3;
         u32 maskedValue = mask | value;
-        if(maskedValue != mask) {
+        if (maskedValue != mask) {
             state.ctx->registers.w0 = constant::status::InvCombination;
             state.logger->Warn("svcSetMemoryAttribute: 'mask' invalid: 0x{:X}, 0x{:X}", mask, value);
             return;
         }
-        memory::MemoryAttribute attribute = *reinterpret_cast<memory::MemoryAttribute*>(&maskedValue);
+        memory::MemoryAttribute attribute = *reinterpret_cast<memory::MemoryAttribute *>(&maskedValue);
         bool found = false;
         for (const auto&[address, region] : state.process->memoryMap) {
             if (addr >= address && addr < (address + region->size)) {
@@ -62,7 +62,7 @@ namespace skyline::kernel::svc {
                 break;
             }
         }
-        if(!found) {
+        if (!found) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", addr);
             return;
@@ -73,7 +73,7 @@ namespace skyline::kernel::svc {
 
     void QueryMemory(DeviceState &state) {
         memory::MemoryInfo memInfo{};
-        u64 addr = (state.ctx->registers.x2 & ~(PAGE_SIZE - 1));
+        u64 addr = state.ctx->registers.x2 & ~(PAGE_SIZE - 1);
         bool found = false;
         for (const auto&[address, region] : state.process->memoryMap) {
             if (addr >= address && addr < (address + region->size)) {
@@ -126,7 +126,7 @@ namespace skyline::kernel::svc {
         u64 entryArg = state.ctx->registers.x2;
         u64 stackTop = state.ctx->registers.x3;
         u8 priority = static_cast<u8>(state.ctx->registers.w4);
-        if((priority < constant::PriorityNin.first) && (priority > constant::PriorityNin.second)) { // NOLINT(misc-redundant-expression)
+        if ((priority < constant::PriorityNin.first) && (priority > constant::PriorityNin.second)) { // NOLINT(misc-redundant-expression)
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
@@ -143,7 +143,7 @@ namespace skyline::kernel::svc {
             auto thread = state.process->GetHandle<type::KThread>(handle);
             state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->pid);
             thread->Start();
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             state.logger->Warn("svcStartThread: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
         }
@@ -161,12 +161,9 @@ namespace skyline::kernel::svc {
             case 1:
             case 2:
                 state.logger->Debug("svcSleepThread: Yielding thread: {}", in);
-                state.thread->status = type::KThread::Status::Runnable; // Will cause the application to awaken on the next iteration of the main loop
                 break;
             default:
                 state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
-                state.thread->timeout = GetCurrTimeNs() + in;
-                state.thread->status = type::KThread::Status::Sleeping;
         }
     }
 
@@ -177,7 +174,7 @@ namespace skyline::kernel::svc {
             state.ctx->registers.w1 = priority;
             state.ctx->registers.w0 = constant::status::Success;
             state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             state.logger->Warn("svcGetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
         }
@@ -190,7 +187,7 @@ namespace skyline::kernel::svc {
             state.process->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
             state.ctx->registers.w0 = constant::status::Success;
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
         }
@@ -259,7 +256,7 @@ namespace skyline::kernel::svc {
             state.process->handleTable.erase(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::Success;
-        } catch(const std::exception&) {
+        } catch (const std::exception &) {
             state.logger->Warn("svcCloseHandle: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
         }
@@ -284,7 +281,7 @@ namespace skyline::kernel::svc {
             }
             state.logger->Debug("svcResetSignal: Resetting signal: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::Success;
-        } catch(const std::out_of_range&) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcResetSignal: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
             return;
@@ -298,9 +295,9 @@ namespace skyline::kernel::svc {
             return;
         }
         std::vector<handle_t> waitHandles(numHandles);
+        std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
         state.process->ReadMemory(waitHandles.data(), state.ctx->registers.x1, numHandles * sizeof(handle_t));
         std::string handleStr;
-        uint index{};
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
             auto object = state.process->handleTable.at(handle);
@@ -312,33 +309,34 @@ namespace skyline::kernel::svc {
                     break;
                 default: {
                     state.ctx->registers.w0 = constant::status::InvHandle;
-                    state.thread->ClearWaitObjects();
                     return;
                 }
             }
-            auto syncObject = std::static_pointer_cast<type::KSyncObject>(object);
-            if (syncObject->signalled) {
-                state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", handle);
-                state.ctx->registers.w0 = constant::status::Success;
-                state.ctx->registers.w1 = index;
-                state.thread->ClearWaitObjects();
+            objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
+        }
+        state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, state.ctx->registers.x3);
+        auto timeout = state.ctx->registers.x3 + GetCurrTimeNs();
+        while (true) {
+            uint index{};
+            for (const auto &object : objectTable) {
+                if (object->signalled) {
+                    state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles.at(index));
+                    state.ctx->registers.w0 = constant::status::Success;
+                    state.ctx->registers.w1 = index;
+                    return;
+                }
+                index++;
+            }
+            if (GetCurrTimeNs() >= timeout) {
+                state.ctx->registers.w0 = constant::status::Timeout;
                 return;
             }
-            state.thread->waitObjects.push_back(syncObject);
-            syncObject->waitThreads.emplace_back(state.thread->pid, index);
         }
-        auto timeout = state.ctx->registers.x3;
-        state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
-        if (state.ctx->registers.x3 != std::numeric_limits<u64>::max())
-            state.thread->timeout = GetCurrTimeNs() + timeout;
-        else
-            state.thread->timeout = 0;
-        state.thread->status = type::KThread::Status::WaitSync;
     }
 
     void ArbitrateLock(DeviceState &state) {
         auto addr = state.ctx->registers.x1;
-        if((addr & ((1UL << WORD_BIT) - 1U))) {
+        if ((addr & ((1UL << WORD_BIT) - 1U))) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcArbitrateLock: 'address' not word aligned: {}", addr);
             return;
@@ -353,7 +351,7 @@ namespace skyline::kernel::svc {
 
     void ArbitrateUnlock(DeviceState &state) {
         auto addr = state.ctx->registers.x0;
-        if((addr & ((1UL << WORD_BIT) - 1U))) {
+        if ((addr & ((1UL << WORD_BIT) - 1U))) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcArbitrateUnlock: 'address' not word aligned: {}", addr);
             return;
@@ -365,49 +363,53 @@ namespace skyline::kernel::svc {
 
     void WaitProcessWideKeyAtomic(DeviceState &state) {
         auto mtxAddr = state.ctx->registers.x0;
-        if((mtxAddr & ((1UL << WORD_BIT) - 1U))) {
-            state.ctx->registers.w0 = constant::status::InvAddress;
-            state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: {}", mtxAddr);
-            return;
-        }
-        auto handle = state.ctx->registers.w2;
-        if (handle != state.thread->handle)
-            throw exception("svcWaitProcessWideKeyAtomic: Called from another thread");
-        state.process->MutexUnlock(mtxAddr);
         auto condAddr = state.ctx->registers.x1;
-        auto &cvarVec = state.process->condVarMap[condAddr];
-        for (auto thread = cvarVec.begin();; thread++) {
-            if ((*thread)->priority < state.thread->priority) {
-                cvarVec.insert(thread, state.thread);
-                break;
-            } else if (thread + 1 == cvarVec.end()) {
-                cvarVec.push_back(state.thread);
-                break;
+        try {
+            auto &cvar = state.process->condVarMap.at(condAddr);
+            if ((mtxAddr & ((1UL << WORD_BIT) - 1U))) {
+                state.ctx->registers.w0 = constant::status::InvAddress;
+                state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: {}", mtxAddr);
+                return;
             }
+            auto handle = state.ctx->registers.w2;
+            if (handle != state.thread->handle)
+                throw exception("svcWaitProcessWideKeyAtomic: Called from another thread");
+            state.process->MutexLock(mtxAddr);
+            auto &mutex = state.process->mutexMap.at(mtxAddr);
+            auto timeout = state.ctx->registers.x3;
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x:{:X}, Timeout: {} ns", mtxAddr, condAddr, timeout);
+            timespec spec{};
+            clock_gettime(CLOCK_REALTIME, &spec);
+            u128 time = u128(spec.tv_sec * 1000000000U + spec.tv_nsec) + timeout; // u128 to prevent overflow
+            spec.tv_sec = static_cast<time_t>(time / 1000000000U);
+            spec.tv_nsec = static_cast<long>(time % 1000000000U);
+            if (pthread_cond_timedwait(&cvar, &mutex, &spec) == ETIMEDOUT)
+                state.ctx->registers.w0 = constant::status::Timeout;
+            else
+                state.ctx->registers.w0 = constant::status::Success;
+            state.process->MutexUnlock(mtxAddr);
+        } catch (const std::out_of_range &) {
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: No Conditional-Variable at 0x{:X}", condAddr);
+            state.process->condVarMap[condAddr] = PTHREAD_COND_INITIALIZER;
+            state.ctx->registers.w0 = constant::status::Success;
         }
-        auto timeout = state.ctx->registers.x3;
-        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x:{:X}, Timeout: {} ns", mtxAddr, condAddr, timeout);
-        state.thread->status = type::KThread::Status::WaitCondVar;
-        state.thread->timeout = GetCurrTimeNs() + timeout;
-        state.ctx->registers.w0 = constant::status::Success;
     }
 
     void SignalProcessWideKey(DeviceState &state) {
         auto address = state.ctx->registers.x0;
-        auto count = state.ctx->registers.w1;
-        state.ctx->registers.w0 = constant::status::Success;
-        if (!state.process->condVarMap.count(address)) {
+        auto count = state.ctx->registers.x1;
+        try {
+            state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
+            auto &cvar = state.process->condVarMap.at(address);
+            /*
+            for (u32 iter = 0; iter < count; iter++)
+                pthread_cond_signal(&cvar);
+            */
+        } catch (const std::out_of_range &) {
             state.logger->Debug("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
-            return;
+            state.process->condVarMap[address] = PTHREAD_COND_INITIALIZER;
         }
-        auto &cvarVec = state.process->condVarMap.at(address);
-        count = std::min(count, static_cast<u32>(cvarVec.size()));
-        for (uint index = 0; index < count; index++)
-            cvarVec[index]->status = type::KThread::Status::Runnable;
-        cvarVec.erase(cvarVec.begin(), cvarVec.begin() + count);
-        if (cvarVec.empty())
-            state.process->condVarMap.erase(address);
-        state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
+        state.ctx->registers.w0 = constant::status::Success;
     }
 
     void GetSystemTick(DeviceState &state) {
@@ -459,7 +461,7 @@ namespace skyline::kernel::svc {
     void OutputDebugString(DeviceState &state) {
         std::string debug(state.ctx->registers.x1, '\0');
         state.process->ReadMemory(debug.data(), state.ctx->registers.x0, state.ctx->registers.x1);
-        if(debug.back() == '\n')
+        if (debug.back() == '\n')
             debug.pop_back();
         state.logger->Info("Debug Output: {}", debug);
         state.ctx->registers.w0 = constant::status::Success;
