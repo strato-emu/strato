@@ -314,8 +314,9 @@ namespace skyline::kernel::svc {
             }
             objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
         }
-        state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, state.ctx->registers.x3);
-        auto timeout = state.ctx->registers.x3 + GetCurrTimeNs();
+        auto timeout = state.ctx->registers.x3;
+        state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
+        auto start = GetCurrTimeNs();
         while (true) {
             uint index{};
             for (const auto &object : objectTable) {
@@ -327,7 +328,8 @@ namespace skyline::kernel::svc {
                 }
                 index++;
             }
-            if (GetCurrTimeNs() >= timeout) {
+            if ((GetCurrTimeNs() - start) >= timeout) {
+                state.logger->Debug("svcWaitSynchronization: Wait has timed out");
                 state.ctx->registers.w0 = constant::status::Timeout;
                 return;
             }
@@ -397,14 +399,15 @@ namespace skyline::kernel::svc {
 
     void SignalProcessWideKey(DeviceState &state) {
         auto address = state.ctx->registers.x0;
-        auto count = state.ctx->registers.x1;
+        auto count = state.ctx->registers.w1;
         try {
             state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
             auto &cvar = state.process->condVarMap.at(address);
-            /*
-            for (u32 iter = 0; iter < count; iter++)
-                pthread_cond_signal(&cvar);
-            */
+            if(count == UINT32_MAX)
+                pthread_cond_broadcast(&cvar);
+            else
+                for (u32 iter = 0; iter < count; iter++)
+                    pthread_cond_signal(&cvar);
         } catch (const std::out_of_range &) {
             state.logger->Debug("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
             state.process->condVarMap[address] = PTHREAD_COND_INITIALIZER;
