@@ -139,7 +139,8 @@ namespace skyline {
         if (ctx->sp)
             regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);
         for (u16 index = 0; index < constant::NumRegs - 1; index += 2) {
-            regStr += fmt::format("\nX{}: 0x{:X}, X{}: 0x{:X}", index, ctx->registers.regs[index], index + 1, ctx->registers.regs[index + 1]);
+            auto xStr = index < 10 ? " X" : "X";
+            regStr += fmt::format("\n{}{}: 0x{:<16X} {}{}: 0x{:X}", xStr, index, ctx->registers.regs[index], xStr, index + 1, ctx->registers.regs[index + 1]);
         }
         if (numHist) {
             state.logger->Debug("Process Trace:{}", trace);

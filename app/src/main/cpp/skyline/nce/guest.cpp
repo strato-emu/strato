@@ -112,7 +112,7 @@ namespace skyline::guest {
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                        "LDR LR, [SP], #16" :: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
                     break;
                 }
                 default: {
@@ -120,8 +120,8 @@ namespace skyline::guest {
                         .tv_sec = static_cast<time_t>(ctx->registers.x0 / 1000000000),
                         .tv_nsec = static_cast<long>(ctx->registers.x0 % 1000000000)
                     };
-                    volatile register __unused timespec *specPtr asm("x0") = &spec;
-                    asm("MOV X1, XZR\n\t"
+                    asm("MOV X0, %0\n\t"
+                        "MOV X1, XZR\n\t"
                         "MOV X2, XZR\n\t"
                         "MOV X3, XZR\n\t"
                         "MOV X4, XZR\n\t"
@@ -131,11 +131,11 @@ namespace skyline::guest {
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                        "LDR LR, [SP], #16" :: "r"(&spec) : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
                 }
             }
             return;
-        } else if (svc == 0x1E) {
+        } else if (svc == 0x1E) { // svcGetSystemTick
             asm("STP X1, X2, [SP, #-16]!\n\t"
                 "STR Q0, [SP, #-16]!\n\t"
                 "STR Q1, [SP, #-16]!\n\t"
@@ -153,7 +153,7 @@ namespace skyline::guest {
                 "LDR Q2, [SP], #16\n\t"
                 "LDR Q1, [SP], #16\n\t"
                 "LDR Q0, [SP], #16\n\t"
-                "LDP X1, X2, [SP], #16"::"r"(ctx->registers.x0));
+                "LDP X1, X2, [SP], #16" :: "r"(ctx->registers.x0));
             return;
         }
         while (true) {

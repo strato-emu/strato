@@ -115,9 +115,7 @@ namespace skyline::service::vi {
         {0x908, SFUNC(IDisplayService::CreateStrayLayer)}
     }) {}
 
-    void ISystemDisplayService::SetLayerZ(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {
-        response.Push<u32>(constant::status::Success);
-    }
+    void ISystemDisplayService::SetLayerZ(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {}
 
     IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IManagerDisplayService, {
         {0x7DA, SFUNC(IManagerDisplayService::CreateManagedLayer)},
@@ -144,7 +142,5 @@ namespace skyline::service::vi {
         response.Push<u32>(constant::status::Success);
     }
 
-    void IManagerDisplayService::AddToLayerStack(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {
-        response.Push<u32>(constant::status::Success);
-    }
+    void IManagerDisplayService::AddToLayerStack(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {}
 }

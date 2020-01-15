@@ -6,10 +6,6 @@
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    u64 MapSharedFunc(u64 address, size_t size, u64 perms, u64 fd) {
-        return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_SHARED | ((address) ? MAP_FIXED : 0), static_cast<int>(fd), 0));
-    }
-
     KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::Type type) : type(type), KObject(state, KType::KSharedMemory) {
         fd = ASharedMemory_create("", size);
         if (fd < 0)
@@ -35,36 +31,13 @@ namespace skyline::kernel::type {
         return fregs.x0;
     }
 
-    u64 UnmapSharedFunc(u64 address, size_t size) {
-        return static_cast<u64>(munmap(reinterpret_cast<void *>(address), size));
-    }
-
-    KSharedMemory::~KSharedMemory() {
-        try {
-            if (guest.valid() && state.process) {
-                Registers fregs{};
-                fregs.x0 = guest.address;
-                fregs.x1 = guest.size;
-                fregs.x8 = __NR_munmap;
-                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
-            }
-            if (kernel.valid())
-                UnmapSharedFunc(kernel.address, kernel.size);
-        } catch (const std::exception &) {
-        }
-        close(fd);
-    }
-
-    u64 RemapSharedFunc(u64 address, size_t oldSize, size_t size) {
-        return reinterpret_cast<u64>(mremap(reinterpret_cast<void *>(address), oldSize, size, 0));
-    }
-
     void KSharedMemory::Resize(size_t size) {
         if (guest.valid()) {
             Registers fregs{};
             fregs.x0 = guest.address;
             fregs.x1 = guest.size;
             fregs.x2 = size;
+            fregs.x8 = __NR_mremap;
             state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread->pid);
             if (fregs.x0 < 0)
                 throw exception("An error occurred while remapping shared region in child process");
@@ -77,16 +50,13 @@ namespace skyline::kernel::type {
         }
     }
 
-    u64 UpdatePermissionSharedFunc(u64 address, size_t size, u64 perms) {
-        return static_cast<u64>(mprotect(reinterpret_cast<void *>(address), size, static_cast<int>(perms)));
-    }
-
     void KSharedMemory::UpdatePermission(memory::Permission permission, bool host) {
         if (guest.valid() && !host) {
             Registers fregs{};
             fregs.x0 = guest.address;
             fregs.x1 = guest.size;
             fregs.x2 = static_cast<u64>(guest.permission.Get());
+            fregs.x8 = __NR_mprotect;
             state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread->pid);
             if (fregs.x0 < 0)
                 throw exception("An error occurred while updating shared region's permissions in child process");
@@ -112,5 +82,21 @@ namespace skyline::kernel::type {
         info.ipcRefCount = ipcRefCount;
         info.deviceRefCount = deviceRefCount;
         return info;
+    }
+
+    KSharedMemory::~KSharedMemory() {
+        try {
+            if (guest.valid() && state.process) {
+                Registers fregs{};
+                fregs.x0 = guest.address;
+                fregs.x1 = guest.size;
+                fregs.x8 = __NR_munmap;
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
+            }
+            if (kernel.valid())
+                munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
+        } catch (const std::exception &) {
+        }
+        close(fd);
     }
 };

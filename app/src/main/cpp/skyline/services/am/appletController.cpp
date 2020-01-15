@@ -21,7 +21,7 @@ namespace skyline::service::am {
 
     void ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem(messageEvent);
-        state.logger->Debug("Event Handle: 0x{:X}", handle);
+        state.logger->Debug("Applet Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }
 

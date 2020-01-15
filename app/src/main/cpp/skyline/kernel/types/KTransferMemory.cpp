@@ -4,10 +4,6 @@
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    u64 MapTransferFunc(u64 address, size_t size, u64 perms) {
-        return reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, static_cast<int>(perms), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0));
-    }
-
     KTransferMemory::KTransferMemory(const DeviceState &state, pid_t pid, u64 address, size_t size, const memory::Permission permission) : owner(pid), cSize(size), permission(permission), KObject(state, KType::KTransferMemory) {
         if (pid) {
             Registers fregs{};
@@ -43,7 +39,7 @@ namespace skyline::kernel::type {
                 throw exception("An error occurred while mapping transfer memory in child process");
             address = fregs.x0;
         } else {
-            address = MapTransferFunc(address, size, static_cast<u64>(permission.Get()));
+            address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, permission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0));
             if (reinterpret_cast<void *>(address) == MAP_FAILED)
                 throw exception("An error occurred while mapping transfer memory in kernel");
         }
@@ -94,6 +90,7 @@ namespace skyline::kernel::type {
                     Registers fregs{};
                     fregs.x0 = cAddress;
                     fregs.x1 = cSize;
+                    fregs.x8 = __NR_munmap;
                     state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
                 }
             } catch (const std::exception &) {

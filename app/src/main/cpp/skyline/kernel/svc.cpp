@@ -163,6 +163,11 @@ namespace skyline::kernel::svc {
                 state.logger->Debug("svcSleepThread: Yielding thread: {}", in);
                 break;
             default:
+                struct timespec spec = {
+                    .tv_sec = static_cast<time_t>(state.ctx->registers.x0 / 1000000000),
+                    .tv_nsec = static_cast<long>(state.ctx->registers.x0 % 1000000000)
+                };
+                nanosleep(&spec, nullptr);
                 state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
         }
     }

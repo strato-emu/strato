@@ -19,10 +19,6 @@ namespace skyline::kernel::type {
             this->address = fregs.x0;
     }
 
-    u64 RemapPrivateFunc(u64 address, size_t oldSize, size_t size, u64 flags) {
-        return reinterpret_cast<u64>(mremap(reinterpret_cast<void *>(address), oldSize, size, static_cast<int>(flags)));
-    }
-
     u64 KPrivateMemory::Resize(size_t newSize, bool canMove) {
         Registers fregs{};
         fregs.x0 = address;
@@ -36,10 +32,6 @@ namespace skyline::kernel::type {
         address = fregs.x0;
         size = newSize;
         return address;
-    }
-
-    u64 UpdatePermissionPrivateFunc(u64 address, size_t size, u64 perms) {
-        return static_cast<u64>(mprotect(reinterpret_cast<void *>(address), size, static_cast<int>(perms)));
     }
 
     void KPrivateMemory::UpdatePermission(memory::Permission permission) {
@@ -71,10 +63,6 @@ namespace skyline::kernel::type {
         info.ipcRefCount = ipcRefCount;
         info.deviceRefCount = deviceRefCount;
         return info;
-    }
-
-    u64 UnmapPrivateFunc(u64 address, size_t size) {
-        return static_cast<u64>(munmap(reinterpret_cast<void *>(address), size));
     }
 
     KPrivateMemory::~KPrivateMemory() {
