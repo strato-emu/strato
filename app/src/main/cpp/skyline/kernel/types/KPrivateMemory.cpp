@@ -1,68 +1,66 @@
 #include "KPrivateMemory.h"
 #include "KProcess.h"
-#include <nce.h>
+#include <os.h>
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 dstAddress, size_t size, memory::Permission permission, const memory::Type type, std::shared_ptr<KThread> thread) : state(state), address(dstAddress), size(size), permission(permission), type(type), KObject(state, KType::KPrivateMemory) {
-        Registers fregs{};
-        fregs.x0 = dstAddress;
-        fregs.x1 = size;
-        fregs.x2 = static_cast<u64>(permission.Get());
-        fregs.x3 = static_cast<u64>(MAP_PRIVATE | MAP_ANONYMOUS | ((dstAddress) ? MAP_FIXED : 0));
-        fregs.x4 = static_cast<u64>(-1);
-        fregs.x8 = __NR_mmap;
-        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, thread);
-        if (fregs.x0 < 0)
-            throw exception("An error occurred while mapping private region in child process");
-        if (!this->address)
-            this->address = fregs.x0;
-    }
-
-    u64 KPrivateMemory::Resize(size_t newSize, bool canMove) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : state(state), address(address), size(size), KMemory(state, KType::KPrivateMemory) {
         Registers fregs{};
         fregs.x0 = address;
         fregs.x1 = size;
-        fregs.x2 = newSize;
-        fregs.x3 = canMove ? MREMAP_MAYMOVE : 0;
-        fregs.x8 = __NR_mremap;
-        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread);
+        fregs.x2 = static_cast<u64>(permission.Get());
+        fregs.x3 = static_cast<u64>(MAP_PRIVATE | MAP_ANONYMOUS | ((address) ? MAP_FIXED : 0));
+        fregs.x4 = static_cast<u64>(-1);
+        fregs.x8 = __NR_mmap;
+        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
         if (fregs.x0 < 0)
-            throw exception("An error occurred while remapping private region in child process");
-        address = fregs.x0;
-        size = newSize;
-        return address;
+            throw exception("An error occurred while mapping private section in child process");
+        if (!this->address)
+            this->address = fregs.x0;
+        BlockDescriptor block{
+            .address = fregs.x0,
+            .size = size,
+            .permission = permission,
+        };
+        ChunkDescriptor chunk{
+            .address = fregs.x0,
+            .size = size,
+            .state = memState,
+            .blockList = {block},
+        };
+        state.os->memory.InsertChunk(chunk);
     }
 
-    void KPrivateMemory::UpdatePermission(memory::Permission permission) {
+    void KPrivateMemory::Resize(size_t nSize) {
+        Registers fregs{};
+        fregs.x0 = address;
+        fregs.x1 = size;
+        fregs.x2 = nSize;
+        fregs.x8 = __NR_mremap;
+        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+        if (fregs.x0 < 0)
+            throw exception("An error occurred while remapping private section in child process");
+        size = nSize;
+        auto chunk = state.os->memory.GetChunk(address);
+        MemoryManager::ResizeChunk(chunk, size);
+    }
+
+    void KPrivateMemory::UpdatePermission(const u64 address, const u64 size, memory::Permission permission) {
         Registers fregs{};
         fregs.x0 = address;
         fregs.x1 = size;
         fregs.x2 = static_cast<u64>(permission.Get());
         fregs.x8 = __NR_mprotect;
-        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread);
+        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
         if (fregs.x0 < 0)
-            throw exception("An error occurred while updating private region's permissions in child process");
-        this->permission = permission;
-    }
-
-    memory::MemoryInfo KPrivateMemory::GetInfo(u64 address) {
-        memory::MemoryInfo info{};
-        info.baseAddress = address;
-        info.size = size;
-        info.type = static_cast<u32>(type);
-        for (const auto &region : regionInfoVec)
-            if ((address >= region.address) && (address < (region.address + region.size))) {
-                info.memoryAttribute.isUncached = region.isUncached;
-            }
-        info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
-        info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
-        info.r = permission.r;
-        info.w = permission.w;
-        info.x = permission.x;
-        info.ipcRefCount = ipcRefCount;
-        info.deviceRefCount = deviceRefCount;
-        return info;
+            throw exception("An error occurred while updating private section's permissions in child process");
+        auto chunk = state.os->memory.GetChunk(address);
+        BlockDescriptor block{
+                .address = address,
+                .size = size,
+                .permission = permission,
+        };
+        MemoryManager::InsertBlock(chunk, block);
     }
 
     KPrivateMemory::~KPrivateMemory() {
@@ -72,9 +70,10 @@ namespace skyline::kernel::type {
                 fregs.x0 = address;
                 fregs.x1 = size;
                 fregs.x8 = __NR_munmap;
-                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
             }
         } catch (const std::exception &) {
         }
+        state.os->memory.DeleteChunk(address);
     }
 };

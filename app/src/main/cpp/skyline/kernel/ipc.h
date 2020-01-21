@@ -23,10 +23,10 @@ namespace skyline::kernel::ipc {
      */
     struct CommandHeader {
         CommandType type  : 16;
-        u8 Xno            : 4;
-        u8 Ano            : 4;
-        u8 Bno            : 4;
-        u8 Wno            : 4;
+        u8 xNo            : 4;
+        u8 aNo            : 4;
+        u8 bNo            : 4;
+        u8 wNo            : 4;
         u32 rawSize       : 10;
         BufferCFlag cFlag : 4;
         u32               : 17;

@@ -20,6 +20,7 @@ namespace skyline::kernel {
       public:
         std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
         service::ServiceManager serviceManager; //!< This manages all of the service functions
+        MemoryManager memory; //!< The MemoryManager object for this process
 
         /**
          * @param logger An instance of the Logger class

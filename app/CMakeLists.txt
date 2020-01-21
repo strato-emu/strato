@@ -36,6 +36,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/devices/nvhost_as_gpu.cpp
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/loader/nro.cpp
+        ${source_DIR}/skyline/kernel/memory.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp
         ${source_DIR}/skyline/kernel/svc.cpp
         ${source_DIR}/skyline/kernel/types/KProcess.cpp

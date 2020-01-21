@@ -1,45 +1,70 @@
 #pragma once
 
-#include <memory.h>
-#include "KObject.h"
+#include "KMemory.h"
 
 namespace skyline::kernel::type {
     /**
      * @brief KTransferMemory is used to hold a particular amount of transferable memory
      */
-    class KTransferMemory : public KObject {
+    class KTransferMemory : public KMemory {
+      private:
+        ChunkDescriptor hostChunk{};
       public:
-        pid_t owner; //!< The PID of the process owning this memory
-        u64 cAddress; //!< The current address of the allocated memory for the kernel
-        size_t cSize; //!< The current size of the allocated memory
-        u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
-        u16 deviceRefCount{};  //!< The amount of reference to this memory for IPC
-        memory::Permission permission; //!< The permissions of the memory
+        bool host; //!< If the memory is mapped on the host or the guest
+        u64 address; //!< The current address of the allocated memory for the kernel
+        size_t size; //!< The current size of the allocated memory
 
         /**
          * @param state The state of the device
-         * @param pid The PID of the owner thread (Use 0 for kernel)
+         * @param host If to map the memory on host or guest
          * @param address The address to map to (If NULL an arbitrary address is picked)
          * @param size The size of the allocation
          * @param permission The permissions of the memory
          * @param type The type of the memory
+         * @param memState The MemoryState of the chunk of memory
          */
-        KTransferMemory(const DeviceState &state, pid_t pid, u64 address, size_t size, const memory::Permission permission);
+        KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState = memory::MemoryStates::TransferMemory);
 
         /**
          * @brief Transfers this piece of memory to another process
-         * @param process The PID of the process (Use 0 for kernel)
+         * @param host If to transfer memory to host or guest
          * @param address The address to map to (If NULL an arbitrary address is picked)
          * @param size The amount of shared memory to map
          * @return The address of the allocation
          */
-        u64 Transfer(pid_t process, u64 address, u64 size);
+        u64 Transfer(bool host, u64 address, u64 size = 0);
 
         /**
-         * @brief Returns a MemoryInfo struct filled with attributes of this region of memory
-         * @return A memory::MemoryInfo struct based on attributes of the memory
+         * @brief Remap a chunk of memory as to change the size occupied by it
+         * @param size The new size of the memory
+         * @return The address the memory was remapped to
          */
-        memory::MemoryInfo GetInfo();
+        virtual void Resize(size_t size);
+
+        /**
+         * @brief Updates the permissions of a block of mapped memory
+         * @param address The starting address to change the permissions at
+         * @param size The size of the partition to change the permissions of
+         * @param permission The new permissions to be set for the memory
+         */
+        virtual void UpdatePermission(const u64 address, const u64 size, memory::Permission permission);
+
+        /**
+         * @brief Updates the permissions of a chunk of mapped memory
+         * @param permission The new permissions to be set for the memory
+         */
+        inline virtual void UpdatePermission(memory::Permission permission) {
+            UpdatePermission(address, size, permission);
+        }
+
+        /**
+         * @brief Checks if the specified address is within the memory object
+         * @param address The address to check
+         * @return If the address is inside the memory object
+         */
+        inline virtual bool IsInside(u64 address) {
+            return (this->address <= address) && ((this->address + this->size) > address);
+        }
 
         /**
          * @brief The destructor of private memory, it deallocates the memory

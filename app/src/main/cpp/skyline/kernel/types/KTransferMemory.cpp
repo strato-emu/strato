@@ -4,8 +4,25 @@
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    KTransferMemory::KTransferMemory(const DeviceState &state, pid_t pid, u64 address, size_t size, const memory::Permission permission) : owner(pid), cSize(size), permission(permission), KObject(state, KType::KTransferMemory) {
-        if (pid) {
+    KTransferMemory::KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState) : host(host), size(size), KMemory(state, KType::KTransferMemory) {
+        BlockDescriptor block{
+            .size = size,
+            .permission = permission,
+        };
+        ChunkDescriptor chunk{
+            .size = size,
+            .state = memState,
+            .blockList = {block},
+        };
+        if (host) {
+            address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, permission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0));
+            if (reinterpret_cast<void *>(address) == MAP_FAILED)
+                throw exception("An error occurred while mapping transfer memory in host");
+            this->address = address;
+            chunk.address = address;
+            chunk.blockList.front().address = address;
+            hostChunk = chunk;
+        } else {
             Registers fregs{};
             fregs.x0 = address;
             fregs.x1 = size;
@@ -13,89 +30,152 @@ namespace skyline::kernel::type {
             fregs.x3 = static_cast<u64>(MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0));
             fregs.x4 = static_cast<u64>(-1);
             fregs.x8 = __NR_mmap;
-            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, pid);
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
             if (fregs.x0 < 0)
                 throw exception("An error occurred while mapping shared region in child process");
-            cAddress = fregs.x0;
-        } else {
-            address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, permission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0));
-            if (reinterpret_cast<void *>(address) == MAP_FAILED)
-                throw exception("An error occurred while mapping transfer memory in kernel");
-            cAddress = address;
+            this->address = fregs.x0;
+            chunk.address = fregs.x0;
+            chunk.blockList.front().address = fregs.x0;
+            state.os->memory.InsertChunk(chunk);
         }
     }
 
-    u64 KTransferMemory::Transfer(pid_t process, u64 address, u64 size) {
-        if (process) {
-            Registers fregs{};
-            fregs.x0 = address;
-            fregs.x1 = size;
-            fregs.x2 = static_cast<u64 >(permission.Get());
-            fregs.x3 = static_cast<u64>(MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0));
-            fregs.x4 = static_cast<u64>(-1);
-            fregs.x8 = __NR_mmap;
-            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, process);
-            if (fregs.x0 < 0)
-                throw exception("An error occurred while mapping transfer memory in child process");
-            address = fregs.x0;
-        } else {
-            address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, permission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | ((address) ? MAP_FIXED : 0), -1, 0));
-            if (reinterpret_cast<void *>(address) == MAP_FAILED)
-                throw exception("An error occurred while mapping transfer memory in kernel");
+    u64 KTransferMemory::Transfer(bool mHost, u64 nAddress, u64 nSize) {
+        nSize = nSize ? nSize : size;
+        ChunkDescriptor chunk = host ? hostChunk : *state.os->memory.GetChunk(address);
+        chunk.address = nAddress;
+        chunk.size = nSize;
+        MemoryManager::ResizeChunk(&chunk, nSize);
+        for (auto &block : chunk.blockList) {
+            block.address = nAddress + (block.address - address);
+            if ((mHost && !host) || (!mHost && !host)) {
+                Registers fregs{};
+                fregs.x0 = block.address;
+                fregs.x1 = block.size;
+                fregs.x2 = (block.permission.w) ? static_cast<u64>(block.permission.Get()) : (PROT_READ | PROT_WRITE);
+                fregs.x3 = static_cast<u64>(MAP_ANONYMOUS | MAP_PRIVATE | ((nAddress) ? MAP_FIXED : 0));
+                fregs.x4 = static_cast<u64>(-1);
+                fregs.x8 = __NR_mmap;
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+                if (fregs.x0 < 0)
+                    throw exception("An error occurred while mapping transfer memory in child process");
+                nAddress = fregs.x0;
+            } else if ((!mHost && host) || (mHost && host)) {
+                nAddress = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(block.address), block.size, block.permission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | ((nAddress) ? MAP_FIXED : 0), -1, 0));
+                if (reinterpret_cast<void *>(nAddress) == MAP_FAILED)
+                    throw exception("An error occurred while mapping transfer memory in host");
+            }
+            if (block.permission.r) {
+                if (mHost && !host)
+                    state.process->ReadMemory(reinterpret_cast<void *>(nAddress), address, block.size);
+                else if (!mHost && host)
+                    state.process->WriteMemory(reinterpret_cast<void *>(address), nAddress, block.size);
+                else if (!mHost && !host)
+                    state.process->CopyMemory(address, nAddress, block.size);
+                else if (mHost && host)
+                    memcpy(reinterpret_cast<void *>(nAddress), reinterpret_cast<void *>(address), block.size);
+            }
+            if (!block.permission.w) {
+                if (mHost) {
+                    if (mprotect(reinterpret_cast<void *>(block.address), block.size, block.permission.Get()) == reinterpret_cast<u64>(MAP_FAILED))
+                        throw exception("An error occurred while remapping transfer memory: {}", strerror(errno));
+                } else {
+                    Registers fregs{};
+                    fregs.x0 = block.address;
+                    fregs.x1 = block.size;
+                    fregs.x2 = static_cast<u64>(block.permission.Get());
+                    fregs.x8 = __NR_mprotect;
+                    state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+                    if (fregs.x0 < 0)
+                        throw exception("An error occurred while updating transfer memory's permissions in guest");
+                }
+            }
         }
-        size_t copySz = std::min(size, cSize);
-        if (process && !owner) {
-            state.process->WriteMemory(reinterpret_cast<void *>(cAddress), address, copySz);
-        } else if (!process && owner) {
-            state.process->ReadMemory(reinterpret_cast<void *>(address), cAddress, copySz);
-        } else
-            throw exception("Transferring from kernel to kernel is not supported");
-        if (owner) {
+        if (mHost && !host) {
+            state.os->memory.DeleteChunk(address);
+            hostChunk = chunk;
+        } else if (!mHost && host)
+            state.os->memory.InsertChunk(chunk);
+        else if (mHost && host)
+            hostChunk = chunk;
+        else if (!mHost && !host) {
+            state.os->memory.DeleteChunk(address);
+            state.os->memory.InsertChunk(chunk);
+        }
+        if ((mHost && !host) || (!mHost && !host)) {
             Registers fregs{};
             fregs.x0 = address;
             fregs.x1 = size;
             fregs.x8 = __NR_munmap;
-            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, owner);
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
             if (fregs.x0 < 0)
                 throw exception("An error occurred while unmapping transfer memory in child process");
-        } else {
+        } else if ((!mHost && host) || (mHost && host)) {
             if (reinterpret_cast<void *>(munmap(reinterpret_cast<void *>(address), size)) == MAP_FAILED)
-                throw exception("An error occurred while unmapping transfer memory in kernel");
+                throw exception("An error occurred while unmapping transfer memory in host: {}");
         }
-        owner = process;
-        cAddress = address;
-        cSize = size;
+        host = mHost;
+        address = nAddress;
+        size = nSize;
         return address;
     }
 
-    memory::MemoryInfo KTransferMemory::GetInfo() {
-        memory::MemoryInfo info{};
-        info.baseAddress = cAddress;
-        info.size = cSize;
-        info.type = static_cast<u64>(memory::Type::TransferMemory);
-        info.memoryAttribute.isIpcLocked = (info.ipcRefCount > 0);
-        info.memoryAttribute.isDeviceShared = (info.deviceRefCount > 0);
-        info.r = permission.r;
-        info.w = permission.w;
-        info.x = permission.x;
-        info.ipcRefCount = ipcRefCount;
-        info.deviceRefCount = deviceRefCount;
-        return info;
+    void KTransferMemory::Resize(size_t nSize) {
+        if (host) {
+            if (mremap(reinterpret_cast<void *>(address), size, nSize, 0) == MAP_FAILED)
+                throw exception("An error occurred while remapping transfer memory in host: {}", strerror(errno));
+        } else {
+            Registers fregs{};
+            fregs.x0 = address;
+            fregs.x1 = size;
+            fregs.x2 = nSize;
+            fregs.x8 = __NR_mremap;
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+            if (fregs.x0 < 0)
+                throw exception("An error occurred while remapping transfer memory in guest");
+            size = nSize;
+            auto chunk = state.os->memory.GetChunk(address);
+            MemoryManager::ResizeChunk(chunk, size);
+        }
+    }
+
+    void KTransferMemory::UpdatePermission(const u64 address, const u64 size, memory::Permission permission) {
+        BlockDescriptor block{
+            .address = address,
+            .size = size,
+            .permission = permission,
+        };
+        if (host) {
+            if (mprotect(reinterpret_cast<void *>(address), size, permission.Get()) == reinterpret_cast<u64>(MAP_FAILED))
+                throw exception("An occurred while remapping transfer memory: {}", strerror(errno));
+            MemoryManager::InsertBlock(&hostChunk, block);
+        } else {
+            Registers fregs{};
+            fregs.x0 = address;
+            fregs.x1 = size;
+            fregs.x2 = static_cast<u64>(permission.Get());
+            fregs.x8 = __NR_mprotect;
+            state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+            if (fregs.x0 < 0)
+                throw exception("An error occurred while updating transfer memory's permissions in guest");
+            auto chunk = state.os->memory.GetChunk(address);
+            MemoryManager::InsertBlock(chunk, block);
+        }
     }
 
     KTransferMemory::~KTransferMemory() {
-        if (owner) {
+        if (host)
+            munmap(reinterpret_cast<void *>(address), size);
+        else if (state.process) {
             try {
-                if (state.process) {
-                    Registers fregs{};
-                    fregs.x0 = cAddress;
-                    fregs.x1 = cSize;
-                    fregs.x8 = __NR_munmap;
-                    state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.process->pid);
-                }
+                Registers fregs{};
+                fregs.x0 = address;
+                fregs.x1 = size;
+                fregs.x8 = __NR_munmap;
+                state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
+                state.os->memory.DeleteChunk(address);
             } catch (const std::exception &) {
             }
-        } else
-            munmap(reinterpret_cast<void *>(cAddress), cSize);
+        }
     }
 };

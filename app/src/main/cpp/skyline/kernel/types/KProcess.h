@@ -6,6 +6,7 @@
 #include "KSharedMemory.h"
 #include "KSession.h"
 #include "KEvent.h"
+#include <kernel/memory.h>
 #include <condition_variable>
 
 namespace skyline::kernel::type {
@@ -57,25 +58,16 @@ namespace skyline::kernel::type {
          */
         u64 GetTlsSlot();
 
-      public:
-        enum class Status {
-            Created, //!< The process was created but the main thread has not started yet
-            Started, //!< The process has been started
-            Exiting //!< The process is exiting
-        } status = Status::Created; //!< The state of the process
-        handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
-        pid_t pid; //!< The PID of the main thread
-        size_t mainThreadStackSz; //!< The size of the main thread's stack (All other threads map stack themselves so we don't know the size per-se)
-        int memFd; //!< The file descriptor to the memory of the process
-        std::unordered_map<u64, std::shared_ptr<KPrivateMemory>> memoryMap; //!< A mapping from every address to a shared pointer of it's corresponding KPrivateMemory, used to keep track of KPrivateMemory instances
-        std::unordered_map<memory::Region, std::shared_ptr<KPrivateMemory>> memoryRegionMap; //!< A mapping from every MemoryRegion to a shared pointer of it's corresponding KPrivateMemory
-        std::unordered_map<handle_t, std::shared_ptr<KObject>> handleTable; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
-        std::unordered_map<pid_t, std::shared_ptr<KThread>> threadMap; //!< A mapping from a PID to it's corresponding KThread object
-        std::unordered_map<u64, pthread_mutex_t> mutexMap; //!< A map from a mutex's address to a vector of threads waiting on it
-        std::unordered_map<u64, pthread_cond_t> condVarMap; //!< A map from a conditional variable's address to a vector of threads waiting on it
-        std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
         /**
-         * This is used as the output for functions that return created kernel objects
+         * @brief This initializes heap and the initial TLS page
+         */
+        void InitializeMemory();
+
+      public:
+        friend OS;
+
+        /**
+         * @brief This is used as the output for functions that return created kernel objects
          * @tparam objectClass The class of the kernel object
          */
         template<typename objectClass>
@@ -83,6 +75,25 @@ namespace skyline::kernel::type {
             std::shared_ptr<objectClass> item; //!< A shared pointer to the object
             handle_t handle; //!< The handle of the object in the process
         };
+
+        /**
+         * @brief This enum is used to describe the current status of the process
+         */
+        enum class Status {
+            Created, //!< The process was created but the main thread has not started yet
+            Started, //!< The process has been started
+            Exiting //!< The process is exiting
+        } status = Status::Created; //!< The state of the process
+
+        handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
+        pid_t pid; //!< The PID of the main thread
+        int memFd; //!< The file descriptor to the memory of the process
+        std::unordered_map<handle_t, std::shared_ptr<KObject>> handles; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
+        std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object
+        std::unordered_map<u64, pthread_mutex_t> mutexes; //!< A map from a mutex's address to a vector of threads waiting on it
+        std::unordered_map<u64, pthread_cond_t> condVars; //!< A map from a conditional variable's address to a vector of threads waiting on it
+        std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
+        std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
 
         /**
          * @brief Creates a KThread object for the main thread and opens the process's memory file
@@ -151,27 +162,12 @@ namespace skyline::kernel::type {
         void WriteMemory(void *source, u64 offset, size_t size) const;
 
         /**
-         * @brief Map a chunk of process local memory (private memory)
-         * @param address The address to map to (Can be 0 if address doesn't matter)
-         * @param size The size of the chunk of memory
-         * @param perms The permissions of the memory
-         * @param type The type of the memory
-         * @param region The specific region this memory is mapped for
-         * @return The HandleOut of the created KPrivateMemory
+         * @brief Copy one chunk to another in the process's memory
+         * @param source The address of where the data to read is present
+         * @param destination The address to write the read data to
+         * @param size The amount of memory to be copied
          */
-        HandleOut<KPrivateMemory> MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region);
-
-        /**
-         * @brief Unmap a chunk of process local memory (private memory)
-         * @param region The region of memory to unmap
-         * @return If the region was mapped at all
-         */
-        bool UnmapPrivateRegion(const memory::Region region);
-
-        /**
-         * @brief Returns the total memory occupied by regions mapped for the process
-         */
-        size_t GetProgramSize();
+        void CopyMemory(u64 source, u64 destination, size_t size) const;
 
         /**
          * @brief Creates a new handle to a KObject and adds it to the process handle_table
@@ -186,18 +182,18 @@ namespace skyline::kernel::type {
                 item = std::make_shared<objectClass>(state, handleIndex, args...);
             else
                 item = std::make_shared<objectClass>(state, args...);
-            handleTable[handleIndex] = std::static_pointer_cast<KObject>(item);
+            handles[handleIndex] = std::static_pointer_cast<KObject>(item);
             return {item, handleIndex++};
         }
 
         /**
-         * @brief This inserts an item into the process handle table
+         * @brief Inserts an item into the process handle table
          * @param item The item to insert
          * @return The handle of the corresponding item in the handle table
          */
         template<typename objectClass>
         handle_t InsertItem(std::shared_ptr<objectClass> &item) {
-            handleTable[handleIndex] = std::static_pointer_cast<KObject>(item);
+            handles[handleIndex] = std::static_pointer_cast<KObject>(item);
             return handleIndex++;
         }
 
@@ -227,7 +223,7 @@ namespace skyline::kernel::type {
             else
                 throw exception("KProcess::GetHandle couldn't determine object type");
             try {
-                auto item = handleTable.at(handle);
+                auto item = handles.at(handle);
                 if (item->objectType == objectType)
                     return std::static_pointer_cast<objectClass>(item);
                 else
@@ -235,6 +231,21 @@ namespace skyline::kernel::type {
             } catch (std::out_of_range) {
                 throw exception("GetHandle was called with invalid handle: 0x{:X}", handle);
             }
+        }
+
+        /**
+         * @brief Retrieves a kernel memory object that owns the specified address
+         * @param address The address to look for
+         * @return A shared pointer to the corresponding KMemory object
+         */
+        std::shared_ptr<KMemory> GetMemoryObject(u64 address);
+
+        /**
+         * @brief This deletes a certain handle from the handle table
+         * @param handle The handle to delete
+         */
+        inline void DeleteHandle(handle_t handle) {
+            handles.erase(handle);
         }
 
         /**

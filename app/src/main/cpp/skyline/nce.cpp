@@ -5,6 +5,7 @@
 #include "nce/guest.h"
 #include "nce/instr.h"
 #include "kernel/svc.h"
+#include "nce.h"
 
 extern bool Halt;
 extern skyline::GroupMutex jniMtx;
@@ -12,8 +13,8 @@ extern skyline::GroupMutex jniMtx;
 namespace skyline {
     void NCE::KernelThread(pid_t thread) {
         try {
-            state.thread = state.process->threadMap.at(thread);
-            state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->guest.address);
+            state.thread = state.process->threads.at(thread);
+            state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.address);
             while (true) {
                 std::lock_guard jniGd(jniMtx);
                 if (Halt)
@@ -91,11 +92,9 @@ namespace skyline {
         ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
     }
 
-    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, pid_t pid) {
-        if (state.process->status != kernel::type::KProcess::Status::Exiting)
-            ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(state.process->threadMap.at(pid)->ctxMemory->kernel.address));
-        else
-            throw std::out_of_range("The KProcess object is missing");
+    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs) {
+        auto thread = state.thread ? state.thread : state.process->threads.at(state.process->pid);
+        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
     }
 
     void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) __attribute__ ((optnone)) {
@@ -339,7 +338,6 @@ namespace skyline {
             offset -= sizeof(u32);
             patchOffset -= sizeof(u32);
         }
-        patch.resize(patch.size() + PAGE_SIZE - 1 & ~(PAGE_SIZE - 1), 0x0);
         return patch;
     }
 }

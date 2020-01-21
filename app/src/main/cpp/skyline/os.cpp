@@ -3,7 +3,7 @@
 #include "nce/guest.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, jvmManager, settings, logger), serviceManager(state) {}
+    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, jvmManager, settings, logger), memory(state), serviceManager(state) {}
 
     void OS::Execute(const int romFd, const TitleFormat romType) {
         std::shared_ptr<loader::Loader> loader;
@@ -11,9 +11,10 @@ namespace skyline::kernel {
             loader = std::make_shared<loader::NroLoader>(romFd);
         } else
             throw exception("Unsupported ROM extension.");
-        auto process = CreateProcess(loader->mainEntry, 0, constant::DefStackSize);
+        auto process = CreateProcess(constant::BaseAddress, 0, constant::DefStackSize);
         loader->LoadProcessData(process, state);
-        process->threadMap.at(process->pid)->Start(); // The kernel itself is responsible for starting the main thread
+        process->InitializeMemory();
+        process->threads.at(process->pid)->Start(); // The kernel itself is responsible for starting the main thread
         state.nce->Execute();
     }
 
@@ -25,7 +26,7 @@ namespace skyline::kernel {
             munmap(stack, stackSize);
             throw exception("Failed to create guard pages");
         }
-        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission(true, true, false), memory::Type::Reserved);
+        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission(true, true, false), memory::MemoryStates::Reserved);
         tlsMem->guest = tlsMem->kernel;
         pid_t pid = clone(reinterpret_cast<int (*)(void *)>(&guest::entry), stack + stackSize, CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address));
         if (pid == -1)
@@ -39,11 +40,11 @@ namespace skyline::kernel {
     void OS::KillThread(pid_t pid) {
         if (process->pid == pid) {
             state.logger->Debug("Killing process with PID: {}", pid);
-            for (auto &thread: process->threadMap)
+            for (auto &thread: process->threads)
                 thread.second->Kill();
         } else {
             state.logger->Debug("Killing thread with TID: {}", pid);
-            process->threadMap.at(pid)->Kill();
+            process->threads.at(pid)->Kill();
         }
     }
 }

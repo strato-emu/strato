@@ -1,4 +1,5 @@
 #include <vector>
+#include <kernel/memory.h>
 #include "nro.h"
 
 namespace skyline::loader {
@@ -6,7 +7,6 @@ namespace skyline::loader {
         ReadOffset((u32 *) &header, 0x0, sizeof(NroHeader));
         if (header.magic != constant::NroMagic)
             throw exception("Invalid NRO magic! 0x{0:X}", header.magic);
-        mainEntry = constant::BaseAddr;
     }
 
     void NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
@@ -18,31 +18,34 @@ namespace skyline::loader {
         ReadOffset(rodata.data(), header.ro.offset, header.ro.size);
         ReadOffset(data.data(), header.data.offset, header.data.size);
 
-        std::vector<u32> patch = state.nce->PatchCode(text, constant::BaseAddr, header.text.size + header.ro.size + header.data.size + header.bssSize);
+        std::vector<u32> patch = state.nce->PatchCode(text, constant::BaseAddress, header.text.size + header.ro.size + header.data.size + header.bssSize);
 
         u64 textSize = text.size();
         u64 rodataSize = rodata.size();
         u64 dataSize = data.size();
         u64 patchSize = patch.size() * sizeof(u32);
+        u64 padding = utils::AlignUp(textSize + rodataSize + dataSize + header.bssSize + patchSize, PAGE_SIZE) - (textSize + rodataSize + dataSize + header.bssSize + patchSize);
 
-        process->MapPrivateRegion(constant::BaseAddr, textSize, {true, true, true}, memory::Type::CodeStatic, memory::Region::Text); // R-X
-        state.logger->Debug("Successfully mapped region .text @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr, textSize);
+        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress, textSize, memory::Permission{true, true, true}, memory::MemoryStates::CodeStatic); // R-X
+        state.logger->Debug("Successfully mapped section .text @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress, textSize);
 
-        process->MapPrivateRegion(constant::BaseAddr + textSize, rodataSize, {true, false, false}, memory::Type::CodeReadOnly, memory::Region::RoData); // R--
-        state.logger->Debug("Successfully mapped region .ro @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize, rodataSize);
+        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize, rodataSize, memory::Permission{true, false, false}, memory::MemoryStates::CodeReadOnly); // R--
+        state.logger->Debug("Successfully mapped section .ro @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize, rodataSize);
 
-        process->MapPrivateRegion(constant::BaseAddr + textSize + rodataSize, dataSize, {true, true, false}, memory::Type::CodeStatic, memory::Region::Data); // RW-
-        state.logger->Debug("Successfully mapped region .data @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize + rodataSize, dataSize);
+        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize, dataSize, memory::Permission{true, true, false}, memory::MemoryStates::CodeStatic); // RW-
+        state.logger->Debug("Successfully mapped section .data @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize, dataSize);
 
-        process->MapPrivateRegion(constant::BaseAddr + textSize + rodataSize + dataSize, header.bssSize, {true, true, true}, memory::Type::CodeMutable, memory::Region::Bss); // RWX
-        state.logger->Debug("Successfully mapped region .bss @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize + rodataSize + dataSize, header.bssSize);
+        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize + dataSize, header.bssSize, memory::Permission{true, true, true}, memory::MemoryStates::CodeMutable); // RWX
+        state.logger->Debug("Successfully mapped section .bss @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize + dataSize, header.bssSize);
 
-        process->MapPrivateRegion(constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize, {true, true, true}, memory::Type::CodeStatic, memory::Region::Text); // RWX
-        state.logger->Debug("Successfully mapped region .patch @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize);
+        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize + dataSize + header.bssSize, patchSize + padding, memory::Permission{true, true, true}, memory::MemoryStates::CodeStatic); // RWX
+        state.logger->Debug("Successfully mapped section .patch @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize + dataSize + header.bssSize, patchSize);
 
-        process->WriteMemory(text.data(), constant::BaseAddr, textSize);
-        process->WriteMemory(rodata.data(), constant::BaseAddr + textSize, rodataSize);
-        process->WriteMemory(data.data(), constant::BaseAddr + textSize + rodataSize, dataSize);
-        process->WriteMemory(patch.data(), constant::BaseAddr + textSize + rodataSize + dataSize + header.bssSize, patchSize);
+        process->WriteMemory(text.data(), constant::BaseAddress, textSize);
+        process->WriteMemory(rodata.data(), constant::BaseAddress + textSize, rodataSize);
+        process->WriteMemory(data.data(), constant::BaseAddress + textSize + rodataSize, dataSize);
+        process->WriteMemory(patch.data(), constant::BaseAddress + textSize + rodataSize + dataSize + header.bssSize, patchSize);
+
+        state.os->memory.InitializeRegions(constant::BaseAddress, textSize + rodataSize + dataSize + header.bssSize + patchSize + padding, memory::AddressSpaceType::AddressSpace39Bit);
     }
 }

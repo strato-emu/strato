@@ -1,15 +1,15 @@
 #pragma once
 
-#include <memory.h>
-#include "KObject.h"
+#include "KMemory.h"
 
 namespace skyline::kernel::type {
     /**
      * @brief KSharedMemory is used to hold a particular amount of shared memory
      */
-    class KSharedMemory : public KObject {
+    class KSharedMemory : public KMemory {
       private:
         int fd; //!< A file descriptor to the underlying shared memory
+        memory::MemoryState initialState; //!< This is to hold the initial state for the Map call
 
       public:
         /**
@@ -27,21 +27,17 @@ namespace skyline::kernel::type {
             inline bool valid() { return address && size && permission.Get(); }
         } kernel, guest;
 
-        u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
-        u16 deviceRefCount{};  //!< The amount of reference to this memory for IPC
-        memory::Type type; //!< The type of this memory allocation
-
         /**
          * @param state The state of the device
-         * @param address The address of the allocation on the kernel (Arbitrary is 0)
+         * @param address The address of the allocation on the kernel (If NULL then an arbitrary address is picked)
          * @param size The size of the allocation on the kernel
          * @param permission The permission of the kernel process
-         * @param type The type of the memory
+         * @param memState The MemoryState of the chunk of memory
          */
-        KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::Type type);
+        KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState = memory::MemoryStates::SharedMemory);
 
         /**
-         * @brief Maps the shared memory at an address in the guest
+         * @brief Maps the shared memory in the guest
          * @param address The address to map to (If NULL an arbitrary address is picked)
          * @param size The amount of shared memory to map
          * @param permission The permission of the kernel process
@@ -53,20 +49,44 @@ namespace skyline::kernel::type {
          * @brief Resize a chunk of memory as to change the size occupied by it
          * @param size The new size of the memory
          */
-        void Resize(size_t size);
+        virtual void Resize(size_t size);
+
+        /**
+         * @brief Updates the permissions of a block of mapped memory
+         * @param address The starting address to change the permissions at
+         * @param size The size of the partition to change the permissions of
+         * @param permission The new permissions to be set for the memory
+         * @param host Set the permissions for the kernel rather than the guest
+         */
+        void UpdatePermission(u64 address, u64 size, memory::Permission permission, bool host = false);
+
+        /**
+         * @brief Updates the permissions of a block of mapped memory
+         * @param address The starting address to change the permissions at
+         * @param size The size of the partition to change the permissions of
+         * @param permission The new permissions to be set for the memory
+         */
+        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission) {
+            UpdatePermission(address, size, permission, false);
+        }
+
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory
          * @param permission The new permissions to be set for the memory
-         * @param kernel Set the permissions for the kernel rather than the guest
          */
-        void UpdatePermission(memory::Permission permission, bool host = 0);
+        inline virtual void UpdatePermission(memory::Permission permission) {
+            UpdatePermission(guest.address, guest.size, permission, false);
+        }
 
         /**
-         * @brief Creates a MemoryInfo struct from the current instance
-         * @return A Memory::MemoryInfo struct based on attributes of the memory
+         * @brief Checks if the specified address is within the guest memory object
+         * @param address The address to check
+         * @return If the address is inside the guest memory object
          */
-        memory::MemoryInfo GetInfo();
+        inline virtual bool IsInside(u64 address) {
+            return (guest.address <= address) && ((guest.address + guest.size) > address);
+        }
 
         /**
          * @brief The destructor of shared memory, it deallocates the memory from all processes

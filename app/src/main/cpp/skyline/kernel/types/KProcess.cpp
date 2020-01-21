@@ -26,12 +26,15 @@ namespace skyline::kernel::type {
     }
 
     u64 KProcess::GetTlsSlot() {
-        for (auto &tlsPage: tlsPages) {
+        for (auto &tlsPage: tlsPages)
             if (!tlsPage->Full())
                 return tlsPage->ReserveSlot();
-        }
-        auto tlsMem = NewHandle<KPrivateMemory>(0, PAGE_SIZE, memory::Permission(true, true, false), memory::Type::ThreadLocal, threadMap.at(pid)).item;
-        memoryMap[tlsMem->address] = tlsMem;
+        u64 address;
+        if(tlsPages.empty())
+            address = state.os->memory.GetRegion(memory::Regions::TlsIo).address;
+        else
+            address = (*(tlsPages.end()-1))->address + PAGE_SIZE;
+        auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::MemoryStates::ThreadLocal).item;
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
         auto &tlsPage = tlsPages.back();
         if (tlsPages.empty())
@@ -39,13 +42,15 @@ namespace skyline::kernel::type {
         return tlsPage->ReserveSlot();
     }
 
-    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), mainThreadStackSz(stackSize), KSyncObject(state, KType::KProcess) {
+    void KProcess::InitializeMemory() {
+        heap = NewHandle<KPrivateMemory>(state.os->memory.GetRegion(memory::Regions::Heap).address, constant::DefHeapSize, memory::Permission{true, true, false}, memory::MemoryStates::Heap).item;
+        threads[pid]->tls = GetTlsSlot();
+    }
+
+    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), KSyncObject(state, KType::KProcess) {
         auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stackBase + stackSize, 0, constant::DefaultPriority, this, tlsMemory).item;
-        // Remove GetTlsSlot from KThread ctor and cleanup ctor in general
-        threadMap[pid] = thread;
+        threads[pid] = thread;
         state.nce->WaitThreadInit(thread);
-        thread->tls = GetTlsSlot();
-        MapPrivateRegion(constant::HeapAddr, constant::DefHeapSize, {true, true, false}, memory::Type::Heap, memory::Region::Heap);
         memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC);
         if (memFd == -1)
             throw exception("Cannot open file descriptor to /proc/{}/mem, \"{}\"", pid, strerror(errno));
@@ -78,24 +83,24 @@ namespace skyline::kernel::type {
         fregs.regs[0] = entryPoint;
         fregs.regs[1] = stackTop;
         fregs.x8 = __NR_clone;
-        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs, state.thread->pid);
+        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
         auto pid = static_cast<pid_t>(fregs.regs[0]);
         if (pid == -1)
             throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
         auto process = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this).item;
-        threadMap[pid] = process;
+        threads[pid] = process;
         return process;
         */
         return nullptr;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
-        struct iovec local {
+        struct iovec local{
             .iov_base = destination,
             .iov_len = size
         };
-        struct iovec remote {
-            .iov_base = reinterpret_cast<void*>(offset),
+        struct iovec remote{
+            .iov_base = reinterpret_cast<void *>(offset),
             .iov_len = size
         };
 
@@ -104,12 +109,12 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::WriteMemory(void *source, u64 offset, size_t size) const {
-        struct iovec local {
+        struct iovec local{
             .iov_base = source,
             .iov_len = size
         };
-        struct iovec remote {
-            .iov_base = reinterpret_cast<void*>(offset),
+        struct iovec remote{
+            .iov_base = reinterpret_cast<void *>(offset),
             .iov_len = size
         };
 
@@ -117,43 +122,52 @@ namespace skyline::kernel::type {
             pwrite64(memFd, source, size, offset);
     }
 
-    KProcess::HandleOut<KPrivateMemory> KProcess::MapPrivateRegion(u64 address, size_t size, const memory::Permission perms, const memory::Type type, const memory::Region region) {
-        auto mem = NewHandle<KPrivateMemory>(address, size, perms, type, threadMap.at(pid));
-        memoryMap[mem.item->address] = mem.item;
-        memoryRegionMap[region] = mem.item;
-        return mem;
+    void KProcess::CopyMemory(u64 source, u64 destination, size_t size) const {
+        if (size <= PAGE_SIZE) {
+            std::vector<u8> buffer(size);
+            state.process->ReadMemory(buffer.data(), source, size);
+            state.process->WriteMemory(buffer.data(), destination, size);
+        } else {
+            Registers fregs{};
+            fregs.x0 = source;
+            fregs.x1 = destination;
+            fregs.x2 = size;
+            state.nce->ExecuteFunction(ThreadCall::Memcopy, fregs);
+        }
     }
 
-    bool KProcess::UnmapPrivateRegion(const skyline::memory::Region region) {
-        if (!memoryRegionMap.count(region))
-            return false;
-        memoryMap.erase(memoryRegionMap.at(region)->address);
-        memoryRegionMap.erase(region);
-        return true;
-    }
-
-    size_t KProcess::GetProgramSize() {
-        size_t sharedSize = 0;
-        for (auto &region : memoryRegionMap)
-            sharedSize += region.second->size;
-        return sharedSize;
+    std::shared_ptr<KMemory> KProcess::GetMemoryObject(u64 address) {
+        for(auto& [handle, object] : state.process->handles) {
+            switch(object->objectType) {
+                case type::KType::KPrivateMemory:
+                case type::KType::KSharedMemory:
+                case type::KType::KTransferMemory: {
+                    auto mem = std::static_pointer_cast<type::KMemory>(object);
+                    if (mem->IsInside(address))
+                        return mem;
+                }
+                default:
+                    break;
+            }
+        }
+        return nullptr;
     }
 
     void KProcess::MutexLock(u64 address) {
         try {
-            auto mtx = mutexMap.at(address);
+            auto mtx = mutexes.at(address);
             pthread_mutex_lock(&mtx);
             u32 mtxVal = ReadMemory<u32>(address);
             mtxVal = (mtxVal & ~constant::MtxOwnerMask) | state.thread->handle;
             WriteMemory(mtxVal, address);
         } catch (const std::out_of_range &) {
-            mutexMap[address] = PTHREAD_MUTEX_INITIALIZER;
+            mutexes[address] = PTHREAD_MUTEX_INITIALIZER;
         }
     }
 
     void KProcess::MutexUnlock(u64 address) {
         try {
-            auto mtx = mutexMap.at(address);
+            auto mtx = mutexes.at(address);
             u32 mtxVal = ReadMemory<u32>(address);
             if ((mtxVal & constant::MtxOwnerMask) != state.thread->handle)
                 throw exception("A non-owner thread tried to release a mutex");
@@ -161,7 +175,7 @@ namespace skyline::kernel::type {
             WriteMemory(mtxVal, address);
             pthread_mutex_unlock(&mtx);
         } catch (const std::out_of_range &) {
-            mutexMap[address] = PTHREAD_MUTEX_INITIALIZER;
+            mutexes[address] = PTHREAD_MUTEX_INITIALIZER;
         }
     }
 }

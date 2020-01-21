@@ -32,7 +32,7 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        for (uint index = 0; header->Xno > index; index++) {
+        for (uint index = 0; header->xNo > index; index++) {
             auto bufX = reinterpret_cast<BufferDescriptorX *>(currPtr);
             if (bufX->Address()) {
                 inputBuf.emplace_back(bufX);
@@ -41,7 +41,7 @@ namespace skyline::kernel::ipc {
             currPtr += sizeof(BufferDescriptorX);
         }
 
-        for (uint index = 0; header->Ano > index; index++) {
+        for (uint index = 0; header->aNo > index; index++) {
             auto bufA = reinterpret_cast<BufferDescriptorABW *>(currPtr);
             if (bufA->Address()) {
                 inputBuf.emplace_back(bufA);
@@ -50,7 +50,7 @@ namespace skyline::kernel::ipc {
             currPtr += sizeof(BufferDescriptorABW);
         }
 
-        for (uint index = 0; header->Bno > index; index++) {
+        for (uint index = 0; header->bNo > index; index++) {
             auto bufB = reinterpret_cast<BufferDescriptorABW *>(currPtr);
             if (bufB->Address()) {
                 outputBuf.emplace_back(bufB);
@@ -59,7 +59,7 @@ namespace skyline::kernel::ipc {
             currPtr += sizeof(BufferDescriptorABW);
         }
 
-        for (uint index = 0; header->Wno > index; index++) {
+        for (uint index = 0; header->wNo > index; index++) {
             auto bufW = reinterpret_cast<BufferDescriptorABW *>(currPtr);
             if (bufW->Address()) {
                 inputBuf.emplace_back(bufW, IpcBufferType::W);

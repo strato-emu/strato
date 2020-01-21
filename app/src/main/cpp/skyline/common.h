@@ -23,11 +23,8 @@ namespace skyline {
 
     namespace constant {
         // Memory
-        constexpr u64 BaseAddr = 0x8000000; //!< The address space base
-        constexpr u64 MapAddr = BaseAddr + 0x80000000; //!< The address of the map region
-        constexpr u64 HeapAddr = MapAddr + 0x1000000000; //!< The address of the heap region
+        constexpr u64 BaseAddress = 0x8000000; //!< The address space base
         constexpr u64 BaseEnd = 0x7FFFFFFFFF; //!< The end of the address space
-        constexpr u64 MapSize = 0x1000000000; //!< The size of the map region
         constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
         constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
         constexpr size_t HeapSizeDiv = 0x200000; //!< The amount heap size has to be divisible by
@@ -38,8 +35,6 @@ namespace skyline {
         constexpr u32 NroMagic = 0x304F524E; //!< "NRO0" in reverse, this is written at the start of every NRO file
         // NCE
         constexpr u8 NumRegs = 30; //!< The amount of registers that ARMv8 has
-        constexpr u16 SvcLast = 0x7F; //!< The index of the last SVC
-        constexpr u16 BrkRdy = 0xFF; //!< This is reserved for our kernel's to know when a process/thread is ready
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
         constexpr u32 CntfrqEl0 = 0x5F00; //!< ID of CNTFRQ_EL0 in MRS
         constexpr u32 TegraX1Freq = 0x124F800; //!< The clock frequency of the Tegra X1 (19.2 MHz)
@@ -53,7 +48,6 @@ namespace skyline {
         constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
         constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
         constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
-        constexpr u32 CheckInterval = 10000000; //!< The amount of cycles to wait between checking if the guest thread is dead
         // IPC
         constexpr size_t TlsIpcSize = 0x100; //!< The size of the IPC command buffer in a TLS slot
         constexpr u8 PortSize = 0x8; //!< The size of a port name string
@@ -78,11 +72,14 @@ namespace skyline {
             constexpr u32 ServiceNotReg = 0xE15; //!< "Service not registered"
             constexpr u32 InvSize = 0xCA01; //!< "Invalid size"
             constexpr u32 InvAddress = 0xCC01; //!< "Invalid address"
-            constexpr u32 InvPermission = 0xE001; //!< "Invalid Permission"
+            constexpr u32 InvState = 0xD401; //!< "Invalid MemoryState"
+            constexpr u32 InvPermission = 0xD801; //!< "Invalid Permission"
+            constexpr u32 InvMemRange = 0xD801; //!< "Invalid Memory Range"
+            constexpr u32 InvPriority = 0xE001; //!< "Invalid Priority"
             constexpr u32 InvHandle = 0xE401; //!< "Invalid handle"
             constexpr u32 InvCombination = 0xE801; //!< "Invalid combination"
-            constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
             constexpr u32 Timeout = 0xEA01; //!< "Timeout"
+            constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
             constexpr u32 NotFound = 0xF201; //!< "Not found"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
         }
@@ -97,6 +94,51 @@ namespace skyline {
         XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
         NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
     };
+
+    namespace utils {
+        /**
+         * @brief Returns the current time in nanoseconds
+         * @return The current time in nanoseconds
+         */
+        inline u64 GetCurrTimeNs() {
+            return static_cast<u64>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
+        }
+
+        /**
+         * @brief Aligns up a value to a multiple of two
+         * @tparam Type The type of the values
+         * @param value The value to round up
+         * @param multiple The multiple to round up to (Should be a multiple of 2)
+         * @tparam TypeVal The type of the value
+         * @tparam TypeMul The type of the multiple
+         * @return The aligned value
+         */
+        template <typename TypeVal, typename TypeMul>
+        inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
+            static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
+            multiple--;
+            return (value + multiple) & ~multiple;
+        }
+
+        /**
+         * @brief Aligns down a value to a multiple of two
+         * @param value The value to round down
+         * @param multiple The multiple to round down to (Should be a multiple of 2)
+         * @tparam TypeVal The type of the value
+         * @tparam TypeMul The type of the multiple
+         * @return The aligned value
+         */
+        template <typename TypeVal, typename TypeMul>
+        inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
+            static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
+            multiple--;
+            return value & ~multiple;
+        }
+
+        inline bool PageAligned(u64 address) {
+            return !(address & (PAGE_SIZE - 1U));
+        }
+    }
 
     /**
      * @brief The Mutex class is a wrapper around an atomic bool used for synchronization
@@ -292,14 +334,6 @@ namespace skyline {
         template<typename S, typename... Args>
         inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, args...)) {}
     };
-
-    /**
-     * @brief Returns the current time in nanoseconds
-     * @return The current time in nanoseconds
-     */
-    inline u64 GetCurrTimeNs() {
-        return static_cast<u64>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
-    }
 
     class NCE;
     class JvmManager;

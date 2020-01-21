@@ -5,9 +5,9 @@ namespace skyline {
         constexpr size_t saveCtxSize = 20 * sizeof(u32);
         constexpr size_t loadCtxSize = 20 * sizeof(u32);
         #ifdef NDEBUG
-        constexpr size_t svcHandlerSize = 150 * sizeof(u32);
+        constexpr size_t svcHandlerSize = 175 * sizeof(u32);
         #else
-        constexpr size_t svcHandlerSize = 250 * sizeof(u32);
+        constexpr size_t svcHandlerSize = 275 * sizeof(u32);
         #endif
 
         void entry(u64 address);

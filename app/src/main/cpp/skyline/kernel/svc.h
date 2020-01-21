@@ -37,7 +37,7 @@ namespace skyline {
     };
     namespace kernel::svc {
         /**
-         * @brief Set the process heap to a given size (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
+         * @brief Sets the process heap to a given Size. It can both extend and shrink the heap. (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
          */
         void SetHeapSize(DeviceState &state);
 
@@ -45,6 +45,11 @@ namespace skyline {
          * @brief Change attribute of page-aligned memory region. This is used to turn on/off caching for a given memory area. (https://switchbrew.org/wiki/SVC#svcSetMemoryAttribute)
          */
         void SetMemoryAttribute(DeviceState &state);
+
+        /**
+         * @brief Maps a memory range into a different range. Mainly used for adding guard pages around stack.  (https://switchbrew.org/wiki/SVC#svcSetMemoryAttribute)
+         */
+        void MapMemory(DeviceState &state);
 
         /**
          * @brief Query information about an address (https://switchbrew.org/wiki/SVC#svcQueryMemory)
@@ -169,7 +174,7 @@ namespace skyline {
             SetHeapSize, // 0x01
             nullptr, // 0x02
             SetMemoryAttribute, // 0x03
-            nullptr, // 0x04
+            MapMemory, // 0x04
             nullptr, // 0x05
             QueryMemory, // 0x06
             ExitProcess, // 0x07

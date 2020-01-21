@@ -5,7 +5,7 @@
 
 namespace skyline::kernel::type {
     KThread::KThread(const DeviceState &state, handle_t handle, pid_t self_pid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory) : handle(handle), pid(self_pid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state,
-                                                                                                                                                                                                                                                                                                                                                                                                      KType::KThread) {
+        KType::KThread) {
         UpdatePriority(priority);
     }
 
@@ -18,7 +18,7 @@ namespace skyline::kernel::type {
             if (pid == parent->pid)
                 parent->status = KProcess::Status::Started;
             status = Status::Running;
-            state.nce->StartThread(entryArg, handle, parent->threadMap.at(pid));
+            state.nce->StartThread(entryArg, handle, parent->threads.at(pid));
         }
     }
 

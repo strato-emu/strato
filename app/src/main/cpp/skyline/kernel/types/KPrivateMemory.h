@@ -1,55 +1,59 @@
 #pragma once
 
-#include <memory.h>
-#include "KObject.h"
+#include "KMemory.h"
 
 namespace skyline::kernel::type {
     /**
-     * KPrivateMemory is used to hold some amount of private memory
+     * @brief KPrivateMemory is used to map memory local to the guest process
      */
-    class KPrivateMemory : public KObject {
+    class KPrivateMemory : public KMemory {
       private:
         const DeviceState &state; //!< The state of the device
 
       public:
-        u64 address; //!< The address of the allocated memory
-        size_t size; //!< The size of the allocated memory
-        u16 ipcRefCount{}; //!< The amount of reference to this memory for IPC
-        u16 deviceRefCount{};  //!< The amount of reference to this memory for IPC
-        memory::Permission permission; //!< The permissions for the allocated memory
-        const memory::Type type; //!< The type of this memory allocation
-        std::vector<memory::RegionInfo> regionInfoVec; //!< This holds information about specific memory regions
+        u64 address{}; //!< The address of the allocated memory
+        size_t size{}; //!< The size of the allocated memory
 
         /**
          * @param state The state of the device
-         * @param dstAddress The address to map to (If NULL then an arbitrary address is picked)
+         * @param address The address to map to (If NULL then an arbitrary address is picked)
          * @param size The size of the allocation
          * @param permission The permissions for the allocated memory
-         * @param type The type of the memory
-         * @param thread The thread to execute the calls on
+         * @param memState The MemoryState of the chunk of memory
          */
-        KPrivateMemory(const DeviceState &state, u64 dstAddress, size_t size, memory::Permission permission, const memory::Type type, std::shared_ptr<KThread> thread = 0);
+        KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState);
 
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it
-         * @param newSize The new size of the memory
-         * @param canMove If the memory can move if there is not enough space at the current address
+         * @param size The new size of the memory
          * @return The address the memory was remapped to
          */
-        u64 Resize(size_t newSize, bool canMove);
+        virtual void Resize(size_t size);
+
+        /**
+         * @brief Updates the permissions of a block of mapped memory
+         * @param address The starting address to change the permissions at
+         * @param size The size of the partition to change the permissions of
+         * @param permission The new permissions to be set for the memory
+         */
+        virtual void UpdatePermission(const u64 address, const u64 size, memory::Permission permission);
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory
          * @param permission The new permissions to be set for the memory
          */
-        void UpdatePermission(memory::Permission permission);
+        inline virtual void UpdatePermission(memory::Permission permission) {
+            UpdatePermission(address, size, permission);
+        }
 
         /**
-         * @brief Returns a MemoryInfo object
-         * @param address The specific address being queried (Used to fill MemoryAttribute)
-         * @return A Memory::MemoryInfo struct based on attributes of the memory
+         * @brief Checks if the specified address is within the memory object
+         * @param address The address to check
+         * @return If the address is inside the memory object
          */
-        memory::MemoryInfo GetInfo(u64 address);
+        inline virtual bool IsInside(u64 address) {
+            return (this->address <= address) && ((this->address + this->size) > address);
+        }
 
         /**
          * @brief The destructor of private memory, it deallocates the memory

@@ -172,6 +172,13 @@ namespace skyline::guest {
                         "LDR LR, [SP], #16");
                     saveCtxTls();
                     loadCtxStack();
+                } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
+                    auto src = reinterpret_cast<u8*>(ctx->registers.x0);
+                    auto dest = reinterpret_cast<u8*>(ctx->registers.x1);
+                    auto size = ctx->registers.x2;
+                    auto end = src + size;
+                    while (src < end)
+                        *(src++) = *(dest++);
                 }
             }
         }
@@ -214,6 +221,13 @@ namespace skyline::guest {
                     saveCtxTls();
                     loadCtxStack();
                 }
+            } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
+                auto src = reinterpret_cast<u8*>(ctx->registers.x0);
+                auto dest = reinterpret_cast<u8*>(ctx->registers.x1);
+                auto size = ctx->registers.x2;
+                auto end = src + size;
+                while (src < end)
+                    *(src++) = *(dest++);
             }
         }
         struct sigaction sigact{

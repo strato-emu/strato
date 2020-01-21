@@ -37,7 +37,7 @@ namespace skyline {
         void Execute();
 
         /**
-         * @brief Execute any arbitrary function on a particular child process
+         * @brief Execute any arbitrary function on a specific child thread
          * @param call The specific call to execute
          * @param funcRegs A set of registers to run the function
          * @param thread The thread to execute the function on
@@ -45,12 +45,11 @@ namespace skyline {
         void ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread> &thread);
 
         /**
-         * @brief Execute any arbitrary function on a particular child process
+         * @brief Execute any arbitrary function on the child process
          * @param call The specific call to execute
          * @param funcRegs A set of registers to run the function
-         * @param pid The PID of the process
          */
-        void ExecuteFunction(ThreadCall call, Registers &funcRegs, pid_t pid);
+        void ExecuteFunction(ThreadCall call, Registers &funcRegs);
 
         /**
          * @brief Waits till a thread is ready to execute commands
