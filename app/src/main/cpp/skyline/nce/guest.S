@@ -19,6 +19,7 @@ saveCtx:
     STP X26, X27, [LR, #224]
     STP X28, X29, [LR, #240]
     LDR LR, [SP], #16
+    DSB SY
     RET
 
 .global loadCtx
