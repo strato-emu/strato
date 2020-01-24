@@ -54,4 +54,16 @@
                 app:key="operation_mode"
                 app:title="@string/use_docked" />
     </PreferenceCategory>
+    <PreferenceCategory
+            android:key="category_audio"
+            android:title="@string/audio">
+        <SeekBarPreference
+                app:key="audren_buffer_size"
+                app:title="@string/audren_buffer_size"
+                app:summary="@string/audren_buffer_desc"
+                app:showSeekBarValue="true"
+                app:min="320"
+                android:defaultValue="960"
+                android:max="2880"/>
+    </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

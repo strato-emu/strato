@@ -53,6 +53,10 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/sm/sm.cpp
         ${source_DIR}/skyline/services/fatal/fatal.cpp
         ${source_DIR}/skyline/services/audout/audout.cpp
+        ${source_DIR}/skyline/services/audren/IAudioRendererManager.cpp
+        ${source_DIR}/skyline/services/audren/IAudioRenderer.cpp
+        ${source_DIR}/skyline/services/audren/voice.cpp
+        ${source_DIR}/skyline/services/audren/memoryPool.cpp
         ${source_DIR}/skyline/services/set/sys.cpp
         ${source_DIR}/skyline/services/apm/apm.cpp
         ${source_DIR}/skyline/services/am/applet.cpp

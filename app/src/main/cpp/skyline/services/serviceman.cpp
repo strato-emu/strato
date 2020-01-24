@@ -1,5 +1,6 @@
 #include "serviceman.h"
 #include <kernel/types/KProcess.h>
+#include <services/audren/IAudioRendererManager.h>
 #include "sm/sm.h"
 #include "set/sys.h"
 #include "apm/apm.h"
@@ -85,6 +86,9 @@ namespace skyline::service {
                 break;
             case Service::audout_u:
                 serviceObj = std::make_shared<audout::audoutU>(state, *this);
+                break;
+            case Service::IAudioRendererManager:
+                serviceObj = std::make_shared<audren::IAudioRendererManager>(state, *this);
                 break;
             case Service::hid:
                 serviceObj = std::make_shared<hid::hid>(state, *this);
