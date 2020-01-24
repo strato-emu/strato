@@ -25,6 +25,7 @@ add_library(skyline SHARED
         ${source_DIR}/main.cpp
         ${source_DIR}/skyline/audio.cpp
         ${source_DIR}/skyline/audio/track.cpp
+        ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/nce/guest.S
         ${source_DIR}/skyline/nce/guest.cpp

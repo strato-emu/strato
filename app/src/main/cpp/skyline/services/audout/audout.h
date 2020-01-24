@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audio/resampler.h>
 #include <audio.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
@@ -33,9 +34,13 @@ namespace skyline::service::audout {
      */
     class IAudioOut : public BaseService {
       private:
+        audio::Resampler resampler; //!< The audio resampler object used to resample audio
         std::shared_ptr<audio::AudioTrack> track; //!< The audio track associated with the audio out
         std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
         std::vector<i16> tmpSampleBuffer; //!< A temporary buffer used to store sample data in AppendAudioOutBuffer
+
+        int sampleRate; //!< The sample rate of the audio out
+        int channelCount; //!< The amount of channels in the data sent to the audio out
 
       public:
         /**
