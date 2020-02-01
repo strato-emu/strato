@@ -77,6 +77,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
         thread(start = true) {
+            val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
+            runOnUiThread {snackbar.show()}
             try {
                 runOnUiThread{adapter.clear()}
                 val entries = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
@@ -102,6 +104,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     notifyUser(e.message!!)
                 }
             }
+            runOnUiThread {snackbar.dismiss()}
         }
     }
 

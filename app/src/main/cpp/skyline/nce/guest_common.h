@@ -136,6 +136,7 @@ namespace skyline {
     enum class ThreadCall : u32 {
         Syscall = 0x100, //!< A linux syscall needs to be called from the guest
         Memcopy = 0x101, //!< To copy memory from one location to another
+        Clone = 0x102, //!< Use the clone syscall to create a new thread
     };
 
     /**

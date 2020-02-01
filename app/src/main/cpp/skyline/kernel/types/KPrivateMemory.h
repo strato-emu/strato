@@ -7,9 +7,6 @@ namespace skyline::kernel::type {
      * @brief KPrivateMemory is used to map memory local to the guest process
      */
     class KPrivateMemory : public KMemory {
-      private:
-        const DeviceState &state; //!< The state of the device
-
       public:
         u64 address{}; //!< The address of the allocated memory
         size_t size{}; //!< The size of the allocated memory

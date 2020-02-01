@@ -1,25 +1,37 @@
 #include "common.h"
 #include "nce.h"
 #include "gpu.h"
+#include <kernel/types/KThread.h>
 #include <tinyxml2.h>
 
 namespace skyline {
     void Mutex::lock() {
-        while (flag.test_and_set(std::memory_order_acquire));
-    }
-
-    void Mutex::unlock() {
-        flag.clear(std::memory_order_release);
-    }
-
-    bool Mutex::try_lock() {
-        return !flag.test_and_set(std::memory_order_acquire);
+        while (true) {
+            for (int i = 0; i < 1000; ++i) {
+                if (!flag.test_and_set(std::memory_order_acquire))
+                    return;
+                asm volatile("yield");
+            }
+            sched_yield();
+        }
     }
 
     void GroupMutex::lock(Group group) {
         auto none = Group::None;
-        while (!flag.compare_exchange_weak(none, group) && flag != group);
-        num++;
+        if (flag == group) {
+            num++;
+            return;
+        }
+        while (true) {
+            for (int i = 0; i < 1000; ++i) {
+                if (flag.compare_exchange_weak(none, group)) {
+                    num++;
+                    return;
+                }
+                asm volatile("yield");
+            }
+            sched_yield();
+        }
     }
 
     void GroupMutex::unlock() {
@@ -38,13 +50,16 @@ namespace skyline {
                     stringMap[elem->FindAttribute("name")->Value()] = elem->GetText();
                     break;
                 case 'b':
-                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->BoolValue();
+                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
+                            "value")->BoolValue();
                     break;
                 case 'i':
-                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->IntValue();
+                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
+                            "value")->IntValue();
                     break;
                 default:
-                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
+                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(),
+                           elem->FindAttribute("name")->Value());
                     break;
             };
             if (elem->NextSibling())

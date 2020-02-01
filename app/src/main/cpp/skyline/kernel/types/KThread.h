@@ -19,12 +19,13 @@ namespace skyline::kernel::type {
             Running, //!< The thread is running currently
             Dead //!< The thread is dead and not running
         } status = Status::Created; //!< The state of the thread
+        std::atomic<bool> cancelSync; //!< This is to flag to a thread to cancel a synchronization call it currently is in
         std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
         handle_t handle; // The handle of the object in the handle table
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
         u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
-        u8 priority; //!< Hold the priority of a thread in Nintendo format
+        u8 priority; //!< The priority of a thread in Nintendo format
 
         /**
          * @param state The state of the device
@@ -54,11 +55,6 @@ namespace skyline::kernel::type {
          * @brief This kills the thread
          */
         void Kill();
-
-        /**
-         * @brief This wakes up the thread from it's sleep (no-op if thread is already awake)
-         */
-        void WakeUp();
 
         /**
          * @brief Update the priority level for the process.

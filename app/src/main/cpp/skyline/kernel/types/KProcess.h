@@ -85,15 +85,28 @@ namespace skyline::kernel::type {
             Exiting //!< The process is exiting
         } status = Status::Created; //!< The state of the process
 
+        /**
+         * @brief This is used to hold information about a single waiting thread for mutexes and conditional variables
+         */
+        struct WaitStatus {
+            std::atomic_bool flag{false}; //!< The underlying atomic flag of the thread
+            u8 priority; //!< The priority of the thread
+            pid_t pid; //!< The PID of the thread
+
+            WaitStatus(u8 priority, pid_t pid) : priority(priority), pid(pid) {}
+        };
+
         handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
         pid_t pid; //!< The PID of the main thread
         int memFd; //!< The file descriptor to the memory of the process
         std::unordered_map<handle_t, std::shared_ptr<KObject>> handles; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
         std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object
-        std::unordered_map<u64, pthread_mutex_t> mutexes; //!< A map from a mutex's address to a vector of threads waiting on it
-        std::unordered_map<u64, pthread_cond_t> condVars; //!< A map from a conditional variable's address to a vector of threads waiting on it
+        std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
+        std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
         std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
         std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
+        Mutex mutexLock; //!< This Mutex is to prevent concurrent mutex operations to happen at once
+        Mutex conditionalLock; //!< This Mutex is to prevent concurrent conditional variable operations to happen at once
 
         /**
          * @brief Creates a KThread object for the main thread and opens the process's memory file
@@ -142,6 +155,17 @@ namespace skyline::kernel::type {
          */
         template<typename Type>
         inline void WriteMemory(Type &item, u64 address) const {
+            WriteMemory(&item, address, sizeof(Type));
+        }
+
+        /**
+         * @brief Writes an object to process memory
+         * @tparam Type The type of the object to be written
+         * @param item The object to write
+         * @param address The address of the object
+         */
+        template<typename Type>
+        inline void WriteMemory(const Type &item, u64 address) const {
             WriteMemory(&item, address, sizeof(Type));
         }
 
@@ -238,7 +262,7 @@ namespace skyline::kernel::type {
          * @param address The address to look for
          * @return A shared pointer to the corresponding KMemory object
          */
-        std::shared_ptr<KMemory> GetMemoryObject(u64 address);
+        std::optional<HandleOut<KMemory>> GetMemoryObject(u64 address);
 
         /**
          * @brief This deletes a certain handle from the handle table
@@ -251,14 +275,31 @@ namespace skyline::kernel::type {
         /**
          * @brief This locks the Mutex at the specified address
          * @param address The address of the mutex
+         * @param owner The handle of the current mutex owner
+         * @param alwaysLock If to return rather than lock if owner tag is not matched
          */
-        void MutexLock(u64 address);
+        void MutexLock(u64 address, handle_t owner, bool alwaysLock = false);
 
         /**
          * @brief This unlocks the Mutex at the specified address
          * @param address The address of the mutex
+         * @return If the mutex was successfully unlocked
          */
-        void MutexUnlock(u64 address);
+        bool MutexUnlock(u64 address);
+
+        /**
+         * @param address The address of the conditional variable
+         * @param timeout The amount of time to wait for the conditional variable
+         * @return If the conditional variable was successfully waited for or timed out
+         */
+        bool ConditionalVariableWait(u64 address, u64 timeout);
+
+        /**
+         * @brief This signals a number of conditional variable waiters
+         * @param address The address of the conditional variable
+         * @param amount The amount of waiters to signal
+         */
+        void ConditionalVariableSignal(u64 address, u64 amount);
 
         /**
          * @brief This resets the object to an unsignalled state

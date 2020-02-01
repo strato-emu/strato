@@ -37,132 +37,142 @@ namespace skyline {
     };
     namespace kernel::svc {
         /**
-         * @brief Sets the process heap to a given Size. It can both extend and shrink the heap. (https://switchbrew.org/wiki/SVC#svcSetHeapSize)
+         * @brief Sets the process heap to a given Size. It can both extend and shrink the heap. (https://switchbrew.org/wiki/SVC#SetHeapSize)
          */
         void SetHeapSize(DeviceState &state);
 
         /**
-         * @brief Change attribute of page-aligned memory region. This is used to turn on/off caching for a given memory area. (https://switchbrew.org/wiki/SVC#svcSetMemoryAttribute)
+         * @brief Change attribute of page-aligned memory region. This is used to turn on/off caching for a given memory area. (https://switchbrew.org/wiki/SVC#SetMemoryAttribute)
          */
         void SetMemoryAttribute(DeviceState &state);
 
         /**
-         * @brief Maps a memory range into a different range. Mainly used for adding guard pages around stack.  (https://switchbrew.org/wiki/SVC#svcSetMemoryAttribute)
+         * @brief Maps a memory range into a different range. Mainly used for adding guard pages around stack. (https://switchbrew.org/wiki/SVC#SetMemoryAttribute)
          */
         void MapMemory(DeviceState &state);
 
         /**
-         * @brief Query information about an address (https://switchbrew.org/wiki/SVC#svcQueryMemory)
+         * @brief Unmaps a region that was previously mapped with #MapMemory. (https://switchbrew.org/wiki/SVC#UnmapMemory)
+         */
+        void UnmapMemory(DeviceState &state);
+
+        /**
+         * @brief Query information about an address (https://switchbrew.org/wiki/SVC#QueryMemory)
          */
         void QueryMemory(DeviceState &state);
 
         /**
-         * @brief Exits the current process (https://switchbrew.org/wiki/SVC#svcExitProcess)
+         * @brief Exits the current process (https://switchbrew.org/wiki/SVC#ExitProcess)
          */
         void ExitProcess(DeviceState &state);
 
         /**
-         * @brief Create a thread in the current process (https://switchbrew.org/wiki/SVC#svcCreateThread)
+         * @brief Create a thread in the current process (https://switchbrew.org/wiki/SVC#CreateThread)
          */
         void CreateThread(DeviceState &state);
 
         /**
-         * @brief Starts the thread for the provided handle (https://switchbrew.org/wiki/SVC#svcStartThread)
+         * @brief Starts the thread for the provided handle (https://switchbrew.org/wiki/SVC#StartThread)
          */
         void StartThread(DeviceState &state);
 
         /**
-         * @brief Exits the current thread (https://switchbrew.org/wiki/SVC#svcExitThread)
+         * @brief Exits the current thread (https://switchbrew.org/wiki/SVC#ExitThread)
          */
         void ExitThread(DeviceState &state);
 
         /**
-         * @brief Sleep for a specified amount of time, or yield thread (https://switchbrew.org/wiki/SVC#svcExitThread)
+         * @brief Sleep for a specified amount of time, or yield thread (https://switchbrew.org/wiki/SVC#SleepThread)
          */
         void SleepThread(DeviceState &state);
 
         /**
-         * @brief Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcGetThreadPriority)
+         * @brief Get priority of provided thread handle (https://switchbrew.org/wiki/SVC#GetThreadPriority)
          */
         void GetThreadPriority(DeviceState &state);
 
         /**
-         * @brief Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#svcSetThreadPriority)
+         * @brief Set priority of provided thread handle (https://switchbrew.org/wiki/SVC#SetThreadPriority)
          */
         void SetThreadPriority(DeviceState &state);
 
         /**
-         * @brief Maps the block supplied by the handle (https://switchbrew.org/wiki/SVC#svcMapSharedMemory)
+         * @brief Maps the block supplied by the handle (https://switchbrew.org/wiki/SVC#MapSharedMemory)
          */
         void MapSharedMemory(DeviceState &state);
 
         /**
-         * @brief Returns a handle to a KSharedMemory object (https://switchbrew.org/wiki/SVC#svcCreateTransferMemory)
+         * @brief Returns a handle to a KSharedMemory object (https://switchbrew.org/wiki/SVC#CreateTransferMemory)
          */
         void CreateTransferMemory(DeviceState &state);
 
         /**
-         * @brief Closes the specified handle
+         * @brief Closes the specified handle (https://switchbrew.org/wiki/SVC#CloseHandle)
          */
         void CloseHandle(DeviceState &state);
 
         /**
-         * @brief This resets a particular KEvent or KProcess which is signalled (https://switchbrew.org/wiki/SVC#svcResetSignal)
+         * @brief This resets a particular KEvent or KProcess which is signalled (https://switchbrew.org/wiki/SVC#ResetSignal)
          */
         void ResetSignal(DeviceState &state);
 
         /**
-         * @brief Stalls a thread till a KSyncObject signals or the timeout has ended (https://switchbrew.org/wiki/SVC#svcWaitSynchronization)
+         * @brief Stalls a thread till a KSyncObject signals or the timeout has ended (https://switchbrew.org/wiki/SVC#WaitSynchronization)
          */
         void WaitSynchronization(DeviceState &state);
 
         /**
-         * @brief Locks a specified mutex
+         * @brief If the referenced thread is currently in a synchronization call, that call will be interrupted (https://switchbrew.org/wiki/SVC#CancelSynchronization)
+         */
+        void CancelSynchronization(DeviceState &state);
+
+        /**
+         * @brief Locks a specified mutex (https://switchbrew.org/wiki/SVC#ArbitrateLock)
          */
         void ArbitrateLock(DeviceState &state);
 
         /**
-         * @brief Unlocks a specified mutex
+         * @brief Unlocks a specified mutex (https://switchbrew.org/wiki/SVC#ArbitrateUnlock)
          */
         void ArbitrateUnlock(DeviceState &state);
 
         /**
-         * @brief Waits on a process-wide key (Conditional-Variable)
+         * @brief Waits on a process-wide key (Conditional-Variable) (https://switchbrew.org/wiki/SVC#WaitProcessWideKeyAtomic)
          */
         void WaitProcessWideKeyAtomic(DeviceState &state);
 
         /**
-         * @brief Signals a process-wide key (Conditional-Variable)
+         * @brief Signals a process-wide key (Conditional-Variable) (https://switchbrew.org/wiki/SVC#SignalProcessWideKey)
          */
         void SignalProcessWideKey(DeviceState &state);
 
         /**
-         * @brief This returns the value of CNTPCT_EL0 on the Switch (https://switchbrew.org/wiki/SVC#svcGetSystemTick)
+         * @brief This returns the value of CNTPCT_EL0 on the Switch (https://switchbrew.org/wiki/SVC#GetSystemTick)
          */
         void GetSystemTick(DeviceState &state);
 
         /**
-         * @brief Connects to a named IPC port
+         * @brief Connects to a named IPC port (https://switchbrew.org/wiki/SVC#ConnectToNamedPort)
          */
         void ConnectToNamedPort(DeviceState &state);
 
         /**
-         * @brief Send a synchronous IPC request to a service
+         * @brief Send a synchronous IPC request to a service (https://switchbrew.org/wiki/SVC#SendSyncRequest)
          */
         void SendSyncRequest(DeviceState &state);
 
         /**
-         * @brief Retrieves the PID of a specific thread
+         * @brief Retrieves the PID of a specific thread (https://switchbrew.org/wiki/SVC#GetThreadId)
          */
         void GetThreadId(DeviceState &state);
 
         /**
-         * @brief Outputs a debug string
+         * @brief Outputs a debug string (https://switchbrew.org/wiki/SVC#OutputDebugString)
          */
         void OutputDebugString(DeviceState &state);
 
         /**
-         * @brief Retrieves a piece of information (https://switchbrew.org/wiki/SVC#svcGetInfo)
+         * @brief Retrieves a piece of information (https://switchbrew.org/wiki/SVC#GetInfo)
          */
         void GetInfo(DeviceState &state);
 
@@ -175,7 +185,7 @@ namespace skyline {
             nullptr, // 0x02
             SetMemoryAttribute, // 0x03
             MapMemory, // 0x04
-            nullptr, // 0x05
+            UnmapMemory, // 0x05
             QueryMemory, // 0x06
             ExitProcess, // 0x07
             CreateThread, // 0x08
@@ -195,7 +205,7 @@ namespace skyline {
             CloseHandle, // 0x16
             ResetSignal, // 0x17
             WaitSynchronization, // 0x18
-            nullptr, // 0x19
+            CancelSynchronization, // 0x19
             ArbitrateLock, // 0x1a
             ArbitrateUnlock, // 0x1b
             WaitProcessWideKeyAtomic, // 0x1c

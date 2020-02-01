@@ -72,27 +72,19 @@ namespace skyline {
             u32 value;
         };
 
-        static_assert(sizeof(MemoryAttribute) == sizeof(u32));
-
         /**
          * @brief This contains information about a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryInfo
          */
         struct MemoryInfo {
-            u64 address;
-            u64 size;
-            u32 type;
-            MemoryAttribute attributes;
-            union {
-                u32 _pad0_;
-                struct {
-                    bool r : 1, w : 1, x : 1;
-                };
-            };
-            u32 ipcRefCount;
-            u32 deviceRefCount;
-            u32                          : 32;
+            u64 address; //!< The base address of the mapping
+            u64 size; //!< The size of the mapping
+            u32 type; //!< The MemoryType of the mapping
+            u32 attributes; //!< The attributes of the mapping
+            u32 permissions; //!< The permissions of the mapping
+            u32 ipcRefCount; //!< The IPC reference count (This is always 0)
+            u32 deviceRefCount; //!< The device reference count (This is always 0)
+            u32 _pad0_;
         };
-
         static_assert(sizeof(MemoryInfo) == 0x28);
 
         /**
@@ -153,7 +145,6 @@ namespace skyline {
             };
             u32 value;
         };
-
         static_assert(sizeof(MemoryState) == sizeof(u32));
 
         /**
@@ -187,6 +178,7 @@ namespace skyline {
          * @brief This enumerates all of the memory regions in the process address space
          */
         enum class Regions {
+            Base, //!< The region representing the entire address space
             Code, //!< The code region contains all of the loaded in code
             Alias, //!< The alias region is reserved for allocating thread stack before 2.0.0
             Heap, //!< The heap region is reserved for heap allocations
@@ -272,6 +264,7 @@ namespace skyline {
           private:
             const DeviceState &state; //!< The state of the device
             std::forward_list<ChunkDescriptor> chunkList; //!< This linked list holds all the chunk descriptors
+            memory::Region base{memory::Regions::Base}; //!< The Region object for the entire address space
             memory::Region code{memory::Regions::Code}; //!< The Region object for the code memory region
             memory::Region alias{memory::Regions::Alias}; //!< The Region object for the alias memory region
             memory::Region heap{memory::Regions::Heap}; //!< The Region object for the heap memory region

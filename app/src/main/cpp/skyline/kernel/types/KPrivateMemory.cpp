@@ -4,7 +4,7 @@
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : state(state), address(address), size(size), KMemory(state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : address(address), size(size), KMemory(state, KType::KPrivateMemory) {
         Registers fregs{};
         fregs.x0 = address;
         fregs.x1 = size;

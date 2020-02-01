@@ -6,7 +6,7 @@
 #include <fstream>
 #include <syslog.h>
 #include <mutex>
-#import <thread>
+#include <thread>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -24,7 +24,6 @@ namespace skyline {
     namespace constant {
         // Memory
         constexpr u64 BaseAddress = 0x8000000; //!< The address space base
-        constexpr u64 BaseEnd = 0x7FFFFFFFFF; //!< The end of the address space
         constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
         constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
         constexpr size_t HeapSizeDiv = 0x200000; //!< The amount heap size has to be divisible by
@@ -79,6 +78,7 @@ namespace skyline {
             constexpr u32 InvHandle = 0xE401; //!< "Invalid handle"
             constexpr u32 InvCombination = 0xE801; //!< "Invalid combination"
             constexpr u32 Timeout = 0xEA01; //!< "Timeout"
+            constexpr u32 Interrupted = 0xEC01; //!< "Interrupted"
             constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
             constexpr u32 NotFound = 0xF201; //!< "Not found"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
@@ -135,8 +135,20 @@ namespace skyline {
             return value & ~multiple;
         }
 
+        /**
+         * @param address The address to check for alignment
+         * @return If the address is page aligned
+         */
         inline bool PageAligned(u64 address) {
             return !(address & (PAGE_SIZE - 1U));
+        }
+
+        /**
+         * @param address The address to check for alignment
+         * @return If the address is word aligned
+         */
+        inline bool WordAligned(u64 address) {
+            return !(address & 3U);
         }
     }
 
@@ -156,12 +168,16 @@ namespace skyline {
          * @brief Try to lock the mutex if it is unlocked else return
          * @return If the mutex was successfully locked or not
          */
-        bool try_lock();
+        inline bool try_lock() {
+            return !flag.test_and_set(std::memory_order_acquire);
+        }
 
         /**
          * @brief Unlock the mutex if it is held by this thread
          */
-        void unlock();
+        inline void unlock() {
+            flag.clear(std::memory_order_release);
+        }
     };
 
     /**

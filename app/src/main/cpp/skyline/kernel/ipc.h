@@ -121,7 +121,6 @@ namespace skyline::kernel::ipc {
             return static_cast<u16>(counter0_5) | static_cast<u16>(counter9_11) << 9;
         }
     };
-
     static_assert(sizeof(BufferDescriptorX) == 8);
 
     /**
@@ -154,7 +153,6 @@ namespace skyline::kernel::ipc {
             return static_cast<u64>(size0_31) | static_cast<u64>(size32_35) << 32;
         }
     };
-
     static_assert(sizeof(BufferDescriptorABW) == 12);
 
     /**

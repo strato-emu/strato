@@ -91,7 +91,9 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");
             case memory::AddressSpaceType::AddressSpace36Bit: {
-                code.address = 0x8000000;
+                base.address = constant::BaseAddress;
+                base.size = 0xFF8000000;
+                code.address = base.address;
                 code.size = 0x78000000;
                 if(code.address > address || (code.size - (address - code.address)) < size)
                     throw exception("Code mapping larger than 36-bit code region");
@@ -101,11 +103,13 @@ namespace skyline::kernel {
                 stack.size = alias.size;
                 heap.address = alias.address + alias.size;
                 heap.size = 0x180000000;
-                tlsIo.address = heap.address + heap.size;
-                tlsIo.size = 0x1000000000;
+                tlsIo.address = code.address;
+                tlsIo.size = 0;
                 break;
             }
             case memory::AddressSpaceType::AddressSpace39Bit: {
+                base.address = constant::BaseAddress;
+                base.size = 0x7FF8000000;
                 code.address = utils::AlignDown(address, 0x200000);
                 code.size = utils::AlignUp(address + size, 0x200000) - code.address;
                 alias.address = code.address + code.size;
@@ -136,6 +140,8 @@ namespace skyline::kernel {
 
     memory::Region MemoryManager::GetRegion(memory::Regions region) {
         switch(region) {
+            case memory::Regions::Base:
+                return base;
             case memory::Regions::Code:
                 return code;
             case memory::Regions::Alias:

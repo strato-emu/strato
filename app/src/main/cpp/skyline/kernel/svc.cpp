@@ -73,7 +73,7 @@ namespace skyline::kernel::svc {
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
         if(!stack.IsInside(destination)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
-            state.logger->Warn("svcMapMemory: Addresses not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
         auto descriptor = state.os->memory.Get(source);
@@ -87,13 +87,58 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, descriptor->chunk.state.value);
             return;
         }
-        state.process->NewHandle<type::KPrivateMemory>(destination, size, memory::Permission{true, true, true}, memory::MemoryStates::Stack);
+        state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::MemoryStates::Stack);
         state.process->CopyMemory(source, destination, size);
         auto object = state.process->GetMemoryObject(source);
         if(!object)
             throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
-        object->UpdatePermission(source, size, {false, false, false});
+        object->item->UpdatePermission(source, size, {false, false, false});
         state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
+        state.ctx->registers.w0 = constant::status::Success;
+    }
+
+    void UnmapMemory(DeviceState &state) {
+        const u64 source = state.ctx->registers.x0;
+        const u64 destination = state.ctx->registers.x1;
+        const u64 size = state.ctx->registers.x2;
+        if(!utils::PageAligned(destination) || !utils::PageAligned(source)) {
+            state.ctx->registers.w0 = constant::status::InvAddress;
+            state.logger->Warn("svcUnmapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            return;
+        }
+        if(!utils::PageAligned(size)) {
+            state.ctx->registers.w0 = constant::status::InvSize;
+            state.logger->Warn("svcUnmapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+            return;
+        }
+        auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
+        if(!stack.IsInside(source)) {
+            state.ctx->registers.w0 = constant::status::InvMemRange;
+            state.logger->Warn("svcUnmapMemory: Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            return;
+        }
+        auto sourceDesc = state.os->memory.Get(source);
+        auto destDesc = state.os->memory.Get(destination);
+        if(!sourceDesc || !destDesc) {
+            state.ctx->registers.w0 = constant::status::InvAddress;
+            state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            return;
+        }
+        if(!destDesc->chunk.state.MapAllowed) {
+            state.ctx->registers.w0 = constant::status::InvState;
+            state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destDesc->chunk.state.value);
+            return;
+        }
+        auto destObject = state.process->GetMemoryObject(destination);
+        if(!destObject)
+            throw exception("svcUnmapMemory: Cannot find destination memory object in handle table for address 0x{:X}", destination);
+        destObject->item->UpdatePermission(destination, size, sourceDesc->block.permission);
+        state.process->CopyMemory(destination, source, size);
+        auto sourceObject = state.process->GetMemoryObject(destination);
+        if(!sourceObject)
+            throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
+        state.process->DeleteHandle(sourceObject->handle);
+        state.logger->Debug("svcUnmapMemory: Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
@@ -106,22 +151,22 @@ namespace skyline::kernel::svc {
                 .address = descriptor->block.address,
                 .size = descriptor->block.size,
                 .type = static_cast<u32>(descriptor->chunk.state.type),
-                .attributes = descriptor->block.attributes,
-                .r = descriptor->block.permission.r,
-                .w = descriptor->block.permission.w,
-                .x = descriptor->block.permission.x,
+                .attributes = descriptor->block.attributes.value,
+                .permissions = static_cast<u32>(descriptor->block.permission.Get()),
                 .deviceRefCount = 0,
                 .ipcRefCount = 0,
             };
+            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(descriptor->block.attributes.isUncached), descriptor->block.permission.r ? "R" : "-", descriptor->block.permission.w ? "W" : "-", descriptor->block.permission.x ? "X" : "-");
         } else {
+            auto region = state.os->memory.GetRegion(memory::Regions::Base);
+            auto baseEnd = region.address + region.size;
             memInfo = {
-                .address = constant::BaseEnd,
-                .size = ~(constant::BaseEnd - 1),
-                .type = static_cast<u32>(memory::MemoryType::Unmapped)
+                .address = region.address,
+                .size = ~baseEnd + 1,
+                .type = static_cast<u32>(memory::MemoryType::Unmapped),
             };
             state.logger->Debug("svcQueryMemory: Cannot find block of address: 0x{:X}", address);
         }
-        state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(memInfo.attributes.isUncached), memInfo.r ? "R" : "-", memInfo.w ? "W" : "-", memInfo.x ? "X" : "-");
         state.process->WriteMemory(memInfo, state.ctx->registers.x0);
         state.ctx->registers.w0 = constant::status::Success;
     }
@@ -153,6 +198,7 @@ namespace skyline::kernel::svc {
             auto thread = state.process->GetHandle<type::KThread>(handle);
             state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->pid);
             thread->Start();
+            state.ctx->registers.w0 = constant::status::Success;
         } catch (const std::exception &) {
             state.logger->Warn("svcStartThread: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
@@ -160,7 +206,7 @@ namespace skyline::kernel::svc {
     }
 
     void ExitThread(DeviceState &state) {
-        state.logger->Debug("svcExitProcess: Exiting current thread: {}", state.thread->pid);
+        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->pid);
         state.os->KillThread(state.thread->pid);
     }
 
@@ -333,6 +379,11 @@ namespace skyline::kernel::svc {
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
         auto start = utils::GetCurrTimeNs();
         while (true) {
+            if(state.thread->cancelSync) {
+                state.thread->cancelSync = false;
+                state.ctx->registers.w0 = constant::status::Interrupted;
+                break;
+            }
             uint index{};
             for (const auto &object : objectTable) {
                 if (object->signalled) {
@@ -351,82 +402,82 @@ namespace skyline::kernel::svc {
         }
     }
 
+    void CancelSynchronization(DeviceState &state) {
+        try {
+            state.process->GetHandle<type::KThread>(state.ctx->registers.w0)->cancelSync = true;
+        } catch (const std::exception &) {
+            state.logger->Warn("svcCancelSynchronization: 'handle' invalid: 0x{:X}", state.ctx->registers.w0);
+            state.ctx->registers.w0 = constant::status::InvHandle;
+        }
+    }
+
     void ArbitrateLock(DeviceState &state) {
-        auto addr = state.ctx->registers.x1;
-        if ((addr & ((1UL << WORD_BIT) - 1U))) {
+        auto address = state.ctx->registers.x1;
+        if (!utils::WordAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
-            state.logger->Warn("svcArbitrateLock: 'address' not word aligned: 0x{:X}", addr);
+            state.logger->Warn("svcArbitrateLock: 'address' not word aligned: 0x{:X}", address);
             return;
         }
-        auto handle = state.ctx->registers.w2;
-        if (handle != state.thread->handle)
-            throw exception("svcArbitrateLock: Called from another thread");
-        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X} for thread 0x{:X}", addr, handle);
-        state.process->MutexLock(addr);
+        auto ownerHandle = state.ctx->registers.w0;
+        auto requesterHandle = state.ctx->registers.w2;
+        if (requesterHandle != state.thread->handle)
+            throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", requesterHandle, state.thread->handle);
+        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X} for thread {}", address, state.thread->pid);
+        state.process->MutexLock(address, ownerHandle);
+        state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X} for thread {}", address, state.thread->pid);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void ArbitrateUnlock(DeviceState &state) {
         auto address = state.ctx->registers.x0;
-        if ((address & ((1UL << WORD_BIT) - 1U))) {
+        if (!utils::WordAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcArbitrateUnlock: 'address' not word aligned: 0x{:X}", address);
             return;
         }
         state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", address);
-        state.process->MutexUnlock(address);
-        state.ctx->registers.w0 = constant::status::Success;
+        if(state.process->MutexUnlock(address)) {
+            state.ctx->registers.w0 = constant::status::Success;
+            state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", address);
+        } else {
+            state.ctx->registers.w0 = constant::status::InvAddress;
+            state.logger->Debug("svcArbitrateUnlock: A non-owner thread tried to release a mutex at 0x{:X}", address);
+        }
     }
 
     void WaitProcessWideKeyAtomic(DeviceState &state) {
         auto mtxAddress = state.ctx->registers.x0;
+        if (!utils::WordAligned(mtxAddress)) {
+            state.ctx->registers.w0 = constant::status::InvAddress;
+            state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: 0x{:X}", mtxAddress);
+            return;
+        }
         auto condAddress = state.ctx->registers.x1;
-        try {
-            auto &cvar = state.process->condVars.at(condAddress);
-            if ((mtxAddress & ((1UL << WORD_BIT) - 1U))) {
-                state.ctx->registers.w0 = constant::status::InvAddress;
-                state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: 0x{:X}", mtxAddress);
-                return;
-            }
-            auto handle = state.ctx->registers.w2;
-            if (handle != state.thread->handle)
-                throw exception("svcWaitProcessWideKeyAtomic: Called from another thread");
-            state.process->MutexLock(mtxAddress);
-            auto &mutex = state.process->mutexes.at(mtxAddress);
-            auto timeout = state.ctx->registers.x3;
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x:{:X}, Timeout: {} ns", mtxAddress, condAddress, timeout);
-            timespec spec{};
-            clock_gettime(CLOCK_REALTIME, &spec);
-            u128 time = u128(spec.tv_sec * 1000000000U + spec.tv_nsec) + timeout; // u128 to prevent overflow
-            spec.tv_sec = static_cast<time_t>(time / 1000000000U);
-            spec.tv_nsec = static_cast<long>(time % 1000000000U);
-            if (pthread_cond_timedwait(&cvar, &mutex, &spec) == ETIMEDOUT)
-                state.ctx->registers.w0 = constant::status::Timeout;
-            else
-                state.ctx->registers.w0 = constant::status::Success;
-            state.process->MutexUnlock(mtxAddress);
-        } catch (const std::out_of_range &) {
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: No Conditional-Variable at 0x{:X}", condAddress);
-            state.process->condVars[condAddress] = PTHREAD_COND_INITIALIZER;
+        auto handle = state.ctx->registers.w2;
+        if (handle != state.thread->handle)
+            throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
+        if(!state.process->MutexUnlock(mtxAddress)) {
+            state.ctx->registers.w0 = constant::status::InvAddress;
+            state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", mtxAddress);
+            return;
+        }
+        auto timeout = state.ctx->registers.x3;
+        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mtxAddress, condAddress, timeout);
+        if (state.process->ConditionalVariableWait(condAddress, timeout)) {
             state.ctx->registers.w0 = constant::status::Success;
+            state.process->MutexLock(mtxAddress, handle, true);
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable and relocked mutex");
+        } else {
+            state.ctx->registers.w0 = constant::status::Timeout;
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait has timed out");
         }
     }
 
     void SignalProcessWideKey(DeviceState &state) {
         auto address = state.ctx->registers.x0;
         auto count = state.ctx->registers.w1;
-        try {
-            state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
-            auto &cvar = state.process->condVars.at(address);
-            if (count == UINT32_MAX)
-                pthread_cond_broadcast(&cvar);
-            else
-                for (u32 iter = 0; iter < count; iter++)
-                    pthread_cond_signal(&cvar);
-        } catch (const std::out_of_range &) {
-            state.logger->Debug("svcSignalProcessWideKey: No Conditional-Variable at 0x{:X}", address);
-            state.process->condVars[address] = PTHREAD_COND_INITIALIZER;
-        }
+        state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
+        state.process->ConditionalVariableSignal(address, count);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
@@ -516,10 +567,10 @@ namespace skyline::kernel::svc {
                 out = state.process->heap->address + constant::DefStackSize + state.os->memory.GetProgramSize();
                 break;
             case constant::infoState::AddressSpaceBaseAddr:
-                out = constant::BaseAddress;
+                out = state.os->memory.GetRegion(memory::Regions::Base).address;
                 break;
             case constant::infoState::AddressSpaceSize:
-                out = constant::BaseEnd;
+                out = state.os->memory.GetRegion(memory::Regions::Base).size;
                 break;
             case constant::infoState::StackRegionBaseAddr:
                 out = state.os->memory.GetRegion(memory::Regions::Stack).address;

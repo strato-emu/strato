@@ -38,7 +38,7 @@ namespace skyline {
                     break;
                 }
             }
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             state.logger->Error(e.what());
         } catch (...) {
             state.logger->Error("An unknown exception has occurred");
@@ -109,7 +109,7 @@ namespace skyline {
         ctx->registers.x0 = entryArg;
         ctx->registers.x1 = handle;
         ctx->state = ThreadState::WaitRun;
-        state.logger->Debug("Starting thread with PID: {}", thread->pid);
+        state.logger->Debug("Starting kernel thread for guest thread: {}", thread->pid);
         threadMap[thread->pid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->pid);
     }
 

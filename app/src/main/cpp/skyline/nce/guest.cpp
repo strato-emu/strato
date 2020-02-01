@@ -112,7 +112,7 @@ namespace skyline::guest {
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16" :: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                        "LDR LR, [SP], #16" ::: "x0", "x1", "x2", "x3", "x4", "x5", "x8");
                     break;
                 }
                 default: {
@@ -179,6 +179,50 @@ namespace skyline::guest {
                     auto end = src + size;
                     while (src < end)
                         *(src++) = *(dest++);
+                } else if (ctx->commandId == static_cast<u32>(ThreadCall::Clone)) {
+                    saveCtxStack();
+                    loadCtxTls();
+                    asm("STR LR, [SP, #-16]!\n\t"
+                        "MOV LR, SP\n\t"
+                        "SVC #0\n\t"
+                        "CBNZ X0, .parent\n\t"
+                        "MSR TPIDR_EL0, X3\n\t"
+                        "MOV LR, 0\n\t"
+                        "MOV X0, X6\n\t"
+                        "MOV X1, XZR\n\t"
+                        "MOV X2, XZR\n\t"
+                        "MOV X3, XZR\n\t"
+                        "MOV X4, XZR\n\t"
+                        "MOV X6, XZR\n\t"
+                        "MOV X7, XZR\n\t"
+                        "MOV X8, XZR\n\t"
+                        "MOV X9, XZR\n\t"
+                        "MOV X10, XZR\n\t"
+                        "MOV X11, XZR\n\t"
+                        "MOV X12, XZR\n\t"
+                        "MOV X13, XZR\n\t"
+                        "MOV X14, XZR\n\t"
+                        "MOV X15, XZR\n\t"
+                        "MOV X16, XZR\n\t"
+                        "MOV X17, XZR\n\t"
+                        "MOV X18, XZR\n\t"
+                        "MOV X19, XZR\n\t"
+                        "MOV X20, XZR\n\t"
+                        "MOV X21, XZR\n\t"
+                        "MOV X22, XZR\n\t"
+                        "MOV X23, XZR\n\t"
+                        "MOV X24, XZR\n\t"
+                        "MOV X25, XZR\n\t"
+                        "MOV X26, XZR\n\t"
+                        "MOV X27, XZR\n\t"
+                        "MOV X28, XZR\n\t"
+                        "MOV X29, XZR\n\t"
+                        "BR X5\n\t"
+                        ".parent:\n\t"
+                        "MOV SP, LR\n\t"
+                        "LDR LR, [SP], #16");
+                    saveCtxTls();
+                    loadCtxStack();
                 }
             }
         }
@@ -268,7 +312,7 @@ namespace skyline::guest {
             "MOV X27, XZR\n\t"
             "MOV X28, XZR\n\t"
             "MOV X29, XZR\n\t"
-            "RET"::"r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
+            "RET" :: "r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
         __builtin_unreachable();
     }
 }

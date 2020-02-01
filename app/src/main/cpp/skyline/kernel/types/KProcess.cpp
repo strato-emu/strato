@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/uio.h>
+#include <asm/unistd.h>
+#include <nce/guest.h>
 
 namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(u64 address) : address(address) {}
@@ -30,10 +32,11 @@ namespace skyline::kernel::type {
             if (!tlsPage->Full())
                 return tlsPage->ReserveSlot();
         u64 address;
-        if(tlsPages.empty())
-            address = state.os->memory.GetRegion(memory::Regions::TlsIo).address;
-        else
-            address = (*(tlsPages.end()-1))->address + PAGE_SIZE;
+        if (tlsPages.empty()) {
+            auto region = state.os->memory.GetRegion(memory::Regions::TlsIo);
+            address = region.size ? region.address : 0;
+        } else
+            address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
         auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::MemoryStates::ThreadLocal).item;
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
         auto &tlsPage = tlsPages.back();
@@ -61,37 +64,23 @@ namespace skyline::kernel::type {
         status = Status::Exiting;
     }
 
-    /**
-     * @brief Function executed by all child threads after cloning
-     */
-    int ExecuteChild(void *) {
-        asm volatile("BRK #0xFF"); // BRK #constant::brkRdy (So we know when the thread/process is ready)
-        return 0;
-    }
-
-    u64 CreateThreadFunc(u64 stackTop) {
-        pid_t pid = clone(&ExecuteChild, reinterpret_cast<void *>(stackTop), CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO, nullptr);
-        return static_cast<u64>(pid);
-    }
-
     std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, u8 priority) {
-        /*
-         * Future Reference:
-         * https://android.googlesource.com/platform/bionic/+/master/libc/bionic/clone.cpp
-         * https://android.googlesource.com/platform/bionic/+/master/libc/arch-arm64/bionic/__bionic_clone.S
+        auto size = (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
+        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::MemoryStates::Reserved);
         Registers fregs{};
-        fregs.regs[0] = entryPoint;
-        fregs.regs[1] = stackTop;
+        fregs.x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO;
+        fregs.x1 = stackTop;
+        fregs.x3 = tlsMem->Map(0, size, memory::Permission{true, true, false});
         fregs.x8 = __NR_clone;
-        state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
-        auto pid = static_cast<pid_t>(fregs.regs[0]);
-        if (pid == -1)
+        fregs.x5 = reinterpret_cast<u64>(&guest::entry);
+        fregs.x6 = entryPoint;
+        state.nce->ExecuteFunction(ThreadCall::Clone, fregs);
+        if (static_cast<int>(fregs.x0) < 0)
             throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
-        auto process = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this).item;
+        auto pid = static_cast<pid_t>(fregs.x0);
+        auto process = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item;
         threads[pid] = process;
         return process;
-        */
-        return nullptr;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
@@ -136,46 +125,107 @@ namespace skyline::kernel::type {
         }
     }
 
-    std::shared_ptr<KMemory> KProcess::GetMemoryObject(u64 address) {
-        for(auto& [handle, object] : state.process->handles) {
-            switch(object->objectType) {
+    std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u64 address) {
+        for (auto&[handle, object] : state.process->handles) {
+            switch (object->objectType) {
                 case type::KType::KPrivateMemory:
                 case type::KType::KSharedMemory:
                 case type::KType::KTransferMemory: {
                     auto mem = std::static_pointer_cast<type::KMemory>(object);
                     if (mem->IsInside(address))
-                        return mem;
+                        return std::optional<KProcess::HandleOut<KMemory>>({mem, handle});
                 }
                 default:
                     break;
             }
         }
-        return nullptr;
+        return std::nullopt;
     }
 
-    void KProcess::MutexLock(u64 address) {
-        try {
-            auto mtx = mutexes.at(address);
-            pthread_mutex_lock(&mtx);
-            u32 mtxVal = ReadMemory<u32>(address);
-            mtxVal = (mtxVal & ~constant::MtxOwnerMask) | state.thread->handle;
-            WriteMemory(mtxVal, address);
-        } catch (const std::out_of_range &) {
-            mutexes[address] = PTHREAD_MUTEX_INITIALIZER;
+    void KProcess::MutexLock(u64 address, handle_t owner, bool alwaysLock) {
+        std::unique_lock lock(mutexLock);
+        u32 mtxVal = ReadMemory<u32>(address);
+        if(alwaysLock) {
+            if(!mtxVal) {
+                state.logger->Warn("Mutex Value was 0");
+                mtxVal = (constant::MtxOwnerMask & state.thread->handle);
+                WriteMemory<u32>(mtxVal, address);
+                return;
+                // TODO: Replace with atomic CAS
+            }
+        } else {
+            if (mtxVal != (owner | ~constant::MtxOwnerMask))
+                return;
         }
+        auto &mtxWaiters = mutexes[address];
+        std::shared_ptr<WaitStatus> status;
+        for (auto it = mtxWaiters.begin();;++it) {
+            if (it != mtxWaiters.end() && (*it)->priority >= state.thread->priority)
+                continue;
+            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
+            mtxWaiters.insert(it, status);
+            break;
+        }
+        lock.unlock();
+        while (!status->flag);
+        lock.lock();
+        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it)
+            if((*it)->pid == state.thread->pid) {
+                mtxWaiters.erase(it);
+                break;
+            }
+        mtxVal = (constant::MtxOwnerMask & state.thread->handle) | (mtxWaiters.empty() ? 0 : ~constant::MtxOwnerMask);
+        WriteMemory<u32>(mtxVal, address);
+        lock.unlock();
     }
 
-    void KProcess::MutexUnlock(u64 address) {
-        try {
-            auto mtx = mutexes.at(address);
-            u32 mtxVal = ReadMemory<u32>(address);
-            if ((mtxVal & constant::MtxOwnerMask) != state.thread->handle)
-                throw exception("A non-owner thread tried to release a mutex");
+    bool KProcess::MutexUnlock(u64 address) {
+        std::lock_guard lock(mutexLock);
+        u32 mtxVal = ReadMemory<u32>(address);
+        if ((mtxVal & constant::MtxOwnerMask) != state.thread->handle)
+            return false;
+        auto &mtxWaiters = mutexes[address];
+        if (mtxWaiters.empty()) {
             mtxVal = 0;
-            WriteMemory(mtxVal, address);
-            pthread_mutex_unlock(&mtx);
-        } catch (const std::out_of_range &) {
-            mutexes[address] = PTHREAD_MUTEX_INITIALIZER;
+            WriteMemory<u32>(mtxVal, address);
+        } else
+            (*mtxWaiters.begin())->flag = true;
+        return true;
+    }
+
+    bool KProcess::ConditionalVariableWait(u64 address, u64 timeout) {
+        std::unique_lock lock(conditionalLock);
+        auto &condWaiters = conditionals[address];
+        std::shared_ptr<WaitStatus> status;
+        for (auto it = condWaiters.begin();;++it) {
+            if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
+                continue;
+            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
+            condWaiters.insert(it, status);
+            break;
         }
+        lock.unlock();
+        bool timedOut{};
+        auto start = utils::GetCurrTimeNs();
+        while (!status->flag) {
+            if ((utils::GetCurrTimeNs() - start) >= timeout)
+                timedOut = true;
+        }
+        lock.lock();
+        for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it)
+            if((*it)->pid == state.thread->pid) {
+                condWaiters.erase(it);
+                break;
+            }
+        lock.unlock();
+        return !timedOut;
+    }
+
+    void KProcess::ConditionalVariableSignal(u64 address, u64 amount) {
+        std::lock_guard lock(conditionalLock);
+        auto &condWaiters = conditionals[address];
+        amount = std::min(condWaiters.size(), amount);
+        for (size_t i = 0; i < amount; ++i)
+            condWaiters[i]->flag = true;
     }
 }
