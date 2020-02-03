@@ -170,20 +170,40 @@ namespace skyline::kernel::type {
         }
 
         /**
+         * @brief This returns the host address for a specific address in guest memory
+         * @param address The corresponding guest address
+         * @return The corresponding host address
+         */
+        u64 GetHostAddress(const u64 address) const;
+
+        /**
+         * @tparam Type The type of the pointer to return
+         * @param address The address on the guest
+         * @return A pointer corresponding to a certain address on the guest
+         * @note This can return a nullptr if the address is invalid
+         */
+        template<typename Type>
+        inline Type* GetPointer(const u64 address) const {
+            return reinterpret_cast<Type*>(GetHostAddress(address));
+        }
+
+        /**
          * @brief Read data from the process's memory
          * @param destination The address to the location where the process memory is written
          * @param offset The address to read from in process memory
          * @param size The amount of memory to be read
+         * @param forceGuest This flag forces the write to be performed in guest address space
          */
-        void ReadMemory(void *destination, u64 offset, size_t size) const;
+        void ReadMemory(void *destination, const u64 offset, const size_t size, const bool forceGuest = false) const;
 
         /**
          * @brief Write to the process's memory
          * @param source The address of where the data to be written is present
          * @param offset The address to write to in process memory
          * @param size The amount of memory to be written
+         * @param forceGuest This flag forces the write to be performed in guest address space
          */
-        void WriteMemory(void *source, u64 offset, size_t size) const;
+        void WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest = false) const;
 
         /**
          * @brief Copy one chunk to another in the process's memory
@@ -191,7 +211,7 @@ namespace skyline::kernel::type {
          * @param destination The address to write the read data to
          * @param size The amount of memory to be copied
          */
-        void CopyMemory(u64 source, u64 destination, size_t size) const;
+        void CopyMemory(const u64 source, const u64 destination, const size_t size) const;
 
         /**
          * @brief Creates a new handle to a KObject and adds it to the process handle_table

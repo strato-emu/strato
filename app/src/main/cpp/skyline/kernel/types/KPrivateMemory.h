@@ -7,6 +7,9 @@ namespace skyline::kernel::type {
      * @brief KPrivateMemory is used to map memory local to the guest process
      */
     class KPrivateMemory : public KMemory {
+      private:
+        int fd; //!< A file descriptor to the underlying shared memory
+
       public:
         u64 address{}; //!< The address of the allocated memory
         size_t size{}; //!< The size of the allocated memory

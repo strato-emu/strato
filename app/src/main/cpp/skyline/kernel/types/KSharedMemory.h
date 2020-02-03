@@ -70,7 +70,6 @@ namespace skyline::kernel::type {
             UpdatePermission(address, size, permission, false);
         }
 
-
         /**
          * @brief Updates the permissions of a chunk of mapped memory
          * @param permission The new permissions to be set for the memory

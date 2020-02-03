@@ -4,7 +4,7 @@
 namespace skyline::kernel {
     ChunkDescriptor *MemoryManager::GetChunk(u64 address) {
         for (auto &chunk : chunkList)
-            if (chunk.address <= address && (chunk.address + chunk.size) >= address)
+            if (chunk.address <= address && (chunk.address + chunk.size) > address)
                 return &chunk;
         return nullptr;
     }
@@ -13,7 +13,7 @@ namespace skyline::kernel {
         auto chunk = GetChunk(address);
         if (chunk)
             for (auto &block : chunk->blockList)
-                if (block.address <= address && (block.address + block.size) >= address)
+                if (block.address <= address && (block.address + block.size) > address)
                     return &block;
         return nullptr;
     }
@@ -38,7 +38,7 @@ namespace skyline::kernel {
 
     void MemoryManager::DeleteChunk(u64 address) {
         chunkList.remove_if([address](const ChunkDescriptor &chunk) {
-            return chunk.address <= address && (chunk.address + chunk.size) >= address;
+            return chunk.address <= address && (chunk.address + chunk.size) > address;
         });
     }
 
@@ -70,7 +70,7 @@ namespace skyline::kernel {
 
     void MemoryManager::InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block) {
         for (auto iter = chunk->blockList.begin(); iter != chunk->blockList.end(); iter++) {
-            if (iter->address <= block.address && (iter->address + iter->size) >= block.address) {
+            if (iter->address <= block.address && (iter->address + iter->size) > block.address) {
                 if (iter->address == block.address && iter->size == block.size) {
                     iter->attributes = block.attributes;
                     iter->permission = block.permission;
@@ -133,7 +133,7 @@ namespace skyline::kernel {
         auto chunk = GetChunk(address);
         if (chunk)
             for (auto &block : chunk->blockList)
-                if (block.address <= address && (block.address + block.size) >= address)
+                if (block.address <= address && (block.address + block.size) > address)
                     return DescriptorPack{block, *chunk};
         return std::nullopt;
     }

@@ -5,8 +5,8 @@ namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
         const u32 size = state.ctx->registers.w1;
         if (size % constant::HeapSizeDiv != 0) {
-            state.ctx->registers.x1 = 0;
             state.ctx->registers.w0 = constant::status::InvSize;
+            state.ctx->registers.x1 = 0;
             state.logger->Warn("svcSetHeapSize: 'size' not divisible by 2MB: {}", size);
             return;
         }

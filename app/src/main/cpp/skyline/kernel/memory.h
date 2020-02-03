@@ -245,6 +245,7 @@ namespace skyline {
         struct ChunkDescriptor {
             u64 address; //!< The address of the current chunk
             u64 size; //!< The size of the current chunk in bytes
+            u64 host; //!< The address of the chunk in the host
             memory::MemoryState state; //!< The MemoryState for the current block
             std::forward_list<BlockDescriptor> blockList; //!< This linked list holds the block descriptors for all the children blocks of this Chunk
         };

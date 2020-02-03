@@ -83,45 +83,68 @@ namespace skyline::kernel::type {
         return process;
     }
 
-    void KProcess::ReadMemory(void *destination, u64 offset, size_t size) const {
+    u64 KProcess::GetHostAddress(u64 address) const {
+        auto chunk = state.os->memory.GetChunk(address);
+        return (chunk && chunk->host) ? chunk->host + (address - chunk->address) : 0;
+    }
+
+    void KProcess::ReadMemory(void *destination, const u64 offset, const size_t size, const bool forceGuest) const {
+        if (!forceGuest) {
+            auto source = GetHostAddress(offset);
+            if (source) {
+                memcpy(destination, reinterpret_cast<void *>(source), size);
+                return;
+            }
+        }
         struct iovec local{
             .iov_base = destination,
-            .iov_len = size
+            .iov_len = size,
         };
         struct iovec remote{
             .iov_base = reinterpret_cast<void *>(offset),
-            .iov_len = size
+            .iov_len = size,
         };
-
         if (process_vm_readv(pid, &local, 1, &remote, 1, 0) < 0)
             pread64(memFd, destination, size, offset);
     }
 
-    void KProcess::WriteMemory(void *source, u64 offset, size_t size) const {
+    void KProcess::WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest) const {
+        if(!forceGuest) {
+            auto destination = GetHostAddress(offset);
+            if (destination) {
+                memcpy(reinterpret_cast<void *>(destination), source, size);
+                return;
+            }
+        }
         struct iovec local{
             .iov_base = source,
-            .iov_len = size
+            .iov_len = size,
         };
         struct iovec remote{
             .iov_base = reinterpret_cast<void *>(offset),
-            .iov_len = size
+            .iov_len = size,
         };
-
         if (process_vm_writev(pid, &local, 1, &remote, 1, 0) < 0)
             pwrite64(memFd, source, size, offset);
     }
 
     void KProcess::CopyMemory(u64 source, u64 destination, size_t size) const {
-        if (size <= PAGE_SIZE) {
-            std::vector<u8> buffer(size);
-            state.process->ReadMemory(buffer.data(), source, size);
-            state.process->WriteMemory(buffer.data(), destination, size);
+        auto sourceHost = GetHostAddress(source);
+        auto destinationHost = GetHostAddress(destination);
+        if(sourceHost && destinationHost) {
+            memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
         } else {
-            Registers fregs{};
-            fregs.x0 = source;
-            fregs.x1 = destination;
-            fregs.x2 = size;
-            state.nce->ExecuteFunction(ThreadCall::Memcopy, fregs);
+            if (size <= PAGE_SIZE) {
+                std::vector<u8> buffer(size);
+                state.process->ReadMemory(buffer.data(), source, size);
+                state.process->WriteMemory(buffer.data(), destination, size);
+            } else {
+                Registers fregs{};
+                fregs.x0 = source;
+                fregs.x1 = destination;
+                fregs.x2 = size;
+                state.nce->ExecuteFunction(ThreadCall::Memcopy, fregs);
+            }
         }
     }
 
@@ -145,8 +168,8 @@ namespace skyline::kernel::type {
     void KProcess::MutexLock(u64 address, handle_t owner, bool alwaysLock) {
         std::unique_lock lock(mutexLock);
         u32 mtxVal = ReadMemory<u32>(address);
-        if(alwaysLock) {
-            if(!mtxVal) {
+        if (alwaysLock) {
+            if (!mtxVal) {
                 state.logger->Warn("Mutex Value was 0");
                 mtxVal = (constant::MtxOwnerMask & state.thread->handle);
                 WriteMemory<u32>(mtxVal, address);
@@ -159,7 +182,7 @@ namespace skyline::kernel::type {
         }
         auto &mtxWaiters = mutexes[address];
         std::shared_ptr<WaitStatus> status;
-        for (auto it = mtxWaiters.begin();;++it) {
+        for (auto it = mtxWaiters.begin();; ++it) {
             if (it != mtxWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
             status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
@@ -170,7 +193,7 @@ namespace skyline::kernel::type {
         while (!status->flag);
         lock.lock();
         for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it)
-            if((*it)->pid == state.thread->pid) {
+            if ((*it)->pid == state.thread->pid) {
                 mtxWaiters.erase(it);
                 break;
             }
@@ -197,7 +220,7 @@ namespace skyline::kernel::type {
         std::unique_lock lock(conditionalLock);
         auto &condWaiters = conditionals[address];
         std::shared_ptr<WaitStatus> status;
-        for (auto it = condWaiters.begin();;++it) {
+        for (auto it = condWaiters.begin();; ++it) {
             if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
             status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
@@ -213,7 +236,7 @@ namespace skyline::kernel::type {
         }
         lock.lock();
         for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it)
-            if((*it)->pid == state.thread->pid) {
+            if ((*it)->pid == state.thread->pid) {
                 condWaiters.erase(it);
                 break;
             }
