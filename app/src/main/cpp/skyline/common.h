@@ -43,7 +43,7 @@ namespace skyline {
         constexpr u64 MaxSyncHandles = 0x40; //!< The total amount of handles that can be passed to WaitSynchronization
         constexpr handle_t BaseHandleIndex = 0xD000; // The index of the base handle
         constexpr handle_t ThreadSelf = 0xFFFF8000; //!< This is the handle used by threads to refer to themselves
-        constexpr u8 DefaultPriority = 31; //!< The default priority of a process
+        constexpr u8 DefaultPriority = 44; //!< The default priority of a process
         constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
         constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
         constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex

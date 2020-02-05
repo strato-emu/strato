@@ -7,7 +7,7 @@
 #include "KSession.h"
 #include "KEvent.h"
 #include <kernel/memory.h>
-#include <condition_variable>
+#include <list>
 
 namespace skyline::kernel::type {
     /**
@@ -91,9 +91,12 @@ namespace skyline::kernel::type {
         struct WaitStatus {
             std::atomic_bool flag{false}; //!< The underlying atomic flag of the thread
             u8 priority; //!< The priority of the thread
-            pid_t pid; //!< The PID of the thread
+            handle_t handle; //!< The handle of the thread
+            u64 mutexAddress{}; //!< The address of the mutex
 
-            WaitStatus(u8 priority, pid_t pid) : priority(priority), pid(pid) {}
+            WaitStatus(u8 priority, handle_t handle) : priority(priority), handle(handle) {}
+
+            WaitStatus(u8 priority, handle_t handle, u64 mutexAddress) : priority(priority), handle(handle), mutexAddress(mutexAddress) {}
         };
 
         handle_t handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
@@ -102,11 +105,11 @@ namespace skyline::kernel::type {
         std::unordered_map<handle_t, std::shared_ptr<KObject>> handles; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
         std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object
         std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
-        std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
+        std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
         std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
         std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
-        Mutex mutexLock; //!< This Mutex is to prevent concurrent mutex operations to happen at once
-        Mutex conditionalLock; //!< This Mutex is to prevent concurrent conditional variable operations to happen at once
+        Mutex mutexLock; //!< This mutex is to prevent concurrent mutex operations to happen at once
+        Mutex conditionalLock; //!< This mutex is to prevent concurrent conditional variable operations to happen at once
 
         /**
          * @brief Creates a KThread object for the main thread and opens the process's memory file
@@ -296,9 +299,9 @@ namespace skyline::kernel::type {
          * @brief This locks the Mutex at the specified address
          * @param address The address of the mutex
          * @param owner The handle of the current mutex owner
-         * @param alwaysLock If to return rather than lock if owner tag is not matched
+         * @return If the mutex was successfully locked
          */
-        void MutexLock(u64 address, handle_t owner, bool alwaysLock = false);
+        bool MutexLock(u64 address, handle_t owner);
 
         /**
          * @brief This unlocks the Mutex at the specified address
@@ -308,11 +311,12 @@ namespace skyline::kernel::type {
         bool MutexUnlock(u64 address);
 
         /**
-         * @param address The address of the conditional variable
+         * @param conditionalAddress The address of the conditional variable
+         * @param mutexAddress The address of the mutex
          * @param timeout The amount of time to wait for the conditional variable
          * @return If the conditional variable was successfully waited for or timed out
          */
-        bool ConditionalVariableWait(u64 address, u64 timeout);
+        bool ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout);
 
         /**
          * @brief This signals a number of conditional variable waiters

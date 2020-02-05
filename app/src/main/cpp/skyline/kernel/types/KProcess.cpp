@@ -109,7 +109,7 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest) const {
-        if(!forceGuest) {
+        if (!forceGuest) {
             auto destination = GetHostAddress(offset);
             if (destination) {
                 memcpy(reinterpret_cast<void *>(destination), source, size);
@@ -131,7 +131,7 @@ namespace skyline::kernel::type {
     void KProcess::CopyMemory(u64 source, u64 destination, size_t size) const {
         auto sourceHost = GetHostAddress(source);
         auto destinationHost = GetHostAddress(destination);
-        if(sourceHost && destinationHost) {
+        if (sourceHost && destinationHost) {
             memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
         } else {
             if (size <= PAGE_SIZE) {
@@ -165,65 +165,66 @@ namespace skyline::kernel::type {
         return std::nullopt;
     }
 
-    void KProcess::MutexLock(u64 address, handle_t owner, bool alwaysLock) {
+    bool KProcess::MutexLock(u64 address, handle_t owner) {
         std::unique_lock lock(mutexLock);
-        u32 mtxVal = ReadMemory<u32>(address);
-        if (alwaysLock) {
-            if (!mtxVal) {
-                state.logger->Warn("Mutex Value was 0");
-                mtxVal = (constant::MtxOwnerMask & state.thread->handle);
-                WriteMemory<u32>(mtxVal, address);
-                return;
-                // TODO: Replace with atomic CAS
-            }
-        } else {
-            if (mtxVal != (owner | ~constant::MtxOwnerMask))
-                return;
-        }
+        auto mtx = GetPointer<u32>(address);
         auto &mtxWaiters = mutexes[address];
+        u32 mtxExpected = 0;
+        if (__atomic_compare_exchange_n(mtx, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle) | (mtxWaiters.empty() ? 0 : ~constant::MtxOwnerMask), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+            return true;
+        if (owner && (__atomic_load_n(mtx, __ATOMIC_SEQ_CST) != (owner | ~constant::MtxOwnerMask)))
+            return false;
         std::shared_ptr<WaitStatus> status;
         for (auto it = mtxWaiters.begin();; ++it) {
             if (it != mtxWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
-            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
+            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->handle);
             mtxWaiters.insert(it, status);
             break;
         }
         lock.unlock();
         while (!status->flag);
         lock.lock();
+        status->flag = false;
         for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it)
-            if ((*it)->pid == state.thread->pid) {
+            if ((*it)->handle == state.thread->handle) {
                 mtxWaiters.erase(it);
                 break;
             }
-        mtxVal = (constant::MtxOwnerMask & state.thread->handle) | (mtxWaiters.empty() ? 0 : ~constant::MtxOwnerMask);
-        WriteMemory<u32>(mtxVal, address);
-        lock.unlock();
-    }
-
-    bool KProcess::MutexUnlock(u64 address) {
-        std::lock_guard lock(mutexLock);
-        u32 mtxVal = ReadMemory<u32>(address);
-        if ((mtxVal & constant::MtxOwnerMask) != state.thread->handle)
-            return false;
-        auto &mtxWaiters = mutexes[address];
-        if (mtxWaiters.empty()) {
-            mtxVal = 0;
-            WriteMemory<u32>(mtxVal, address);
-        } else
-            (*mtxWaiters.begin())->flag = true;
         return true;
     }
 
-    bool KProcess::ConditionalVariableWait(u64 address, u64 timeout) {
+    bool KProcess::MutexUnlock(u64 address) {
+        std::unique_lock lock(mutexLock);
+        auto mtx = GetPointer<u32>(address);
+        auto &mtxWaiters = mutexes[address];
+        u32 mtxDesired{};
+        if (!mtxWaiters.empty())
+            mtxDesired = (*mtxWaiters.begin())->handle | ((mtxWaiters.size() > 1) ? ~constant::MtxOwnerMask : 0);
+        u32 mtxExpected = (constant::MtxOwnerMask & state.thread->handle) | ~constant::MtxOwnerMask;
+        if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+            mtxExpected = constant::MtxOwnerMask & state.thread->handle;
+            if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+                return false;
+        }
+        if (mtxDesired) {
+            auto status = (*mtxWaiters.begin());
+            status->flag = true;
+            lock.unlock();
+            while(status->flag);
+            lock.lock();
+        }
+        return true;
+    }
+
+    bool KProcess::ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout) {
         std::unique_lock lock(conditionalLock);
-        auto &condWaiters = conditionals[address];
+        auto &condWaiters = conditionals[conditionalAddress];
         std::shared_ptr<WaitStatus> status;
         for (auto it = condWaiters.begin();; ++it) {
             if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
-            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->pid);
+            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->handle, mutexAddress);
             condWaiters.insert(it, status);
             break;
         }
@@ -235,8 +236,12 @@ namespace skyline::kernel::type {
                 timedOut = true;
         }
         lock.lock();
+        if (!status->flag)
+            timedOut = false;
+        else
+            status->flag = false;
         for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it)
-            if ((*it)->pid == state.thread->pid) {
+            if ((*it)->handle == state.thread->handle) {
                 condWaiters.erase(it);
                 break;
             }
@@ -245,10 +250,56 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ConditionalVariableSignal(u64 address, u64 amount) {
-        std::lock_guard lock(conditionalLock);
+        std::unique_lock condLock(conditionalLock);
         auto &condWaiters = conditionals[address];
-        amount = std::min(condWaiters.size(), amount);
-        for (size_t i = 0; i < amount; ++i)
-            condWaiters[i]->flag = true;
+        u64 count{};
+        auto iter = condWaiters.begin();
+        while (iter != condWaiters.end() && count < amount) {
+            auto &thread = *iter;
+            auto mtx = GetPointer<u32>(thread->mutexAddress);
+            u32 mtxValue = __atomic_load_n(mtx, __ATOMIC_SEQ_CST);
+            while (true) {
+                u32 mtxDesired{};
+                if (!mtxValue)
+                    mtxDesired = (constant::MtxOwnerMask & thread->handle);
+                else if ((mtxValue & constant::MtxOwnerMask) == state.thread->handle)
+                    mtxDesired = mtxValue | (constant::MtxOwnerMask & thread->handle);
+                else if (mtxValue & ~constant::MtxOwnerMask)
+                    mtxDesired = mtxValue | ~constant::MtxOwnerMask;
+                else
+                    break;
+                if (__atomic_compare_exchange_n(mtx, &mtxValue, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+                    break;
+            }
+            if (mtxValue && ((mtxValue & constant::MtxOwnerMask) != state.thread->handle)) {
+                std::unique_lock mtxLock(mutexLock);
+                auto &mtxWaiters = mutexes[thread->mutexAddress];
+                std::shared_ptr<WaitStatus> status;
+                for (auto it = mtxWaiters.begin();; ++it) {
+                    if (it != mtxWaiters.end() && (*it)->priority >= thread->priority)
+                        continue;
+                    status = std::make_shared<WaitStatus>(thread->priority, thread->handle);
+                    mtxWaiters.insert(it, status);
+                    break;
+                }
+                mtxLock.unlock();
+                while (!status->flag);
+                mtxLock.lock();
+                status->flag = false;
+                for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it) {
+                    if ((*it)->handle == thread->handle) {
+                        mtxWaiters.erase(it);
+                        break;
+                    }
+                }
+                mtxLock.unlock();
+            }
+            thread->flag = true;
+            iter++;
+            count++;
+            condLock.unlock();
+            while(thread->flag);
+            condLock.lock();
+        }
     }
 }

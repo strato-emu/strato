@@ -10,7 +10,7 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetHeapSize: 'size' not divisible by 2MB: {}", size);
             return;
         }
-        auto& heap = state.process->heap;
+        auto &heap = state.process->heap;
         heap->Resize(size);
         state.ctx->registers.w0 = constant::status::Success;
         state.ctx->registers.x1 = heap->address;
@@ -45,7 +45,7 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", address);
             return;
         }
-        if(!chunk->state.AttributeChangeAllowed) {
+        if (!chunk->state.AttributeChangeAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", address);
             return;
@@ -60,29 +60,29 @@ namespace skyline::kernel::svc {
         const u64 destination = state.ctx->registers.x0;
         const u64 source = state.ctx->registers.x1;
         const u64 size = state.ctx->registers.x2;
-        if(!utils::PageAligned(destination) || !utils::PageAligned(source)) {
+        if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if(!utils::PageAligned(size)) {
+        if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcMapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
-        if(!stack.IsInside(destination)) {
+        if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
         auto descriptor = state.os->memory.Get(source);
-        if(!descriptor) {
+        if (!descriptor) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcMapMemory: Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if(!descriptor->chunk.state.MapAllowed) {
+        if (!descriptor->chunk.state.MapAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, descriptor->chunk.state.value);
             return;
@@ -90,7 +90,7 @@ namespace skyline::kernel::svc {
         state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::MemoryStates::Stack);
         state.process->CopyMemory(source, destination, size);
         auto object = state.process->GetMemoryObject(source);
-        if(!object)
+        if (!object)
             throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
         object->item->UpdatePermission(source, size, {false, false, false});
         state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
@@ -101,41 +101,41 @@ namespace skyline::kernel::svc {
         const u64 source = state.ctx->registers.x0;
         const u64 destination = state.ctx->registers.x1;
         const u64 size = state.ctx->registers.x2;
-        if(!utils::PageAligned(destination) || !utils::PageAligned(source)) {
+        if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcUnmapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if(!utils::PageAligned(size)) {
+        if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcUnmapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
-        if(!stack.IsInside(source)) {
+        if (!stack.IsInside(source)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcUnmapMemory: Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
         auto sourceDesc = state.os->memory.Get(source);
         auto destDesc = state.os->memory.Get(destination);
-        if(!sourceDesc || !destDesc) {
+        if (!sourceDesc || !destDesc) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if(!destDesc->chunk.state.MapAllowed) {
+        if (!destDesc->chunk.state.MapAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destDesc->chunk.state.value);
             return;
         }
         auto destObject = state.process->GetMemoryObject(destination);
-        if(!destObject)
+        if (!destObject)
             throw exception("svcUnmapMemory: Cannot find destination memory object in handle table for address 0x{:X}", destination);
         destObject->item->UpdatePermission(destination, size, sourceDesc->block.permission);
         state.process->CopyMemory(destination, source, size);
         auto sourceObject = state.process->GetMemoryObject(destination);
-        if(!sourceObject)
+        if (!sourceObject)
             throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
         state.process->DeleteHandle(sourceObject->handle);
         state.logger->Debug("svcUnmapMemory: Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
@@ -379,7 +379,7 @@ namespace skyline::kernel::svc {
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
         auto start = utils::GetCurrTimeNs();
         while (true) {
-            if(state.thread->cancelSync) {
+            if (state.thread->cancelSync) {
                 state.thread->cancelSync = false;
                 state.ctx->registers.w0 = constant::status::Interrupted;
                 break;
@@ -414,62 +414,63 @@ namespace skyline::kernel::svc {
     void ArbitrateLock(DeviceState &state) {
         auto address = state.ctx->registers.x1;
         if (!utils::WordAligned(address)) {
-            state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcArbitrateLock: 'address' not word aligned: 0x{:X}", address);
+            state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
         auto ownerHandle = state.ctx->registers.w0;
         auto requesterHandle = state.ctx->registers.w2;
         if (requesterHandle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", requesterHandle, state.thread->handle);
-        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X} for thread {}", address, state.thread->pid);
-        state.process->MutexLock(address, ownerHandle);
-        state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X} for thread {}", address, state.thread->pid);
+        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", address);
+        if (state.process->MutexLock(address, ownerHandle))
+            state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", address);
+        else
+            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex at 0x{:X}", address);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void ArbitrateUnlock(DeviceState &state) {
         auto address = state.ctx->registers.x0;
         if (!utils::WordAligned(address)) {
-            state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcArbitrateUnlock: 'address' not word aligned: 0x{:X}", address);
+            state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
         state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", address);
-        if(state.process->MutexUnlock(address)) {
-            state.ctx->registers.w0 = constant::status::Success;
+        if (state.process->MutexUnlock(address)) {
             state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", address);
+            state.ctx->registers.w0 = constant::status::Success;
         } else {
-            state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Debug("svcArbitrateUnlock: A non-owner thread tried to release a mutex at 0x{:X}", address);
+            state.ctx->registers.w0 = constant::status::InvAddress;
         }
     }
 
     void WaitProcessWideKeyAtomic(DeviceState &state) {
         auto mtxAddress = state.ctx->registers.x0;
         if (!utils::WordAligned(mtxAddress)) {
-            state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: 0x{:X}", mtxAddress);
+            state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
         auto condAddress = state.ctx->registers.x1;
         auto handle = state.ctx->registers.w2;
         if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
-        if(!state.process->MutexUnlock(mtxAddress)) {
-            state.ctx->registers.w0 = constant::status::InvAddress;
+        if (!state.process->MutexUnlock(mtxAddress)) {
             state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", mtxAddress);
+            state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
         auto timeout = state.ctx->registers.x3;
         state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mtxAddress, condAddress, timeout);
-        if (state.process->ConditionalVariableWait(condAddress, timeout)) {
-            state.ctx->registers.w0 = constant::status::Success;
-            state.process->MutexLock(mtxAddress, handle, true);
+        if (state.process->ConditionalVariableWait(condAddress, mtxAddress, timeout)) {
             state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable and relocked mutex");
+            state.ctx->registers.w0 = constant::status::Success;
         } else {
-            state.ctx->registers.w0 = constant::status::Timeout;
             state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait has timed out");
+            state.ctx->registers.w0 = constant::status::Timeout;
         }
     }
 
