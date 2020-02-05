@@ -120,6 +120,7 @@ namespace skyline {
          */
         union MemoryState {
             constexpr MemoryState(const u32 value) : value(value) {};
+
             constexpr MemoryState() : value(0) {};
 
             struct {
@@ -226,6 +227,7 @@ namespace skyline {
 
         namespace svc {
             void SetMemoryAttribute(DeviceState &state);
+
             void MapMemory(DeviceState &state);
         }
 
@@ -324,7 +326,9 @@ namespace skyline {
             friend class type::KTransferMemory;
             friend class type::KProcess;
             friend class loader::NroLoader;
+
             friend void svc::SetMemoryAttribute(DeviceState &state);
+
             friend void svc::MapMemory(skyline::DeviceState &state);
 
             MemoryManager(const DeviceState &state);

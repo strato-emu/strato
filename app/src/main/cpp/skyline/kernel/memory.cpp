@@ -87,7 +87,7 @@ namespace skyline::kernel {
     }
 
     void MemoryManager::InitializeRegions(u64 address, u64 size, const memory::AddressSpaceType type) {
-        switch(type) {
+        switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");
             case memory::AddressSpaceType::AddressSpace36Bit: {
@@ -95,7 +95,7 @@ namespace skyline::kernel {
                 base.size = 0xFF8000000;
                 code.address = base.address;
                 code.size = 0x78000000;
-                if(code.address > address || (code.size - (address - code.address)) < size)
+                if (code.address > address || (code.size - (address - code.address)) < size)
                     throw exception("Code mapping larger than 36-bit code region");
                 alias.address = code.address + code.size;
                 alias.size = 0x180000000;
@@ -124,7 +124,7 @@ namespace skyline::kernel {
             }
         }
         state.logger->Debug("Region Map:\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
-        .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
+            .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
     }
 
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
@@ -139,7 +139,7 @@ namespace skyline::kernel {
     }
 
     memory::Region MemoryManager::GetRegion(memory::Regions region) {
-        switch(region) {
+        switch (region) {
             case memory::Regions::Base:
                 return base;
             case memory::Regions::Code:

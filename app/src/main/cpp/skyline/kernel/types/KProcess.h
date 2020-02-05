@@ -186,8 +186,8 @@ namespace skyline::kernel::type {
          * @note This can return a nullptr if the address is invalid
          */
         template<typename Type>
-        inline Type* GetPointer(const u64 address) const {
-            return reinterpret_cast<Type*>(GetHostAddress(address));
+        inline Type *GetPointer(const u64 address) const {
+            return reinterpret_cast<Type *>(GetHostAddress(address));
         }
 
         /**

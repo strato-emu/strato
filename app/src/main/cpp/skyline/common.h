@@ -100,12 +100,19 @@ namespace skyline {
          * @brief Returns the current time in nanoseconds
          * @return The current time in nanoseconds
          */
-        inline u64 GetCurrTimeNs() {
-            return static_cast<u64>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
+        inline u64 GetTimeNs() {
+            static u64 frequencyMs{};
+            if (!frequencyMs) {
+                asm("MRS %0, CNTFRQ_EL0" : "=r"(frequencyMs));
+                frequencyMs *= 1000000000;
+            }
+            u64 ticks;
+            asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
+            return ticks / frequencyMs;
         }
 
         /**
-         * @brief Aligns up a value to a multiple of two
+         * @brief Aligns up a value to a multiple of twoB
          * @tparam Type The type of the values
          * @param value The value to round up
          * @param multiple The multiple to round up to (Should be a multiple of 2)
@@ -113,7 +120,7 @@ namespace skyline {
          * @tparam TypeMul The type of the multiple
          * @return The aligned value
          */
-        template <typename TypeVal, typename TypeMul>
+        template<typename TypeVal, typename TypeMul>
         inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             multiple--;
@@ -128,7 +135,7 @@ namespace skyline {
          * @tparam TypeMul The type of the multiple
          * @return The aligned value
          */
-        template <typename TypeVal, typename TypeMul>
+        template<typename TypeVal, typename TypeMul>
         inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             multiple--;
@@ -207,6 +214,7 @@ namespace skyline {
 
       private:
         std::atomic<Group> flag = Group::None; //!< An atomic flag to hold which group holds the mutex
+        std::atomic<Group> next = Group::None; //!< An atomic flag to hold which group will hold the mutex next
         std::atomic<u8> num = 0; //!< An atomic u8 keeping track of how many users are holding the mutex
     };
 

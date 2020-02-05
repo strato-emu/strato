@@ -124,7 +124,9 @@ namespace skyline::kernel::type {
         } catch (const std::exception &) {
         }
         auto chunk = state.os->memory.GetChunk(address);
-        munmap(reinterpret_cast<void *>(chunk->host), chunk->size);
-        state.os->memory.DeleteChunk(address);
+        if (chunk) {
+            munmap(reinterpret_cast<void *>(chunk->host), chunk->size);
+            state.os->memory.DeleteChunk(address);
+        }
     }
 };

@@ -93,6 +93,8 @@ namespace skyline {
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs) {
+        if(state.process->status == kernel::type::KProcess::Status::Exiting)
+            throw exception("Executing function on Exiting process");
         auto thread = state.thread ? state.thread : state.process->threads.at(state.process->pid);
         ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
     }

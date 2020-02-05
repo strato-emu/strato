@@ -377,7 +377,7 @@ namespace skyline::kernel::svc {
         }
         auto timeout = state.ctx->registers.x3;
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
-        auto start = utils::GetCurrTimeNs();
+        auto start = utils::GetTimeNs();
         while (true) {
             if (state.thread->cancelSync) {
                 state.thread->cancelSync = false;
@@ -394,7 +394,7 @@ namespace skyline::kernel::svc {
                 }
                 index++;
             }
-            if ((utils::GetCurrTimeNs() - start) >= timeout) {
+            if ((utils::GetTimeNs() - start) >= timeout) {
                 state.logger->Debug("svcWaitSynchronization: Wait has timed out");
                 state.ctx->registers.w0 = constant::status::Timeout;
                 return;

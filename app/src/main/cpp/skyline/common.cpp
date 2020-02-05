@@ -18,20 +18,18 @@ namespace skyline {
 
     void GroupMutex::lock(Group group) {
         auto none = Group::None;
-        if (flag == group) {
-            num++;
-            return;
-        }
-        while (true) {
-            for (int i = 0; i < 1000; ++i) {
-                if (flag.compare_exchange_weak(none, group)) {
-                    num++;
-                    return;
-                }
-                asm volatile("yield");
+        constexpr u64 timeout = 1000; // The timeout in ns
+        auto start = utils::GetTimeNs();
+        while (next != group && !next.compare_exchange_weak(none, group)) {
+            if (flag == group && ((utils::GetTimeNs() - start) > timeout)) {
+                num++;
+                return;
             }
-            sched_yield();
+            asm volatile("yield");
         }
+        while (flag != group && !flag.compare_exchange_weak(none, group))
+            asm volatile("yield");
+        num++;
     }
 
     void GroupMutex::unlock() {
@@ -51,11 +49,11 @@ namespace skyline {
                     break;
                 case 'b':
                     boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
-                            "value")->BoolValue();
+                        "value")->BoolValue();
                     break;
                 case 'i':
                     intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
-                            "value")->IntValue();
+                        "value")->IntValue();
                     break;
                 default:
                     syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(),

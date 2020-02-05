@@ -211,7 +211,7 @@ namespace skyline::kernel::type {
             auto status = (*mtxWaiters.begin());
             status->flag = true;
             lock.unlock();
-            while(status->flag);
+            while (status->flag);
             lock.lock();
         }
         return true;
@@ -230,9 +230,9 @@ namespace skyline::kernel::type {
         }
         lock.unlock();
         bool timedOut{};
-        auto start = utils::GetCurrTimeNs();
+        auto start = utils::GetTimeNs();
         while (!status->flag) {
-            if ((utils::GetCurrTimeNs() - start) >= timeout)
+            if ((utils::GetTimeNs() - start) >= timeout)
                 timedOut = true;
         }
         lock.lock();
@@ -298,7 +298,7 @@ namespace skyline::kernel::type {
             iter++;
             count++;
             condLock.unlock();
-            while(thread->flag);
+            while (thread->flag);
             condLock.lock();
         }
     }
