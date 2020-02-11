@@ -31,9 +31,11 @@ namespace skyline::gpu {
             resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
             resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
             format = ANativeWindow_getFormat(window);
+            surfaceUpdate = false;
+        } else if (Surface == nullptr) {
             surfaceUpdate = true;
-        } else
-            surfaceUpdate = (Surface == nullptr);
+            return;
+        }
         if (!bufferQueue.displayQueue.empty()) {
             auto &buffer = bufferQueue.displayQueue.front();
             bufferQueue.displayQueue.pop();

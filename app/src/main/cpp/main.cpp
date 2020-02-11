@@ -44,12 +44,12 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
         logger->Info("Launching ROM {}", romString);
         env->ReleaseStringUTFChars(romJstring, romString);
         os.Execute(romFd, static_cast<skyline::TitleFormat>(romType));
-        logger->Info("Emulation has ended");
     } catch (std::exception &e) {
         logger->Error(e.what());
     } catch (...) {
         logger->Error("An unknown exception has occurred");
     }
+    logger->Info("Emulation has ended");
 
     auto end = std::chrono::steady_clock::now();
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));

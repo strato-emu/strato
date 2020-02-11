@@ -302,30 +302,33 @@ namespace skyline {
         };
         static_assert(sizeof(Movk) == sizeof(u32));
 
-        const std::array<u32, 4> MoveU64Reg(regs::X destReg, u64 value) {
+        const std::vector<u32> MoveU64Reg(regs::X destReg, u64 value) {
             union {
                 u64 val;
                 struct {
                     u16 v0;
                     u16 v16;
                     u16 v32;
-                    u16 v64;
+                    u16 v48;
                 };
             } val;
             val.val = value;
-            std::array<u32, 4> instr;
+            std::vector<u32> instr;
             instr::Movz mov0(destReg, val.v0, 0);
-            instr[0] = mov0.raw;
+            instr.push_back(mov0.raw);
             instr::Movk mov16(destReg, val.v16, 16);
-            instr[1] = mov16.raw;
+            if (val.v16)
+                instr.push_back(mov16.raw);
             instr::Movk mov32(destReg, val.v32, 32);
-            instr[2] = mov32.raw;
-            instr::Movk mov64(destReg, val.v64, 48);
-            instr[3] = mov64.raw;
+            if (val.v32)
+                instr.push_back(mov32.raw);
+            instr::Movk mov48(destReg, val.v48, 48);
+            if (val.v48)
+                instr.push_back(mov48.raw);
             return instr;
         }
 
-        const std::array<u32, 2> MoveU32Reg(regs::X destReg, u32 value) {
+        const std::vector<u32> MoveU32Reg(regs::X destReg, u32 value) {
             union {
                 u32 val;
                 struct {
@@ -334,11 +337,12 @@ namespace skyline {
                 };
             } val;
             val.val = value;
-            std::array<u32, 2> instr;
+            std::vector<u32> instr;
             instr::Movz mov0(destReg, val.v0, 0);
-            instr[0] = mov0.raw;
+            instr.push_back(mov0.raw);
             instr::Movk mov16(destReg, val.v16, 16);
-            instr[1] = mov16.raw;
+            if (val.v16)
+                instr.push_back(mov16.raw);
             return instr;
         }
 
@@ -398,44 +402,37 @@ namespace skyline {
         static_assert(sizeof(Mov) == sizeof(u32));
 
         /**
-         * @brief A bit-field struct that encapsulates a FCVTZU (Scalar, Integer) instruction. See https://developer.arm.com/docs/ddi0602/d/simd-and-floating-point-instructions-alphabetic-order/fcvtzu-scalar-integer-floating-point-convert-to-unsigned-integer-rounding-toward-zero-scalar.
+         * @brief A bit-field struct that encapsulates a LDR (immediate) instruction. See https://developer.arm.com/docs/ddi0596/e/base-instructions-alphabetic-order/ldr-immediate-load-register-immediate.
          */
-        struct Fcvtzu {
+        struct Ldr {
           public:
             /**
-             * @brief Creates a FCVTZU (Scalar, Integer) instruction
-             * @param destReg The destination Xn register to store the value in
-             * @param srcReg The source Dn register to retrieve the value from
+             * @brief Creates a LDR (immediate) instruction
+             * @param raw The raw value of the whole instruction
              */
-            Fcvtzu(regs::X destReg, u8 srcReg) {
-                this->destReg = static_cast<u8>(destReg);
-                this->srcReg = static_cast<u8>(srcReg);
-                sig0 = 0xE40;
-                ftype = 1;
-                sig1 = 0x1E;
-                sf = 1;
-            }
+            Ldr(u32 raw) : raw(raw) {}
 
             /**
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid FCVTZU instruction
              */
             inline bool Verify() {
-                return (sig0 == 0xE40 && sig1 == 0x1E);
+                return (sig0 == 0x0 && sig1 == 0x1CA && sig2 == 0x1);
             }
 
             union {
                 struct __attribute__((packed)) {
                     u8 destReg : 5;
                     u8 srcReg  : 5;
-                    u32 sig0   : 12;
-                    u8 ftype   : 2;
-                    u8 sig1    : 7;
-                    u8 sf      : 1;
+                    u8 sig0    : 2;
+                    u16 imm    : 9;
+                    u16 sig1   : 9;
+                    u8 x       : 1;
+                    u8 sig2    : 1;
                 };
                 u32 raw{};
             };
         };
-        static_assert(sizeof(Fcvtzu) == sizeof(u32));
+        static_assert(sizeof(Ldr) == sizeof(u32));
     }
 }

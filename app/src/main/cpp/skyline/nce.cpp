@@ -8,6 +8,7 @@
 #include "nce.h"
 
 extern bool Halt;
+extern jobject Surface;
 extern skyline::GroupMutex jniMtx;
 
 namespace skyline {
@@ -16,10 +17,17 @@ namespace skyline {
             state.thread = state.process->threads.at(thread);
             state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.address);
             while (true) {
-                std::lock_guard jniGd(jniMtx);
+                asm("yield");
                 if (Halt)
                     break;
+                if (!Surface)
+                    continue;
                 if (state.ctx->state == ThreadState::WaitKernel) {
+                    std::lock_guard jniGd(jniMtx);
+                    if (Halt)
+                        break;
+                    if (!Surface)
+                        continue;
                     const u16 svc = static_cast<const u16>(state.ctx->commandId);
                     try {
                         if (kernel::svc::SvcTable[svc]) {
@@ -43,11 +51,14 @@ namespace skyline {
         } catch (...) {
             state.logger->Error("An unknown exception has occurred");
         }
-        if (thread == state.process->pid) {
-            jniMtx.lock(GroupMutex::Group::Group2);
-            state.os->KillThread(thread);
-            Halt = true;
-            jniMtx.unlock();
+        if (!Halt) {
+            if (thread == state.process->pid) {
+                jniMtx.lock(GroupMutex::Group::Group2);
+                state.os->KillThread(thread);
+                Halt = true;
+                jniMtx.unlock();
+            } else
+                state.os->KillThread(thread);
         }
     }
 
@@ -60,15 +71,17 @@ namespace skyline {
 
     void NCE::Execute() {
         while (true) {
-            std::lock_guard jniGd(jniMtx);
+            std::lock_guard guard(jniMtx);
             if (Halt)
                 break;
             state.os->serviceManager.Loop();
             state.gpu->Loop();
         }
-        jniMtx.lock(GroupMutex::Group::Group2);
-        Halt = true;
-        jniMtx.unlock();
+        if (!Halt) {
+            jniMtx.lock(GroupMutex::Group::Group2);
+            Halt = true;
+            jniMtx.unlock();
+        }
     }
 
     /**
@@ -93,7 +106,7 @@ namespace skyline {
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs) {
-        if(state.process->status == kernel::type::KProcess::Status::Exiting)
+        if (state.process->status == kernel::type::KProcess::Status::Exiting)
             throw exception("Executing function on Exiting process");
         auto thread = state.thread ? state.thread : state.process->threads.at(state.process->pid);
         ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
@@ -151,67 +164,23 @@ namespace skyline {
             state.logger->Debug("CPU Context:{}", regStr);
     }
 
-    const std::array<u32, 18> cntpctEl0X0 = {
-        0xA9BF0BE1, // STP X1, X2, [SP, #-16]!
-        0x3C9F0FE0, // STR Q0, [SP, #-16]!
-        0x3C9F0FE1, // STR Q1, [SP, #-16]!
-        0x3C9F0FE2, // STR Q2, [SP, #-16]!
+    const std::array<u32, 16> CntpctEl0 = {
+        0xD10083FF, // SUB SP, SP, #32
+        0xA90107E0, // STP X0, X1, [SP, #16]
+        0xD28F0860, // MOV X0, #30787
+        0xF2AE3680, // MOVK X0, #29108, LSL #16
         0xD53BE001, // MRS X1, CNTFRQ_EL0
-        0xD53BE042, // MRS X2, CNTVCT_EL0
-        0x9E630020, // UCVTF D0, X0
-        0xD2C9F001, // MOV X1, 87411174408192
-        0xF2E82E41, // MOVK X1, 0x4172, LSL 48
-        0x9E670022, // FMOV D2, X1
-        0x9E630041, // UCVTF D1, X1
-        0x1E621800, // FDIV D0, D0, D2
-        0x1E610800, // FMUL D0, D0, D1
-        0x9E790000, // FCVTZU X0, D0
-        0x3CC107E2, // LDR Q2, [SP], #16
-        0x3CC107E1, // LDR Q1, [SP], #16
-        0x3CC107E0, // LDR Q0, [SP], #16
-        0xA8C10BE1, // LDP X1, X2, [SP], #16
-    };
-
-    const std::array<u32, 18> cntpctEl0X1 = {
-        0xA9BF0BE0, // STP X0, X2, [SP, #-16]!
-        0x3C9F0FE0, // STR Q0, [SP, #-16]!
-        0x3C9F0FE1, // STR Q1, [SP, #-16]!
-        0x3C9F0FE2, // STR Q2, [SP, #-16]!
-        0xD53BE000, // MRS X0, CNTFRQ_EL0
-        0xD53BE042, // MRS X2, CNTVCT_EL0
-        0x9E630020, // UCVTF D0, X0
-        0xD2C9F000, // MOV X0, 87411174408192
-        0xF2E82E40, // MOVK X0, 0x4172, LSL 48
-        0x9E670002, // FMOV D2, X0
-        0x9E630041, // UCVTF D1, X2
-        0x1E621800, // FDIV D0, D0, D2
-        0x1E610800, // FMUL D0, D0, D1
-        0x9E790001, // FCVTZU X0, D0
-        0x3CC107E2, // LDR Q2, [SP], #16
-        0x3CC107E1, // LDR Q1, [SP], #16
-        0x3CC107E0, // LDR Q0, [SP], #16
-        0xA8C10BE0, // LDP X0, X2, [SP], #16
-    };
-
-    std::array<u32, 18> cntpctEl0Xn = {
-        0xA9BF07E0, // STP X0, X1, [SP, #-16]!
-        0x3C9F0FE0, // STR Q0, [SP, #-16]!
-        0x3C9F0FE1, // STR Q1, [SP, #-16]!
-        0x3C9F0FE2, // STR Q2, [SP, #-16]!
-        0xD53BE000, // MRS X0, CNTFRQ_EL0
-        0xD53BE041, // MRS X1, CNTVCT_EL0
-        0x9E630000, // UCVTF D0, X0
-        0xD2C9F000, // MOV X0, 87411174408192
-        0xF2E82E40, // MOVK X0, 0x4172, LSL 48
-        0x9E670002, // FMOV D2, X0
-        0x9E630021, // UCVTF D1, X1
-        0x1E621800, // FDIV D0, D0, D2
-        0x1E610800, // FMUL D0, D0, D1
-        0x00000000, // FCVTZU Xn, D0 (Set at runtime)
-        0x3CC107E2, // LDR Q2, [SP], #16
-        0x3CC107E1, // LDR Q1, [SP], #16
-        0x3CC107E0, // LDR Q0, [SP], #16
-        0xA8C107E0, // LDP X0, X1, [SP], #16
+        0xF2CB5880, // MOVK X0, #23236, LSL #32
+        0xD345FC21, // LSR X1, X1, #5
+        0xF2E14F80, // MOVK X0, #2684, LSL #48
+        0x9BC07C21, // UMULH X1, X1, X0
+        0xD347FC21, // LSR X1, X1, #7
+        0xD53BE040, // MRS X0, CNTVCT_EL0
+        0x9AC10801, // UDIV X1, X0, X1
+        0x8B010421, // ADD X1, X1, X1, LSL #1
+        0xD37AE420, // LSL X0, X1, #6
+        0xF90003E0, // STR X0, [SP, #0]
+        0xA94107E0, // LDP X0, X1, [SP, #16]
     };
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
@@ -231,6 +200,10 @@ namespace skyline {
         std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize,
                     reinterpret_cast<void *>(&guest::svcHandler), guest::svcHandlerSize);
         offset += guest::svcHandlerSize;
+
+        static u64 frequency{};
+        if (!frequency)
+            asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
 
         for (u32 *address = start; address < end; address++) {
             auto instrSvc = reinterpret_cast<instr::Svc *>(address);
@@ -275,9 +248,9 @@ namespace skyline {
                         strX0 = 0xF81F0FE0; // STR X0, [SP, #-16]!
                         offset += sizeof(strX0);
                     }
-                    u32 mrsX0 = 0xD53BD040; // MRS X0, TPIDR_EL0
+                    const u32 mrsX0 = 0xD53BD040; // MRS X0, TPIDR_EL0
                     offset += sizeof(mrsX0);
-                    u32 ldrTls = 0xF9408000; // LDR X0, [X0, #256]
+                    const u32 ldrTls = 0xF9408000; // LDR X0, [X0, #256]
                     offset += sizeof(ldrTls);
                     u32 movXn{};
                     u32 ldrX0{};
@@ -300,41 +273,41 @@ namespace skyline {
                     if (ldrX0)
                         patch.push_back(ldrX0);
                     patch.push_back(bret.raw);
-                } else if (instrMrs->srcReg == constant::CntpctEl0) {
-                    instr::B bjunc(offset);
-                    if (instrMrs->destReg == 0)
-                        offset += cntpctEl0X0.size() * sizeof(u32);
-                    else if (instrMrs->destReg == 1)
-                        offset += cntpctEl0X1.size() * sizeof(u32);
-                    else
-                        offset += cntpctEl0Xn.size() * sizeof(u32);
-                    instr::B bret(-offset + sizeof(u32));
-                    offset += sizeof(bret);
+                } else if (frequency != constant::TegraX1Freq) {
+                    if (instrMrs->srcReg == constant::CntpctEl0) {
+                        instr::B bjunc(offset);
+                        offset += CntpctEl0.size() * sizeof(u32);
+                        instr::Ldr ldr(0xF94003E0); // LDR XOUT, [SP]
+                        ldr.destReg = instrMrs->destReg;
+                        offset += sizeof(ldr);
+                        const u32 addSp = 0x910083FF; // ADD SP, SP, #32
+                        offset += sizeof(addSp);
+                        instr::B bret(-offset + sizeof(u32));
+                        offset += sizeof(bret);
 
-                    *address = bjunc.raw;
-                    if (instrMrs->destReg == 0)
-                        for (auto &instr : cntpctEl0X0)
+                        *address = bjunc.raw;
+                        for (const auto &instr : CntpctEl0)
                             patch.push_back(instr);
-                    else if (instrMrs->destReg == 1)
-                        for (auto &instr : cntpctEl0X1)
+                        patch.push_back(ldr.raw);
+                        patch.push_back(addSp);
+                        patch.push_back(bret.raw);
+                    } else if (instrMrs->srcReg == constant::CntfrqEl0) {
+                        instr::B bjunc(offset);
+                        auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), constant::TegraX1Freq);
+                        offset += sizeof(u32) * movFreq.size();
+                        instr::B bret(-offset + sizeof(u32));
+                        offset += sizeof(bret);
+
+                        *address = bjunc.raw;
+                        for (auto &instr : movFreq)
                             patch.push_back(instr);
-                    else {
-                        cntpctEl0Xn[13] = instr::Fcvtzu(regs::X(instrMrs->destReg), 0).raw;
-                        for (auto &instr : cntpctEl0Xn)
-                            patch.push_back(instr);
+                        patch.push_back(bret.raw);
                     }
-                    patch.push_back(bret.raw);
-                } else if (instrMrs->srcReg == constant::CntfrqEl0) {
-                    instr::B bjunc(offset);
-                    auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), constant::TegraX1Freq);
-                    offset += sizeof(u32) * movFreq.size();
-                    instr::B bret(-offset + sizeof(u32));
-                    offset += sizeof(bret);
-
-                    *address = bjunc.raw;
-                    for (auto &instr : movFreq)
-                        patch.push_back(instr);
-                    patch.push_back(bret.raw);
+                } else {
+                    if (instrMrs->srcReg == constant::CntpctEl0) {
+                        instr::Mrs mrs(constant::CntvctEl0, regs::X(instrMrs->destReg));
+                        *address = mrs.raw;
+                    }
                 }
             }
             offset -= sizeof(u32);

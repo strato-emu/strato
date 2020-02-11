@@ -36,7 +36,7 @@ namespace skyline {
         constexpr u8 NumRegs = 30; //!< The amount of registers that ARMv8 has
         constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
         constexpr u32 CntfrqEl0 = 0x5F00; //!< ID of CNTFRQ_EL0 in MRS
-        constexpr u32 TegraX1Freq = 0x124F800; //!< The clock frequency of the Tegra X1 (19.2 MHz)
+        constexpr u32 TegraX1Freq = 19200000; //!< The clock frequency of the Tegra X1 (19.2 MHz)
         constexpr u32 CntpctEl0 = 0x5F01; //!< ID of CNTPCT_EL0 in MRS
         constexpr u32 CntvctEl0 = 0x5F02; //!< ID of CNTVCT_EL0 in MRS
         // Kernel
@@ -101,18 +101,17 @@ namespace skyline {
          * @return The current time in nanoseconds
          */
         inline u64 GetTimeNs() {
-            static u64 frequencyMs{};
-            if (!frequencyMs) {
-                asm("MRS %0, CNTFRQ_EL0" : "=r"(frequencyMs));
-                frequencyMs *= 1000000000;
-            }
+            constexpr uint64_t NsInSecond = 1000000000;
+            static u64 frequency{};
+            if (!frequency)
+                asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
             u64 ticks;
             asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-            return ticks / frequencyMs;
+            return ((ticks / frequency) * NsInSecond) + (((ticks % frequency) * NsInSecond + (frequency / 2)) / frequency);
         }
 
         /**
-         * @brief Aligns up a value to a multiple of twoB
+         * @brief Aligns up a value to a multiple of two
          * @tparam Type The type of the values
          * @param value The value to round up
          * @param multiple The multiple to round up to (Should be a multiple of 2)
@@ -216,6 +215,7 @@ namespace skyline {
         std::atomic<Group> flag = Group::None; //!< An atomic flag to hold which group holds the mutex
         std::atomic<Group> next = Group::None; //!< An atomic flag to hold which group will hold the mutex next
         std::atomic<u8> num = 0; //!< An atomic u8 keeping track of how many users are holding the mutex
+        Mutex mtx; //!< A mutex to lock before changing of num and flag
     };
 
     /**

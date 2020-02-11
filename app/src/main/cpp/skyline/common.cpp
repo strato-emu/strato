@@ -18,23 +18,37 @@ namespace skyline {
 
     void GroupMutex::lock(Group group) {
         auto none = Group::None;
-        constexpr u64 timeout = 1000; // The timeout in ns
-        auto start = utils::GetTimeNs();
-        while (next != group && !next.compare_exchange_weak(none, group)) {
-            if (flag == group && ((utils::GetTimeNs() - start) > timeout)) {
-                num++;
-                return;
-            }
+        constexpr u64 timeout = 100; // The timeout in ns
+        auto end = utils::GetTimeNs() + timeout;
+        while (true) {
+            if (next == group) {
+                if (flag == group) {
+                    std::lock_guard lock(mtx);
+                    if (flag == group) {
+                        auto groupT = group;
+                        next.compare_exchange_strong(groupT, Group::None);
+                        num++;
+                        return;
+                    }
+                } else
+                    flag.compare_exchange_weak(none, group);
+            } else if (flag == group && (next == Group::None || utils::GetTimeNs() >= end)) {
+                std::lock_guard lock(mtx);
+                if (flag == group) {
+                    num++;
+                    return;
+                }
+            } else
+                next.compare_exchange_weak(none, group);
+            none = Group::None;
             asm volatile("yield");
         }
-        while (flag != group && !flag.compare_exchange_weak(none, group))
-            asm volatile("yield");
-        num++;
     }
 
     void GroupMutex::unlock() {
+        std::lock_guard lock(mtx);
         if (!--num)
-            flag.exchange(Group::None);
+            flag.exchange(next);
     }
 
     Settings::Settings(const int preferenceFd) {
@@ -118,6 +132,6 @@ namespace skyline {
         gpu = std::move(std::make_shared<gpu::GPU>(*this));
     }
 
-    thread_local std::shared_ptr<kernel::type::KThread> DeviceState::thread = 0;
-    thread_local ThreadContext *DeviceState::ctx = 0;
+    thread_local std::shared_ptr<kernel::type::KThread> DeviceState::thread = nullptr;
+    thread_local ThreadContext *DeviceState::ctx = nullptr;
 }

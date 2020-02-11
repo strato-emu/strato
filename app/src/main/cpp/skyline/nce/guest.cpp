@@ -278,10 +278,8 @@ namespace skyline::guest {
             .sa_sigaction = reinterpret_cast<void (*)(int, struct siginfo *, void *)>(reinterpret_cast<void *>(signalHandler)),
             .sa_flags = SA_SIGINFO,
         };
-        /*
         for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
             sigaction(signal, &sigact, nullptr);
-        */
         ctx->state = ThreadState::Running;
         asm("MOV LR, %0\n\t"
             "MOV X0, %1\n\t"

@@ -62,7 +62,7 @@ namespace skyline::gpu {
                     break;
                 }
             }
-            sched_yield();
+            asm("yield");
         }
         struct {
             u32 slot;

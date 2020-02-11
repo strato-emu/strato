@@ -95,4 +95,4 @@ captures/
 .vscode/
 
 # Discord plugin for IntelliJ IDEA
-.idea\discord.xml
+.idea/discord.xml
