@@ -33,18 +33,18 @@ namespace skyline::kernel::type {
         if (fregs.x0 < 0)
             throw exception("An error occurred while mapping shared memory in guest");
         guest = {.address = fregs.x0, .size = size, .permission = permission};
-        ChunkDescriptor chunk{
-            .address = fregs.x0,
-            .host = kernel.address,
-            .size = size,
-            .state = initialState,
-        };
         BlockDescriptor block{
             .address = fregs.x0,
             .size = size,
             .permission = permission,
         };
-        chunk.blockList.push_front(block);
+        ChunkDescriptor chunk{
+            .address = fregs.x0,
+            .host = kernel.address,
+            .size = size,
+            .state = initialState,
+            .blockList = {block},
+        };
         state.os->memory.InsertChunk(chunk);
         return fregs.x0;
     }
@@ -78,7 +78,7 @@ namespace skyline::kernel::type {
             state.process->WriteMemory(reinterpret_cast<void *>(kernel.address), guest.address, std::min(guest.size, size), true);
             auto chunk = state.os->memory.GetChunk(guest.address);
             for (const auto &block : chunk->blockList) {
-                if((block.address - chunk->address) < guest.size) {
+                if ((block.address - chunk->address) < guest.size) {
                     fregs = {
                         .x0 = block.address,
                         .x1 = std::min(block.size, (chunk->address + size) - block.address),
@@ -88,8 +88,9 @@ namespace skyline::kernel::type {
                     state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
                     if (fregs.x0 < 0)
                         throw exception("An error occurred while updating private memory's permissions in child process");
-                } else
+                } else {
                     break;
+                }
             }
             munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
             auto host = mmap(reinterpret_cast<void *>(chunk->host), size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);

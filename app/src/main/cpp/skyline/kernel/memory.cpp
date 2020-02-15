@@ -3,87 +3,111 @@
 
 namespace skyline::kernel {
     ChunkDescriptor *MemoryManager::GetChunk(u64 address) {
-        for (auto &chunk : chunkList)
-            if (chunk.address <= address && (chunk.address + chunk.size) > address)
-                return &chunk;
+        auto chunk = std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+            return address < chunk.address;
+        });
+        if (chunk-- != chunkList.begin()) {
+            if ((chunk->address + chunk->size) > address)
+                return chunk.base();
+        }
         return nullptr;
     }
 
-    BlockDescriptor *MemoryManager::GetBlock(u64 address) {
-        auto chunk = GetChunk(address);
-        if (chunk)
-            for (auto &block : chunk->blockList)
-                if (block.address <= address && (block.address + block.size) > address)
-                    return &block;
+    BlockDescriptor *MemoryManager::GetBlock(u64 address, ChunkDescriptor *chunk) {
+        if (!chunk)
+            chunk = GetChunk(address);
+        if (chunk) {
+            auto block = std::upper_bound(chunk->blockList.begin(), chunk->blockList.end(), address, [](const u64 address, const BlockDescriptor &block) -> bool {
+                return address < block.address;
+            });
+            if (block-- != chunk->blockList.begin()) {
+                if ((block->address + block->size) > address)
+                    return block.base();
+            }
+        }
         return nullptr;
     }
 
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {
-        auto it = chunkList.begin();
-        if (chunkList.empty() || it->address > chunk.address)
-            chunkList.push_front(chunk);
-        else {
-            auto prevIt = it;
-            while (true) {
-                if (it == chunkList.end() || (prevIt->address < chunk.address && it->address > chunk.address)) {
-                    if (prevIt->address + prevIt->size > chunk.address)
-                        throw exception("InsertChunk: Descriptors are colliding: 0x{:X} and 0x{:X}", prevIt->address, chunk.address);
-                    chunkList.insert_after(prevIt, chunk);
-                    break;
-                }
-                prevIt = it++;
-            }
+        auto upperChunk = std::upper_bound(chunkList.begin(), chunkList.end(), chunk.address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+            return address < chunk.address;
+        });
+        if (upperChunk != chunkList.begin()) {
+            auto lowerChunk = std::prev(upperChunk);
+            if (lowerChunk->address + lowerChunk->size > chunk.address)
+                throw exception("InsertChunk: Descriptors are colliding: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", lowerChunk->address, lowerChunk->address + lowerChunk->size, chunk.address, chunk.address + chunk.size);
         }
+        chunkList.insert(upperChunk, chunk);
     }
 
     void MemoryManager::DeleteChunk(u64 address) {
-        chunkList.remove_if([address](const ChunkDescriptor &chunk) {
-            return chunk.address <= address && (chunk.address + chunk.size) > address;
-        });
+        for (auto chunk = chunkList.begin(), end = chunkList.end(); chunk != end;) {
+            if (chunk->address <= address && (chunk->address + chunk->size) > address)
+                chunk = chunkList.erase(chunk);
+            else
+                ++chunk;
+        }
     }
 
     void MemoryManager::ResizeChunk(ChunkDescriptor *chunk, size_t size) {
-        if (std::next(chunk->blockList.begin()) == chunk->blockList.end())
+        if (chunk->blockList.size() == 1) {
             chunk->blockList.begin()->size = size;
-        else if (size > chunk->size) {
-            auto end = chunk->blockList.begin();
-            for (; std::next(end) != chunk->blockList.end(); end++);
-            auto baseBlock = (*chunk->blockList.begin());
+        } else if (size > chunk->size) {
+            auto begin = chunk->blockList.begin();
+            auto end = std::prev(chunk->blockList.end());
             BlockDescriptor block{
                 .address = (end->address + end->size),
                 .size = (chunk->address + size) - (end->address + end->size),
-                .permission = baseBlock.permission,
-                .attributes = baseBlock.attributes,
+                .permission = begin->permission,
+                .attributes = begin->attributes,
             };
-            chunk->blockList.insert_after(end, block);
-        } else if (chunk->size < size) {
+            chunk->blockList.push_back(block);
+        } else if (size < chunk->size) {
             auto endAddress = chunk->address + size;
-            chunk->blockList.remove_if([endAddress](const BlockDescriptor &block) {
-                return block.address > endAddress;
-            });
-            auto end = chunk->blockList.begin();
-            for (; std::next(end) != chunk->blockList.end(); end++);
+            for (auto block = chunk->blockList.begin(), end = chunk->blockList.end(); block != end;) {
+                if (block->address > endAddress)
+                    block = chunk->blockList.erase(block);
+                else
+                    ++block;
+            }
+            auto end = std::prev(chunk->blockList.end());
             end->size = endAddress - end->address;
         }
         chunk->size = size;
     }
 
-    void MemoryManager::InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block) {
+    void MemoryManager::InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block) {
         for (auto iter = chunk->blockList.begin(); iter != chunk->blockList.end(); iter++) {
-            if (iter->address <= block.address && (iter->address + iter->size) > block.address) {
-                if (iter->address == block.address && iter->size == block.size) {
-                    iter->attributes = block.attributes;
-                    iter->permission = block.permission;
+            if (iter->address <= block.address) {
+                if ((iter->address + iter->size) > block.address) {
+                    if (iter->address == block.address && iter->size == block.size) {
+                        iter->attributes = block.attributes;
+                        iter->permission = block.permission;
+                    } else {
+                        auto endBlock = *iter;
+                        endBlock.address = (block.address + block.size);
+                        endBlock.size = (iter->address + iter->size) - endBlock.address;
+                        iter->size = iter->address - block.address;
+                        chunk->blockList.insert(std::next(iter), {block, endBlock});
+                    }
+                } else if (std::next(iter) != chunk->blockList.end()) {
+                    auto nextIter = std::next(iter);
+                    auto nextEnd = nextIter->address + nextIter->size;
+                    if(nextEnd > block.address) {
+                        iter->size = block.address - iter->address;
+                        nextIter->address = block.address + block.size;
+                        nextIter->size = nextEnd - nextIter->address;
+                        chunk->blockList.insert(nextIter, block);
+                    } else {
+                        throw exception("InsertBlock: Inserting block across more than one block is not allowed");
+                    }
                 } else {
-                    auto endBlock = *iter;
-                    endBlock.address = (block.address + block.size);
-                    endBlock.size = (iter->address + iter->size) - endBlock.address;
-                    iter->size = (iter->address - block.address);
-                    chunk->blockList.insert_after(iter, {block, endBlock});
+                    throw exception("InsertBlock: Inserting block with end past chunk end is not allowed");
                 }
-                break;
+                return;
             }
         }
+        throw exception("InsertBlock: Block offset not present within current block list");
     }
 
     void MemoryManager::InitializeRegions(u64 address, u64 size, const memory::AddressSpaceType type) {
@@ -132,9 +156,7 @@ namespace skyline::kernel {
     std::optional<DescriptorPack> MemoryManager::Get(u64 address) {
         auto chunk = GetChunk(address);
         if (chunk)
-            for (auto &block : chunk->blockList)
-                if (block.address <= address && (block.address + block.size) > address)
-                    return DescriptorPack{block, *chunk};
+            return DescriptorPack{*GetBlock(address, chunk), *chunk};
         return std::nullopt;
     }
 

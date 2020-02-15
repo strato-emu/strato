@@ -73,7 +73,7 @@ namespace skyline::gpu::device {
             u64 gpuCharacteristicsBufSize;         // InOut
             u64 gpuCharacteristicsBufAddr;         // In
             GpuCharacteristics gpuCharacteristics; // Out
-        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->GetObject<Data>(buffer.input[0].address);
         data.gpuCharacteristics = {
             .arch = 0x120,
             .impl = 0xB,
@@ -119,7 +119,7 @@ namespace skyline::gpu::device {
             u32 maskBufSize; // In
             u32 reserved[3]; // In
             u64 maskBuf;     // Out
-        } data = state.process->ReadMemory<Data>(buffer.input[0].address);
+        } data = state.process->GetObject<Data>(buffer.input[0].address);
         if (data.maskBufSize)
             data.maskBuf = 0x3;
         state.process->WriteMemory(data, buffer.output[0].address);

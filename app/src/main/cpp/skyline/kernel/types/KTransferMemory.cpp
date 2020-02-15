@@ -101,11 +101,11 @@ namespace skyline::kernel::type {
         if (mHost && !host) {
             state.os->memory.DeleteChunk(address);
             hostChunk = chunk;
-        } else if (!mHost && host)
+        } else if (!mHost && host) {
             state.os->memory.InsertChunk(chunk);
-        else if (mHost && host)
+        } else if (mHost && host) {
             hostChunk = chunk;
-        else if (!mHost && !host) {
+        } else if (!mHost && !host) {
             state.os->memory.DeleteChunk(address);
             state.os->memory.InsertChunk(chunk);
         }
@@ -174,9 +174,9 @@ namespace skyline::kernel::type {
     }
 
     KTransferMemory::~KTransferMemory() {
-        if (host)
+        if (host) {
             munmap(reinterpret_cast<void *>(address), size);
-        else if (state.process) {
+        } else if (state.process) {
             try {
                 Registers fregs{
                     .x0 = address,

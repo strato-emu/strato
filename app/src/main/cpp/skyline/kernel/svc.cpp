@@ -232,9 +232,9 @@ namespace skyline::kernel::svc {
         auto handle = state.ctx->registers.w0;
         try {
             auto priority = state.process->GetHandle<type::KThread>(handle)->priority;
+            state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
             state.ctx->registers.w1 = priority;
             state.ctx->registers.w0 = constant::status::Success;
-            state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
         } catch (const std::exception &) {
             state.logger->Warn("svcGetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
@@ -245,9 +245,9 @@ namespace skyline::kernel::svc {
         auto handle = state.ctx->registers.w0;
         auto priority = state.ctx->registers.w1;
         try {
+            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
             state.process->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
             state.ctx->registers.w0 = constant::status::Success;
-            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
         } catch (const std::exception &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::InvHandle;
@@ -499,9 +499,9 @@ namespace skyline::kernel::svc {
         char port[constant::PortSize + 1]{0};
         state.process->ReadMemory(port, state.ctx->registers.x1, constant::PortSize);
         handle_t handle{};
-        if (std::strcmp(port, "sm:") == 0)
+        if (std::strcmp(port, "sm:") == 0) {
             handle = state.os->serviceManager.NewSession(service::Service::sm);
-        else {
+        } else {
             state.logger->Warn("svcConnectToNamedPort: Connecting to invalid port: '{}'", port);
             state.ctx->registers.w0 = constant::status::NotFound;
             return;
@@ -519,9 +519,9 @@ namespace skyline::kernel::svc {
     void GetThreadId(DeviceState &state) {
         pid_t pid{};
         auto handle = state.ctx->registers.w1;
-        if (handle != constant::ThreadSelf) {
+        if (handle != constant::ThreadSelf)
             pid = state.process->GetHandle<type::KThread>(handle)->pid;
-        } else
+        else
             pid = state.thread->pid;
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
         state.ctx->registers.x1 = static_cast<u64>(pid);
@@ -529,8 +529,7 @@ namespace skyline::kernel::svc {
     }
 
     void OutputDebugString(DeviceState &state) {
-        std::string debug(state.ctx->registers.x1, '\0');
-        state.process->ReadMemory(debug.data(), state.ctx->registers.x0, state.ctx->registers.x1);
+        auto debug = state.process->GetString(state.ctx->registers.x0, state.ctx->registers.x1);
         if (debug.back() == '\n')
             debug.pop_back();
         state.logger->Info("Debug Output: {}", debug);

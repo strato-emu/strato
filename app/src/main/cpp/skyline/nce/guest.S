@@ -1,6 +1,6 @@
 .text
-.global saveCtx
-saveCtx:
+.global SaveCtx
+SaveCtx:
     STR LR, [SP, #-16]!
     MRS LR, TPIDR_EL0
     STP X0, X1, [LR, #16]
@@ -19,11 +19,11 @@ saveCtx:
     STP X26, X27, [LR, #224]
     STP X28, X29, [LR, #240]
     LDR LR, [SP], #16
-    DSB SY
+    DSB ST
     RET
 
-.global loadCtx
-loadCtx:
+.global LoadCtx
+LoadCtx:
     STR LR, [SP, #-16]!
     MRS LR, TPIDR_EL0
     LDP X0, X1, [LR, #16]
@@ -43,3 +43,23 @@ loadCtx:
     LDP X28, X29, [LR, #240]
     LDR LR, [SP], #16
     RET
+
+.global RescaleClock
+RescaleClock:
+    SUB SP, SP, #32
+    STP X0, X1, [SP, #16]
+    MOV X0, #30787
+    MOVK X0, #29108, LSL #16
+    MOVK X0, #23236, LSL #32
+    MOVK X0, #2684, LSL #48
+    MRS X1, CNTFRQ_EL0
+    LSR X1, X1, #5
+    UMULH X1, X1, X0
+    LSR X1, X1, #7
+    MRS X0, CNTVCT_EL0
+    UDIV X1, X0, X1
+    ADD X1, X1, X1, LSL #1
+    LSL X0, X1, #6
+    STR X0, [SP, #0]
+    LDP X0, X1, [SP, #16]
+

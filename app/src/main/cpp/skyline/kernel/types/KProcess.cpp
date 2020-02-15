@@ -35,8 +35,9 @@ namespace skyline::kernel::type {
         if (tlsPages.empty()) {
             auto region = state.os->memory.GetRegion(memory::Regions::TlsIo);
             address = region.size ? region.address : 0;
-        } else
+        } else {
             address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
+        }
         auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::MemoryStates::ThreadLocal).item;
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
         auto &tlsPage = tlsPages.back();
@@ -72,7 +73,7 @@ namespace skyline::kernel::type {
         fregs.x1 = stackTop;
         fregs.x3 = tlsMem->Map(0, size, memory::Permission{true, true, false});
         fregs.x8 = __NR_clone;
-        fregs.x5 = reinterpret_cast<u64>(&guest::entry);
+        fregs.x5 = reinterpret_cast<u64>(&guest::GuestEntry);
         fregs.x6 = entryPoint;
         state.nce->ExecuteFunction(ThreadCall::Clone, fregs);
         if (static_cast<int>(fregs.x0) < 0)
@@ -156,7 +157,7 @@ namespace skyline::kernel::type {
                 case type::KType::KTransferMemory: {
                     auto mem = std::static_pointer_cast<type::KMemory>(object);
                     if (mem->IsInside(address))
-                        return std::optional<KProcess::HandleOut<KMemory>>({mem, handle});
+                        return std::make_optional<KProcess::HandleOut<KMemory>>({mem, handle});
                 }
                 default:
                     break;
@@ -186,11 +187,12 @@ namespace skyline::kernel::type {
         while (!status->flag);
         lock.lock();
         status->flag = false;
-        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it)
+        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it) {
             if ((*it)->handle == state.thread->handle) {
                 mtxWaiters.erase(it);
                 break;
             }
+        }
         return true;
     }
 
@@ -231,20 +233,20 @@ namespace skyline::kernel::type {
         lock.unlock();
         bool timedOut{};
         auto start = utils::GetTimeNs();
-        while (!status->flag) {
+        while (!status->flag)
             if ((utils::GetTimeNs() - start) >= timeout)
                 timedOut = true;
-        }
         lock.lock();
         if (!status->flag)
             timedOut = false;
         else
             status->flag = false;
-        for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it)
+        for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it) {
             if ((*it)->handle == state.thread->handle) {
                 condWaiters.erase(it);
                 break;
             }
+        }
         lock.unlock();
         return !timedOut;
     }

@@ -30,16 +30,18 @@ namespace skyline {
                         num++;
                         return;
                     }
-                } else
+                } else {
                     flag.compare_exchange_weak(none, group);
+                }
             } else if (flag == group && (next == Group::None || utils::GetTimeNs() >= end)) {
                 std::lock_guard lock(mtx);
                 if (flag == group) {
                     num++;
                     return;
                 }
-            } else
+            } else {
                 next.compare_exchange_weak(none, group);
+            }
             none = Group::None;
             asm volatile("yield");
         }

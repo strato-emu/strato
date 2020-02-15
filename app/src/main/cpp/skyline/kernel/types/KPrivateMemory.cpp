@@ -70,7 +70,7 @@ namespace skyline::kernel::type {
         auto chunk = state.os->memory.GetChunk(address);
         state.process->WriteMemory(reinterpret_cast<void *>(chunk->host), address, std::min(nSize, size), true);
         for (const auto &block : chunk->blockList) {
-            if((block.address - chunk->address) < size) {
+            if ((block.address - chunk->address) < size) {
                 fregs = {
                     .x0 = block.address,
                     .x1 = std::min(block.size, (chunk->address + nSize) - block.address),
@@ -80,8 +80,9 @@ namespace skyline::kernel::type {
                 state.nce->ExecuteFunction(ThreadCall::Syscall, fregs);
                 if (fregs.x0 < 0)
                     throw exception("An error occurred while updating private memory's permissions in child process");
-            } else
+            } else {
                 break;
+            }
         }
         munmap(reinterpret_cast<void *>(chunk->host), size);
         auto host = mmap(reinterpret_cast<void *>(chunk->host), nSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);

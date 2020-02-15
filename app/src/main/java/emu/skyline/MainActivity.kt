@@ -181,7 +181,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
+                startActivityForResult(Intent(this, SettingsActivity::class.java), 3)
                 true
             }
             R.id.action_refresh -> {
@@ -193,34 +193,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (sharedPreferences.getBoolean("refresh_required", false))
-            refreshFiles(false)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+        super.onActivityResult(requestCode, resultCode, intent)
         if (resultCode == RESULT_OK) {
             when (requestCode) {
                 1 -> {
-                    val uri = data!!.data!!
+                    val uri = intent!!.data!!
                     contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     sharedPreferences.edit().putString("search_location", uri.toString()).apply()
                     refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
                 }
                 2 -> {
                     try {
-                        val uri = (data!!.data!!)
-                        val intent = Intent(this, GameActivity::class.java)
-                        intent.data = uri
+                        val uri = (intent!!.data!!)
+                        val intentGame = Intent(this, GameActivity::class.java)
+                        intentGame.data = uri
                         if (resultCode != 0)
-                            startActivityForResult(intent, resultCode)
+                            startActivityForResult(intentGame, resultCode)
                         else
-                            startActivity(intent)
+                            startActivity(intentGame)
                     } catch (e: Exception) {
                         notifyUser(e.message!!)
                     }
+                }
+                3 -> {
+                    if (sharedPreferences.getBoolean("refresh_required", false))
+                        refreshFiles(false)
                 }
             }
         }

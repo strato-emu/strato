@@ -98,12 +98,12 @@ namespace skyline::kernel::ipc {
      * @brief This is a buffer descriptor for X buffers: https://switchbrew.org/wiki/IPC_Marshalling#Buffer_descriptor_X_.22Pointer.22
      */
     struct BufferDescriptorX {
-        u16 counter0_5   : 6;
-        u16 address36_38 : 3;
-        u16 counter9_11  : 3;
-        u16 address32_35 : 4;
-        u16 size         : 16;
-        u32 address0_31  : 32;
+        u16 counter0_5   : 6; //!< The first 5 bits of the counter
+        u16 address36_38 : 3; //!< Bit 36-38 of the address
+        u16 counter9_11  : 3; //!< Bit 9-11 of the counter
+        u16 address32_35 : 4; //!< Bit 32-35 of the address
+        u16 size         : 16; //!< The 16 bit size of the buffer
+        u32 address0_31  : 32; //!< The first 32-bits of the address
 
         BufferDescriptorX(u64 address, u16 counter, u16 size) : size(size) {
             address0_31 = static_cast<u32>(address & 0x7FFFFFFF80000000);
@@ -113,10 +113,16 @@ namespace skyline::kernel::ipc {
             counter9_11 = static_cast<u16>(address & 0x38);
         }
 
+        /**
+         * @return The address of the buffer
+         */
         inline u64 Address() const {
             return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
         }
 
+        /**
+         * @return The buffer counter
+         */
         inline u16 Counter() const {
             return static_cast<u16>(counter0_5) | static_cast<u16>(counter9_11) << 9;
         }
@@ -127,13 +133,13 @@ namespace skyline::kernel::ipc {
      * @brief This is a buffer descriptor for A/B/W buffers: https://switchbrew.org/wiki/IPC_Marshalling#Buffer_descriptor_A.2FB.2FW_.22Send.22.2F.22Receive.22.2F.22Exchange.22
      */
     struct BufferDescriptorABW {
-        u32 size0_31    : 32;
-        u32 address0_31 : 32;
-        u8 flags        : 2;
-        u8 address36_38 : 3;
+        u32 size0_31    : 32; //!< The first 32 bits of the size
+        u32 address0_31 : 32; //!< The first 32 bits of the address
+        u8 flags        : 2; //!< The buffer flags
+        u8 address36_38 : 3; //!< Bit 36-38 of the address
         u32             : 19;
-        u8 size32_35    : 4;
-        u8 address32_35 : 4;
+        u8 size32_35    : 4; //!< Bit 32-35 of the size
+        u8 address32_35 : 4; //!< Bit 32-35 of the address
 
         BufferDescriptorABW(u64 address, u64 size) {
             address0_31 = static_cast<u32>(address & 0x7FFFFFFF80000000);
@@ -143,12 +149,16 @@ namespace skyline::kernel::ipc {
             size32_35 = static_cast<u8>(size & 0x78000000);
         }
 
-        std::vector<u8> Read(const DeviceState &state);
-
+        /**
+         * @return The address of the buffer
+         */
         inline u64 Address() const {
             return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
         }
 
+        /**
+         * @return The size of the buffer
+         */
         inline u64 Size() const {
             return static_cast<u64>(size0_31) | static_cast<u64>(size32_35) << 32;
         }
@@ -159,8 +169,8 @@ namespace skyline::kernel::ipc {
      * @brief This is a buffer descriptor for C buffers: https://switchbrew.org/wiki/IPC_Marshalling#Buffer_descriptor_C_.22ReceiveList.22
      */
     struct BufferDescriptorC {
-        u64 address : 48;
-        u32 size    : 16;
+        u64 address : 48; //!< The 48-bit address of the buffer
+        u32 size    : 16; //!< The 16-bit size of the buffer
 
         BufferDescriptorC(u64 address, u16 size) : address(address), size(size) {}
     };
@@ -232,7 +242,7 @@ namespace skyline::kernel::ipc {
         u8 *payloadOffset; //!< This is the offset of the data read from the payload
 
       public:
-        std::array<u8, constant::TlsIpcSize> tls; //!< A static-sized array where TLS data is actually copied to
+        //std::array<u8, constant::TlsIpcSize> tls; //!< A static-sized array where TLS data is actually copied to
         CommandHeader *header{}; //!< The header of the request
         HandleDescriptor *handleDesc{}; //!< The handle descriptor in case CommandHeader::handle_desc is true in the header
         bool isDomain{}; //!< If this is a domain request

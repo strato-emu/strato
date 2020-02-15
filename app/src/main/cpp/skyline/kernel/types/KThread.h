@@ -19,7 +19,7 @@ namespace skyline::kernel::type {
             Running, //!< The thread is running currently
             Dead //!< The thread is dead and not running
         } status = Status::Created; //!< The state of the thread
-        std::atomic<bool> cancelSync; //!< This is to flag to a thread to cancel a synchronization call it currently is in
+        std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
         std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
         handle_t handle; // The handle of the object in the handle table
         pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])

@@ -21,7 +21,7 @@ namespace skyline::gpu::device {
     void NvHostChannel::SetErrorNotifier(skyline::gpu::device::IoctlData &buffer) {}
 
     void NvHostChannel::SetPriority(skyline::gpu::device::IoctlData &buffer) {
-        auto priority = state.process->ReadMemory<NvChannelPriority>(buffer.input[0].address);
+        auto priority = state.process->GetObject<NvChannelPriority>(buffer.input[0].address);
         switch (priority) {
             case NvChannelPriority::Low:
                 timeslice = 1300;

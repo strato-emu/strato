@@ -138,41 +138,6 @@ namespace skyline::kernel::type {
         std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, u8 priority);
 
         /**
-         * @brief Returns an object from process memory
-         * @tparam Type The type of the object to be read
-         * @param address The address of the object
-         * @return An object of type T with read data
-         */
-        template<typename Type>
-        inline Type ReadMemory(u64 address) const {
-            Type item{};
-            ReadMemory(&item, address, sizeof(Type));
-            return item;
-        }
-
-        /**
-         * @brief Writes an object to process memory
-         * @tparam Type The type of the object to be written
-         * @param item The object to write
-         * @param address The address of the object
-         */
-        template<typename Type>
-        inline void WriteMemory(Type &item, u64 address) const {
-            WriteMemory(&item, address, sizeof(Type));
-        }
-
-        /**
-         * @brief Writes an object to process memory
-         * @tparam Type The type of the object to be written
-         * @param item The object to write
-         * @param address The address of the object
-         */
-        template<typename Type>
-        inline void WriteMemory(const Type &item, u64 address) const {
-            WriteMemory(&item, address, sizeof(Type));
-        }
-
-        /**
          * @brief This returns the host address for a specific address in guest memory
          * @param address The corresponding guest address
          * @return The corresponding host address
@@ -191,7 +156,87 @@ namespace skyline::kernel::type {
         }
 
         /**
-         * @brief Read data from the process's memory
+         * @brief Returns a reference to an object from guest memory
+         * @tparam Type The type of the object to be read
+         * @param address The address of the object
+         * @return A reference to object with type T
+         */
+        template<typename Type>
+        inline Type &GetReference(u64 address) const {
+            auto source = GetPointer<Type>(address);
+            if (source)
+                return *source;
+            else
+                throw exception("Cannot retrieve reference to object not in shared guest memory");
+        }
+
+        /**
+         * @brief Returns a copy of an object from guest memory
+         * @tparam Type The type of the object to be read
+         * @param address The address of the object
+         * @return A copy of the object from guest memory
+         */
+        template<typename Type>
+        inline Type GetObject(u64 address) const {
+            auto source = GetPointer<Type>(address);
+            if (source) {
+                return *source;
+            } else {
+                Type item{};
+                ReadMemory(&item, address, sizeof(Type));
+                return item;
+            }
+        }
+
+        /**
+         * @brief Returns a string from guest memory
+         * @param address The address of the object
+         * @param maxSize The maximum size of the string
+         * @return A copy of a string in guest memory
+         */
+        inline std::string GetString(u64 address, const size_t maxSize) const {
+            auto source = GetPointer<char>(address);
+            if (source)
+                return std::string(source, maxSize);
+            std::string debug(maxSize, '\0');
+            ReadMemory(debug.data(), address, maxSize);
+            return debug;
+        }
+
+        /**
+         * @brief Writes an object to guest memory
+         * @tparam Type The type of the object to be written
+         * @param item The object to write
+         * @param address The address of the object
+         */
+        template<typename Type>
+        inline void WriteMemory(Type &item, u64 address) const {
+            auto destination = GetPointer<Type>(address);
+            if (destination) {
+                *destination = item;
+            } else {
+                WriteMemory(&item, address, sizeof(Type));
+            }
+        }
+
+        /**
+         * @brief Writes an object to guest memory
+         * @tparam Type The type of the object to be written
+         * @param item The object to write
+         * @param address The address of the object
+         */
+        template<typename Type>
+        inline void WriteMemory(const Type &item, u64 address) const {
+            auto destination = GetPointer<Type>(address);
+            if (destination) {
+                *destination = item;
+            } else {
+                WriteMemory(&item, address, sizeof(Type));
+            }
+        }
+
+        /**
+         * @brief Read data from the guest's memory
          * @param destination The address to the location where the process memory is written
          * @param offset The address to read from in process memory
          * @param size The amount of memory to be read
@@ -200,7 +245,7 @@ namespace skyline::kernel::type {
         void ReadMemory(void *destination, const u64 offset, const size_t size, const bool forceGuest = false) const;
 
         /**
-         * @brief Write to the process's memory
+         * @brief Write to the guest's memory
          * @param source The address of where the data to be written is present
          * @param offset The address to write to in process memory
          * @param size The amount of memory to be written
@@ -209,7 +254,7 @@ namespace skyline::kernel::type {
         void WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest = false) const;
 
         /**
-         * @brief Copy one chunk to another in the process's memory
+         * @brief Copy one chunk to another in the guest's memory
          * @param source The address of where the data to read is present
          * @param destination The address to write the read data to
          * @param size The amount of memory to be copied

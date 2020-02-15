@@ -122,8 +122,7 @@ namespace skyline {
         template<typename TypeVal, typename TypeMul>
         inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
-            multiple--;
-            return (value + multiple) & ~multiple;
+            return (value + multiple) & ~(multiple - 1);
         }
 
         /**
@@ -137,8 +136,7 @@ namespace skyline {
         template<typename TypeVal, typename TypeMul>
         inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
-            multiple--;
-            return value & ~multiple;
+            return value & ~(multiple - 1);
         }
 
         /**
@@ -212,9 +210,9 @@ namespace skyline {
         void unlock();
 
       private:
-        std::atomic<Group> flag = Group::None; //!< An atomic flag to hold which group holds the mutex
-        std::atomic<Group> next = Group::None; //!< An atomic flag to hold which group will hold the mutex next
-        std::atomic<u8> num = 0; //!< An atomic u8 keeping track of how many users are holding the mutex
+        std::atomic<Group> flag{Group::None}; //!< An atomic flag to hold which group holds the mutex
+        std::atomic<Group> next{Group::None}; //!< An atomic flag to hold which group will hold the mutex next
+        std::atomic<u8> num{0}; //!< An atomic u8 keeping track of how many users are holding the mutex
         Mutex mtx; //!< A mutex to lock before changing of num and flag
     };
 

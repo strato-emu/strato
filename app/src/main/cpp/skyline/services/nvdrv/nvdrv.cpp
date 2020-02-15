@@ -13,8 +13,7 @@ namespace skyline::service::nvdrv {
 
     void nvdrv::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto buffer = request.inputBuf.at(0);
-        std::string path(buffer.size, '\0');
-        state.process->ReadMemory(path.data(), buffer.address, buffer.size);
+        auto path = state.process->GetString(buffer.address, buffer.size);
         response.Push<u32>(state.gpu->OpenDevice(path));
         response.Push<u32>(constant::status::Success);
     }

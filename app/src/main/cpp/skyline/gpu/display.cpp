@@ -3,7 +3,7 @@
 #include <gpu.h>
 
 namespace skyline::gpu {
-    Buffer::Buffer(const DeviceState &state, u32 slot, GbpBuffer &gbpBuffer) : state(state), slot(slot), gbpBuffer(gbpBuffer), resolution{gbpBuffer.width, gbpBuffer.height}, dataBuffer(gbpBuffer.size) {
+    Buffer::Buffer(const DeviceState &state, u32 slot, GbpBuffer &gbpBuffer) : state(state), slot(slot), gbpBuffer(gbpBuffer), resolution{gbpBuffer.width, gbpBuffer.height} {
         if (gbpBuffer.nvmapHandle)
             nvBuffer = state.gpu->GetDevice<device::NvMap>(device::NvDeviceType::nvmap)->handleTable.at(gbpBuffer.nvmapHandle);
         else {
@@ -30,8 +30,8 @@ namespace skyline::gpu {
         }
     }
 
-    void Buffer::UpdateBuffer() {
-        state.process->ReadMemory(dataBuffer.data(), nvBuffer->address + gbpBuffer.offset, gbpBuffer.size);
+    u8 *Buffer::GetAddress() {
+        return state.process->GetPointer<u8>(nvBuffer->address + gbpBuffer.offset);
     }
 
     BufferQueue::BufferQueue(const DeviceState &state) : state(state) {}
@@ -89,7 +89,6 @@ namespace skyline::gpu {
         } *data = reinterpret_cast<Data *>(in.data.data() + constant::TokenLength);
         auto buffer = queue.at(data->slot);
         buffer->status = BufferStatus::Queued;
-        buffer->UpdateBuffer();
         displayQueue.emplace(buffer);
         state.gpu->bufferEvent->Signal();
         struct {

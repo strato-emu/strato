@@ -13,22 +13,14 @@ namespace skyline {
             /**
              * @brief This constructor initializes all permissions to false
              */
-            Permission() {
-                r = 0;
-                w = 0;
-                x = 0;
-            };
+            Permission() : r(), w(), x() {};
 
             /**
              * @param read If memory has read permission
              * @param write If memory has write permission
              * @param execute If memory has execute permission
              */
-            Permission(bool read, bool write, bool execute) {
-                r = read;
-                w = write;
-                x = execute;
-            };
+            Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {};
 
             /**
              * @brief Equality operator between two Permission objects
@@ -199,7 +191,8 @@ namespace skyline {
              * @brief Checks if the specified address is within the region
              * @param address The address to check
              * @return If the address is inside the region
-             */inline bool IsInside(u64 address) {
+             */
+            inline bool IsInside(u64 address) {
                 return (this->address <= address) && ((this->address + this->size) > address);
             }
         };
@@ -249,7 +242,7 @@ namespace skyline {
             u64 size; //!< The size of the current chunk in bytes
             u64 host; //!< The address of the chunk in the host
             memory::MemoryState state; //!< The MemoryState for the current block
-            std::forward_list<BlockDescriptor> blockList; //!< This linked list holds the block descriptors for all the children blocks of this Chunk
+            std::vector<BlockDescriptor> blockList; //!< This vector holds the block descriptors for all the children blocks of this Chunk
         };
 
         /**
@@ -266,7 +259,7 @@ namespace skyline {
         class MemoryManager {
           private:
             const DeviceState &state; //!< The state of the device
-            std::forward_list<ChunkDescriptor> chunkList; //!< This linked list holds all the chunk descriptors
+            std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
             memory::Region base{memory::Regions::Base}; //!< The Region object for the entire address space
             memory::Region code{memory::Regions::Code}; //!< The Region object for the code memory region
             memory::Region alias{memory::Regions::Alias}; //!< The Region object for the alias memory region
@@ -284,7 +277,7 @@ namespace skyline {
              * @param address The address to find a block at
              * @return A pointer to the BlockDescriptor or nullptr in case chunk was not found
              */
-            BlockDescriptor *GetBlock(u64 address);
+            BlockDescriptor *GetBlock(u64 address, ChunkDescriptor* chunk = nullptr);
 
             /**
              * @brief Inserts a chunk into the memory map
@@ -310,7 +303,7 @@ namespace skyline {
              * @param chunk The chunk to insert the block into
              * @param block The block to insert
              */
-            static void InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block);
+            static void InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block);
 
             /**
              * @brief This initializes all of the regions in the address space

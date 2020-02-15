@@ -7,7 +7,7 @@
 #define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
 
 namespace skyline::guest {
-    FORCE_INLINE void saveCtxStack() {
+    FORCE_INLINE void SaveCtxStack() {
         asm("SUB SP, SP, #240\n\t"
             "STP X0, X1, [SP, #0]\n\t"
             "STP X2, X3, [SP, #16]\n\t"
@@ -27,7 +27,7 @@ namespace skyline::guest {
         );
     }
 
-    FORCE_INLINE void loadCtxStack() {
+    FORCE_INLINE void LoadCtxStack() {
         asm("LDP X0, X1, [SP, #0]\n\t"
             "LDP X2, X3, [SP, #16]\n\t"
             "LDP X4, X5, [SP, #32]\n\t"
@@ -47,7 +47,7 @@ namespace skyline::guest {
         );
     }
 
-    FORCE_INLINE void saveCtxTls() {
+    FORCE_INLINE void SaveCtxTls() {
         asm("STR LR, [SP, #-16]!\n\t"
             "MRS LR, TPIDR_EL0\n\t"
             "STP X0, X1, [LR, #16]\n\t"
@@ -65,11 +65,12 @@ namespace skyline::guest {
             "STP X24, X25, [LR, #208]\n\t"
             "STP X26, X27, [LR, #224]\n\t"
             "STP X28, X29, [LR, #240]\n\t"
-            "LDR LR, [SP], #16"
+            "LDR LR, [SP], #16\n\t"
+            "DSB ST"
         );
     }
 
-    FORCE_INLINE void loadCtxTls() {
+    FORCE_INLINE void LoadCtxTls() {
         asm("STR LR, [SP, #-16]!\n\t"
             "MRS LR, TPIDR_EL0\n\t"
             "LDP X0, X1, [LR, #16]\n\t"
@@ -91,7 +92,10 @@ namespace skyline::guest {
         );
     }
 
-    void svcHandler(u64 pc, u32 svc) {
+    /**
+     * @note Do not use any functions that cannot be inlined from this, as this function is placed at an arbitrary address in the guest. In addition, do not use any static variables or globals as the .bss section is not copied into the guest.
+     */
+    void SvcHandler(u64 pc, u32 svc) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
         ctx->pc = pc;
@@ -112,7 +116,7 @@ namespace skyline::guest {
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16" ::: "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
                     break;
                 }
                 default: {
@@ -131,7 +135,7 @@ namespace skyline::guest {
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16" :: "r"(&spec) : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
+                        "LDR LR, [SP], #16"::"r"(&spec) : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
                 }
             }
             return;
@@ -153,35 +157,35 @@ namespace skyline::guest {
                 "LDR Q2, [SP], #16\n\t"
                 "LDR Q1, [SP], #16\n\t"
                 "LDR Q0, [SP], #16\n\t"
-                "LDP X1, X2, [SP], #16" :: "r"(ctx->registers.x0));
+                "LDP X1, X2, [SP], #16"::"r"(ctx->registers.x0));
             return;
         }
         while (true) {
             ctx->state = ThreadState::WaitKernel;
             while (ctx->state == ThreadState::WaitKernel);
-            if (ctx->state == ThreadState::WaitRun)
+            if (ctx->state == ThreadState::WaitRun) {
                 break;
-            else if (ctx->state == ThreadState::WaitFunc) {
+            } else if (ctx->state == ThreadState::WaitFunc) {
                 if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
-                    saveCtxStack();
-                    loadCtxTls();
+                    SaveCtxStack();
+                    LoadCtxTls();
                     asm("STR LR, [SP, #-16]!\n\t"
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
                         "LDR LR, [SP], #16");
-                    saveCtxTls();
-                    loadCtxStack();
+                    SaveCtxTls();
+                    LoadCtxStack();
                 } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
-                    auto src = reinterpret_cast<u8*>(ctx->registers.x0);
-                    auto dest = reinterpret_cast<u8*>(ctx->registers.x1);
+                    auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
+                    auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
                     auto size = ctx->registers.x2;
                     auto end = src + size;
                     while (src < end)
                         *(src++) = *(dest++);
                 } else if (ctx->commandId == static_cast<u32>(ThreadCall::Clone)) {
-                    saveCtxStack();
-                    loadCtxTls();
+                    SaveCtxStack();
+                    LoadCtxTls();
                     asm("STR LR, [SP, #-16]!\n\t"
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
@@ -221,15 +225,15 @@ namespace skyline::guest {
                         ".parent:\n\t"
                         "MOV SP, LR\n\t"
                         "LDR LR, [SP], #16");
-                    saveCtxTls();
-                    loadCtxStack();
+                    SaveCtxTls();
+                    LoadCtxStack();
                 }
             }
         }
         ctx->state = ThreadState::Running;
     }
 
-    void signalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
+    void SignalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
         for (u8 index = 0; index < 30; index++)
@@ -245,29 +249,29 @@ namespace skyline::guest {
         }
     }
 
-    void entry(u64 address) {
+    void GuestEntry(u64 address) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
         while (true) {
             ctx->state = ThreadState::WaitInit;
             while (ctx->state == ThreadState::WaitInit);
-            if (ctx->state == ThreadState::WaitRun)
+            if (ctx->state == ThreadState::WaitRun) {
                 break;
-            else if (ctx->state == ThreadState::WaitFunc) {
+            } else if (ctx->state == ThreadState::WaitFunc) {
                 if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
-                    saveCtxStack();
-                    loadCtxTls();
+                    SaveCtxStack();
+                    LoadCtxTls();
                     asm("STR LR, [SP, #-16]!\n\t"
                         "MOV LR, SP\n\t"
                         "SVC #0\n\t"
                         "MOV SP, LR\n\t"
                         "LDR LR, [SP], #16");
-                    saveCtxTls();
-                    loadCtxStack();
+                    SaveCtxTls();
+                    LoadCtxStack();
                 }
             } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
-                auto src = reinterpret_cast<u8*>(ctx->registers.x0);
-                auto dest = reinterpret_cast<u8*>(ctx->registers.x1);
+                auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
+                auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
                 auto size = ctx->registers.x2;
                 auto end = src + size;
                 while (src < end)
@@ -275,7 +279,7 @@ namespace skyline::guest {
             }
         }
         struct sigaction sigact{
-            .sa_sigaction = reinterpret_cast<void (*)(int, struct siginfo *, void *)>(reinterpret_cast<void *>(signalHandler)),
+            .sa_sigaction = reinterpret_cast<void (*)(int, struct siginfo *, void *)>(reinterpret_cast<void *>(SignalHandler)),
             .sa_flags = SA_SIGINFO,
         };
         for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
@@ -312,7 +316,7 @@ namespace skyline::guest {
             "MOV X27, XZR\n\t"
             "MOV X28, XZR\n\t"
             "MOV X29, XZR\n\t"
-            "RET" :: "r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
+            "RET"::"r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
         __builtin_unreachable();
     }
 }

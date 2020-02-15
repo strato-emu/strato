@@ -104,7 +104,6 @@ namespace skyline::gpu {
         Resolution resolution; //!< The resolution of this buffer
         GbpBuffer gbpBuffer; //!< The information about the underlying buffer
         BufferStatus status{BufferStatus::Free}; //!< The status of this buffer
-        std::vector<u8> dataBuffer; //!< The vector holding the actual pixel data
         std::shared_ptr<device::NvMap::NvMapObject> nvBuffer{}; //!< A shared pointer to the buffer's nvmap object
 
         /**
@@ -115,9 +114,9 @@ namespace skyline::gpu {
         Buffer(const DeviceState &state, u32 slot, GbpBuffer &gbpBuffer);
 
         /**
-         * @brief This reads the buffer from the process into the dataBuffer vector
+         * @return The address of the buffer on the kernel
          */
-        void UpdateBuffer();
+        u8* GetAddress();
     };
 
     /**

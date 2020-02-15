@@ -44,7 +44,7 @@ namespace skyline::gpu {
                 resolution = buffer->resolution;
                 format = buffer->gbpBuffer.format;
             }
-            u8 *inBuffer = buffer->dataBuffer.data();
+            u8 *inBuffer = buffer->GetAddress();
             madvise(inBuffer, buffer->gbpBuffer.size, MADV_SEQUENTIAL);
             ANativeWindow_Buffer windowBuffer;
             ARect rect;

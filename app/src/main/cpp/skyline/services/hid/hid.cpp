@@ -40,7 +40,7 @@ namespace skyline::service::hid {
         size_t numId = buffer.size / sizeof(NpadId);
         u64 address = buffer.address;
         for (size_t i = 0; i < numId; i++) {
-            auto id = state.process->ReadMemory<NpadId>(address);
+            auto id = state.process->GetObject<NpadId>(address);
             deviceMap[id] = JoyConDevice(id);
             address += sizeof(NpadId);
         }

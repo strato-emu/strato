@@ -33,8 +33,9 @@ namespace skyline {
                         if (kernel::svc::SvcTable[svc]) {
                             state.logger->Debug("SVC called 0x{:X}", svc);
                             (*kernel::svc::SvcTable[svc])(state);
-                        } else
+                        } else {
                             throw exception("Unimplemented SVC 0x{:X}", svc);
+                        }
                     } catch (const std::exception &e) {
                         throw exception("{} (SVC: 0x{:X})", e.what(), svc);
                     }
@@ -57,8 +58,9 @@ namespace skyline {
                 state.os->KillThread(thread);
                 Halt = true;
                 jniMtx.unlock();
-            } else
+            } else {
                 state.os->KillThread(thread);
+            }
         }
     }
 
@@ -160,28 +162,10 @@ namespace skyline {
             state.logger->Debug("Process Trace:{}", trace);
             state.logger->Debug("Raw Instructions: 0x{}", raw);
             state.logger->Debug("CPU Context:{}", regStr);
-        } else
+        } else {
             state.logger->Debug("CPU Context:{}", regStr);
+        }
     }
-
-    const std::array<u32, 16> CntpctEl0 = {
-        0xD10083FF, // SUB SP, SP, #32
-        0xA90107E0, // STP X0, X1, [SP, #16]
-        0xD28F0860, // MOV X0, #30787
-        0xF2AE3680, // MOVK X0, #29108, LSL #16
-        0xD53BE001, // MRS X1, CNTFRQ_EL0
-        0xF2CB5880, // MOVK X0, #23236, LSL #32
-        0xD345FC21, // LSR X1, X1, #5
-        0xF2E14F80, // MOVK X0, #2684, LSL #48
-        0x9BC07C21, // UMULH X1, X1, X0
-        0xD347FC21, // LSR X1, X1, #7
-        0xD53BE040, // MRS X0, CNTVCT_EL0
-        0x9AC10801, // UDIV X1, X0, X1
-        0x8B010421, // ADD X1, X1, X1, LSL #1
-        0xD37AE420, // LSL X0, X1, #6
-        0xF90003E0, // STR X0, [SP, #0]
-        0xA94107E0, // LDP X0, X1, [SP, #16]
-    };
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
         u32 *start = reinterpret_cast<u32 *>(code.data());
@@ -190,15 +174,13 @@ namespace skyline {
 
         std::vector<u32> patch((guest::saveCtxSize + guest::loadCtxSize + guest::svcHandlerSize) / sizeof(u32));
 
-        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::saveCtx), guest::saveCtxSize);
+        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::SaveCtx), guest::saveCtxSize);
         offset += guest::saveCtxSize;
 
-        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize,
-                    reinterpret_cast<void *>(&guest::loadCtx), guest::loadCtxSize);
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize, reinterpret_cast<void *>(&guest::LoadCtx), guest::loadCtxSize);
         offset += guest::loadCtxSize;
 
-        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize,
-                    reinterpret_cast<void *>(&guest::svcHandler), guest::svcHandlerSize);
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize, reinterpret_cast<void *>(&guest::SvcHandler), guest::svcHandlerSize);
         offset += guest::svcHandlerSize;
 
         static u64 frequency{};
@@ -276,7 +258,7 @@ namespace skyline {
                 } else if (frequency != constant::TegraX1Freq) {
                     if (instrMrs->srcReg == constant::CntpctEl0) {
                         instr::B bjunc(offset);
-                        offset += CntpctEl0.size() * sizeof(u32);
+                        offset += guest::rescaleClockSize;
                         instr::Ldr ldr(0xF94003E0); // LDR XOUT, [SP]
                         ldr.destReg = instrMrs->destReg;
                         offset += sizeof(ldr);
@@ -286,8 +268,9 @@ namespace skyline {
                         offset += sizeof(bret);
 
                         *address = bjunc.raw;
-                        for (const auto &instr : CntpctEl0)
-                            patch.push_back(instr);
+                        auto size = patch.size();
+                        patch.resize(size + (guest::rescaleClockSize / sizeof(u32)));
+                        std::memcpy(patch.data() + size, reinterpret_cast<void *>(&guest::RescaleClock), guest::rescaleClockSize);
                         patch.push_back(ldr.raw);
                         patch.push_back(addSp);
                         patch.push_back(bret.raw);
@@ -316,4 +299,3 @@ namespace skyline {
         return patch;
     }
 }
-
