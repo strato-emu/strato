@@ -62,7 +62,9 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/applet.cpp
         ${source_DIR}/skyline/services/am/appletController.cpp
         ${source_DIR}/skyline/services/hid/hid.cpp
-        ${source_DIR}/skyline/services/time/time.cpp
+        ${source_DIR}/skyline/services/timesrv/IStaticService.cpp
+        ${source_DIR}/skyline/services/timesrv/ISystemClock.cpp
+        ${source_DIR}/skyline/services/timesrv/ITimeZoneService.cpp
         ${source_DIR}/skyline/services/fs/fs.cpp
         ${source_DIR}/skyline/services/nvdrv/nvdrv.cpp
         ${source_DIR}/skyline/services/nvnflinger/dispdrv.cpp

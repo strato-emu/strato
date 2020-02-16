@@ -8,7 +8,7 @@
 #include "audout/audout.h"
 #include "fatal/fatal.h"
 #include "hid/hid.h"
-#include "time/timesrv.h"
+#include "timesrv/IStaticService.h"
 #include "fs/fs.h"
 #include "nvdrv/nvdrv.h"
 #include "vi/vi_m.h"
@@ -50,8 +50,8 @@ namespace skyline::service {
             case Service::hid:
                 serviceObj = std::make_shared<hid::hid>(state, *this);
                 break;
-            case Service::time:
-                serviceObj = std::make_shared<time::time>(state, *this);
+            case Service::timesrv_IStaticService:
+                serviceObj = std::make_shared<timesrv::IStaticService>(state, *this);
                 break;
             case Service::fs_fsp:
                 serviceObj = std::make_shared<fs::fsp>(state, *this);
