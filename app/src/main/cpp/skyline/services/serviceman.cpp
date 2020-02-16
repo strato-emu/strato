@@ -9,7 +9,7 @@
 #include "fatal/fatal.h"
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
-#include "fs/fs.h"
+#include "fssrv/IFileSystemProxy.h"
 #include "nvdrv/nvdrv.h"
 #include "vi/vi_m.h"
 #include "serviceman.h"
@@ -53,8 +53,8 @@ namespace skyline::service {
             case Service::timesrv_IStaticService:
                 serviceObj = std::make_shared<timesrv::IStaticService>(state, *this);
                 break;
-            case Service::fs_fsp:
-                serviceObj = std::make_shared<fs::fsp>(state, *this);
+            case Service::fssrv_IFileSystemProxy:
+                serviceObj = std::make_shared<fssrv::IFileSystemProxy>(state, *this);
                 break;
             case Service::nvdrv:
                 serviceObj = std::make_shared<nvdrv::nvdrv>(state, *this);
