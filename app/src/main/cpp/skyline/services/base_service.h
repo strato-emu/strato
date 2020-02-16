@@ -18,7 +18,7 @@ namespace skyline::service {
      * @brief This contains an enum for every service that's present
      */
     enum class Service {
-        sm,
+        sm_IUserInterface,
         fatal_u,
         set_sys,
         apm,

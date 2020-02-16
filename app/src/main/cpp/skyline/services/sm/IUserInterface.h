@@ -5,11 +5,11 @@
 
 namespace skyline::service::sm {
     /**
-     * @brief sm: or Service Manager is responsible for providing handles to services (https://switchbrew.org/wiki/Services_API)
+     * @brief IUserInterface or sm: is responsible for providing handles to services (https://switchbrew.org/wiki/Services_API)
      */
-    class sm : public BaseService {
+    class IUserInterface : public BaseService {
       public:
-        sm(const DeviceState &state, ServiceManager &manager);
+        IUserInterface(const DeviceState &state, ServiceManager &manager);
 
         /**
          * @brief This initializes the sm: service. It doesn't actually do anything. (https://switchbrew.org/wiki/Services_API#Initialize)

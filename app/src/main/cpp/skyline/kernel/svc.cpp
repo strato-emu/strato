@@ -500,7 +500,7 @@ namespace skyline::kernel::svc {
         state.process->ReadMemory(port, state.ctx->registers.x1, constant::PortSize);
         handle_t handle{};
         if (std::strcmp(port, "sm:") == 0) {
-            handle = state.os->serviceManager.NewSession(service::Service::sm);
+            handle = state.os->serviceManager.NewSession(service::Service::sm_IUserInterface);
         } else {
             state.logger->Warn("svcConnectToNamedPort: Connecting to invalid port: '{}'", port);
             state.ctx->registers.w0 = constant::status::NotFound;
