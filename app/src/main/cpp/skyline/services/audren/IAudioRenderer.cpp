@@ -2,7 +2,7 @@
 #include <kernel/types/KProcess.h>
 
 namespace skyline::service::audren {
-    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params) : releaseEvent(std::make_shared<type::KEvent>(state)), rendererParams(params), BaseService(state, manager, false, Service::IAudioRenderer, {
+    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params) : releaseEvent(std::make_shared<type::KEvent>(state)), rendererParams(params), BaseService(state, manager, Service::IAudioRenderer, "IAudioRenderer", {
         {0x0, SFUNC(IAudioRenderer::GetSampleRate)},
         {0x1, SFUNC(IAudioRenderer::GetSampleCount)},
         {0x2, SFUNC(IAudioRenderer::GetMixBufferCount)},

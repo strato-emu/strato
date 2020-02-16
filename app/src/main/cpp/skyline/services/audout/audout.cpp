@@ -2,7 +2,7 @@
 #include <kernel/types/KProcess.h>
 
 namespace skyline::service::audout {
-    audoutU::audoutU(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::audout_u, {
+    audoutU::audoutU(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audout_u, "audout:u", {
         {0x0, SFUNC(audoutU::ListAudioOuts)},
         {0x1, SFUNC(audoutU::OpenAudioOut)}
     }) {}
@@ -30,7 +30,7 @@ namespace skyline::service::audout {
         response.Push(static_cast<u32>(audio::AudioOutState::Stopped));
     }
 
-    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, int channelCount, int sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, false, Service::audout_IAudioOut, {
+    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, int channelCount, int sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::audout_IAudioOut, "audout:IAudioOut", {
         {0x0, SFUNC(IAudioOut::GetAudioOutState)},
         {0x1, SFUNC(IAudioOut::StartAudioOut)},
         {0x2, SFUNC(IAudioOut::StopAudioOut)},

@@ -2,7 +2,7 @@
 #include <os.h>
 
 namespace skyline::service::hid {
-    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::hid_IAppletResource, {
+    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hid_IAppletResource, "hid:IAppletResource", {
         {0x0, SFUNC(IAppletResource::GetSharedMemoryHandle)}
     }) {}
 
@@ -13,7 +13,7 @@ namespace skyline::service::hid {
         response.copyHandles.push_back(handle);
     }
 
-    hid::hid(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::hid, {
+    hid::hid(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hid, "hid", {
         {0x0, SFUNC(hid::CreateAppletResource)},
         {0x64, SFUNC(hid::SetSupportedNpadStyleSet)},
         {0x66, SFUNC(hid::SetSupportedNpadIdType)},

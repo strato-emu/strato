@@ -1,7 +1,7 @@
 #pragma once
 
-#include <nce.h>
 #include <kernel/types/KSession.h>
+#include <nce.h>
 #include "base_service.h"
 
 namespace skyline::service {
@@ -54,11 +54,6 @@ namespace skyline::service {
          * @param service The handle of the KService object
          */
         void CloseSession(const handle_t handle);
-
-        /**
-         * @brief This is a function where the Services get to run their core event loops
-         */
-        void Loop();
 
         /**
          * @brief Handles a Synchronous IPC Request

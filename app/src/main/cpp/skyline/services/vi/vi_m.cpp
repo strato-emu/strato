@@ -4,7 +4,7 @@
 #include <gpu/display.h>
 
 namespace skyline::service::vi {
-    vi_m::vi_m(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvdrv, {
+    vi_m::vi_m(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::nvdrv, "nvdrv", {
         {0x2, SFUNC(vi_m::GetDisplayService)}
     }) {}
 
@@ -12,7 +12,7 @@ namespace skyline::service::vi {
         manager.RegisterService(SRVREG(IApplicationDisplayService), session, response);
     }
 
-    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, Service serviceType, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, false, serviceType, vTable) {}
+    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, serviceType, serviceName, vTable) {}
 
     void IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Stray Layer");
@@ -28,7 +28,7 @@ namespace skyline::service::vi {
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
     }
 
-    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IApplicationDisplayService, {
+    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IApplicationDisplayService, "vi:IApplicationDisplayService", {
         {0x64, SFUNC(IApplicationDisplayService::GetRelayService)},
         {0x65, SFUNC(IApplicationDisplayService::GetSystemDisplayService)},
         {0x66, SFUNC(IApplicationDisplayService::GetManagerDisplayService)},
@@ -110,14 +110,14 @@ namespace skyline::service::vi {
         response.copyHandles.push_back(handle);
     }
 
-    ISystemDisplayService::ISystemDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_ISystemDisplayService, {
+    ISystemDisplayService::ISystemDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_ISystemDisplayService, "vi:ISystemDisplayService", {
         {0x89D, SFUNC(ISystemDisplayService::SetLayerZ)},
         {0x908, SFUNC(IDisplayService::CreateStrayLayer)}
     }) {}
 
     void ISystemDisplayService::SetLayerZ(skyline::kernel::type::KSession &session, skyline::kernel::ipc::IpcRequest &request, skyline::kernel::ipc::IpcResponse &response) {}
 
-    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IManagerDisplayService, {
+    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::vi_IManagerDisplayService, "vi:IManagerDisplayService", {
         {0x7DA, SFUNC(IManagerDisplayService::CreateManagedLayer)},
         {0x7DB, SFUNC(IManagerDisplayService::DestroyManagedLayer)},
         {0x7DC, SFUNC(IDisplayService::CreateStrayLayer)},

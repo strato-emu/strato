@@ -76,7 +76,6 @@ namespace skyline {
             std::lock_guard guard(jniMtx);
             if (Halt)
                 break;
-            state.os->serviceManager.Loop();
             state.gpu->Loop();
         }
         if (!Halt) {

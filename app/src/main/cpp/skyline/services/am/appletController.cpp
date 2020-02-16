@@ -6,7 +6,7 @@ namespace skyline::service::am {
         messageEvent->Signal();
     }
 
-    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, false, Service::am_ICommonStateGetter, {
+    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ICommonStateGetter, "am:ICommonStateGetter", {
         {0x0, SFUNC(ICommonStateGetter::GetEventHandle)},
         {0x1, SFUNC(ICommonStateGetter::ReceiveMessage)},
         {0x5, SFUNC(ICommonStateGetter::GetOperationMode)},
@@ -56,7 +56,7 @@ namespace skyline::service::am {
         }
     }
 
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_ISelfController, {
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_ISelfController, "am:ISelfController", {
         {0xB, SFUNC(ISelfController::SetOperationModeChangedNotification)},
         {0xC, SFUNC(ISelfController::SetPerformanceModeChangedNotification)},
         {0xD, SFUNC(ISelfController::SetFocusHandlingMode)},
@@ -80,7 +80,7 @@ namespace skyline::service::am {
         response.Push<u64>(0);
     }
 
-    IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IWindowController, {
+    IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IWindowController, "am:IWindowController", {
         {0x1, SFUNC(IWindowController::GetAppletResourceUserId)},
         {0xA, SFUNC(IWindowController::AcquireForegroundRights)}
     }) {}
@@ -91,16 +91,16 @@ namespace skyline::service::am {
 
     void IWindowController::AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
-    IAudioController::IAudioController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IAudioController, {
+    IAudioController::IAudioController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IAudioController, "am:IAudioController", {
     }) {}
 
-    IDisplayController::IDisplayController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IDisplayController, {
+    IDisplayController::IDisplayController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IDisplayController, "am:IDisplayController", {
     }) {}
 
-    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_ILibraryAppletCreator, {
+    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_ILibraryAppletCreator, "am:ILibraryAppletCreator", {
     }) {}
 
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IApplicationFunctions, {
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IApplicationFunctions, "am:IApplicationFunctions", {
         {0x28, SFUNC(IApplicationFunctions::NotifyRunning)}
     }) {}
 
@@ -108,9 +108,9 @@ namespace skyline::service::am {
         response.Push<u8>(1);
     }
 
-    IDebugFunctions::IDebugFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IDebugFunctions, {
+    IDebugFunctions::IDebugFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IDebugFunctions, "am:IDebugFunctions", {
     }) {}
 
-    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::am_IAppletCommonFunctions, {
+    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IAppletCommonFunctions, "am:IAppletCommonFunctions", {
     }) {}
 }

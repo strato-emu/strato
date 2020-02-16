@@ -1,7 +1,7 @@
 #include "apm.h"
 
 namespace skyline::service::apm {
-    apm::apm(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::apm, {
+    apm::apm(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::apm, "apm", {
         {0x0, SFUNC(apm::OpenSession)}
     }) {}
 
@@ -9,7 +9,7 @@ namespace skyline::service::apm {
         manager.RegisterService(std::make_shared<ISession>(state, manager), session, response);
     }
 
-    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::apm_ISession, {
+    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::apm_ISession, "apm:ISession", {
         {0x0, SFUNC(ISession::SetPerformanceConfiguration)},
         {0x1, SFUNC(ISession::GetPerformanceConfiguration)}
     }) {}

@@ -1,7 +1,7 @@
 #include "fatal.h"
 
 namespace skyline::service::fatal {
-    fatalU::fatalU(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::fatal_u, {
+    fatalU::fatalU(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::fatal_u, "fatal:u", {
         {0x0, SFUNC(fatalU::ThrowFatal)},
         {0x1, SFUNC(fatalU::ThrowFatal)},
         {0x2, SFUNC(fatalU::ThrowFatal)}

@@ -1,7 +1,7 @@
 #include "fs.h"
 
 namespace skyline::service::fs {
-    fsp::fsp(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::fs_fsp, {
+    fsp::fsp(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::fs_fsp, "fs:fsp", {
         {0x1, SFUNC(fsp::SetCurrentProcess)},
         {0x12, SFUNC(fsp::OpenSdCardFileSystem)}
     }) {}
@@ -14,5 +14,5 @@ namespace skyline::service::fs {
         manager.RegisterService(std::make_shared<IFileSystem>(FsType::SdCard, state, manager), session, response);
     }
 
-    IFileSystem::IFileSystem(FsType type, const DeviceState &state, ServiceManager &manager) : type(type), BaseService(state, manager, false, Service::fs_IFileSystem, {}) {}
+    IFileSystem::IFileSystem(FsType type, const DeviceState &state, ServiceManager &manager) : type(type), BaseService(state, manager, Service::fs_IFileSystem, "fs:IFileSystem", {}) {}
 }

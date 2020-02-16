@@ -3,7 +3,7 @@
 #include <gpu.h>
 
 namespace skyline::service::nvnflinger {
-    dispdrv::dispdrv(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::nvnflinger_dispdrv, {
+    dispdrv::dispdrv(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::nvnflinger_dispdrv, "nvnflinger_dispdrv", {
         {0x0, SFUNC(dispdrv::TransactParcel)},
         {0x1, SFUNC(dispdrv::AdjustRefcount)},
         {0x2, SFUNC(dispdrv::GetNativeHandle)},

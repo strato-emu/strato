@@ -1,4 +1,3 @@
-#include "serviceman.h"
 #include <kernel/types/KProcess.h>
 #include <services/audren/IAudioRendererManager.h>
 #include "sm/sm.h"
@@ -13,15 +12,15 @@
 #include "fs/fs.h"
 #include "nvdrv/nvdrv.h"
 #include "vi/vi_m.h"
-#include "nvnflinger/dispdrv.h"
+#include "serviceman.h"
 
 namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
 
     std::shared_ptr<BaseService> ServiceManager::GetService(const Service serviceType) {
-        if (serviceMap.count(serviceType)) {
+        if (serviceMap.count(serviceType))
             return serviceMap.at(serviceType);
-        }
+
         std::shared_ptr<BaseService> serviceObj;
         switch (serviceType) {
             case Service::sm:
@@ -36,53 +35,11 @@ namespace skyline::service {
             case Service::apm:
                 serviceObj = std::make_shared<apm::apm>(state, *this);
                 break;
-            case Service::apm_ISession:
-                serviceObj = std::make_shared<apm::ISession>(state, *this);
-                break;
             case Service::am_appletOE:
                 serviceObj = std::make_shared<am::appletOE>(state, *this);
                 break;
             case Service::am_appletAE:
                 serviceObj = std::make_shared<am::appletAE>(state, *this);
-                break;
-            case Service::am_IApplicationProxy:
-                serviceObj = std::make_shared<am::IApplicationProxy>(state, *this);
-                break;
-            case Service::am_ILibraryAppletProxy:
-                serviceObj = std::make_shared<am::ILibraryAppletProxy>(state, *this);
-                break;
-            case Service::am_ISystemAppletProxy:
-                serviceObj = std::make_shared<am::ISystemAppletProxy>(state, *this);
-                break;
-            case Service::am_IOverlayAppletProxy:
-                serviceObj = std::make_shared<am::IOverlayAppletProxy>(state, *this);
-                break;
-            case Service::am_ICommonStateGetter:
-                serviceObj = std::make_shared<am::ICommonStateGetter>(state, *this);
-                break;
-            case Service::am_IWindowController:
-                serviceObj = std::make_shared<am::IWindowController>(state, *this);
-                break;
-            case Service::am_IAudioController:
-                serviceObj = std::make_shared<am::IAudioController>(state, *this);
-                break;
-            case Service::am_IDisplayController:
-                serviceObj = std::make_shared<am::IDisplayController>(state, *this);
-                break;
-            case Service::am_ISelfController:
-                serviceObj = std::make_shared<am::ISelfController>(state, *this);
-                break;
-            case Service::am_ILibraryAppletCreator:
-                serviceObj = std::make_shared<am::ILibraryAppletCreator>(state, *this);
-                break;
-            case Service::am_IApplicationFunctions:
-                serviceObj = std::make_shared<am::IApplicationFunctions>(state, *this);
-                break;
-            case Service::am_IDebugFunctions:
-                serviceObj = std::make_shared<am::IDebugFunctions>(state, *this);
-                break;
-            case Service::am_IAppletCommonFunctions:
-                serviceObj = std::make_shared<am::IAppletCommonFunctions>(state, *this);
                 break;
             case Service::audout_u:
                 serviceObj = std::make_shared<audout::audoutU>(state, *this);
@@ -92,9 +49,6 @@ namespace skyline::service {
                 break;
             case Service::hid:
                 serviceObj = std::make_shared<hid::hid>(state, *this);
-                break;
-            case Service::hid_IAppletResource:
-                serviceObj = std::make_shared<hid::IAppletResource>(state, *this);
                 break;
             case Service::time:
                 serviceObj = std::make_shared<time::time>(state, *this);
@@ -107,18 +61,6 @@ namespace skyline::service {
                 break;
             case Service::vi_m:
                 serviceObj = std::make_shared<vi::vi_m>(state, *this);
-                break;
-            case Service::vi_IApplicationDisplayService:
-                serviceObj = std::make_shared<vi::IApplicationDisplayService>(state, *this);
-                break;
-            case Service::vi_ISystemDisplayService:
-                serviceObj = std::make_shared<vi::ISystemDisplayService>(state, *this);
-                break;
-            case Service::vi_IManagerDisplayService:
-                serviceObj = std::make_shared<vi::IManagerDisplayService>(state, *this);
-                break;
-            case Service::nvnflinger_dispdrv:
-                serviceObj = std::make_shared<nvnflinger::dispdrv>(state, *this);
                 break;
             default:
                 throw exception("GetService called on missing object, type: {}", serviceType);
@@ -159,7 +101,7 @@ namespace skyline::service {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
-        state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->getName(), handle);
+        state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->serviceName, handle);
     }
 
     void ServiceManager::CloseSession(const handle_t handle) {
@@ -169,18 +111,12 @@ namespace skyline::service {
             if (session->isDomain) {
                 for (const auto &[objectId, service] : session->domainTable)
                     serviceMap.erase(service->serviceType);
-            } else
+            } else {
                 serviceMap.erase(session->serviceObject->serviceType);
+            }
             session->serviceStatus = type::KSession::ServiceStatus::Closed;
         }
     };
-
-    void ServiceManager::Loop() {
-        std::lock_guard serviceGuard(mutex);
-        for (auto&[type, service] : serviceMap)
-            if (service->hasLoop)
-                service->Loop();
-    }
 
     void ServiceManager::SyncRequestHandler(const handle_t handle) {
         auto session = state.process->GetHandle<type::KSession>(handle);
@@ -191,7 +127,7 @@ namespace skyline::service {
             ipc::IpcRequest request(session->isDomain, state);
             ipc::IpcResponse response(session->isDomain, state);
 
-            switch (static_cast<ipc::CommandType>(request.header->type)) {
+            switch (request.header->type) {
                 case ipc::CommandType::Request:
                 case ipc::CommandType::RequestWithContext:
                     if (session->isDomain) {
@@ -209,12 +145,12 @@ namespace skyline::service {
                         } catch (std::out_of_range &) {
                             throw exception("Invalid object ID was used with domain request");
                         }
-                    } else
+                    } else {
                         session->serviceObject->HandleRequest(*session, request, response);
+                    }
                     if (!response.nWrite)
                         response.WriteResponse();
                     break;
-
                 case ipc::CommandType::Control:
                 case ipc::CommandType::ControlWithContext:
                     state.logger->Debug("Control IPC Message: 0x{:X}", request.payload->value);
@@ -234,17 +170,16 @@ namespace skyline::service {
                     }
                     response.WriteResponse();
                     break;
-
                 case ipc::CommandType::Close:
                     state.logger->Debug("Closing Session");
                     CloseSession(handle);
                     break;
-
                 default:
-                    throw exception("Unimplemented IPC message type: {}", u16(request.header->type));
+                    throw exception("Unimplemented IPC message type: {}", static_cast<u16>(request.header->type));
             }
-        } else
+        } else {
             state.logger->Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
+        }
         state.logger->Debug("====End====");
     }
 }

@@ -38,7 +38,7 @@ namespace skyline::service::vi {
         static_assert(sizeof(LayerParcel) == 0x28);
 
       public:
-        IDisplayService(const DeviceState &state, ServiceManager &manager, Service serviceType, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable);
+        IDisplayService(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable);
 
         /**
          * @brief This takes a display's ID and returns a layer ID and the corresponding buffer ID

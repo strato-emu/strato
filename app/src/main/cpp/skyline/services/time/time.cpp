@@ -1,7 +1,7 @@
 #include "timesrv.h"
 
 namespace skyline::service::time {
-    time::time(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::time, {
+    time::time(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::time, "time", {
         {0x0, SFUNC(time::GetStandardUserSystemClock)},
         {0x1, SFUNC(time::GetStandardNetworkSystemClock)},
         {0x3, SFUNC(time::GetTimeZoneService)},
@@ -24,7 +24,7 @@ namespace skyline::service::time {
         manager.RegisterService(std::make_shared<ISystemClock>(SystemClockType::Local, state, manager), session, response);
     }
 
-    ISystemClock::ISystemClock(SystemClockType clockType, const DeviceState &state, ServiceManager &manager) : type(clockType), BaseService(state, manager, false, Service::time_ISystemClock, {
+    ISystemClock::ISystemClock(SystemClockType clockType, const DeviceState &state, ServiceManager &manager) : type(clockType), BaseService(state, manager, Service::time_ISystemClock, "time:ISystemClock", {
         {0x0, SFUNC(ISystemClock::GetCurrentTime)}
     }) {}
 
@@ -32,7 +32,7 @@ namespace skyline::service::time {
         response.Push<u64>(static_cast<u64>(std::time(nullptr)));
     }
 
-    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, false, Service::time_ITimeZoneService, {
+    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::time_ITimeZoneService, "time:ITimeZoneService", {
         {0x65, SFUNC(ITimeZoneService::ToCalendarTimeWithMyRule)}
     }) {}
 
