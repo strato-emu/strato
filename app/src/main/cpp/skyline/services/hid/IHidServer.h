@@ -2,32 +2,13 @@
 
 #include <services/base_service.h>
 #include <services/serviceman.h>
-#include <kernel/types/KProcess.h>
-
-namespace skyline::constant {
-    constexpr size_t hidSharedMemSize = 0x40000; //!< The size of HID Shared Memory (https://switchbrew.org/wiki/HID_Shared_Memory)
-}
+#include "IAppletResource.h"
 
 namespace skyline::service::hid {
     /**
-     * @brief IAppletResource is used to get the handle to the HID shared memory (https://switchbrew.org/wiki/HID_services#IAppletResource)
+     * @brief IHidServer or hid service is used to access input devices (https://switchbrew.org/wiki/HID_services#hid)
      */
-    class IAppletResource : public BaseService {
-      public:
-        IAppletResource(const DeviceState &state, ServiceManager &manager);
-
-        std::shared_ptr<type::KSharedMemory> hidSharedMemory;
-
-        /**
-         * @brief This opens a handle to HID shared memory (https://switchbrew.org/wiki/HID_services#GetSharedMemoryHandle)
-         */
-        void GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-    };
-
-    /**
-     * @brief hid or Human Interface Device service is used to access input devices (https://switchbrew.org/wiki/HID_services#hid)
-     */
-    class hid : public BaseService {
+    class IHidServer : public BaseService {
       private:
         /**
          * @brief This holds the controller styles supported by an application
@@ -43,7 +24,7 @@ namespace skyline::service::hid {
             bool nes : 1; //!< NES controller
             bool nesHandheld : 1; //!< NES controller in handheld mode
             bool snes : 1; //!< SNES controller
-            u32 : 22;
+            u32 _pad0_ : 22;
         };
         static_assert(sizeof(StyleSet) == 4);
 
@@ -105,13 +86,13 @@ namespace skyline::service::hid {
             JoyConDevice(const NpadId &id) : id(id) {}
         };
 
-        std::shared_ptr<IAppletResource> resource{}; //!< A shared pointer to the applet resource
-        std::optional<StyleSet> styleSet; //!< The controller styles supported by the application
-        std::unordered_map<NpadId, JoyConDevice> deviceMap; //!< Mapping from a controller's ID to it's corresponding JoyConDevice
+        std::shared_ptr <IAppletResource> resource{}; //!< A shared pointer to the applet resource
+        std::optional <StyleSet> styleSet; //!< The controller styles supported by the application
+        std::unordered_map <NpadId, JoyConDevice> deviceMap; //!< Mapping from a controller's ID to it's corresponding JoyConDevice
         JoyConOrientation orientation{JoyConOrientation::Unset}; //!< The Orientation of the Joy-Con(s)
 
       public:
-        hid(const DeviceState &state, ServiceManager &manager);
+        IHidServer(const DeviceState &state, ServiceManager &manager);
 
         /**
          * @brief This returns an IAppletResource (https://switchbrew.org/wiki/HID_services#CreateAppletResource)

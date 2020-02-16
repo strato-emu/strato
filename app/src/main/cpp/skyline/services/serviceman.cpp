@@ -7,7 +7,7 @@
 #include "am/appletController.h"
 #include "audout/audout.h"
 #include "fatal/fatal.h"
-#include "hid/hid.h"
+#include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
 #include "fs/fs.h"
 #include "nvdrv/nvdrv.h"
@@ -47,8 +47,8 @@ namespace skyline::service {
             case Service::IAudioRendererManager:
                 serviceObj = std::make_shared<audren::IAudioRendererManager>(state, *this);
                 break;
-            case Service::hid:
-                serviceObj = std::make_shared<hid::hid>(state, *this);
+            case Service::hid_IHidServer:
+                serviceObj = std::make_shared<hid::IHidServer>(state, *this);
                 break;
             case Service::timesrv_IStaticService:
                 serviceObj = std::make_shared<timesrv::IStaticService>(state, *this);
