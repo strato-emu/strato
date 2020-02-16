@@ -57,7 +57,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/audren/IAudioRenderer.cpp
         ${source_DIR}/skyline/services/audren/voice.cpp
         ${source_DIR}/skyline/services/audren/memoryPool.cpp
-        ${source_DIR}/skyline/services/set/sys.cpp
+        ${source_DIR}/skyline/services/settings/ISystemSettingsServer.cpp
         ${source_DIR}/skyline/services/apm/apm.cpp
         ${source_DIR}/skyline/services/am/applet.cpp
         ${source_DIR}/skyline/services/am/appletController.cpp

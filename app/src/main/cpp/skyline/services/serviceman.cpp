@@ -1,7 +1,7 @@
 #include <kernel/types/KProcess.h>
 #include <services/audren/IAudioRendererManager.h>
 #include "sm/IUserInterface.h"
-#include "set/sys.h"
+#include "settings/ISystemSettingsServer.h"
 #include "apm/apm.h"
 #include "am/applet.h"
 #include "am/appletController.h"
@@ -29,8 +29,8 @@ namespace skyline::service {
             case Service::fatal_u:
                 serviceObj = std::make_shared<fatal::fatalU>(state, *this);
                 break;
-            case Service::set_sys:
-                serviceObj = std::make_shared<set::sys>(state, *this);
+            case Service::settings_ISystemSettingsServer:
+                serviceObj = std::make_shared<settings::ISystemSettingsServer>(state, *this);
                 break;
             case Service::apm:
                 serviceObj = std::make_shared<apm::apm>(state, *this);
