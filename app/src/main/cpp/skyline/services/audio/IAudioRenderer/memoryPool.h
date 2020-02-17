@@ -2,7 +2,7 @@
 
 #include <common.h>
 
-namespace skyline::service::audren {
+namespace skyline::service::audio::IAudioRenderer {
     /**
      * @brief This enumerates various states a memory pool can be in
      */

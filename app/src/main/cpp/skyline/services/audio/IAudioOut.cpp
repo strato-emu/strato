@@ -1,36 +1,8 @@
-#include "audout.h"
 #include <kernel/types/KProcess.h>
+#include "IAudioOut.h"
 
-namespace skyline::service::audout {
-    audoutU::audoutU(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audout_u, "audout:u", {
-        {0x0, SFUNC(audoutU::ListAudioOuts)},
-        {0x1, SFUNC(audoutU::OpenAudioOut)}
-    }) {}
-
-    void audoutU::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.process->WriteMemory(reinterpret_cast<void *>(const_cast<char *>(constant::DefaultAudioOutName.data())),
-                                   request.outputBuf.at(0).address, constant::DefaultAudioOutName.size());
-    }
-
-    void audoutU::OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u32 sampleRate = request.Pop<u32>();
-        request.Pop<u16>(); // Channel count is stored in the upper half of a u32
-        u16 channelCount = request.Pop<u16>();
-
-        state.logger->Debug("audoutU: Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
-
-        sampleRate = sampleRate ? sampleRate : audio::constant::SampleRate;
-        channelCount = channelCount ? channelCount : static_cast<u16>(audio::constant::ChannelCount);
-        manager.RegisterService(std::make_shared<IAudioOut>(state, manager, channelCount, sampleRate), session, response);
-
-        response.Push<u32>(sampleRate);
-        response.Push<u16>(channelCount);
-        response.Push<u16>(0);
-        response.Push(static_cast<u32>(audio::PcmFormat::Int16));
-        response.Push(static_cast<u32>(audio::AudioOutState::Stopped));
-    }
-
-    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, int channelCount, int sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::audout_IAudioOut, "audout:IAudioOut", {
+namespace skyline::service::audio {
+    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, const int channelCount, const int sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::audio_IAudioOut, "audio:IAudioOut", {
         {0x0, SFUNC(IAudioOut::GetAudioOutState)},
         {0x1, SFUNC(IAudioOut::StartAudioOut)},
         {0x2, SFUNC(IAudioOut::StopAudioOut)},
@@ -39,7 +11,7 @@ namespace skyline::service::audout {
         {0x5, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)},
         {0x6, SFUNC(IAudioOut::ContainsAudioOutBuffer)}
     }) {
-        track = state.audio->OpenTrack(channelCount, audio::constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(channelCount, skyline::audio::constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
     }
 
     IAudioOut::~IAudioOut() {
@@ -74,7 +46,7 @@ namespace skyline::service::audout {
 
         tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
         state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
-        resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / audio::constant::SampleRate, channelCount);
+        resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / skyline::audio::constant::SampleRate, channelCount);
         track->AppendBuffer(tmpSampleBuffer, tag);
     }
 

@@ -1,11 +1,11 @@
 #include <kernel/types/KProcess.h>
-#include <services/audren/IAudioRendererManager.h>
 #include "sm/IUserInterface.h"
 #include "settings/ISystemSettingsServer.h"
 #include "apm/apm.h"
 #include "am/applet.h"
 #include "am/appletController.h"
-#include "audout/audout.h"
+#include "audio/IAudioOutManager.h"
+#include "audio/IAudioRendererManager.h"
 #include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
@@ -41,11 +41,11 @@ namespace skyline::service {
             case Service::am_appletAE:
                 serviceObj = std::make_shared<am::appletAE>(state, *this);
                 break;
-            case Service::audout_u:
-                serviceObj = std::make_shared<audout::audoutU>(state, *this);
+            case Service::audio_IAudioOutManager:
+                serviceObj = std::make_shared<audio::IAudioOutManager>(state, *this);
                 break;
-            case Service::IAudioRendererManager:
-                serviceObj = std::make_shared<audren::IAudioRendererManager>(state, *this);
+            case Service::audio_IAudioRendererManager:
+                serviceObj = std::make_shared<audio::IAudioRendererManager>(state, *this);
                 break;
             case Service::hid_IHidServer:
                 serviceObj = std::make_shared<hid::IHidServer>(state, *this);

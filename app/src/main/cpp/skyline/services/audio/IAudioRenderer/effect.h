@@ -2,7 +2,7 @@
 
 #include <common.h>
 
-namespace skyline::service::audren {
+namespace skyline::service::audio::IAudioRenderer {
     /**
      * @brief This enumerates various states an effect can be in
      */

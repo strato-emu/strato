@@ -1,53 +1,31 @@
 #pragma once
 
-#include <audio/resampler.h>
-#include <audio.h>
+#include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
-#include <kernel/types/KEvent.h>
+#include <audio/resampler.h>
+#include <audio.h>
 
-namespace skyline::service::audout {
-    namespace constant {
-        constexpr std::string_view DefaultAudioOutName = "DeviceOut"; //!< The default audio output device name
-    };
-
+namespace skyline::service::audio {
     /**
-     * @brief audout:u or IAudioOutManager is used to manage audio outputs (https://switchbrew.org/wiki/Audio_services#audout:u)
-     */
-    class audoutU : public BaseService {
-      public:
-        audoutU(const DeviceState &state, ServiceManager &manager);
-
-        /**
-         * @brief Returns a list of all available audio outputs (https://switchbrew.org/wiki/Audio_services#ListAudioOuts)
-         */
-        void ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-
-        /**
-         * @brief Creates a new audoutU::IAudioOut object and returns a handle to it (https://switchbrew.org/wiki/Audio_services#OpenAudioOut)
-         */
-        void OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-    };
-
-    /**
-     * @brief IAudioOut is a service opened when OpenAudioOut is called by audout (https://switchbrew.org/wiki/Audio_services#IAudioOut)
+     * @brief IAudioOut is a service opened when OpenAudioOut is called by IAudioOutManager (https://switchbrew.org/wiki/Audio_services#IAudioOut)
      */
     class IAudioOut : public BaseService {
       private:
-        audio::Resampler resampler; //!< The audio resampler object used to resample audio
-        std::shared_ptr<audio::AudioTrack> track; //!< The audio track associated with the audio out
+        skyline::audio::Resampler resampler; //!< The audio resampler object used to resample audio
+        std::shared_ptr<skyline::audio::AudioTrack> track; //!< The audio track associated with the audio out
         std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
         std::vector<i16> tmpSampleBuffer; //!< A temporary buffer used to store sample data in AppendAudioOutBuffer
 
-        int sampleRate; //!< The sample rate of the audio out
-        int channelCount; //!< The amount of channels in the data sent to the audio out
+        const int sampleRate; //!< The sample rate of the audio out
+        const int channelCount; //!< The amount of channels in the data sent to the audio out
 
       public:
         /**
          * @param channelCount The channel count of the audio data the audio out will be fed
          * @param sampleRate The sample rate of the audio data the audio out will be fed
          */
-        IAudioOut(const DeviceState &state, ServiceManager &manager, int channelCount, int sampleRate);
+        IAudioOut(const DeviceState &state, ServiceManager &manager, const int channelCount, const int sampleRate);
 
         /**
          * @brief Closes the audio track

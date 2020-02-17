@@ -1,7 +1,6 @@
-#include <common.h>
 #include "memoryPool.h"
 
-namespace skyline::service::audren {
+namespace skyline::service::audio::IAudioRenderer {
     void MemoryPool::ProcessInput(const MemoryPoolIn &input) {
         if (input.state == MemoryPoolState::RequestAttach)
             output.state = MemoryPoolState::Attached;

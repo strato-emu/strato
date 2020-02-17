@@ -1,8 +1,9 @@
-#include "IAudioRenderer.h"
 #include <kernel/types/KProcess.h>
+#include "IAudioRenderer.h"
 
-namespace skyline::service::audren {
-    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params) : releaseEvent(std::make_shared<type::KEvent>(state)), rendererParams(params), BaseService(state, manager, Service::IAudioRenderer, "IAudioRenderer", {
+namespace skyline::service::audio::IAudioRenderer {
+    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params)
+        : releaseEvent(std::make_shared<type::KEvent>(state)), rendererParams(params), memoryPoolCount(params.effectCount + params.voiceCount * 4), samplesPerBuffer(state.settings->GetInt("audren_buffer_size")), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
         {0x0, SFUNC(IAudioRenderer::GetSampleRate)},
         {0x1, SFUNC(IAudioRenderer::GetSampleCount)},
         {0x2, SFUNC(IAudioRenderer::GetMixBufferCount)},
@@ -12,11 +13,9 @@ namespace skyline::service::audren {
         {0x6, SFUNC(IAudioRenderer::Stop)},
         {0x7, SFUNC(IAudioRenderer::QuerySystemEvent)},
     }) {
-        track = state.audio->OpenTrack(audio::constant::ChannelCount, params.sampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(skyline::audio::constant::ChannelCount, params.sampleRate, [this]() { this->releaseEvent->Signal(); });
         track->Start();
 
-        samplesPerBuffer = state.settings->GetInt("audren_buffer_size");
-        memoryPoolCount = rendererParams.effectCount + rendererParams.voiceCount * 4;
         memoryPools.resize(memoryPoolCount);
         effects.resize(rendererParams.effectCount);
         voices.resize(rendererParams.voiceCount, Voice(state));
@@ -78,7 +77,7 @@ namespace skyline::service::audren {
 
         UpdateAudio();
 
-        UpdateDataHeader outputHeader {
+        UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,
             .behaviorSize = 0xb0,
             .memoryPoolSize = (rendererParams.effectCount + rendererParams.voiceCount * 4) * static_cast<u32>(sizeof(MemoryPoolOut)),
@@ -133,7 +132,7 @@ namespace skyline::service::audren {
 
     void IAudioRenderer::MixFinalBuffer() {
         int setIndex = 0;
-        sampleBuffer.resize(samplesPerBuffer * audio::constant::ChannelCount);
+        sampleBuffer.resize(samplesPerBuffer * skyline::audio::constant::ChannelCount);
 
         for (auto &voice : voices) {
             if (!voice.Playable())
@@ -150,7 +149,7 @@ namespace skyline::service::audren {
                 if (voiceBufferSize == 0)
                     break;
 
-                pendingSamples -= voiceBufferSize / audio::constant::ChannelCount;
+                pendingSamples -= voiceBufferSize / skyline::audio::constant::ChannelCount;
 
                 for (int i = voiceBufferOffset; i < voiceBufferOffset + voiceBufferSize; i++) {
                     if (setIndex == bufferOffset) {
@@ -160,8 +159,8 @@ namespace skyline::service::audren {
                         setIndex++;
                     } else {
                         sampleBuffer[bufferOffset] += static_cast<i16>(std::clamp(static_cast<int>(sampleBuffer[voiceSamples[i]]) +
-                            static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume),
-                            static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                                                                                      static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume),
+                                                                                  static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
                     }
 
                     bufferOffset++;
@@ -171,11 +170,11 @@ namespace skyline::service::audren {
     }
 
     void IAudioRenderer::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        playbackState = audio::AudioOutState::Started;
+        playbackState = skyline::audio::AudioOutState::Started;
     }
 
     void IAudioRenderer::Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        playbackState = audio::AudioOutState::Stopped;
+        playbackState = skyline::audio::AudioOutState::Stopped;
     }
 
     void IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

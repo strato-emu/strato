@@ -52,11 +52,12 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/serviceman.cpp
         ${source_DIR}/skyline/services/sm/IUserInterface.cpp
         ${source_DIR}/skyline/services/fatalsrv/IService.cpp
-        ${source_DIR}/skyline/services/audout/audout.cpp
-        ${source_DIR}/skyline/services/audren/IAudioRendererManager.cpp
-        ${source_DIR}/skyline/services/audren/IAudioRenderer.cpp
-        ${source_DIR}/skyline/services/audren/voice.cpp
-        ${source_DIR}/skyline/services/audren/memoryPool.cpp
+        ${source_DIR}/skyline/services/audio/IAudioOutManager.cpp
+        ${source_DIR}/skyline/services/audio/IAudioOut.cpp
+        ${source_DIR}/skyline/services/audio/IAudioRendererManager.cpp
+        ${source_DIR}/skyline/services/audio/IAudioRenderer/IAudioRenderer.cpp
+        ${source_DIR}/skyline/services/audio/IAudioRenderer/voice.cpp
+        ${source_DIR}/skyline/services/audio/IAudioRenderer/memoryPool.cpp
         ${source_DIR}/skyline/services/settings/ISystemSettingsServer.cpp
         ${source_DIR}/skyline/services/apm/apm.cpp
         ${source_DIR}/skyline/services/am/applet.cpp

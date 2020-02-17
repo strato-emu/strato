@@ -1,15 +1,15 @@
 #pragma once
 
-#include <audio.h>
+#include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
-#include <kernel/types/KEvent.h>
+#include <audio.h>
 #include "memoryPool.h"
 #include "effect.h"
 #include "voice.h"
 #include "revisionInfo.h"
 
-namespace skyline::service::audren {
+namespace skyline::service::audio::IAudioRenderer {
     namespace constant {
         constexpr int BufferAlignment = 0x40; //!< The alignment for all audren buffers
     }
@@ -58,18 +58,18 @@ namespace skyline::service::audren {
     */
     class IAudioRenderer : public BaseService {
       private:
-        std::shared_ptr<audio::AudioTrack> track; //!< The audio track associated with the audio renderer
         AudioRendererParams rendererParams; //!< The parameters to use for the renderer
+        RevisionInfo revisionInfo{}; //!< Stores info about supported features for the audren revision used
+        std::shared_ptr<skyline::audio::AudioTrack> track; //!< The audio track associated with the audio renderer
         std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
         std::vector<MemoryPool> memoryPools; //!< An vector of all memory pools that the guest may need
         std::vector<Effect> effects; //!< An vector of all effects that the guest may need
         std::vector<Voice> voices; //!< An vector of all voices that the guest may need
         std::vector<i16> sampleBuffer; //!< The final output data that is appended to the stream
-        RevisionInfo revisionInfo{}; //!< Stores info about supported features for the audren revision used
 
-        audio::AudioOutState playbackState{audio::AudioOutState::Stopped}; //!< The current state of playback
-        size_t memoryPoolCount{}; //!< The amount of memory pools the guest may need
-        int samplesPerBuffer{}; //!< The amount of samples each appended buffer should contain
+        skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The current state of playback
+        const size_t memoryPoolCount; //!< The amount of memory pools the guest may need
+        const int samplesPerBuffer; //!< The amount of samples each appended buffer should contain
 
         /**
          * @brief Obtains new sample data from voices and mixes it together into the sample buffer

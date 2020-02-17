@@ -15,8 +15,8 @@ namespace skyline::audio {
         const std::function<void()> releaseCallback; //!< Callback called when a buffer has been played
         std::deque<BufferIdentifier> identifierQueue; //!< Queue of all appended buffer identifiers
 
-        int channelCount; //!< The amount channels present in the track
-        int sampleRate; //!< The sample rate of the track
+        const int channelCount; //!< The amount channels present in the track
+        const int sampleRate; //!< The sample rate of the track
 
       public:
         std::queue<i16> sampleQueue; //!< Queue of all appended buffer data
@@ -30,7 +30,7 @@ namespace skyline::audio {
          * @param sampleRate The sample rate to use for the track
          * @param releaseCallback A callback to call when a buffer has been played
          */
-        AudioTrack(int channelCount, int sampleRate, const std::function<void()> &releaseCallback);
+        AudioTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback);
 
         /**
          * @brief Starts audio playback using data from appended buffers.

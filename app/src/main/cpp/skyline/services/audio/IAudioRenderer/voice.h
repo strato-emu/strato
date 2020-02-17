@@ -1,11 +1,11 @@
 #pragma once
 
-#include <common.h>
 #include <array>
-#include <audio.h>
 #include <audio/resampler.h>
+#include <audio.h>
+#include <common.h>
 
-namespace skyline::service::audren {
+namespace skyline::service::audio::IAudioRenderer {
     /**
      * @brief This stores data for configuring a biquadratic filter
      */
@@ -46,8 +46,8 @@ namespace skyline::service::audren {
         u32 nodeId; //!< The node ID of the voice
         u8 firstUpdate; //!< Whether this voice is new
         u8 acquired; //!< Whether the sample is in use
-        audio::AudioOutState playbackState; //!< The playback state
-        audio::PcmFormat pcmFormat; //!< The sample format
+        skyline::audio::AudioOutState playbackState; //!< The playback state
+        skyline::audio::PcmFormat pcmFormat; //!< The sample format
         u32 sampleRate; //!< The sample rate
         u32 priority; //!< The priority for this voice
         u32 _unk0_;
@@ -87,7 +87,7 @@ namespace skyline::service::audren {
         const DeviceState &state; //!< The emulator state object
         std::array<WaveBuffer, 4> waveBuffers; //!< An array containing the state of all four wave buffers
         std::vector<i16> sampleBuffer; //!< A buffer containing processed sample data
-        audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a stream
+        skyline::audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a stream
 
         bool acquired{false}; //!< If the voice is in use
         bool bufferReload{true}; //!< If the buffer needs to be updated
@@ -95,8 +95,8 @@ namespace skyline::service::audren {
         int sampleOffset{}; //!< The offset in the sample data of the current wave buffer
         int sampleRate{}; //!< The sample rate of the sample data
         int channelCount{}; //!< The amount of channels in the sample data
-        audio::AudioOutState playbackState{audio::AudioOutState::Stopped}; //!< The playback state of the voice
-        audio::PcmFormat pcmFormat{audio::PcmFormat::Invalid}; //!< The PCM format used for guest audio data
+        skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The playback state of the voice
+        skyline::audio::PcmFormat pcmFormat{skyline::audio::PcmFormat::Invalid}; //!< The PCM format used for guest audio data
 
         /**
          * @brief Updates the sample buffer with data from the current wave buffer and processes it
@@ -132,7 +132,7 @@ namespace skyline::service::audren {
          * @return Whether the voice is currently playable
          */
         inline bool Playable() {
-            return acquired && playbackState == audio::AudioOutState::Started && waveBuffers[bufferIndex].size != 0;
+            return acquired && playbackState == skyline::audio::AudioOutState::Started && waveBuffers[bufferIndex].size != 0;
         }
     };
 }
