@@ -6,7 +6,7 @@
 #include "am/applet.h"
 #include "am/appletController.h"
 #include "audout/audout.h"
-#include "fatal/fatal.h"
+#include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
 #include "fssrv/IFileSystemProxy.h"
@@ -26,8 +26,8 @@ namespace skyline::service {
             case Service::sm_IUserInterface:
                 serviceObj = std::make_shared<sm::IUserInterface>(state, *this);
                 break;
-            case Service::fatal_u:
-                serviceObj = std::make_shared<fatal::fatalU>(state, *this);
+            case Service::fatalsrv_IService:
+                serviceObj = std::make_shared<fatalsrv::IService>(state, *this);
                 break;
             case Service::settings_ISystemSettingsServer:
                 serviceObj = std::make_shared<settings::ISystemSettingsServer>(state, *this);

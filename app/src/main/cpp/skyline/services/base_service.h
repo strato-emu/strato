@@ -19,7 +19,7 @@ namespace skyline::service {
      */
     enum class Service {
         sm_IUserInterface,
-        fatal_u,
+        fatalsrv_IService,
         settings_ISystemSettingsServer,
         apm,
         apm_ISession,
@@ -61,7 +61,7 @@ namespace skyline::service {
      * @brief A map from every service's name as a std::string to the corresponding serviceEnum
      */
     const static std::unordered_map<std::string, Service> ServiceString{
-        {"fatal:u", Service::fatal_u},
+        {"fatal:u", Service::fatalsrv_IService},
         {"set:sys", Service::settings_ISystemSettingsServer},
         {"apm", Service::apm},
         {"appletOE", Service::am_appletOE},

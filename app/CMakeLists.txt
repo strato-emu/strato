@@ -51,7 +51,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
         ${source_DIR}/skyline/services/serviceman.cpp
         ${source_DIR}/skyline/services/sm/IUserInterface.cpp
-        ${source_DIR}/skyline/services/fatal/fatal.cpp
+        ${source_DIR}/skyline/services/fatalsrv/IService.cpp
         ${source_DIR}/skyline/services/audout/audout.cpp
         ${source_DIR}/skyline/services/audren/IAudioRendererManager.cpp
         ${source_DIR}/skyline/services/audren/IAudioRenderer.cpp
