@@ -21,7 +21,7 @@ namespace skyline::service {
         sm_IUserInterface,
         fatalsrv_IService,
         settings_ISystemSettingsServer,
-        apm,
+        apm_IManager,
         apm_ISession,
         am_appletOE,
         am_appletAE,
@@ -63,7 +63,7 @@ namespace skyline::service {
     const static std::unordered_map<std::string, Service> ServiceString{
         {"fatal:u", Service::fatalsrv_IService},
         {"set:sys", Service::settings_ISystemSettingsServer},
-        {"apm", Service::apm},
+        {"apm", Service::apm_IManager},
         {"appletOE", Service::am_appletOE},
         {"appletAE", Service::am_appletAE},
         {"audout:u", Service::audio_IAudioOutManager},
