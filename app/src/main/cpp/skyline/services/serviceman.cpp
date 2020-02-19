@@ -2,8 +2,8 @@
 #include "sm/IUserInterface.h"
 #include "settings/ISystemSettingsServer.h"
 #include "apm/IManager.h"
-#include "am/applet.h"
-#include "am/appletController.h"
+#include "am/IApplicationProxyService.h"
+#include "am/IAllSystemAppletProxiesService.h"
 #include "audio/IAudioOutManager.h"
 #include "audio/IAudioRendererManager.h"
 #include "fatalsrv/IService.h"
@@ -35,11 +35,11 @@ namespace skyline::service {
             case Service::apm_IManager:
                 serviceObj = std::make_shared<apm::IManager>(state, *this);
                 break;
-            case Service::am_appletOE:
-                serviceObj = std::make_shared<am::appletOE>(state, *this);
+            case Service::am_IApplicationProxyService:
+                serviceObj = std::make_shared<am::IApplicationProxyService>(state, *this);
                 break;
-            case Service::am_appletAE:
-                serviceObj = std::make_shared<am::appletAE>(state, *this);
+            case Service::am_IAllSystemAppletProxiesService:
+                serviceObj = std::make_shared<am::IAllSystemAppletProxiesService>(state, *this);
                 break;
             case Service::audio_IAudioOutManager:
                 serviceObj = std::make_shared<audio::IAudioOutManager>(state, *this);

@@ -61,8 +61,22 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/settings/ISystemSettingsServer.cpp
         ${source_DIR}/skyline/services/apm/IManager.cpp
         ${source_DIR}/skyline/services/apm/ISession.cpp
-        ${source_DIR}/skyline/services/am/applet.cpp
-        ${source_DIR}/skyline/services/am/appletController.cpp
+        ${source_DIR}/skyline/services/am/IAllSystemAppletProxiesService.cpp
+        ${source_DIR}/skyline/services/am/IApplicationProxyService.cpp
+        ${source_DIR}/skyline/services/am/proxy/base_proxy.cpp
+        ${source_DIR}/skyline/services/am/proxy/IApplicationProxy.cpp
+        ${source_DIR}/skyline/services/am/proxy/ILibraryAppletProxy.cpp
+        ${source_DIR}/skyline/services/am/proxy/IOverlayAppletProxy.cpp
+        ${source_DIR}/skyline/services/am/proxy/ISystemAppletProxy.cpp
+        ${source_DIR}/skyline/services/am/controller/IAppletCommonFunctions.cpp
+        ${source_DIR}/skyline/services/am/controller/IApplicationFunctions.cpp
+        ${source_DIR}/skyline/services/am/controller/IAudioController.cpp
+        ${source_DIR}/skyline/services/am/controller/ICommonStateGetter.cpp
+        ${source_DIR}/skyline/services/am/controller/IDebugFunctions.cpp
+        ${source_DIR}/skyline/services/am/controller/IDisplayController.cpp
+        ${source_DIR}/skyline/services/am/controller/ILibraryAppletCreator.cpp
+        ${source_DIR}/skyline/services/am/controller/ISelfController.cpp
+        ${source_DIR}/skyline/services/am/controller/IWindowController.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
         ${source_DIR}/skyline/services/hid/IAppletResource.cpp
         ${source_DIR}/skyline/services/timesrv/IStaticService.cpp
