@@ -35,24 +35,20 @@ class GameDialog() : DialogFragment() {
             val shortcutManager = activity?.getSystemService(ShortcutManager::class.java)!!
             game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
             game_pin.setOnClickListener {
-                run {
-                    val info = ShortcutInfo.Builder(context, item?.title)
-                    info.setShortLabel(item?.meta?.name!!)
-                    info.setActivity(ComponentName(context!!, GameActivity::class.java))
-                    info.setIcon(Icon.createWithBitmap(item?.icon))
-                    val intent = Intent(context, GameActivity::class.java)
-                    intent.data = item?.uri
-                    intent.action = Intent.ACTION_VIEW
-                    info.setIntent(intent)
-                    shortcutManager.requestPinShortcut(info.build(), null)
-                }
+                val info = ShortcutInfo.Builder(context, item?.title)
+                info.setShortLabel(item?.meta?.name!!)
+                info.setActivity(ComponentName(context!!, GameActivity::class.java))
+                info.setIcon(Icon.createWithBitmap(item?.icon))
+                val intent = Intent(context, GameActivity::class.java)
+                intent.data = item?.uri
+                intent.action = Intent.ACTION_VIEW
+                info.setIntent(intent)
+                shortcutManager.requestPinShortcut(info.build(), null)
             }
             game_play.setOnClickListener {
-                run {
-                    val intent = Intent(activity, GameActivity::class.java)
-                    intent.data = item?.uri
-                    startActivity(intent)
-                }
+                val intent = Intent(activity, GameActivity::class.java)
+                intent.data = item?.uri
+                startActivity(intent)
             }
         } else
             activity?.supportFragmentManager?.beginTransaction()?.remove(this)?.commit()

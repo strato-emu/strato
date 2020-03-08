@@ -27,53 +27,49 @@ import java.io.File
 import java.io.IOException
 import kotlin.concurrent.thread
 
-
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
     private var adapter = GameAdapter(this)
 
-    fun notifyUser(text: String) {
+    private fun notifyUser(text: String) {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
     }
 
     private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, entries: Int = 0): Int {
-        var mEntries = entries
-        for (file in directory.listFiles()) {
-            if (file.isDirectory) {
-                mEntries = findFile(ext, loader, file, mEntries)
-            } else {
-                try {
-                    if (file.name != null) {
-                        if (ext.equals(file.name?.substring((file.name!!.lastIndexOf(".")) + 1), ignoreCase = true)) {
-                            val document = RandomAccessDocument(this, file)
-                            if (loader.verifyFile(document)) {
-                                val entry = loader.getTitleEntry(document, file.uri)
-                                val header = (mEntries == 0)
-                                runOnUiThread {
-                                    if(header)
-                                        adapter.addHeader(getString(R.string.nro))
-                                    adapter.addItem(GameItem(entry))
-                                }
-                                mEntries++
+        var entryCount = entries
+
+        directory.listFiles()
+            .forEach { file ->
+                if (file.isDirectory) {
+                    entryCount = findFile(ext, loader, file, entries)
+                } else {
+                    if (ext.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
+                        val document = RandomAccessDocument(this, file)
+                        if (loader.verifyFile(document)) {
+                            val entry = loader.getTitleEntry(document, file.uri)
+                            val header = (entryCount == 0)
+                            runOnUiThread {
+                                if (header)
+                                    adapter.addHeader(getString(R.string.nro))
+                                adapter.addItem(GameItem(entry))
                             }
-                            document.close()
+                            entryCount++
                         }
+                        document.close()
                     }
-                } catch (e: StringIndexOutOfBoundsException) {
-                    Log.w("findFile", e.message!!)
                 }
             }
-        }
-        return mEntries
+
+        return entryCount
     }
 
     private fun refreshFiles(tryLoad: Boolean) {
         if (tryLoad) {
             try {
-                adapter.load(File(applicationInfo.dataDir + "/roms.bin"))
+                adapter.load(File("${applicationInfo.dataDir}/roms.bin"))
                 return
             } catch (e: Exception) {
-                Log.w("refreshFiles", "Ran into exception while loading: " + e.message)
+                Log.w("refreshFiles", "Ran into exception while loading: ${e.message}")
             }
         }
         thread(start = true) {
@@ -86,9 +82,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     if (entries == 0)
                         adapter.addHeader(getString(R.string.no_rom))
                     try {
-                        adapter.save(File(applicationInfo.dataDir + "/roms.bin"))
+                        adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
                     } catch (e: IOException) {
-                        Log.w("refreshFiles", "Ran into exception while saving: " + e.message)
+                        Log.w("refreshFiles", "Ran into exception while saving: ${e.message}")
                     }
                 }
                 sharedPreferences.edit().putBoolean("refresh_required", false).apply()
