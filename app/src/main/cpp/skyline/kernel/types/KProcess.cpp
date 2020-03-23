@@ -51,8 +51,8 @@ namespace skyline::kernel::type {
         threads[pid]->tls = GetTlsSlot();
     }
 
-    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), KSyncObject(state, KType::KProcess) {
-        auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stackBase + stackSize, 0, constant::DefaultPriority, this, tlsMemory).item;
+    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), stack(stack), KSyncObject(state, KType::KProcess) {
+        auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, constant::DefaultPriority, this, tlsMemory).item;
         threads[pid] = thread;
         state.nce->WaitThreadInit(thread);
         memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC);

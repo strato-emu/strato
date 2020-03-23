@@ -33,8 +33,9 @@ namespace skyline::kernel::type {
          * @param size The size of the allocation on the kernel
          * @param permission The permission of the kernel process
          * @param memState The MemoryState of the chunk of memory
+         * @param mmapFlags Additional flags to pass to mmap
          */
-        KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState = memory::MemoryStates::SharedMemory);
+        KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState = memory::MemoryStates::SharedMemory, int mmapFlags = 0);
 
         /**
          * @brief Maps the shared memory in the guest

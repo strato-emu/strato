@@ -6,13 +6,13 @@
 #include <asm/unistd.h>
 
 namespace skyline::kernel::type {
-    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState) : initialState(memState), KMemory(state, KType::KSharedMemory) {
+    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {
         if (address && !utils::PageAligned(address))
             throw exception("KSharedMemory was created with non-page-aligned address: 0x{:X}", address);
         fd = ASharedMemory_create("KSharedMemory", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
-        address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | ((address) ? MAP_FIXED : 0), fd, 0));
+        address = reinterpret_cast<u64>(mmap(reinterpret_cast<void *>(address), size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | ((address) ? MAP_FIXED : 0) | mmapFlags, fd, 0));
         if (address == reinterpret_cast<u64>(MAP_FAILED))
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
         kernel = {.address = address, .size = size, .permission = permission};

@@ -37,7 +37,7 @@ jobs:
       run: chmod +x gradlew
 
     - name: Install CMake from Android SDK Manager
-      run: yes | sdkmanager --install "cmake;3.10.2.4988404" | grep -v = || true
+      run: yes | sdkmanager --install "ndk;21.0.6113669" "cmake;3.10.2.4988404" | grep -v = || true
 
     - name: Android Lint
       run: ./gradlew --stacktrace lint

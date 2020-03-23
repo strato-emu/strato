@@ -107,6 +107,7 @@ namespace skyline::kernel::type {
         std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
         std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
         std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
+        std::shared_ptr<type::KSharedMemory> stack; //!< The shared memory used to hold the stack of the main thread
         std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
         Mutex mutexLock; //!< This mutex is to prevent concurrent mutex operations to happen at once
         Mutex conditionalLock; //!< This mutex is to prevent concurrent conditional variable operations to happen at once
@@ -116,11 +117,10 @@ namespace skyline::kernel::type {
          * @param state The state of the device
          * @param pid The PID of the main thread
          * @param entryPoint The address to start execution at
-         * @param stackBase The base of the stack
-         * @param stackSize The size of the stack
+         * @param stack The KSharedMemory object for Stack memory allocated by the guest process
          * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, u64 stackBase, u64 stackSize, std::shared_ptr<type::KSharedMemory> &tlsMemory);
+        KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
         /**
          * Close the file descriptor to the process's memory

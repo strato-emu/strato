@@ -18,15 +18,15 @@ namespace skyline {
             state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.address);
             while (true) {
                 asm("yield");
-                if (Halt)
+                if (__predict_false(Halt))
                     break;
-                if (!Surface)
+                if (__predict_false(!Surface))
                     continue;
                 if (state.ctx->state == ThreadState::WaitKernel) {
                     std::lock_guard jniGd(jniMtx);
-                    if (Halt)
+                    if (__predict_false(Halt))
                         break;
-                    if (!Surface)
+                    if (__predict_false(!Surface))
                         continue;
                     const u16 svc = static_cast<const u16>(state.ctx->commandId);
                     try {
@@ -40,7 +40,7 @@ namespace skyline {
                         throw exception("{} (SVC: 0x{:X})", e.what(), svc);
                     }
                     state.ctx->state = ThreadState::WaitRun;
-                } else if (state.ctx->state == ThreadState::GuestCrash) {
+                } else if (__predict_false(state.ctx->state == ThreadState::GuestCrash)) {
                     state.logger->Warn("Thread with PID {} has crashed due to signal: {}", thread, strsignal(state.ctx->commandId));
                     ThreadTrace();
                     state.ctx->state = ThreadState::WaitRun;
@@ -72,11 +72,17 @@ namespace skyline {
     }
 
     void NCE::Execute() {
-        while (true) {
-            std::lock_guard guard(jniMtx);
-            if (Halt)
-                break;
-            state.gpu->Loop();
+        try {
+            while (true) {
+                std::lock_guard guard(jniMtx);
+                if (Halt)
+                    break;
+                state.gpu->Loop();
+            }
+        } catch (const std::exception &e) {
+            state.logger->Error(e.what());
+        } catch (...) {
+            state.logger->Error("An unknown exception has occurred");
         }
         if (!Halt) {
             jniMtx.lock(GroupMutex::Group::Group2);
