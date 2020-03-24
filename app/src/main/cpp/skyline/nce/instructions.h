@@ -16,27 +16,27 @@ namespace skyline {
              * @brief Creates a BRK instruction with a specific immediate value, used for generating BRK opcodes
              * @param value The immediate value of the instruction
              */
-            explicit Brk(u16 value) {
-                sig0 = 0x0; // First 5 bits of a BRK instruction are 0
+            inline constexpr Brk(u16 value) {
+                sig0 = 0x0;
                 this->value = value;
-                sig1 = 0x6A1; // Last 11 bits of a BRK instruction stored as u16
+                sig1 = 0x6A1;
             }
 
             /**
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid BRK instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig0 == 0x0 && sig1 == 0x6A1);
             }
 
             union {
                 struct {
-                    u8 sig0   : 5;
-                    u32 value : 16;
-                    u16 sig1  : 11;
+                    u8 sig0   : 5;  //!< 5-bit signature (0x0)
+                    u32 value : 16; //!< 16-bit immediate value
+                    u16 sig1  : 11; //!< 11-bit signature (0x6A1)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Brk) == sizeof(u32));
@@ -49,17 +49,17 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid SVC instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig0 == 0x1 && sig1 == 0x6A0);
             }
 
             union {
                 struct {
-                    u8 sig0   : 5;
-                    u32 value : 16;
-                    u16 sig1  : 11;
+                    u8 sig0   : 5;  //!< 5-bit signature (0x0)
+                    u32 value : 16; //!< 16-bit immediate value
+                    u16 sig1  : 11; //!< 11-bit signature (0x6A1)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Svc) == sizeof(u32));
@@ -73,27 +73,27 @@ namespace skyline {
              * @param srcReg The source system register
              * @param dstReg The destination Xn register
              */
-            Mrs(u32 srcReg, regs::X dstReg) {
+            inline constexpr Mrs(u32 srcReg, regs::X dstReg) {
                 this->srcReg = srcReg;
                 this->destReg = dstReg;
-                sig = 0xD53; // Last 12 bits of a MRS instruction stored as u16
+                sig = 0xD53;
             }
 
             /**
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid MRS instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig == 0xD53);
             }
 
             union {
                 struct {
-                    u8 destReg  : 5;
-                    u32 srcReg : 15;
-                    u16 sig    : 12;
+                    u8 destReg  : 5; //!< 5-bit destination register
+                    u32 srcReg : 15; //!< 15-bit source register
+                    u16 sig    : 12; //!< 16-bit signature (0xD53)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Mrs) == sizeof(u32));
@@ -107,7 +107,7 @@ namespace skyline {
              * @brief Creates a B instruction with a specific offset
              * @param offset The offset to encode in the instruction (Should be 32-bit aligned)
              */
-            explicit B(i64 offset) {
+            inline constexpr B(i64 offset) {
                 this->offset = static_cast<i32>(offset / 4);
                 sig = 0x5;
             }
@@ -116,7 +116,7 @@ namespace skyline {
              * @brief Returns the offset of the instruction
              * @return The offset encoded within the instruction
              */
-            inline i32 Offset() {
+            inline constexpr i32 Offset() {
                 return offset * 4;
             }
 
@@ -124,16 +124,16 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid Branch instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig == 0x5);
             }
 
             union {
                 struct {
-                    i32 offset : 26;
-                    u8 sig     : 6;
+                    i32 offset : 26; //!< 26-bit branch offset
+                    u8 sig     : 6;  //!< 6-bit signature (0x5)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(B) == sizeof(u32));
@@ -147,7 +147,7 @@ namespace skyline {
              * @brief Creates a BL instruction with a specific offset
              * @param offset The offset to encode in the instruction (Should be 32-bit aligned)
              */
-            explicit BL(i64 offset) {
+            inline constexpr BL(i64 offset) {
                 this->offset = static_cast<i32>(offset / 4);
                 sig = 0x25;
             }
@@ -156,7 +156,7 @@ namespace skyline {
              * @brief Returns the offset of the instruction
              * @return The offset encoded within the instruction
              */
-            inline i32 Offset() {
+            inline constexpr i32 Offset() {
                 return offset * 4;
             }
 
@@ -164,16 +164,16 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid Branch Linked instruction
              */
-            inline bool Verify() {
-                return (sig == 0x85);
+            inline constexpr bool Verify() {
+                return (sig == 0x25);
             }
 
             union {
                 struct {
-                    i32 offset : 26;
-                    u8 sig     : 6;
+                    i32 offset : 26; //!< 26-bit branch offset
+                    u8 sig     : 6;  //!< 6-bit signature (0x25)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(BL) == sizeof(u32));
@@ -189,7 +189,7 @@ namespace skyline {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
              */
-            Movz(regs::X destReg, u16 imm16, u8 shift = 0) {
+            inline constexpr Movz(regs::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = static_cast<u8>(shift / 16);
@@ -203,7 +203,7 @@ namespace skyline {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
              */
-            Movz(regs::W destReg, u16 imm16, u8 shift = 0) {
+            inline constexpr Movz(regs::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = static_cast<u8>(shift / 16);
@@ -215,7 +215,7 @@ namespace skyline {
              * @brief Returns the offset of the instruction
              * @return The offset encoded within the instruction
              */
-            inline u8 Shift() {
+            inline constexpr u8 Shift() {
                 return static_cast<u8>(hw * 16);
             }
 
@@ -223,19 +223,19 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid MOVZ instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig == 0xA5);
             }
 
             union {
                 struct __attribute__((packed)) {
-                    u8 destReg : 5;
-                    u16 imm16  : 16;
-                    u8 hw      : 2;
-                    u8 sig     : 8;
-                    u8 sf      : 1;
+                    u8 destReg : 5;  //!< 5-bit destination register
+                    u16 imm16  : 16; //!< 16-bit immediate value
+                    u8 hw      : 2;  //!< 2-bit offset
+                    u8 sig     : 8;  //!< 8-bit signature (0xA5)
+                    u8 sf      : 1;  //!< 1-bit register type
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Movz) == sizeof(u32));
@@ -251,7 +251,7 @@ namespace skyline {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
              */
-            Movk(regs::X destReg, u16 imm16, u8 shift = 0) {
+            inline constexpr Movk(regs::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = static_cast<u8>(shift / 16);
@@ -265,7 +265,7 @@ namespace skyline {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
              */
-            Movk(regs::W destReg, u16 imm16, u8 shift = 0) {
+            inline constexpr Movk(regs::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = static_cast<u8>(shift / 16);
@@ -277,7 +277,7 @@ namespace skyline {
              * @brief Returns the offset of the instruction
              * @return The offset encoded within the instruction
              */
-            inline u8 Shift() {
+            inline constexpr u8 Shift() {
                 return static_cast<u8>(hw * 16);
             }
 
@@ -285,24 +285,29 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid MOVK instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig == 0xE5);
             }
 
             union {
                 struct __attribute__((packed)) {
-                    u8 destReg : 5;
-                    u16 imm16  : 16;
-                    u8 hw      : 2;
-                    u8 sig     : 8;
-                    u8 sf      : 1;
+                    u8 destReg : 5;  //!< 5-bit destination register
+                    u16 imm16  : 16; //!< 16-bit immediate value
+                    u8 hw      : 2;  //!< 2-bit offset
+                    u8 sig     : 8;  //!< 8-bit signature (0xA5)
+                    u8 sf      : 1;  //!< 1-bit register type
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Movk) == sizeof(u32));
 
-        const std::vector<u32> MoveU64Reg(regs::X destReg, u64 value) {
+        /**
+         * @param destReg The destination register of the operation
+         * @param value The 64-bit value to insert into the register
+         * @return A vector with the instructions to insert the value
+         */
+        inline const std::vector<u32> MoveU64Reg(regs::X destReg, u64 value) {
             union {
                 u64 val;
                 struct {
@@ -328,7 +333,12 @@ namespace skyline {
             return instr;
         }
 
-        const std::vector<u32> MoveU32Reg(regs::X destReg, u32 value) {
+        /**
+         * @param destReg The destination register of the operation
+         * @param value The 32-bit value to insert into the register
+         * @return A vector with the instructions to insert the value
+         */
+        inline const std::vector<u32> MoveU32Reg(regs::X destReg, u32 value) {
             union {
                 u32 val;
                 struct {
@@ -356,12 +366,12 @@ namespace skyline {
              * @param destReg The destination Xn register to store the value in
              * @param srcReg The source Xn register to retrieve the value from
              */
-            Mov(regs::X destReg, regs::X srcReg) {
+            inline constexpr Mov(regs::X destReg, regs::X srcReg) {
                 this->destReg = static_cast<u8>(destReg);
-                zeroReg = 0x1F;
+                sig0 = 0x1F;
                 imm6 = 0;
                 this->srcReg = static_cast<u8>(srcReg);
-                sig = 0x150;
+                sig1 = 0x150;
                 sf = 1;
             }
 
@@ -370,12 +380,12 @@ namespace skyline {
              * @param destReg The destination Wn register to store the value in
              * @param srcReg The source Wn register to retrieve the value from
              */
-            Mov(regs::W destReg, regs::W srcReg) {
+            inline constexpr Mov(regs::W destReg, regs::W srcReg) {
                 this->destReg = static_cast<u8>(destReg);
-                zeroReg = 0x1F;
+                sig0 = 0x1F;
                 imm6 = 0;
                 this->srcReg = static_cast<u8>(srcReg);
-                sig = 0x150;
+                sig1 = 0x150;
                 sf = 0;
             }
 
@@ -383,20 +393,20 @@ namespace skyline {
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid MOVZ instruction
              */
-            inline bool Verify() {
-                return (sig == 0x150);
+            inline constexpr bool Verify() {
+                return (sig0 == 0x1F) && (sig1 == 0x150);
             }
 
             union {
                 struct __attribute__((packed)) {
-                    u8 destReg : 5;
-                    u8 zeroReg : 5;
-                    u8 imm6    : 6;
-                    u8 srcReg  : 5;
-                    u16 sig    : 10;
-                    u8 sf      : 1;
+                    u8 destReg : 5;  //!< 5-bit destination register
+                    u8 sig0    : 5;  //!< 5-bit signature (0x1F)
+                    u8 imm6    : 6;  //!< 6-bit immediate value
+                    u8 srcReg  : 5;  //!< 5-bit source register
+                    u16 sig1   : 10; //!< 10-bit signature (0x150)
+                    u8 sf      : 1;  //!< 1-bit register type
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Mov) == sizeof(u32));
@@ -410,27 +420,27 @@ namespace skyline {
              * @brief Creates a LDR (immediate) instruction
              * @param raw The raw value of the whole instruction
              */
-            Ldr(u32 raw) : raw(raw) {}
+            inline constexpr Ldr(u32 raw) : raw(raw) {}
 
             /**
              * @brief Returns if the opcode is valid or not
              * @return If the opcode represents a valid FCVTZU instruction
              */
-            inline bool Verify() {
+            inline constexpr bool Verify() {
                 return (sig0 == 0x0 && sig1 == 0x1CA && sig2 == 0x1);
             }
 
             union {
                 struct __attribute__((packed)) {
-                    u8 destReg : 5;
-                    u8 srcReg  : 5;
-                    u8 sig0    : 2;
-                    u16 imm    : 9;
-                    u16 sig1   : 9;
-                    u8 x       : 1;
-                    u8 sig2    : 1;
+                    u8 destReg : 5; //!< 5-bit destination register
+                    u8 srcReg  : 5; //!< 5-bit source register
+                    u8 sig0    : 2; //!< 2-bit signature (0x0)
+                    u16 imm    : 9; //!< 6-bit immediate value
+                    u16 sig1   : 9; //!< 9-bit signature (0x1CA)
+                    u8 sf      : 1; //!< 1-bit register type
+                    u8 sig2    : 1; //!< 1-bit signature (0x1)
                 };
-                u32 raw{};
+                u32 raw{}; //!< The raw value of the instruction
             };
         };
         static_assert(sizeof(Ldr) == sizeof(u32));
