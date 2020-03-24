@@ -2,7 +2,7 @@
 
 #include "nvdevice.h"
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     /**
      * @brief NvMap (/dev/nvmap) is used to map certain CPU memory as GPU memory (https://switchbrew.org/wiki/NV_services) (https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h)
      */

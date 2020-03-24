@@ -1,7 +1,7 @@
 #include "nvhost_ctrl_gpu.h"
 #include <kernel/types/KProcess.h>
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_ctrl_gpu, {
         {0x80044701, NFUNC(NvHostCtrlGpu::ZCullGetCtxSize)},
         {0x80284702, NFUNC(NvHostCtrlGpu::ZCullGetInfo)},
@@ -15,7 +15,7 @@ namespace skyline::gpu::device {
         state.process->WriteMemory(size, buffer.output[0].address);
     }
 
-    void NvHostCtrlGpu::ZCullGetInfo(skyline::gpu::device::IoctlData &buffer) {
+    void NvHostCtrlGpu::ZCullGetInfo(IoctlData &buffer) {
         struct {
             u32 widthAlignPixels{0x20};
             u32 heightAlignPixels{0x20};

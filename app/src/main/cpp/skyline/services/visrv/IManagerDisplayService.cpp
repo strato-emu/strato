@@ -1,0 +1,35 @@
+#include <os.h>
+#include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/display.h>
+#include "IManagerDisplayService.h"
+
+namespace skyline::service::visrv {
+    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::visrv_IManagerDisplayService, "visrv:IManagerDisplayService", {
+        {0x7DA, SFUNC(IManagerDisplayService::CreateManagedLayer)},
+        {0x7DB, SFUNC(IManagerDisplayService::DestroyManagedLayer)},
+        {0x7DC, SFUNC(IDisplayService::CreateStrayLayer)},
+        {0x1770, SFUNC(IManagerDisplayService::AddToLayerStack)}
+    }) {}
+
+    void IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        request.Skip<u32>();
+        auto displayId = request.Pop<u64>();
+        state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
+            throw exception("The application is creating more than one layer");
+        hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
+        response.Push<u64>(0); // There's only one layer
+    }
+
+    void IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto layerId = request.Pop<u64>();
+        state.logger->Debug("Destroying Managed Layer: {}", layerId);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
+            state.logger->Warn("The application is destroying an uninitialized layer");
+        hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+    }
+
+    void IManagerDisplayService::AddToLayerStack(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+}

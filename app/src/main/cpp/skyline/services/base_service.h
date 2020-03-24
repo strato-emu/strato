@@ -49,12 +49,12 @@ namespace skyline::service {
         timesrv_ITimeZoneService,
         fssrv_IFileSystemProxy,
         fssrv_IFileSystem,
-        nvdrv,
-        vi_m,
-        vi_IApplicationDisplayService,
-        vi_ISystemDisplayService,
-        vi_IManagerDisplayService,
-        nvnflinger_dispdrv,
+        nvdrv_INvDrvServices,
+        visrv_IManagerRootService,
+        visrv_IApplicationDisplayService,
+        visrv_ISystemDisplayService,
+        visrv_IManagerDisplayService,
+        hosbinder_IHOSBinderDriver,
     };
 
     /**
@@ -73,11 +73,11 @@ namespace skyline::service {
         {"time:a", Service::timesrv_IStaticService},
         {"time:u", Service::timesrv_IStaticService},
         {"fsp-srv", Service::fssrv_IFileSystemProxy},
-        {"nvdrv", Service::nvdrv},
-        {"nvdrv:a", Service::nvdrv},
-        {"nvdrv:s", Service::nvdrv},
-        {"nvdrv:t", Service::nvdrv},
-        {"vi:m", Service::vi_m},
+        {"nvdrv", Service::nvdrv_INvDrvServices},
+        {"nvdrv:a", Service::nvdrv_INvDrvServices},
+        {"nvdrv:s", Service::nvdrv_INvDrvServices},
+        {"nvdrv:t", Service::nvdrv_INvDrvServices},
+        {"vi:m", Service::visrv_IManagerRootService},
     };
 
     class ServiceManager;

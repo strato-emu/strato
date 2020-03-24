@@ -1,7 +1,7 @@
 #include "nvmap.h"
 #include <kernel/types/KProcess.h>
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     NvMap::NvMapObject::NvMapObject(u32 id, u32 size) : id(id), size(size) {}
 
     NvMap::NvMap(const DeviceState &state) : NvDevice(state, NvDeviceType::nvmap, {
@@ -24,7 +24,7 @@ namespace skyline::gpu::device {
         state.logger->Debug("Create: Input: Size: 0x{:X}, Output: Handle: 0x{:X}, Status: {}", data.size, data.handle, buffer.status);
     }
 
-    void NvMap::FromId(skyline::gpu::device::IoctlData &buffer) {
+    void NvMap::FromId(IoctlData &buffer) {
         struct Data {
             u32 id;     // In
             u32 handle; // Out
@@ -64,7 +64,7 @@ namespace skyline::gpu::device {
         state.logger->Debug("Alloc: Input: Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}, Output: Status: {}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.address, buffer.status);
     }
 
-    void NvMap::Free(skyline::gpu::device::IoctlData &buffer) {
+    void NvMap::Free(IoctlData &buffer) {
         struct Data {
             u32 handle;   // In
             u32 _pad0_;
@@ -128,7 +128,7 @@ namespace skyline::gpu::device {
         state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
     }
 
-    void NvMap::GetId(skyline::gpu::device::IoctlData &buffer) {
+    void NvMap::GetId(IoctlData &buffer) {
         struct Data {
             u32 id;     // Out
             u32 handle; // In

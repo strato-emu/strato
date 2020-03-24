@@ -15,10 +15,11 @@ namespace skyline::service {
         skyline::Mutex mutex; //!< This mutex is used to ensure concurrent access to services doesn't cause crashes
 
         /**
+         * @brief Creates an instance of the service if it doesn't already exist, otherwise returns an existing instance
          * @param serviceType The type of service requested
          * @return A shared pointer to an instance of the service
          */
-        std::shared_ptr<BaseService> GetService(const Service serviceType);
+        std::shared_ptr<BaseService> CreateService(const Service serviceType);
 
       public:
         /**
@@ -46,8 +47,20 @@ namespace skyline::service {
          * @param serviceObject An instance of the service
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to
+         * @param submodule If the registered service is a submodule or not
          */
-        void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response);
+        void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule = true);
+
+        /**
+         * @param serviceType The type of the service
+         * @tparam The class of the service
+         * @return A shared pointer to an instance of the service
+         * @note This only works for services created with `NewService` as sub-interfaces used with `RegisterService` can have multiple instances
+         */
+        template<typename Type>
+        inline std::shared_ptr<Type> GetService(const Service serviceType) {
+            return std::static_pointer_cast<Type>(serviceMap.at(serviceType));
+        }
 
         /**
          * @brief Closes an existing session to a service

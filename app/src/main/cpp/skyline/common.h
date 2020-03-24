@@ -60,9 +60,6 @@ namespace skyline {
         constexpr u32 DockedResolutionW = 1920; //!< The width component of the docked resolution
         constexpr u32 DockedResolutionH = 1080; //!< The height component of the docked resolution
         constexpr u32 TokenLength = 0x50; //!< The length of the token on BufferQueue parcels
-        constexpr u32 GobHeight = 0x8; //!< The height of a blocklinear GOB
-        constexpr u32 GobStride = 0x40; //!< The stride of a blocklinear GOB
-        constexpr u32 GobSize = GobHeight * GobStride; //!< The size of a blocklinear GOB
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
@@ -122,7 +119,8 @@ namespace skyline {
         template<typename TypeVal, typename TypeMul>
         inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
-            return (value + multiple) & ~(multiple - 1);
+            multiple--;
+            return (value + multiple) & ~(multiple);
         }
 
         /**

@@ -32,13 +32,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/gpu.cpp
-        ${source_DIR}/skyline/gpu/display.cpp
-        ${source_DIR}/skyline/gpu/parcel.cpp
-        ${source_DIR}/skyline/gpu/devices/nvhost_ctrl.cpp
-        ${source_DIR}/skyline/gpu/devices/nvhost_ctrl_gpu.cpp
-        ${source_DIR}/skyline/gpu/devices/nvhost_channel.cpp
-        ${source_DIR}/skyline/gpu/devices/nvmap.cpp
-        ${source_DIR}/skyline/gpu/devices/nvhost_as_gpu.cpp
+        ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/loader/nro.cpp
         ${source_DIR}/skyline/kernel/memory.cpp
@@ -50,6 +44,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/types/KTransferMemory.cpp
         ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
         ${source_DIR}/skyline/services/serviceman.cpp
+        ${source_DIR}/skyline/services/common/parcel.cpp
         ${source_DIR}/skyline/services/sm/IUserInterface.cpp
         ${source_DIR}/skyline/services/fatalsrv/IService.cpp
         ${source_DIR}/skyline/services/audio/IAudioOutManager.cpp
@@ -84,9 +79,18 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/timesrv/ITimeZoneService.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystemProxy.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystem.cpp
-        ${source_DIR}/skyline/services/nvdrv/nvdrv.cpp
-        ${source_DIR}/skyline/services/nvnflinger/dispdrv.cpp
-        ${source_DIR}/skyline/services/vi/vi_m.cpp
+        ${source_DIR}/skyline/services/nvdrv/INvDrvServices.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvmap.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl_gpu.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost_channel.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost_as_gpu.cpp
+        ${source_DIR}/skyline/services/hosbinder/IHOSBinderDriver.cpp
+        ${source_DIR}/skyline/services/visrv/IDisplayService.cpp
+        ${source_DIR}/skyline/services/visrv/IApplicationDisplayService.cpp
+        ${source_DIR}/skyline/services/visrv/IManagerDisplayService.cpp
+        ${source_DIR}/skyline/services/visrv/IManagerRootService.cpp
+        ${source_DIR}/skyline/services/visrv/ISystemDisplayService.cpp
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe)

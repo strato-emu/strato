@@ -10,16 +10,17 @@
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
 #include "fssrv/IFileSystemProxy.h"
-#include "nvdrv/nvdrv.h"
-#include "vi/vi_m.h"
+#include "services/nvdrv/INvDrvServices.h"
+#include "visrv/IManagerRootService.h"
 #include "serviceman.h"
 
 namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
 
-    std::shared_ptr<BaseService> ServiceManager::GetService(const Service serviceType) {
-        if (serviceMap.count(serviceType))
-            return serviceMap.at(serviceType);
+    std::shared_ptr<BaseService> ServiceManager::CreateService(const Service serviceType) {
+        auto serviceIter = serviceMap.find(serviceType);
+        if (serviceIter != serviceMap.end())
+            return (*serviceIter).second;
 
         std::shared_ptr<BaseService> serviceObj;
         switch (serviceType) {
@@ -56,14 +57,14 @@ namespace skyline::service {
             case Service::fssrv_IFileSystemProxy:
                 serviceObj = std::make_shared<fssrv::IFileSystemProxy>(state, *this);
                 break;
-            case Service::nvdrv:
-                serviceObj = std::make_shared<nvdrv::nvdrv>(state, *this);
+            case Service::nvdrv_INvDrvServices:
+                serviceObj = std::make_shared<nvdrv::INvDrvServices>(state, *this);
                 break;
-            case Service::vi_m:
-                serviceObj = std::make_shared<vi::vi_m>(state, *this);
+            case Service::visrv_IManagerRootService:
+                serviceObj = std::make_shared<visrv::IManagerRootService>(state, *this);
                 break;
             default:
-                throw exception("GetService called on missing object, type: {}", serviceType);
+                throw exception("CreateService called on missing object, type: {}", serviceType);
         }
         serviceMap[serviceType] = serviceObj;
         return serviceObj;
@@ -71,12 +72,12 @@ namespace skyline::service {
 
     handle_t ServiceManager::NewSession(const Service serviceType) {
         std::lock_guard serviceGuard(mutex);
-        return state.process->NewHandle<type::KSession>(GetService(serviceType)).handle;
+        return state.process->NewHandle<type::KSession>(CreateService(serviceType)).handle;
     }
 
     std::shared_ptr<BaseService> ServiceManager::NewService(const std::string &serviceName, type::KSession &session, ipc::IpcResponse &response) {
         std::lock_guard serviceGuard(mutex);
-        auto serviceObject = GetService(ServiceString.at(serviceName));
+        auto serviceObject = CreateService(ServiceString.at(serviceName));
         handle_t handle{};
         if (response.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
@@ -90,7 +91,7 @@ namespace skyline::service {
         return serviceObject;
     }
 
-    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
+    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule) { // NOLINT(performance-unnecessary-value-param)
         std::lock_guard serviceGuard(mutex);
         handle_t handle{};
         if (response.isDomain) {
@@ -101,6 +102,8 @@ namespace skyline::service {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
+        if(!submodule)
+            serviceMap[serviceObject->serviceType] = serviceObject;
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->serviceName, handle);
     }
 

@@ -5,7 +5,7 @@
 
 #define NFUNC(function) std::bind(&function, this, std::placeholders::_1)
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     /**
      * @brief An enumeration of all the devices that can be opened by nvdrv
      */

@@ -2,7 +2,7 @@
 
 #include "nvdevice.h"
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     /**
      * @brief NvHostChannel is used as a common interface for all Channel devices (https://switchbrew.org/wiki/NV_services#Channels)
      */

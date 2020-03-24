@@ -2,7 +2,7 @@
 
 #include "nvdevice.h"
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     /**
      * @brief NvHostCtrl (/dev/nvhost-ctrl) is used for GPU synchronization (https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl)
      */

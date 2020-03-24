@@ -2,7 +2,7 @@
 
 #include "nvdevice.h"
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     /**
      * @brief NvHostCtrlGpu (/dev/nvhost-ctrl-gpu) is used for context independent operations on the underlying GPU (https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl-gpu)
      */

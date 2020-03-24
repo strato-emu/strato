@@ -1,7 +1,7 @@
 #include "nvhost_channel.h"
 #include <kernel/types/KProcess.h>
 
-namespace skyline::gpu::device {
+namespace skyline::service::nvdrv::device {
     NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : NvDevice(state, type, {
         {0x40044801, NFUNC(NvHostChannel::SetNvmapFd)},
         {0xC0104809, NFUNC(NvHostChannel::AllocObjCtx)},
@@ -12,15 +12,15 @@ namespace skyline::gpu::device {
         {0x40084714, NFUNC(NvHostChannel::SetUserData)}
     }) {}
 
-    void NvHostChannel::SetNvmapFd(skyline::gpu::device::IoctlData &buffer) {}
+    void NvHostChannel::SetNvmapFd(IoctlData &buffer) {}
 
-    void NvHostChannel::AllocObjCtx(skyline::gpu::device::IoctlData &buffer) {}
+    void NvHostChannel::AllocObjCtx(IoctlData &buffer) {}
 
     void NvHostChannel::ZcullBind(IoctlData &buffer) {}
 
-    void NvHostChannel::SetErrorNotifier(skyline::gpu::device::IoctlData &buffer) {}
+    void NvHostChannel::SetErrorNotifier(IoctlData &buffer) {}
 
-    void NvHostChannel::SetPriority(skyline::gpu::device::IoctlData &buffer) {
+    void NvHostChannel::SetPriority(IoctlData &buffer) {
         auto priority = state.process->GetObject<NvChannelPriority>(buffer.input[0].address);
         switch (priority) {
             case NvChannelPriority::Low:
@@ -35,8 +35,8 @@ namespace skyline::gpu::device {
         }
     }
 
-    void NvHostChannel::AllocGpfifoEx2(skyline::gpu::device::IoctlData &buffer) {}
+    void NvHostChannel::AllocGpfifoEx2(IoctlData &buffer) {}
 
-    void NvHostChannel::SetUserData(skyline::gpu::device::IoctlData &buffer) {}
+    void NvHostChannel::SetUserData(IoctlData &buffer) {}
 
 }

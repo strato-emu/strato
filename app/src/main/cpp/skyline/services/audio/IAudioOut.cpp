@@ -52,7 +52,7 @@ namespace skyline::service::audio {
 
     void IAudioOut::RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem(releaseEvent);
-        state.logger->Debug("Audout Buffer Release Event Handle: 0x{:X}", handle);
+        state.logger->Debug("IAudioOut: Buffer Release Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }
 

@@ -3,7 +3,7 @@
 #include <common.h>
 #include <kernel/ipc.h>
 
-namespace skyline::gpu {
+namespace skyline::service {
     /**
      * @brief This class encapsulates a Parcel object (https://switchbrew.org/wiki/Display_services#Parcel)
      */

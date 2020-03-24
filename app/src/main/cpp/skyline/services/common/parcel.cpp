@@ -2,7 +2,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 
-namespace skyline::gpu {
+namespace skyline::service {
     Parcel::Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state) : Parcel(buffer.address, buffer.size, state) {}
 
     Parcel::Parcel(u64 address, u64 size, const DeviceState &state) : state(state) {

@@ -1,4 +1,6 @@
-#include <gpu.h>
+#include <os.h>
+#include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/display.h>
 #include "ISelfController.h"
 
 namespace skyline::service::am {
@@ -19,10 +21,11 @@ namespace skyline::service::am {
     void ISelfController::SetOutOfFocusSuspendingEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.logger->Debug("Creating Managed Layer");
-        if (state.gpu->layerStatus == gpu::LayerStatus::Initialized)
+        state.logger->Debug("Creating Managed Layer on Default Display");
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
-        state.gpu->layerStatus = gpu::LayerStatus::Initialized;
+        hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
         response.Push<u64>(0);
     }
 }
