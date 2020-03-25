@@ -88,7 +88,7 @@ namespace skyline::service::visrv {
     }
 
     void IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        handle_t handle = state.process->InsertItem(state.gpu->vsyncEvent);
+        KHandle handle = state.process->InsertItem(state.gpu->vsyncEvent);
         state.logger->Debug("VSync Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }

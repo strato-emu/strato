@@ -50,7 +50,7 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::Resize(size_t size) {
-        if (guest.valid() && kernel.valid()) {
+        if (guest.Valid() && kernel.Valid()) {
             if (close(fd) < 0)
                 throw exception("An error occurred while trying to close shared memory FD: {}", strerror(errno));
             fd = ASharedMemory_create("KSharedMemory", size);
@@ -98,7 +98,7 @@ namespace skyline::kernel::type {
                 throw exception("An occurred while mapping shared memory: {}", strerror(errno));
             guest.size = size;
             MemoryManager::ResizeChunk(chunk, size);
-        } else if (kernel.valid()) {
+        } else if (kernel.Valid()) {
             if (close(fd) < 0)
                 throw exception("An error occurred while trying to close shared memory FD: {}", strerror(errno));
             fd = ASharedMemory_create("KSharedMemory", size);
@@ -119,7 +119,7 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::UpdatePermission(u64 address, u64 size, memory::Permission permission, bool host) {
-        if (guest.valid() && !host) {
+        if (guest.Valid() && !host) {
             Registers fregs{
                 .x0 = address,
                 .x1 = size,
@@ -137,7 +137,7 @@ namespace skyline::kernel::type {
             };
             MemoryManager::InsertBlock(chunk, block);
         }
-        if (kernel.valid() && host) {
+        if (kernel.Valid() && host) {
             if (mprotect(reinterpret_cast<void *>(kernel.address), kernel.size, permission.Get()) == reinterpret_cast<u64>(MAP_FAILED))
                 throw exception("An error occurred while remapping shared memory: {}", strerror(errno));
             kernel.permission = permission;
@@ -146,7 +146,7 @@ namespace skyline::kernel::type {
 
     KSharedMemory::~KSharedMemory() {
         try {
-            if (guest.valid() && state.process) {
+            if (guest.Valid() && state.process) {
                 Registers fregs{
                     .x0 = guest.address,
                     .x1 = guest.size,
@@ -156,7 +156,7 @@ namespace skyline::kernel::type {
             }
         } catch (const std::exception &) {
         }
-        if (kernel.valid())
+        if (kernel.Valid())
             munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
         state.os->memory.DeleteChunk(guest.address);
         close(fd);

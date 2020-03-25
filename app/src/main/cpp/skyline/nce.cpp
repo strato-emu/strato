@@ -189,7 +189,9 @@ namespace skyline {
         if (ctx->sp)
             regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);
 
-        for (u16 index = 0; index < constant::NumRegs - 1; index += 2) {
+        constexpr auto numRegisters = 31; //!< The amount of general-purpose registers in ARMv8
+
+        for (u16 index = 0; index < numRegisters - 2; index += 2) {
             auto xStr = index < 10 ? " X" : "X";
             regStr += fmt::format("\n{}{}: 0x{:<16X} {}{}: 0x{:X}", xStr, index, ctx->registers.regs[index], xStr, index + 1, ctx->registers.regs[index + 1]);
         }
@@ -204,20 +206,26 @@ namespace skyline {
     }
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
+        constexpr auto TpidrroEl0 = 0x5E83;    // ID of TPIDRRO_EL0 in MRS
+        constexpr auto CntfrqEl0 = 0x5F00;     // ID of CNTFRQ_EL0 in MRS
+        constexpr auto CntpctEl0 = 0x5F01;     // ID of CNTPCT_EL0 in MRS
+        constexpr auto CntvctEl0 = 0x5F02;     // ID of CNTVCT_EL0 in MRS
+        constexpr auto TegraX1Freq = 19200000; // The clock frequency of the Tegra X1 (19.2 MHz)
+
         u32 *start = reinterpret_cast<u32 *>(code.data());
         u32 *end = start + (code.size() / sizeof(u32));
         i64 patchOffset = offset;
 
-        std::vector<u32> patch((guest::saveCtxSize + guest::loadCtxSize + guest::svcHandlerSize) / sizeof(u32));
+        std::vector<u32> patch((guest::SaveCtxSize + guest::LoadCtxSize + guest::SvcHandlerSize) / sizeof(u32));
 
-        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::SaveCtx), guest::saveCtxSize);
-        offset += guest::saveCtxSize;
+        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::SaveCtx), guest::SaveCtxSize);
+        offset += guest::SaveCtxSize;
 
-        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize, reinterpret_cast<void *>(&guest::LoadCtx), guest::loadCtxSize);
-        offset += guest::loadCtxSize;
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::SaveCtxSize, reinterpret_cast<void *>(&guest::LoadCtx), guest::LoadCtxSize);
+        offset += guest::LoadCtxSize;
 
-        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::saveCtxSize + guest::loadCtxSize, reinterpret_cast<void *>(&guest::SvcHandler), guest::svcHandlerSize);
-        offset += guest::svcHandlerSize;
+        std::memcpy(reinterpret_cast<u8 *>(patch.data()) + guest::SaveCtxSize + guest::LoadCtxSize, reinterpret_cast<void *>(&guest::SvcHandler), guest::SvcHandlerSize);
+        offset += guest::SvcHandlerSize;
 
         static u64 frequency{};
         if (!frequency)
@@ -238,10 +246,10 @@ namespace skyline {
                 offset += sizeof(u32) * movPc.size();
                 instr::Movz movCmd(regs::W1, static_cast<u16>(instrSvc->value));
                 offset += sizeof(movCmd);
-                instr::BL bSvcHandler((patchOffset + guest::saveCtxSize + guest::loadCtxSize) - offset);
+                instr::BL bSvcHandler((patchOffset + guest::SaveCtxSize + guest::LoadCtxSize) - offset);
                 offset += sizeof(bSvcHandler);
 
-                instr::BL bLdCtx((patchOffset + guest::saveCtxSize) - offset);
+                instr::BL bLdCtx((patchOffset + guest::SaveCtxSize) - offset);
                 offset += sizeof(bLdCtx);
                 constexpr u32 ldrLr = 0xF84107FE; // LDR LR, [SP], #16
                 offset += sizeof(ldrLr);
@@ -259,7 +267,7 @@ namespace skyline {
                 patch.push_back(ldrLr);
                 patch.push_back(bret.raw);
             } else if (instrMrs->Verify()) {
-                if (instrMrs->srcReg == constant::TpidrroEl0) {
+                if (instrMrs->srcReg == TpidrroEl0) {
                     instr::B bJunc(offset);
                     u32 strX0{};
                     if (instrMrs->destReg != regs::X0) {
@@ -291,10 +299,10 @@ namespace skyline {
                     if (ldrX0)
                         patch.push_back(ldrX0);
                     patch.push_back(bret.raw);
-                } else if (frequency != constant::TegraX1Freq) {
-                    if (instrMrs->srcReg == constant::CntpctEl0) {
+                } else if (frequency != TegraX1Freq) {
+                    if (instrMrs->srcReg == CntpctEl0) {
                         instr::B bJunc(offset);
-                        offset += guest::rescaleClockSize;
+                        offset += guest::RescaleClockSize;
                         instr::Ldr ldr(0xF94003E0); // LDR XOUT, [SP]
                         ldr.destReg = instrMrs->destReg;
                         offset += sizeof(ldr);
@@ -305,14 +313,14 @@ namespace skyline {
 
                         *address = bJunc.raw;
                         auto size = patch.size();
-                        patch.resize(size + (guest::rescaleClockSize / sizeof(u32)));
-                        std::memcpy(patch.data() + size, reinterpret_cast<void *>(&guest::RescaleClock), guest::rescaleClockSize);
+                        patch.resize(size + (guest::RescaleClockSize / sizeof(u32)));
+                        std::memcpy(patch.data() + size, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize);
                         patch.push_back(ldr.raw);
                         patch.push_back(addSp);
                         patch.push_back(bret.raw);
-                    } else if (instrMrs->srcReg == constant::CntfrqEl0) {
+                    } else if (instrMrs->srcReg == CntfrqEl0) {
                         instr::B bJunc(offset);
-                        auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), constant::TegraX1Freq);
+                        auto movFreq = instr::MoveU32Reg(static_cast<regs::X>(instrMrs->destReg), TegraX1Freq);
                         offset += sizeof(u32) * movFreq.size();
                         instr::B bret(-offset + sizeof(u32));
                         offset += sizeof(bret);
@@ -323,8 +331,8 @@ namespace skyline {
                         patch.push_back(bret.raw);
                     }
                 } else {
-                    if (instrMrs->srcReg == constant::CntpctEl0) {
-                        instr::Mrs mrs(constant::CntvctEl0, regs::X(instrMrs->destReg));
+                    if (instrMrs->srcReg == CntpctEl0) {
+                        instr::Mrs mrs(CntvctEl0, regs::X(instrMrs->destReg));
                         *address = mrs.raw;
                     }
                 }

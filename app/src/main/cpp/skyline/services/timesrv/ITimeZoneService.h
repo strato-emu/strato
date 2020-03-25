@@ -27,11 +27,11 @@ namespace skyline::service::timesrv {
          * @brief This is passed in addition to CalendarTime
          */
         struct CalendarAdditionalInfo {
-            u32 day_week;
-            u32 day_month;
+            u32 dayWeek;
+            u32 dayMonth;
             u64 name;
             i32 dst;
-            u32 utc_rel;
+            u32 utcRel;
         };
         static_assert(sizeof(CalendarAdditionalInfo) == 0x18);
 

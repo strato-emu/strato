@@ -38,23 +38,29 @@ namespace skyline::kernel::type {
         } else {
             address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
         }
-        auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::MemoryStates::ThreadLocal).item;
+        auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item;
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
+
         auto &tlsPage = tlsPages.back();
         if (tlsPages.empty())
             tlsPage->ReserveSlot(); // User-mode exception handling
+
         return tlsPage->ReserveSlot();
     }
 
     void KProcess::InitializeMemory() {
-        heap = NewHandle<KPrivateMemory>(state.os->memory.GetRegion(memory::Regions::Heap).address, constant::DefHeapSize, memory::Permission{true, true, false}, memory::MemoryStates::Heap).item;
+        constexpr size_t DefHeapSize = 0x200000; // The default amount of heap
+        heap = NewHandle<KPrivateMemory>(state.os->memory.GetRegion(memory::Regions::Heap).address, DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
         threads[pid]->tls = GetTlsSlot();
     }
 
     KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), stack(stack), KSyncObject(state, KType::KProcess) {
-        auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, constant::DefaultPriority, this, tlsMemory).item;
+        constexpr auto DefaultPriority = 44; // The default priority of a process
+
+        auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, DefaultPriority, this, tlsMemory).item;
         threads[pid] = thread;
         state.nce->WaitThreadInit(thread);
+
         memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC);
         if (memFd == -1)
             throw exception("Cannot open file descriptor to /proc/{}/mem, \"{}\"", pid, strerror(errno));
@@ -67,7 +73,7 @@ namespace skyline::kernel::type {
 
     std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, u8 priority) {
         auto size = (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
-        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::MemoryStates::Reserved);
+        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::states::Reserved);
         Registers fregs{};
         fregs.x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO;
         fregs.x1 = stackTop;
@@ -166,7 +172,7 @@ namespace skyline::kernel::type {
         return std::nullopt;
     }
 
-    bool KProcess::MutexLock(u64 address, handle_t owner) {
+    bool KProcess::MutexLock(u64 address, KHandle owner) {
         std::unique_lock lock(mutexLock);
         auto mtx = GetPointer<u32>(address);
         auto &mtxWaiters = mutexes[address];

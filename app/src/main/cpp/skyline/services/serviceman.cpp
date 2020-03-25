@@ -70,7 +70,7 @@ namespace skyline::service {
         return serviceObj;
     }
 
-    handle_t ServiceManager::NewSession(const Service serviceType) {
+    KHandle ServiceManager::NewSession(const Service serviceType) {
         std::lock_guard serviceGuard(mutex);
         return state.process->NewHandle<type::KSession>(CreateService(serviceType)).handle;
     }
@@ -78,7 +78,7 @@ namespace skyline::service {
     std::shared_ptr<BaseService> ServiceManager::NewService(const std::string &serviceName, type::KSession &session, ipc::IpcResponse &response) {
         std::lock_guard serviceGuard(mutex);
         auto serviceObject = CreateService(ServiceString.at(serviceName));
-        handle_t handle{};
+        KHandle handle{};
         if (response.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
@@ -93,7 +93,7 @@ namespace skyline::service {
 
     void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule) { // NOLINT(performance-unnecessary-value-param)
         std::lock_guard serviceGuard(mutex);
-        handle_t handle{};
+        KHandle handle{};
         if (response.isDomain) {
             session.domainTable[session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
@@ -107,7 +107,7 @@ namespace skyline::service {
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->serviceName, handle);
     }
 
-    void ServiceManager::CloseSession(const handle_t handle) {
+    void ServiceManager::CloseSession(const KHandle handle) {
         std::lock_guard serviceGuard(mutex);
         auto session = state.process->GetHandle<type::KSession>(handle);
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
@@ -121,7 +121,7 @@ namespace skyline::service {
         }
     };
 
-    void ServiceManager::SyncRequestHandler(const handle_t handle) {
+    void ServiceManager::SyncRequestHandler(const KHandle handle) {
         auto session = state.process->GetHandle<type::KSession>(handle);
         state.logger->Debug("----Start----");
         state.logger->Debug("Handle is 0x{:X}", handle);

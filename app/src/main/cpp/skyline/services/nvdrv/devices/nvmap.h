@@ -32,8 +32,8 @@ namespace skyline::service::nvdrv::device {
             NvMapObject(u32 id, u32 size);
         };
 
-        std::unordered_map<handle_t, std::shared_ptr<NvMapObject>> handleTable; //!< A mapping from a handle to it's corresponding NvMapObject
-        handle_t handleIndex{1}; //!< This is used to keep track of the next handle to allocate
+        std::unordered_map<KHandle, std::shared_ptr<NvMapObject>> handleTable; //!< A mapping from a handle to it's corresponding NvMapObject
+        KHandle handleIndex{1}; //!< This is used to keep track of the next handle to allocate
         u32 idIndex{1}; //!< This is used to keep track of the next ID to allocate
 
         NvMap(const DeviceState &state);

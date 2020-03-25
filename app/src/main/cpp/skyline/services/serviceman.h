@@ -32,7 +32,7 @@ namespace skyline::service {
          * @param serviceType The type of the service
          * @return Handle to KService object of the service
          */
-        handle_t NewSession(const Service serviceType);
+        KHandle NewSession(const Service serviceType);
 
         /**
          * @brief Creates a new service using it's type enum and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
@@ -66,12 +66,12 @@ namespace skyline::service {
          * @brief Closes an existing session to a service
          * @param service The handle of the KService object
          */
-        void CloseSession(const handle_t handle);
+        void CloseSession(const KHandle handle);
 
         /**
          * @brief Handles a Synchronous IPC Request
          * @param handle The handle of the object
          */
-        void SyncRequestHandler(const handle_t handle);
+        void SyncRequestHandler(const KHandle handle);
     };
 }

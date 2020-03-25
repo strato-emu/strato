@@ -55,15 +55,15 @@ namespace skyline::service::audio::IAudioRenderer {
                 throw exception("Unsupported voice PCM format: {}", pcmFormat);
         }
 
-        if (sampleRate != skyline::audio::constant::SampleRate)
-            sampleBuffer = resampler.ResampleBuffer(sampleBuffer, static_cast<double>(sampleRate) / skyline::audio::constant::SampleRate, channelCount);
+        if (sampleRate != constant::SampleRate)
+            sampleBuffer = resampler.ResampleBuffer(sampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
 
-        if (channelCount == 1 && skyline::audio::constant::ChannelCount != channelCount) {
+        if (channelCount == 1 && constant::ChannelCount != channelCount) {
             size_t originalSize = sampleBuffer.size();
-            sampleBuffer.resize((originalSize / channelCount) * skyline::audio::constant::ChannelCount);
+            sampleBuffer.resize((originalSize / channelCount) * constant::ChannelCount);
 
             for (size_t monoIndex = originalSize - 1, targetIndex = sampleBuffer.size(); monoIndex > 0; monoIndex--)
-                for (uint i = 0; i < skyline::audio::constant::ChannelCount; i++)
+                for (uint i = 0; i < constant::ChannelCount; i++)
                     sampleBuffer[--targetIndex] = sampleBuffer[monoIndex];
         }
     }
@@ -82,9 +82,9 @@ namespace skyline::service::audio::IAudioRenderer {
         }
 
         outOffset = sampleOffset;
-        outSize = std::min(maxSamples * skyline::audio::constant::ChannelCount, static_cast<int>(sampleBuffer.size() - sampleOffset));
+        outSize = std::min(maxSamples * constant::ChannelCount, static_cast<int>(sampleBuffer.size() - sampleOffset));
 
-        output.playedSamplesCount += outSize / skyline::audio::constant::ChannelCount;
+        output.playedSamplesCount += outSize / constant::ChannelCount;
         sampleOffset += outSize;
 
         if (sampleOffset == sampleBuffer.size()) {

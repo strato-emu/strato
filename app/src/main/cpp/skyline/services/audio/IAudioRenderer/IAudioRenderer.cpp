@@ -13,7 +13,7 @@ namespace skyline::service::audio::IAudioRenderer {
         {0x6, SFUNC(IAudioRenderer::Stop)},
         {0x7, SFUNC(IAudioRenderer::QuerySystemEvent)},
     }) {
-        track = state.audio->OpenTrack(skyline::audio::constant::ChannelCount, params.sampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(constant::ChannelCount, params.sampleRate, [this]() { this->releaseEvent->Signal(); });
         track->Start();
 
         memoryPools.resize(memoryPoolCount);
@@ -132,7 +132,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
     void IAudioRenderer::MixFinalBuffer() {
         int setIndex = 0;
-        sampleBuffer.resize(samplesPerBuffer * skyline::audio::constant::ChannelCount);
+        sampleBuffer.resize(static_cast<size_t>(samplesPerBuffer * constant::ChannelCount));
 
         for (auto &voice : voices) {
             if (!voice.Playable())
@@ -149,7 +149,7 @@ namespace skyline::service::audio::IAudioRenderer {
                 if (voiceBufferSize == 0)
                     break;
 
-                pendingSamples -= voiceBufferSize / skyline::audio::constant::ChannelCount;
+                pendingSamples -= voiceBufferSize / constant::ChannelCount;
 
                 for (int i = voiceBufferOffset; i < voiceBufferOffset + voiceBufferSize; i++) {
                     if (setIndex == bufferOffset) {

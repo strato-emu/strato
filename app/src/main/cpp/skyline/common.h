@@ -19,47 +19,20 @@
 #include "nce/guest_common.h"
 
 namespace skyline {
-    using handle_t = u32; //!< The type of a kernel handle
+    using KHandle = u32; //!< The type of a kernel handle
 
     namespace constant {
         // Memory
-        constexpr u64 BaseAddress = 0x8000000; //!< The address space base
-        constexpr u64 TotalPhyMem = 0xF8000000; // ~4 GB of RAM
-        constexpr size_t DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
-        constexpr size_t HeapSizeDiv = 0x200000; //!< The amount heap size has to be divisible by
-        constexpr size_t DefHeapSize = HeapSizeDiv; //!< The default amount of heap
-        constexpr size_t TlsSlotSize = 0x200; //!< The size of a single TLS slot
-        constexpr u8 TlsSlots = PAGE_SIZE / TlsSlotSize; //!< The amount of TLS slots in a single page
-        // Loader
-        constexpr u32 NroMagic = 0x304F524E; //!< "NRO0" in reverse, this is written at the start of every NRO file
-        // NCE
-        constexpr u8 NumRegs = 30; //!< The amount of registers that ARMv8 has
-        constexpr u32 TpidrroEl0 = 0x5E83; //!< ID of TPIDRRO_EL0 in MRS
-        constexpr u32 CntfrqEl0 = 0x5F00; //!< ID of CNTFRQ_EL0 in MRS
-        constexpr u32 TegraX1Freq = 19200000; //!< The clock frequency of the Tegra X1 (19.2 MHz)
-        constexpr u32 CntpctEl0 = 0x5F01; //!< ID of CNTPCT_EL0 in MRS
-        constexpr u32 CntvctEl0 = 0x5F02; //!< ID of CNTVCT_EL0 in MRS
+        constexpr auto BaseAddress = 0x8000000; //!< The address space base
+        constexpr auto DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
         // Kernel
-        constexpr u64 MaxSyncHandles = 0x40; //!< The total amount of handles that can be passed to WaitSynchronization
-        constexpr handle_t BaseHandleIndex = 0xD000; // The index of the base handle
-        constexpr handle_t ThreadSelf = 0xFFFF8000; //!< This is the handle used by threads to refer to themselves
-        constexpr u8 DefaultPriority = 44; //!< The default priority of a process
-        constexpr std::pair<int8_t, int8_t> PriorityAn = {19, -8}; //!< The range of priority for Android, taken from https://medium.com/mindorks/exploring-android-thread-priority-5d0542eebbd1
-        constexpr std::pair<u8, u8> PriorityNin = {0, 63}; //!< The range of priority for the Nintendo Switch
-        constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
-        // IPC
-        constexpr size_t TlsIpcSize = 0x100; //!< The size of the IPC command buffer in a TLS slot
-        constexpr u8 PortSize = 0x8; //!< The size of a port name string
-        constexpr u32 SfcoMagic = 0x4F434653; //!< SFCO in reverse, written to IPC messages
-        constexpr u32 SfciMagic = 0x49434653; //!< SFCI in reverse, present in received IPC messages
-        constexpr u64 IpcPaddingSum = 0x10; //!< The sum of the padding surrounding DataPayload
-        constexpr handle_t BaseVirtualHandleIndex = 0x1; // The index of the base virtual handle
-        // GPU
-        constexpr u32 HandheldResolutionW = 1280; //!< The width component of the handheld resolution
-        constexpr u32 HandheldResolutionH = 720; //!< The height component of the handheld resolution
-        constexpr u32 DockedResolutionW = 1920; //!< The width component of the docked resolution
-        constexpr u32 DockedResolutionH = 1080; //!< The height component of the docked resolution
-        constexpr u32 TokenLength = 0x50; //!< The length of the token on BufferQueue parcels
+        constexpr std::pair<int8_t, int8_t> AndroidPriority = {19, -8}; //!< The range of priority for Android
+        constexpr std::pair<u8, u8> SwitchPriority = {0, 63}; //!< The range of priority for the Nintendo Switch
+        // Display
+        constexpr auto HandheldResolutionW = 1280; //!< The width component of the handheld resolution
+        constexpr auto HandheldResolutionH = 720; //!< The height component of the handheld resolution
+        constexpr auto DockedResolutionW = 1920; //!< The width component of the docked resolution
+        constexpr auto DockedResolutionH = 1080; //!< The height component of the docked resolution
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
@@ -98,13 +71,13 @@ namespace skyline {
          * @return The current time in nanoseconds
          */
         inline u64 GetTimeNs() {
-            constexpr uint64_t NsInSecond = 1000000000;
+            constexpr uint64_t nsInSecond = 1000000000;
             static u64 frequency{};
             if (!frequency)
                 asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
             u64 ticks;
             asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-            return ((ticks / frequency) * NsInSecond) + (((ticks % frequency) * NsInSecond + (frequency / 2)) / frequency);
+            return ((ticks / frequency) * nsInSecond) + (((ticks % frequency) * nsInSecond + (frequency / 2)) / frequency);
         }
 
         /**

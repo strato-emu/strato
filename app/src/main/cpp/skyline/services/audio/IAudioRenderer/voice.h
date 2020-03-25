@@ -91,7 +91,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
         bool acquired{false}; //!< If the voice is in use
         bool bufferReload{true}; //!< If the buffer needs to be updated
-        int bufferIndex{}; //!< The index of the wave buffer currently in use
+        uint bufferIndex{}; //!< The index of the wave buffer currently in use
         int sampleOffset{}; //!< The offset in the sample data of the current wave buffer
         int sampleRate{}; //!< The sample rate of the sample data
         int channelCount{}; //!< The amount of channels in the sample data

@@ -11,7 +11,7 @@ namespace skyline::service::audio {
         {0x5, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)},
         {0x6, SFUNC(IAudioOut::ContainsAudioOutBuffer)}
     }) {
-        track = state.audio->OpenTrack(channelCount, skyline::audio::constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
     }
 
     IAudioOut::~IAudioOut() {
@@ -46,7 +46,7 @@ namespace skyline::service::audio {
 
         tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
         state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
-        resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / skyline::audio::constant::SampleRate, channelCount);
+        resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
         track->AppendBuffer(tmpSampleBuffer, tag);
     }
 

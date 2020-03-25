@@ -17,11 +17,11 @@ namespace skyline::service::timesrv {
         };
         response.Push(calendarTime);
         CalendarAdditionalInfo calendarInfo{
-            .day_week = static_cast<u32>(calender.tm_wday),
-            .day_month = static_cast<u32>(calender.tm_mday),
+            .dayWeek = static_cast<u32>(calender.tm_wday),
+            .dayMonth = static_cast<u32>(calender.tm_mday),
             .name = *reinterpret_cast<const u64 *>(calender.tm_zone),
             .dst = static_cast<i32>(calender.tm_isdst),
-            .utc_rel = static_cast<u32>(calender.tm_gmtoff)
+            .utcRel = static_cast<u32>(calender.tm_gmtoff)
         };
         response.Push(calendarInfo);
     }

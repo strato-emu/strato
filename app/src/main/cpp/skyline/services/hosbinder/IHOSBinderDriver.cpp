@@ -14,7 +14,7 @@ namespace skyline::service::hosbinder {
     }) {}
 
     void IHOSBinderDriver::RequestBuffer(Parcel &in, Parcel &out) {
-        u32 slot = *reinterpret_cast<u32 *>(in.data.data() + constant::TokenLength);
+        u32 slot = *reinterpret_cast<u32 *>(in.data.data());
         out.WriteData<u32>(1);
         out.WriteData<u32>(sizeof(GbpBuffer));
         out.WriteData<u32>(0);
@@ -29,7 +29,7 @@ namespace skyline::service::hosbinder {
             u32 height;
             u32 timestamps;
             u32 usage;
-        } *data = reinterpret_cast<Data *>(in.data.data() + constant::TokenLength);
+        } *data = reinterpret_cast<Data *>(in.data.data());
 
         i64 slot{-1};
         while (slot == -1) {
@@ -66,7 +66,7 @@ namespace skyline::service::hosbinder {
             u64 _unk0_;
             u32 swapInterval;
             Fence fence[4];
-        } *data = reinterpret_cast<Data *>(in.data.data() + constant::TokenLength);
+        } *data = reinterpret_cast<Data *>(in.data.data());
 
         auto buffer = queue.at(data->slot);
         buffer->status = BufferStatus::Queued;
@@ -100,13 +100,13 @@ namespace skyline::service::hosbinder {
         struct Data {
             u32 slot;
             Fence fence[4];
-        } *data = reinterpret_cast<Data *>(parcel.data.data() + constant::TokenLength);
+        } *data = reinterpret_cast<Data *>(parcel.data.data());
         FreeBuffer(data->slot);
         state.logger->Debug("CancelBuffer: Slot: {}", data->slot);
     }
 
     void IHOSBinderDriver::SetPreallocatedBuffer(Parcel &parcel) {
-        auto pointer = parcel.data.data() + constant::TokenLength;
+        auto pointer = parcel.data.data();
         struct Data {
             u32 slot;
             u32 _unk0_;
@@ -159,7 +159,7 @@ namespace skyline::service::hosbinder {
         auto layerId = request.Pop<u32>();
         auto code = request.Pop<TransactionCode>();
 
-        Parcel in(request.inputBuf.at(0), state);
+        Parcel in(request.inputBuf.at(0), state, true);
         Parcel out(state);
 
         state.logger->Debug("TransactParcel: Layer ID: {}, Code: {}", layerId, code);
@@ -211,7 +211,7 @@ namespace skyline::service::hosbinder {
     }
 
     void IHOSBinderDriver::GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        handle_t handle = state.process->InsertItem(state.gpu->bufferEvent);
+        KHandle handle = state.process->InsertItem(state.gpu->bufferEvent);
         state.logger->Debug("Display Buffer Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         response.Push<u32>(constant::status::Success);
@@ -219,7 +219,7 @@ namespace skyline::service::hosbinder {
 
     void IHOSBinderDriver::SetDisplay(const std::string &name) {
         try {
-            const auto type = displayTypeMap.at(name);
+            const auto type = DisplayTypeMap.at(name);
             if (displayId == DisplayId::Null)
                 displayId = type;
             else

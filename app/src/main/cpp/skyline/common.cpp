@@ -11,6 +11,7 @@ namespace skyline {
             for (int i = 0; i < 1000; ++i) {
                 if (!flag.test_and_set(std::memory_order_acquire))
                     return;
+
                 asm volatile("yield");
             }
             sched_yield();
@@ -21,14 +22,17 @@ namespace skyline {
         auto none = Group::None;
         constexpr u64 timeout = 100; // The timeout in ns
         auto end = utils::GetTimeNs() + timeout;
+
         while (true) {
             if (next == group) {
                 if (flag == group) {
                     std::lock_guard lock(mtx);
+
                     if (flag == group) {
                         auto groupT = group;
                         next.compare_exchange_strong(groupT, Group::None);
                         num++;
+
                         return;
                     }
                 } else {
@@ -36,6 +40,7 @@ namespace skyline {
                 }
             } else if (flag == group && (next == Group::None || utils::GetTimeNs() >= end)) {
                 std::lock_guard lock(mtx);
+
                 if (flag == group) {
                     num++;
                     return;
@@ -43,6 +48,7 @@ namespace skyline {
             } else {
                 next.compare_exchange_weak(none, group);
             }
+
             none = Group::None;
             asm volatile("yield");
         }
@@ -50,38 +56,44 @@ namespace skyline {
 
     void GroupMutex::unlock() {
         std::lock_guard lock(mtx);
+
         if (!--num)
             flag.exchange(next);
     }
 
     Settings::Settings(const int preferenceFd) {
         tinyxml2::XMLDocument pref;
+
         if (pref.LoadFile(fdopen(preferenceFd, "r")))
             throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
+
         tinyxml2::XMLElement *elem = pref.LastChild()->FirstChild()->ToElement();
+
         while (elem) {
             switch (elem->Value()[0]) {
                 case 's':
                     stringMap[elem->FindAttribute("name")->Value()] = elem->GetText();
                     break;
+
                 case 'b':
-                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
-                        "value")->BoolValue();
+                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->BoolValue();
                     break;
+
                 case 'i':
-                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute(
-                        "value")->IntValue();
+                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->IntValue();
                     break;
+
                 default:
-                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(),
-                           elem->FindAttribute("name")->Value());
+                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
                     break;
             };
+
             if (elem->NextSibling())
                 elem = elem->NextSibling()->ToElement();
             else
                 break;
         }
+
         pref.Clear();
     }
 
@@ -100,6 +112,7 @@ namespace skyline {
     void Settings::List(const std::shared_ptr<Logger> &logger) {
         for (auto &iter : stringMap)
             logger->Info("Key: {}, Value: {}, Type: String", iter.first, GetString(iter.first));
+
         for (auto &iter : boolMap)
             logger->Info("Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
     }
@@ -115,15 +128,18 @@ namespace skyline {
 
     void Logger::WriteHeader(const std::string &str) {
         syslog(LOG_ALERT, "%s", str.c_str());
+
         logFile << "0|" << str << "\n";
         logFile.flush();
     }
 
     void Logger::Write(const LogLevel level, std::string str) {
         syslog(levelSyslog[static_cast<u8>(level)], "%s", str.c_str());
+
         for (auto &character : str)
             if (character == '\n')
                 character = '\\';
+
         logFile << "1|" << levelStr[static_cast<u8>(level)] << "|" << str << "\n";
         logFile.flush();
     }

@@ -1621,7 +1621,7 @@
     <inspection_tool class="NotInHierarchyMessage" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NotInitializedVariable" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NotReleasedValue" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="NotSuperclass" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="NotSuperclass" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="NotVisibleClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NotifyCalledOnCondition" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NotifyWithoutCorrespondingWait" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1644,7 +1644,7 @@
     <inspection_tool class="NumericToString" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="OCDFA" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="OCGlobalUnused" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="OCInconsistentNaming" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="OCInconsistentNaming" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="OCLegacyObjCLiteral" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="OCLoopDoesntUseConditionVariable" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="OCNotLocalizedString" enabled="true" level="WARNING" enabled_by_default="true" />

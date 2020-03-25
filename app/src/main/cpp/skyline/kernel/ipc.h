@@ -242,7 +242,6 @@ namespace skyline::kernel::ipc {
         u8 *payloadOffset; //!< This is the offset of the data read from the payload
 
       public:
-        //std::array<u8, constant::TlsIpcSize> tls; //!< A static-sized array where TLS data is actually copied to
         CommandHeader *header{}; //!< The header of the request
         HandleDescriptor *handleDesc{}; //!< The handle descriptor in case CommandHeader::handle_desc is true in the header
         bool isDomain{}; //!< If this is a domain request
@@ -250,9 +249,9 @@ namespace skyline::kernel::ipc {
         PayloadHeader *payload{}; //!< This is the header of the payload
         u8 *cmdArg{}; //!< This is a pointer to the data payload (End of PayloadHeader)
         u64 cmdArgSz{}; //!< This is the size of the data payload
-        std::vector<handle_t> copyHandles; //!< A vector of handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
-        std::vector<handle_t> moveHandles; //!< A vector of handles that should be moved from the server to the client process rather than copied
-        std::vector<handle_t> domainObjects; //!< A vector of all input domain objects
+        std::vector<KHandle> copyHandles; //!< A vector of handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
+        std::vector<KHandle> moveHandles; //!< A vector of handles that should be moved from the server to the client process rather than copied
+        std::vector<KHandle> domainObjects; //!< A vector of all input domain objects
         std::vector<InputBuffer> inputBuf; //!< This is a vector of input buffers
         std::vector<OutputBuffer> outputBuf; //!< This is a vector of output buffers
 
@@ -295,9 +294,9 @@ namespace skyline::kernel::ipc {
         bool nWrite{}; //!< This is to signal the IPC handler to not write this, as it will be manually written
         bool isDomain{}; //!< If this is a domain request
         u32 errorCode{}; //!< The error code to respond with, it is 0 (Success) by default
-        std::vector<handle_t> copyHandles; //!< A vector of handles to copy
-        std::vector<handle_t> moveHandles; //!< A vector of handles to move
-        std::vector<handle_t> domainObjects; //!< A vector of domain objects to write
+        std::vector<KHandle> copyHandles; //!< A vector of handles to copy
+        std::vector<KHandle> moveHandles; //!< A vector of handles to move
+        std::vector<KHandle> domainObjects; //!< A vector of domain objects to write
 
         /**
          * @param isDomain If the following request is a domain request

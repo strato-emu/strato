@@ -117,24 +117,24 @@ namespace skyline {
 
             struct {
                 MemoryType type; //!< The MemoryType of this memory block
-                bool PermissionChangeAllowed : 1; //!< If the application can use svcSetMemoryPermission on this block
-                bool ForceReadWritableByDebugSyscalls : 1; //!< If the application can use svcWriteDebugProcessMemory on this block
-                bool IpcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=0
-                bool NonDeviceIpcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=3
-                bool NonSecureIpcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=1
+                bool permissionChangeAllowed : 1; //!< If the application can use svcSetMemoryPermission on this block
+                bool forceReadWritableByDebugSyscalls : 1; //!< If the application can use svcWriteDebugProcessMemory on this block
+                bool ipcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=0
+                bool nonDeviceIpcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=3
+                bool nonSecureIpcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=1
                 bool _pad0_ : 1;
-                bool ProcessPermissionChangeAllowed : 1; //!< If the application can use svcSetProcessMemoryPermission on this block
-                bool MapAllowed : 1; //!< If the application can use svcMapMemory on this block
-                bool UnmapProcessCodeMemoryAllowed : 1; //!< If the application can use svcUnmapProcessCodeMemory on this block
-                bool TransferMemoryAllowed : 1; //!< If the application can use svcCreateTransferMemory on this block
-                bool QueryPhysicalAddressAllowed : 1; //!< If the application can use svcQueryPhysicalAddress on this block
-                bool MapDeviceAllowed : 1; //!< If the application can use svcMapDeviceAddressSpace or svcMapDeviceAddressSpaceByForce on this block
-                bool MapDeviceAlignedAllowed : 1; //!< If the application can use svcMapDeviceAddressSpaceAligned on this block
-                bool IpcBufferAllowed : 1; //!< If the application can use this block with svcSendSyncRequestWithUserBuffer
-                bool IsReferenceCounted : 1; //!< If the physical memory blocks backing this region are reference counted
-                bool MapProcessAllowed : 1; //!< If the application can use svcMapProcessMemory on this block
-                bool AttributeChangeAllowed : 1; //!< If the application can use svcSetMemoryAttribute on this block
-                bool CodeMemoryAllowed : 1; //!< If the application can use svcCreateCodeMemory on this block
+                bool processPermissionChangeAllowed : 1; //!< If the application can use svcSetProcessMemoryPermission on this block
+                bool mapAllowed : 1; //!< If the application can use svcMapMemory on this block
+                bool unmapProcessCodeMemoryAllowed : 1; //!< If the application can use svcUnmapProcessCodeMemory on this block
+                bool transferMemoryAllowed : 1; //!< If the application can use svcCreateTransferMemory on this block
+                bool queryPhysicalAddressAllowed : 1; //!< If the application can use svcQueryPhysicalAddress on this block
+                bool mapDeviceAllowed : 1; //!< If the application can use svcMapDeviceAddressSpace or svcMapDeviceAddressSpaceByForce on this block
+                bool mapDeviceAlignedAllowed : 1; //!< If the application can use svcMapDeviceAddressSpaceAligned on this block
+                bool ipcBufferAllowed : 1; //!< If the application can use this block with svcSendSyncRequestWithUserBuffer
+                bool isReferenceCounted : 1; //!< If the physical memory blocks backing this region are reference counted
+                bool mapProcessAllowed : 1; //!< If the application can use svcMapProcessMemory on this block
+                bool attributeChangeAllowed : 1; //!< If the application can use svcSetMemoryAttribute on this block
+                bool codeMemoryAllowed : 1; //!< If the application can use svcCreateCodeMemory on this block
             };
             u32 value;
         };
@@ -143,7 +143,7 @@ namespace skyline {
         /**
          * @brief The preset states that different regions are set to (https://switchbrew.org/wiki/SVC#MemoryType)
          */
-        namespace MemoryStates {
+        namespace states {
             constexpr MemoryState Unmapped = 0x00000000;
             constexpr MemoryState Io = 0x00002001;
             constexpr MemoryState CodeStatic = 0x00DC7E03;

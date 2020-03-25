@@ -17,7 +17,7 @@ namespace skyline::service::hosbinder {
     /**
      * @brief A mapping from a display's name to it's displayType entry
      */
-    static const std::unordered_map <std::string, DisplayId> displayTypeMap{
+    static const std::unordered_map <std::string, DisplayId> DisplayTypeMap{
         {"Default", DisplayId::Default},
         {"External", DisplayId::External},
         {"Edid", DisplayId::Edid},

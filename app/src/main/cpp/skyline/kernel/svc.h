@@ -34,7 +34,8 @@ namespace skyline {
         // 6.0.0+
         constexpr u8 TotalMemoryAvailableWithoutMmHeap = 0x15;
         constexpr u8 TotalMemoryUsedWithoutMmHeap = 0x16;
-    };
+    }
+
     namespace kernel::svc {
         /**
          * @brief Sets the process heap to a given Size. It can both extend and shrink the heap. (https://switchbrew.org/wiki/SVC#SetHeapSize)

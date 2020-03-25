@@ -29,7 +29,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
     std::signal(SIGABRT, signalHandler);
     std::signal(SIGFPE, signalHandler);
 
-    setpriority(PRIO_PROCESS, static_cast<id_t>(getpid()), skyline::constant::PriorityAn.second);
+    setpriority(PRIO_PROCESS, static_cast<id_t>(getpid()), skyline::constant::AndroidPriority.second);
 
     auto jvmManager = std::make_shared<skyline::JvmManager>(env, instance);
     auto settings = std::make_shared<skyline::Settings>(preferenceFd);

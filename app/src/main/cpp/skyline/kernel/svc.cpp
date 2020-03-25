@@ -3,17 +3,23 @@
 
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
+        constexpr auto heapSizeAlign = 0x200000; // The heap size has to be a multiple of this value
         const u32 size = state.ctx->registers.w1;
-        if (size % constant::HeapSizeDiv != 0) {
+
+        if (size % heapSizeAlign != 0) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.ctx->registers.x1 = 0;
+
             state.logger->Warn("svcSetHeapSize: 'size' not divisible by 2MB: {}", size);
             return;
         }
+
         auto &heap = state.process->heap;
         heap->Resize(size);
+
         state.ctx->registers.w0 = constant::status::Success;
         state.ctx->registers.x1 = heap->address;
+
         state.logger->Debug("svcSetHeapSize: Allocated at 0x{:X} for 0x{:X} bytes", heap->address, heap->size);
     }
 
@@ -45,7 +51,7 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", address);
             return;
         }
-        if (!chunk->state.AttributeChangeAllowed) {
+        if (!chunk->state.attributeChangeAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", address);
             return;
@@ -82,12 +88,12 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcMapMemory: Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if (!descriptor->chunk.state.MapAllowed) {
+        if (!descriptor->chunk.state.mapAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, descriptor->chunk.state.value);
             return;
         }
-        state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::MemoryStates::Stack);
+        state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::states::Stack);
         state.process->CopyMemory(source, destination, size);
         auto object = state.process->GetMemoryObject(source);
         if (!object)
@@ -124,7 +130,7 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        if (!destDesc->chunk.state.MapAllowed) {
+        if (!destDesc->chunk.state.mapAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destDesc->chunk.state.value);
             return;
@@ -181,7 +187,7 @@ namespace skyline::kernel::svc {
         u64 entryArgument = state.ctx->registers.x2;
         u64 stackTop = state.ctx->registers.x3;
         u8 priority = static_cast<u8>(state.ctx->registers.w4);
-        if ((priority < constant::PriorityNin.first) || (priority > constant::PriorityNin.second)) {
+        if ((priority < constant::SwitchPriority.first) || (priority > constant::SwitchPriority.second)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
@@ -312,7 +318,7 @@ namespace skyline::kernel::svc {
     }
 
     void CloseHandle(DeviceState &state) {
-        auto handle = static_cast<handle_t>(state.ctx->registers.w0);
+        auto handle = static_cast<KHandle>(state.ctx->registers.w0);
         try {
             state.process->handles.erase(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
@@ -350,40 +356,52 @@ namespace skyline::kernel::svc {
     }
 
     void WaitSynchronization(DeviceState &state) {
+        constexpr auto maxSyncHandles = 0x40; // The total amount of handles that can be passed to WaitSynchronization
         auto numHandles = state.ctx->registers.w2;
-        if (numHandles > constant::MaxSyncHandles) {
+        if (numHandles > maxSyncHandles) {
             state.ctx->registers.w0 = constant::status::MaxHandles;
             return;
         }
-        std::vector<handle_t> waitHandles(numHandles);
-        std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
-        state.process->ReadMemory(waitHandles.data(), state.ctx->registers.x1, numHandles * sizeof(handle_t));
+
         std::string handleStr;
+        std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
+        std::vector<KHandle> waitHandles(numHandles);
+
+        state.process->ReadMemory(waitHandles.data(), state.ctx->registers.x1, numHandles * sizeof(KHandle));
+
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
+
             auto object = state.process->handles.at(handle);
+
             switch (object->objectType) {
                 case type::KType::KProcess:
                 case type::KType::KThread:
                 case type::KType::KEvent:
                 case type::KType::KSession:
                     break;
+
                 default: {
                     state.ctx->registers.w0 = constant::status::InvHandle;
                     return;
                 }
             }
+
             objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
         }
+
         auto timeout = state.ctx->registers.x3;
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
+
         auto start = utils::GetTimeNs();
+
         while (true) {
             if (state.thread->cancelSync) {
                 state.thread->cancelSync = false;
                 state.ctx->registers.w0 = constant::status::Interrupted;
                 break;
             }
+
             uint index{};
             for (const auto &object : objectTable) {
                 if (object->signalled) {
@@ -394,6 +412,7 @@ namespace skyline::kernel::svc {
                 }
                 index++;
             }
+
             if ((utils::GetTimeNs() - start) >= timeout) {
                 state.logger->Debug("svcWaitSynchronization: Wait has timed out");
                 state.ctx->registers.w0 = constant::status::Timeout;
@@ -496,34 +515,41 @@ namespace skyline::kernel::svc {
     }
 
     void ConnectToNamedPort(DeviceState &state) {
-        char port[constant::PortSize + 1]{0};
-        state.process->ReadMemory(port, state.ctx->registers.x1, constant::PortSize);
-        handle_t handle{};
-        if (std::strcmp(port, "sm:") == 0) {
+        constexpr auto portSize = 0x8; //!< The size of a port name string
+        std::string_view port(state.process->GetPointer<char>(state.ctx->registers.x1), portSize);
+
+        KHandle handle{};
+        if (port.compare("sm:") >= 0) {
             handle = state.os->serviceManager.NewSession(service::Service::sm_IUserInterface);
         } else {
             state.logger->Warn("svcConnectToNamedPort: Connecting to invalid port: '{}'", port);
             state.ctx->registers.w0 = constant::status::NotFound;
             return;
         }
+
         state.logger->Debug("svcConnectToNamedPort: Connecting to port '{}' at 0x{:X}", port, handle);
+
         state.ctx->registers.w1 = handle;
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void SendSyncRequest(DeviceState &state) {
-        state.os->serviceManager.SyncRequestHandler(static_cast<handle_t>(state.ctx->registers.x0));
+        state.os->serviceManager.SyncRequestHandler(static_cast<KHandle>(state.ctx->registers.x0));
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void GetThreadId(DeviceState &state) {
-        pid_t pid{};
+        constexpr KHandle threadSelf = 0xFFFF8000; // This is the handle used by threads to refer to themselves
         auto handle = state.ctx->registers.w1;
-        if (handle != constant::ThreadSelf)
+        pid_t pid{};
+
+        if (handle != threadSelf)
             pid = state.process->GetHandle<type::KThread>(handle)->pid;
         else
             pid = state.thread->pid;
+
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
+
         state.ctx->registers.x1 = static_cast<u64>(pid);
         state.ctx->registers.w0 = constant::status::Success;
     }
@@ -540,7 +566,11 @@ namespace skyline::kernel::svc {
         auto id0 = state.ctx->registers.w1;
         auto handle = state.ctx->registers.w2;
         auto id1 = state.ctx->registers.x3;
+
+        constexpr auto totalPhysicalMemory = 0xF8000000; // ~4 GB of RAM
+
         u64 out{};
+
         switch (id0) {
             case constant::infoState::AllowedCpuIdBitmask:
             case constant::infoState::AllowedThreadPriorityMask:
@@ -548,57 +578,75 @@ namespace skyline::kernel::svc {
             case constant::infoState::TitleId:
             case constant::infoState::PrivilegedProcessId:
                 break;
+
             case constant::infoState::AliasRegionBaseAddr:
                 out = state.os->memory.GetRegion(memory::Regions::Alias).address;
                 break;
+
             case constant::infoState::AliasRegionSize:
                 out = state.os->memory.GetRegion(memory::Regions::Alias).size;
                 break;
+
             case constant::infoState::HeapRegionBaseAddr:
                 out = state.os->memory.GetRegion(memory::Regions::Heap).address;
                 break;
+
             case constant::infoState::HeapRegionSize:
                 out = state.os->memory.GetRegion(memory::Regions::Heap).size;
                 break;
+
             case constant::infoState::TotalMemoryAvailable:
-                out = constant::TotalPhyMem;
+                out = totalPhysicalMemory;
                 break;
+
             case constant::infoState::TotalMemoryUsage:
                 out = state.process->heap->address + constant::DefStackSize + state.os->memory.GetProgramSize();
                 break;
+
             case constant::infoState::AddressSpaceBaseAddr:
                 out = state.os->memory.GetRegion(memory::Regions::Base).address;
                 break;
+
             case constant::infoState::AddressSpaceSize:
                 out = state.os->memory.GetRegion(memory::Regions::Base).size;
                 break;
+
             case constant::infoState::StackRegionBaseAddr:
                 out = state.os->memory.GetRegion(memory::Regions::Stack).address;
                 break;
+
             case constant::infoState::StackRegionSize:
                 out = state.os->memory.GetRegion(memory::Regions::Stack).size;
                 break;
+
             case constant::infoState::PersonalMmHeapSize:
-                out = constant::TotalPhyMem;
+                out = totalPhysicalMemory;
                 break;
+
             case constant::infoState::PersonalMmHeapUsage:
                 out = state.process->heap->address + constant::DefStackSize;
                 break;
+
             case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
-                out = constant::TotalPhyMem; // TODO: NPDM specifies SystemResourceSize, subtract that from this
+                out = totalPhysicalMemory; // TODO: NPDM specifies SystemResourceSize, subtract that from this
                 break;
+
             case constant::infoState::TotalMemoryUsedWithoutMmHeap:
                 out = state.process->heap->size + constant::DefStackSize; // TODO: Same as above
                 break;
+
             case constant::infoState::UserExceptionContextAddr:
                 out = state.process->tlsPages[0]->Get(0);
                 break;
+
             default:
                 state.logger->Warn("svcGetInfo: Unimplemented case ID0: {}, ID1: {}", id0, id1);
                 state.ctx->registers.w0 = constant::status::Unimpl;
                 return;
         }
+
         state.logger->Debug("svcGetInfo: ID0: {}, ID1: {}, Out: 0x{:X}", id0, id1, out);
+
         state.ctx->registers.x1 = out;
         state.ctx->registers.w0 = constant::status::Success;
     }

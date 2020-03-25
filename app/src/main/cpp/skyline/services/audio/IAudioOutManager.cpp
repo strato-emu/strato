@@ -20,8 +20,8 @@ namespace skyline::service::audio {
 
         state.logger->Debug("audoutU: Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
 
-        sampleRate = sampleRate ? sampleRate : skyline::audio::constant::SampleRate;
-        channelCount = channelCount ? channelCount : static_cast<u16>(skyline::audio::constant::ChannelCount);
+        sampleRate = sampleRate ? sampleRate : constant::SampleRate;
+        channelCount = channelCount ? channelCount : static_cast<u16>(constant::ChannelCount);
         manager.RegisterService(std::make_shared<IAudioOut>(state, manager, channelCount, sampleRate), session, response);
 
         response.Push<u32>(sampleRate);

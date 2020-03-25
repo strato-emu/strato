@@ -10,7 +10,7 @@ namespace skyline::service {
     class Parcel {
       private:
         /**
-         * @brief This holds the header of a parcel
+         * @brief The header of an Android Parcel structure
          */
         struct ParcelHeader {
             u32 dataSize;
@@ -30,16 +30,18 @@ namespace skyline::service {
          * @brief This constructor fills in the Parcel object with data from a IPC buffer
          * @param buffer The buffer that contains the parcel
          * @param state The state of the device
+         * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
          */
-        Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state);
+        Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state, bool hasToken = false);
 
         /**
          * @brief This constructor fills in the Parcel object with data from a Parcel on a remote process
          * @param address The remote address of the parcel
          * @param size The size of the parcel
          * @param state The state of the device
+         * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
          */
-        Parcel(u64 address, u64 size, const DeviceState &state);
+        Parcel(u64 address, u64 size, const DeviceState &state, bool hasToken = false);
 
         /**
          * @brief This constructor is used to create an empty parcel then write to a process

@@ -25,25 +25,25 @@ namespace skyline::service::audio {
 
         u32 totalMixCount = params.subMixCount + 1;
 
-        i64 size = utils::AlignUp(params.mixBufferCount * 4, IAudioRenderer::constant::BufferAlignment) +
+        i64 size = utils::AlignUp(params.mixBufferCount * 4, constant::BufferAlignment) +
             params.subMixCount * 0x400 +
             totalMixCount * 0x940 +
             params.voiceCount * 0x3F0 +
             utils::AlignUp(totalMixCount * 8, 16) +
             utils::AlignUp(params.voiceCount * 8, 16) +
-            utils::AlignUp(((params.sinkCount + params.subMixCount) * 0x3C0 + params.sampleCount * 4) * (params.mixBufferCount + 6), IAudioRenderer::constant::BufferAlignment) +
+            utils::AlignUp(((params.sinkCount + params.subMixCount) * 0x3C0 + params.sampleCount * 4) * (params.mixBufferCount + 6), constant::BufferAlignment) +
             (params.sinkCount + params.subMixCount) * 0x2C0 +
             (params.effectCount + params.voiceCount * 4) * 0x30 +
             0x50;
 
         if (revisionInfo.SplitterSupported()) {
-            i32 nodeStateWorkSize = utils::AlignUp(totalMixCount, IAudioRenderer::constant::BufferAlignment);
+            i32 nodeStateWorkSize = utils::AlignUp(totalMixCount, constant::BufferAlignment);
             if (nodeStateWorkSize < 0)
                 nodeStateWorkSize |= 7;
 
             nodeStateWorkSize = 4 * (totalMixCount * totalMixCount) + 12 * totalMixCount + 2 * (nodeStateWorkSize / 8);
 
-            i32 edgeMatrixWorkSize = utils::AlignUp(totalMixCount * totalMixCount, IAudioRenderer::constant::BufferAlignment);
+            i32 edgeMatrixWorkSize = utils::AlignUp(totalMixCount * totalMixCount, constant::BufferAlignment);
             if (edgeMatrixWorkSize < 0)
                 edgeMatrixWorkSize |= 7;
 
