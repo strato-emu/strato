@@ -4,6 +4,9 @@
 #include "KObject.h"
 
 namespace skyline::kernel::type {
+    /**
+     * @brief The base kernel memory object that other memory classes derieve from
+     */
     class KMemory : public KObject {
       public:
         KMemory(const DeviceState &state, KType objectType) : KObject(state, objectType) {}

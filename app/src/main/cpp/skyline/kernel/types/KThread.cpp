@@ -17,6 +17,7 @@ namespace skyline::kernel::type {
             if (pid == parent->pid)
                 parent->status = KProcess::Status::Started;
             status = Status::Running;
+
             state.nce->StartThread(entryArg, handle, parent->threads.at(pid));
         }
     }

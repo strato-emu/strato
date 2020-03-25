@@ -4,7 +4,7 @@
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
         constexpr auto heapSizeAlign = 0x200000; // The heap size has to be a multiple of this value
-        const u32 size = state.ctx->registers.w1;
+        auto size = state.ctx->registers.w1;
 
         if (size % heapSizeAlign != 0) {
             state.ctx->registers.w0 = constant::status::InvSize;
@@ -24,26 +24,30 @@ namespace skyline::kernel::svc {
     }
 
     void SetMemoryAttribute(DeviceState &state) {
-        const u64 address = state.ctx->registers.x0;
+        auto address = state.ctx->registers.x0;
         if (!utils::PageAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", address);
             return;
         }
-        const u64 size = state.ctx->registers.x1;
+        
+        auto size = state.ctx->registers.x1;
         if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
+        
         memory::MemoryAttribute mask{.value = state.ctx->registers.w2};
         memory::MemoryAttribute value{.value = state.ctx->registers.w3};
-        u32 maskedValue = mask.value | value.value;
+        
+        auto maskedValue = mask.value | value.value;
         if (maskedValue != mask.value || !mask.isUncached || mask.isDeviceShared || mask.isBorrowed || mask.isIpcLocked) {
             state.ctx->registers.w0 = constant::status::InvCombination;
             state.logger->Warn("svcSetMemoryAttribute: 'mask' invalid: 0x{:X}, 0x{:X}", mask.value, value.value);
             return;
         }
+        
         auto chunk = state.os->memory.GetChunk(address);
         auto block = state.os->memory.GetBlock(address);
         if (!chunk || !block) {
@@ -51,37 +55,44 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", address);
             return;
         }
+        
         if (!chunk->state.attributeChangeAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", address);
             return;
         }
+        
         block->attributes.isUncached = value.isUncached;
         MemoryManager::InsertBlock(chunk, *block);
+        
         state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", !block->attributes.isUncached, address, size);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void MapMemory(DeviceState &state) {
-        const u64 destination = state.ctx->registers.x0;
-        const u64 source = state.ctx->registers.x1;
-        const u64 size = state.ctx->registers.x2;
+        auto destination = state.ctx->registers.x0;
+        auto source = state.ctx->registers.x1;
+        auto size = state.ctx->registers.x2;
+        
         if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
+        
         if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcMapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
+        
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
         if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
+
         auto descriptor = state.os->memory.Get(source);
         if (!descriptor) {
             state.ctx->registers.w0 = constant::status::InvAddress;
@@ -93,36 +104,44 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, descriptor->chunk.state.value);
             return;
         }
+
         state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::states::Stack);
         state.process->CopyMemory(source, destination, size);
+
         auto object = state.process->GetMemoryObject(source);
         if (!object)
             throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
+
         object->item->UpdatePermission(source, size, {false, false, false});
+
         state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void UnmapMemory(DeviceState &state) {
-        const u64 source = state.ctx->registers.x0;
-        const u64 destination = state.ctx->registers.x1;
-        const u64 size = state.ctx->registers.x2;
+        auto source = state.ctx->registers.x0;
+        auto destination = state.ctx->registers.x1;
+        auto size = state.ctx->registers.x2;
+
         if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcUnmapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
+
         if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcUnmapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
+
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
         if (!stack.IsInside(source)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcUnmapMemory: Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
+
         auto sourceDesc = state.os->memory.Get(source);
         auto destDesc = state.os->memory.Get(destination);
         if (!sourceDesc || !destDesc) {
@@ -130,28 +149,37 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
+
         if (!destDesc->chunk.state.mapAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destDesc->chunk.state.value);
             return;
         }
+
         auto destObject = state.process->GetMemoryObject(destination);
         if (!destObject)
             throw exception("svcUnmapMemory: Cannot find destination memory object in handle table for address 0x{:X}", destination);
+
         destObject->item->UpdatePermission(destination, size, sourceDesc->block.permission);
+
         state.process->CopyMemory(destination, source, size);
+
         auto sourceObject = state.process->GetMemoryObject(destination);
         if (!sourceObject)
             throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
+
         state.process->DeleteHandle(sourceObject->handle);
+
         state.logger->Debug("svcUnmapMemory: Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->registers.w0 = constant::status::Success;
     }
 
     void QueryMemory(DeviceState &state) {
-        u64 address = state.ctx->registers.x2;
         memory::MemoryInfo memInfo{};
+
+        auto address = state.ctx->registers.x2;
         auto descriptor = state.os->memory.Get(address);
+
         if (descriptor) {
             memInfo = {
                 .address = descriptor->block.address,
@@ -162,18 +190,23 @@ namespace skyline::kernel::svc {
                 .deviceRefCount = 0,
                 .ipcRefCount = 0,
             };
+
             state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(descriptor->block.attributes.isUncached), descriptor->block.permission.r ? "R" : "-", descriptor->block.permission.w ? "W" : "-", descriptor->block.permission.x ? "X" : "-");
         } else {
             auto region = state.os->memory.GetRegion(memory::Regions::Base);
             auto baseEnd = region.address + region.size;
+
             memInfo = {
                 .address = region.address,
                 .size = ~baseEnd + 1,
                 .type = static_cast<u32>(memory::MemoryType::Unmapped),
             };
+
             state.logger->Debug("svcQueryMemory: Cannot find block of address: 0x{:X}", address);
         }
+
         state.process->WriteMemory(memInfo, state.ctx->registers.x0);
+
         state.ctx->registers.w0 = constant::status::Success;
     }
 
@@ -187,13 +220,16 @@ namespace skyline::kernel::svc {
         u64 entryArgument = state.ctx->registers.x2;
         u64 stackTop = state.ctx->registers.x3;
         u8 priority = static_cast<u8>(state.ctx->registers.w4);
+
         if ((priority < constant::SwitchPriority.first) || (priority > constant::SwitchPriority.second)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
+
         auto thread = state.process->CreateThread(entryAddress, entryArgument, stackTop, priority);
         state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->pid);
+
         state.ctx->registers.w1 = thread->handle;
         state.ctx->registers.w0 = constant::status::Success;
     }
@@ -218,6 +254,7 @@ namespace skyline::kernel::svc {
 
     void SleepThread(DeviceState &state) {
         auto in = state.ctx->registers.x0;
+
         switch (in) {
             case 0:
             case 1:
@@ -239,6 +276,7 @@ namespace skyline::kernel::svc {
         try {
             auto priority = state.process->GetHandle<type::KThread>(handle)->priority;
             state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
+
             state.ctx->registers.w1 = priority;
             state.ctx->registers.w0 = constant::status::Success;
         } catch (const std::exception &) {
@@ -250,6 +288,7 @@ namespace skyline::kernel::svc {
     void SetThreadPriority(DeviceState &state) {
         auto handle = state.ctx->registers.w0;
         auto priority = state.ctx->registers.w1;
+
         try {
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
             state.process->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
@@ -264,17 +303,20 @@ namespace skyline::kernel::svc {
         try {
             auto object = state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0);
             u64 address = state.ctx->registers.x1;
+
             if (!utils::PageAligned(address)) {
                 state.ctx->registers.w0 = constant::status::InvAddress;
                 state.logger->Warn("svcMapSharedMemory: 'address' not page aligned: 0x{:X}", address);
                 return;
             }
-            const u64 size = state.ctx->registers.x2;
+
+            auto size = state.ctx->registers.x2;
             if (!utils::PageAligned(size)) {
                 state.ctx->registers.w0 = constant::status::InvSize;
                 state.logger->Warn("svcMapSharedMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
                 return;
             }
+
             u32 perm = state.ctx->registers.w3;
             memory::Permission permission = *reinterpret_cast<memory::Permission *>(&perm);
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
@@ -282,8 +324,11 @@ namespace skyline::kernel::svc {
                 state.ctx->registers.w0 = constant::status::InvPermission;
                 return;
             }
+
             state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", address, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
+
             object->Map(address, size, permission);
+
             state.ctx->registers.w0 = constant::status::Success;
         } catch (const std::exception &) {
             state.logger->Warn("svcMapSharedMemory: 'handle' invalid: 0x{:X}", state.ctx->registers.w0);
@@ -298,12 +343,14 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcCreateTransferMemory: 'address' not page aligned: 0x{:X}", address);
             return;
         }
+
         u64 size = state.ctx->registers.x2;
         if (!utils::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcCreateTransferMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
+
         u32 perm = state.ctx->registers.w3;
         memory::Permission permission = *reinterpret_cast<memory::Permission *>(&perm);
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
@@ -311,8 +358,11 @@ namespace skyline::kernel::svc {
             state.ctx->registers.w0 = constant::status::InvPermission;
             return;
         }
+
         state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", address, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
+
         auto shmem = state.process->NewHandle<type::KTransferMemory>(state.process->pid, address, size, permission);
+
         state.ctx->registers.w0 = constant::status::Success;
         state.ctx->registers.w1 = shmem.handle;
     }
@@ -337,15 +387,18 @@ namespace skyline::kernel::svc {
                 case (type::KType::KEvent):
                     std::static_pointer_cast<type::KEvent>(object)->ResetSignal();
                     break;
+
                 case (type::KType::KProcess):
                     std::static_pointer_cast<type::KProcess>(object)->ResetSignal();
                     break;
+
                 default: {
                     state.logger->Warn("svcResetSignal: 'handle' type invalid: 0x{:X} ({})", handle, object->objectType);
                     state.ctx->registers.w0 = constant::status::InvHandle;
                     return;
                 }
             }
+
             state.logger->Debug("svcResetSignal: Resetting signal: 0x{:X}", handle);
             state.ctx->registers.w0 = constant::status::Success;
         } catch (const std::out_of_range &) {
@@ -357,6 +410,7 @@ namespace skyline::kernel::svc {
 
     void WaitSynchronization(DeviceState &state) {
         constexpr auto maxSyncHandles = 0x40; // The total amount of handles that can be passed to WaitSynchronization
+
         auto numHandles = state.ctx->registers.w2;
         if (numHandles > maxSyncHandles) {
             state.ctx->registers.w0 = constant::status::MaxHandles;
@@ -373,7 +427,6 @@ namespace skyline::kernel::svc {
             handleStr += fmt::format("* 0x{:X}\n", handle);
 
             auto object = state.process->handles.at(handle);
-
             switch (object->objectType) {
                 case type::KType::KProcess:
                 case type::KType::KThread:
@@ -394,7 +447,6 @@ namespace skyline::kernel::svc {
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
 
         auto start = utils::GetTimeNs();
-
         while (true) {
             if (state.thread->cancelSync) {
                 state.thread->cancelSync = false;
@@ -437,15 +489,19 @@ namespace skyline::kernel::svc {
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
+
         auto ownerHandle = state.ctx->registers.w0;
         auto requesterHandle = state.ctx->registers.w2;
         if (requesterHandle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", requesterHandle, state.thread->handle);
+
         state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", address);
+
         if (state.process->MutexLock(address, ownerHandle))
             state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", address);
         else
             state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex at 0x{:X}", address);
+
         state.ctx->registers.w0 = constant::status::Success;
     }
 
@@ -456,7 +512,9 @@ namespace skyline::kernel::svc {
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
+
         state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", address);
+
         if (state.process->MutexUnlock(address)) {
             state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", address);
             state.ctx->registers.w0 = constant::status::Success;
@@ -473,17 +531,21 @@ namespace skyline::kernel::svc {
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
+
         auto condAddress = state.ctx->registers.x1;
         auto handle = state.ctx->registers.w2;
         if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
+
         if (!state.process->MutexUnlock(mtxAddress)) {
             state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", mtxAddress);
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
         }
+
         auto timeout = state.ctx->registers.x3;
         state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mtxAddress, condAddress, timeout);
+
         if (state.process->ConditionalVariableWait(condAddress, mtxAddress, timeout)) {
             state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable and relocked mutex");
             state.ctx->registers.w0 = constant::status::Success;
@@ -496,6 +558,7 @@ namespace skyline::kernel::svc {
     void SignalProcessWideKey(DeviceState &state) {
         auto address = state.ctx->registers.x0;
         auto count = state.ctx->registers.w1;
+
         state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
         state.process->ConditionalVariableSignal(address, count);
         state.ctx->registers.w0 = constant::status::Success;
@@ -556,8 +619,10 @@ namespace skyline::kernel::svc {
 
     void OutputDebugString(DeviceState &state) {
         auto debug = state.process->GetString(state.ctx->registers.x0, state.ctx->registers.x1);
+
         if (debug.back() == '\n')
             debug.pop_back();
+
         state.logger->Info("Debug Output: {}", debug);
         state.ctx->registers.w0 = constant::status::Success;
     }
@@ -567,9 +632,9 @@ namespace skyline::kernel::svc {
         auto handle = state.ctx->registers.w2;
         auto id1 = state.ctx->registers.x3;
 
-        constexpr auto totalPhysicalMemory = 0xF8000000; // ~4 GB of RAM
-
         u64 out{};
+
+        constexpr auto totalPhysicalMemory = 0xF8000000; // ~4 GB of RAM
 
         switch (id0) {
             case constant::infoState::AllowedCpuIdBitmask:

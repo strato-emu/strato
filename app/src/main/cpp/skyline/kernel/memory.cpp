@@ -6,25 +6,30 @@ namespace skyline::kernel {
         auto chunk = std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         });
+
         if (chunk-- != chunkList.begin()) {
             if ((chunk->address + chunk->size) > address)
                 return chunk.base();
         }
+
         return nullptr;
     }
 
     BlockDescriptor *MemoryManager::GetBlock(u64 address, ChunkDescriptor *chunk) {
         if (!chunk)
             chunk = GetChunk(address);
+
         if (chunk) {
             auto block = std::upper_bound(chunk->blockList.begin(), chunk->blockList.end(), address, [](const u64 address, const BlockDescriptor &block) -> bool {
                 return address < block.address;
             });
+
             if (block-- != chunk->blockList.begin()) {
                 if ((block->address + block->size) > address)
                     return block.base();
             }
         }
+
         return nullptr;
     }
 
@@ -32,11 +37,14 @@ namespace skyline::kernel {
         auto upperChunk = std::upper_bound(chunkList.begin(), chunkList.end(), chunk.address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         });
+
         if (upperChunk != chunkList.begin()) {
             auto lowerChunk = std::prev(upperChunk);
+
             if (lowerChunk->address + lowerChunk->size > chunk.address)
                 throw exception("InsertChunk: Descriptors are colliding: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", lowerChunk->address, lowerChunk->address + lowerChunk->size, chunk.address, chunk.address + chunk.size);
         }
+
         chunkList.insert(upperChunk, chunk);
     }
 
@@ -55,24 +63,29 @@ namespace skyline::kernel {
         } else if (size > chunk->size) {
             auto begin = chunk->blockList.begin();
             auto end = std::prev(chunk->blockList.end());
+
             BlockDescriptor block{
                 .address = (end->address + end->size),
                 .size = (chunk->address + size) - (end->address + end->size),
                 .permission = begin->permission,
                 .attributes = begin->attributes,
             };
+
             chunk->blockList.push_back(block);
         } else if (size < chunk->size) {
             auto endAddress = chunk->address + size;
+
             for (auto block = chunk->blockList.begin(), end = chunk->blockList.end(); block != end;) {
                 if (block->address > endAddress)
                     block = chunk->blockList.erase(block);
                 else
                     ++block;
             }
+
             auto end = std::prev(chunk->blockList.end());
             end->size = endAddress - end->address;
         }
+
         chunk->size = size;
     }
 
@@ -87,16 +100,19 @@ namespace skyline::kernel {
                         auto endBlock = *iter;
                         endBlock.address = (block.address + block.size);
                         endBlock.size = (iter->address + iter->size) - endBlock.address;
+
                         iter->size = iter->address - block.address;
                         chunk->blockList.insert(std::next(iter), {block, endBlock});
                     }
                 } else if (std::next(iter) != chunk->blockList.end()) {
                     auto nextIter = std::next(iter);
                     auto nextEnd = nextIter->address + nextIter->size;
+
                     if(nextEnd > block.address) {
                         iter->size = block.address - iter->address;
                         nextIter->address = block.address + block.size;
                         nextIter->size = nextEnd - nextIter->address;
+
                         chunk->blockList.insert(nextIter, block);
                     } else {
                         throw exception("InsertBlock: Inserting block across more than one block is not allowed");
@@ -107,6 +123,7 @@ namespace skyline::kernel {
                 return;
             }
         }
+
         throw exception("InsertBlock: Block offset not present within current block list");
     }
 
@@ -114,6 +131,7 @@ namespace skyline::kernel {
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");
+
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 base.address = constant::BaseAddress;
                 base.size = 0xFF8000000;
@@ -131,6 +149,7 @@ namespace skyline::kernel {
                 tlsIo.size = 0;
                 break;
             }
+
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 base.address = constant::BaseAddress;
                 base.size = 0x7FF8000000;
@@ -147,6 +166,7 @@ namespace skyline::kernel {
                 break;
             }
         }
+
         state.logger->Debug("Region Map:\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
             .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
     }
@@ -155,8 +175,10 @@ namespace skyline::kernel {
 
     std::optional<DescriptorPack> MemoryManager::Get(u64 address) {
         auto chunk = GetChunk(address);
+
         if (chunk)
             return DescriptorPack{*GetBlock(address, chunk), *chunk};
+
         return std::nullopt;
     }
 
@@ -179,8 +201,10 @@ namespace skyline::kernel {
 
     size_t MemoryManager::GetProgramSize() {
         size_t size = 0;
+
         for (const auto &chunk : chunkList)
             size += chunk.size;
+
         return size;
     }
 }
