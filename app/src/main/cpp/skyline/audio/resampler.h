@@ -8,7 +8,7 @@ namespace skyline::audio {
      */
     class Resampler {
       private:
-        uint fraction{}; //!< The fractional value used for storing the resamplers last frame
+        u32 fraction{}; //!< The fractional value used for storing the resamplers last frame
 
       public:
         /**
@@ -17,6 +17,6 @@ namespace skyline::audio {
          * @param ratio The conversion ratio needed
          * @param channelCount The amount of channels the buffer contains
          */
-        std::vector<i16> ResampleBuffer(std::vector<i16> &inputBuffer, double ratio, int channelCount);
+        std::vector<i16> ResampleBuffer(const std::vector<i16> &inputBuffer, double ratio, int channelCount);
     };
 }

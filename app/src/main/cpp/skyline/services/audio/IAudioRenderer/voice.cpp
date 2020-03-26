@@ -41,7 +41,7 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void Voice::UpdateBuffers() {
-        WaveBuffer &currentBuffer = waveBuffers.at(bufferIndex);
+        const auto &currentBuffer = waveBuffers.at(bufferIndex);
 
         if (currentBuffer.size == 0)
             return;
@@ -49,7 +49,7 @@ namespace skyline::service::audio::IAudioRenderer {
         switch (pcmFormat) {
             case skyline::audio::PcmFormat::Int16:
                 sampleBuffer.resize(currentBuffer.size / sizeof(i16));
-                state.process->ReadMemory(sampleBuffer.data(), currentBuffer.position, currentBuffer.size);
+                state.process->ReadMemory(sampleBuffer.data(), currentBuffer.address, currentBuffer.size);
                 break;
             default:
                 throw exception("Unsupported voice PCM format: {}", pcmFormat);
@@ -59,11 +59,11 @@ namespace skyline::service::audio::IAudioRenderer {
             sampleBuffer = resampler.ResampleBuffer(sampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
 
         if (channelCount == 1 && constant::ChannelCount != channelCount) {
-            size_t originalSize = sampleBuffer.size();
+            auto originalSize = sampleBuffer.size();
             sampleBuffer.resize((originalSize / channelCount) * constant::ChannelCount);
 
-            for (size_t monoIndex = originalSize - 1, targetIndex = sampleBuffer.size(); monoIndex > 0; monoIndex--)
-                for (uint i = 0; i < constant::ChannelCount; i++)
+            for (auto monoIndex = originalSize - 1, targetIndex = sampleBuffer.size(); monoIndex > 0; monoIndex--)
+                for (auto i = 0; i < constant::ChannelCount; i++)
                     sampleBuffer[--targetIndex] = sampleBuffer[monoIndex];
         }
     }

@@ -4,10 +4,10 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 #include <audio.h>
-#include "memoryPool.h"
+#include "memory_pool.h"
 #include "effect.h"
 #include "voice.h"
-#include "revisionInfo.h"
+#include "revision_info.h"
 
 namespace skyline {
     namespace constant {

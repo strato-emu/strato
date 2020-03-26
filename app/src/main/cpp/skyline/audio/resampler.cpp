@@ -112,10 +112,10 @@ namespace skyline::audio {
         {-58, 4354, 26130, 2338},   {-54, 4199, 26169, 2451},   {-50, 4046, 26202, 2568},   {-46, 3897, 26230, 2688},
         {-42, 3751, 26253, 2811},   {-38, 3608, 26270, 2936},   {-34, 3467, 26281, 3064},   {-32, 3329, 26287, 3195}}};
 
-    std::vector<i16> Resampler::ResampleBuffer(std::vector<i16> &inputBuffer, double ratio, int channelCount) {
-        uint step = static_cast<uint>(ratio * 0x8000);
-        uint outputSize = static_cast<uint>(static_cast<double>(inputBuffer.size()) / ratio);
-        std::vector<i16> outputBuffer(static_cast<size_t>(outputSize));
+    std::vector<i16> Resampler::ResampleBuffer(const std::vector<i16> &inputBuffer, double ratio, int channelCount) {
+        auto step = static_cast<uint>(ratio * 0x8000);
+        auto outputSize = static_cast<size_t>(inputBuffer.size() / ratio);
+        std::vector<i16> outputBuffer(outputSize);
 
         const std::array<skyline::audio::LutEntry, 128> &lut = [step] {
             if (step > 0xaaaa)
@@ -126,20 +126,19 @@ namespace skyline::audio {
                 return CurveLut2;
         }();
 
-        for (uint outIndex = 0, inIndex = 0; outIndex < outputBuffer.size(); outIndex += channelCount) {
-            uint lutIndex = (fraction >> 8) << 2;
+        for (auto outIndex = 0, inIndex = 0; outIndex < outputBuffer.size(); outIndex += channelCount) {
+            auto lutIndex = (fraction >> 8) << 2;
 
             for (int channel = 0; channel < channelCount; channel++) {
-                int data = inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
-                    inputBuffer[(inIndex + 1) * channelCount + channel] * lut[lutIndex].b +
-                    inputBuffer[(inIndex + 2) * channelCount + channel] * lut[lutIndex].c +
-                    inputBuffer[(inIndex + 3) * channelCount + channel] * lut[lutIndex].d;
+                i32 data = inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
+                           inputBuffer[(inIndex + 1) * channelCount + channel] * lut[lutIndex].b +
+                           inputBuffer[(inIndex + 2) * channelCount + channel] * lut[lutIndex].c +
+                           inputBuffer[(inIndex + 3) * channelCount + channel] * lut[lutIndex].d;
 
-                outputBuffer[outIndex + channel] = static_cast<i16>(std::clamp(data >> 15,
-                    static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                outputBuffer[outIndex + channel] = static_cast<i16>(std::clamp(data >> 15, static_cast<i32>(std::numeric_limits<i16>::min()), static_cast<i32>(std::numeric_limits<i16>::max())));
             }
 
-            uint newOffset = fraction + step;
+            auto newOffset = fraction + step;
             inIndex += newOffset >> 15;
             fraction = newOffset & 0x7fff;
         }

@@ -128,7 +128,7 @@ namespace skyline::kernel::type {
             pread64(memFd, destination, size, offset);
     }
 
-    void KProcess::WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest) const {
+    void KProcess::WriteMemory(const void *source, const u64 offset, const size_t size, const bool forceGuest) const {
         if (!forceGuest) {
             auto destination = GetHostAddress(offset);
 
@@ -139,7 +139,7 @@ namespace skyline::kernel::type {
         }
 
         struct iovec local{
-            .iov_base = source,
+            .iov_base = const_cast<void *>(source),
             .iov_len = size,
         };
 

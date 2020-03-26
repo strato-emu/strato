@@ -24,7 +24,7 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This stores information of a wave buffer of samples
      */
     struct WaveBuffer {
-        u64 position; //!< The position of the wave buffer in guest memory
+        u64 address; //!< The address of the wave buffer in guest memory
         u64 size; //!< The size of the wave buffer
         u32 firstSampleOffset; //!< The offset of the first sample in the buffer
         u32 lastSampleOffset; //!< The offset of the last sample in the buffer

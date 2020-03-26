@@ -40,7 +40,7 @@ namespace skyline::service::audio {
             u64 sampleSize;
             u64 sampleOffset;
         } data = state.process->GetObject<Data>(request.inputBuf.at(0).address);
-        u64 tag = request.Pop<u64>();
+        auto tag = request.Pop<u64>();
 
         state.logger->Debug("IAudioOut: Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
 
@@ -57,9 +57,9 @@ namespace skyline::service::audio {
     }
 
     void IAudioOut::GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u32 maxCount = static_cast<u32>(request.outputBuf.at(0).size >> 3);
+        auto maxCount = static_cast<u32>(request.outputBuf.at(0).size >> 3);
         std::vector<u64> releasedBuffers = track->GetReleasedBuffers(maxCount);
-        u32 count = static_cast<u32>(releasedBuffers.size());
+        auto count = static_cast<u32>(releasedBuffers.size());
 
         // Fill rest of output buffer with zeros
         releasedBuffers.resize(maxCount, 0);
@@ -69,7 +69,7 @@ namespace skyline::service::audio {
     }
 
     void IAudioOut::ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u64 tag = request.Pop<u64>();
+        auto tag = request.Pop<u64>();
 
         response.Push(static_cast<u32>(track->ContainsBuffer(tag)));
     }

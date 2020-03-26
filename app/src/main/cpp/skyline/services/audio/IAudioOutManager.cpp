@@ -9,8 +9,7 @@ namespace skyline::service::audio {
     }) {}
 
     void IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.process->WriteMemory(reinterpret_cast<void *>(const_cast<char *>(constant::DefaultAudioOutName.data())),
-                                   request.outputBuf.at(0).address, constant::DefaultAudioOutName.size());
+        state.process->WriteMemory(reinterpret_cast<void *>(const_cast<char *>(constant::DefaultAudioOutName.data())), request.outputBuf.at(0).address, constant::DefaultAudioOutName.size());
     }
 
     void IAudioOutManager::OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

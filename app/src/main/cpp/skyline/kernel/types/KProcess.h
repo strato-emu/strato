@@ -259,7 +259,7 @@ namespace skyline {
             * @param size The amount of memory to be written
             * @param forceGuest This flag forces the write to be performed in guest address space
             */
-            void WriteMemory(void *source, const u64 offset, const size_t size, const bool forceGuest = false) const;
+            void WriteMemory(const void *source, const u64 offset, const size_t size, const bool forceGuest = false) const;
 
             /**
             * @brief Copy one chunk to another in the guest's memory

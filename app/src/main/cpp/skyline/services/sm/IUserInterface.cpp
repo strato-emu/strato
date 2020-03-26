@@ -1,7 +1,7 @@
 #include "IUserInterface.h"
 
 namespace skyline::service::sm {
-    IUserInterface::IUserInterface(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::sm_IUserInterface, "IUserInterface:IUserInterface", {
+    IUserInterface::IUserInterface(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::sm_IUserInterface, "sm:IUserInterface", {
         {0x0, SFUNC(IUserInterface::Initialize)},
         {0x1, SFUNC(IUserInterface::GetService)}
     }) {}

@@ -47,7 +47,7 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u64 inputAddress = request.inputBuf.at(0).address;
+        auto inputAddress = request.inputBuf.at(0).address;
 
         auto inputHeader = state.process->GetObject<UpdateDataHeader>(inputAddress);
         revisionInfo.SetUserRevision(inputHeader.revision);
@@ -58,7 +58,7 @@ namespace skyline::service::audio::IAudioRenderer {
         state.process->ReadMemory(memoryPoolsIn.data(), inputAddress, memoryPoolCount * sizeof(MemoryPoolIn));
         inputAddress += inputHeader.memoryPoolSize;
 
-        for (int i = 0; i < memoryPoolsIn.size(); i++)
+        for (auto i = 0; i < memoryPoolsIn.size(); i++)
             memoryPools[i].ProcessInput(memoryPoolsIn[i]);
 
         inputAddress += inputHeader.voiceResourceSize;
@@ -66,13 +66,13 @@ namespace skyline::service::audio::IAudioRenderer {
         state.process->ReadMemory(voicesIn.data(), inputAddress, rendererParams.voiceCount * sizeof(VoiceIn));
         inputAddress += inputHeader.voiceSize;
 
-        for (int i = 0; i < voicesIn.size(); i++)
+        for (auto i = 0; i < voicesIn.size(); i++)
             voices[i].ProcessInput(voicesIn[i]);
 
         std::vector<EffectIn> effectsIn(rendererParams.effectCount);
         state.process->ReadMemory(effectsIn.data(), inputAddress, rendererParams.effectCount * sizeof(EffectIn));
 
-        for (int i = 0; i < effectsIn.size(); i++)
+        for (auto i = 0; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
 
         UpdateAudio();
@@ -105,24 +105,24 @@ namespace skyline::service::audio::IAudioRenderer {
         state.process->WriteMemory(outputHeader, outputAddress);
         outputAddress += sizeof(UpdateDataHeader);
 
-        for (auto &memoryPool : memoryPools) {
+        for (const auto &memoryPool : memoryPools) {
             state.process->WriteMemory(memoryPool.output, outputAddress);
             outputAddress += sizeof(MemoryPoolOut);
         }
 
-        for (auto &voice : voices) {
+        for (const auto &voice : voices) {
             state.process->WriteMemory(voice.output, outputAddress);
             outputAddress += sizeof(VoiceOut);
         }
 
-        for (auto &effect : effects) {
+        for (const auto &effect : effects) {
             state.process->WriteMemory(effect.output, outputAddress);
             outputAddress += sizeof(EffectOut);
         }
     }
 
     void IAudioRenderer::UpdateAudio() {
-        std::vector<u64> released = track->GetReleasedBuffers(2);
+        auto released = track->GetReleasedBuffers(2);
 
         for (auto &tag : released) {
             MixFinalBuffer();
@@ -153,14 +153,11 @@ namespace skyline::service::audio::IAudioRenderer {
 
                 for (int i = voiceBufferOffset; i < voiceBufferOffset + voiceBufferSize; i++) {
                     if (setIndex == bufferOffset) {
-                        sampleBuffer[bufferOffset] = static_cast<i16>(std::clamp(static_cast<int>(static_cast<float>(voiceSamples[i]) *
-                            voice.volume), static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                        sampleBuffer[bufferOffset] = static_cast<i16>(std::clamp(static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume), static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
 
                         setIndex++;
                     } else {
-                        sampleBuffer[bufferOffset] += static_cast<i16>(std::clamp(static_cast<int>(sampleBuffer[voiceSamples[i]]) +
-                                                                                      static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume),
-                                                                                  static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                        sampleBuffer[bufferOffset] += static_cast<i16>(std::clamp(static_cast<int>(sampleBuffer[voiceSamples[i]]) + static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume), static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
                     }
 
                     bufferOffset++;

@@ -30,7 +30,7 @@ namespace skyline::audio {
     std::vector<u64> AudioTrack::GetReleasedBuffers(u32 max) {
         std::vector<u64> bufferIds;
 
-        for (u32 i = 0; i < max; i++) {
+        for (auto i = 0; i < max; i++) {
             if (!identifierQueue.back().released)
                 break;
             bufferIds.push_back(identifierQueue.back().tag);
@@ -54,7 +54,7 @@ namespace skyline::audio {
         bufferLock.lock();
 
         identifierQueue.push_front(identifier);
-        for (auto &sample : sampleData)
+        for (const auto &sample : sampleData)
             sampleQueue.push(sample);
 
         bufferLock.unlock();
