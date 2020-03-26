@@ -1,5 +1,5 @@
-#include "IManagerRootService.h"
 #include <kernel/types/KProcess.h>
+#include "IManagerRootService.h"
 #include "IApplicationDisplayService.h"
 
 namespace skyline::service::visrv {

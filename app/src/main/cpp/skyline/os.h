@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sys/mman.h>
 #include <thread>
+#include <sys/mman.h>
 #include "common.h"
 #include "kernel/ipc.h"
 #include "kernel/types/KProcess.h"

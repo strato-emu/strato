@@ -1,5 +1,7 @@
 #pragma once
 
+#include "guest_common.h"
+
 namespace skyline {
     namespace guest {
         constexpr size_t SaveCtxSize = 20 * sizeof(u32); //!< The size of the SaveCtx function in 32-bit ARMv8 instructions

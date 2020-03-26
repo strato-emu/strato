@@ -51,7 +51,7 @@ namespace skyline::service::nvdrv::device {
         {"/dev/nvhost-as-gpu", NvDeviceType::nvhost_as_gpu},
         {"/dev/nvhost-dbg-gpu", NvDeviceType::nvhost_dbg_gpu},
         {"/dev/nvhost-prof-gpu", NvDeviceType::nvhost_prof_gpu},
-        {"/dev/nvhost-ctrl-gpu", NvDeviceType::nvhost_ctrl_gpu}
+        {"/dev/nvhost-ctrl-gpu", NvDeviceType::nvhost_ctrl_gpu},
     };
 
     /**

@@ -1,9 +1,9 @@
-#include "INvDrvServices.h"
 #include <kernel/types/KProcess.h>
 #include "devices/nvhost_ctrl.h"
 #include "devices/nvhost_ctrl_gpu.h"
 #include "devices/nvhost_channel.h"
 #include "devices/nvhost_as_gpu.h"
+#include "INvDrvServices.h"
 
 namespace skyline::service::nvdrv {
     u32 INvDrvServices::OpenDevice(const std::string &path) {

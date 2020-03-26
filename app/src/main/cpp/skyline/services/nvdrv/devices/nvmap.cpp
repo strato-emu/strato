@@ -1,5 +1,5 @@
-#include "nvmap.h"
 #include <kernel/types/KProcess.h>
+#include "nvmap.h"
 
 namespace skyline::service::nvdrv::device {
     NvMap::NvMapObject::NvMapObject(u32 id, u32 size) : id(id), size(size) {}

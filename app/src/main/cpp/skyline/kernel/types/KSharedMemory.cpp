@@ -1,9 +1,9 @@
-#include "KSharedMemory.h"
-#include "KProcess.h"
-#include <os.h>
 #include <android/sharedmem.h>
 #include <unistd.h>
 #include <asm/unistd.h>
+#include <os.h>
+#include "KSharedMemory.h"
+#include "KProcess.h"
 
 namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {

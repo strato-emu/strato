@@ -1,13 +1,13 @@
 #pragma once
 
+#include <list>
+#include <kernel/memory.h>
 #include "KThread.h"
 #include "KPrivateMemory.h"
 #include "KTransferMemory.h"
 #include "KSharedMemory.h"
 #include "KSession.h"
 #include "KEvent.h"
-#include <kernel/memory.h>
-#include <list>
 
 namespace skyline {
     namespace constant {

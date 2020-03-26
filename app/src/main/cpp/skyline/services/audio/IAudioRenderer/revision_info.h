@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common.h>
+
 namespace skyline {
     namespace constant {
         constexpr u32 SupportedRevision = 7; //!< The audren revision our implementation supports

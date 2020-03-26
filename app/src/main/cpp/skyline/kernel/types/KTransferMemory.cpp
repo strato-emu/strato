@@ -1,7 +1,7 @@
-#include "KTransferMemory.h"
+#include <asm/unistd.h>
 #include <nce.h>
 #include <os.h>
-#include <asm/unistd.h>
+#include "KTransferMemory.h"
 
 namespace skyline::kernel::type {
     KTransferMemory::KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState) : host(host), size(size), KMemory(state, KType::KTransferMemory) {

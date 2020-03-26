@@ -1,5 +1,5 @@
-#include "nvhost_ctrl_gpu.h"
 #include <kernel/types/KProcess.h>
+#include "nvhost_ctrl_gpu.h"
 
 namespace skyline::service::nvdrv::device {
     NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_ctrl_gpu, {

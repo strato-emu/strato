@@ -1,8 +1,8 @@
 #pragma once
 
+#include <unistd.h>
 #include <os.h>
 #include <kernel/types/KProcess.h>
-#include <unistd.h>
 
 namespace skyline::loader {
     class Loader {

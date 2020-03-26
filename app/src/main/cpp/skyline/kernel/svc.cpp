@@ -1,5 +1,5 @@
-#include "svc.h"
 #include <os.h>
+#include "svc.h"
 
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {

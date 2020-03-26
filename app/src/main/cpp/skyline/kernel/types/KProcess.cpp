@@ -1,11 +1,11 @@
-#include "KProcess.h"
-#include <nce.h>
-#include <os.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/uio.h>
 #include <asm/unistd.h>
 #include <nce/guest.h>
+#include <nce.h>
+#include <os.h>
+#include "KProcess.h"
 
 namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(u64 address) : address(address) {}

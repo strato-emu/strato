@@ -1,5 +1,5 @@
-#include "nvhost_channel.h"
 #include <kernel/types/KProcess.h>
+#include "nvhost_channel.h"
 
 namespace skyline::service::nvdrv::device {
     NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : NvDevice(state, type, {

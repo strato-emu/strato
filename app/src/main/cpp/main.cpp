@@ -1,8 +1,8 @@
+#include <csignal>
+#include <unistd.h>
 #include "skyline/common.h"
 #include "skyline/os.h"
 #include "skyline/jvm.h"
-#include <unistd.h>
-#include <csignal>
 
 bool Halt;
 jobject Surface;

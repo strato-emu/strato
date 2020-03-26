@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ipc.h"
 #include <common.h>
+#include "ipc.h"
 
 namespace skyline {
     namespace constant::infoState {

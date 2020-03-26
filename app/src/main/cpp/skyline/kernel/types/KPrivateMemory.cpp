@@ -1,9 +1,9 @@
-#include "KPrivateMemory.h"
-#include "KProcess.h"
-#include <os.h>
 #include <android/sharedmem.h>
 #include <asm/unistd.h>
 #include <unistd.h>
+#include <os.h>
+#include "KPrivateMemory.h"
+#include "KProcess.h"
 
 namespace skyline::kernel::type {
     KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : size(size), KMemory(state, KType::KPrivateMemory) {

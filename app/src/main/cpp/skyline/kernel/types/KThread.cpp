@@ -1,7 +1,7 @@
 #include <sys/resource.h>
+#include <nce.h>
 #include "KThread.h"
 #include "KProcess.h"
-#include <nce.h>
 
 namespace skyline::kernel::type {
     KThread::KThread(const DeviceState &state, KHandle handle, pid_t selfPid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory) : handle(handle), pid(selfPid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state, KType::KThread) {
