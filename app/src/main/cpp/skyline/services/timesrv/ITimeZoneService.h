@@ -13,12 +13,12 @@ namespace skyline::service::timesrv {
          * @brief This holds a particular time point in calendar format
          */
         struct CalendarTime {
-            u16 year;
-            u8 month;
-            u8 day;
-            u8 hour;
-            u8 minute;
-            u8 second;
+            u16 year; //!< The Year component of the date
+            u8 month; //!< The Month component of the date
+            u8 day; //!< The Day component of the date
+            u8 hour; //!< The Hour component of the date
+            u8 minute; //!< The Minute component of the date
+            u8 second; //!< The Second component of the date
             u8 _pad_;
         };
         static_assert(sizeof(CalendarTime) == 0x8);
@@ -27,11 +27,11 @@ namespace skyline::service::timesrv {
          * @brief This is passed in addition to CalendarTime
          */
         struct CalendarAdditionalInfo {
-            u32 dayWeek;
-            u32 dayMonth;
-            u64 name;
-            i32 dst;
-            u32 utcRel;
+            u32 dayWeek; //!< The amount of days since Sunday
+            u32 dayMonth; //!< The amount of days since the start of the month
+            u64 name; //!< The name of the time zone
+            i32 dst; //!< If DST is in effect or not
+            u32 utcRel; //!< The offset of the time from GMT in seconds
         };
         static_assert(sizeof(CalendarAdditionalInfo) == 0x18);
 
