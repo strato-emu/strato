@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+
 #include <kernel/types/KProcess.h>
 #include "sm/IUserInterface.h"
 #include "settings/ISystemSettingsServer.h"

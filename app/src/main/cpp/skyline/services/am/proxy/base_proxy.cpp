@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+
 #include <services/am/controller/ICommonStateGetter.h>
 #include <services/am/controller/ISelfController.h>
 #include <services/am/controller/IWindowController.h>

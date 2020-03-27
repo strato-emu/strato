@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+ */
+
 package emu.skyline.adapter
 
 import android.content.ClipData
