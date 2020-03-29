@@ -3,9 +3,11 @@ project(Skyline LANGUAGES CXX ASM VERSION 0.3)
 
 set(BUILD_TESTS OFF)
 set(BUILD_TESTING OFF)
-set(BUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Shared Libraries" FORCE)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -Wno-unused-command-line-argument")
 if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")

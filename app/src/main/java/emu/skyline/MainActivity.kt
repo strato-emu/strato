@@ -38,32 +38,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
     }
 
-    private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, entries: Int = 0): Int {
-        var entryCount = entries
+    private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, found: Boolean = false): Boolean {
+        var foundCurrent = found
 
         directory.listFiles()
-            .forEach { file ->
-                if (file.isDirectory) {
-                    entryCount = findFile(ext, loader, file, entries)
-                } else {
-                    if (ext.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
-                        val document = RandomAccessDocument(this, file)
-                        if (loader.verifyFile(document)) {
-                            val entry = loader.getTitleEntry(document, file.uri)
-                            val header = (entryCount == 0)
-                            runOnUiThread {
-                                if (header)
-                                    adapter.addHeader(getString(R.string.nro))
-                                adapter.addItem(GameItem(entry))
+                .forEach { file ->
+                    if (file.isDirectory) {
+                        foundCurrent = findFile(ext, loader, file, foundCurrent)
+                    } else {
+                        if (ext.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
+                            val document = RandomAccessDocument(this, file)
+                            if (loader.verifyFile(document)) {
+                                val entry = loader.getTitleEntry(document, file.uri)
+                                runOnUiThread {
+                                    if (!foundCurrent) {
+                                        adapter.addHeader(getString(R.string.nro))
+                                        foundCurrent = true
+                                    }
+                                    adapter.addItem(GameItem(entry))
+                                }
                             }
-                            entryCount++
+                            document.close()
                         }
-                        document.close()
                     }
                 }
-            }
 
-        return entryCount
+        return foundCurrent
     }
 
     private fun refreshFiles(tryLoad: Boolean) {
@@ -77,12 +77,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
         thread(start = true) {
             val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
-            runOnUiThread {snackbar.show()}
+            runOnUiThread { snackbar.show() }
             try {
-                runOnUiThread{adapter.clear()}
-                val entries = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                runOnUiThread { adapter.clear() }
+                val foundNros = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
                 runOnUiThread {
-                    if (entries == 0)
+                    if (!foundNros)
                         adapter.addHeader(getString(R.string.no_rom))
                     try {
                         adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     notifyUser(e.message!!)
                 }
             }
-            runOnUiThread {snackbar.dismiss()}
+            runOnUiThread { snackbar.dismiss() }
         }
     }
 
