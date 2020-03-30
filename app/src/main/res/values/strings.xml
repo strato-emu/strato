@@ -38,4 +38,23 @@
     <string name="audio">Audio</string>
     <string name="audren_buffer_size">Audio Buffer Size</string>
     <string name="audren_buffer_desc">The size of the buffer used to store audio samples for ROMs using audren. A lower value will result in less latency but potentially increased audio stutter depending on the performance of the device</string>
+    <!-- Licenses -->
+    <string name="licenses">Licenses</string>
+    <string name="fmtlib">{fmt}</string>
+    <string name="fmtlib_description">We use libfmt for formatting strings (Custom License)</string>
+    <string name="oboe">oboe</string>
+    <string name="oboe_description">We use oboe for audio output during emulation (Apache License 2.0)</string>
+    <string name="vkhpp">Vulkan-Hpp</string>
+    <string name="vkhpp_description">We use Vulkan-Hpp for using Vulkan with a C++ API (Apache License 2.0)</string>
+    <string name="txml2">TinyXML2</string>
+    <string name="txml2_description">We use TinyXML2 for parsing the preference XML to retrieve settings from C++ (zLib License)</string>
+    <string name="jssim">java-string-similarity</string>
+    <string name="jssim_description">We use java-string-similarity to power our search functionality (Apache License 2.0)</string>
+    <string name="andx">AndroidX</string>
+    <string name="andx_description">We use AndroidX to have a consistent user-experience across Android versions (Apache License 2.0)</string>
+    <string name="amat">Android Material Components</string>
+    <string name="amat_description">We use Android Material Components to have a consistent material design UI (Apache License 2.0)</string>
+    <string name="ktstd">Kotlin Standard Library</string>
+    <string name="ktstd_description">We use Kotlin Standard Library for accessing convenience functions in Kotlin (Apache License 2.0)</string>
+    <string name="skyline_description">The license of Skyline (LGPLv3 or later)</string>
 </resources>

@@ -58,12 +58,62 @@
             android:key="category_audio"
             android:title="@string/audio">
         <SeekBarPreference
-                app:key="audren_buffer_size"
-                app:title="@string/audren_buffer_size"
-                app:summary="@string/audren_buffer_desc"
-                app:showSeekBarValue="true"
-                app:min="320"
                 android:defaultValue="960"
-                android:max="2880"/>
+                android:max="2880"
+                app:key="audren_buffer_size"
+                app:min="320"
+                app:showSeekBarValue="true"
+                app:summary="@string/audren_buffer_desc"
+                app:title="@string/audren_buffer_size" />
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:key="category_licenses"
+            android:title="@string/licenses"
+            app:initialExpandedChildrenCount="3">
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/lgpl3_license"
+                libraryUrl="https://github.com/skyline-emu/skyline"
+                app:summary="@string/skyline_description"
+                app:title="@string/app_name" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/fmtlib_license"
+                libraryUrl="https://github.com/fmtlib/fmt"
+                app:summary="@string/fmtlib_description"
+                app:title="@string/fmtlib" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://github.com/google/oboe"
+                app:summary="@string/oboe_description"
+                app:title="@string/oboe" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
+                app:summary="@string/vkhpp_description"
+                app:title="@string/vkhpp" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/zlib_license"
+                libraryUrl="https://github.com/leethomason/tinyxml2"
+                app:summary="@string/txml2_description"
+                app:title="@string/txml2" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://github.com/tdebatty/java-string-similarity"
+                app:summary="@string/jssim_description"
+                app:title="@string/jssim" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://developer.android.com/jetpack/androidx"
+                app:summary="@string/andx_description"
+                app:title="@string/andx" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://github.com/material-components/material-components-android"
+                app:summary="@string/amat_description"
+                app:title="@string/amat" />
+        <emu.skyline.utility.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
+                app:summary="@string/ktstd_description"
+                app:title="@string/ktstd" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

@@ -15,4 +15,8 @@
         <item name="android:background">@color/colorPrimary</item>
         <item name="android:textColorPrimary">@color/colorOnPrimary</item>
     </style>
+    <style name="LicenseDialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="windowFixedWidthMajor">90%</item>
+        <item name="windowFixedWidthMinor">90%</item>
+    </style>
 </resources>
