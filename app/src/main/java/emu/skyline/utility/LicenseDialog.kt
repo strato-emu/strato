@@ -30,6 +30,5 @@ class LicenseDialog : DialogFragment() {
 
         license_url.text = libraryUrl
         license_content.text = libraryLicense
-        license_content.movementMethod = ScrollingMovementMethod()
     }
 }

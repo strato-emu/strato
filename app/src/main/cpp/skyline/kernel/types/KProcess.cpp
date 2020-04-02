@@ -85,7 +85,7 @@ namespace skyline::kernel::type {
         Registers fregs{
             .x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO,
             .x1 = stackTop,
-            .x3 = tlsMem->Map(0, size, memory::Permission{ true, true, false }),
+            .x3 = tlsMem->Map(0, size, memory::Permission{true, true, false}),
             .x8 = __NR_clone,
             .x5 = reinterpret_cast<u64>(&guest::GuestEntry),
             .x6 = entryPoint,
@@ -203,10 +203,13 @@ namespace skyline::kernel::type {
         auto mtx = GetPointer<u32>(address);
         auto &mtxWaiters = mutexes[address];
 
-        u32 mtxExpected = 0;
-        if (__atomic_compare_exchange_n(mtx, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle) | (mtxWaiters.empty() ? 0 : ~constant::MtxOwnerMask), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-            return true;
-        if (owner && (__atomic_load_n(mtx, __ATOMIC_SEQ_CST) != (owner | ~constant::MtxOwnerMask)))
+        if (mtxWaiters.empty()) {
+            u32 mtxExpected = 0;
+            if (__atomic_compare_exchange_n(mtx, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+                return true;
+        }
+
+        if (__atomic_load_n(mtx, __ATOMIC_SEQ_CST) != (owner | ~constant::MtxOwnerMask))
             return false;
 
         std::shared_ptr<WaitStatus> status;
@@ -245,7 +248,7 @@ namespace skyline::kernel::type {
 
         u32 mtxExpected = (constant::MtxOwnerMask & state.thread->handle) | ~constant::MtxOwnerMask;
         if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-            mtxExpected = constant::MtxOwnerMask & state.thread->handle;
+            mtxExpected &= constant::MtxOwnerMask;
 
             if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
                 return false;
@@ -277,14 +280,15 @@ namespace skyline::kernel::type {
         }
 
         lock.unlock();
-        bool timedOut{};
 
+        bool timedOut{};
         auto start = utils::GetTimeNs();
         while (!status->flag)
             if ((utils::GetTimeNs() - start) >= timeout)
                 timedOut = true;
 
         lock.lock();
+
         if (!status->flag)
             timedOut = false;
         else

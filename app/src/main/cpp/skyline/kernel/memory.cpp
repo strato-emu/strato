@@ -93,6 +93,9 @@ namespace skyline::kernel {
     }
 
     void MemoryManager::InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block) {
+        if(chunk->address + chunk->size < block.address + block.size)
+            throw exception("InsertBlock: Inserting block past chunk end is not allowed");
+
         for (auto iter = chunk->blockList.begin(); iter != chunk->blockList.end(); iter++) {
             if (iter->address <= block.address) {
                 if ((iter->address + iter->size) > block.address) {
@@ -107,23 +110,8 @@ namespace skyline::kernel {
                         iter->size = iter->address - block.address;
                         chunk->blockList.insert(std::next(iter), {block, endBlock});
                     }
-                } else if (std::next(iter) != chunk->blockList.end()) {
-                    auto nextIter = std::next(iter);
-                    auto nextEnd = nextIter->address + nextIter->size;
-
-                    if(nextEnd > block.address) {
-                        iter->size = block.address - iter->address;
-                        nextIter->address = block.address + block.size;
-                        nextIter->size = nextEnd - nextIter->address;
-
-                        chunk->blockList.insert(nextIter, block);
-                    } else {
-                        throw exception("InsertBlock: Inserting block across more than one block is not allowed");
-                    }
-                } else {
-                    throw exception("InsertBlock: Inserting block with end past chunk end is not allowed");
+                    return;
                 }
-                return;
             }
         }
 

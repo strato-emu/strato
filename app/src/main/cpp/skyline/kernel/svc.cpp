@@ -503,7 +503,7 @@ namespace skyline::kernel::svc {
         if (state.process->MutexLock(address, ownerHandle))
             state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", address);
         else
-            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex at 0x{:X}", address);
+            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex or didn't have waiter flag at 0x{:X}", address);
 
         state.ctx->registers.w0 = constant::status::Success;
     }
