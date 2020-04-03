@@ -19,8 +19,8 @@ import androidx.appcompat.widget.SearchView
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
-import emu.skyline.adapter.GameAdapter
-import emu.skyline.adapter.GameItem
+import emu.skyline.adapter.AppAdapter
+import emu.skyline.adapter.AppItem
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
 import emu.skyline.utility.GameDialog
@@ -32,7 +32,7 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
-    private var adapter = GameAdapter(this)
+    private var adapter = AppAdapter(this)
 
     private fun notifyUser(text: String) {
         Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
@@ -49,13 +49,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         if (ext.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
                             val document = RandomAccessDocument(this, file)
                             if (loader.verifyFile(document)) {
-                                val entry = loader.getTitleEntry(document, file.uri)
+                                val entry = loader.getAppEntry(document, file.uri)
                                 runOnUiThread {
                                     if (!foundCurrent) {
-                                        adapter.addHeader(getString(R.string.nro))
+                                        adapter.addHeader(loader.format.name)
                                         foundCurrent = true
                                     }
-                                    adapter.addItem(GameItem(entry))
+                                    adapter.addItem(AppItem(entry))
                                 }
                             }
                             document.close()
@@ -75,25 +75,31 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 Log.w("refreshFiles", "Ran into exception while loading: ${e.message}")
             }
         }
+
         thread(start = true) {
             val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
             runOnUiThread { snackbar.show() }
+
             try {
                 runOnUiThread { adapter.clear() }
                 val foundNros = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+
                 runOnUiThread {
                     if (!foundNros)
                         adapter.addHeader(getString(R.string.no_rom))
+
                     try {
                         adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
                     } catch (e: IOException) {
                         Log.w("refreshFiles", "Ran into exception while saving: ${e.message}")
                     }
                 }
+
                 sharedPreferences.edit().putBoolean("refresh_required", false).apply()
             } catch (e: IllegalArgumentException) {
                 runOnUiThread {
                     sharedPreferences.edit().remove("search_location").apply()
+
                     val intent = intent
                     finish()
                     startActivity(intent)
@@ -103,6 +109,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     notifyUser(e.message!!)
                 }
             }
+
             runOnUiThread { snackbar.dismiss() }
         }
     }
@@ -124,15 +131,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         game_list.adapter = adapter
         game_list.onItemClickListener = OnItemClickListener { parent: AdapterView<*>, _: View?, position: Int, _: Long ->
             val item = parent.getItemAtPosition(position)
-            if (item is GameItem) {
-                val intent = Intent(this, GameActivity::class.java)
+            if (item is AppItem) {
+                val intent = Intent(this, EmulationActivity::class.java)
                 intent.data = item.uri
                 startActivity(intent)
             }
         }
         game_list.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, _, position, _ ->
             val item = parent.getItemAtPosition(position)
-            if (item is GameItem) {
+            if (item is AppItem) {
                 val dialog = GameDialog(item)
                 dialog.show(supportFragmentManager, "game")
             }
@@ -205,7 +212,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 2 -> {
                     try {
                         val uri = (intent!!.data!!)
-                        val intentGame = Intent(this, GameActivity::class.java)
+                        val intentGame = Intent(this, EmulationActivity::class.java)
                         intentGame.data = uri
                         if (resultCode != 0)
                             startActivityForResult(intentGame, resultCode)

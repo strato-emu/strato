@@ -24,19 +24,22 @@ enum class ElementType(val type: Int) {
 }
 
 /**
- * @brief This is the interface class that all element classes inherit from
+ * This is an abstract class that all adapter element classes inherit from
  */
 abstract class BaseElement constructor(val elementType: ElementType) : Serializable
 
 /**
- * @brief This is the interface class that all header classes inherit from
+ *  This is an abstract class that all adapter header classes inherit from
  */
 class BaseHeader constructor(val title: String) : BaseElement(ElementType.Header)
 
 /**
- * @brief This is the interface class that all item classes inherit from
+ * This is an abstract class that all adapter item classes inherit from
  */
 abstract class BaseItem : BaseElement(ElementType.Item) {
+    /**
+     * This function returns a string used for searching
+     */
     abstract fun key(): String?
 }
 

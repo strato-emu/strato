@@ -28,7 +28,9 @@ Use doxygen style comments for:
 * Class/Struct Functions - Use `/**` block comments on their function with a brief, all arguments and the return value (The brief can be skipped if the function's arguments and return value alone explain what the function does)
 * Enumerations - Use a `/**` block comment with a brief for the enum itself and a `//!<` single-line comment for all the individual items
 
-Note: The DeviceState object can be skipped from function argument documentation as well as class members in the constructor.
+Notes: 
+* The DeviceState object can be skipped from function argument documentation as well as class members in the constructor
+* Any class members don't need to be redundantly documented in the constructor
 
 ### Control flow statements (if, for and while):
 #### If a child control-flow statement has brackets, the parent statement must as well

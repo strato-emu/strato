@@ -15,15 +15,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import emu.skyline.GameActivity
+import emu.skyline.EmulationActivity
 import emu.skyline.R
-import emu.skyline.adapter.GameItem
+import emu.skyline.adapter.AppItem
 import kotlinx.android.synthetic.main.game_dialog.*
 
 class GameDialog() : DialogFragment() {
-    var item: GameItem? = null
+    var item: AppItem? = null
 
-    constructor(item: GameItem) : this() {
+    constructor(item: AppItem) : this() {
         this.item = item
     }
 
@@ -33,7 +33,7 @@ class GameDialog() : DialogFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        if (item is GameItem) {
+        if (item is AppItem) {
             game_icon.setImageBitmap(item?.icon)
             game_title.text = item?.title
             game_subtitle.text = item?.subTitle
@@ -42,16 +42,16 @@ class GameDialog() : DialogFragment() {
             game_pin.setOnClickListener {
                 val info = ShortcutInfo.Builder(context, item?.title)
                 info.setShortLabel(item?.meta?.name!!)
-                info.setActivity(ComponentName(context!!, GameActivity::class.java))
+                info.setActivity(ComponentName(context!!, EmulationActivity::class.java))
                 info.setIcon(Icon.createWithBitmap(item?.icon))
-                val intent = Intent(context, GameActivity::class.java)
+                val intent = Intent(context, EmulationActivity::class.java)
                 intent.data = item?.uri
                 intent.action = Intent.ACTION_VIEW
                 info.setIntent(intent)
                 shortcutManager.requestPinShortcut(info.build(), null)
             }
             game_play.setOnClickListener {
-                val intent = Intent(activity, GameActivity::class.java)
+                val intent = Intent(activity, EmulationActivity::class.java)
                 intent.data = item?.uri
                 startActivity(intent)
             }

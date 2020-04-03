@@ -21,7 +21,7 @@ void signalHandler(int signal) {
     FaultCount++;
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, jobject instance, jstring romJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeRom(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
     Halt = false;
     FaultCount = 0;
 
@@ -43,9 +43,9 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings);
-        const char *romString = env->GetStringUTFChars(romJstring, nullptr);
-        logger->Info("Launching ROM {}", romString);
-        env->ReleaseStringUTFChars(romJstring, romString);
+        const char *romUri = env->GetStringUTFChars(romUriJstring, nullptr);
+        logger->Info("Launching ROM {}", romUri);
+        env->ReleaseStringUTFChars(romUriJstring, romUri);
         os.Execute(romFd, static_cast<skyline::TitleFormat>(romType));
     } catch (std::exception &e) {
         logger->Error(e.what());
@@ -58,13 +58,13 @@ extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_executeRom(JNIEnv *env, 
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_setHalt(JNIEnv *env, jobject instance, jboolean halt) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setHalt(JNIEnv *env, jobject instance, jboolean halt) {
     JniMtx.lock(skyline::GroupMutex::Group::Group2);
     Halt = halt;
     JniMtx.unlock();
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_GameActivity_setSurface(JNIEnv *env, jobject instance, jobject surface) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *env, jobject instance, jobject surface) {
     JniMtx.lock(skyline::GroupMutex::Group::Group2);
     if (!env->IsSameObject(Surface, nullptr))
         env->DeleteGlobalRef(Surface);

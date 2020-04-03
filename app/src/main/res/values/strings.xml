@@ -8,10 +8,9 @@
     <string name="refresh">Refresh</string>
     <!-- Main -->
     <string name="refreshed">The list of ROMs has been refreshed.</string>
-    <string name="aset_missing">ASET Header Missing</string>
+    <string name="metadata_missing">Metadata Missing</string>
     <string name="icon">Icon</string>
     <string name="no_rom">Cannot find any ROMs</string>
-    <string name="nro">NROs</string>
     <string name="pin">Pin</string>
     <string name="play">Play</string>
     <!-- Toolbar Logger -->
