@@ -11,8 +11,6 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView
-import android.widget.AdapterView.OnItemClickListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
@@ -32,48 +30,63 @@ import emu.skyline.loader.NroLoader
 import emu.skyline.utility.AppDialog
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
+import kotlinx.android.synthetic.main.titlebar.*
 import java.io.File
 import java.io.IOException
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClickListener {
+    /**
+     * This is used to get/set shared preferences
+     */
     private lateinit var sharedPreferences: SharedPreferences
-    private var adapter = AppAdapter(this)
 
-    private fun notifyUser(text: String) {
-        Snackbar.make(findViewById(android.R.id.content), text, Snackbar.LENGTH_SHORT).show()
-    }
+    /**
+     * The adapter used for adding elements to [app_list]
+     */
+    private lateinit var adapter: AppAdapter
 
-    private fun findFile(ext: String, loader: BaseLoader, directory: DocumentFile, found: Boolean = false): Boolean {
+    /**
+     * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
+     */
+    private fun addEntries(extension: String, loader: BaseLoader, directory: DocumentFile, found: Boolean = false): Boolean {
         var foundCurrent = found
 
-        directory.listFiles()
-                .forEach { file ->
-                    if (file.isDirectory) {
-                        foundCurrent = findFile(ext, loader, file, foundCurrent)
-                    } else {
-                        if (ext.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
-                            val document = RandomAccessDocument(this, file)
-                            if (loader.verifyFile(document)) {
-                                val entry = loader.getAppEntry(document, file.uri)
-                                runOnUiThread {
-                                    if (!foundCurrent) {
-                                        adapter.addHeader(loader.format.name)
-                                        foundCurrent = true
-                                    }
-                                    adapter.addItem(AppItem(entry))
-                                }
+        directory.listFiles().forEach { file ->
+            if (file.isDirectory) {
+                foundCurrent = addEntries(extension, loader, file, foundCurrent)
+            } else {
+                if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
+                    val document = RandomAccessDocument(this, file)
+
+                    if (loader.verifyFile(document)) {
+                        val entry = loader.getAppEntry(document, file.uri)
+
+                        runOnUiThread {
+                            if (!foundCurrent) {
+                                adapter.addHeader(loader.format.name)
+                                foundCurrent = true
                             }
-                            document.close()
+
+                            adapter.addItem(AppItem(entry))
                         }
                     }
+
+                    document.close()
                 }
+            }
+        }
 
         return foundCurrent
     }
 
-    private fun refreshFiles(tryLoad: Boolean) {
+    /**
+     * This refreshes the contents of the adapter by either trying to load cached adapter data or searches for them to recreate a list
+     *
+     * @param tryLoad If this is false then trying to load cached adapter data is skipped entirely
+     */
+    private fun refreshAdapter(tryLoad: Boolean) {
         if (tryLoad) {
             try {
                 adapter.load(File("${applicationInfo.dataDir}/roms.bin"))
@@ -89,7 +102,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             try {
                 runOnUiThread { adapter.clear() }
-                val foundNros = findFile("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+
+                val foundNros = addEntries("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
 
                 runOnUiThread {
                     if (!foundNros)
@@ -113,7 +127,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    notifyUser(e.message!!)
+                    Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_SHORT).show()
                 }
             }
 
@@ -121,18 +135,26 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    /**
+     * This initializes [toolbar], [open_fab], [log_fab] and [app_list]
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.main_activity)
+
+        setSupportActionBar(toolbar)
+
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+
         AppCompatDelegate.setDefaultNightMode(when ((sharedPreferences.getString("app_theme", "2")?.toInt())) {
             0 -> AppCompatDelegate.MODE_NIGHT_NO
             1 -> AppCompatDelegate.MODE_NIGHT_YES
             2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
         })
-        setSupportActionBar(toolbar)
+
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
 
@@ -157,22 +179,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 app_list.layoutManager = layoutManager
             }
-            true
         }
 
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+
             startActivityForResult(intent, 1)
         } else
-            refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
+            refreshAdapter(!sharedPreferences.getBoolean("refresh_required", false))
     }
 
+    /**
+     * This inflates the layout for the menu [R.menu.toolbar_main] and sets up searching the logs
+     */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.toolbar_main, menu)
-        val mSearch = menu.findItem(R.id.action_search_main)
-        val searchView = mSearch.actionView as SearchView
-        searchView.isSubmitButtonEnabled = false
+
+        val searchView = menu.findItem(R.id.action_search_main).actionView as SearchView
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 searchView.clearFocus()
@@ -184,19 +209,26 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 return true
             }
         })
+
         return super.onCreateOptionsMenu(menu)
     }
 
+    /**
+     * This handles on-click interaction with [R.id.log_fab], [R.id.open_fab], [R.id.app_item_linear] and [R.id.app_item_grid]
+     */
     override fun onClick(view: View) {
         when (view.id) {
             R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
+
             R.id.open_fab -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
                 intent.type = "*/*"
+
                 startActivityForResult(intent, 2)
             }
-            R.id.app_item_linear -> {
+
+            R.id.app_item_linear, R.id.app_item_grid -> {
                 val tag = view.tag
 
                 if (tag is AppItem) {
@@ -209,9 +241,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    /**
+     * This handles long-click interaction with [R.id.app_item_linear] and [R.id.app_item_grid]
+     */
     override fun onLongClick(view: View?): Boolean {
         when (view?.id) {
-            R.id.app_item_linear -> {
+            R.id.app_item_linear, R.id.app_item_grid -> {
                 val tag = view.tag
 
                 if (tag is AppItem) {
@@ -225,47 +260,58 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return false
     }
 
+    /**
+     * This handles menu interaction for [R.id.action_settings] and [R.id.action_refresh]
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
                 startActivityForResult(Intent(this, SettingsActivity::class.java), 3)
                 true
             }
+
             R.id.action_refresh -> {
-                refreshFiles(false)
-                notifyUser(getString(R.string.refreshed))
+                refreshAdapter(false)
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
 
+    /**
+     * This handles receiving activity result from [Intent.ACTION_OPEN_DOCUMENT_TREE], [Intent.ACTION_OPEN_DOCUMENT] and [SettingsActivity]
+     */
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         super.onActivityResult(requestCode, resultCode, intent)
+
         if (resultCode == RESULT_OK) {
             when (requestCode) {
                 1 -> {
                     val uri = intent!!.data!!
                     contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     sharedPreferences.edit().putString("search_location", uri.toString()).apply()
-                    refreshFiles(!sharedPreferences.getBoolean("refresh_required", false))
+
+                    refreshAdapter(!sharedPreferences.getBoolean("refresh_required", false))
                 }
+
                 2 -> {
                     try {
-                        val uri = (intent!!.data!!)
                         val intentGame = Intent(this, EmulationActivity::class.java)
-                        intentGame.data = uri
+                        intentGame.data = intent!!.data!!
+
                         if (resultCode != 0)
                             startActivityForResult(intentGame, resultCode)
                         else
                             startActivity(intentGame)
                     } catch (e: Exception) {
-                        notifyUser(e.message!!)
+                        Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_SHORT).show()
                     }
                 }
+
                 3 -> {
                     if (sharedPreferences.getBoolean("refresh_required", false))
-                        refreshFiles(false)
+                        refreshAdapter(false)
                 }
             }
         }

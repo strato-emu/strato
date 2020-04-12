@@ -21,7 +21,7 @@ void signalHandler(int signal) {
     FaultCount++;
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeRom(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
     Halt = false;
     FaultCount = 0;
 

@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.ListView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -18,23 +17,37 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.LogAdapter
 import kotlinx.android.synthetic.main.log_activity.*
+import kotlinx.android.synthetic.main.titlebar.*
 import org.json.JSONObject
-import java.io.*
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.util.stream.Collectors
 import javax.net.ssl.HttpsURLConnection
 
 class LogActivity : AppCompatActivity() {
+    /**
+     * The log file is used to read log entries from or to clear all entries
+     */
     private lateinit var logFile: File
+
+    /**
+     * The adapter used for adding elements from the log to [log_list]
+     */
     private lateinit var adapter: LogAdapter
 
+    /**
+     * This initializes [toolbar] and fills [log_list] with data from the logs
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.log_activity)
-        setSupportActionBar(findViewById(R.id.toolbar))
+
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
@@ -51,24 +64,30 @@ class LogActivity : AppCompatActivity() {
 
         try {
             logFile = File("${applicationInfo.dataDir}/skyline.log")
+
             logFile.forEachLine {
                 adapter.add(it)
             }
         } catch (e: FileNotFoundException) {
             Log.w("Logger", "IO Error during access of log file: " + e.message)
             Toast.makeText(applicationContext, getString(R.string.file_missing), Toast.LENGTH_LONG).show()
+
             finish()
         } catch (e: IOException) {
             Log.w("Logger", "IO Error during access of log file: " + e.message)
-            Toast.makeText(applicationContext, getString(R.string.io_error) + ": " + e.message, Toast.LENGTH_LONG).show()
+            Toast.makeText(applicationContext, getString(R.string.error) + ": ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 
+    /**
+     * This inflates the layout for the menu [R.menu.toolbar_log] and sets up searching the logs
+     */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.toolbar_log, menu)
-        val mSearch = menu.findItem(R.id.action_search_log)
-        val searchView = mSearch.actionView as SearchView
+
+        val searchView = menu.findItem(R.id.action_search_log).actionView as SearchView
         searchView.isSubmitButtonEnabled = false
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 searchView.isIconified = false
@@ -80,9 +99,13 @@ class LogActivity : AppCompatActivity() {
                 return true
             }
         })
+
         return super.onCreateOptionsMenu(menu)
     }
 
+    /**
+     * This handles menu selection for [R.id.action_clear] and [R.id.action_share_log]
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_clear -> {
@@ -90,57 +113,67 @@ class LogActivity : AppCompatActivity() {
                     logFile.writeText("")
                 } catch (e: IOException) {
                     Log.w("Logger", "IO Error while clearing the log file: " + e.message)
-                    Toast.makeText(applicationContext, getString(R.string.io_error) + ": " + e.message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(applicationContext, getString(R.string.error) + ": ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                 }
+
                 Toast.makeText(applicationContext, getString(R.string.cleared), Toast.LENGTH_LONG).show()
                 finish()
                 true
             }
+
             R.id.action_share_log -> {
                 uploadAndShareLog()
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
 
+    /**
+     * This uploads the logs and launches the [Intent.ACTION_SEND] intent
+     */
     private fun uploadAndShareLog() {
+        Snackbar.make(findViewById(android.R.id.content), getString(R.string.upload_logs), Snackbar.LENGTH_SHORT).show()
+
         val shareThread = Thread(Runnable {
             var urlConnection: HttpsURLConnection? = null
+
             try {
                 val url = URL("https://hastebin.com/documents")
+
                 urlConnection = url.openConnection() as HttpsURLConnection
                 urlConnection.requestMethod = "POST"
                 urlConnection.setRequestProperty("Host", "hastebin.com")
                 urlConnection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 urlConnection.setRequestProperty("Referer", "https://hastebin.com/")
+
                 val bufferedWriter = urlConnection.outputStream.bufferedWriter()
                 bufferedWriter.write(logFile.readText())
                 bufferedWriter.flush()
                 bufferedWriter.close()
+
                 if (urlConnection.responseCode != 200) {
                     Log.e("LogUpload", "HTTPS Status Code: " + urlConnection.responseCode)
                     throw Exception()
                 }
+
                 val bufferedReader = urlConnection.inputStream.bufferedReader()
                 val key = JSONObject(bufferedReader.readText()).getString("key")
                 bufferedReader.close()
+
                 val result = "https://hastebin.com/$key"
                 val sharingIntent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, result)
+
                 startActivity(Intent.createChooser(sharingIntent, "Share log url with:"))
             } catch (e: Exception) {
-                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.share_error), Toast.LENGTH_LONG).show() }
+                runOnUiThread { Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_LONG).show() }
                 e.printStackTrace()
             } finally {
                 urlConnection!!.disconnect()
             }
         })
+
         shareThread.start()
-        try {
-            shareThread.join(1000)
-        } catch (e: Exception) {
-            Toast.makeText(applicationContext, getString(R.string.share_error), Toast.LENGTH_LONG).show()
-            e.printStackTrace()
-        }
     }
 }
