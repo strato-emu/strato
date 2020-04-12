@@ -15,6 +15,9 @@ import java.io.IOException
  * This loader is used to load in NRO (Nintendo Relocatable Object) files (https://switchbrew.org/wiki/NRO)
  */
 internal class NroLoader(context: Context) : BaseLoader(context, RomFormat.NRO) {
+    /**
+     * This is used to get the [AppEntry] for the specified NRO
+     */
     override fun getAppEntry(file: RandomAccessDocument, uri: Uri): AppEntry {
         return try {
             file.seek(0x18) // Skip to NroHeader.size
@@ -54,6 +57,9 @@ internal class NroLoader(context: Context) : BaseLoader(context, RomFormat.NRO) 
         }
     }
 
+    /**
+     * This verifies if [file] is a valid NRO file
+     */
     override fun verifyFile(file: RandomAccessDocument): Boolean {
         try {
             file.seek(0x10) // Skip to NroHeader.magic

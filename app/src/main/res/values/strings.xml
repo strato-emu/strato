@@ -39,6 +39,7 @@
     <string name="audren_buffer_desc">The size of the buffer used to store audio samples for ROMs using audren. A lower value will result in less latency but potentially increased audio stutter depending on the performance of the device</string>
     <!-- Licenses -->
     <string name="licenses">Licenses</string>
+    <string name="skyline_license_description">The license of Skyline (LGPLv3 or later)</string>
     <string name="fmtlib">{fmt}</string>
     <string name="fmtlib_description">We use libfmt for formatting strings (Custom License)</string>
     <string name="oboe">oboe</string>
@@ -55,5 +56,6 @@
     <string name="amat_description">We use Android Material Components to have a consistent material design UI (Apache License 2.0)</string>
     <string name="ktstd">Kotlin Standard Library</string>
     <string name="ktstd_description">We use Kotlin Standard Library for accessing convenience functions in Kotlin (Apache License 2.0)</string>
-    <string name="skyline_description">The license of Skyline (LGPLv3 or later)</string>
+    <string name="mtico">Material Design Icons</string>
+    <string name="mtico_description">We use Material Design Icons to have consistent iconography throughout the application</string>
 </resources>

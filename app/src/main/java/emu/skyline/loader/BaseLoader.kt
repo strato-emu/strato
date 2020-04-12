@@ -22,7 +22,9 @@ import java.util.*
  * An enumeration of all supported ROM formats
  */
 enum class RomFormat {
-    NRO, XCI, NSP
+    NRO,
+    XCI,
+    NSP,
 }
 
 /**
@@ -80,7 +82,7 @@ class AppEntry : Serializable {
             val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             cursor.moveToFirst()
             cursor.getString(nameIndex)
-        }!!
+        }!!.dropLast(format.name.length + 1)
         this.format = format
         this.uri = uri
     }
@@ -125,12 +127,12 @@ class AppEntry : Serializable {
  */
 internal abstract class BaseLoader(val context: Context, val format: RomFormat) {
     /**
-     * This returns an AppEntry object for the supplied document
+     * This is used to get the [AppEntry] for the specified [file] at the supplied [uri]
      */
     abstract fun getAppEntry(file: RandomAccessDocument, uri: Uri): AppEntry
 
     /**
-     * This returns if the supplied document is a valid ROM or not
+     * This returns if the supplied [file] is a valid ROM or not
      */
     abstract fun verifyFile(file: RandomAccessDocument): Boolean
 }

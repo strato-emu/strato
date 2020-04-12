@@ -19,11 +19,11 @@
     <PreferenceCategory
             android:key="category_emulator"
             android:title="@string/emulator">
-        <emu.skyline.utility.FolderPreference
+        <emu.skyline.preference.FolderPreference
                 app:key="search_location"
                 app:title="@string/search_location"
                 app:useSimpleSummaryProvider="true" />
-        <emu.skyline.utility.ThemePreference
+        <emu.skyline.preference.ThemePreference
                 android:defaultValue="2"
                 android:entries="@array/app_theme"
                 android:entryValues="@array/app_theme_val"
@@ -77,50 +77,55 @@
             android:key="category_licenses"
             android:title="@string/licenses"
             app:initialExpandedChildrenCount="3">
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/lgpl3_license"
                 libraryUrl="https://github.com/skyline-emu/skyline"
-                app:summary="@string/skyline_description"
+                app:summary="@string/skyline_license_description"
                 app:title="@string/app_name" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/fmtlib_license"
                 libraryUrl="https://github.com/fmtlib/fmt"
                 app:summary="@string/fmtlib_description"
                 app:title="@string/fmtlib" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://github.com/google/oboe"
                 app:summary="@string/oboe_description"
                 app:title="@string/oboe" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
                 app:summary="@string/vkhpp_description"
                 app:title="@string/vkhpp" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/zlib_license"
                 libraryUrl="https://github.com/leethomason/tinyxml2"
                 app:summary="@string/txml2_description"
                 app:title="@string/txml2" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://github.com/tdebatty/java-string-similarity"
                 app:summary="@string/jssim_description"
                 app:title="@string/jssim" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://developer.android.com/jetpack/androidx"
                 app:summary="@string/andx_description"
                 app:title="@string/andx" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://github.com/material-components/material-components-android"
                 app:summary="@string/amat_description"
                 app:title="@string/amat" />
-        <emu.skyline.utility.LicensePreference
+        <emu.skyline.preference.LicensePreference
                 libraryLicense="@string/apache2_license"
                 libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
                 app:summary="@string/ktstd_description"
                 app:title="@string/ktstd" />
+        <emu.skyline.preference.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://material.io/resources/icons"
+                app:summary="@string/mtico_description"
+                app:title="@string/mtico" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
