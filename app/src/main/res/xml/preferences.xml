@@ -31,6 +31,13 @@
                 app:title="@string/theme"
                 app:useSimpleSummaryProvider="true" />
         <ListPreference
+                android:defaultValue="1"
+                android:entries="@array/layout_type"
+                android:entryValues="@array/layout_type_val"
+                app:key="layout_type"
+                app:title="@string/layout_type"
+                app:useSimpleSummaryProvider="true" />
+        <ListPreference
                 android:defaultValue="2"
                 android:entries="@array/log_level"
                 android:entryValues="@array/log_level_val"

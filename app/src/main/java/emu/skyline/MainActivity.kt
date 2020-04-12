@@ -19,11 +19,14 @@ import androidx.appcompat.widget.SearchView
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.AppAdapter
 import emu.skyline.adapter.AppItem
+import emu.skyline.adapter.GridLayoutSpan
+import emu.skyline.adapter.LayoutType
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
 import emu.skyline.utility.GameDialog
@@ -32,6 +35,7 @@ import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File
 import java.io.IOException
 import kotlin.concurrent.thread
+import kotlin.math.ceil
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var sharedPreferences: SharedPreferences
@@ -131,23 +135,31 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setSupportActionBar(toolbar)
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
-        adapter = AppAdapter(this)
+
+        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
+
+        adapter = AppAdapter(this, layoutType)
         app_list.adapter = adapter
 
-        app_list.layoutManager = LinearLayoutManager(this)
-        app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
-
-                startActivity(intent)
+        when (layoutType) {
+            LayoutType.List -> {
+                app_list.layoutManager = LinearLayoutManager(this)
+                app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
             }
-        }
-        game_list.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, _, position, _ ->
-            val item = parent.getItemAtPosition(position)
-            if (item is AppItem) {
-                val dialog = GameDialog(item)
-                dialog.show(supportFragmentManager, "game")
+
+            LayoutType.Grid -> {
+                val itemWidth = 225
+                val metrics = resources.displayMetrics
+                val span = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
+
+                val layoutManager = GridLayoutManager(this, span)
+                layoutManager.spanSizeLookup = GridLayoutSpan(adapter, span)
+
+                app_list.layoutManager = layoutManager
             }
             true
         }
+
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION

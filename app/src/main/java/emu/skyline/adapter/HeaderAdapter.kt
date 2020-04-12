@@ -237,3 +237,22 @@ abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHeader?, Vie
         }
     }
 }
+
+/**
+ * This class is used to lookup the span based on the type of the element
+ *
+ * @param adapter The adapter which is used to deduce the type of the item based on the position
+ * @param headerSpan The span size to return for headers
+ */
+class GridLayoutSpan<ItemType : BaseItem?, HeaderType : BaseHeader?, ViewHolder : RecyclerView.ViewHolder?>(val adapter: HeaderAdapter<ItemType, HeaderType, ViewHolder>, var headerSpan: Int) : GridLayoutManager.SpanSizeLookup() {
+    /**
+     * This returns the size of the span based on the type of the element at [position]
+     */
+    override fun getSpanSize(position: Int): Int {
+        val item = adapter.getItem(position)!!
+        return if (item.elementType == ElementType.Item)
+            1
+        else
+            headerSpan
+    }
+}

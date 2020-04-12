@@ -12,6 +12,14 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+    <string-array name="layout_type">
+        <item>List</item>
+        <item>Grid</item>
+    </string-array>
+    <string-array name="layout_type_val">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
     <string-array name="app_theme">
         <item>Light</item>
         <item>Dark</item>

@@ -68,17 +68,18 @@ class AppItem(val meta: AppEntry) : BaseItem() {
 }
 
 /**
+ * This enumerates the type of layouts the menu can be in
+ */
+enum class LayoutType {
+    List,
+    Grid,
+}
+
+/**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
-    /**
-     * The icon to use on items that don't have a valid icon
-     */
+internal class AppAdapter(val context: Context?, private val layoutType: LayoutType) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
     private val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context.theme)?.toBitmap(256, 256)
-
-    /**
-     * The string to use as a description for items that don't have a valid description
-     */
     private val missingString = context?.getString(R.string.metadata_missing)
 
     /**
@@ -137,7 +138,7 @@ internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHe
         var holder: RecyclerView.ViewHolder? = null
 
         if (viewType == Item.ordinal) {
-            val view = inflater.inflate(R.layout.app_item_linear, parent, false)
+            val view = inflater.inflate(if (layoutType == LayoutType.List) R.layout.app_item_linear else R.layout.app_item_grid, parent, false)
             holder = ItemViewHolder(view, view.findViewById(R.id.icon), view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
 
             if (layoutType == LayoutType.List) {
@@ -146,6 +147,14 @@ internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHe
 
                 if (context is View.OnLongClickListener)
                     view.setOnLongClickListener(context as View.OnLongClickListener)
+            } else {
+                holder.card = view.findViewById(R.id.app_item_grid)
+
+                if (context is View.OnClickListener)
+                    holder.card!!.setOnClickListener(context as View.OnClickListener)
+
+                if (context is View.OnLongClickListener)
+                    holder.card!!.setOnLongClickListener(context as View.OnLongClickListener)
             }
         } else if (viewType == Header.ordinal) {
             val view = inflater.inflate(R.layout.section_item, parent, false)
@@ -171,8 +180,10 @@ internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHe
 
             holder.icon.setImageBitmap(item.icon ?: missingIcon)
 
-            holder.icon.setOnClickListener(this)
-            holder.icon.tag = position
+            if (layoutType == LayoutType.List) {
+                holder.icon.setOnClickListener(this)
+                holder.icon.tag = position
+            }
 
             holder.card?.tag = item
             holder.parent.tag = item

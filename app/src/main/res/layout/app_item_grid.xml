@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+    <androidx.cardview.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/app_item_grid"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_margin="15dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            card_view:cardCornerRadius="4dp">
+
+        <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical">
+
+            <ImageView
+                    android:id="@+id/icon"
+                    android:layout_width="150dp"
+                    android:layout_height="150dp"
+                    android:layout_alignParentTop="false"
+                    android:layout_centerHorizontal="true"
+                    android:contentDescription="@string/icon" />
+
+            <TextView
+                    android:id="@+id/text_title"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/icon"
+                    android:paddingStart="15dp"
+                    android:paddingTop="15dp"
+                    android:paddingEnd="15dp"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceListItem"
+                    tools:ignore="RelativeOverlap" />
+
+            <TextView
+                    android:id="@+id/text_subtitle"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/text_title"
+                    android:layout_alignStart="@id/text_title"
+                    android:paddingBottom="15dp"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+                    android:textColor="@android:color/tertiary_text_light" />
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>
