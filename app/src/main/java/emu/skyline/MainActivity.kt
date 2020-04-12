@@ -29,7 +29,7 @@ import emu.skyline.adapter.GridLayoutSpan
 import emu.skyline.adapter.LayoutType
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
-import emu.skyline.utility.GameDialog
+import emu.skyline.utility.AppDialog
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
 import java.io.File

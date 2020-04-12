@@ -14,45 +14,62 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.DialogFragment
+import androidx.core.graphics.drawable.toBitmap
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.EmulationActivity
 import emu.skyline.R
 import emu.skyline.adapter.AppItem
-import kotlinx.android.synthetic.main.game_dialog.*
+import kotlinx.android.synthetic.main.app_dialog.*
 
-class GameDialog() : DialogFragment() {
-    var item: AppItem? = null
+/**
+ * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
+ *
+ * @param item This is used to hold the [AppItem] between instances
+ */
+class AppDialog(val item: AppItem? = null) : BottomSheetDialogFragment() {
 
-    constructor(item: AppItem) : this() {
-        this.item = item
-    }
-
+    /**
+     * This inflates the layout of the dialog after initial view creation
+     */
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return requireActivity().layoutInflater.inflate(R.layout.game_dialog, container)
+        return requireActivity().layoutInflater.inflate(R.layout.app_dialog, container)
     }
 
+    /**
+     * This fills all the dialog with the information from [item] if it is valid and setup all user interaction
+     */
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+
         if (item is AppItem) {
-            game_icon.setImageBitmap(item?.icon)
-            game_title.text = item?.title
-            game_subtitle.text = item?.subTitle
+            val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context?.theme)?.toBitmap(256, 256)
+
+            game_icon.setImageBitmap(item.icon ?: missingIcon)
+            game_title.text = item.title
+            game_subtitle.text = item.subTitle ?: getString(R.string.metadata_missing)
+
             val shortcutManager = activity?.getSystemService(ShortcutManager::class.java)!!
             game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
+
             game_pin.setOnClickListener {
-                val info = ShortcutInfo.Builder(context, item?.title)
-                info.setShortLabel(item?.meta?.name!!)
+                val info = ShortcutInfo.Builder(context, item.title)
+                info.setShortLabel(item.meta.name)
                 info.setActivity(ComponentName(context!!, EmulationActivity::class.java))
-                info.setIcon(Icon.createWithBitmap(item?.icon))
+                info.setIcon(Icon.createWithBitmap(item.icon ?: missingIcon))
+
                 val intent = Intent(context, EmulationActivity::class.java)
-                intent.data = item?.uri
+                intent.data = item.uri
                 intent.action = Intent.ACTION_VIEW
+
                 info.setIntent(intent)
+
                 shortcutManager.requestPinShortcut(info.build(), null)
             }
+
             game_play.setOnClickListener {
                 val intent = Intent(activity, EmulationActivity::class.java)
-                intent.data = item?.uri
+                intent.data = item.uri
+
                 startActivity(intent)
             }
         } else
