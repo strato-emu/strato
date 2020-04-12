@@ -15,7 +15,7 @@ import android.view.SurfaceHolder
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import emu.skyline.loader.getRomFormat
-import kotlinx.android.synthetic.main.game_activity.*
+import kotlinx.android.synthetic.main.app_activity.*
 import java.io.File
 
 /**

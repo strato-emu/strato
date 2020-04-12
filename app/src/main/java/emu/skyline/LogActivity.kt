@@ -15,7 +15,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.adapter.LogAdapter
+import kotlinx.android.synthetic.main.log_activity.*
 import org.json.JSONObject
 import java.io.*
 import java.net.URL
@@ -32,10 +36,19 @@ class LogActivity : AppCompatActivity() {
         setContentView(R.layout.log_activity)
         setSupportActionBar(findViewById(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val logList = findViewById<ListView>(R.id.log_list)
-        adapter = LogAdapter(this, prefs.getBoolean("log_compact", false), prefs.getString("log_level", "3")!!.toInt(), resources.getStringArray(R.array.log_level))
-        logList.adapter = adapter
+        val compact = prefs.getBoolean("log_compact", false)
+        val logLevel = prefs.getString("log_level", "3")!!.toInt()
+
+        adapter = LogAdapter(this, compact, logLevel, resources.getStringArray(R.array.log_level))
+
+        log_list.adapter = adapter
+        log_list.layoutManager = LinearLayoutManager(this)
+
+        if (!compact)
+            log_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
+
         try {
             logFile = File("${applicationInfo.dataDir}/skyline.log")
             logFile.forEachLine {

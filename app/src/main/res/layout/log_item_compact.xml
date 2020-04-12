@@ -4,7 +4,7 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:orientation="vertical"
-        android:padding="6dp">
+        android:padding="1dp">
 
     <TextView
             android:id="@+id/text_title"

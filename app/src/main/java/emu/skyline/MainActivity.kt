@@ -18,6 +18,9 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.AppAdapter
 import emu.skyline.adapter.AppItem
@@ -128,12 +131,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setSupportActionBar(toolbar)
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
-        game_list.adapter = adapter
-        game_list.onItemClickListener = OnItemClickListener { parent: AdapterView<*>, _: View?, position: Int, _: Long ->
-            val item = parent.getItemAtPosition(position)
-            if (item is AppItem) {
-                val intent = Intent(this, EmulationActivity::class.java)
-                intent.data = item.uri
+        adapter = AppAdapter(this)
+        app_list.adapter = adapter
+
+        app_list.layoutManager = LinearLayoutManager(this)
+        app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
+
                 startActivity(intent)
             }
         }
@@ -181,7 +184,33 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 intent.type = "*/*"
                 startActivityForResult(intent, 2)
             }
+            R.id.app_item_linear -> {
+                val tag = view.tag
+
+                if (tag is AppItem) {
+                    val intent = Intent(this, EmulationActivity::class.java)
+                    intent.data = tag.uri
+
+                    startActivity(intent)
+                }
+            }
         }
+    }
+
+    override fun onLongClick(view: View?): Boolean {
+        when (view?.id) {
+            R.id.app_item_linear -> {
+                val tag = view.tag
+
+                if (tag is AppItem) {
+                    val dialog = AppDialog(tag)
+                    dialog.show(supportFragmentManager, "game")
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

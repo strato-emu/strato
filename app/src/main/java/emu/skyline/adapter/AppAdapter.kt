@@ -19,7 +19,10 @@ import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.graphics.drawable.toBitmap
+import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.R
+import emu.skyline.adapter.ElementType.Header
+import emu.skyline.adapter.ElementType.Item
 import emu.skyline.loader.AppEntry
 
 /**
@@ -36,7 +39,7 @@ class AppItem(val meta: AppEntry) : BaseItem() {
      * The title of the application
      */
     val title: String
-        get() = meta.name + " (" + type + ")"
+        get() = meta.name
 
     /**
      * The string used as the sub-title, we currently use the author
@@ -56,6 +59,9 @@ class AppItem(val meta: AppEntry) : BaseItem() {
     private val type: String
         get() = meta.format.name
 
+    /**
+     * The name and author is used as the key
+     */
     override fun key(): String? {
         return if (meta.author != null) meta.name + " " + meta.author else meta.name
     }
@@ -64,29 +70,41 @@ class AppItem(val meta: AppEntry) : BaseItem() {
 /**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHeader>(), View.OnClickListener {
+internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
     /**
-     * This adds a string header to the view
+     * The icon to use on items that don't have a valid icon
+     */
+    private val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context.theme)?.toBitmap(256, 256)
+
+    /**
+     * The string to use as a description for items that don't have a valid description
+     */
+    private val missingString = context?.getString(R.string.metadata_missing)
+
+    /**
+     * This adds a header to the view with the contents of [string]
      */
     fun addHeader(string: String) {
         super.addHeader(BaseHeader(string))
     }
 
     /**
-     * The onClick handler, it's for displaying the icon preview
-     *
-     * @param view The specific view that was clicked
+     * The onClick handler for the supplied [view], used for the icon preview
      */
     override fun onClick(view: View) {
         val position = view.tag as Int
+
         if (getItem(position) is AppItem) {
             val item = getItem(position) as AppItem
+
             if (view.id == R.id.icon) {
                 val builder = Dialog(context!!)
                 builder.requestWindowFeature(Window.FEATURE_NO_TITLE)
                 builder.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
                 val imageView = ImageView(context)
-                imageView.setImageBitmap(item.icon)
+                imageView.setImageBitmap(item.icon ?: missingIcon)
+
                 builder.addContentView(imageView, RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 builder.show()
             }
@@ -94,60 +112,74 @@ internal class AppAdapter(val context: Context?) : HeaderAdapter<AppItem, BaseHe
     }
 
     /**
-     * This returns the view for an element at a specific position
+     * The ViewHolder used by items is used to hold the views associated with an item
      *
-     * @param position The position of the requested item
-     * @param convertView An existing view (If any)
-     * @param parent The parent view group used for layout inflation
-     */
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var view = convertView
-        val viewHolder: ViewHolder
-        val item = elementArray[visibleArray[position]]
-
-        if (view == null) {
-            viewHolder = ViewHolder()
-            if (item is AppItem) {
-                val inflater = LayoutInflater.from(context)
-                view = inflater.inflate(R.layout.game_item, parent, false)
-
-                viewHolder.icon = view.findViewById(R.id.icon)
-                viewHolder.title = view.findViewById(R.id.text_title)
-                viewHolder.subtitle = view.findViewById(R.id.text_subtitle)
-                view.tag = viewHolder
-            } else if (item is BaseHeader) {
-                val inflater = LayoutInflater.from(context)
-                view = inflater.inflate(R.layout.section_item, parent, false)
-
-                viewHolder.title = view.findViewById(R.id.text_title)
-                view.tag = viewHolder
-            }
-        } else {
-            viewHolder = view.tag as ViewHolder
-        }
-
-        if (item is AppItem) {
-            val data = getItem(position) as AppItem
-
-            viewHolder.title!!.text = data.title
-            viewHolder.subtitle!!.text = data.subTitle ?: context?.getString(R.string.metadata_missing)!!
-
-            viewHolder.icon!!.setImageBitmap(data.icon ?: context!!.resources.getDrawable(R.drawable.ic_missing, context.theme).toBitmap(256, 256))
-            viewHolder.icon!!.setOnClickListener(this)
-            viewHolder.icon!!.tag = position
-        } else {
-            viewHolder.title!!.text = (getItem(position) as BaseHeader).title
-        }
-
-        return view!!
-    }
-
-    /**
-     * The ViewHolder object is used to hold the views associated with an object
-     *
+     * @param parent The parent view that contains all the others
      * @param icon The ImageView associated with the icon
      * @param title The TextView associated with the title
      * @param subtitle The TextView associated with the subtitle
      */
-    private class ViewHolder(var icon: ImageView? = null, var title: TextView? = null, var subtitle: TextView? = null)
+    private class ItemViewHolder(val parent: View, var icon: ImageView, var title: TextView, var subtitle: TextView, var card: View? = null) : RecyclerView.ViewHolder(parent)
+
+    /**
+     * The ViewHolder used by headers is used to hold the views associated with an headers
+     *
+     * @param parent The parent view that contains all the others
+     * @param header The TextView associated with the header
+     */
+    private class HeaderViewHolder(val parent: View, var header: TextView? = null) : RecyclerView.ViewHolder(parent)
+
+    /**
+     * This function creates the view-holder of type [viewType] with the layout parent as [parent]
+     */
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(context)
+        var holder: RecyclerView.ViewHolder? = null
+
+        if (viewType == Item.ordinal) {
+            val view = inflater.inflate(R.layout.app_item_linear, parent, false)
+            holder = ItemViewHolder(view, view.findViewById(R.id.icon), view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
+
+            if (layoutType == LayoutType.List) {
+                if (context is View.OnClickListener)
+                    view.setOnClickListener(context as View.OnClickListener)
+
+                if (context is View.OnLongClickListener)
+                    view.setOnLongClickListener(context as View.OnLongClickListener)
+            }
+        } else if (viewType == Header.ordinal) {
+            val view = inflater.inflate(R.layout.section_item, parent, false)
+            holder = HeaderViewHolder(view)
+
+            holder.header = view.findViewById(R.id.text_title)
+        }
+
+        return holder!!
+    }
+
+    /**
+     * This function binds the item at [position] to the supplied [viewHolder]
+     */
+    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+        val item = getItem(position)
+
+        if (item is AppItem) {
+            val holder = viewHolder as ItemViewHolder
+
+            holder.title.text = item.title
+            holder.subtitle.text = item.subTitle ?: missingString
+
+            holder.icon.setImageBitmap(item.icon ?: missingIcon)
+
+            holder.icon.setOnClickListener(this)
+            holder.icon.tag = position
+
+            holder.card?.tag = item
+            holder.parent.tag = item
+        } else if (item is BaseHeader) {
+            val holder = viewHolder as HeaderViewHolder
+
+            holder.header!!.text = item.title
+        }
+    }
 }
