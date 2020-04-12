@@ -1,5 +1,19 @@
 # Contributing Guidelines
 
+## Common
+### Commit Style
+We generally follow simple plain-English commit titles and summaries, which encapsulate what a commit has done. We don't use a distinct commit style like that of the Linux Kernel for any commits and they would look extremely out of place in the repository overall.
+
+In addition, we stick to a single objective with one commit albeit ensure that the scope isn't too small so there'll be a huge amount of them or too large so it's a single commit that changes vast swaths of the codebase. Try to find the right balance between committing too less and too much.
+
+### Use line-wrapping
+There is no column limit in the codebase, this is so that the line width can adjust to everyone's display size using line-wrap. Do not manually wrap lines unless it can be done in a natural way and is needed at all, let line-wrap handle it for you.
+
+### Use code formatter
+Android Studio comes with a code formatter in-built, this can fix minor mistakes in code-style. To reformat code: Right-click on the relevant file/directory -> Reformat. We recommend doing so prior to all commits to ensure the codebase is clean.
+
+This can also be done by using `Ctrl + Alt + L` on Windows, `Ctrl + Shift + Alt + L` on Linux and `Option + Command + L` on macOS. 
+
 ## C++
 ### Include Order
 * STD includes
@@ -11,17 +25,19 @@
 * Macro: `SCREAMING_SNAKE_CASE`
 * Namespaces: `camelCase`
 * Enum: `PascalCase`
-* Enumerator: `PascalCase`
+* Enumerator: `PascalCase` **(1)**
 * Union: `PascalCase`
-* Classes: `PascalCase` except for abbreviations such as OS and NCE
+* Classes/Structs: `PascalCase` **(1)**
 * Local Variable: `camelCase`
 * Member Variables: `camelCase`
 * Global Variables: `PascalCase`
 * Functions: `PascalCase`
-* Parameter: `camelCase`
+* Parameters: `camelCase`
 * Files and Directories: `snake_case` except for when they correspond to a HOS structure (EG: Services, Kernel Objects)
 
-### Comments:
+**(1)** Except when the whole name is an abbreviation such as `OS` and `NCE` but not `JVMManager`
+
+### Comments
 Use doxygen style comments for:
 * Classes/Structs - Use `/**` block comments with a brief
 * Class/Struct Variables - Use `//!<` single-line comments on their utility 
@@ -32,60 +48,11 @@ Notes:
 * The DeviceState object can be skipped from function argument documentation as well as class members in the constructor
 * Any class members don't need to be redundantly documented in the constructor
 
-### Control flow statements (if, for and while):
-#### If a child control-flow statement has brackets, the parent statement must as well
-* Correct
-  ```cpp
-  if (a) {
-    while (b) {
-      printf("A");
-      printf("B");
-      b = false;
-    }
-  }
-  ```
-* Incorrect
-  ```cpp
-  if (a)
-    while (b) {
-      printf("A");
-      printf("B");
-      b = false;
-    }
-  ```
-
-#### If any cases of an if statement have curly brackets all must have curly brackets:
-* Correct
-  ```cpp
-  if (a) {
-    printf("a");
-    a = false;
-  } else {
-    printf("none");
-  }
-  ```
-* Incorrect
-  ```cpp
-  if (a) {
-    printf("a");
-    a = false;
-  } else
-    printf("none");
-  ```
-
 ### Spacing
 We generally follow the rule of **"Functional Spacing"**, that being spacing between chunks of code that do something functionally different while functionally similar blocks of code can be closer together.
 
 Here are a few examples of this to help with intution:
-* If variable declarations are small, they can have no spacing
-  ```cpp
-  auto a = 1;
-  auto b = GetSomething();
-  DoSomething(a, b);
-
-  return;
-  ```
-* If variable declarations are large, spacing should follow them. This applies even more if error checking code needs to follow it.
+* Spacing should generally follow multiple related variable declarations, this applies even more if error checking code needs to follow it
   ```cpp
   auto a = GetSomethingA();
   auto b = GetSomethingB();
@@ -103,16 +70,14 @@ Here are a few examples of this to help with intution:
   auto b = GetClassB();
   b.DoSomething();
   ```
-* If a single variable is used by a control flow statement, there can be no spaces after it's declaration
+* If a single variable is used by a single-line control flow statement, there can be no spaces after it's declaration 
   ```cpp
   auto a = GetClass();
-  if (a.something) {
-    for(const auto& item : a.items)
-      DoSomething(item);
-  }
+  if (a.fail)
+    throw exception();
   ```
 * **Be consistent** (The above examples assume that `a`/`b`/`c` are correlated)
-  * Inconsistent Disaster
+  * Inconsistent
     ```cpp
     auto a = GetClassA();
     a.DoSomething();
@@ -123,7 +88,7 @@ Here are a few examples of this to help with intution:
     b.DoSomething();
     c.DoSomething();
     ```
-  * The Right Way:tm:
+  * Consistent #1
     ```cpp
     auto a = GetClassA();
     auto b = GetClassB();
@@ -133,7 +98,62 @@ Here are a few examples of this to help with intution:
     b.DoSomething();
     c.DoSomething();
     ```
-**Readability is key at the end, skirt these rules if you think it increases readability**
+  * Consistent #2
+    ```cpp
+    auto a = GetClassA();
+    a.DoSomething();
+
+    auto b = GetClassB();
+    b.DoSomething();
+
+    auto c = GetClassC();
+    c.DoSomething();
+    ```
+
+### Control flow statements (if, for and while)
+#### If a child control-flow statement has brackets, the parent statement must as well
+* Correct
+  ```cpp
+  if (a) {
+    while (b) {
+      printf("A");
+      printf("B");
+
+      b = false;
+    }
+  }
+  ```
+* Incorrect
+  ```cpp
+  if (a)
+    while (b) {
+      printf("A");
+      printf("B");
+
+      b = false;
+    }
+  ```
+
+#### If any cases of an if statement have curly brackets all must have curly brackets
+* Correct
+  ```cpp
+  if (a) {
+    printf("a");
+    
+    a = false;
+  } else {
+    printf("none");
+  }
+  ```
+* Incorrect
+  ```cpp
+  if (a) {
+    printf("a");
+
+    a = false;
+  } else
+    printf("none");
+  ```
 
 ### Lambda Usage
 We generally support the usage of functional programming and lambda, usage of it for assigning conditional variables is recommended especially if it would otherwise be a nested ternary statement:
@@ -179,3 +199,161 @@ Handle b = 0x10; // Handle is a specific type that won't be automatically assign
 If a variable is constant at compile time use `constexpr`, if it's only used in a local function then place it in the function but if it's used throughout a class then in the corresponding header add the variable to the `skyline::constant` namespace. If a constant is used throughout the codebase, add it to `common.h`.
 
 In addition, try to `constexpr` as much as possible including constructors and functions so that they may be initialized at compile-time and have lesser runtime overhead during usage and certain values can be pre-calculated in advance.
+
+## Kotlin
+### Naming rules
+* Enumerator: `PascalCase` **(1)**
+* Classes: `PascalCase` **(1)**
+* Local Variable: `camelCase` 
+* Member Variables: `camelCase`
+* Global Variables: `PascalCase`
+* Functions: `PascalCase`
+* Parameters: `camelCase`
+* Files: `PascalCase`
+* Directories: `camelCase`
+
+**(1)** Except when the whole name is an abbreviation such as `OS` and `NCE` but not `JVMManager`
+
+### Comments
+Use KDoc comments (`/**`) for:
+* Classes - A comment about the function of a class and any of it's parameters if required, albeit this can be skipped if the information is mundane enough to the point of it being useless which is generally the case with [Activities](https://developer.android.com/reference/android/app/Activity), albeit this isn't always the case. In addition, document any parameters in the primary constructor using `@param`.
+* Variables/Functions - A comment about what the variable is used for or what it is depending on what's more applicable. This is mandatory and shouldn't be skipped.
+* Functions - A comment about what the function is used for or what it is depending on what's more applicable and is mandatory, just like a variable. All parameters should be documented using `@param`. In addition, if it's an overridden function then it's description should cover more what it specifically does rather than what it is.  
+* Constructors - A comment about the constructor can be skipped if it simply calls another constructor or just assigns variables, assuming those variables are documented themselves. If the constructor does anything outside of that, it must be documented in accordance to the function comments.
+
+Exceptions to `@param`:
+* If a parameter has already been tagged in the comment using a KDoc link (`[]`), then it doesn't need to have it's own `@param`
+* If a parameter is a standard Android class such as `Context` then it's documentation can be skipped entirely
+
+Notes:
+* Any class members don't need to be redundantly documented in the constructor
+* Use a KDoc link (`[]`) when referencing any item 
+
+### Spacing
+The spacing in Kotlin follows the same rule as C++ with "**Functional Spacing**", spacing between chunks of code that do something functionally different while functionally similar blocks of code can be closer together.
+
+Here are a few examples of this to help with intution:
+* Spacing should generally follow multiple related variable declarations
+  ```kotlin
+  val a = GetSomethingA()
+  val b = GetSomethingB()
+  val c = GetSomethingC()
+
+  val result = DoSomething(a, b, c)
+  ```
+* If a function doesn't require multiple variable declarations, the function call should be right after the variable declaration
+  ```kotlin
+  val a = GetClassA()
+  a.DoSomething()
+
+  val b = GetClassB()
+  b.DoSomething()
+  ```
+  ```kotlin
+  val a = GetClassA()
+  DoSomething(a)
+
+  val b = GetClassB()
+  DoSomething(b)
+  ```
+* If a single variable is used by a single-line control flow statement, there can be no spaces after it's declaration 
+  ```kotlin
+  val a = GetClass()
+  if (a.fail)
+    throw exception()
+  ```
+* In `when` statements, if cases generally have multi-line code blocks then have spacing between all the cases
+  ```kotlin
+  when(num) {
+    1 -> {
+      a.Something()
+      a.SomethingElse()
+    }
+    
+    2 -> {
+      b.Something()
+      b.SomethingElse()
+    }
+
+    else -> c.Something()
+  }
+  ```
+  ```kotlin
+  when(num) {
+    1 -> a.Something()
+    2 -> b.Something()
+    else -> c.Something()
+  }
+  ```
+* **Be consistent** (The above examples assume that `a`/`b`/`c` are correlated)
+  * Inconsistent
+    ```kotlin
+    val a = GetClassA()
+    a.DoSomething()
+
+    val b = GetClassB()
+    val c = GetClassC()
+
+    b.DoSomething()
+    c.DoSomething()
+    ```
+  * Consistent #1
+    ```kotlin
+    val a = GetClassA()
+    val b = GetClassB()
+    val c = GetClassC()
+
+    a.DoSomething()
+    b.DoSomething()
+    c.DoSomething()
+    ```
+  * Consistent #2
+    ```kotlin
+    val a = GetClassA()
+    a.DoSomething()
+
+    val b = GetClassB()
+    b.DoSomething()
+
+    val c = GetClassC()
+    c.DoSomething()
+    ```
+
+### Control flow statements (if, for and while)
+#### If a child control-flow statement has brackets, the parent statement must as well
+* Correct
+  ```cpp
+  if (a) {
+    while (b) {
+      Something(a)
+      Something(b)
+    }
+  }
+  ```
+* Incorrect
+  ```cpp
+  if (a)
+    while (b) {
+      Something(a)
+      Something(b)
+    }
+  ```
+
+#### If any cases of an if statement have curly brackets all must have curly brackets
+* Correct
+  ```cpp
+  if (a) {
+    Something()
+    SomethingElse()
+  } else {
+    SomethingElse()
+  }
+  ```
+* Incorrect
+  ```cpp
+  if (a) {
+    Something()
+    SomethingElse()
+  } else
+    SomethingElse()
+  ```
