@@ -8,7 +8,7 @@
 
 namespace skyline::kernel::type {
     KTransferMemory::KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState) : host(host), size(size), KMemory(state, KType::KTransferMemory) {
-        if (address && !utils::PageAligned(address))
+        if (address && !util::PageAligned(address))
             throw exception("KTransferMemory was created with non-page-aligned address: 0x{:X}", address);
 
         BlockDescriptor block{
@@ -53,7 +53,7 @@ namespace skyline::kernel::type {
     }
 
     u64 KTransferMemory::Transfer(bool mHost, u64 nAddress, u64 nSize) {
-        if (nAddress && !utils::PageAligned(nAddress))
+        if (nAddress && !util::PageAligned(nAddress))
             throw exception("KTransferMemory was transferred to a non-page-aligned address: 0x{:X}", nAddress);
 
         nSize = nSize ? nSize : size;
@@ -95,7 +95,7 @@ namespace skyline::kernel::type {
                 else if (!mHost && !host)
                     state.process->CopyMemory(address, nAddress, block.size);
                 else if (mHost && host)
-                    memcpy(reinterpret_cast<void *>(nAddress), reinterpret_cast<void *>(address), block.size);
+                    std::memcpy(reinterpret_cast<void *>(nAddress), reinterpret_cast<void *>(address), block.size);
             }
             if (!block.permission.w) {
                 if (mHost) {

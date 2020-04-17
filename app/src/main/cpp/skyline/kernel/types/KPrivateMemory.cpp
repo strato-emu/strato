@@ -10,7 +10,7 @@
 
 namespace skyline::kernel::type {
     KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : size(size), KMemory(state, KType::KPrivateMemory) {
-        if (address && !utils::PageAligned(address))
+        if (address && !util::PageAligned(address))
             throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", address);
 
         fd = ASharedMemory_create("KPrivateMemory", size);

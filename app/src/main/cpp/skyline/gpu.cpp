@@ -10,7 +10,7 @@ extern bool Halt;
 extern jobject Surface;
 
 namespace skyline::gpu {
-    GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvmManager->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+    GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
@@ -25,7 +25,7 @@ namespace skyline::gpu {
         if (surfaceUpdate) {
             if (Surface == nullptr)
                 return;
-            window = ANativeWindow_fromSurface(state.jvmManager->GetEnv(), Surface);
+            window = ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface);
             ANativeWindow_acquire(window);
             resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
             resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
@@ -51,7 +51,7 @@ namespace skyline::gpu {
             ARect rect;
 
             ANativeWindow_lock(window, &windowBuffer, &rect);
-            memcpy(windowBuffer.bits, texture->backing.data(), texture->backing.size());
+            std::memcpy(windowBuffer.bits, texture->backing.data(), texture->backing.size());
             ANativeWindow_unlockAndPost(window);
 
             vsyncEvent->Signal();

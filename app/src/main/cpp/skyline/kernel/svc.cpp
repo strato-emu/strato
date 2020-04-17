@@ -28,14 +28,14 @@ namespace skyline::kernel::svc {
 
     void SetMemoryAttribute(DeviceState &state) {
         auto address = state.ctx->registers.x0;
-        if (!utils::PageAligned(address)) {
+        if (!util::PageAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", address);
             return;
         }
         
         auto size = state.ctx->registers.x1;
-        if (!utils::PageAligned(size)) {
+        if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -77,13 +77,13 @@ namespace skyline::kernel::svc {
         auto source = state.ctx->registers.x1;
         auto size = state.ctx->registers.x2;
         
-        if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
+        if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
         
-        if (!utils::PageAligned(size)) {
+        if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcMapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -126,13 +126,13 @@ namespace skyline::kernel::svc {
         auto destination = state.ctx->registers.x1;
         auto size = state.ctx->registers.x2;
 
-        if (!utils::PageAligned(destination) || !utils::PageAligned(source)) {
+        if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcUnmapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        if (!utils::PageAligned(size)) {
+        if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcUnmapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -307,14 +307,14 @@ namespace skyline::kernel::svc {
             auto object = state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0);
             u64 address = state.ctx->registers.x1;
 
-            if (!utils::PageAligned(address)) {
+            if (!util::PageAligned(address)) {
                 state.ctx->registers.w0 = constant::status::InvAddress;
                 state.logger->Warn("svcMapSharedMemory: 'address' not page aligned: 0x{:X}", address);
                 return;
             }
 
             auto size = state.ctx->registers.x2;
-            if (!utils::PageAligned(size)) {
+            if (!util::PageAligned(size)) {
                 state.ctx->registers.w0 = constant::status::InvSize;
                 state.logger->Warn("svcMapSharedMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
                 return;
@@ -341,14 +341,14 @@ namespace skyline::kernel::svc {
 
     void CreateTransferMemory(DeviceState &state) {
         u64 address = state.ctx->registers.x1;
-        if (!utils::PageAligned(address)) {
+        if (!util::PageAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateTransferMemory: 'address' not page aligned: 0x{:X}", address);
             return;
         }
 
         u64 size = state.ctx->registers.x2;
-        if (!utils::PageAligned(size)) {
+        if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcCreateTransferMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -449,7 +449,7 @@ namespace skyline::kernel::svc {
         auto timeout = state.ctx->registers.x3;
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
 
-        auto start = utils::GetTimeNs();
+        auto start = util::GetTimeNs();
         while (true) {
             if (state.thread->cancelSync) {
                 state.thread->cancelSync = false;
@@ -468,7 +468,7 @@ namespace skyline::kernel::svc {
                 index++;
             }
 
-            if ((utils::GetTimeNs() - start) >= timeout) {
+            if ((util::GetTimeNs() - start) >= timeout) {
                 state.logger->Debug("svcWaitSynchronization: Wait has timed out");
                 state.ctx->registers.w0 = constant::status::Timeout;
                 return;
@@ -487,7 +487,7 @@ namespace skyline::kernel::svc {
 
     void ArbitrateLock(DeviceState &state) {
         auto address = state.ctx->registers.x1;
-        if (!utils::WordAligned(address)) {
+        if (!util::WordAligned(address)) {
             state.logger->Warn("svcArbitrateLock: 'address' not word aligned: 0x{:X}", address);
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
@@ -510,7 +510,7 @@ namespace skyline::kernel::svc {
 
     void ArbitrateUnlock(DeviceState &state) {
         auto address = state.ctx->registers.x0;
-        if (!utils::WordAligned(address)) {
+        if (!util::WordAligned(address)) {
             state.logger->Warn("svcArbitrateUnlock: 'address' not word aligned: 0x{:X}", address);
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;
@@ -529,7 +529,7 @@ namespace skyline::kernel::svc {
 
     void WaitProcessWideKeyAtomic(DeviceState &state) {
         auto mtxAddress = state.ctx->registers.x0;
-        if (!utils::WordAligned(mtxAddress)) {
+        if (!util::WordAligned(mtxAddress)) {
             state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: 0x{:X}", mtxAddress);
             state.ctx->registers.w0 = constant::status::InvAddress;
             return;

@@ -26,8 +26,8 @@ namespace skyline::gpu {
             constexpr auto gobHeight = 8; // The height of a GOB in lines
 
             auto robHeight = gobHeight * guest->tileConfig.blockHeight; // The height of a single ROB (Row of Blocks) in lines
-            auto surfaceHeightRobs = utils::AlignUp(dimensions.height / format.blockHeight, robHeight) / robHeight; // The height of the surface in ROBs (Row Of Blocks)
-            auto robWidthBytes = utils::AlignUp((guest->tileConfig.surfaceWidth / format.blockWidth) * format.bpb, gobWidth); // The width of a ROB in bytes
+            auto surfaceHeightRobs = util::AlignUp(dimensions.height / format.blockHeight, robHeight) / robHeight; // The height of the surface in ROBs (Row Of Blocks)
+            auto robWidthBytes = util::AlignUp((guest->tileConfig.surfaceWidth / format.blockWidth) * format.bpb, gobWidth); // The width of a ROB in bytes
             auto robWidthBlocks = robWidthBytes / gobWidth; // The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
             auto robBytes = robWidthBytes * robHeight; // The size of a ROB in bytes
             auto gobYOffset = robWidthBytes * gobHeight; // The offset of the next Y-axis GOB from the current one in linear space

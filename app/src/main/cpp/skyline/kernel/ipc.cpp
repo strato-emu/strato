@@ -25,17 +25,17 @@ namespace skyline::kernel::ipc {
         if (header->handleDesc) {
             handleDesc = reinterpret_cast<HandleDescriptor *>(pointer);
             pointer += sizeof(HandleDescriptor) + (handleDesc->sendPid ? sizeof(u64) : 0);
-            for (uint index = 0; handleDesc->copyCount > index; index++) {
+            for (u32 index = 0; handleDesc->copyCount > index; index++) {
                 copyHandles.push_back(*reinterpret_cast<KHandle *>(pointer));
                 pointer += sizeof(KHandle);
             }
-            for (uint index = 0; handleDesc->moveCount > index; index++) {
+            for (u32 index = 0; handleDesc->moveCount > index; index++) {
                 moveHandles.push_back(*reinterpret_cast<KHandle *>(pointer));
                 pointer += sizeof(KHandle);
             }
         }
 
-        for (uint index = 0; header->xNo > index; index++) {
+        for (u8 index = 0; header->xNo > index; index++) {
             auto bufX = reinterpret_cast<BufferDescriptorX *>(pointer);
             if (bufX->Address()) {
                 inputBuf.emplace_back(bufX);
@@ -44,7 +44,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorX);
         }
 
-        for (uint index = 0; header->aNo > index; index++) {
+        for (u8 index = 0; header->aNo > index; index++) {
             auto bufA = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufA->Address()) {
                 inputBuf.emplace_back(bufA);
@@ -53,7 +53,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorABW);
         }
 
-        for (uint index = 0; header->bNo > index; index++) {
+        for (u8 index = 0; header->bNo > index; index++) {
             auto bufB = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufB->Address()) {
                 outputBuf.emplace_back(bufB);
@@ -62,7 +62,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorABW);
         }
 
-        for (uint index = 0; header->wNo > index; index++) {
+        for (u8 index = 0; header->wNo > index; index++) {
             auto bufW = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufW->Address()) {
                 inputBuf.emplace_back(bufW, IpcBufferType::W);
@@ -72,9 +72,8 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorABW);
         }
 
-        constexpr auto ipcPaddingSum = 0x10; // The sum of the padding surrounding the data payload
-
-        u64 padding = ((((reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls)) - 1U) & ~(ipcPaddingSum - 1U)) + ipcPaddingSum + (reinterpret_cast<u64>(tls) - reinterpret_cast<u64>(pointer))); // Calculate the amount of padding at the front
+        auto offset = reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls); // We calculate the relative offset as the absolute one might differ
+        auto padding = util::AlignUp(offset, constant::IpcPaddingSum) - offset; // Calculate the amount of padding at the front
         pointer += padding;
 
         if (isDomain && (header->type == CommandType::Request)) {
@@ -88,7 +87,7 @@ namespace skyline::kernel::ipc {
             cmdArgSz = domain->payloadSz - sizeof(PayloadHeader);
             pointer += domain->payloadSz;
 
-            for (uint index = 0; domain->inputCount > index; index++) {
+            for (u8 index = 0; domain->inputCount > index; index++) {
                 domainObjects.push_back(*reinterpret_cast<KHandle *>(pointer));
                 pointer += sizeof(KHandle);
             }
@@ -97,18 +96,16 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(PayloadHeader);
 
             cmdArg = pointer;
-            cmdArgSz = (header->rawSize * sizeof(u32)) - (ipcPaddingSum + sizeof(PayloadHeader));
+            cmdArgSz = (header->rawSize * sizeof(u32)) - (constant::IpcPaddingSum + sizeof(PayloadHeader));
             pointer += cmdArgSz;
         }
 
         payloadOffset = cmdArg;
 
-        constexpr auto sfciMagic = 0x49434653; //!< SFCI in reverse, present in received IPC messages
-
-        if (payload->magic != sfciMagic && header->type != CommandType::Control)
+        if (payload->magic != util::MakeMagic<u32>("SFCI") && header->type != CommandType::Control) // SFCI is the magic in received IPC messages
             state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
 
-        pointer += ipcPaddingSum - padding;
+        pointer += constant::IpcPaddingSum - padding;
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC = reinterpret_cast<BufferDescriptorC *>(pointer);
@@ -117,7 +114,7 @@ namespace skyline::kernel::ipc {
                 state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", u64(bufC->address), u16(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
-            for (uint index = 0; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
+            for (u8 index = 0; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC = reinterpret_cast<BufferDescriptorC *>(pointer);
                 if (bufC->address) {
                     outputBuf.emplace_back(bufC);
@@ -143,13 +140,10 @@ namespace skyline::kernel::ipc {
         auto tls = state.process->GetPointer<u8>(state.thread->tls);
         u8 *pointer = tls;
 
-        constexpr auto tlsIpcSize = 0x100; // The size of the IPC command buffer in a TLS slot
-        memset(tls, 0, tlsIpcSize);
-
-        constexpr auto ipcPaddingSum = 0x10; // The sum of the padding surrounding the data payload
+        memset(tls, 0, constant::TlsIpcSize);
 
         auto header = reinterpret_cast<CommandHeader *>(pointer);
-        header->rawSize = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(KHandle)) + ipcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        header->rawSize = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(KHandle)) + constant::IpcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
         header->handleDesc = (!copyHandles.empty() || !moveHandles.empty());
         pointer += sizeof(CommandHeader);
 
@@ -159,18 +153,19 @@ namespace skyline::kernel::ipc {
             handleDesc->moveCount = static_cast<u8>(moveHandles.size());
             pointer += sizeof(HandleDescriptor);
 
-            for (unsigned int copyHandle : copyHandles) {
+            for (auto copyHandle : copyHandles) {
                 *reinterpret_cast<KHandle *>(pointer) = copyHandle;
                 pointer += sizeof(KHandle);
             }
 
-            for (unsigned int moveHandle : moveHandles) {
+            for (auto moveHandle : moveHandles) {
                 *reinterpret_cast<KHandle *>(pointer) = moveHandle;
                 pointer += sizeof(KHandle);
             }
         }
 
-        u64 padding = ((((reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls)) - 1U) & ~(ipcPaddingSum - 1U)) + ipcPaddingSum + (reinterpret_cast<u64>(tls) - reinterpret_cast<u64>(pointer))); // Calculate the amount of padding at the front
+        auto offset = reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls); // We calculate the relative offset as the absolute one might differ
+        auto padding = util::AlignUp(offset, constant::IpcPaddingSum) - offset; // Calculate the amount of padding at the front
         pointer += padding;
 
         if (isDomain) {
@@ -179,16 +174,14 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(DomainHeaderResponse);
         }
 
-        constexpr auto sfcoMagic = 0x4F434653; // SFCO in reverse, IPC Response Magic
-
         auto payload = reinterpret_cast<PayloadHeader *>(pointer);
-        payload->magic = sfcoMagic;
+        payload->magic = util::MakeMagic<u32>("SFCO"); // SFCO is the magic in IPC responses
         payload->version = 1;
         payload->value = errorCode;
         pointer += sizeof(PayloadHeader);
 
         if (!argVec.empty())
-            memcpy(pointer, argVec.data(), argVec.size());
+            std::memcpy(pointer, argVec.data(), argVec.size());
         pointer += argVec.size();
 
         if (isDomain) {

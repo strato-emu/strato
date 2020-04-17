@@ -112,7 +112,7 @@ namespace skyline::kernel::type {
             auto source = GetHostAddress(offset);
 
             if (source) {
-                memcpy(destination, reinterpret_cast<void *>(source), size);
+                std::memcpy(destination, reinterpret_cast<void *>(source), size);
                 return;
             }
         }
@@ -136,7 +136,7 @@ namespace skyline::kernel::type {
             auto destination = GetHostAddress(offset);
 
             if (destination) {
-                memcpy(reinterpret_cast<void *>(destination), source, size);
+                std::memcpy(reinterpret_cast<void *>(destination), source, size);
                 return;
             }
         }
@@ -160,7 +160,7 @@ namespace skyline::kernel::type {
         auto destinationHost = GetHostAddress(destination);
 
         if (sourceHost && destinationHost) {
-            memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
+            std::memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
         } else {
             if (size <= PAGE_SIZE) {
                 std::vector<u8> buffer(size);
@@ -282,9 +282,9 @@ namespace skyline::kernel::type {
         lock.unlock();
 
         bool timedOut{};
-        auto start = utils::GetTimeNs();
+        auto start = util::GetTimeNs();
         while (!status->flag)
-            if ((utils::GetTimeNs() - start) >= timeout)
+            if ((util::GetTimeNs() - start) >= timeout)
                 timedOut = true;
 
         lock.lock();

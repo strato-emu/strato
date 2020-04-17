@@ -8,7 +8,7 @@
 namespace skyline {
     namespace constant {
         constexpr u32 SupportedRevision = 7; //!< The audren revision our implementation supports
-        constexpr u32 Rev0Magic = ('R' << 0) | ('E' << 8) | ('V' << 16) | ('0' << 24); //!< The HOS 1.0 revision magic
+        constexpr u32 Rev0Magic = util::MakeMagic<u32>("REV0"); //!< The HOS 1.0 revision magic
         constexpr u32 RevMagic = Rev0Magic + (SupportedRevision << 24); //!< The revision magic for our supported revision
 
         namespace supportTags {

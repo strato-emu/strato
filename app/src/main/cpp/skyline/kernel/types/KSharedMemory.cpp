@@ -10,7 +10,7 @@
 
 namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {
-        if (address && !utils::PageAligned(address))
+        if (address && !util::PageAligned(address))
             throw exception("KSharedMemory was created with non-page-aligned address: 0x{:X}", address);
 
         fd = ASharedMemory_create("KSharedMemory", size);
@@ -25,7 +25,7 @@ namespace skyline::kernel::type {
     }
 
     u64 KSharedMemory::Map(const u64 address, const u64 size, memory::Permission permission) {
-        if (address && !utils::PageAligned(address))
+        if (address && !util::PageAligned(address))
             throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", address);
 
         Registers fregs{
@@ -129,7 +129,7 @@ namespace skyline::kernel::type {
                 throw exception("An error occurred while creating shared memory: {}", fd);
 
             std::vector<u8> data(std::min(size, kernel.size));
-            memcpy(data.data(), reinterpret_cast<const void *>(kernel.address), std::min(size, kernel.size));
+            std::memcpy(data.data(), reinterpret_cast<const void *>(kernel.address), std::min(size, kernel.size));
 
             munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
 
@@ -137,7 +137,7 @@ namespace skyline::kernel::type {
             if (address == MAP_FAILED)
                 throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
-            memcpy(address, data.data(), std::min(size, kernel.size));
+            std::memcpy(address, data.data(), std::min(size, kernel.size));
 
             kernel.address = reinterpret_cast<u64>(address);
             kernel.size = size;

@@ -144,8 +144,8 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 base.address = constant::BaseAddress;
                 base.size = 0x7FF8000000;
-                code.address = utils::AlignDown(address, 0x200000);
-                code.size = utils::AlignUp(address + size, 0x200000) - code.address;
+                code.address = util::AlignDown(address, 0x200000);
+                code.size = util::AlignUp(address + size, 0x200000) - code.address;
                 alias.address = code.address + code.size;
                 alias.size = 0x1000000000;
                 heap.address = alias.address + alias.size;

@@ -9,9 +9,7 @@ namespace skyline::loader {
     NroLoader::NroLoader(const int romFd) : Loader(romFd) {
         ReadOffset((u32 *) &header, 0x0, sizeof(NroHeader));
 
-        constexpr auto nroMagic = 0x304F524E; // "NRO0" in reverse, this is written at the start of every NRO file
-
-        if (header.magic != nroMagic)
+        if (header.magic != util::MakeMagic<u32>("NRO0"))
             throw exception("Invalid NRO magic! 0x{0:X}", header.magic);
     }
 
@@ -30,7 +28,7 @@ namespace skyline::loader {
         u64 rodataSize = rodata.size();
         u64 dataSize = data.size();
         u64 patchSize = patch.size() * sizeof(u32);
-        u64 padding = utils::AlignUp(textSize + rodataSize + dataSize + header.bssSize + patchSize, PAGE_SIZE) - (textSize + rodataSize + dataSize + header.bssSize + patchSize);
+        u64 padding = util::AlignUp(textSize + rodataSize + dataSize + header.bssSize + patchSize, PAGE_SIZE) - (textSize + rodataSize + dataSize + header.bssSize + patchSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress, textSize, memory::Permission{true, true, true}, memory::states::CodeStatic); // R-X
         state.logger->Debug("Successfully mapped section .text @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress, textSize);

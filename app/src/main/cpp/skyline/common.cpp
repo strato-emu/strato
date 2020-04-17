@@ -24,7 +24,7 @@ namespace skyline {
     void GroupMutex::lock(Group group) {
         auto none = Group::None;
         constexpr u64 timeout = 100; // The timeout in ns
-        auto end = utils::GetTimeNs() + timeout;
+        auto end = util::GetTimeNs() + timeout;
 
         while (true) {
             if (next == group) {
@@ -41,7 +41,7 @@ namespace skyline {
                 } else {
                     flag.compare_exchange_weak(none, group);
                 }
-            } else if (flag == group && (next == Group::None || utils::GetTimeNs() >= end)) {
+            } else if (flag == group && (next == Group::None || util::GetTimeNs() >= end)) {
                 std::lock_guard lock(mtx);
 
                 if (flag == group) {
@@ -127,13 +127,14 @@ namespace skyline {
 
     Logger::~Logger() {
         WriteHeader("Logging ended");
+        logFile.flush();
     }
 
     void Logger::WriteHeader(const std::string &str) {
         syslog(LOG_ALERT, "%s", str.c_str());
 
+        std::lock_guard guard(mtx);
         logFile << "0|" << str << "\n";
-        logFile.flush();
     }
 
     void Logger::Write(const LogLevel level, std::string str) {
@@ -143,12 +144,12 @@ namespace skyline {
             if (character == '\n')
                 character = '\\';
 
+        std::lock_guard guard(mtx);
         logFile << "1|" << levelStr[static_cast<u8>(level)] << "|" << str << "\n";
-        logFile.flush();
     }
 
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
-        : os(os), jvmManager(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(process) {
+        : os(os), jvm(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(process) {
         // We assign these later as they use the state in their constructor and we don't want null pointers
         nce = std::move(std::make_shared<NCE>(*this));
         gpu = std::move(std::make_shared<gpu::GPU>(*this));

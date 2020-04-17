@@ -68,7 +68,7 @@ namespace skyline {
         NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
     };
 
-    namespace utils {
+    namespace util {
         /**
          * @brief Returns the current time in nanoseconds
          * @return The current time in nanoseconds
@@ -93,7 +93,7 @@ namespace skyline {
          * @return The aligned value
          */
         template<typename TypeVal, typename TypeMul>
-        inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
+        constexpr inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             multiple--;
             return (value + multiple) & ~(multiple);
@@ -108,7 +108,7 @@ namespace skyline {
          * @return The aligned value
          */
         template<typename TypeVal, typename TypeMul>
-        inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
+        constexpr inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
             static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             return value & ~(multiple - 1);
         }
@@ -117,7 +117,7 @@ namespace skyline {
          * @param address The address to check for alignment
          * @return If the address is page aligned
          */
-        inline bool PageAligned(u64 address) {
+        constexpr inline bool PageAligned(u64 address) {
             return !(address & (PAGE_SIZE - 1U));
         }
 
@@ -125,8 +125,25 @@ namespace skyline {
          * @param address The address to check for alignment
          * @return If the address is word aligned
          */
-        inline bool WordAligned(u64 address) {
+        constexpr inline bool WordAligned(u64 address) {
             return !(address & 3U);
+        }
+
+        /**
+         * @param string The string to create a magic from
+         * @return The magic of the supplied string
+         */
+        template<typename Type>
+        constexpr Type MakeMagic(std::string_view string) {
+            Type object{};
+            auto offset = 0;
+
+            for(auto& character : string) {
+                object |= static_cast<Type>(character) << offset;
+                offset += sizeof(character) * 8;
+            }
+
+            return object;
         }
     }
 
@@ -198,6 +215,7 @@ namespace skyline {
         std::ofstream logFile; //!< An output stream to the log file
         const char *levelStr[4] = {"0", "1", "2", "3"}; //!< This is used to denote the LogLevel when written out to a file
         static constexpr int levelSyslog[4] = {LOG_ERR, LOG_WARNING, LOG_INFO, LOG_DEBUG}; //!< This corresponds to LogLevel and provides it's equivalent for syslog
+        Mutex mtx; //!< A mutex to lock before logging anything
 
       public:
         enum class LogLevel { Error, Warn, Info, Debug }; //!< The level of a particular log
@@ -360,7 +378,7 @@ namespace skyline {
         std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
         std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
         std::shared_ptr<audio::Audio> audio; //!< This holds a reference to the Audio class
-        std::shared_ptr<JvmManager> jvmManager; //!< This holds a reference to the JvmManager class
+        std::shared_ptr<JvmManager> jvm; //!< This holds a reference to the JvmManager class
         std::shared_ptr<Settings> settings; //!< This holds a reference to the Settings class
         std::shared_ptr<Logger> logger; //!< This holds a reference to the Logger class
     };
