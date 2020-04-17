@@ -230,12 +230,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
 
             R.id.app_item_linear, R.id.app_item_grid -> {
                 val tag = view.tag
-
                 if (tag is AppItem) {
-                    val intent = Intent(this, EmulationActivity::class.java)
-                    intent.data = tag.uri
-
-                    startActivity(intent)
+                    if (sharedPreferences.getBoolean("select_action", false)) {
+                        val dialog = AppDialog(tag)
+                        dialog.show(supportFragmentManager, "game")
+                    } else {
+                        val intent = Intent(this, EmulationActivity::class.java)
+                        intent.data = tag.uri
+                        startActivity(intent)
+                    }
                 }
             }
         }
@@ -248,10 +251,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
         when (view?.id) {
             R.id.app_item_linear, R.id.app_item_grid -> {
                 val tag = view.tag
-
                 if (tag is AppItem) {
                     val dialog = AppDialog(tag)
                     dialog.show(supportFragmentManager, "game")
+
                     return true
                 }
             }

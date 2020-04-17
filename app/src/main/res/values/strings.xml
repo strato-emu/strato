@@ -25,6 +25,10 @@
     <!-- Settings -->
     <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
+    <string name="layout_type">Game Container Layout</string>
+    <string name="select_action">Always Show Game Information</string>
+    <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
+    <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
     <string name="log_level">Log Level</string>
     <string name="log_compact">Compact Logs</string>
     <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
@@ -34,10 +38,6 @@
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="theme">Theme</string>
-    <string name="layout_type">Application Layout</string>
-    <string name="audio">Audio</string>
-    <string name="audren_buffer_size">Audio Buffer Size</string>
-    <string name="audren_buffer_desc">The size of the buffer used to store audio samples for ROMs using audren. A lower value will result in less latency but potentially increased audio stutter depending on the performance of the device</string>
     <!-- Licenses -->
     <string name="licenses">Licenses</string>
     <string name="skyline_license_description">The license of Skyline (LGPLv3 or later)</string>

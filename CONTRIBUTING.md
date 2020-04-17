@@ -32,6 +32,7 @@ This can also be done by using `Ctrl + Alt + L` on Windows, `Ctrl + Shift + Alt 
 * Member Variables: `camelCase`
 * Global Variables: `PascalCase`
 * Functions: `PascalCase`
+* Template Parameters: `PascalCase`
 * Parameters: `camelCase`
 * Files and Directories: `snake_case` except for when they correspond to a HOS structure (EG: Services, Kernel Objects)
 
@@ -209,6 +210,7 @@ In addition, try to `constexpr` as much as possible including constructors and f
 * Global Variables: `PascalCase`
 * Functions: `PascalCase`
 * Parameters: `camelCase`
+* Generics: `PascalCase`
 * Files: `PascalCase`
 * Directories: `camelCase`
 
