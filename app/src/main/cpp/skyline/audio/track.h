@@ -16,14 +16,14 @@ namespace skyline::audio {
     class AudioTrack {
       private:
         const std::function<void()> releaseCallback; //!< Callback called when a buffer has been played
-        std::deque<BufferIdentifier> identifierQueue; //!< Queue of all appended buffer identifiers
+        std::deque<BufferIdentifier> identifiers; //!< Queue of all appended buffer identifiers
 
-        const int channelCount; //!< The amount channels present in the track
-        const int sampleRate; //!< The sample rate of the track
+        const u8 channelCount; //!< The amount channels present in the track
+        const u32 sampleRate; //!< The sample rate of the track
 
       public:
         std::queue<i16> sampleQueue; //!< Queue of all appended buffer data
-        skyline::Mutex bufferLock; //!< Buffer access lock
+        Mutex bufferLock; //!< This mutex ensures that appending to buffers doesn't overlap
 
         AudioOutState playbackState{AudioOutState::Stopped}; //!< The current state of playback
         u64 sampleCounter{}; //!< A counter used for tracking buffer status
@@ -33,7 +33,7 @@ namespace skyline::audio {
          * @param sampleRate The sample rate to use for the track
          * @param releaseCallback A callback to call when a buffer has been played
          */
-        AudioTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback);
+        AudioTrack(const u8 channelCount, const u32 sampleRate, const std::function<void()> &releaseCallback);
 
         /**
          * @brief Starts audio playback using data from appended buffers.

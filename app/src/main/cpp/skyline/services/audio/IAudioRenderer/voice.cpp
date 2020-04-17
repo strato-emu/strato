@@ -5,6 +5,11 @@
 #include "voice.h"
 
 namespace skyline::service::audio::IAudioRenderer {
+    void Voice::SetWaveBufferIndex(u8 index) {
+        bufferIndex = static_cast<u8>(index & 3);
+        bufferReload = true;
+    }
+
     Voice::Voice(const DeviceState &state) : state(state) {}
 
     void Voice::ProcessInput(const VoiceIn &input) {
@@ -25,17 +30,18 @@ namespace skyline::service::audio::IAudioRenderer {
             return;
 
         if (input.firstUpdate) {
-            if (input.pcmFormat != skyline::audio::PcmFormat::Int16)
-                throw exception("Unsupported voice PCM format: {}", input.pcmFormat);
+            if (input.format != skyline::audio::AudioFormat::Int16)
+                throw exception("Unsupported voice PCM format: {}", input.format);
 
-            pcmFormat = input.pcmFormat;
+            format = input.format;
             sampleRate = input.sampleRate;
 
             if (input.channelCount > 2)
                 throw exception("Unsupported voice channel count: {}", input.channelCount);
 
-            channelCount = input.channelCount;
-            SetWaveBufferIndex(input.baseWaveBufferIndex);
+            channelCount = static_cast<u8>(input.channelCount);
+
+            SetWaveBufferIndex(static_cast<u8>(input.baseWaveBufferIndex));
         }
 
         waveBuffers = input.waveBuffers;
@@ -49,34 +55,36 @@ namespace skyline::service::audio::IAudioRenderer {
         if (currentBuffer.size == 0)
             return;
 
-        switch (pcmFormat) {
-            case skyline::audio::PcmFormat::Int16:
-                sampleBuffer.resize(currentBuffer.size / sizeof(i16));
-                state.process->ReadMemory(sampleBuffer.data(), currentBuffer.address, currentBuffer.size);
+        switch (format) {
+            case skyline::audio::AudioFormat::Int16:
+                samples.resize(currentBuffer.size / sizeof(i16));
+                state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
                 break;
             default:
-                throw exception("Unsupported voice PCM format: {}", pcmFormat);
+                throw exception("Unsupported PCM format used by Voice: {}", format);
         }
 
         if (sampleRate != constant::SampleRate)
-            sampleBuffer = resampler.ResampleBuffer(sampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
+            samples = resampler.ResampleBuffer(samples, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
 
         if (channelCount == 1 && constant::ChannelCount != channelCount) {
-            auto originalSize = sampleBuffer.size();
-            sampleBuffer.resize((originalSize / channelCount) * constant::ChannelCount);
+            auto originalSize = samples.size();
+            samples.resize((originalSize / channelCount) * constant::ChannelCount);
 
-            for (auto monoIndex = originalSize - 1, targetIndex = sampleBuffer.size(); monoIndex > 0; monoIndex--)
+            for (auto monoIndex = originalSize - 1, targetIndex = samples.size(); monoIndex > 0; monoIndex--) {
+                auto sample = samples[monoIndex];
                 for (auto i = 0; i < constant::ChannelCount; i++)
-                    sampleBuffer[--targetIndex] = sampleBuffer[monoIndex];
+                    samples[--targetIndex] = sample;
+            }
         }
     }
 
-    std::vector<i16> &Voice::GetBufferData(int maxSamples, int &outOffset, int &outSize) {
+    std::vector<i16> &Voice::GetBufferData(u32 maxSamples, u32 &outOffset, u32 &outSize) {
         WaveBuffer &currentBuffer = waveBuffers.at(bufferIndex);
 
         if (!acquired || playbackState != skyline::audio::AudioOutState::Started) {
             outSize = 0;
-            return sampleBuffer;
+            return samples;
         }
 
         if (bufferReload) {
@@ -85,28 +93,23 @@ namespace skyline::service::audio::IAudioRenderer {
         }
 
         outOffset = sampleOffset;
-        outSize = std::min(maxSamples * constant::ChannelCount, static_cast<int>(sampleBuffer.size() - sampleOffset));
+        outSize = std::min(maxSamples * constant::ChannelCount, static_cast<u32>(samples.size() - sampleOffset));
 
         output.playedSamplesCount += outSize / constant::ChannelCount;
         sampleOffset += outSize;
 
-        if (sampleOffset == sampleBuffer.size()) {
+        if (sampleOffset == samples.size()) {
             sampleOffset = 0;
 
             if (currentBuffer.lastBuffer)
                 playbackState = skyline::audio::AudioOutState::Paused;
 
             if (!currentBuffer.looping)
-                SetWaveBufferIndex(bufferIndex + 1);
+                SetWaveBufferIndex(static_cast<u8>(bufferIndex + 1));
 
             output.playedWaveBuffersCount++;
         }
 
-        return sampleBuffer;
-    }
-
-    void Voice::SetWaveBufferIndex(uint index) {
-        bufferIndex = index & 3;
-        bufferReload = true;
+        return samples;
     }
 }

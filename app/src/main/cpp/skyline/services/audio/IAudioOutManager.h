@@ -6,6 +6,7 @@
 #include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
+
 namespace skyline {
     namespace constant {
         constexpr std::string_view DefaultAudioOutName = "DeviceOut"; //!< The default audio output device name

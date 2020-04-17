@@ -29,7 +29,7 @@ namespace skyline::service::audio {
         response.Push<u32>(sampleRate);
         response.Push<u16>(channelCount);
         response.Push<u16>(0);
-        response.Push(static_cast<u32>(skyline::audio::PcmFormat::Int16));
+        response.Push(static_cast<u32>(skyline::audio::AudioFormat::Int16));
         response.Push(static_cast<u32>(skyline::audio::AudioOutState::Stopped));
     }
 }

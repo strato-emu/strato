@@ -20,15 +20,15 @@ namespace skyline::service::audio {
         std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
         std::vector<i16> tmpSampleBuffer; //!< A temporary buffer used to store sample data in AppendAudioOutBuffer
 
-        const int sampleRate; //!< The sample rate of the audio out
-        const int channelCount; //!< The amount of channels in the data sent to the audio out
+        const u32 sampleRate; //!< The sample rate of the audio out
+        const u8 channelCount; //!< The amount of channels in the data sent to the audio out
 
       public:
         /**
          * @param channelCount The channel count of the audio data the audio out will be fed
          * @param sampleRate The sample rate of the audio data the audio out will be fed
          */
-        IAudioOut(const DeviceState &state, ServiceManager &manager, const int channelCount, const int sampleRate);
+        IAudioOut(const DeviceState &state, ServiceManager &manager, const u8 channelCount, const u32 sampleRate);
 
         /**
          * @brief Closes the audio track

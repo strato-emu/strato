@@ -8,23 +8,23 @@
 
 namespace skyline {
     namespace constant {
-        constexpr auto SampleRate = 48000; //!< The sampling rate to use for the oboe audio output
-        constexpr auto ChannelCount = 2; //!< The amount of channels to use for the oboe audio output
-        constexpr auto PcmFormat = oboe::AudioFormat::I16; //!< The pcm data format to use for the oboe audio output
+        constexpr auto SampleRate = 48000; //!< The common sampling rate to use for audio output
+        constexpr auto ChannelCount = 2; //!< The common amount of channels to use for audio output
+        constexpr auto PcmFormat = oboe::AudioFormat::I16; //!< The common PCM data format to use for audio output
     };
 
     namespace audio {
         /**
          * @brief The available PCM stream formats
          */
-        enum class PcmFormat : u8 {
+        enum class AudioFormat : u8 {
             Invalid = 0, //!< An invalid PCM format
             Int8 = 1, //!< 8 bit integer PCM
             Int16 = 2, //!< 16 bit integer PCM
             Int24 = 3, //!< 24 bit integer PCM
             Int32 = 4, //!< 32 bit integer PCM
-            PcmFloat = 5, //!< Floating point PCM
-            AdPcm = 6 //!< Adaptive differential PCM
+            Float = 5, //!< Floating point PCM
+            ADPCM = 6 //!< Adaptive differential PCM
         };
 
         /**
@@ -37,12 +37,12 @@ namespace skyline {
         };
 
         /**
-         * @brief Stores various information about pushed buffers
+         * @brief This stores information about pushed buffers
          */
         struct BufferIdentifier {
             u64 tag; //!< The tag of the buffer
             u64 finalSample; //!< The final sample this buffer will be played in
-            bool released; //!< Whether the buffer has been released
+            bool released; //!< If the buffer has been released
         };
     }
 }

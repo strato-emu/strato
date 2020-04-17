@@ -4,7 +4,7 @@
 #include "track.h"
 
 namespace skyline::audio {
-    AudioTrack::AudioTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback) : channelCount(channelCount), sampleRate(sampleRate), releaseCallback(releaseCallback) {
+    AudioTrack::AudioTrack(const u8 channelCount, const u32 sampleRate, const std::function<void()> &releaseCallback) : channelCount(channelCount), sampleRate(sampleRate), releaseCallback(releaseCallback) {
         if (sampleRate != constant::SampleRate)
             throw exception("Unsupported audio sample rate: {}", sampleRate);
 
@@ -13,13 +13,13 @@ namespace skyline::audio {
     }
 
     void AudioTrack::Stop() {
-        while (!identifierQueue.end()->released);
+        while (!identifiers.end()->released);
         playbackState = AudioOutState::Stopped;
     }
 
     bool AudioTrack::ContainsBuffer(u64 tag) {
         // Iterate from front of queue as we don't want released samples
-        for (auto identifier = identifierQueue.crbegin(); identifier != identifierQueue.crend(); ++identifier) {
+        for (auto identifier = identifiers.crbegin(); identifier != identifiers.crend(); ++identifier) {
             if (identifier->released)
                 return false;
 
@@ -33,11 +33,11 @@ namespace skyline::audio {
     std::vector<u64> AudioTrack::GetReleasedBuffers(u32 max) {
         std::vector<u64> bufferIds;
 
-        for (auto i = 0; i < max; i++) {
-            if (!identifierQueue.back().released)
+        for (auto index = 0; index < max; index++) {
+            if (!identifiers.back().released)
                 break;
-            bufferIds.push_back(identifierQueue.back().tag);
-            identifierQueue.pop_back();
+            bufferIds.push_back(identifiers.back().tag);
+            identifiers.pop_back();
         }
 
         return bufferIds;
@@ -64,7 +64,7 @@ namespace skyline::audio {
     }
 
     void AudioTrack::CheckReleasedBuffers() {
-        for (auto &identifier : identifierQueue) {
+        for (auto &identifier : identifiers) {
             if (identifier.finalSample <= sampleCounter && !identifier.released) {
                 releaseCallback();
                 identifier.released = true;

@@ -50,7 +50,7 @@ namespace skyline::service::audio::IAudioRenderer {
         u8 firstUpdate; //!< Whether this voice is new
         u8 acquired; //!< Whether the sample is in use
         skyline::audio::AudioOutState playbackState; //!< The playback state
-        skyline::audio::PcmFormat pcmFormat; //!< The sample format
+        skyline::audio::AudioFormat format; //!< The sample format
         u32 sampleRate; //!< The sample rate
         u32 priority; //!< The priority for this voice
         u32 _unk0_;
@@ -89,20 +89,20 @@ namespace skyline::service::audio::IAudioRenderer {
       private:
         const DeviceState &state; //!< The emulator state object
         std::array<WaveBuffer, 4> waveBuffers; //!< An array containing the state of all four wave buffers
-        std::vector<i16> sampleBuffer; //!< A buffer containing processed sample data
+        std::vector<i16> samples; //!< A vector containing processed sample data
         skyline::audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a stream
 
         bool acquired{false}; //!< If the voice is in use
         bool bufferReload{true}; //!< If the buffer needs to be updated
-        uint bufferIndex{}; //!< The index of the wave buffer currently in use
-        int sampleOffset{}; //!< The offset in the sample data of the current wave buffer
-        int sampleRate{}; //!< The sample rate of the sample data
-        int channelCount{}; //!< The amount of channels in the sample data
+        u8 bufferIndex{}; //!< The index of the wave buffer currently in use
+        u32 sampleOffset{}; //!< The offset in the sample data of the current wave buffer
+        u32 sampleRate{}; //!< The sample rate of the sample data
+        u8 channelCount{}; //!< The amount of channels in the sample data
         skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The playback state of the voice
-        skyline::audio::PcmFormat pcmFormat{skyline::audio::PcmFormat::Invalid}; //!< The PCM format used for guest audio data
+        skyline::audio::AudioFormat format{skyline::audio::AudioFormat::Invalid}; //!< The format used for guest audio data
 
         /**
-         * @brief Updates the sample buffer with data from the current wave buffer and processes it
+         * @brief This updates the sample buffer with data from the current wave buffer and processes it
          */
         void UpdateBuffers();
 
@@ -110,7 +110,7 @@ namespace skyline::service::audio::IAudioRenderer {
          * @brief Sets the current wave buffer index to use
          * @param index The index to use
          */
-        void SetWaveBufferIndex(uint index);
+        void SetWaveBufferIndex(u8 index);
 
       public:
         VoiceOut output{}; //!< The current output state
@@ -119,20 +119,20 @@ namespace skyline::service::audio::IAudioRenderer {
         Voice(const DeviceState &state);
 
         /**
-         * @brief Reads the input voice data from the guest and sets internal data based off it
+         * @brief This reads the input voice data from the guest and sets internal data based off it
          * @param input The input data struct from guest
          */
         void ProcessInput(const VoiceIn &input);
 
         /**
-         * @brief Obtains the voices audio sample data, updating it if required
+         * @brief This obtains the voices audio sample data, updating it if required
          * @param maxSamples The maximum amount of samples the output buffer should contain
          * @return A vector of I16 PCM sample data
          */
-        std::vector<i16> &GetBufferData(int maxSamples, int &outOffset, int &outSize);
+        std::vector<i16> &GetBufferData(u32 maxSamples, u32 &outOffset, u32 &outSize);
 
         /**
-         * @return Whether the voice is currently playable
+         * @return If the voice is currently playable
          */
         inline bool Playable() {
             return acquired && playbackState == skyline::audio::AudioOutState::Started && waveBuffers[bufferIndex].size != 0;
