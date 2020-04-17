@@ -5,8 +5,8 @@
 #include "IAudioRenderer.h"
 
 namespace skyline::service::audio::IAudioRenderer {
-    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params)
-        : releaseEvent(std::make_shared<type::KEvent>(state)), rendererParams(params), memoryPoolCount(params.effectCount + params.voiceCount * 4), samplesPerBuffer(state.settings->GetInt("audren_buffer_size")), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
+    IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters)
+        : releaseEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
         {0x0, SFUNC(IAudioRenderer::GetSampleRate)},
         {0x1, SFUNC(IAudioRenderer::GetSampleCount)},
         {0x2, SFUNC(IAudioRenderer::GetMixBufferCount)},
@@ -16,17 +16,17 @@ namespace skyline::service::audio::IAudioRenderer {
         {0x6, SFUNC(IAudioRenderer::Stop)},
         {0x7, SFUNC(IAudioRenderer::QuerySystemEvent)},
     }) {
-        track = state.audio->OpenTrack(constant::ChannelCount, params.sampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(constant::ChannelCount, parameters.sampleRate, [this]() { releaseEvent->Signal(); });
         track->Start();
 
-        memoryPools.resize(memoryPoolCount);
-        effects.resize(rendererParams.effectCount);
-        voices.resize(rendererParams.voiceCount, Voice(state));
+        memoryPools.resize(parameters.effectCount + parameters.voiceCount * 4);
+        effects.resize(parameters.effectCount);
+        voices.resize(parameters.voiceCount, Voice(state));
 
         // Fill track with empty samples that we will triple buffer
-        track->AppendBuffer(std::vector<i16>(), 0);
-        track->AppendBuffer(std::vector<i16>(), 1);
-        track->AppendBuffer(std::vector<i16>(), 2);
+        track->AppendBuffer(0);
+        track->AppendBuffer(1);
+        track->AppendBuffer(2);
     }
 
     IAudioRenderer::~IAudioRenderer() {
@@ -34,15 +34,15 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(rendererParams.sampleRate);
+        response.Push<u32>(parameters.sampleRate);
     }
 
     void IAudioRenderer::GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(rendererParams.sampleCount);
+        response.Push<u32>(parameters.sampleCount);
     }
 
     void IAudioRenderer::GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(rendererParams.subMixCount);
+        response.Push<u32>(parameters.subMixCount);
     }
 
     void IAudioRenderer::GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -57,6 +57,7 @@ namespace skyline::service::audio::IAudioRenderer {
         inputAddress += sizeof(UpdateDataHeader);
         inputAddress += inputHeader.behaviorSize; // Unused
 
+        auto memoryPoolCount = memoryPools.size();
         std::vector<MemoryPoolIn> memoryPoolsIn(memoryPoolCount);
         state.process->ReadMemory(memoryPoolsIn.data(), inputAddress, memoryPoolCount * sizeof(MemoryPoolIn));
         inputAddress += inputHeader.memoryPoolSize;
@@ -65,15 +66,15 @@ namespace skyline::service::audio::IAudioRenderer {
             memoryPools[i].ProcessInput(memoryPoolsIn[i]);
 
         inputAddress += inputHeader.voiceResourceSize;
-        std::vector<VoiceIn> voicesIn(rendererParams.voiceCount);
-        state.process->ReadMemory(voicesIn.data(), inputAddress, rendererParams.voiceCount * sizeof(VoiceIn));
+        std::vector<VoiceIn> voicesIn(parameters.voiceCount);
+        state.process->ReadMemory(voicesIn.data(), inputAddress, parameters.voiceCount * sizeof(VoiceIn));
         inputAddress += inputHeader.voiceSize;
 
         for (auto i = 0; i < voicesIn.size(); i++)
             voices[i].ProcessInput(voicesIn[i]);
 
-        std::vector<EffectIn> effectsIn(rendererParams.effectCount);
-        state.process->ReadMemory(effectsIn.data(), inputAddress, rendererParams.effectCount * sizeof(EffectIn));
+        std::vector<EffectIn> effectsIn(parameters.effectCount);
+        state.process->ReadMemory(effectsIn.data(), inputAddress, parameters.effectCount * sizeof(EffectIn));
 
         for (auto i = 0; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
@@ -83,10 +84,10 @@ namespace skyline::service::audio::IAudioRenderer {
         UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,
             .behaviorSize = 0xb0,
-            .memoryPoolSize = (rendererParams.effectCount + rendererParams.voiceCount * 4) * static_cast<u32>(sizeof(MemoryPoolOut)),
-            .voiceSize = rendererParams.voiceCount * static_cast<u32>(sizeof(VoiceOut)),
-            .effectSize = rendererParams.effectCount * static_cast<u32>(sizeof(EffectOut)),
-            .sinkSize = rendererParams.sinkCount * 0x20,
+            .memoryPoolSize = (parameters.effectCount + parameters.voiceCount * 4) * static_cast<u32>(sizeof(MemoryPoolOut)),
+            .voiceSize = parameters.voiceCount * static_cast<u32>(sizeof(VoiceOut)),
+            .effectSize = parameters.effectCount * static_cast<u32>(sizeof(EffectOut)),
+            .sinkSize = parameters.sinkCount * 0x20,
             .performanceManagerSize = 0x10,
             .elapsedFrameCountInfoSize = 0x0
         };
@@ -129,38 +130,37 @@ namespace skyline::service::audio::IAudioRenderer {
 
         for (auto &tag : released) {
             MixFinalBuffer();
-            track->AppendBuffer(sampleBuffer, tag);
+            track->AppendBuffer(tag, sampleBuffer.data(), sampleBuffer.size());
         }
     }
 
     void IAudioRenderer::MixFinalBuffer() {
-        int setIndex = 0;
-        sampleBuffer.resize(static_cast<size_t>(samplesPerBuffer * constant::ChannelCount));
+        u32 writtenSamples = 0;
 
         for (auto &voice : voices) {
             if (!voice.Playable())
                 continue;
 
-            int bufferOffset = 0;
-            int pendingSamples = samplesPerBuffer;
+            u32 bufferOffset{};
+            u32 pendingSamples = constant::MixBufferSize;
 
             while (pendingSamples > 0) {
-                int voiceBufferSize = 0;
-                int voiceBufferOffset = 0;
-                std::vector<i16> &voiceSamples = voice.GetBufferData(pendingSamples, voiceBufferOffset, voiceBufferSize);
+                u32 voiceBufferOffset{};
+                u32 voiceBufferSize{};
+                auto &voiceSamples = voice.GetBufferData(pendingSamples, voiceBufferOffset, voiceBufferSize);
 
                 if (voiceBufferSize == 0)
                     break;
 
                 pendingSamples -= voiceBufferSize / constant::ChannelCount;
 
-                for (int i = voiceBufferOffset; i < voiceBufferOffset + voiceBufferSize; i++) {
-                    if (setIndex == bufferOffset) {
-                        sampleBuffer[bufferOffset] = static_cast<i16>(std::clamp(static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume), static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                for (auto index = voiceBufferOffset; index < voiceBufferOffset + voiceBufferSize; index++) {
+                    if (writtenSamples == bufferOffset) {
+                        sampleBuffer[bufferOffset] = skyline::audio::Saturate<i16, i32>(voiceSamples[index] * voice.volume);
 
-                        setIndex++;
+                        writtenSamples++;
                     } else {
-                        sampleBuffer[bufferOffset] += static_cast<i16>(std::clamp(static_cast<int>(sampleBuffer[voiceSamples[i]]) + static_cast<int>(static_cast<float>(voiceSamples[i]) * voice.volume), static_cast<int>(std::numeric_limits<i16>::min()), static_cast<int>(std::numeric_limits<i16>::max())));
+                        sampleBuffer[bufferOffset] = skyline::audio::Saturate<i16, i32>(sampleBuffer[bufferOffset] + (voiceSamples[index] * voice.volume));
                     }
 
                     bufferOffset++;

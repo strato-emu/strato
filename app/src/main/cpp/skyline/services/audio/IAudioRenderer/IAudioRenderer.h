@@ -21,7 +21,7 @@ namespace skyline {
         /**
          * @brief The parameters used to configure an IAudioRenderer
          */
-        struct AudioRendererParams {
+        struct AudioRendererParameters {
             u32 sampleRate; //!< The sample rate to use for the renderer
             u32 sampleCount; //!< The buffer sample count
             u32 mixBufferCount; //!< The amount of mix buffers to use
@@ -36,7 +36,7 @@ namespace skyline {
             u32 _unk0_;
             u32 revision; //!< The revision of audren to use
         };
-        static_assert(sizeof(AudioRendererParams) == 0x34);
+        static_assert(sizeof(AudioRendererParameters) == 0x34);
 
         /**
          * @brief Header containing information about the software side audren implementation
@@ -63,21 +63,19 @@ namespace skyline {
         */
         class IAudioRenderer : public BaseService {
           private:
-            AudioRendererParams rendererParams; //!< The parameters to use for the renderer
+            AudioRendererParameters parameters; //!< The parameters to use for the renderer
             RevisionInfo revisionInfo{}; //!< Stores info about supported features for the audren revision used
             std::shared_ptr<skyline::audio::AudioTrack> track; //!< The audio track associated with the audio renderer
             std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
             std::vector<MemoryPool> memoryPools; //!< An vector of all memory pools that the guest may need
             std::vector<Effect> effects; //!< An vector of all effects that the guest may need
             std::vector<Voice> voices; //!< An vector of all voices that the guest may need
-            std::vector<i16> sampleBuffer; //!< The final output data that is appended to the stream
-
+            std::array<i16, constant::MixBufferSize * constant::ChannelCount> sampleBuffer; //!< The final output data that is appended to the stream
             skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The current state of playback
-            const size_t memoryPoolCount; //!< The amount of memory pools the guest may need
-            const int samplesPerBuffer; //!< The amount of samples each appended buffer should contain
 
             /**
              * @brief Obtains new sample data from voices and mixes it together into the sample buffer
+             * @return The amount of samples present in the buffer
              */
             void MixFinalBuffer();
 
@@ -88,9 +86,9 @@ namespace skyline {
 
           public:
             /**
-             * @param params The parameters to use for rendering
+             * @param parameters The parameters to use for rendering
              */
-            IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParams &params);
+            IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters);
 
             /**
              * @brief Closes the audio track

@@ -47,10 +47,15 @@ namespace skyline::service::audio {
 
         state.logger->Debug("IAudioOut: Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
 
-        tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
-        state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
-        resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
-        track->AppendBuffer(tmpSampleBuffer, tag);
+        if(sampleRate != constant::SampleRate) {
+            tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
+            state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
+            resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
+
+            track->AppendBuffer(tag, tmpSampleBuffer);
+        } else {
+            track->AppendBuffer(tag, state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize);
+        }
     }
 
     void IAudioOut::RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

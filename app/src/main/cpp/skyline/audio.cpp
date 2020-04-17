@@ -5,67 +5,68 @@
 
 namespace skyline::audio {
     Audio::Audio(const DeviceState &state) : state(state), oboe::AudioStreamCallback() {
-        oboe::AudioStreamBuilder builder;
+        builder.setChannelCount(constant::ChannelCount);
+        builder.setSampleRate(constant::SampleRate);
+        builder.setFormat(constant::PcmFormat);
+        builder.setFramesPerCallback(constant::MixBufferSize);
+        builder.setUsage(oboe::Usage::Game);
+        builder.setCallback(this);
 
-        builder.setChannelCount(constant::ChannelCount)
-            ->setSampleRate(constant::SampleRate)
-            ->setFormat(constant::PcmFormat)
-            ->setCallback(this)
-            ->openManagedStream(outputStream);
-
+        builder.openManagedStream(outputStream);
         outputStream->requestStart();
     }
 
-    Audio::~Audio() {
-        outputStream->close();
-    }
-
     std::shared_ptr<AudioTrack> Audio::OpenTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback) {
-        std::shared_ptr<AudioTrack> track = std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback);
+        std::lock_guard trackGuard(trackMutex);
+
+        auto track = std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback);
         audioTracks.push_back(track);
 
         return track;
     }
 
     void Audio::CloseTrack(std::shared_ptr<AudioTrack> &track) {
+        std::lock_guard trackGuard(trackMutex);
+
         audioTracks.erase(std::remove(audioTracks.begin(), audioTracks.end(), track), audioTracks.end());
         track.reset();
     }
 
     oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
         i16 *destBuffer = static_cast<i16 *>(audioData);
-        uint setIndex = 0;
-        size_t sampleI16Size = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
+        size_t streamSamples = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
+        size_t writtenSamples = 0;
+
+        std::unique_lock trackLock(trackMutex);
 
         for (auto &track : audioTracks) {
             if (track->playbackState == AudioOutState::Stopped)
                 continue;
 
-            track->bufferLock.lock();
+            std::lock_guard bufferGuard(track->bufferLock);
 
-            std::queue<i16> &srcBuffer = track->sampleQueue;
-            size_t amount = std::min(srcBuffer.size(), sampleI16Size);
+            auto trackSamples = track->samples.Read(destBuffer, streamSamples, [](i16 *source, i16 *destination) {
+                *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
+            }, writtenSamples);
 
-            for (size_t i = 0; i < amount; i++) {
-                if (setIndex == i) {
-                    destBuffer[i] = srcBuffer.front();
-                    setIndex++;
-                } else {
-                    destBuffer[i] += srcBuffer.front();
-                }
+            writtenSamples = std::max(trackSamples, writtenSamples);
 
-                srcBuffer.pop();
-            }
-
-            track->sampleCounter += amount;
+            track->sampleCounter += trackSamples;
             track->CheckReleasedBuffers();
-
-            track->bufferLock.unlock();
         }
 
-        if (sampleI16Size > setIndex)
-            memset(destBuffer, 0, (sampleI16Size - setIndex) * 2);
+        trackLock.unlock();
+
+        if (streamSamples > writtenSamples)
+            memset(destBuffer + writtenSamples, 0, (streamSamples - writtenSamples) * sizeof(i16));
 
         return oboe::DataCallbackResult::Continue;
+    }
+
+    void Audio::onErrorAfterClose(oboe::AudioStream *audioStream, oboe::Result error) {
+        if (error == oboe::Result::ErrorDisconnected) {
+            builder.openManagedStream(outputStream);
+            outputStream->requestStart();
+        }
     }
 }

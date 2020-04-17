@@ -17,16 +17,13 @@ namespace skyline::audio {
     class Audio : public oboe::AudioStreamCallback {
       private:
         const DeviceState &state; //!< The state of the device
+        oboe::AudioStreamBuilder builder; //!< The audio stream builder, used to open
         oboe::ManagedStream outputStream; //!< The output oboe audio stream
-        std::vector<std::shared_ptr<audio::AudioTrack>> audioTracks; //!< Vector containing a pointer of every open audio track
+        std::vector<std::shared_ptr<audio::AudioTrack>> audioTracks; //!< A vector of shared_ptr to every open audio track
+        Mutex trackMutex; //!< This mutex is used to ensure that audioTracks isn't modified while it is being used
 
       public:
         Audio(const DeviceState &state);
-
-        /**
-         * @brief The destructor for the audio class
-         */
-        ~Audio();
 
         /**
          * @brief Opens a new track that can be used to play sound
@@ -50,5 +47,12 @@ namespace skyline::audio {
          * @param numFrames The amount of frames the sample data needs to contain
          */
         oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames);
+
+        /**
+         * @brief The callback oboe uses to notify the application about stream closure
+         * @param audioStream The audio stream we are being called by
+         * @param error The error due to which the stream is being closed
+         */
+        void onErrorAfterClose(oboe::AudioStream *audioStream, oboe::Result error);
     };
 }

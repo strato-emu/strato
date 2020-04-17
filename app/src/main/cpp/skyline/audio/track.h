@@ -22,7 +22,7 @@ namespace skyline::audio {
         const u32 sampleRate; //!< The sample rate of the track
 
       public:
-        std::queue<i16> sampleQueue; //!< Queue of all appended buffer data
+        CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A vector of all appended audio samples
         Mutex bufferLock; //!< This mutex ensures that appending to buffers doesn't overlap
 
         AudioOutState playbackState{AudioOutState::Stopped}; //!< The current state of playback
@@ -63,10 +63,20 @@ namespace skyline::audio {
 
         /**
          * @brief Appends audio samples to the output buffer
-         * @param sampleData Reference to a vector containing I16 format pcm data
          * @param tag The tag of the buffer
+         * @param address The address of the audio buffer
+         * @param size The size of the audio buffer in i16 units
          */
-        void AppendBuffer(const std::vector<i16> &sampleData, u64 tag);
+        void AppendBuffer(u64 tag, const i16* address, u64 size);
+
+        /**
+         * @brief Appends audio samples to the output buffer
+         * @param tag The tag of the buffer
+         * @param sampleData A reference to a vector containing I16 format PCM data
+         */
+        void AppendBuffer(u64 tag, const std::vector<i16> &sampleData = {}) {
+            AppendBuffer(tag, sampleData.data(), sampleData.size());
+        }
 
         /**
          * @brief Checks if any buffers have been released and calls the appropriate callback for them
