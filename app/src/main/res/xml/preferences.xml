@@ -43,6 +43,12 @@
                 android:summaryOn="@string/select_action_desc_on"
                 app:key="select_action"
                 app:title="@string/select_action" />
+        <CheckBoxPreference
+                android:defaultValue="false"
+                android:summaryOff="@string/perf_stats_desc_off"
+                android:summaryOn="@string/perf_stats_desc_on"
+                app:key="perf_stats"
+                app:title="@string/perf_stats" />
         <ListPreference
                 android:defaultValue="2"
                 android:entries="@array/log_level"

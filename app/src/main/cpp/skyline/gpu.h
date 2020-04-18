@@ -20,7 +20,7 @@ namespace skyline::gpu {
         ANativeWindow *window; //!< The ANativeWindow to render to
         const DeviceState &state; //!< The state of the device
         bool surfaceUpdate{}; //!< If the surface needs to be updated
-        double prevTime{}; //!< The time passed from the last frame
+        u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
 
       public:
         std::queue<std::shared_ptr<PresentationTexture>> presentationQueue; //!< A queue of all the PresentationTextures to be posted to the display

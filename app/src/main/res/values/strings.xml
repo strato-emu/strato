@@ -32,7 +32,7 @@
     <string name="log_level">Log Level</string>
     <string name="log_compact">Compact Logs</string>
     <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
-    <string name="log_compact_desc_off">The logs will be displayed in a verbose form factor</string>
+    <string name="log_compact_desc_off">Logs will be displayed in a verbose form factor</string>
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
@@ -59,4 +59,7 @@
     <string name="ktstd_description">We use Kotlin Standard Library for accessing convenience functions in Kotlin (Apache License 2.0)</string>
     <string name="mtico">Material Design Icons</string>
     <string name="mtico_description">We use Material Design Icons to have consistent iconography throughout the application</string>
+    <string name="perf_stats">Show Performance Statistics</string>
+    <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
+    <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
 </resources>

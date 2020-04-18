@@ -11,6 +11,8 @@ bool Halt;
 jobject Surface;
 uint FaultCount;
 skyline::GroupMutex JniMtx;
+skyline::u16 fps;
+skyline::u32 frametime;
 
 void signalHandler(int signal) {
     syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
@@ -73,4 +75,12 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *
     else
         Surface = surface;
     JniMtx.unlock();
+}
+
+extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *env, jobject thiz) {
+    return fps;
+}
+
+extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *env, jobject thiz) {
+    return static_cast<float>(frametime) / 100;
 }

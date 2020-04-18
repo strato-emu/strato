@@ -14,8 +14,9 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.PreferenceManager
 import emu.skyline.loader.getRomFormat
-import kotlinx.android.synthetic.main.app_activity.*
+import kotlinx.android.synthetic.main.emu_activity.*
 import java.io.File
 
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
@@ -79,6 +80,16 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private external fun setSurface(surface: Surface?)
 
     /**
+     * This returns the current FPS of the application
+     */
+    private external fun getFps(): Int
+
+    /**
+     * This returns the current frame-time of the application
+     */
+    private external fun getFrametime(): Float
+
+    /**
      * This executes the specified ROM, [preferenceFd] and [logFd] are assumed to be valid beforehand
      *
      * @param rom The URI of the ROM to execute
@@ -101,12 +112,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     }
 
     /**
-     * This sets up [preferenceFd] and [logFd] then calls [executeApplication] for executing the application
+     * This makes the window fullscreen then sets up [preferenceFd] and [logFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.app_activity)
+        setContentView(R.layout.emu_activity)
+
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
 
         val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
         preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)
@@ -114,8 +127,20 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val log = File("${applicationInfo.dataDir}/skyline.log")
         logFd = ParcelFileDescriptor.open(log, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_READ_WRITE)
 
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         game_view.holder.addCallback(this)
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+
+        if (sharedPreferences.getBoolean("perf_stats", false)) {
+            lateinit var perfRunnable: Runnable
+
+            perfRunnable = Runnable {
+                perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
+                perf_stats.postDelayed(perfRunnable, 250)
+            }
+
+            perf_stats.postDelayed(perfRunnable, 250)
+        }
 
         executeApplication(intent.data!!)
     }

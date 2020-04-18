@@ -8,6 +8,8 @@
 
 extern bool Halt;
 extern jobject Surface;
+extern skyline::u16 fps;
+extern skyline::u32 frametime;
 
 namespace skyline::gpu {
     GPU::GPU(const DeviceState &state) : state(state), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
@@ -57,12 +59,16 @@ namespace skyline::gpu {
             vsyncEvent->Signal();
             texture->releaseCallback();
 
-            if (prevTime != 0) {
-                auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-                state.logger->Error("{} ms, {} FPS", (now - prevTime) / 1000, 1000000 / (now - prevTime));
-            }
+            if (frameTimestamp) {
+                auto now = util::GetTimeNs();
 
-            prevTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                frametime = static_cast<u32>((now - frameTimestamp) / 10000); // frametime / 100 is the real ms value, this is to retain the first two decimals
+                fps = static_cast<u16>(1000000000 / (now - frameTimestamp));
+
+                frameTimestamp = now;
+            } else {
+                frameTimestamp = util::GetTimeNs();
+            }
         }
     }
 }
