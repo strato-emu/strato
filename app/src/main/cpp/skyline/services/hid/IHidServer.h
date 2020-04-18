@@ -89,9 +89,9 @@ namespace skyline::service::hid {
             JoyConDevice(const NpadId &id) : id(id) {}
         };
 
-        std::shared_ptr <IAppletResource> resource{}; //!< A shared pointer to the applet resource
-        std::optional <StyleSet> styleSet; //!< The controller styles supported by the application
-        std::unordered_map <NpadId, JoyConDevice> deviceMap; //!< Mapping from a controller's ID to it's corresponding JoyConDevice
+        std::shared_ptr<IAppletResource> resource{}; //!< A shared pointer to the applet resource
+        std::optional<StyleSet> styleSet; //!< The controller styles supported by the application
+        std::unordered_map<NpadId, JoyConDevice> deviceMap; //!< Mapping from a controller's ID to it's corresponding JoyConDevice
         JoyConOrientation orientation{JoyConOrientation::Unset}; //!< The Orientation of the Joy-Con(s)
 
       public:

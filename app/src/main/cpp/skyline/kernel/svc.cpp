@@ -33,24 +33,24 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", address);
             return;
         }
-        
+
         auto size = state.ctx->registers.x1;
         if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
-        
+
         memory::MemoryAttribute mask{.value = state.ctx->registers.w2};
         memory::MemoryAttribute value{.value = state.ctx->registers.w3};
-        
+
         auto maskedValue = mask.value | value.value;
         if (maskedValue != mask.value || !mask.isUncached || mask.isDeviceShared || mask.isBorrowed || mask.isIpcLocked) {
             state.ctx->registers.w0 = constant::status::InvCombination;
             state.logger->Warn("svcSetMemoryAttribute: 'mask' invalid: 0x{:X}, 0x{:X}", mask.value, value.value);
             return;
         }
-        
+
         auto chunk = state.os->memory.GetChunk(address);
         auto block = state.os->memory.GetBlock(address);
         if (!chunk || !block) {
@@ -58,16 +58,16 @@ namespace skyline::kernel::svc {
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", address);
             return;
         }
-        
+
         if (!chunk->state.attributeChangeAllowed) {
             state.ctx->registers.w0 = constant::status::InvState;
             state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", address);
             return;
         }
-        
+
         block->attributes.isUncached = value.isUncached;
         MemoryManager::InsertBlock(chunk, *block);
-        
+
         state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", !block->attributes.isUncached, address, size);
         state.ctx->registers.w0 = constant::status::Success;
     }
@@ -76,19 +76,19 @@ namespace skyline::kernel::svc {
         auto destination = state.ctx->registers.x0;
         auto source = state.ctx->registers.x1;
         auto size = state.ctx->registers.x2;
-        
+
         if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
-        
+
         if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcMapMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
-        
+
         auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
         if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;

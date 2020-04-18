@@ -138,7 +138,7 @@ namespace skyline {
             Type object{};
             auto offset = 0;
 
-            for(auto& character : string) {
+            for (auto &character : string) {
                 object |= static_cast<Type>(character) << offset;
                 offset += sizeof(character) * 8;
             }

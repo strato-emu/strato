@@ -36,7 +36,7 @@ namespace skyline::audio {
         AudioTrack(const u8 channelCount, const u32 sampleRate, const std::function<void()> &releaseCallback);
 
         /**
-         * @brief Starts audio playback using data from appended buffers.
+         * @brief Starts audio playback using data from appended buffers
          */
         inline void Start() {
             playbackState = AudioOutState::Started;
@@ -67,7 +67,7 @@ namespace skyline::audio {
          * @param address The address of the audio buffer
          * @param size The size of the audio buffer in i16 units
          */
-        void AppendBuffer(u64 tag, const i16* address, u64 size);
+        void AppendBuffer(u64 tag, const i16 *address, u64 size);
 
         /**
          * @brief Appends audio samples to the output buffer

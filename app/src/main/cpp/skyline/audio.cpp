@@ -17,7 +17,7 @@ namespace skyline::audio {
     }
 
     std::shared_ptr<AudioTrack> Audio::OpenTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback) {
-        std::lock_guard trackGuard(trackMutex);
+        std::lock_guard trackGuard(trackLock);
 
         auto track = std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback);
         audioTracks.push_back(track);
@@ -26,7 +26,7 @@ namespace skyline::audio {
     }
 
     void Audio::CloseTrack(std::shared_ptr<AudioTrack> &track) {
-        std::lock_guard trackGuard(trackMutex);
+        std::lock_guard trackGuard(trackLock);
 
         audioTracks.erase(std::remove(audioTracks.begin(), audioTracks.end(), track), audioTracks.end());
         track.reset();
@@ -37,7 +37,7 @@ namespace skyline::audio {
         size_t streamSamples = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
         size_t writtenSamples = 0;
 
-        std::unique_lock trackLock(trackMutex);
+        std::unique_lock trackGuard(trackLock);
 
         for (auto &track : audioTracks) {
             if (track->playbackState == AudioOutState::Stopped)
@@ -55,7 +55,7 @@ namespace skyline::audio {
             track->CheckReleasedBuffers();
         }
 
-        trackLock.unlock();
+        trackGuard.unlock();
 
         if (streamSamples > writtenSamples)
             memset(destBuffer + writtenSamples, 0, (streamSamples - writtenSamples) * sizeof(i16));

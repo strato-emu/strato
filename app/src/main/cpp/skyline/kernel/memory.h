@@ -280,7 +280,7 @@ namespace skyline {
              * @param address The address to find a block at
              * @return A pointer to the BlockDescriptor or nullptr in case chunk was not found
              */
-            BlockDescriptor *GetBlock(u64 address, ChunkDescriptor* chunk = nullptr);
+            BlockDescriptor *GetBlock(u64 address, ChunkDescriptor *chunk = nullptr);
 
             /**
              * @brief Inserts a chunk into the memory map

@@ -43,7 +43,7 @@ namespace skyline::audio {
         return bufferIds;
     }
 
-    void AudioTrack::AppendBuffer(u64 tag, const i16* address, u64 size) {
+    void AudioTrack::AppendBuffer(u64 tag, const i16 *address, u64 size) {
         BufferIdentifier identifier;
 
         identifier.released = false;

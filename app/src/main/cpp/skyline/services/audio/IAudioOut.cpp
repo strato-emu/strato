@@ -47,7 +47,7 @@ namespace skyline::service::audio {
 
         state.logger->Debug("IAudioOut: Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
 
-        if(sampleRate != constant::SampleRate) {
+        if (sampleRate != constant::SampleRate) {
             tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
             state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
             resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);

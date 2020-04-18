@@ -1,4 +1,5 @@
 <resources>
+
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
@@ -7,10 +8,12 @@
         <item name="colorSecondaryVariant">@color/colorSecondaryDark</item>
         <item name="colorOnSecondary">@color/colorOnSecondary</item>
     </style>
+
     <style name="AppTheme.ActionBar" parent="">
         <item name="android:textColorPrimary">@color/colorOnPrimary</item>
         <item name="android:textColorSecondary">@color/colorOnPrimary</item>
     </style>
+
     <style name="roundedAppImage" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">6dp</item>

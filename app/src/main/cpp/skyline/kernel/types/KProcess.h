@@ -282,7 +282,7 @@ namespace skyline {
             HandleOut<objectClass> NewHandle(objectArgs... args) {
                 std::shared_ptr<objectClass> item;
                 if constexpr (std::is_same<objectClass, KThread>())
-                item = std::make_shared<objectClass>(state, handleIndex, args...);
+                    item = std::make_shared<objectClass>(state, handleIndex, args...);
                 else
                     item = std::make_shared<objectClass>(state, args...);
                 handles[handleIndex] = std::static_pointer_cast<KObject>(item);
@@ -310,19 +310,19 @@ namespace skyline {
             std::shared_ptr<objectClass> GetHandle(KHandle handle) {
                 KType objectType;
                 if constexpr(std::is_same<objectClass, KThread>())
-                objectType = KType::KThread;
+                    objectType = KType::KThread;
                 else if constexpr(std::is_same<objectClass, KProcess>())
-                objectType = KType::KProcess;
+                    objectType = KType::KProcess;
                 else if constexpr(std::is_same<objectClass, KSharedMemory>())
-                objectType = KType::KSharedMemory;
+                    objectType = KType::KSharedMemory;
                 else if constexpr(std::is_same<objectClass, KTransferMemory>())
-                objectType = KType::KTransferMemory;
+                    objectType = KType::KTransferMemory;
                 else if constexpr(std::is_same<objectClass, KPrivateMemory>())
-                objectType = KType::KPrivateMemory;
+                    objectType = KType::KPrivateMemory;
                 else if constexpr(std::is_same<objectClass, KSession>())
-                objectType = KType::KSession;
+                    objectType = KType::KSession;
                 else if constexpr(std::is_same<objectClass, KEvent>())
-                objectType = KType::KEvent;
+                    objectType = KType::KEvent;
                 else
                     throw exception("KProcess::GetHandle couldn't determine object type");
                 try {

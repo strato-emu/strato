@@ -105,7 +105,7 @@ namespace skyline::service {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
-        if(!submodule)
+        if (!submodule)
             serviceMap[serviceObject->serviceType] = serviceObject;
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->serviceName, handle);
     }

@@ -93,7 +93,7 @@ namespace skyline::kernel {
     }
 
     void MemoryManager::InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block) {
-        if(chunk->address + chunk->size < block.address + block.size)
+        if (chunk->address + chunk->size < block.address + block.size)
             throw exception("InsertBlock: Inserting block past chunk end is not allowed");
 
         for (auto iter = chunk->blockList.begin(); iter != chunk->blockList.end(); iter++) {

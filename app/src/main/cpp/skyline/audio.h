@@ -20,7 +20,7 @@ namespace skyline::audio {
         oboe::AudioStreamBuilder builder; //!< The audio stream builder, used to open
         oboe::ManagedStream outputStream; //!< The output oboe audio stream
         std::vector<std::shared_ptr<audio::AudioTrack>> audioTracks; //!< A vector of shared_ptr to every open audio track
-        Mutex trackMutex; //!< This mutex is used to ensure that audioTracks isn't modified while it is being used
+        Mutex trackLock; //!< This mutex is used to ensure that audioTracks isn't modified while it is being used
 
       public:
         Audio(const DeviceState &state);
