@@ -66,11 +66,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                         runOnUiThread {
                             if (!foundCurrent) {
                                 adapter.addHeader(loader.format.name)
-                                foundCurrent = true
                             }
 
                             adapter.addItem(AppItem(entry))
                         }
+
+                        foundCurrent = true
                     }
 
                     document.close()

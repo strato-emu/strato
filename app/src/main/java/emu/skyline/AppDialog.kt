@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.drawable.toBitmap
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.EmulationActivity
 import emu.skyline.R
@@ -33,6 +34,16 @@ class AppDialog(val item: AppItem? = null) : BottomSheetDialogFragment() {
      */
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return requireActivity().layoutInflater.inflate(R.layout.app_dialog, container)
+    }
+
+    /**
+     * This expands the bottom sheet so that it's fully visible
+     */
+    override fun onStart() {
+        super.onStart()
+
+        val behavior = BottomSheetBehavior.from(requireView().parent as View)
+        behavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
     /**

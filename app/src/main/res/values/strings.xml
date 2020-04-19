@@ -25,7 +25,7 @@
     <!-- Settings -->
     <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
-    <string name="layout_type">Game Container Layout</string>
+    <string name="layout_type">Game Display Layout</string>
     <string name="select_action">Always Show Game Information</string>
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
