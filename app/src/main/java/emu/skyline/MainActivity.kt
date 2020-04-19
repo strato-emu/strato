@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
-// Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+/*
+ * SPDX-License-Identifier: MPL-2.0
+ * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+ */
 
 package emu.skyline
 

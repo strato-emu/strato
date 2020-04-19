@@ -78,7 +78,7 @@
             android:title="@string/licenses"
             app:initialExpandedChildrenCount="3">
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/lgpl3_license"
+                libraryLicense="@string/mpl2_license"
                 libraryUrl="https://github.com/skyline-emu/skyline"
                 app:summary="@string/skyline_license_description"
                 app:title="@string/app_name" />
