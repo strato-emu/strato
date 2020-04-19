@@ -111,7 +111,7 @@ namespace skyline {
             };
 
             KHandle handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
-            pid_t pid; //!< The PID of the main thread
+            pid_t pid; //!< The PID of the process or TGID of the threads
             int memFd; //!< The file descriptor to the memory of the process
             std::unordered_map<KHandle, std::shared_ptr<KObject>> handles; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
             std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object

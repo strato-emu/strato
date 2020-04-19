@@ -25,7 +25,7 @@ namespace skyline::kernel::type {
         std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
         std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
         KHandle handle; // The handle of the object in the handle table
-        pid_t pid; //!< The PID of the current thread (As in kernel PID and not PGID [In short, Linux implements threads as processes that share a lot of stuff at the kernel level])
+        pid_t tid; //!< The TID of the current thread
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
         u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
         u8 priority; //!< The priority of a thread in Nintendo format
@@ -33,7 +33,7 @@ namespace skyline::kernel::type {
         /**
          * @param state The state of the device
          * @param handle The handle of the current thread
-         * @param selfPid The PID of this thread
+         * @param selfTid The TID of this thread
          * @param entryPoint The address to start execution at
          * @param entryArg An argument to pass to the process on entry
          * @param stackTop The top of the stack
@@ -42,7 +42,7 @@ namespace skyline::kernel::type {
          * @param parent The parent process of this thread
          * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KThread(const DeviceState &state, KHandle handle, pid_t selfPid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory);
+        KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
         /**
          * @brief Kills the thread and deallocates the memory allocated for stack.

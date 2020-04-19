@@ -231,7 +231,7 @@ namespace skyline::kernel::svc {
         }
 
         auto thread = state.process->CreateThread(entryAddress, entryArgument, stackTop, priority);
-        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->pid);
+        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->tid);
 
         state.ctx->registers.w1 = thread->handle;
         state.ctx->registers.w0 = constant::status::Success;
@@ -241,7 +241,7 @@ namespace skyline::kernel::svc {
         auto handle = state.ctx->registers.w0;
         try {
             auto thread = state.process->GetHandle<type::KThread>(handle);
-            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->pid);
+            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->tid);
             thread->Start();
             state.ctx->registers.w0 = constant::status::Success;
         } catch (const std::exception &) {
@@ -251,8 +251,8 @@ namespace skyline::kernel::svc {
     }
 
     void ExitThread(DeviceState &state) {
-        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->pid);
-        state.os->KillThread(state.thread->pid);
+        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->tid);
+        state.os->KillThread(state.thread->tid);
     }
 
     void SleepThread(DeviceState &state) {
@@ -610,9 +610,9 @@ namespace skyline::kernel::svc {
         pid_t pid{};
 
         if (handle != threadSelf)
-            pid = state.process->GetHandle<type::KThread>(handle)->pid;
+            pid = state.process->GetHandle<type::KThread>(handle)->tid;
         else
-            pid = state.thread->pid;
+            pid = state.thread->tid;
 
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
 

@@ -7,8 +7,8 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, pid_t selfPid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory)
-        : handle(handle), pid(selfPid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory)
+        : handle(handle), tid(selfTid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state, KType::KThread) {
         UpdatePriority(priority);
     }
 
@@ -18,11 +18,11 @@ namespace skyline::kernel::type {
 
     void KThread::Start() {
         if (status == Status::Created) {
-            if (pid == parent->pid)
+            if (tid == parent->pid)
                 parent->status = KProcess::Status::Started;
             status = Status::Running;
 
-            state.nce->StartThread(entryArg, handle, parent->threads.at(pid));
+            state.nce->StartThread(entryArg, handle, parent->threads.at(tid));
         }
     }
 
@@ -30,6 +30,7 @@ namespace skyline::kernel::type {
         if (status != Status::Dead) {
             status = Status::Dead;
             Signal();
+            tgkill(parent->pid, tid, SIGKILL);
         }
     }
 
@@ -38,7 +39,7 @@ namespace skyline::kernel::type {
         auto linuxPriority =
             static_cast<int8_t>(constant::AndroidPriority.first + ((static_cast<float>(constant::AndroidPriority.second - constant::AndroidPriority.first) / static_cast<float>(constant::SwitchPriority.second - constant::SwitchPriority.first)) * (static_cast<float>(priority) - constant::SwitchPriority.first))); // Resize range SwitchPriority (Nintendo Priority) to AndroidPriority (Android Priority)
 
-        if (setpriority(PRIO_PROCESS, static_cast<id_t>(pid), linuxPriority) == -1)
-            throw exception("Couldn't set process priority to {} for PID: {}", linuxPriority, pid);
+        if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), linuxPriority) == -1)
+            throw exception("Couldn't set process priority to {} for PID: {}", linuxPriority, tid);
     }
 }

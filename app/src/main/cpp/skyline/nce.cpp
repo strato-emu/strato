@@ -155,8 +155,8 @@ namespace skyline {
         ctx->registers.x1 = handle;
         ctx->state = ThreadState::WaitRun;
 
-        state.logger->Debug("Starting kernel thread for guest thread: {}", thread->pid);
-        threadMap[thread->pid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->pid);
+        state.logger->Debug("Starting kernel thread for guest thread: {}", thread->tid);
+        threadMap[thread->tid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->tid);
     }
 
     void NCE::ThreadTrace(u16 numHist, ThreadContext *ctx) {
