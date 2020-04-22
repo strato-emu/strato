@@ -9,7 +9,7 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {
+    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {
         if (address && !util::PageAligned(address))
             throw exception("KSharedMemory was created with non-page-aligned address: 0x{:X}", address);
 

@@ -8,7 +8,7 @@
 namespace skyline::kernel {
     OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, jvmManager, settings, logger), memory(state), serviceManager(state) {}
 
-    void OS::Execute(const int romFd, const TitleFormat romType) {
+    void OS::Execute(int romFd, TitleFormat romType) {
         std::shared_ptr<loader::Loader> loader;
 
         if (romType == TitleFormat::NRO) {
@@ -33,7 +33,7 @@ namespace skyline::kernel {
         auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission{true, true, false}, memory::states::Reserved);
         tlsMem->guest = tlsMem->kernel;
 
-        pid_t pid = clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), reinterpret_cast<void *>(stack->guest.address + stackSize), CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address));
+        auto pid = clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), reinterpret_cast<void *>(stack->guest.address + stackSize), CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address));
         if (pid == -1)
             throw exception("Call to clone() has failed: {}", strerror(errno));
 

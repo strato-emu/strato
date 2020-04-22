@@ -32,7 +32,7 @@ namespace skyline::audio {
          * @param releaseCallback The callback to call when a buffer has been released
          * @return A shared pointer to a new AudioTrack object
          */
-        std::shared_ptr<AudioTrack> OpenTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback);
+        std::shared_ptr<AudioTrack> OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback);
 
         /**
          * @brief Closes a track and frees its data

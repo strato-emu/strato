@@ -11,9 +11,9 @@ namespace skyline::service::fssrv {
      * @brief These are the possible types of the filesystem
      */
     enum class FsType {
-        Nand,
-        SdCard,
-        GameCard
+        Nand, //!< The internal NAND storage
+        SdCard, //!< The external SDCard storage
+        GameCard, //!< The Game-Card of the inserted game (https://switchbrew.org/wiki/Gamecard)
     };
 
     /**
@@ -21,7 +21,7 @@ namespace skyline::service::fssrv {
      */
     class IFileSystem : public BaseService {
       public:
-        const FsType type;
+        FsType type; //!< The type of filesystem this class represents
 
         IFileSystem(FsType type, const DeviceState &state, ServiceManager &manager);
     };

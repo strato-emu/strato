@@ -146,14 +146,14 @@ namespace skyline {
             * @param priority The priority of the thread
             * @return An instance of KThread class for the corresponding thread
             */
-            std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, u8 priority);
+            std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority);
 
             /**
             * @brief This returns the host address for a specific address in guest memory
             * @param address The corresponding guest address
             * @return The corresponding host address
             */
-            u64 GetHostAddress(const u64 address) const;
+            u64 GetHostAddress(u64 address);
 
             /**
             * @tparam Type The type of the pointer to return
@@ -162,7 +162,7 @@ namespace skyline {
             * @note This can return a nullptr if the address is invalid
             */
             template<typename Type>
-            inline Type *GetPointer(const u64 address) const {
+            inline Type *GetPointer(u64 address) {
                 return reinterpret_cast<Type *>(GetHostAddress(address));
             }
 
@@ -173,7 +173,7 @@ namespace skyline {
             * @return A reference to object with type T
             */
             template<typename Type>
-            inline Type &GetReference(u64 address) const {
+            inline Type &GetReference(u64 address) {
                 auto source = GetPointer<Type>(address);
                 if (source)
                     return *source;
@@ -188,7 +188,7 @@ namespace skyline {
             * @return A copy of the object from guest memory
             */
             template<typename Type>
-            inline Type GetObject(u64 address) const {
+            inline Type GetObject(u64 address) {
                 auto source = GetPointer<Type>(address);
                 if (source) {
                     return *source;
@@ -205,7 +205,7 @@ namespace skyline {
             * @param maxSize The maximum size of the string
             * @return A copy of a string in guest memory
             */
-            inline std::string GetString(u64 address, const size_t maxSize) const {
+            inline std::string GetString(u64 address, size_t maxSize) {
                 auto source = GetPointer<char>(address);
                 if (source)
                     return std::string(source, maxSize);
@@ -221,7 +221,7 @@ namespace skyline {
             * @param address The address of the object
             */
             template<typename Type>
-            inline void WriteMemory(Type &item, u64 address) const {
+            inline void WriteMemory(Type &item, u64 address) {
                 auto destination = GetPointer<Type>(address);
                 if (destination) {
                     *destination = item;
@@ -237,7 +237,7 @@ namespace skyline {
             * @param address The address of the object
             */
             template<typename Type>
-            inline void WriteMemory(const Type &item, u64 address) const {
+            inline void WriteMemory(const Type &item, u64 address) {
                 auto destination = GetPointer<Type>(address);
                 if (destination) {
                     *destination = item;
@@ -253,7 +253,7 @@ namespace skyline {
             * @param size The amount of memory to be read
             * @param forceGuest This flag forces the write to be performed in guest address space
             */
-            void ReadMemory(void *destination, const u64 offset, const size_t size, const bool forceGuest = false) const;
+            void ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest = false);
 
             /**
             * @brief Write to the guest's memory
@@ -262,7 +262,7 @@ namespace skyline {
             * @param size The amount of memory to be written
             * @param forceGuest This flag forces the write to be performed in guest address space
             */
-            void WriteMemory(const void *source, const u64 offset, const size_t size, const bool forceGuest = false) const;
+            void WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest = false);
 
             /**
             * @brief Copy one chunk to another in the guest's memory
@@ -270,7 +270,7 @@ namespace skyline {
             * @param destination The address to write the read data to
             * @param size The amount of memory to be copied
             */
-            void CopyMemory(const u64 source, const u64 destination, const size_t size) const;
+            void CopyMemory(u64 source, u64 destination, size_t size);
 
             /**
             * @brief Creates a new handle to a KObject and adds it to the process handle_table

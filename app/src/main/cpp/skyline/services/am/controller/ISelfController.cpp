@@ -25,10 +25,12 @@ namespace skyline::service::am {
 
     void ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Managed Layer on Default Display");
+
         auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
         if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
+
         response.Push<u64>(0);
     }
 }

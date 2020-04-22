@@ -7,7 +7,7 @@
 #include "KTransferMemory.h"
 
 namespace skyline::kernel::type {
-    KTransferMemory::KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState) : host(host), size(size), KMemory(state, KType::KTransferMemory) {
+    KTransferMemory::KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState) : host(host), size(size), KMemory(state, KType::KTransferMemory) {
         if (address && !util::PageAligned(address))
             throw exception("KTransferMemory was created with non-page-aligned address: 0x{:X}", address);
 
@@ -172,7 +172,7 @@ namespace skyline::kernel::type {
         }
     }
 
-    void KTransferMemory::UpdatePermission(const u64 address, const u64 size, memory::Permission permission) {
+    void KTransferMemory::UpdatePermission(u64 address, u64 size, memory::Permission permission) {
         BlockDescriptor block{
             .address = address,
             .size = size,

@@ -37,7 +37,7 @@ namespace skyline::kernel {
          * @param romFd A FD to the ROM file to execute
          * @param romType The type of the ROM file
          */
-        void Execute(const int romFd, const TitleFormat romType);
+        void Execute(int romFd, TitleFormat romType);
 
         /**
          * @brief Creates a new process

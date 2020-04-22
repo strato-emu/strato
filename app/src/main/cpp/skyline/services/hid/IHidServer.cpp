@@ -30,6 +30,7 @@ namespace skyline::service::hid {
         const auto &buffer = request.inputBuf.at(0);
         size_t numId = buffer.size / sizeof(NpadId);
         u64 address = buffer.address;
+
         for (size_t i = 0; i < numId; i++) {
             auto id = state.process->GetObject<NpadId>(address);
             deviceMap[id] = JoyConDevice(id);
@@ -50,6 +51,7 @@ namespace skyline::service::hid {
     void IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto controllerId = request.Pop<NpadId>();
         auto appletUserId = request.Pop<u64>();
+
         deviceMap[controllerId].assignment = JoyConAssignment::Single;
         deviceMap[controllerId].side = request.Pop<JoyConSide>();
     }

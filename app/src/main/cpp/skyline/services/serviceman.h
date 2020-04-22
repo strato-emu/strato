@@ -22,7 +22,7 @@ namespace skyline::service {
          * @param serviceType The type of service requested
          * @return A shared pointer to an instance of the service
          */
-        std::shared_ptr<BaseService> CreateService(const Service serviceType);
+        std::shared_ptr<BaseService> CreateService(Service serviceType);
 
       public:
         /**
@@ -35,7 +35,7 @@ namespace skyline::service {
          * @param serviceType The type of the service
          * @return Handle to KService object of the service
          */
-        KHandle NewSession(const Service serviceType);
+        KHandle NewSession(Service serviceType);
 
         /**
          * @brief Creates a new service using it's type enum and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
@@ -61,7 +61,7 @@ namespace skyline::service {
          * @note This only works for services created with `NewService` as sub-interfaces used with `RegisterService` can have multiple instances
          */
         template<typename Type>
-        inline std::shared_ptr<Type> GetService(const Service serviceType) {
+        inline std::shared_ptr<Type> GetService(Service serviceType) {
             return std::static_pointer_cast<Type>(serviceMap.at(serviceType));
         }
 
@@ -69,12 +69,12 @@ namespace skyline::service {
          * @brief Closes an existing session to a service
          * @param service The handle of the KService object
          */
-        void CloseSession(const KHandle handle);
+        void CloseSession(KHandle handle);
 
         /**
          * @brief Handles a Synchronous IPC Request
          * @param handle The handle of the object
          */
-        void SyncRequestHandler(const KHandle handle);
+        void SyncRequestHandler(KHandle handle);
     };
 }

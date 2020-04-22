@@ -97,11 +97,6 @@ namespace skyline {
                 }
             };
 
-            namespace format {
-                constexpr Format RGBA8888Unorm{sizeof(u8) * 4, 1, 1, vk::Format::eR8G8B8A8Unorm}; //!< 8-bits per channel 4-channel pixels
-                constexpr Format RGB565Unorm{sizeof(u8) * 2, 1, 1, vk::Format::eR5G6B5UnormPack16}; //!< Red channel: 5-bit, Green channel: 6-bit, Blue channel: 5-bit
-            }
-
             /**
              * @brief This describes the linearity of a texture. Refer to Chapter 20.1 of the Tegra X1 TRM for information.
              */

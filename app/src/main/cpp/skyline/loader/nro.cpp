@@ -6,7 +6,7 @@
 #include "nro.h"
 
 namespace skyline::loader {
-    NroLoader::NroLoader(const int romFd) : Loader(romFd) {
+    NroLoader::NroLoader(int fd) : Loader(fd) {
         ReadOffset((u32 *) &header, 0x0, sizeof(NroHeader));
 
         if (header.magic != util::MakeMagic<u32>("NRO0"))
@@ -27,6 +27,10 @@ namespace skyline::loader {
         u64 textSize = text.size();
         u64 rodataSize = rodata.size();
         u64 dataSize = data.size();
+
+        if (!util::IsAligned(textSize, PAGE_SIZE) || !util::IsAligned(rodataSize, PAGE_SIZE) || !util::IsAligned(dataSize, PAGE_SIZE))
+            throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, rodataSize, dataSize);
+
         u64 patchSize = patch.size() * sizeof(u32);
         u64 padding = util::AlignUp(textSize + rodataSize + dataSize + header.bssSize + patchSize, PAGE_SIZE) - (textSize + rodataSize + dataSize + header.bssSize + patchSize);
 

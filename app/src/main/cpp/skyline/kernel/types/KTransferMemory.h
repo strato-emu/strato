@@ -26,7 +26,7 @@ namespace skyline::kernel::type {
          * @param type The type of the memory
          * @param memState The MemoryState of the chunk of memory
          */
-        KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, const memory::Permission permission, memory::MemoryState memState = memory::states::TransferMemory);
+        KTransferMemory(const DeviceState &state, bool host, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState = memory::states::TransferMemory);
 
         /**
          * @brief Transfers this piece of memory to another process
@@ -50,7 +50,7 @@ namespace skyline::kernel::type {
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(const u64 address, const u64 size, memory::Permission permission);
+        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission);
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory

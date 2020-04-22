@@ -27,7 +27,7 @@ namespace skyline::kernel::type {
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(const u64 address, const u64 size, memory::Permission permission) = 0;
+        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission) = 0;
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory

@@ -24,7 +24,7 @@ namespace skyline::kernel::type {
          * @param permission The permissions for the allocated memory
          * @param memState The MemoryState of the chunk of memory
          */
-        KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState);
+        KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState);
 
         /**
          * @brief Remap a chunk of memory as to change the size occupied by it
@@ -39,7 +39,7 @@ namespace skyline::kernel::type {
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(const u64 address, const u64 size, memory::Permission permission);
+        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission);
 
         /**
          * @brief Updates the permissions of a chunk of mapped memory

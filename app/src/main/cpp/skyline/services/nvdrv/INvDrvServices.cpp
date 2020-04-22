@@ -22,28 +22,35 @@ namespace skyline::service::nvdrv {
 
         std::shared_ptr<device::NvDevice> object;
         switch (type) {
-            case (device::NvDeviceType::nvhost_ctrl):
+            case device::NvDeviceType::nvhost_ctrl:
                 object = std::make_shared<device::NvHostCtrl>(state);
                 break;
-            case (device::NvDeviceType::nvhost_gpu):
-            case (device::NvDeviceType::nvhost_vic):
-            case (device::NvDeviceType::nvhost_nvdec):
+
+            case device::NvDeviceType::nvhost_gpu:
+            case device::NvDeviceType::nvhost_vic:
+            case device::NvDeviceType::nvhost_nvdec:
                 object = std::make_shared<device::NvHostChannel>(state, type);
                 break;
-            case (device::NvDeviceType::nvhost_ctrl_gpu):
+
+            case device::NvDeviceType::nvhost_ctrl_gpu:
                 object = std::make_shared<device::NvHostCtrlGpu>(state);
                 break;
-            case (device::NvDeviceType::nvmap):
+
+            case device::NvDeviceType::nvmap:
                 object = std::make_shared<device::NvMap>(state);
                 break;
-            case (device::NvDeviceType::nvhost_as_gpu):
+
+            case device::NvDeviceType::nvhost_as_gpu:
                 object = std::make_shared<device::NvHostAsGpu>(state);
                 break;
+
             default:
                 throw exception("Cannot find NVDRV device");
         }
+
         deviceMap[type] = object;
         fdMap[fdIndex] = object;
+
         return fdIndex++;
     }
 
@@ -59,6 +66,7 @@ namespace skyline::service::nvdrv {
     void INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto buffer = request.inputBuf.at(0);
         auto path = state.process->GetString(buffer.address, buffer.size);
+
         response.Push<u32>(OpenDevice(path));
         response.Push<u32>(constant::status::Success);
     }
@@ -66,20 +74,24 @@ namespace skyline::service::nvdrv {
     void INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto cmd = request.Pop<u32>();
+
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
         try {
             if (request.inputBuf.empty() || request.outputBuf.empty()) {
                 if (request.inputBuf.empty()) {
                     device::IoctlData data(request.outputBuf.at(0));
+
                     fdMap.at(fd)->HandleIoctl(cmd, data);
                     response.Push<u32>(data.status);
                 } else {
                     device::IoctlData data(request.inputBuf.at(0));
+
                     fdMap.at(fd)->HandleIoctl(cmd, data);
                     response.Push<u32>(data.status);
                 }
             } else {
                 device::IoctlData data(request.inputBuf.at(0), request.outputBuf.at(0));
+
                 fdMap.at(fd)->HandleIoctl(cmd, data);
                 response.Push<u32>(data.status);
             }
@@ -89,16 +101,19 @@ namespace skyline::service::nvdrv {
     }
 
     void INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u32 fd = *reinterpret_cast<u32 *>(request.cmdArg);
+        auto fd = request.Pop<u32>();
         state.logger->Debug("Closing NVDRV device ({})", fd);
+
         try {
             auto device = fdMap.at(fd);
             if (!--device->refCount)
                 deviceMap.erase(device->deviceType);
+
             fdMap.erase(fd);
         } catch (const std::out_of_range &) {
             state.logger->Warn("Trying to close non-existent FD");
         }
+
         response.Push<u32>(constant::status::Success);
     }
 
@@ -111,6 +126,7 @@ namespace skyline::service::nvdrv {
         auto eventId = request.Pop<u32>();
         auto event = std::make_shared<type::KEvent>(state);
         auto handle = state.process->InsertItem<type::KEvent>(event);
+
         state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
         response.copyHandles.push_back(handle);
     }

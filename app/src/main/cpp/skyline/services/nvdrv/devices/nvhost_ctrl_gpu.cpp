@@ -31,6 +31,7 @@ namespace skyline::service::nvdrv::device {
             u32 subregionHeightAlignPixels{0x40};
             u32 subregionCount{0x10};
         } zCullInfo;
+
         state.process->WriteMemory(zCullInfo, buffer.output[0].address);
     }
 
@@ -72,11 +73,13 @@ namespace skyline::service::nvdrv::device {
             u64 chipName;                   // 0x6230326D67 ("gm20b")
             u64 grCompbitStoreBaseHw;       // 0x0 (not supported)
         };
+
         struct Data {
             u64 gpuCharacteristicsBufSize;         // InOut
             u64 gpuCharacteristicsBufAddr;         // In
             GpuCharacteristics gpuCharacteristics; // Out
         } data = state.process->GetObject<Data>(buffer.input[0].address);
+
         data.gpuCharacteristics = {
             .arch = 0x120,
             .impl = 0xB,
@@ -113,7 +116,9 @@ namespace skyline::service::nvdrv::device {
             .chipName = 0x6230326D67,
             .grCompbitStoreBaseHw = 0x0
         };
+
         data.gpuCharacteristicsBufSize = 0xA0;
+
         state.process->WriteMemory(data, buffer.output[0].address);
     }
 
@@ -123,8 +128,10 @@ namespace skyline::service::nvdrv::device {
             u32 reserved[3]; // In
             u64 maskBuf;     // Out
         } data = state.process->GetObject<Data>(buffer.input[0].address);
+
         if (data.maskBufSize)
             data.maskBuf = 0x3;
+
         state.process->WriteMemory(data, buffer.output[0].address);
     }
 
@@ -136,6 +143,7 @@ namespace skyline::service::nvdrv::device {
             .slot = 0x07,
             .mask = 0x01
         };
+
         state.process->WriteMemory(data, buffer.output[0].address);
     }
 }

@@ -46,7 +46,8 @@ Use doxygen style comments for:
 * Enumerations - Use a `/**` block comment with a brief for the enum itself and a `//!<` single-line comment for all the individual items
 
 Notes: 
-* The DeviceState object can be skipped from function argument documentation as well as class members in the constructor
+* The `DeviceState` object or other objects which are systematically used throughout multiple classes such as `ServiceManager` can be skipped from function argument documentation as well as class members in the constructor
+* The `KSession`, `IpcRequest` and `IpcResponse` objects in IPC command function arguments and other such objects (Such as `IoctlData`) can be skipped from function argument documentation if used in those contexts, they will need to be documented if they're used as a class member or something on those lines
 * Any class members don't need to be redundantly documented in the constructor
 
 ### Spacing
@@ -190,16 +191,22 @@ void ClassConstructor(const Class& class) : class(class) {} // Make a copy direc
 Use C++ range-based iterators for any C++ container iteration unless it can be performed better with functional programming (After C++20 when they are merged with the container). In addition, stick to using references/const references using them
 
 ### Usage of auto
-Use `auto` unless a variable needs to be a specific type that isn't automatically deducible.
+Use `auto` to assign a variable the type of the value it's being assigned to, but not where a different type is desired. So, as a rule of thumb always specify the type when setting something from a number rather than depending on `auto`. In addition, prefer not to use `auto` in cases where it's hard to determine the return type due to assigned value being complex.
 ```cpp
-u16 a = 20; // Only if `a` is required to specifically be 16-bit, otherwise integers should be auto
-Handle b = 0x10; // Handle is a specific type that won't be automatically assigned
+u8 a = 20; // `20` won't be stored in a `u8` but rather in a `int` (i32, generally) if `auto` is used 
+auto b = std::make_shared<Something>(); // In this case `auto` is used to avoid typing out `std::shared_ptr<Something>`
 ```
+
+### Primitive Types
+We generally use `in` and `un` where `n = {8, 16, 32, 64}` for our integer primitives in which `i` represents signed integers and `u` represents unsigned integers. In addition, we have some other types such as `KHandle` that are used to make certain operations more clear, use these depending on the context.
 
 ### Constants
 If a variable is constant at compile time use `constexpr`, if it's only used in a local function then place it in the function but if it's used throughout a class then in the corresponding header add the variable to the `skyline::constant` namespace. If a constant is used throughout the codebase, add it to `common.h`.
 
 In addition, try to `constexpr` as much as possible including constructors and functions so that they may be initialized at compile-time and have lesser runtime overhead during usage and certain values can be pre-calculated in advance.
+
+We should also mention that this isn't promoting the usage of `const`, it's use is actually discouraged out of references, in which case it is extremely encouraged. In addition, pointers are a general exception to this, using `const` with them isn't encouraged nor discouraged. Another exception are class functions, they can be made `const` if used from a `const` reference/pointer and don't
+ modify any members but do not do this preemptively.
 
 ## Kotlin
 ### Naming rules

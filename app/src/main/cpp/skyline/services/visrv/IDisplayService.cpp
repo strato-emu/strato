@@ -29,6 +29,7 @@ namespace skyline::service::visrv {
             .string = "dispdrv"
         };
         parcel.WriteData(data);
+
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
     }
 

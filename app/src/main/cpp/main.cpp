@@ -34,7 +34,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     std::signal(SIGABRT, signalHandler);
     std::signal(SIGFPE, signalHandler);
 
-    setpriority(PRIO_PROCESS, static_cast<id_t>(getpid()), skyline::constant::AndroidPriority.second);
+    setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), -8); // Set the priority of this process to the highest value
 
     auto jvmManager = std::make_shared<skyline::JvmManager>(env, instance);
     auto settings = std::make_shared<skyline::Settings>(preferenceFd);
@@ -45,7 +45,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings);
-        const char *romUri = env->GetStringUTFChars(romUriJstring, nullptr);
+        auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
         logger->Info("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);
         os.Execute(romFd, static_cast<skyline::TitleFormat>(romType));

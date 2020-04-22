@@ -5,6 +5,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/nvdrv/INvDrvServices.h>
+#include <gpu/format.h>
 #include "IHOSBinderDriver.h"
 #include "display.h"
 
@@ -123,9 +124,9 @@ namespace skyline::service::hosbinder {
         std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
         auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap);
 
-        if (gbpBuffer->nvmapHandle)
+        if (gbpBuffer->nvmapHandle) {
             nvBuffer = nvmap->handleTable.at(gbpBuffer->nvmapHandle);
-        else {
+        } else {
             for (const auto &object : nvmap->handleTable) {
                 if (object.second->id == gbpBuffer->nvmapId) {
                     nvBuffer = object.second;
@@ -140,10 +141,10 @@ namespace skyline::service::hosbinder {
         switch (gbpBuffer->format) {
             case WINDOW_FORMAT_RGBA_8888:
             case WINDOW_FORMAT_RGBX_8888:
-                format = gpu::texture::format::RGBA8888Unorm;
+                format = gpu::format::RGBA8888Unorm;
                 break;
             case WINDOW_FORMAT_RGB_565:
-                format = gpu::texture::format::RGB565Unorm;
+                format = gpu::format::RGB565Unorm;
                 break;
             default:
                 throw exception("Unknown pixel format used for FB");

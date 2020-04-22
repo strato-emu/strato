@@ -2,16 +2,21 @@
   <code_scheme name="Project" version="173">
     <option name="RIGHT_MARGIN" value="400" />
     <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
+    <option name="FORMATTER_TAGS_ENABLED" value="true" />
     <option name="SOFT_MARGINS" value="80,140" />
+    <JetCodeStyleSettings>
+      <option name="SPACE_BEFORE_TYPE_COLON" value="true" />
+    </JetCodeStyleSettings>
     <Objective-C>
       <option name="INDENT_VISIBILITY_KEYWORDS" value="2" />
       <option name="INDENT_PREPROCESSOR_DIRECTIVE" value="4" />
       <option name="INDENT_DIRECTIVE_AS_CODE" value="true" />
       <option name="KEEP_STRUCTURES_IN_ONE_LINE" value="true" />
+      <option name="KEEP_NESTED_NAMESPACES_IN_ONE_LINE" value="true" />
       <option name="FUNCTION_NON_TOP_AFTER_RETURN_TYPE_WRAP" value="0" />
       <option name="FUNCTION_TOP_AFTER_RETURN_TYPE_WRAP" value="0" />
       <option name="FUNCTION_PARAMETERS_WRAP" value="0" />
-      <option name="FUNCTION_CALL_ARGUMENTS_WRAP" value="5" />
+      <option name="FUNCTION_CALL_ARGUMENTS_WRAP" value="0" />
       <option name="SHIFT_OPERATION_WRAP" value="0" />
       <option name="TEMPLATE_CALL_ARGUMENTS_ALIGN_MULTILINE" value="true" />
       <option name="CLASS_CONSTRUCTOR_INIT_LIST_WRAP" value="0" />
@@ -82,6 +87,7 @@
       <option name="WRAP_LONG_LINES" value="true" />
     </codeStyleSettings>
     <codeStyleSettings language="ObjectiveC">
+      <option name="RIGHT_MARGIN" value="999" />
       <option name="KEEP_CONTROL_STATEMENT_IN_ONE_LINE" value="false" />
       <option name="KEEP_BLANK_LINES_IN_DECLARATIONS" value="1" />
       <option name="KEEP_BLANK_LINES_IN_CODE" value="1" />
@@ -92,7 +98,6 @@
       <option name="TERNARY_OPERATION_WRAP" value="0" />
       <option name="FOR_STATEMENT_WRAP" value="1" />
       <option name="ARRAY_INITIALIZER_WRAP" value="5" />
-      <option name="ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE" value="true" />
       <option name="ASSIGNMENT_WRAP" value="1" />
       <option name="SOFT_MARGINS" value="140" />
       <indentOptions>
@@ -208,6 +213,9 @@
           </section>
         </rules>
       </arrangement>
+    </codeStyleSettings>
+    <codeStyleSettings language="kotlin">
+      <option name="RIGHT_MARGIN" value="999" />
     </codeStyleSettings>
   </code_scheme>
 </component>

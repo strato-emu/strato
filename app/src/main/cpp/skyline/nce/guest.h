@@ -42,6 +42,6 @@ namespace skyline {
          * @param pc The address of PC when the call was being done
          * @param svc The SVC ID of the SVC being called
          */
-        void SvcHandler(u64 pc, u32 svc);
+        void SvcHandler(u64 pc, u16 svc);
     }
 }

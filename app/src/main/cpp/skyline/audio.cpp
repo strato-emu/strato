@@ -16,7 +16,7 @@ namespace skyline::audio {
         outputStream->requestStart();
     }
 
-    std::shared_ptr<AudioTrack> Audio::OpenTrack(const int channelCount, const int sampleRate, const std::function<void()> &releaseCallback) {
+    std::shared_ptr<AudioTrack> Audio::OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback) {
         std::lock_guard trackGuard(trackLock);
 
         auto track = std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback);
@@ -33,8 +33,8 @@ namespace skyline::audio {
     }
 
     oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
-        i16 *destBuffer = static_cast<i16 *>(audioData);
-        size_t streamSamples = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
+        auto destBuffer = static_cast<i16 *>(audioData);
+        auto streamSamples = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
         size_t writtenSamples = 0;
 
         std::unique_lock trackGuard(trackLock);

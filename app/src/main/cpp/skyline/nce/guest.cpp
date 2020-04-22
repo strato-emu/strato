@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <initializer_list> // This is used implicitly
 #include <asm/siginfo.h>
+#include <unistd.h>
+#include <asm/unistd.h>
 #include "guest_common.h"
 
 #define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
@@ -98,54 +100,14 @@ namespace skyline::guest {
     /**
      * @note Do not use any functions that cannot be inlined from this, as this function is placed at an arbitrary address in the guest. In addition, do not use any static variables or globals as the .bss section is not copied into the guest.
      */
-    void SvcHandler(u64 pc, u32 svc) {
+    void SvcHandler(u64 pc, u16 svc) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
         ctx->pc = pc;
-        ctx->commandId = svc;
+        ctx->svc = svc;
 
-        if (svc == 0xB) { // svcSleepThread
-            switch (ctx->registers.x0) {
-                case 0:
-                case 1:
-                case 2: {
-                    asm("MOV X0, XZR\n\t"
-                        "MOV X1, XZR\n\t"
-                        "MOV X2, XZR\n\t"
-                        "MOV X3, XZR\n\t"
-                        "MOV X4, XZR\n\t"
-                        "MOV X5, XZR\n\t"
-                        "MOV X8, #124\n\t" // __NR_sched_yield
-                        "STR LR, [SP, #-16]!\n\t"
-                        "MOV LR, SP\n\t"
-                        "SVC #0\n\t"
-                        "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16":: : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
-                    break;
-                }
-
-                default: {
-                    struct timespec spec = {
-                        .tv_sec = static_cast<time_t>(ctx->registers.x0 / 1000000000),
-                        .tv_nsec = static_cast<long>(ctx->registers.x0 % 1000000000)
-                    };
-                    asm("MOV X0, %0\n\t"
-                        "MOV X1, XZR\n\t"
-                        "MOV X2, XZR\n\t"
-                        "MOV X3, XZR\n\t"
-                        "MOV X4, XZR\n\t"
-                        "MOV X5, XZR\n\t"
-                        "MOV X8, #101\n\t" // __NR_nanosleep
-                        "STR LR, [SP, #-16]!\n\t"
-                        "MOV LR, SP\n\t"
-                        "SVC #0\n\t"
-                        "MOV SP, LR\n\t"
-                        "LDR LR, [SP], #16"::"r"(&spec) : "x0", "x1", "x2", "x3", "x4", "x5", "x8");
-                }
-            }
-            return;
-        } else if (svc == 0x1E) { // svcGetSystemTick
+        if (svc == 0x1E) { // svcGetSystemTick
             asm("STP X1, X2, [SP, #-16]!\n\t"
                 "STR Q0, [SP, #-16]!\n\t"
                 "STR Q1, [SP, #-16]!\n\t"
@@ -175,7 +137,7 @@ namespace skyline::guest {
             if (ctx->state == ThreadState::WaitRun) {
                 break;
             } else if (ctx->state == ThreadState::WaitFunc) {
-                if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
+                if (ctx->threadCall == ThreadCall::Syscall) {
                     SaveCtxStack();
                     LoadCtxTls();
 
@@ -187,7 +149,7 @@ namespace skyline::guest {
 
                     SaveCtxTls();
                     LoadCtxStack();
-                } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
+                } else if (ctx->threadCall == ThreadCall::Memcopy) {
                     auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
                     auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
                     auto size = ctx->registers.x2;
@@ -195,7 +157,7 @@ namespace skyline::guest {
 
                     while (src < end)
                         *(src++) = *(dest++);
-                } else if (ctx->commandId == static_cast<u32>(ThreadCall::Clone)) {
+                } else if (ctx->threadCall == ThreadCall::Clone) {
                     SaveCtxStack();
                     LoadCtxTls();
 
@@ -248,7 +210,15 @@ namespace skyline::guest {
         ctx->state = ThreadState::Running;
     }
 
-    void SignalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
+    [[noreturn]] void Exit(int) {
+        if (gettid() == getpid())
+            syscall(__NR_exit_group, 0);
+        else
+            syscall(__NR_exit, 0);
+        __builtin_unreachable();
+    }
+
+    [[noreturn]] void SignalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
@@ -256,7 +226,7 @@ namespace skyline::guest {
             ctx->registers.regs[index] = ucontext->uc_mcontext.regs[index];
 
         ctx->pc = ucontext->uc_mcontext.pc;
-        ctx->commandId = static_cast<u32>(signal);
+        ctx->signal = static_cast<u32>(signal);
         ctx->faultAddress = ucontext->uc_mcontext.fault_address;
         ctx->sp = ucontext->uc_mcontext.sp;
 
@@ -264,7 +234,7 @@ namespace skyline::guest {
             ctx->state = ThreadState::GuestCrash;
 
             if (ctx->state == ThreadState::WaitRun)
-                exit(0);
+                Exit(0);
         }
     }
 
@@ -279,7 +249,7 @@ namespace skyline::guest {
             if (ctx->state == ThreadState::WaitRun) {
                 break;
             } else if (ctx->state == ThreadState::WaitFunc) {
-                if (ctx->commandId == static_cast<u32>(ThreadCall::Syscall)) {
+                if (ctx->threadCall == ThreadCall::Syscall) {
                     SaveCtxStack();
                     LoadCtxTls();
 
@@ -292,7 +262,7 @@ namespace skyline::guest {
                     SaveCtxTls();
                     LoadCtxStack();
                 }
-            } else if (ctx->commandId == static_cast<u32>(ThreadCall::Memcopy)) {
+            } else if (ctx->threadCall == ThreadCall::Memcopy) {
                 auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
                 auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
                 auto size = ctx->registers.x2;
@@ -310,6 +280,12 @@ namespace skyline::guest {
 
         for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
             sigaction(signal, &sigact, nullptr);
+
+        sigact = {
+            .sa_handler = Exit,
+        };
+
+        sigaction(SIGTERM, &sigact, nullptr);
 
         ctx->state = ThreadState::Running;
 

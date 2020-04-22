@@ -16,29 +16,29 @@ namespace skyline {
             /**
              * @brief This constructor initializes all permissions to false
              */
-            Permission() : r(), w(), x() {};
+            constexpr Permission() : r(), w(), x() {}
 
             /**
              * @param read If memory has read permission
              * @param write If memory has write permission
              * @param execute If memory has execute permission
              */
-            Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {};
+            constexpr Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {}
 
             /**
              * @brief Equality operator between two Permission objects
              */
-            inline bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); };
+            inline bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); }
 
             /**
              * @brief Inequality operator between two Permission objects
              */
-            inline bool operator!=(const Permission &rhs) const { return !operator==(rhs); };
+            inline bool operator!=(const Permission &rhs) const { return !operator==(rhs); }
 
             /**
              * @return The value of the permission struct in Linux format
              */
-            int Get() const {
+            constexpr int Get() const {
                 int perm = 0;
                 if (r)
                     perm |= PROT_READ;
@@ -47,7 +47,7 @@ namespace skyline {
                 if (x)
                     perm |= PROT_EXEC;
                 return perm;
-            };
+            }
 
             bool r; //!< The permission to read
             bool w; //!< The permission to write
@@ -114,9 +114,9 @@ namespace skyline {
          * @brief This structure is used to hold the state of a certain block of memory (https://switchbrew.org/wiki/SVC#MemoryState)
          */
         union MemoryState {
-            constexpr MemoryState(const u32 value) : value(value) {};
+            constexpr MemoryState(const u32 value) : value(value) {}
 
-            constexpr MemoryState() : value(0) {};
+            constexpr MemoryState() : value(0) {}
 
             struct {
                 MemoryType type; //!< The MemoryType of this memory block
@@ -304,9 +304,9 @@ namespace skyline {
             /**
              * @brief Insert a block into a chunk
              * @param chunk The chunk to insert the block into
-             * @param block The block to insert
+             * @param block The block to insert into the chunk
              */
-            static void InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block);
+            static void InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block);
 
             /**
              * @brief This initializes all of the regions in the address space
@@ -314,7 +314,7 @@ namespace skyline {
              * @param size The size of the code region
              * @param type The type of the address space
              */
-            void InitializeRegions(u64 address, u64 size, const memory::AddressSpaceType type);
+            void InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type);
 
           public:
             friend class type::KPrivateMemory;

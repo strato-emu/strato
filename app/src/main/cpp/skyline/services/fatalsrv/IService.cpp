@@ -11,6 +11,6 @@ namespace skyline::service::fatalsrv {
     }) {}
 
     void IService::ThrowFatal(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        throw exception("A fatal error with code: 0x{:X} has caused emulation to stop", *reinterpret_cast<u32 *>(request.cmdArg));
+        throw exception("A fatal error with code: 0x{:X} has caused emulation to stop", request.Pop<u32>());
     }
 }

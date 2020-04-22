@@ -12,6 +12,7 @@ namespace skyline::service::hid {
         hidSharedMemory = std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::HidSharedMemSize, memory::Permission{true, false, false});
         auto handle = state.process->InsertItem<type::KSharedMemory>(hidSharedMemory);
         state.logger->Debug("HID Shared Memory Handle: 0x{:X}", handle);
+
         response.copyHandles.push_back(handle);
     }
 }

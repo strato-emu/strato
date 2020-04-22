@@ -190,12 +190,12 @@ namespace skyline {
              * @brief Creates a MOVZ instruction
              * @param destReg The destination Xn register to store the value in
              * @param imm16 The 16-bit value to store
-             * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
+             * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
             inline constexpr Movz(regs::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
-                hw = static_cast<u8>(shift / 16);
+                hw = shift;
                 sig = 0xA5;
                 sf = 1;
             }
@@ -204,22 +204,22 @@ namespace skyline {
              * @brief Creates a MOVZ instruction
              * @param destReg The destination Wn register to store the value in
              * @param imm16 The 16-bit value to store
-             * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
+             * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
             inline constexpr Movz(regs::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
-                hw = static_cast<u8>(shift / 16);
+                hw = shift;
                 sig = 0xA5;
                 sf = 0;
             }
 
             /**
              * @brief Returns the offset of the instruction
-             * @return The offset encoded within the instruction
+             * @return The offset encoded within the instruction (In Bytes)
              */
             inline constexpr u8 Shift() {
-                return static_cast<u8>(hw * 16);
+                return static_cast<u8>(hw * sizeof(u16));
             }
 
             /**
@@ -252,12 +252,12 @@ namespace skyline {
              * @brief Creates a MOVK instruction
              * @param destReg The destination Xn register to store the value in
              * @param imm16 The 16-bit value to store
-             * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
+             * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
             inline constexpr Movk(regs::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
-                hw = static_cast<u8>(shift / 16);
+                hw = shift;
                 sig = 0xE5;
                 sf = 1;
             }
@@ -266,22 +266,22 @@ namespace skyline {
              * @brief Creates a MOVK instruction
              * @param destReg The destination Wn register to store the value in
              * @param imm16 The 16-bit value to store
-             * @param shift The offset (in bits and 16-bit aligned) in the register to store the value at
+             * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
             inline constexpr Movk(regs::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
-                hw = static_cast<u8>(shift / 16);
+                hw = shift;
                 sig = 0xE5;
                 sf = 0;
             }
 
             /**
              * @brief Returns the offset of the instruction
-             * @return The offset encoded within the instruction
+             * @return The offset encoded within the instruction (In Bytes)
              */
             inline constexpr u8 Shift() {
-                return static_cast<u8>(hw * 16);
+                return static_cast<u8>(hw * sizeof(u16));
             }
 
             /**
@@ -306,57 +306,27 @@ namespace skyline {
         static_assert(sizeof(Movk) == sizeof(u32));
 
         /**
-         * @param destReg The destination register of the operation
-         * @param value The 64-bit value to insert into the register
-         * @return A vector with the instructions to insert the value
+         * @param destination The destination register of the operation
+         * @param value The value to insert into the register
+         * @return A array with the instructions to insert the value
          */
-        inline const std::vector<u32> MoveU64Reg(regs::X destReg, u64 value) {
-            union {
-                u64 val;
-                struct {
-                    u16 v0;
-                    u16 v16;
-                    u16 v32;
-                    u16 v48;
-                };
-            } val;
-            val.val = value;
-            std::vector<u32> instr;
-            instr::Movz mov0(destReg, val.v0, 0);
-            instr.push_back(mov0.raw);
-            instr::Movk mov16(destReg, val.v16, 16);
-            if (val.v16)
-                instr.push_back(mov16.raw);
-            instr::Movk mov32(destReg, val.v32, 32);
-            if (val.v32)
-                instr.push_back(mov32.raw);
-            instr::Movk mov48(destReg, val.v48, 48);
-            if (val.v48)
-                instr.push_back(mov48.raw);
-            return instr;
-        }
+        template<typename Type>
+        inline constexpr std::array<u32, sizeof(Type) / sizeof(u16)> MoveRegister(regs::X destination, Type value) {
+            std::array<u32, sizeof(Type) / sizeof(u16)> instructions;
 
-        /**
-         * @param destReg The destination register of the operation
-         * @param value The 32-bit value to insert into the register
-         * @return A vector with the instructions to insert the value
-         */
-        inline const std::vector<u32> MoveU32Reg(regs::X destReg, u32 value) {
-            union {
-                u32 val;
-                struct {
-                    u16 v0;
-                    u16 v16;
-                };
-            } val;
-            val.val = value;
-            std::vector<u32> instr;
-            instr::Movz mov0(destReg, val.v0, 0);
-            instr.push_back(mov0.raw);
-            instr::Movk mov16(destReg, val.v16, 16);
-            if (val.v16)
-                instr.push_back(mov16.raw);
-            return instr;
+            auto valuePointer = reinterpret_cast<u16 *>(&value);
+            u8 offset{};
+
+            for (auto &instruction : instructions) {
+                if (offset)
+                    instruction = instr::Movk(destination, *(valuePointer + offset), offset).raw;
+                else
+                    instruction = instr::Movz(destination, *(valuePointer + offset), offset).raw;
+
+                offset++;
+            }
+
+            return instructions;
         }
 
         /**

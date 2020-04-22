@@ -5,6 +5,7 @@
 
 package emu.skyline
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -114,6 +115,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * This makes the window fullscreen then sets up [preferenceFd] and [logFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
      */
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

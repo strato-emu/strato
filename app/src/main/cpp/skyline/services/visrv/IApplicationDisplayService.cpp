@@ -44,6 +44,7 @@ namespace skyline::service::visrv {
         std::string displayName(reinterpret_cast<char *>(request.cmdArg));
         state.logger->Debug("Setting display as: {}", displayName);
         state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver)->SetDisplay(displayName);
+
         response.Push<u64>(0); // There's only one display
     }
 
@@ -59,7 +60,9 @@ namespace skyline::service::visrv {
             u64 userId;
         } input = request.Pop<InputStruct>();
         state.logger->Debug("Opening Layer: Display Name: {}, Layer ID: {}, User ID: {}", input.displayName, input.layerId, input.userId);
+
         std::string name(input.displayName);
+
         Parcel parcel(state);
         LayerParcel data{
             .type = 0x20,
@@ -69,7 +72,8 @@ namespace skyline::service::visrv {
         };
         parcel.WriteData(data);
         parcel.objects.resize(4);
-        response.Push(parcel.WriteParcel(request.outputBuf.at(0)));
+
+        response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
     }
 
     void IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -87,12 +91,14 @@ namespace skyline::service::visrv {
     void IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto scalingMode = request.Pop<u64>();
         auto layerId = request.Pop<u64>();
+
         state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
     }
 
     void IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle = state.process->InsertItem(state.gpu->vsyncEvent);
         state.logger->Debug("VSync Event Handle: 0x{:X}", handle);
+
         response.copyHandles.push_back(handle);
     }
 }

@@ -62,8 +62,8 @@ namespace skyline::gpu {
             if (frameTimestamp) {
                 auto now = util::GetTimeNs();
 
-                frametime = static_cast<u32>((now - frameTimestamp) / 10000); // frametime / 100 is the real ms value, this is to retain the first two decimals
-                fps = static_cast<u16>(1000000000 / (now - frameTimestamp));
+                frametime = static_cast<u32>((now - frameTimestamp) / (constant::NsInSecond / 100)); // frametime / 100 is the real ms value, this is to retain the first two decimals
+                fps = static_cast<u16>(constant::NsInSecond / (now - frameTimestamp));
 
                 frameTimestamp = now;
             } else {

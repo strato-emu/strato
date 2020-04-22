@@ -91,12 +91,12 @@ namespace skyline::service {
     class BaseService {
       protected:
         const DeviceState &state; //!< The state of the device
-        ServiceManager &manager; //!< A pointer to the service manager
-        const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> vTable; //!< This holds the mapping from an object's CmdId to the actual function
+        ServiceManager &manager; //!< A reference to the service manager
+        std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> vTable; //!< This holds the mapping from a function's CmdId to the actual function
 
       public:
-        const Service serviceType; //!< The type of the service this is
-        const std::string serviceName; //!< The name of the service
+        Service serviceType; //!< The type of this service
+        std::string serviceName; //!< The name of this service
 
         /**
          * @param state The state of the device
@@ -105,7 +105,7 @@ namespace skyline::service {
          * @param serviceName The name of the service
          * @param vTable The functions of the service
          */
-        BaseService(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), serviceType(serviceType), serviceName(serviceName), vTable(vTable) {}
+        BaseService(const DeviceState &state, ServiceManager &manager, Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), serviceType(serviceType), serviceName(serviceName), vTable(vTable) {}
 
         /**
          * @brief This handles all IPC commands with type request to a service

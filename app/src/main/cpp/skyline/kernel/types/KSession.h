@@ -13,10 +13,10 @@ namespace skyline::kernel::type {
      */
     class KSession : public KSyncObject {
       public:
-        const std::shared_ptr<service::BaseService> serviceObject; //!< A shared pointer to the service class
+        std::shared_ptr<service::BaseService> serviceObject; //!< A shared pointer to the service class
         std::unordered_map<KHandle, std::shared_ptr<service::BaseService>> domainTable; //!< This maps from a virtual handle to it's service
         KHandle handleIndex{0x1}; //!< The currently allocated handle index
-        const service::Service serviceType; //!< The type of the service
+        service::Service serviceType; //!< The type of the service
         enum class ServiceStatus { Open, Closed } serviceStatus{ServiceStatus::Open}; //!< If the session is open or closed
         bool isDomain{}; //!< Holds if this is a domain session or not
 

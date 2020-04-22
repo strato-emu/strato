@@ -26,16 +26,15 @@ namespace skyline {
 
     namespace constant {
         // Memory
-        constexpr auto BaseAddress = 0x8000000; //!< The address space base
-        constexpr auto DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
-        // Kernel
-        constexpr std::pair<int8_t, int8_t> AndroidPriority = {19, -8}; //!< The range of priority for Android
-        constexpr std::pair<u8, u8> SwitchPriority = {0, 63}; //!< The range of priority for the Nintendo Switch
+        constexpr u64 BaseAddress = 0x8000000; //!< The address space base
+        constexpr u64 DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
         // Display
-        constexpr auto HandheldResolutionW = 1280; //!< The width component of the handheld resolution
-        constexpr auto HandheldResolutionH = 720; //!< The height component of the handheld resolution
-        constexpr auto DockedResolutionW = 1920; //!< The width component of the docked resolution
-        constexpr auto DockedResolutionH = 1080; //!< The height component of the docked resolution
+        constexpr u16 HandheldResolutionW = 1280; //!< The width component of the handheld resolution
+        constexpr u16 HandheldResolutionH = 720; //!< The height component of the handheld resolution
+        constexpr u16 DockedResolutionW = 1920; //!< The width component of the docked resolution
+        constexpr u16 DockedResolutionH = 1080; //!< The height component of the docked resolution
+        // Time
+        constexpr u64 NsInSecond = 1000000000; //!< This is the amount of nanoseconds in a second
         // Status codes
         namespace status {
             constexpr u32 Success = 0x0; //!< "Success"
@@ -74,13 +73,12 @@ namespace skyline {
          * @return The current time in nanoseconds
          */
         inline u64 GetTimeNs() {
-            constexpr uint64_t nsInSecond = 1000000000;
             static u64 frequency{};
             if (!frequency)
                 asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
             u64 ticks;
             asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-            return ((ticks / frequency) * nsInSecond) + (((ticks % frequency) * nsInSecond + (frequency / 2)) / frequency);
+            return ((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency);
         }
 
         /**
@@ -114,19 +112,28 @@ namespace skyline {
         }
 
         /**
-         * @param address The address to check for alignment
-         * @return If the address is page aligned
+         * @param value The value to check for alignment
+         * @param multiple The multiple to check alignment with
+         * @return If the address is aligned with the multiple
          */
-        constexpr inline bool PageAligned(u64 address) {
-            return !(address & (PAGE_SIZE - 1U));
+        constexpr inline bool IsAligned(u64 value, u64 multiple) {
+            return !(value & (multiple - 1U));
         }
 
         /**
-         * @param address The address to check for alignment
-         * @return If the address is word aligned
+         * @param value The value to check for alignment
+         * @return If the value is page aligned
          */
-        constexpr inline bool WordAligned(u64 address) {
-            return !(address & 3U);
+        constexpr inline bool PageAligned(u64 value) {
+            return IsAligned(value, PAGE_SIZE);
+        }
+
+        /**
+         * @param value The value to check for alignment
+         * @return If the value is word aligned
+         */
+        constexpr inline bool WordAligned(u64 value) {
+            return IsAligned(value, WORD_BIT / 8);
         }
 
         /**
@@ -222,10 +229,10 @@ namespace skyline {
         LogLevel configLevel; //!< The level of logs to write
 
         /**
-         * @param logFd A FD to the log file
+         * @param fd A FD to the log file
          * @param configLevel The minimum level of logs to write
          */
-        Logger(const int logFd, LogLevel configLevel);
+        Logger(int fd, LogLevel configLevel);
 
         /**
          * @brief Writes the termination message to the log file
@@ -243,7 +250,7 @@ namespace skyline {
          * @param level The level of the log
          * @param str The value to be written
          */
-        void Write(const LogLevel level, std::string str);
+        void Write(LogLevel level, std::string str);
 
         /**
          * @brief Write an error log with libfmt formatting
@@ -305,9 +312,9 @@ namespace skyline {
 
       public:
         /**
-         * @param preferenceFd An FD to the preference XML file
+         * @param fd An FD to the preference XML file
          */
-        Settings(const int preferenceFd);
+        Settings(int fd);
 
         /**
          * @brief Retrieves a particular setting as a string

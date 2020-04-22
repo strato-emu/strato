@@ -25,6 +25,7 @@ namespace skyline::service::nvdrv::device {
 
     void NvHostChannel::SetPriority(IoctlData &buffer) {
         auto priority = state.process->GetObject<NvChannelPriority>(buffer.input[0].address);
+
         switch (priority) {
             case NvChannelPriority::Low:
                 timeslice = 1300;

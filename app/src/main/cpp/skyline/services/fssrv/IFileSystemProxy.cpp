@@ -10,7 +10,7 @@ namespace skyline::service::fssrv {
     }) {}
 
     void IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        process = *reinterpret_cast<pid_t *>(request.cmdArg);
+        process = request.Pop<pid_t>();
     }
 
     void IFileSystemProxy::OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

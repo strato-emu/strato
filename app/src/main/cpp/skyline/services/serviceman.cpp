@@ -20,7 +20,7 @@
 namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state) {}
 
-    std::shared_ptr<BaseService> ServiceManager::CreateService(const Service serviceType) {
+    std::shared_ptr<BaseService> ServiceManager::CreateService(Service serviceType) {
         auto serviceIter = serviceMap.find(serviceType);
         if (serviceIter != serviceMap.end())
             return (*serviceIter).second;
@@ -73,7 +73,7 @@ namespace skyline::service {
         return serviceObj;
     }
 
-    KHandle ServiceManager::NewSession(const Service serviceType) {
+    KHandle ServiceManager::NewSession(Service serviceType) {
         std::lock_guard serviceGuard(mutex);
         return state.process->NewHandle<type::KSession>(CreateService(serviceType)).handle;
     }
@@ -110,7 +110,7 @@ namespace skyline::service {
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->serviceName, handle);
     }
 
-    void ServiceManager::CloseSession(const KHandle handle) {
+    void ServiceManager::CloseSession(KHandle handle) {
         std::lock_guard serviceGuard(mutex);
         auto session = state.process->GetHandle<type::KSession>(handle);
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
@@ -124,7 +124,7 @@ namespace skyline::service {
         }
     };
 
-    void ServiceManager::SyncRequestHandler(const KHandle handle) {
+    void ServiceManager::SyncRequestHandler(KHandle handle) {
         auto session = state.process->GetHandle<type::KSession>(handle);
         state.logger->Debug("----Start----");
         state.logger->Debug("Handle is 0x{:X}", handle);

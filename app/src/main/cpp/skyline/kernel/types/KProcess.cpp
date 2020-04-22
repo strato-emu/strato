@@ -78,7 +78,7 @@ namespace skyline::kernel::type {
         status = Status::Exiting;
     }
 
-    std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, u8 priority) {
+    std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority) {
         auto size = (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
         auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::states::Reserved);
 
@@ -102,12 +102,12 @@ namespace skyline::kernel::type {
         return process;
     }
 
-    u64 KProcess::GetHostAddress(u64 address) const {
+    u64 KProcess::GetHostAddress(u64 address) {
         auto chunk = state.os->memory.GetChunk(address);
         return (chunk && chunk->host) ? chunk->host + (address - chunk->address) : 0;
     }
 
-    void KProcess::ReadMemory(void *destination, const u64 offset, const size_t size, const bool forceGuest) const {
+    void KProcess::ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
             auto source = GetHostAddress(offset);
 
@@ -131,7 +131,7 @@ namespace skyline::kernel::type {
             pread64(memFd, destination, size, offset);
     }
 
-    void KProcess::WriteMemory(const void *source, const u64 offset, const size_t size, const bool forceGuest) const {
+    void KProcess::WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
             auto destination = GetHostAddress(offset);
 
@@ -155,7 +155,7 @@ namespace skyline::kernel::type {
             pwrite64(memFd, source, size, offset);
     }
 
-    void KProcess::CopyMemory(u64 source, u64 destination, size_t size) const {
+    void KProcess::CopyMemory(u64 source, u64 destination, size_t size) {
         auto sourceHost = GetHostAddress(source);
         auto destinationHost = GetHostAddress(destination);
 

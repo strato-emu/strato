@@ -34,6 +34,7 @@ namespace skyline::service::am {
             response.errorCode = constant::status::NoMessages;
             return;
         }
+
         response.Push(messageQueue.front());
         messageQueue.pop();
     }

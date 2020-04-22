@@ -10,7 +10,7 @@
 namespace skyline::loader {
     class Loader {
       protected:
-        const int romFd; //!< An FD to the ROM file
+        int fd; //!< An FD to the ROM file
 
         /**
          * @brief Read the file at a particular offset
@@ -21,14 +21,14 @@ namespace skyline::loader {
          */
         template<typename T>
         inline void ReadOffset(T *output, u64 offset, size_t size) {
-            pread64(romFd, output, size, offset);
+            pread64(fd, output, size, offset);
         }
 
       public:
         /**
          * @param filePath The path to the ROM file
          */
-        Loader(const int romFd) : romFd(romFd) {}
+        Loader(int fd) : fd(fd) {}
 
         /**
          * This loads in the data of the main process

@@ -64,10 +64,10 @@ namespace skyline {
             flag.exchange(next);
     }
 
-    Settings::Settings(const int preferenceFd) {
+    Settings::Settings(int fd) {
         tinyxml2::XMLDocument pref;
 
-        if (pref.LoadFile(fdopen(preferenceFd, "r")))
+        if (pref.LoadFile(fdopen(fd, "r")))
             throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
 
         tinyxml2::XMLElement *elem = pref.LastChild()->FirstChild()->ToElement();
@@ -120,8 +120,8 @@ namespace skyline {
             logger->Info("Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
     }
 
-    Logger::Logger(const int logFd, LogLevel configLevel) : configLevel(configLevel) {
-        logFile.__open(logFd, std::ios::app);
+    Logger::Logger(int fd, LogLevel configLevel) : configLevel(configLevel) {
+        logFile.__open(fd, std::ios::app);
         WriteHeader("Logging started");
     }
 
@@ -137,7 +137,7 @@ namespace skyline {
         logFile << "0|" << str << "\n";
     }
 
-    void Logger::Write(const LogLevel level, std::string str) {
+    void Logger::Write(LogLevel level, std::string str) {
         syslog(levelSyslog[static_cast<u8>(level)], "%s", str.c_str());
 
         for (auto &character : str)

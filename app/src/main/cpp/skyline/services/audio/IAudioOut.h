@@ -28,7 +28,7 @@ namespace skyline::service::audio {
          * @param channelCount The channel count of the audio data the audio out will be fed
          * @param sampleRate The sample rate of the audio data the audio out will be fed
          */
-        IAudioOut(const DeviceState &state, ServiceManager &manager, const u8 channelCount, const u32 sampleRate);
+        IAudioOut(const DeviceState &state, ServiceManager &manager, u8 channelCount, u32 sampleRate);
 
         /**
          * @brief Closes the audio track

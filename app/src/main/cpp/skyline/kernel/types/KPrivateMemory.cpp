@@ -9,7 +9,7 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, const memory::MemoryState memState) : size(size), KMemory(state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState) : size(size), KMemory(state, KType::KPrivateMemory) {
         if (address && !util::PageAligned(address))
             throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", address);
 
@@ -113,7 +113,7 @@ namespace skyline::kernel::type {
         size = nSize;
     }
 
-    void KPrivateMemory::UpdatePermission(const u64 address, const u64 size, memory::Permission permission) {
+    void KPrivateMemory::UpdatePermission(u64 address, u64 size, memory::Permission permission) {
         Registers fregs{
             .x0 = address,
             .x1 = size,

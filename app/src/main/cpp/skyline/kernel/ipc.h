@@ -125,14 +125,14 @@ namespace skyline {
             /**
              * @return The address of the buffer
              */
-            inline u64 Address() const {
+            inline u64 Address() {
                 return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
             }
 
             /**
-             * @return The buffer counter
+             * @return The counter index of the buffer
              */
-            inline u16 Counter() const {
+            inline u16 Counter() {
                 return static_cast<u16>(counter0_5) | static_cast<u16>(counter9_11) << 9;
             }
         };
@@ -161,14 +161,14 @@ namespace skyline {
             /**
              * @return The address of the buffer
              */
-            inline u64 Address() const {
+            inline u64 Address() {
                 return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
             }
 
             /**
              * @return The size of the buffer
              */
-            inline u64 Size() const {
+            inline u64 Size() {
                 return static_cast<u64>(size0_31) | static_cast<u64>(size32_35) << 32;
             }
         };

@@ -7,8 +7,8 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, u8 priority, KProcess *parent, std::shared_ptr<type::KSharedMemory> &tlsMemory)
-        : handle(handle), tid(selfTid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, i8 priority, KProcess *parent, const std::shared_ptr<type::KSharedMemory> &tlsMemory) : handle(handle), tid(selfTid), entryPoint(entryPoint), entryArg(entryArg), stackTop(stackTop), tls(tls), priority(priority), parent(parent), ctxMemory(tlsMemory), KSyncObject(state,
+        KType::KThread) {
         UpdatePriority(priority);
     }
 
@@ -30,16 +30,16 @@ namespace skyline::kernel::type {
         if (status != Status::Dead) {
             status = Status::Dead;
             Signal();
-            tgkill(parent->pid, tid, SIGKILL);
+
+            tgkill(parent->pid, tid, SIGTERM);
         }
     }
 
-    void KThread::UpdatePriority(u8 priority) {
+    void KThread::UpdatePriority(i8 priority) {
         this->priority = priority;
-        auto linuxPriority =
-            static_cast<int8_t>(constant::AndroidPriority.first + ((static_cast<float>(constant::AndroidPriority.second - constant::AndroidPriority.first) / static_cast<float>(constant::SwitchPriority.second - constant::SwitchPriority.first)) * (static_cast<float>(priority) - constant::SwitchPriority.first))); // Resize range SwitchPriority (Nintendo Priority) to AndroidPriority (Android Priority)
+        auto priorityValue = androidPriority.Rescale(switchPriority, priority);
 
-        if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), linuxPriority) == -1)
-            throw exception("Couldn't set process priority to {} for PID: {}", linuxPriority, tid);
+        if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), priorityValue) == -1)
+            throw exception("Couldn't set process priority to {} for PID: {}", priorityValue, tid);
     }
 }

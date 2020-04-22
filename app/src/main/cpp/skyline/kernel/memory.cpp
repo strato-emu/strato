@@ -92,7 +92,7 @@ namespace skyline::kernel {
         chunk->size = size;
     }
 
-    void MemoryManager::InsertBlock(ChunkDescriptor *chunk, const BlockDescriptor block) {
+    void MemoryManager::InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block) {
         if (chunk->address + chunk->size < block.address + block.size)
             throw exception("InsertBlock: Inserting block past chunk end is not allowed");
 
@@ -118,7 +118,7 @@ namespace skyline::kernel {
         throw exception("InsertBlock: Block offset not present within current block list");
     }
 
-    void MemoryManager::InitializeRegions(u64 address, u64 size, const memory::AddressSpaceType type) {
+    void MemoryManager::InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type) {
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");

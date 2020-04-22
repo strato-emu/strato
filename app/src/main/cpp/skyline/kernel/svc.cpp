@@ -6,10 +6,9 @@
 
 namespace skyline::kernel::svc {
     void SetHeapSize(DeviceState &state) {
-        constexpr auto heapSizeAlign = 0x200000; // The heap size has to be a multiple of this value
         auto size = state.ctx->registers.w1;
 
-        if (size % heapSizeAlign != 0) {
+        if (!util::IsAligned(size, 0x200000)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.ctx->registers.x1 = 0;
 
@@ -219,19 +218,19 @@ namespace skyline::kernel::svc {
     }
 
     void CreateThread(DeviceState &state) {
-        u64 entryAddress = state.ctx->registers.x1;
-        u64 entryArgument = state.ctx->registers.x2;
-        u64 stackTop = state.ctx->registers.x3;
-        u8 priority = static_cast<u8>(state.ctx->registers.w4);
+        auto entryAddress = state.ctx->registers.x1;
+        auto entryArgument = state.ctx->registers.x2;
+        auto stackTop = state.ctx->registers.x3;
+        auto priority = static_cast<i8>(state.ctx->registers.w4);
 
-        if ((priority < constant::SwitchPriority.first) || (priority > constant::SwitchPriority.second)) {
+        if (!state.thread->switchPriority.Valid(priority)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
 
         auto thread = state.process->CreateThread(entryAddress, entryArgument, stackTop, priority);
-        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, PID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->tid);
+        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, TID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->tid);
 
         state.ctx->registers.w1 = thread->handle;
         state.ctx->registers.w0 = constant::status::Success;
@@ -305,7 +304,7 @@ namespace skyline::kernel::svc {
     void MapSharedMemory(DeviceState &state) {
         try {
             auto object = state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0);
-            u64 address = state.ctx->registers.x1;
+            auto address = state.ctx->registers.x1;
 
             if (!util::PageAligned(address)) {
                 state.ctx->registers.w0 = constant::status::InvAddress;
@@ -320,8 +319,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            u32 perm = state.ctx->registers.w3;
-            memory::Permission permission = *reinterpret_cast<memory::Permission *>(&perm);
+            memory::Permission permission = *reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3);
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
                 state.logger->Warn("svcMapSharedMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
                 state.ctx->registers.w0 = constant::status::InvPermission;
@@ -340,22 +338,21 @@ namespace skyline::kernel::svc {
     }
 
     void CreateTransferMemory(DeviceState &state) {
-        u64 address = state.ctx->registers.x1;
+        auto address = state.ctx->registers.x1;
         if (!util::PageAligned(address)) {
             state.ctx->registers.w0 = constant::status::InvAddress;
             state.logger->Warn("svcCreateTransferMemory: 'address' not page aligned: 0x{:X}", address);
             return;
         }
 
-        u64 size = state.ctx->registers.x2;
+        auto size = state.ctx->registers.x2;
         if (!util::PageAligned(size)) {
             state.ctx->registers.w0 = constant::status::InvSize;
             state.logger->Warn("svcCreateTransferMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
         }
 
-        u32 perm = state.ctx->registers.w3;
-        memory::Permission permission = *reinterpret_cast<memory::Permission *>(&perm);
+        memory::Permission permission = *reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3);
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
             state.logger->Warn("svcCreateTransferMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
             state.ctx->registers.w0 = constant::status::InvPermission;
@@ -387,11 +384,11 @@ namespace skyline::kernel::svc {
         try {
             auto &object = state.process->handles.at(handle);
             switch (object->objectType) {
-                case (type::KType::KEvent):
+                case type::KType::KEvent:
                     std::static_pointer_cast<type::KEvent>(object)->ResetSignal();
                     break;
 
-                case (type::KType::KProcess):
+                case type::KType::KProcess:
                     std::static_pointer_cast<type::KProcess>(object)->ResetSignal();
                     break;
 

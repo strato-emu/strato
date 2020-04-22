@@ -15,11 +15,11 @@ namespace skyline::audio {
      */
     class AudioTrack {
       private:
-        const std::function<void()> releaseCallback; //!< Callback called when a buffer has been played
+        std::function<void()> releaseCallback; //!< Callback called when a buffer has been played
         std::deque<BufferIdentifier> identifiers; //!< Queue of all appended buffer identifiers
 
-        const u8 channelCount; //!< The amount channels present in the track
-        const u32 sampleRate; //!< The sample rate of the track
+        u8 channelCount; //!< The amount channels present in the track
+        u32 sampleRate; //!< The sample rate of the track
 
       public:
         CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A vector of all appended audio samples
@@ -33,7 +33,7 @@ namespace skyline::audio {
          * @param sampleRate The sample rate to use for the track
          * @param releaseCallback A callback to call when a buffer has been played
          */
-        AudioTrack(const u8 channelCount, const u32 sampleRate, const std::function<void()> &releaseCallback);
+        AudioTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback);
 
         /**
          * @brief Starts audio playback using data from appended buffers

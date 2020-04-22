@@ -123,7 +123,7 @@ namespace skyline {
     /**
      * @brief This enumeration is used to convey the state of a thread to the kernel
      */
-    enum class ThreadState : u32 {
+    enum class ThreadState : u8 {
         NotReady = 0, //!< The thread hasn't yet entered the entry handler
         Running = 1, //!< The thread is currently executing code
         WaitKernel = 2, //!< The thread is currently waiting on the kernel
@@ -136,10 +136,10 @@ namespace skyline {
     /**
      * @brief This enumeration holds the functions that can be run on the guest process
      */
-    enum class ThreadCall : u32 {
-        Syscall = 0x100, //!< A linux syscall needs to be called from the guest
-        Memcopy = 0x101, //!< To copy memory from one location to another
-        Clone = 0x102, //!< Use the clone syscall to create a new thread
+    enum class ThreadCall : u8 {
+        Syscall = 1, //!< A linux syscall needs to be called from the guest
+        Memcopy = 2, //!< To copy memory from one location to another
+        Clone = 3, //!< Use the clone syscall to create a new thread
     };
 
     /**
@@ -147,7 +147,9 @@ namespace skyline {
      */
     struct ThreadContext {
         ThreadState state; //!< The state of the guest
-        u32 commandId; //!< The command ID of the current kernel call/function call
+        ThreadCall threadCall; //!< The function to run in the guest process
+        u16 svc; //!< The SVC ID of the current kernel call
+        u32 signal; //!< The signal caught by the guest process
         u64 pc; //!< The program counter register on the guest
         Registers registers; //!< The general purpose registers on the guest
         u64 tpidrroEl0; //!< The value for TPIDRRO_EL0 for the current thread

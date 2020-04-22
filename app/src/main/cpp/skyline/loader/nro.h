@@ -46,12 +46,12 @@ namespace skyline::loader {
 
       public:
         /**
-         * @param filePath The path to the ROM file
+         * @param fd A file descriptor to the ROM
          */
-        NroLoader(const int romFd);
+        NroLoader(int fd);
 
         /**
-         * This loads in the data of the main process
+         * @brief This loads in the data of the main process
          * @param process The process to load in the data
          * @param state The state of the device
          */
