@@ -143,7 +143,7 @@ namespace skyline::kernel::ipc {
         memset(tls, 0, constant::TlsIpcSize);
 
         auto header = reinterpret_cast<CommandHeader *>(pointer);
-        header->rawSize = static_cast<u32>((sizeof(PayloadHeader) + argVec.size() + (domainObjects.size() * sizeof(KHandle)) + constant::IpcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        header->rawSize = static_cast<u32>((sizeof(PayloadHeader) + payload.size() + (domainObjects.size() * sizeof(KHandle)) + constant::IpcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
         header->handleDesc = (!copyHandles.empty() || !moveHandles.empty());
         pointer += sizeof(CommandHeader);
 
@@ -174,15 +174,15 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(DomainHeaderResponse);
         }
 
-        auto payload = reinterpret_cast<PayloadHeader *>(pointer);
-        payload->magic = util::MakeMagic<u32>("SFCO"); // SFCO is the magic in IPC responses
-        payload->version = 1;
-        payload->value = errorCode;
+        auto payloadHeader = reinterpret_cast<PayloadHeader *>(pointer);
+        payloadHeader->magic = util::MakeMagic<u32>("SFCO"); // SFCO is the magic in IPC responses
+        payloadHeader->version = 1;
+        payloadHeader->value = errorCode;
         pointer += sizeof(PayloadHeader);
 
-        if (!argVec.empty())
-            std::memcpy(pointer, argVec.data(), argVec.size());
-        pointer += argVec.size();
+        if (!payload.empty())
+            std::memcpy(pointer, payload.data(), payload.size());
+        pointer += payload.size();
 
         if (isDomain) {
             for (auto &domainObject : domainObjects) {
@@ -191,6 +191,6 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->rawSize), u32(payload->value), copyHandles.size(), moveHandles.size());
+        state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->rawSize), u32(payloadHeader->value), copyHandles.size(), moveHandles.size());
     }
 }

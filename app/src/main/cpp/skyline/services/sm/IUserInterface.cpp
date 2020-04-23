@@ -12,7 +12,7 @@ namespace skyline::service::sm {
     void IUserInterface::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void IUserInterface::GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string serviceName(reinterpret_cast<char *>(request.cmdArg));
+        std::string serviceName(request.PopString());
 
         if (serviceName.empty()) {
             response.errorCode = constant::status::ServiceInvName;

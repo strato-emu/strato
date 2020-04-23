@@ -41,7 +41,7 @@ namespace skyline::service::visrv {
     }
 
     void IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string displayName(reinterpret_cast<char *>(request.cmdArg));
+        std::string displayName(request.PopString());
         state.logger->Debug("Setting display as: {}", displayName);
         state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver)->SetDisplay(displayName);
 

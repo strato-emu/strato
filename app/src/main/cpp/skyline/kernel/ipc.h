@@ -282,6 +282,16 @@ namespace skyline {
             }
 
             /**
+             * @brief This returns a std::string_view from the payload
+             * @param size The length of the string (0 means the string is null terminated)
+             */
+            inline std::string_view PopString(size_t size = 0) {
+                auto view = size ? std::string_view(reinterpret_cast<const char*>(payloadOffset), size) : std::string_view(reinterpret_cast<const char*>(payloadOffset));
+                payloadOffset += view.length();
+                return view;
+            }
+
+            /**
              * @brief This skips an object to pop off the top
              * @tparam ValueType The type of the object to skip
              */
@@ -296,8 +306,8 @@ namespace skyline {
          */
         class IpcResponse {
           private:
-            std::vector<u8> argVec; //!< This holds all of the contents to be pushed to the payload
             const DeviceState &state; //!< The state of the device
+            std::vector<u8> payload; //!< This holds all of the contents to be pushed to the payload
 
           public:
             bool nWrite{}; //!< This is to signal the IPC handler to not write this, as it will be manually written
@@ -320,12 +330,22 @@ namespace skyline {
              */
             template<typename ValueType>
             inline void Push(const ValueType &value) {
-                argVec.reserve(argVec.size() + sizeof(ValueType));
-                auto item = reinterpret_cast<const u8 *>(&value);
-                for (uint index = 0; sizeof(ValueType) > index; index++) {
-                    argVec.push_back(*item);
-                    item++;
-                }
+                auto size = payload.size();
+                payload.resize(size + sizeof(ValueType));
+
+                std::memcpy(payload.data() + size, reinterpret_cast<const u8 *>(&value), sizeof(ValueType));
+            }
+
+            /**
+             * @brief Writes a string to the payload
+             * @param string The string to write to the payload
+             */
+            template<>
+            inline void Push(const std::string &string) {
+                auto size = payload.size();
+                payload.resize(size + string.size());
+
+                std::memcpy(payload.data() + size, string.data(), string.size());
             }
 
             /**
