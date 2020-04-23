@@ -26,6 +26,8 @@ void signalHandler(int signal) {
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
     Halt = false;
     FaultCount = 0;
+    fps = 0;
+    frametime = 0;
 
     std::signal(SIGTERM, signalHandler);
     std::signal(SIGSEGV, signalHandler);
