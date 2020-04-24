@@ -16,38 +16,46 @@
             card_view:cardCornerRadius="4dp">
 
         <RelativeLayout
-                android:layout_width="wrap_content"
+                android:layout_width="155dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:orientation="vertical">
 
             <ImageView
                     android:id="@+id/icon"
-                    android:layout_width="150dp"
-                    android:layout_height="150dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="155dp"
                     android:layout_alignParentTop="false"
                     android:layout_centerHorizontal="true"
-                    android:contentDescription="@string/icon" />
+                    android:contentDescription="@string/icon"
+                    android:scaleType="centerCrop" />
 
             <TextView
                     android:id="@+id/text_title"
-                    android:layout_width="150dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/icon"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
                     android:paddingStart="15dp"
-                    android:paddingTop="15dp"
+                    android:paddingTop="10dp"
                     android:paddingEnd="15dp"
+                    android:singleLine="true"
                     android:textAlignment="center"
                     android:textAppearance="?android:attr/textAppearanceListItem"
                     tools:ignore="RelativeOverlap" />
 
             <TextView
                     android:id="@+id/text_subtitle"
-                    android:layout_width="150dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/text_title"
                     android:layout_alignStart="@id/text_title"
+                    android:ellipsize="marquee"
+                    android:fadingEdge="horizontal"
+                    android:marqueeRepeatLimit="marquee_forever"
                     android:paddingBottom="15dp"
+                    android:singleLine="true"
                     android:textAlignment="center"
                     android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                     android:textColor="@android:color/tertiary_text_light" />

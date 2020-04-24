@@ -22,11 +22,11 @@ class LicenseDialog : DialogFragment() {
     /**
      * This inflates the layout of the dialog and sets the minimum width/height to 90% of the screen size
      */
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
         val layout = layoutInflater.inflate(R.layout.license_dialog, container)
 
         val displayRectangle = Rect()
-        val window: Window = activity!!.window
+        val window : Window = activity!!.window
         window.decorView.getWindowVisibleDisplayFrame(displayRectangle)
 
         layout.minimumWidth = ((displayRectangle.width() * 0.9f).toInt())
@@ -38,7 +38,7 @@ class LicenseDialog : DialogFragment() {
     /**
      * This sets the [license_url] and [license_content] based on arguments passed
      */
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
+    override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
         license_url.text = arguments?.getString("libraryUrl")!!

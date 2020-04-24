@@ -20,11 +20,11 @@ import emu.skyline.R
 /**
  * This class is used to hold all data about a log entry
  */
-internal class LogItem(val message: String, val level: String) : BaseItem() {
+internal class LogItem(val message : String, val level : String) : BaseItem() {
     /**
      * The log message itself is used as the search key
      */
-    override fun key(): String? {
+    override fun key() : String? {
         return message
     }
 }
@@ -32,13 +32,13 @@ internal class LogItem(val message: String, val level: String) : BaseItem() {
 /**
  * This adapter is used for displaying logs outputted by the application
  */
-internal class LogAdapter internal constructor(val context: Context, val compact: Boolean, private val debug_level: Int, private val level_str: Array<String>) : HeaderAdapter<LogItem, BaseHeader, RecyclerView.ViewHolder>(), OnLongClickListener {
-    private val clipboard: ClipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+internal class LogAdapter internal constructor(val context : Context, val compact : Boolean, private val debug_level : Int, private val level_str : Array<String>) : HeaderAdapter<LogItem, BaseHeader, RecyclerView.ViewHolder>(), OnLongClickListener {
+    private val clipboard : ClipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     /**
      * This function adds a line to this log adapter
      */
-    fun add(logLine: String) {
+    fun add(logLine : String) {
         try {
             val logMeta = logLine.split("|", limit = 3)
 
@@ -50,8 +50,8 @@ internal class LogAdapter internal constructor(val context: Context, val compact
             } else {
                 addHeader(BaseHeader(logMeta[1]))
             }
-        } catch (ignored: IndexOutOfBoundsException) {
-        } catch (ignored: NumberFormatException) {
+        } catch (ignored : IndexOutOfBoundsException) {
+        } catch (ignored : NumberFormatException) {
         }
     }
 
@@ -62,7 +62,7 @@ internal class LogAdapter internal constructor(val context: Context, val compact
      * @param title The TextView associated with the title
      * @param subtitle The TextView associated with the subtitle
      */
-    private class ItemViewHolder(val parent: View, var title: TextView, var subtitle: TextView? = null) : RecyclerView.ViewHolder(parent)
+    private class ItemViewHolder(val parent : View, var title : TextView, var subtitle : TextView? = null) : RecyclerView.ViewHolder(parent)
 
     /**
      * The ViewHolder used by headers is used to hold the views associated with an headers
@@ -70,12 +70,12 @@ internal class LogAdapter internal constructor(val context: Context, val compact
      * @param parent The parent view that contains all the others
      * @param header The TextView associated with the header
      */
-    private class HeaderViewHolder(val parent: View, var header: TextView) : RecyclerView.ViewHolder(parent)
+    private class HeaderViewHolder(val parent : View, var header : TextView) : RecyclerView.ViewHolder(parent)
 
     /**
      * The onLongClick handler for the supplied [view], used to copy a log into the clipboard
      */
-    override fun onLongClick(view: View): Boolean {
+    override fun onLongClick(view : View) : Boolean {
         val item = view.tag as LogItem
         clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.message + " (" + item.level + ")"))
         Toast.makeText(view.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
@@ -85,9 +85,9 @@ internal class LogAdapter internal constructor(val context: Context, val compact
     /**
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
      */
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(context)
-        var holder: RecyclerView.ViewHolder? = null
+        var holder : RecyclerView.ViewHolder? = null
 
         if (viewType == ElementType.Item.ordinal) {
             if (compact) {
@@ -112,7 +112,7 @@ internal class LogAdapter internal constructor(val context: Context, val compact
     /**
      * This function binds the item at [position] to the supplied [viewHolder]
      */
-    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(viewHolder : RecyclerView.ViewHolder, position : Int) {
         val item = getItem(position)
 
         if (item is LogItem) {

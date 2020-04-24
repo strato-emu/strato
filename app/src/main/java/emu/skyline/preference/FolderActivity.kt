@@ -18,7 +18,7 @@ class FolderActivity : AppCompatActivity() {
     /**
      * This launches the [Intent.ACTION_OPEN_DOCUMENT_TREE] intent on creation
      */
-    override fun onCreate(state: Bundle?) {
+    override fun onCreate(state : Bundle?) {
         super.onCreate(state)
 
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
@@ -28,7 +28,7 @@ class FolderActivity : AppCompatActivity() {
     /**
      * This changes the search location preference if the [Intent.ACTION_OPEN_DOCUMENT_TREE] has returned and [finish]es the activity
      */
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (resultCode == Activity.RESULT_OK) {

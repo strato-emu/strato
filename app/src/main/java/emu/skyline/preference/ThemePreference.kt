@@ -14,16 +14,16 @@ import androidx.preference.ListPreference
  * This preference is used to set the theme to Light/Dark mode
  */
 class ThemePreference : ListPreference {
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : super(context, attrs, defStyleAttr)
 
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context : Context?, attrs : AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context?) : super(context)
+    constructor(context : Context?) : super(context)
 
     /**
      * This changes [AppCompatDelegate.sDefaultNightMode] based on what the user's selection is
      */
-    override fun callChangeListener(newValue: Any?): Boolean {
+    override fun callChangeListener(newValue : Any?) : Boolean {
         AppCompatDelegate.setDefaultNightMode(when ((newValue as String).toInt()) {
             0 -> AppCompatDelegate.MODE_NIGHT_NO
             1 -> AppCompatDelegate.MODE_NIGHT_YES

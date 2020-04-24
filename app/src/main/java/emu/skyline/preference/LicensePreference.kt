@@ -20,7 +20,7 @@ class LicensePreference : Preference {
     /**
      * The [FragmentManager] is used to show the [LicenseDialog] fragment
      */
-    private val fragmentManager: FragmentManager
+    private val fragmentManager : FragmentManager
 
     /**
      * The tag used by this preference when launching a corresponding fragment
@@ -30,17 +30,17 @@ class LicensePreference : Preference {
     /**
      * The URL of the library
      */
-    private var libraryUrl: String? = null
+    private var libraryUrl : String? = null
 
     /**
      * The contents of the license of this library
      */
-    private var libraryLicense: Int? = null
+    private var libraryLicense : Int? = null
 
     /**
      * The constructor assigns the [fragmentManager] from the activity and finds [libraryUrl] and [libraryLicense] in the attributes
      */
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
+    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int, defStyleRes : Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         fragmentManager = (context as AppCompatActivity).supportFragmentManager
 
         for (i in 0 until attrs!!.attributeCount) {
@@ -53,11 +53,11 @@ class LicensePreference : Preference {
         }
     }
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : this(context, attrs, defStyleAttr, 0)
+    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : this(context, attrs, defStyleAttr, 0)
 
-    constructor(context: Context?, attrs: AttributeSet?) : this(context, attrs, R.attr.dialogPreferenceStyle)
+    constructor(context : Context?, attrs : AttributeSet?) : this(context, attrs, R.attr.dialogPreferenceStyle)
 
-    constructor(context: Context?) : this(context, null)
+    constructor(context : Context?) : this(context, null)
 
     /**
      * The [LicenseDialog] fragment is shown using [fragmentManager] on click with [libraryUrl] and [libraryLicense] passed as arguments

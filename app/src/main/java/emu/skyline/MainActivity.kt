@@ -7,6 +7,7 @@ package emu.skyline
 
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -29,7 +30,6 @@ import emu.skyline.adapter.GridLayoutSpan
 import emu.skyline.adapter.LayoutType
 import emu.skyline.loader.BaseLoader
 import emu.skyline.loader.NroLoader
-import emu.skyline.utility.AppDialog
 import emu.skyline.utility.RandomAccessDocument
 import kotlinx.android.synthetic.main.main_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
@@ -42,17 +42,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This is used to get/set shared preferences
      */
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var sharedPreferences : SharedPreferences
 
     /**
      * The adapter used for adding elements to [app_list]
      */
-    private lateinit var adapter: AppAdapter
+    private lateinit var adapter : AppAdapter
 
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
      */
-    private fun addEntries(extension: String, loader: BaseLoader, directory: DocumentFile, found: Boolean = false): Boolean {
+    private fun addEntries(extension : String, loader : BaseLoader, directory : DocumentFile, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
@@ -89,19 +89,22 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
      *
      * @param tryLoad If this is false then trying to load cached adapter data is skipped entirely
      */
-    private fun refreshAdapter(tryLoad: Boolean) {
+    private fun refreshAdapter(tryLoad : Boolean) {
         if (tryLoad) {
             try {
                 adapter.load(File("${applicationInfo.dataDir}/roms.bin"))
                 return
-            } catch (e: Exception) {
+            } catch (e : Exception) {
                 Log.w("refreshFiles", "Ran into exception while loading: ${e.message}")
             }
         }
 
         thread(start = true) {
             val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
-            runOnUiThread { snackbar.show() }
+            runOnUiThread {
+                snackbar.show()
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+            }
 
             try {
                 runOnUiThread { adapter.clear() }
@@ -114,13 +117,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
 
                     try {
                         adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
-                    } catch (e: IOException) {
+                    } catch (e : IOException) {
                         Log.w("refreshFiles", "Ran into exception while saving: ${e.message}")
                     }
                 }
 
                 sharedPreferences.edit().putBoolean("refresh_required", false).apply()
-            } catch (e: IllegalArgumentException) {
+            } catch (e : IllegalArgumentException) {
                 runOnUiThread {
                     sharedPreferences.edit().remove("search_location").apply()
 
@@ -128,20 +131,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                     finish()
                     startActivity(intent)
                 }
-            } catch (e: Exception) {
+            } catch (e : Exception) {
                 runOnUiThread {
                     Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_SHORT).show()
                 }
             }
 
-            runOnUiThread { snackbar.dismiss() }
+            runOnUiThread {
+                snackbar.dismiss()
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
         }
     }
 
     /**
      * This initializes [toolbar], [open_fab], [log_fab] and [app_list]
      */
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.main_activity)
@@ -184,6 +190,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
             }
         }
 
+        app_list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            var y : Int = 0
+
+            override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
+                y += dy
+
+                if (!app_list.isInTouchMode) {
+                    if (y == 0)
+                        toolbar_layout.setExpanded(true)
+                    else
+                        toolbar_layout.setExpanded(false)
+                }
+
+                super.onScrolled(recyclerView, dx, dy)
+            }
+        })
+
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -196,18 +219,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This inflates the layout for the menu [R.menu.toolbar_main] and sets up searching the logs
      */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+    override fun onCreateOptionsMenu(menu : Menu) : Boolean {
         menuInflater.inflate(R.menu.toolbar_main, menu)
 
         val searchView = menu.findItem(R.id.action_search_main).actionView as SearchView
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String): Boolean {
+            override fun onQueryTextSubmit(query : String) : Boolean {
                 searchView.clearFocus()
                 return false
             }
 
-            override fun onQueryTextChange(newText: String): Boolean {
+            override fun onQueryTextChange(newText : String) : Boolean {
                 adapter.filter.filter(newText)
                 return true
             }
@@ -219,7 +242,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This handles on-click interaction with [R.id.log_fab], [R.id.open_fab], [R.id.app_item_linear] and [R.id.app_item_grid]
      */
-    override fun onClick(view: View) {
+    override fun onClick(view : View) {
         when (view.id) {
             R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
 
@@ -250,7 +273,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This handles long-click interaction with [R.id.app_item_linear] and [R.id.app_item_grid]
      */
-    override fun onLongClick(view: View?): Boolean {
+    override fun onLongClick(view : View?) : Boolean {
         when (view?.id) {
             R.id.app_item_linear, R.id.app_item_grid -> {
                 val tag = view.tag
@@ -269,7 +292,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This handles menu interaction for [R.id.action_settings] and [R.id.action_refresh]
      */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onOptionsItemSelected(item : MenuItem) : Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
                 startActivityForResult(Intent(this, SettingsActivity::class.java), 3)
@@ -288,7 +311,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This handles receiving activity result from [Intent.ACTION_OPEN_DOCUMENT_TREE], [Intent.ACTION_OPEN_DOCUMENT] and [SettingsActivity]
      */
-    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+    override fun onActivityResult(requestCode : Int, resultCode : Int, intent : Intent?) {
         super.onActivityResult(requestCode, resultCode, intent)
 
         if (resultCode == RESULT_OK) {
@@ -310,7 +333,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                             startActivityForResult(intentGame, resultCode)
                         else
                             startActivity(intentGame)
-                    } catch (e: Exception) {
+                    } catch (e : Exception) {
                         Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_SHORT).show()
                     }
                 }

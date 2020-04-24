@@ -4,6 +4,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
+        android:nextFocusRight="@id/game_play"
         android:padding="16dp">
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -11,6 +12,7 @@
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:contentDescription="@string/icon"
+            android:focusable="false"
             app:shapeAppearanceOverlay="@style/roundedAppImage" />
 
     <LinearLayout
@@ -47,6 +49,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="6dp"
+                    android:focusedByDefault="true"
                     android:text="@string/play"
                     app:icon="@drawable/ic_play" />
 

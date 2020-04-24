@@ -3,7 +3,7 @@
  * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline.utility
+package emu.skyline
 
 import android.content.ComponentName
 import android.content.Intent
@@ -11,14 +11,13 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import emu.skyline.EmulationActivity
-import emu.skyline.R
 import emu.skyline.adapter.AppItem
 import kotlinx.android.synthetic.main.app_dialog.*
 
@@ -27,29 +26,38 @@ import kotlinx.android.synthetic.main.app_dialog.*
  *
  * @param item This is used to hold the [AppItem] between instances
  */
-class AppDialog(val item: AppItem? = null) : BottomSheetDialogFragment() {
+class AppDialog(val item : AppItem? = null) : BottomSheetDialogFragment() {
 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
         return requireActivity().layoutInflater.inflate(R.layout.app_dialog, container)
     }
 
     /**
-     * This expands the bottom sheet so that it's fully visible
+     * This expands the bottom sheet so that it's fully visible and map the B button to back
      */
     override fun onStart() {
         super.onStart()
 
         val behavior = BottomSheetBehavior.from(requireView().parent as View)
         behavior.state = BottomSheetBehavior.STATE_EXPANDED
+
+        dialog?.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_DOWN) {
+                dialog?.onBackPressed()
+                true
+            } else {
+                false
+            }
+        }
     }
 
     /**
      * This fills all the dialog with the information from [item] if it is valid and setup all user interaction
      */
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
+    override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
         if (item is AppItem) {
@@ -58,6 +66,13 @@ class AppDialog(val item: AppItem? = null) : BottomSheetDialogFragment() {
             game_icon.setImageBitmap(item.icon ?: missingIcon)
             game_title.text = item.title
             game_subtitle.text = item.subTitle ?: getString(R.string.metadata_missing)
+
+            game_play.setOnClickListener {
+                val intent = Intent(activity, EmulationActivity::class.java)
+                intent.data = item.uri
+
+                startActivity(intent)
+            }
 
             val shortcutManager = activity?.getSystemService(ShortcutManager::class.java)!!
             game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
@@ -75,13 +90,6 @@ class AppDialog(val item: AppItem? = null) : BottomSheetDialogFragment() {
                 info.setIntent(intent)
 
                 shortcutManager.requestPinShortcut(info.build(), null)
-            }
-
-            game_play.setOnClickListener {
-                val intent = Intent(activity, EmulationActivity::class.java)
-                intent.data = item.uri
-
-                startActivity(intent)
             }
         } else
             activity?.supportFragmentManager?.beginTransaction()?.remove(this)?.commit()

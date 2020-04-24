@@ -13,7 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
-import android.view.WindowManager
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
 import emu.skyline.loader.getRomFormat
@@ -28,32 +28,32 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * The file descriptor of the ROM
      */
-    private lateinit var romFd: ParcelFileDescriptor
+    private lateinit var romFd : ParcelFileDescriptor
 
     /**
      * The file descriptor of the application Preference XML
      */
-    private lateinit var preferenceFd: ParcelFileDescriptor
+    private lateinit var preferenceFd : ParcelFileDescriptor
 
     /**
      * The file descriptor of the Log file
      */
-    private lateinit var logFd: ParcelFileDescriptor
+    private lateinit var logFd : ParcelFileDescriptor
 
     /**
      * The surface object used for displaying frames
      */
-    private var surface: Surface? = null
+    private var surface : Surface? = null
 
     /**
      * A boolean flag denoting if the emulation thread should call finish() or not
      */
-    private var shouldFinish: Boolean = true
+    private var shouldFinish : Boolean = true
 
     /**
      * The Kotlin thread on which emulation code executes
      */
-    private lateinit var emulationThread: Thread
+    private lateinit var emulationThread : Thread
 
     /**
      * This is the entry point into the emulation code for libskyline
@@ -64,38 +64,38 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      * @param preferenceFd The file descriptor of the Preference XML
      * @param logFd The file descriptor of the Log file
      */
-    private external fun executeApplication(romUri: String, romType: Int, romFd: Int, preferenceFd: Int, logFd: Int)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, logFd : Int)
 
     /**
      * This sets the halt flag in libskyline to the provided value, if set to true it causes libskyline to halt emulation
      *
      * @param halt The value to set halt to
      */
-    private external fun setHalt(halt: Boolean)
+    private external fun setHalt(halt : Boolean)
 
     /**
      * This sets the surface object in libskyline to the provided value, emulation is halted if set to null
      *
      * @param surface The value to set surface to
      */
-    private external fun setSurface(surface: Surface?)
+    private external fun setSurface(surface : Surface?)
 
     /**
      * This returns the current FPS of the application
      */
-    private external fun getFps(): Int
+    private external fun getFps() : Int
 
     /**
      * This returns the current frame-time of the application
      */
-    private external fun getFrametime(): Float
+    private external fun getFrametime() : Float
 
     /**
      * This executes the specified ROM, [preferenceFd] and [logFd] are assumed to be valid beforehand
      *
      * @param rom The URI of the ROM to execute
      */
-    private fun executeApplication(rom: Uri) {
+    private fun executeApplication(rom : Uri) {
         val romType = getRomFormat(rom, contentResolver).ordinal
         romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
@@ -116,12 +116,17 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      * This makes the window fullscreen then sets up [preferenceFd] and [logFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
      */
     @SuppressLint("SetTextI18n")
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.emu_activity)
 
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_FULLSCREEN)
 
         val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
         preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)
@@ -134,7 +139,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         if (sharedPreferences.getBoolean("perf_stats", false)) {
-            lateinit var perfRunnable: Runnable
+            lateinit var perfRunnable : Runnable
 
             perfRunnable = Runnable {
                 perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
@@ -150,7 +155,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * This is used to stop the currently executing ROM and replace it with the one specified in the new intent
      */
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent : Intent?) {
         shouldFinish = false
 
         setHalt(true)
@@ -184,7 +189,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * This sets [surface] to [holder].surface and passes it into libskyline
      */
-    override fun surfaceCreated(holder: SurfaceHolder?) {
+    override fun surfaceCreated(holder : SurfaceHolder?) {
         Log.d("surfaceCreated", "Holder: ${holder.toString()}")
         surface = holder!!.surface
         setSurface(surface)
@@ -193,14 +198,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * This is purely used for debugging surface changes
      */
-    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
+    override fun surfaceChanged(holder : SurfaceHolder?, format : Int, width : Int, height : Int) {
         Log.d("surfaceChanged", "Holder: ${holder.toString()}, Format: $format, Width: $width, Height: $height")
     }
 
     /**
      * This sets [surface] to null and passes it into libskyline
      */
-    override fun surfaceDestroyed(holder: SurfaceHolder?) {
+    override fun surfaceDestroyed(holder : SurfaceHolder?) {
         Log.d("surfaceDestroyed", "Holder: ${holder.toString()}")
         surface = null
         setSurface(surface)

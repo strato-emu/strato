@@ -28,7 +28,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:padding="8dp"
                 app:maxImageSize="26dp"
                 app:srcCompat="@drawable/ic_open" />
 
@@ -37,7 +36,6 @@
                 style="@style/Widget.MaterialComponents.FloatingActionButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
                 app:maxImageSize="26dp"
                 app:srcCompat="@drawable/ic_log" />
     </LinearLayout>

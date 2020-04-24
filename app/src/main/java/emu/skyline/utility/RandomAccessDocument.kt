@@ -15,7 +15,7 @@ import java.nio.ByteBuffer
  *
  * @param parcelFileDescriptor The file descriptor for the [DocumentFile]
  */
-class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescriptor) {
+class RandomAccessDocument(private var parcelFileDescriptor : ParcelFileDescriptor) {
     /**
      * The actual file descriptor for the [DocumentFile] as an [FileDescriptor] object
      */
@@ -24,19 +24,19 @@ class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescripto
     /**
      * The current position of where the file is being read
      */
-    private var position: Long = 0
+    private var position : Long = 0
 
     /**
      * The constructor sets [parcelFileDescriptor] by opening a read-only FD to [file]
      */
-    constructor(context: Context, file: DocumentFile) : this(context.contentResolver.openFileDescriptor(file.uri, "r")!!)
+    constructor(context : Context, file : DocumentFile) : this(context.contentResolver.openFileDescriptor(file.uri, "r")!!)
 
     /**
      * This reads in as many as possible bytes into [array] (Generally [array].size)
      *
      * @return The amount of bytes read from the file
      */
-    fun read(array: ByteArray): Int {
+    fun read(array : ByteArray) : Int {
         val bytesRead = android.system.Os.pread(fileDescriptor, array, 0, array.size, position)
         position += bytesRead
         return bytesRead
@@ -47,7 +47,7 @@ class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescripto
      *
      * @return The amount of bytes read from the file
      */
-    fun read(buffer: ByteBuffer): Int {
+    fun read(buffer : ByteBuffer) : Int {
         val bytesRead = android.system.Os.pread(fileDescriptor, buffer.array(), 0, buffer.array().size, position)
         position += bytesRead
         return bytesRead
@@ -56,8 +56,8 @@ class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescripto
     /**
      * This returns a single [Long] from the file at the current [position]
      */
-    fun readLong(): Long {
-        val buffer: ByteBuffer = ByteBuffer.allocate(Long.SIZE_BYTES)
+    fun readLong() : Long {
+        val buffer : ByteBuffer = ByteBuffer.allocate(Long.SIZE_BYTES)
         read(buffer)
         return buffer.long
     }
@@ -65,8 +65,8 @@ class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescripto
     /**
      * This returns a single [Int] from the file at the current [position]
      */
-    fun readInt(): Int {
-        val buffer: ByteBuffer = ByteBuffer.allocate(Int.SIZE_BYTES)
+    fun readInt() : Int {
+        val buffer : ByteBuffer = ByteBuffer.allocate(Int.SIZE_BYTES)
         read(buffer)
         return buffer.int
     }
@@ -74,14 +74,14 @@ class RandomAccessDocument(private var parcelFileDescriptor: ParcelFileDescripto
     /**
      * This sets [RandomAccessDocument.position] to the supplied [position]
      */
-    fun seek(position: Long) {
+    fun seek(position : Long) {
         this.position = position
     }
 
     /**
      * This increments [position] by [amount]
      */
-    fun skipBytes(amount: Long) {
+    fun skipBytes(amount : Long) {
         this.position += amount
     }
 

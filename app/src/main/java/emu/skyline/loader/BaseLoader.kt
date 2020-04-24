@@ -33,10 +33,10 @@ enum class RomFormat {
  * @param uri The URL of the ROM
  * @param contentResolver The instance of ContentResolver associated with the current context
  */
-fun getRomFormat(uri: Uri, contentResolver: ContentResolver): RomFormat {
+fun getRomFormat(uri : Uri, contentResolver : ContentResolver) : RomFormat {
     var uriStr = ""
     contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-        val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         cursor.moveToFirst()
         uriStr = cursor.getString(nameIndex)
     }
@@ -50,26 +50,26 @@ class AppEntry : Serializable {
     /**
      * The name of the application
      */
-    var name: String
+    var name : String
 
     /**
      * The author of the application, if it can be extracted from the metadata
      */
-    var author: String? = null
+    var author : String? = null
 
-    var icon: Bitmap? = null
+    var icon : Bitmap? = null
 
     /**
      * The format of the application ROM
      */
-    var format: RomFormat
+    var format : RomFormat
 
     /**
      * The URI of the application ROM
      */
-    var uri: Uri
+    var uri : Uri
 
-    constructor(name: String, author: String, format: RomFormat, uri: Uri, icon: Bitmap) {
+    constructor(name : String, author : String, format : RomFormat, uri : Uri, icon : Bitmap) {
         this.name = name
         this.author = author
         this.icon = icon
@@ -77,9 +77,9 @@ class AppEntry : Serializable {
         this.uri = uri
     }
 
-    constructor(context: Context, format: RomFormat, uri: Uri) {
+    constructor(context : Context, format : RomFormat, uri : Uri) {
         this.name = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex: Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             cursor.moveToFirst()
             cursor.getString(nameIndex)
         }!!.dropLast(format.name.length + 1)
@@ -93,7 +93,7 @@ class AppEntry : Serializable {
      * @param output The stream to which the object is written into
      */
     @Throws(IOException::class)
-    private fun writeObject(output: ObjectOutputStream) {
+    private fun writeObject(output : ObjectOutputStream) {
         output.writeUTF(name)
         output.writeObject(format)
         output.writeUTF(uri.toString())
@@ -111,7 +111,7 @@ class AppEntry : Serializable {
      * @param input The stream from which the object data is retrieved from
      */
     @Throws(IOException::class, ClassNotFoundException::class)
-    private fun readObject(input: ObjectInputStream) {
+    private fun readObject(input : ObjectInputStream) {
         name = input.readUTF()
         format = input.readObject() as RomFormat
         uri = Uri.parse(input.readUTF())
@@ -125,14 +125,14 @@ class AppEntry : Serializable {
 /**
  * This class is used as the base class for all loaders
  */
-internal abstract class BaseLoader(val context: Context, val format: RomFormat) {
+internal abstract class BaseLoader(val context : Context, val format : RomFormat) {
     /**
      * This is used to get the [AppEntry] for the specified [file] at the supplied [uri]
      */
-    abstract fun getAppEntry(file: RandomAccessDocument, uri: Uri): AppEntry
+    abstract fun getAppEntry(file : RandomAccessDocument, uri : Uri) : AppEntry
 
     /**
      * This returns if the supplied [file] is a valid ROM or not
      */
-    abstract fun verifyFile(file: RandomAccessDocument): Boolean
+    abstract fun verifyFile(file : RandomAccessDocument) : Boolean
 }

@@ -20,15 +20,15 @@ class FolderPreference : Preference {
     /**
      * The directory the preference is currently set to
      */
-    private var mDirectory: String? = null
+    private var mDirectory : String? = null
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : super(context, attrs, defStyleAttr) {
         summaryProvider = SimpleSummaryProvider()
     }
 
-    constructor(context: Context?, attrs: AttributeSet?) : this(context, attrs, R.attr.preferenceStyle)
+    constructor(context : Context?, attrs : AttributeSet?) : this(context, attrs, R.attr.preferenceStyle)
 
-    constructor(context: Context?) : this(context, null)
+    constructor(context : Context?) : this(context, null)
 
     /**
      * This launches [FolderActivity] on click to change the directory
@@ -41,7 +41,7 @@ class FolderPreference : Preference {
     /**
      * This sets the initial value of [mDirectory]
      */
-    override fun onSetInitialValue(defaultValue: Any?) {
+    override fun onSetInitialValue(defaultValue : Any?) {
         mDirectory = getPersistedString(defaultValue as String?)
     }
 
@@ -52,7 +52,7 @@ class FolderPreference : Preference {
         /**
          * This returns the decoded URI of the directory as the summary
          */
-        override fun provideSummary(preference: FolderPreference): CharSequence {
+        override fun provideSummary(preference : FolderPreference) : CharSequence {
             return Uri.decode(preference.mDirectory) ?: ""
         }
     }

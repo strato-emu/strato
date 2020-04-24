@@ -28,41 +28,41 @@ import emu.skyline.loader.AppEntry
 /**
  * This class is a wrapper around [AppEntry], it is used for passing around game metadata
  */
-class AppItem(val meta: AppEntry) : BaseItem() {
+class AppItem(val meta : AppEntry) : BaseItem() {
     /**
      * The icon of the application
      */
-    val icon: Bitmap?
+    val icon : Bitmap?
         get() = meta.icon
 
     /**
      * The title of the application
      */
-    val title: String
+    val title : String
         get() = meta.name
 
     /**
      * The string used as the sub-title, we currently use the author
      */
-    val subTitle: String?
+    val subTitle : String?
         get() = meta.author
 
     /**
      * The URI of the application's image file
      */
-    val uri: Uri
+    val uri : Uri
         get() = meta.uri
 
     /**
      * The format of the application ROM as a string
      */
-    private val type: String
+    private val type : String
         get() = meta.format.name
 
     /**
      * The name and author is used as the key
      */
-    override fun key(): String? {
+    override fun key() : String? {
         return if (meta.author != null) meta.name + " " + meta.author else meta.name
     }
 }
@@ -78,21 +78,21 @@ enum class LayoutType {
 /**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val context: Context?, private val layoutType: LayoutType) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
+internal class AppAdapter(val context : Context?, private val layoutType : LayoutType) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
     private val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context.theme)?.toBitmap(256, 256)
     private val missingString = context?.getString(R.string.metadata_missing)
 
     /**
      * This adds a header to the view with the contents of [string]
      */
-    fun addHeader(string: String) {
+    fun addHeader(string : String) {
         super.addHeader(BaseHeader(string))
     }
 
     /**
      * The onClick handler for the supplied [view], used for the icon preview
      */
-    override fun onClick(view: View) {
+    override fun onClick(view : View) {
         val position = view.tag as Int
 
         if (getItem(position) is AppItem) {
@@ -120,7 +120,7 @@ internal class AppAdapter(val context: Context?, private val layoutType: LayoutT
      * @param title The TextView associated with the title
      * @param subtitle The TextView associated with the subtitle
      */
-    private class ItemViewHolder(val parent: View, var icon: ImageView, var title: TextView, var subtitle: TextView, var card: View? = null) : RecyclerView.ViewHolder(parent)
+    private class ItemViewHolder(val parent : View, var icon : ImageView, var title : TextView, var subtitle : TextView, var card : View? = null) : RecyclerView.ViewHolder(parent)
 
     /**
      * The ViewHolder used by headers is used to hold the views associated with an headers
@@ -128,14 +128,14 @@ internal class AppAdapter(val context: Context?, private val layoutType: LayoutT
      * @param parent The parent view that contains all the others
      * @param header The TextView associated with the header
      */
-    private class HeaderViewHolder(val parent: View, var header: TextView? = null) : RecyclerView.ViewHolder(parent)
+    private class HeaderViewHolder(val parent : View, var header : TextView? = null) : RecyclerView.ViewHolder(parent)
 
     /**
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
      */
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(context)
-        var holder: RecyclerView.ViewHolder? = null
+        var holder : RecyclerView.ViewHolder? = null
 
         if (viewType == Item.ordinal) {
             val view = inflater.inflate(if (layoutType == LayoutType.List) R.layout.app_item_linear else R.layout.app_item_grid, parent, false)
@@ -155,6 +155,8 @@ internal class AppAdapter(val context: Context?, private val layoutType: LayoutT
 
                 if (context is View.OnLongClickListener)
                     holder.card!!.setOnLongClickListener(context as View.OnLongClickListener)
+
+                holder.title.isSelected = true
             }
         } else if (viewType == Header.ordinal) {
             val view = inflater.inflate(R.layout.section_item, parent, false)
@@ -169,7 +171,7 @@ internal class AppAdapter(val context: Context?, private val layoutType: LayoutT
     /**
      * This function binds the item at [position] to the supplied [viewHolder]
      */
-    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(viewHolder : RecyclerView.ViewHolder, position : Int) {
         val item = getItem(position)
 
         if (item is AppItem) {

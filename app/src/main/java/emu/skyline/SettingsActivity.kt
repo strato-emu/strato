@@ -15,12 +15,12 @@ class SettingsActivity : AppCompatActivity() {
     /**
      * This is the instance of [PreferenceFragment] that is shown inside [R.id.settings]
      */
-    private val preferenceFragment: PreferenceFragment = PreferenceFragment()
+    private val preferenceFragment : PreferenceFragment = PreferenceFragment()
 
     /**
      * This initializes [toolbar] and [R.id.settings]
      */
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.settings_activity)
@@ -37,7 +37,7 @@ class SettingsActivity : AppCompatActivity() {
     /**
      * This is used to refresh the preferences after [emu.skyline.preference.FolderActivity] has returned
      */
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         preferenceFragment.refreshPreferences()
     }
@@ -57,7 +57,7 @@ class SettingsActivity : AppCompatActivity() {
         /**
          * This constructs the preferences from [R.xml.preferences]
          */
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
         }
     }
