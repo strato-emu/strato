@@ -84,6 +84,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      */
     private external fun getFrametime() : Float
 
+    private external fun setButtonState(id : Long, state : Int)
+
+    private external fun setAxisValue(id : Int, value : Int)
+
     /**
      * This executes the specified ROM, [preferenceFd] is assumed to be valid beforehand
      *

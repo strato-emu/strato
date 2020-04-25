@@ -7,6 +7,7 @@
 #include "skyline/common.h"
 #include "skyline/os.h"
 #include "skyline/jvm.h"
+#include "skyline/input.h"
 
 bool Halt;
 jobject Surface;
@@ -14,6 +15,7 @@ uint FaultCount;
 skyline::GroupMutex JniMtx;
 skyline::u16 fps;
 skyline::u32 frametime;
+skyline::input::Input *input;
 
 void signalHandler(int signal) {
     syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
@@ -50,30 +52,33 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings, std::string(appFilesPath));
+        input = os.state.input.get();
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
 
         auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
         logger->Info("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);
+
         os.Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
         logger->Error(e.what());
     } catch (...) {
         logger->Error("An unknown exception has occurred");
     }
+
     logger->Info("Emulation has ended");
 
     auto end = std::chrono::steady_clock::now();
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setHalt(JNIEnv *env, jobject instance, jboolean halt) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setHalt(JNIEnv *, jobject, jboolean halt) {
     JniMtx.lock(skyline::GroupMutex::Group::Group2);
     Halt = halt;
     JniMtx.unlock();
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *env, jobject instance, jobject surface) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *env, jobject, jobject surface) {
     JniMtx.lock(skyline::GroupMutex::Group::Group2);
     if (!env->IsSameObject(Surface, nullptr))
         env->DeleteGlobalRef(Surface);
@@ -84,10 +89,19 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *
     JniMtx.unlock();
 }
 
-extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *env, jobject thiz) {
+extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *, jobject ) {
     return fps;
 }
 
-extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *env, jobject thiz) {
+extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *, jobject ) {
     return static_cast<float>(frametime) / 100;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jlong id, jint state) {
+    skyline::input::npad::NpadButton button{.raw = static_cast<skyline::u64>(id)};
+    input->npad[0]->SetButtonState(button, static_cast<skyline::input::npad::NpadButtonState>(state));
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint id, jint value) {
+    input->npad[0]->SetAxisValue(static_cast<skyline::input::npad::NpadAxisId>(id), value);
 }

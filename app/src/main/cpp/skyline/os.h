@@ -18,10 +18,8 @@ namespace skyline::kernel {
      * @brief The OS class manages the interaction between Skyline components and the underlying OS in NCE
      */
     class OS {
-      private:
-        DeviceState state; //!< The state of the device
-
       public:
+        DeviceState state; //!< The state of the device
         std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
         service::ServiceManager serviceManager; //!< This manages all of the service functions
         MemoryManager memory; //!< The MemoryManager object for this process
