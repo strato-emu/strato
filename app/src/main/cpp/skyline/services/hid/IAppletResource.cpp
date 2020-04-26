@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <input.h>
 #include "IAppletResource.h"
 
 namespace skyline::service::hid {
@@ -9,8 +10,7 @@ namespace skyline::service::hid {
     }) {}
 
     void IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        hidSharedMemory = std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::HidSharedMemSize, memory::Permission{true, false, false});
-        auto handle = state.process->InsertItem<type::KSharedMemory>(hidSharedMemory);
+        auto handle = state.process->InsertItem<type::KSharedMemory>(state.input->hidKMem);
         state.logger->Debug("HID Shared Memory Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);

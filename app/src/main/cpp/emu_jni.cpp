@@ -89,19 +89,22 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *
     JniMtx.unlock();
 }
 
-extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *, jobject ) {
+extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *, jobject) {
     return fps;
 }
 
-extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *, jobject ) {
+extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *, jobject) {
     return static_cast<float>(frametime) / 100;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jlong id, jint state) {
-    skyline::input::npad::NpadButton button{.raw = static_cast<skyline::u64>(id)};
-    input->npad[0]->SetButtonState(button, static_cast<skyline::input::npad::NpadButtonState>(state));
+    if (input) {
+        skyline::input::npad::NpadButton button{.raw = static_cast<skyline::u64>(id)};
+        input->npad[0]->SetButtonState(button, static_cast<skyline::input::npad::NpadButtonState>(state));
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint id, jint value) {
-    input->npad[0]->SetAxisValue(static_cast<skyline::input::npad::NpadAxisId>(id), value);
+    if (input)
+        input->npad[0]->SetAxisValue(static_cast<skyline::input::npad::NpadAxisId>(id), value);
 }

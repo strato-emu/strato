@@ -42,7 +42,6 @@ namespace skyline {
                 bool leftSr : 1; //!< Left Joy-Con SR button
                 bool rightSl : 1; //!< Right Joy-Con SL button
                 bool rightSr : 1; //!< Right Joy-Con SR button
-                bool touch : 1; //!< The touch button
             };
             u64 raw;
         };
