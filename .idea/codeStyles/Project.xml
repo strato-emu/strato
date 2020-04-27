@@ -3,6 +3,8 @@
     <option name="RIGHT_MARGIN" value="400" />
     <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
     <option name="FORMATTER_TAGS_ENABLED" value="true" />
+    <option name="FORMATTER_ON_TAG" value="@fmt:on" />
+    <option name="FORMATTER_OFF_TAG" value="@fmt:off" />
     <option name="SOFT_MARGINS" value="80,140" />
     <JetCodeStyleSettings>
       <option name="SPACE_BEFORE_TYPE_COLON" value="true" />

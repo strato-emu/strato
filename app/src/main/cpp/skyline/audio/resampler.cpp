@@ -16,7 +16,7 @@ namespace skyline::audio {
         i32 d; //!< The coefficient for the fourth index
     };
 
-    // @formatter:off
+    // @fmt:off
     constexpr std::array<LutEntry, 128> CurveLut0 = {{
         {6600, 19426, 6722, 3},     {6479, 19424, 6845, 9},     {6359, 19419, 6968, 15},    {6239, 19412, 7093, 22},
         {6121, 19403, 7219, 28},    {6004, 19391, 7345, 34},    {5888, 19377, 7472, 41},    {5773, 19361, 7600, 48},
@@ -118,7 +118,7 @@ namespace skyline::audio {
         {-76, 5004, 25919, 1912},   {-72, 4837, 25980, 2015},   {-67, 4673, 26035, 2120},   {-63, 4512, 26085, 2227},
         {-58, 4354, 26130, 2338},   {-54, 4199, 26169, 2451},   {-50, 4046, 26202, 2568},   {-46, 3897, 26230, 2688},
         {-42, 3751, 26253, 2811},   {-38, 3608, 26270, 2936},   {-34, 3467, 26281, 3064},   {-32, 3329, 26287, 3195}}};
-    // @formatter:on
+    // @fmt:on
 
     std::vector<i16> Resampler::ResampleBuffer(const std::vector<i16> &inputBuffer, double ratio, u8 channelCount) {
         auto step = static_cast<u32>(ratio * 0x8000);

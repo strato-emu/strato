@@ -5,7 +5,7 @@
 
 #include "common.h"
 #include "kernel/types/KSharedMemory.h"
-#include "input/common.h"
+#include "input/shared_mem.h"
 
 namespace skyline::input {
     /**
