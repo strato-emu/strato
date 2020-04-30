@@ -31,9 +31,14 @@ namespace skyline::service::hid {
         void SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests the activation of a controller. This is stubbed as we don't have to activate anything.
+         * @brief This requests the activation of controllers (https://switchbrew.org/wiki/HID_services#ActivateNpad)
          */
         void ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This requests the deactivation of controllers (https://switchbrew.org/wiki/HID_services#DeactivateNpad)
+         */
+        void DeactivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Sets the Joy-Con hold mode (https://switchbrew.org/wiki/HID_services#SetNpadJoyHoldType)

@@ -75,6 +75,16 @@ namespace skyline {
         }
 
         /**
+         * @brief Returns the current time in arbitrary ticks
+         * @return The current time in ticks
+         */
+        inline u64 GetTimeTicks() {
+            u64 ticks;
+            asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
+            return ticks;
+        }
+
+        /**
          * @brief Aligns up a value to a multiple of two
          * @tparam Type The type of the values
          * @param value The value to round up

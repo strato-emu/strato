@@ -99,12 +99,12 @@ extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIE
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jlong id, jint state) {
     if (input) {
-        skyline::input::npad::NpadButton button{.raw = static_cast<skyline::u64>(id)};
-        input->npad[0]->SetButtonState(button, static_cast<skyline::input::npad::NpadButtonState>(state));
+        skyline::input::NpadButton button{.raw = static_cast<skyline::u64>(id)};
+        input->npad.at(skyline::input::NpadId::Player1).SetButtonState(button, static_cast<skyline::input::NpadButtonState>(state));
     }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint id, jint value) {
     if (input)
-        input->npad[0]->SetAxisValue(static_cast<skyline::input::npad::NpadAxisId>(id), value);
+        input->npad.at(skyline::input::NpadId::Player1).SetAxisValue(static_cast<skyline::input::NpadAxisId>(id), value);
 }
