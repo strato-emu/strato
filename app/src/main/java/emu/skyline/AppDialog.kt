@@ -46,7 +46,7 @@ class AppDialog(val item : AppItem) : BottomSheetDialogFragment() {
         behavior.state = BottomSheetBehavior.STATE_EXPANDED
 
         dialog?.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_DOWN) {
+            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_UP) {
                 dialog?.onBackPressed()
                 return@setOnKeyListener true
             }
@@ -79,7 +79,7 @@ class AppDialog(val item : AppItem) : BottomSheetDialogFragment() {
         game_pin.setOnClickListener {
             val info = ShortcutInfo.Builder(context, item.title)
             info.setShortLabel(item.meta.name)
-            info.setActivity(ComponentName(requireActivity(), EmulationActivity::class.java))
+            info.setActivity(ComponentName(requireContext(), EmulationActivity::class.java))
             info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
 
             val intent = Intent(context, EmulationActivity::class.java)

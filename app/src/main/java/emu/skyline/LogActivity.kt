@@ -8,6 +8,7 @@ package emu.skyline
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -175,5 +176,17 @@ class LogActivity : AppCompatActivity() {
         })
 
         shareThread.start()
+    }
+
+    /**
+     * This handles on calling [onBackPressed] when [KeyEvent.KEYCODE_BUTTON_B] is lifted
+     */
+    override fun onKeyUp(keyCode : Int, event : KeyEvent?) : Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_B) {
+            onBackPressed()
+            return true
+        }
+
+        return super.onKeyUp(keyCode, event)
     }
 }

@@ -7,6 +7,7 @@ package emu.skyline
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import kotlinx.android.synthetic.main.titlebar.*
@@ -60,5 +61,17 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
         }
+    }
+
+    /**
+     * This handles on calling [onBackPressed] when [KeyEvent.KEYCODE_BUTTON_B] is lifted
+     */
+    override fun onKeyUp(keyCode : Int, event : KeyEvent?) : Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_B) {
+            onBackPressed()
+            return true
+        }
+
+        return super.onKeyUp(keyCode, event)
     }
 }

@@ -7,10 +7,7 @@ package emu.skyline.preference
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.Window
+import android.view.*
 import androidx.fragment.app.DialogFragment
 import emu.skyline.R
 import kotlinx.android.synthetic.main.license_dialog.*
@@ -26,7 +23,7 @@ class LicenseDialog : DialogFragment() {
         val layout = layoutInflater.inflate(R.layout.license_dialog, container)
 
         val displayRectangle = Rect()
-        val window : Window = activity!!.window
+        val window : Window = requireActivity().window
         window.decorView.getWindowVisibleDisplayFrame(displayRectangle)
 
         layout.minimumWidth = ((displayRectangle.width() * 0.9f).toInt())
@@ -43,5 +40,14 @@ class LicenseDialog : DialogFragment() {
 
         license_url.text = arguments?.getString("libraryUrl")!!
         license_content.text = context?.getString(arguments?.getInt("libraryLicense")!!)!!
+
+        dialog?.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_UP) {
+                dialog?.onBackPressed()
+                true
+            } else {
+                false
+            }
+        }
     }
 }

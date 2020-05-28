@@ -25,14 +25,15 @@
                 android:id="@+id/game_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+                android:textAppearance="?android:attr/textAppearanceListItem"
                 android:textSize="18sp" />
 
         <TextView
                 android:id="@+id/game_subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+                android:textColor="@android:color/tertiary_text_light"
                 android:textSize="14sp" />
 
         <LinearLayout

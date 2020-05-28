@@ -5,6 +5,7 @@
 
 package emu.skyline
 
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
@@ -17,6 +18,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
+import androidx.core.animation.doOnEnd
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -169,6 +171,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
         })
 
+        refresh_fab.setOnClickListener(this)
+        settings_fab.setOnClickListener(this)
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
 
@@ -187,6 +191,24 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 super.onScrolled(recyclerView, dx, dy)
             }
         })
+
+        val controllerFabX = controller_fabs.translationX
+        window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener {
+            if (!it) {
+                toolbar_layout.setExpanded(false)
+
+                controller_fabs.visibility = View.VISIBLE
+                ObjectAnimator.ofFloat(controller_fabs, "translationX", 0f).apply {
+                    duration = 250
+                    start()
+                }
+            } else {
+                ObjectAnimator.ofFloat(controller_fabs, "translationX", controllerFabX).apply {
+                    duration = 250
+                    start()
+                }.doOnEnd { controller_fabs.visibility = View.GONE }
+            }
+        }
     }
 
     private fun setupAppList() {
@@ -243,11 +265,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     /**
-     * This handles on-click interaction with [R.id.log_fab], [R.id.open_fab]
+     * This handles on-click interaction with [R.id.refresh_fab], [R.id.settings_fab], [R.id.log_fab], [R.id.open_fab]
      */
     override fun onClick(view : View) {
         when (view.id) {
+            R.id.refresh_fab -> refreshAdapter(false)
+
+            R.id.settings_fab -> startActivityForResult(Intent(this, SettingsActivity::class.java), 3)
+
             R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
+
             R.id.open_fab -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)

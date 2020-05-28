@@ -19,7 +19,6 @@
     <string name="share">Share</string>
     <!-- Logger -->
     <string name="file_missing">The log file was not found</string>
-    <string name="io_error">An I/O error has occurred</string>
     <string name="upload_logs">The logs are being uploaded</string>
     <string name="cleared">The logs have been cleared</string>
     <!-- Settings -->
