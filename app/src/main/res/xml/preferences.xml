@@ -1,19 +1,3 @@
-<!--
-  ~ Copyright 2018 The Android Open Source Project
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
@@ -21,8 +5,7 @@
             android:title="@string/emulator">
         <emu.skyline.preference.FolderPreference
                 app:key="search_location"
-                app:title="@string/search_location"
-                app:useSimpleSummaryProvider="true" />
+                app:title="@string/search_location" />
         <emu.skyline.preference.ThemePreference
                 android:defaultValue="2"
                 android:entries="@array/app_theme"
@@ -77,6 +60,25 @@
                 android:summaryOn="@string/docked_enabled"
                 app:key="operation_mode"
                 app:title="@string/use_docked" />
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:key="category_input"
+            android:title="@string/input"
+            app:initialExpandedChildrenCount="4">
+        <CheckBoxPreference
+                android:defaultValue="true"
+                android:summaryOff="@string/osc_not_shown"
+                android:summaryOn="@string/osc_shown"
+                app:key="show_osc"
+                app:title="@string/show_osc" />
+        <emu.skyline.preference.ControllerPreference index="0" />
+        <emu.skyline.preference.ControllerPreference index="1" />
+        <emu.skyline.preference.ControllerPreference index="2" />
+        <emu.skyline.preference.ControllerPreference index="3" />
+        <emu.skyline.preference.ControllerPreference index="4" />
+        <emu.skyline.preference.ControllerPreference index="5" />
+        <emu.skyline.preference.ControllerPreference index="6" />
+        <emu.skyline.preference.ControllerPreference index="7" />
     </PreferenceCategory>
     <PreferenceCategory
             android:key="category_licenses"

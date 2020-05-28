@@ -170,7 +170,7 @@ namespace skyline::service {
             }
             session->serviceStatus = type::KSession::ServiceStatus::Closed;
         }
-    };
+    }
 
     void ServiceManager::SyncRequestHandler(KHandle handle) {
         auto session = state.process->GetHandle<type::KSession>(handle);

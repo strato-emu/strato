@@ -15,9 +15,9 @@ import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
+import emu.skyline.input.AxisId
+import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonState
-import emu.skyline.input.NpadAxis
-import emu.skyline.input.NpadButton
 import emu.skyline.loader.getRomFormat
 import kotlinx.android.synthetic.main.emu_activity.*
 import java.io.File
@@ -231,26 +231,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
             else -> return false
         }
 
-        val buttonMap : Map<Int, NpadButton> = mapOf(
-                KeyEvent.KEYCODE_BUTTON_A to NpadButton.A,
-                KeyEvent.KEYCODE_BUTTON_B to NpadButton.B,
-                KeyEvent.KEYCODE_BUTTON_X to NpadButton.X,
-                KeyEvent.KEYCODE_BUTTON_Y to NpadButton.Y,
-                KeyEvent.KEYCODE_BUTTON_THUMBL to NpadButton.LeftStick,
-                KeyEvent.KEYCODE_BUTTON_THUMBR to NpadButton.RightStick,
-                KeyEvent.KEYCODE_BUTTON_L1 to NpadButton.L,
-                KeyEvent.KEYCODE_BUTTON_R1 to NpadButton.R,
-                KeyEvent.KEYCODE_BUTTON_L2 to NpadButton.ZL,
-                KeyEvent.KEYCODE_BUTTON_R2 to NpadButton.ZR,
-                KeyEvent.KEYCODE_BUTTON_START to NpadButton.Plus,
-                KeyEvent.KEYCODE_BUTTON_SELECT to NpadButton.Minus,
-                KeyEvent.KEYCODE_DPAD_DOWN to NpadButton.DpadDown,
-                KeyEvent.KEYCODE_DPAD_UP to NpadButton.DpadUp,
-                KeyEvent.KEYCODE_DPAD_LEFT to NpadButton.DpadLeft,
-                KeyEvent.KEYCODE_DPAD_RIGHT to NpadButton.DpadRight)
+        val buttonMap : Map<Int, ButtonId> = mapOf(
+                KeyEvent.KEYCODE_BUTTON_A to ButtonId.A,
+                KeyEvent.KEYCODE_BUTTON_B to ButtonId.B,
+                KeyEvent.KEYCODE_BUTTON_X to ButtonId.X,
+                KeyEvent.KEYCODE_BUTTON_Y to ButtonId.Y,
+                KeyEvent.KEYCODE_BUTTON_THUMBL to ButtonId.LeftStick,
+                KeyEvent.KEYCODE_BUTTON_THUMBR to ButtonId.RightStick,
+                KeyEvent.KEYCODE_BUTTON_L1 to ButtonId.L,
+                KeyEvent.KEYCODE_BUTTON_R1 to ButtonId.R,
+                KeyEvent.KEYCODE_BUTTON_L2 to ButtonId.ZL,
+                KeyEvent.KEYCODE_BUTTON_R2 to ButtonId.ZR,
+                KeyEvent.KEYCODE_BUTTON_START to ButtonId.Plus,
+                KeyEvent.KEYCODE_BUTTON_SELECT to ButtonId.Minus,
+                KeyEvent.KEYCODE_DPAD_DOWN to ButtonId.DpadDown,
+                KeyEvent.KEYCODE_DPAD_UP to ButtonId.DpadUp,
+                KeyEvent.KEYCODE_DPAD_LEFT to ButtonId.DpadLeft,
+                KeyEvent.KEYCODE_DPAD_RIGHT to ButtonId.DpadRight)
 
         return try {
-            setButtonState(buttonMap.getValue(event.keyCode).value(), action.ordinal);
+            setButtonState(buttonMap.getValue(event.keyCode).value(), action.ordinal)
             true
         } catch (ignored : NoSuchElementException) {
             super.dispatchKeyEvent(event)
@@ -273,13 +273,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     override fun dispatchGenericMotionEvent(event : MotionEvent) : Boolean {
         if ((event.source and InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD ||
                 (event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-            val hatXMap : Map<Float, NpadButton> = mapOf(
-                    -1.0f to NpadButton.DpadLeft,
-                    +1.0f to NpadButton.DpadRight)
+            val hatXMap : Map<Float, ButtonId> = mapOf(
+                    -1.0f to ButtonId.DpadLeft,
+                    +1.0f to ButtonId.DpadRight)
 
-            val hatYMap : Map<Float, NpadButton> = mapOf(
-                    -1.0f to NpadButton.DpadUp,
-                    +1.0f to NpadButton.DpadDown)
+            val hatYMap : Map<Float, ButtonId> = mapOf(
+                    -1.0f to ButtonId.DpadUp,
+                    +1.0f to ButtonId.DpadDown)
 
             if (controllerHatX != event.getAxisValue(MotionEvent.AXIS_HAT_X)) {
                 if (event.getAxisValue(MotionEvent.AXIS_HAT_X) == 0.0f)
@@ -305,11 +305,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         }
 
         if ((event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK && event.action == MotionEvent.ACTION_MOVE) {
-            val axisMap : Map<Int, NpadAxis> = mapOf(
-                    MotionEvent.AXIS_X to NpadAxis.LX,
-                    MotionEvent.AXIS_Y to NpadAxis.LY,
-                    MotionEvent.AXIS_Z to NpadAxis.RX,
-                    MotionEvent.AXIS_RZ to NpadAxis.RY)
+            val axisMap : Map<Int, AxisId> = mapOf(
+                    MotionEvent.AXIS_X to AxisId.LX,
+                    MotionEvent.AXIS_Y to AxisId.LY,
+                    MotionEvent.AXIS_Z to AxisId.RX,
+                    MotionEvent.AXIS_RZ to AxisId.RY)
 
             //TODO: Digital inputs based off of analog sticks
             event.device.motionRanges.forEach {

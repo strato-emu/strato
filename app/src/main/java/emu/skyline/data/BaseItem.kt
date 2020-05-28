@@ -15,5 +15,5 @@ abstract class BaseItem : BaseElement(ElementType.Item) {
     /**
      * This function returns a string used for searching
      */
-    abstract fun key() : String?
+    open fun key() : String? = null
 }

@@ -11,7 +11,9 @@ import android.content.Intent
 import android.net.Uri
 import android.util.AttributeSet
 import androidx.preference.Preference
+import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
+import emu.skyline.SettingsActivity
 
 /**
  * This preference shows the decoded URI of it's preference and launches [FolderActivity]
@@ -23,7 +25,10 @@ class FolderPreference : Preference {
     private var mDirectory : String? = null
 
     constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : super(context, attrs, defStyleAttr) {
-        summaryProvider = SimpleSummaryProvider()
+        summaryProvider = SummaryProvider<FolderPreference> { preference ->
+            preference.onSetInitialValue(null)
+            Uri.decode(preference.mDirectory) ?: ""
+        }
     }
 
     constructor(context : Context?, attrs : AttributeSet?) : this(context, attrs, R.attr.preferenceStyle)
@@ -34,6 +39,9 @@ class FolderPreference : Preference {
      * This launches [FolderActivity] on click to change the directory
      */
     override fun onClick() {
+        if (context is SettingsActivity)
+            (context as SettingsActivity).refreshKey = key
+
         val intent = Intent(context, FolderActivity::class.java)
         (context as Activity).startActivityForResult(intent, 0)
     }
@@ -43,17 +51,5 @@ class FolderPreference : Preference {
      */
     override fun onSetInitialValue(defaultValue : Any?) {
         mDirectory = getPersistedString(defaultValue as String?)
-    }
-
-    /**
-     * This [Preference.SummaryProvider] is used to set the summary for URI values
-     */
-    private class SimpleSummaryProvider : SummaryProvider<FolderPreference> {
-        /**
-         * This returns the decoded URI of the directory as the summary
-         */
-        override fun provideSummary(preference : FolderPreference) : CharSequence {
-            return Uri.decode(preference.mDirectory) ?: ""
-        }
     }
 }

@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Skyline</string>
     <!-- Common -->
     <string name="search">Search</string>
@@ -24,10 +24,14 @@
     <!-- Settings -->
     <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
+    <string name="theme">Theme</string>
     <string name="layout_type">Game Display Layout</string>
     <string name="select_action">Always Show Game Information</string>
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
+    <string name="perf_stats">Show Performance Statistics</string>
+    <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
+    <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
     <string name="log_level">Log Level</string>
     <string name="log_compact">Compact Logs</string>
     <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
@@ -36,9 +40,64 @@
     <string name="use_docked">Use Docked Mode</string>
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
     <string name="docked_enabled">The system will emulate being in docked mode</string>
-    <string name="theme">Theme</string>
     <string name="username">Username</string>
     <string name="username_default">@string/app_name</string>
+    <!-- Input -->
+    <string name="input">Input</string>
+    <string name="show_osc">Show On-Screen Controls</string>
+    <string name="osc_not_shown">On-Screen Controls won\'t be shown</string>
+    <string name="osc_shown">On-Screen Controls will be shown</string>
+    <string name="controller">Controller</string>
+    <string name="config_controller">Configure Controller</string>
+    <string name="controller_type">Controller Type</string>
+    <string name="none">None</string>
+    <string name="handheld_procon">Handheld + Pro Controller</string>
+    <string name="procon">Pro Controller</string>
+    <string name="ljoycon">Left JoyCon</string>
+    <string name="rjoycon">Right JoyCon</string>
+    <string name="general">General</string>
+    <string name="partner_joycon">Partner Joy-Con</string>
+    <string name="rumble_device">Rumble Device</string>
+    <string name="supported">Supported</string>
+    <string name="not_supported">Not Supported</string>
+    <string name="press_any_button">Press any button on a controller</string>
+    <string name="confirm_button_again">Confirm choice by pressing a button again</string>
+    <string name="reset">Reset</string>
+    <string name="buttons">Buttons</string>
+    <string name="use_button_axis">Use any button or axis on a controller</string>
+    <string name="release_confirm">Release to confirm selection</string>
+    <string name="hold_confirm">Hold to confirm selection</string>
+    <string name="sticks">Sticks</string>
+    <string name="stick_button">Stick Button</string>
+    <string name="next">Next</string>
+    <string name="x_plus">Stick X+ Axis (Right)</string>
+    <string name="y_plus">Stick Y+ Axis (Up)</string>
+    <string name="x_minus">Stick X- Axis (Left)</string>
+    <string name="y_minus">Stick Y- Axis (Down)</string>
+    <string name="a_button">A</string>
+    <string name="b_button">B</string>
+    <string name="x_button">X</string>
+    <string name="y_button">Y</string>
+    <string name="left_shoulder">Left Shoulder</string>
+    <string name="right_shoulder">Right Shoulder</string>
+    <string name="left_trigger">Left Trigger</string>
+    <string name="right_trigger">Right Trigger</string>
+    <string name="plus_button">Plus</string>
+    <string name="minus_button">Minus</string>
+    <string name="emu_menu_button">Emulator Menu</string>
+    <string name="stick_preview">Stick Preview</string>
+    <string name="done">Done</string>
+    <string name="use_non_stick">Use any unmapped button to finish</string>
+    <string name="button">Button</string>
+    <string name="up">Up</string>
+    <string name="down">Down</string>
+    <string name="left">Left</string>
+    <string name="right">Right</string>
+    <string name="dpad">D-pad</string>
+    <string name="face_buttons">Face Buttons</string>
+    <string name="shoulder_trigger"><![CDATA[Shoulder & Trigger Buttons]]></string>
+    <string name="shoulder_rail">Shoulder Buttons on Joy-Con Rail</string>
+    <string name="misc_buttons">Miscellaneous Buttons</string>
     <!-- Licenses -->
     <string name="licenses">Licenses</string>
     <string name="skyline_license_description">The license of Skyline (MPL 2.0)</string>
@@ -66,7 +125,7 @@
     <string name="roboto_description">We use Roboto as our FOSS shared font replacement for Nintendo\'s extended character set (Apache License 2.0)</string>
     <string name="source_sans_pro">Source Sans Pro</string>
     <string name="source_sans_pro_description">We use Source Sans Pro as our FOSS shared font replacement for Extended Chinese (SIL Open Font License 1.1)</string>
-    <string name="perf_stats">Show Performance Statistics</string>
-    <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
-    <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
+    <!-- Misc -->
+    <!--suppress AndroidLintUnusedResources -->
+    <string name="expand_button_title" tools:override="true">Expand</string>
 </resources>

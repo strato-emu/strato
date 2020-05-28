@@ -9,7 +9,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import emu.skyline.input.InputManager
+import emu.skyline.preference.ControllerPreference
 import kotlinx.android.synthetic.main.titlebar.*
 
 class SettingsActivity : AppCompatActivity() {
@@ -19,10 +22,22 @@ class SettingsActivity : AppCompatActivity() {
     private val preferenceFragment : PreferenceFragment = PreferenceFragment()
 
     /**
-     * This initializes [toolbar] and [R.id.settings]
+     * This is an instance of [InputManager] used by [ControllerPreference]
+     */
+    lateinit var inputManager : InputManager
+
+    /**
+     * The key of the element to force a refresh when [onActivityResult] is called
+     */
+    var refreshKey : String? = null
+
+    /**
+     * This initializes all of the elements in the activity and displays the settings fragment
      */
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
+
+        inputManager = InputManager(this)
 
         setContentView(R.layout.settings_activity)
 
@@ -36,11 +51,17 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     /**
-     * This is used to refresh the preferences after [emu.skyline.preference.FolderActivity] has returned
+     * This is used to refresh the preferences after [emu.skyline.preference.FolderActivity] or [emu.skyline.input.ControllerActivity] has returned
      */
     public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        preferenceFragment.refreshPreferences()
+
+        if (refreshKey != null) {
+            inputManager.syncObjects()
+            preferenceFragment.refreshPreference(refreshKey!!)
+
+            refreshKey = null
+        }
     }
 
     /**
@@ -48,11 +69,12 @@ class SettingsActivity : AppCompatActivity() {
      */
     class PreferenceFragment : PreferenceFragmentCompat() {
         /**
-         * This clears the preference screen and reloads all preferences
+         * This forces refreshing a certain preference by indirectly calling [Preference.notifyChanged]
          */
-        fun refreshPreferences() {
-            preferenceScreen = null
-            addPreferencesFromResource(R.xml.preferences)
+        fun refreshPreference(key : String) {
+            val preference = preferenceManager.findPreference<Preference>(key)!!
+            preference.isSelectable = !preference.isSelectable
+            preference.isSelectable = !preference.isSelectable
         }
 
         /**

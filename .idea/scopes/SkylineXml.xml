@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="SkylineXml" pattern="file[app]:src/main/res/layout/*||file[app]:src/main/res/menu/*||file[app]:src/main/res/values/*||file[app]:src/main/res/values-night/*||file[app]:src/main/res/xml/*" />
+</component>
