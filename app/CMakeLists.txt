@@ -119,4 +119,4 @@ add_library(skyline SHARED
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static)
-target_compile_options(skyline PRIVATE -Wno-c++17-extensions)
+target_compile_options(skyline PRIVATE -Wno-c++17-extensions -Wall -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)
