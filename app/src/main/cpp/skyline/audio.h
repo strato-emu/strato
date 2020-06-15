@@ -16,7 +16,6 @@ namespace skyline::audio {
      */
     class Audio : public oboe::AudioStreamCallback {
       private:
-        const DeviceState &state; //!< The state of the device
         oboe::AudioStreamBuilder builder; //!< The audio stream builder, used to open
         oboe::ManagedStream outputStream; //!< The output oboe audio stream
         std::vector<std::shared_ptr<audio::AudioTrack>> audioTracks; //!< A vector of shared_ptr to every open audio track

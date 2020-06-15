@@ -4,7 +4,7 @@
 #include "audio.h"
 
 namespace skyline::audio {
-    Audio::Audio(const DeviceState &state) : state(state), oboe::AudioStreamCallback() {
+    Audio::Audio(const DeviceState &state) : oboe::AudioStreamCallback() {
         builder.setChannelCount(constant::ChannelCount);
         builder.setSampleRate(constant::SampleRate);
         builder.setFormat(constant::PcmFormat);

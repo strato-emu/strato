@@ -41,5 +41,8 @@ namespace skyline::kernel::type {
          * @return If the address is inside the memory object
          */
         inline virtual bool IsInside(u64 address) = 0;
+
+        virtual ~KMemory() = default;
+
     };
 }

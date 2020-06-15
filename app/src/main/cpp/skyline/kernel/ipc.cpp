@@ -15,7 +15,7 @@ namespace skyline::kernel::ipc {
 
     OutputBuffer::OutputBuffer(kernel::ipc::BufferDescriptorC *cBuf) : IpcBuffer(cBuf->address, cBuf->size, IpcBufferType::C) {}
 
-    IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain), state(state) {
+    IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain) {
         u8 *tls = state.process->GetPointer<u8>(state.thread->tls);
         u8 *pointer = tls;
 

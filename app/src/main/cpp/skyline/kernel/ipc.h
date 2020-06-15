@@ -247,7 +247,6 @@ namespace skyline {
          */
         class IpcRequest {
           private:
-            const DeviceState &state; //!< The state of the device
             u8 *payloadOffset; //!< This is the offset of the data read from the payload
 
           public:

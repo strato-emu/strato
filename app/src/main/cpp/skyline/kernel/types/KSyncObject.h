@@ -26,5 +26,7 @@ namespace skyline::kernel::type {
         virtual void Signal() {
             signalled = true;
         }
+
+        virtual ~KSyncObject() = default;
     };
 }
