@@ -105,7 +105,7 @@ class AppEntry : Serializable {
             output.writeUTF(author)
         output.writeBoolean(icon != null)
         if (icon != null)
-            icon!!.compress(Bitmap.CompressFormat.WEBP, 100, output)
+            icon!!.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, output)
     }
 
     /**

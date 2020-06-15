@@ -189,23 +189,23 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * This sets [surface] to [holder].surface and passes it into libskyline
      */
-    override fun surfaceCreated(holder : SurfaceHolder?) {
+    override fun surfaceCreated(holder : SurfaceHolder) {
         Log.d("surfaceCreated", "Holder: ${holder.toString()}")
-        surface = holder!!.surface
+        surface = holder.surface
         setSurface(surface)
     }
 
     /**
      * This is purely used for debugging surface changes
      */
-    override fun surfaceChanged(holder : SurfaceHolder?, format : Int, width : Int, height : Int) {
+    override fun surfaceChanged(holder : SurfaceHolder, format : Int, width : Int, height : Int) {
         Log.d("surfaceChanged", "Holder: ${holder.toString()}, Format: $format, Width: $width, Height: $height")
     }
 
     /**
      * This sets [surface] to null and passes it into libskyline
      */
-    override fun surfaceDestroyed(holder : SurfaceHolder?) {
+    override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d("surfaceDestroyed", "Holder: ${holder.toString()}")
         surface = null
         setSurface(surface)
