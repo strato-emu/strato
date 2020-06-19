@@ -28,9 +28,8 @@ import emu.skyline.adapter.AppAdapter
 import emu.skyline.adapter.AppItem
 import emu.skyline.adapter.GridLayoutSpan
 import emu.skyline.adapter.LayoutType
-import emu.skyline.loader.BaseLoader
-import emu.skyline.loader.NroLoader
-import emu.skyline.utility.RandomAccessDocument
+import emu.skyline.loader.RomFile
+import emu.skyline.loader.RomFormat
 import kotlinx.android.synthetic.main.main_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 import java.io.File
@@ -52,31 +51,34 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
      */
-    private fun addEntries(extension : String, loader : BaseLoader, directory : DocumentFile, found : Boolean = false) : Boolean {
+    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                foundCurrent = addEntries(extension, loader, file, foundCurrent)
+                foundCurrent = addEntries(extension, romFormat, file, foundCurrent)
             } else {
                 if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
-                    val document = RandomAccessDocument(this, file)
+                    val romFd = contentResolver.openFileDescriptor(file.uri, "r")!!
+                    val romFile = RomFile(this, romFormat, romFd)
 
-                    if (loader.verifyFile(document)) {
-                        val entry = loader.getAppEntry(document, file.uri)
+                    if (romFile.valid()) {
+                        romFile.use {
+                            val entry = romFile.getAppEntry(file.uri)
 
-                        runOnUiThread {
-                            if (!foundCurrent) {
-                                adapter.addHeader(loader.format.name)
+                            runOnUiThread {
+                                if (!foundCurrent) {
+                                    adapter.addHeader(romFormat.name)
+                                }
+
+                                adapter.addItem(AppItem(entry))
                             }
 
-                            adapter.addItem(AppItem(entry))
+                            foundCurrent = true
                         }
-
-                        foundCurrent = true
                     }
 
-                    document.close()
+                    romFd.close();
                 }
             }
         }
@@ -109,7 +111,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
             try {
                 runOnUiThread { adapter.clear() }
 
-                val foundNros = addEntries("nro", NroLoader(this), DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                val foundNros = addEntries("nro", RomFormat.NRO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
 
                 runOnUiThread {
                     if (!foundNros)

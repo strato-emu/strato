@@ -10,8 +10,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
-import emu.skyline.utility.RandomAccessDocument
+import android.view.Surface
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -21,10 +22,10 @@ import java.util.*
 /**
  * An enumeration of all supported ROM formats
  */
-enum class RomFormat {
-    NRO,
-    XCI,
-    NSP,
+enum class RomFormat(val format: Int){
+    NRO(0),
+    XCI(1),
+    NSP(2),
 }
 
 /**
@@ -69,7 +70,7 @@ class AppEntry : Serializable {
      */
     var uri : Uri
 
-    constructor(name : String, author : String, format : RomFormat, uri : Uri, icon : Bitmap) {
+    constructor(name : String, author : String, format : RomFormat, uri : Uri, icon : Bitmap?) {
         this.name = name
         this.author = author
         this.icon = icon
@@ -123,16 +124,81 @@ class AppEntry : Serializable {
 }
 
 /**
- * This class is used as the base class for all loaders
+ * This class is used as interface between libskyline and Kotlin for loaders
  */
-internal abstract class BaseLoader(val context : Context, val format : RomFormat) {
+internal class RomFile(val context : Context, val format : RomFormat, val file : ParcelFileDescriptor) : AutoCloseable {
     /**
-     * This is used to get the [AppEntry] for the specified [file] at the supplied [uri]
+     * This is a pointer to the corresponding C++ Loader class
      */
-    abstract fun getAppEntry(file : RandomAccessDocument, uri : Uri) : AppEntry
+    var instance : Long
+
+    init {
+        System.loadLibrary("skyline")
+
+        instance = initialize(format.ordinal, file.fd)
+    }
 
     /**
-     * This returns if the supplied [file] is a valid ROM or not
+     * This allocates and initializes a new loader object
+     * @param format The format of the ROM
+     * @param romFd A file descriptor of the ROM
+     * @return A pointer to the newly allocated object, or 0 if the ROM is invalid
      */
-    abstract fun verifyFile(file : RandomAccessDocument) : Boolean
+    private external fun initialize(format : Int, romFd : Int) : Long
+
+    /**
+     * @return Whether the ROM contains assets, such as an icon or author information
+     */
+    private external fun hasAssets(instance : Long) : Boolean
+
+    /**
+     * @return A ByteArray containing the application's icon as a bitmap
+     */
+    private external fun getIcon(instance : Long) : ByteArray
+
+    /**
+     * @return A String containing the name of the application
+     */
+    private external fun getApplicationName(instance : Long) : String
+
+    /**
+     * @return A String containing the publisher of the application
+     */
+    private external fun getApplicationPublisher(instance : Long) : String
+
+    /**
+     * This destroys an existing loader object and frees it's resources
+     */
+    private external fun destroy(instance : Long)
+
+    /**
+     * This is used to get the [AppEntry] for the specified NRO
+     */
+    fun getAppEntry(uri : Uri) : AppEntry {
+        return if (hasAssets(instance)) {
+            val rawIcon = getIcon(instance)
+            val icon = if (rawIcon.size != 0) BitmapFactory.decodeByteArray(rawIcon, 0, rawIcon.size) else null
+
+            AppEntry(getApplicationName(instance), getApplicationPublisher(instance), format, uri, icon)
+        } else {
+            AppEntry(context, format, uri)
+        }
+    }
+
+    /**
+     * This checks if the currently loaded ROM is valid
+     */
+    fun valid() : Boolean {
+        return instance != 0L
+    }
+
+    /**
+     * This destroys the C++ loader object
+     */
+    override fun close() {
+        if (valid()) {
+            destroy(instance)
+            instance = 0
+        }
+    }
 }

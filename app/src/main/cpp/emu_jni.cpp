@@ -3,6 +3,7 @@
 
 #include <csignal>
 #include <unistd.h>
+#include "skyline/loader/loader.h"
 #include "skyline/common.h"
 #include "skyline/os.h"
 #include "skyline/jvm.h"
@@ -50,7 +51,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
         logger->Info("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);
-        os.Execute(romFd, static_cast<skyline::TitleFormat>(romType));
+        os.Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
         logger->Error(e.what());
     } catch (...) {
