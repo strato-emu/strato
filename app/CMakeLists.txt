@@ -94,6 +94,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/visrv/IManagerDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IManagerRootService.cpp
         ${source_DIR}/skyline/services/visrv/ISystemDisplayService.cpp
+        ${source_DIR}/skyline/vfs/os_backing.cpp
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe)
