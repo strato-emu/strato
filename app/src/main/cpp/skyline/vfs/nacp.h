@@ -32,6 +32,9 @@ namespace skyline::vfs {
         static_assert(sizeof(NacpData) == 0x4000);
 
       public:
+        /**
+         * @param backing The backing for the NACP
+         */
         NACP(const std::shared_ptr<vfs::Backing> &backing);
 
         std::string applicationName; //!< The name of the application in the currently selected language

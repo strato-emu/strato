@@ -6,6 +6,7 @@
 #include <thread>
 #include <sys/mman.h>
 #include "common.h"
+#include "loader/loader.h"
 #include "kernel/ipc.h"
 #include "kernel/types/KProcess.h"
 #include "kernel/types/KThread.h"
@@ -37,7 +38,7 @@ namespace skyline::kernel {
          * @param romFd A FD to the ROM file to execute
          * @param romType The type of the ROM file
          */
-        void Execute(int romFd, TitleFormat romType);
+        void Execute(int romFd, loader::RomFormat romType);
 
         /**
          * @brief Creates a new process

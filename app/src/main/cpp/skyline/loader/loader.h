@@ -3,35 +3,46 @@
 
 #pragma once
 
-#include <unistd.h>
-#include <os.h>
-#include <kernel/types/KProcess.h>
+#include <vfs/backing.h>
+#include <vfs/nacp.h>
 
 namespace skyline::loader {
+    /**
+     * @brief This enumerates the types of ROM files
+     * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.RomFormat
+     */
+    enum class RomFormat {
+        NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
+        XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
+        NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
+    };
+
+    /**
+     * @brief The Loader class provides an abstract interface for ROM loaders
+     */
     class Loader {
       protected:
-        int fd; //!< An FD to the ROM file
-
-        /**
-         * @brief Read the file at a particular offset
-         * @tparam T The type of object to write to
-         * @param output The object to write to
-         * @param offset The offset to read the file at
-         * @param size The amount to read in bytes
-         */
-        template<typename T>
-        inline void ReadOffset(T *output, u64 offset, size_t size) {
-            pread64(fd, output, size, offset);
-        }
+        std::shared_ptr<vfs::Backing> backing; //!< The backing of the loader
 
       public:
-        /**
-         * @param filePath The path to the ROM file
-         */
-        Loader(int fd) : fd(fd) {}
+        std::shared_ptr<vfs::NACP> nacp; //!< The NACP of the current application
 
         /**
-         * This loads in the data of the main process
+         * @param backing The backing for the NRO
+         */
+        Loader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {}
+
+        virtual ~Loader() = default;
+
+        /**
+         * @return The icon of the loaded application
+         */
+        virtual std::vector<u8> GetIcon() {
+            return std::vector<u8>();
+        }
+
+        /**
+         * @brief This loads in the data of the main process
          * @param process The process to load in the data
          * @param state The state of the device
          */

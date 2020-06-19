@@ -57,16 +57,6 @@ namespace skyline {
         }
     };
 
-    /**
-     * @brief This enumerates the types of the ROM
-     * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.TitleFormat
-     */
-    enum class TitleFormat {
-        NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
-        XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
-        NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
-    };
-
     namespace util {
         /**
          * @brief Returns the current time in nanoseconds

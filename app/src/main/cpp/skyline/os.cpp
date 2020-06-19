@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include "os.h"
+#include "vfs/os_backing.h"
 #include "loader/nro.h"
 #include "nce/guest.h"
+#include "os.h"
 
 namespace skyline::kernel {
     OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, jvmManager, settings, logger), memory(state), serviceManager(state) {}
 
-    void OS::Execute(int romFd, TitleFormat romType) {
+    void OS::Execute(int romFd, loader::RomFormat romType) {
         std::shared_ptr<loader::Loader> loader;
+        auto romFile = std::make_shared<vfs::OsBacking>(romFd);
 
-        if (romType == TitleFormat::NRO) {
-            loader = std::make_shared<loader::NroLoader>(romFd);
+        if (romType == loader::RomFormat::NRO) {
+            loader = std::make_shared<loader::NroLoader>(romFile);
         } else
             throw exception("Unsupported ROM extension.");
 
