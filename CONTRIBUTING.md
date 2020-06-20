@@ -49,6 +49,7 @@ Notes:
 * The `DeviceState` object or other objects which are systematically used throughout multiple classes such as `ServiceManager` can be skipped from function argument documentation as well as class members in the constructor
 * The `KSession`, `IpcRequest` and `IpcResponse` objects in IPC command function arguments and other such objects (Such as `IoctlData`) can be skipped from function argument documentation if used in those contexts, they will need to be documented if they're used as a class member or something on those lines
 * Any class members don't need to be redundantly documented in the constructor
+* Comments on virtual functions are optional
 
 ### Spacing
 We generally follow the rule of **"Functional Spacing"**, that being spacing between chunks of code that do something functionally different while functionally similar blocks of code can be closer together.
