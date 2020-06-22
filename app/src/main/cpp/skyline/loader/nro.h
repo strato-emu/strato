@@ -60,8 +60,8 @@ namespace skyline::loader {
             u32 magic; //!< The asset section magic "ASET"
             u32 version; //!< The format version
             NroAssetSection icon; //!< The header describing the location of the icon
-            NroAssetSection nacp; //!< The header describing the location of the nacp
-            NroAssetSection romfs; //!< The header describing the location of the romfs
+            NroAssetSection nacp; //!< The header describing the location of the NACP
+            NroAssetSection romFs; //!< The header describing the location of the RomFS
         } assetHeader{};
 
         /**

@@ -26,6 +26,7 @@ namespace skyline::loader {
 
       public:
         std::shared_ptr<vfs::NACP> nacp; //!< The NACP of the current application
+        std::shared_ptr<vfs::Backing> romFs; //!< The RomFS of the current application
 
         /**
          * @param backing The backing for the NRO

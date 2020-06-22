@@ -52,6 +52,7 @@ namespace skyline::service {
         timesrv_ITimeZoneService,
         fssrv_IFileSystemProxy,
         fssrv_IFileSystem,
+        fssrv_IStorage,
         nvdrv_INvDrvServices,
         visrv_IManagerRootService,
         visrv_IApplicationDisplayService,

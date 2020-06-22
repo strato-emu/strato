@@ -26,5 +26,10 @@ namespace skyline::service::fssrv {
          * @brief This returns a handle to an instance of #IFileSystem (https://switchbrew.org/wiki/Filesystem_services#IFileSystem) with type SDCard
          */
         void OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns a handle to an instance of #IStorage (https://switchbrew.org/wiki/Filesystem_services#IStorage) for the application's data storage
+         */
+        void OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

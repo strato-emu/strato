@@ -24,6 +24,9 @@ namespace skyline::loader {
 
             NroAssetSection &nacpHeader = assetHeader.nacp;
             nacp = std::make_shared<vfs::NACP>(std::make_shared<vfs::RegionBacking>(backing, header.size + nacpHeader.offset, nacpHeader.size));
+
+            NroAssetSection &romFsHeader = assetHeader.romFs;
+            romFs = std::make_shared<vfs::RegionBacking>(backing, header.size + romFsHeader.offset, romFsHeader.size);
         }
     }
 
