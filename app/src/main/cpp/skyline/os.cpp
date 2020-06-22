@@ -10,16 +10,15 @@ namespace skyline::kernel {
     OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings) : state(this, process, jvmManager, settings, logger), memory(state), serviceManager(state) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
-        std::shared_ptr<loader::Loader> loader;
         auto romFile = std::make_shared<vfs::OsBacking>(romFd);
 
         if (romType == loader::RomFormat::NRO) {
-            loader = std::make_shared<loader::NroLoader>(romFile);
+            state.loader = std::make_shared<loader::NroLoader>(romFile);
         } else
             throw exception("Unsupported ROM extension.");
 
         auto process = CreateProcess(constant::BaseAddress, 0, constant::DefStackSize);
-        loader->LoadProcessData(process, state);
+        state.loader->LoadProcessData(process, state);
         process->InitializeMemory();
         process->threads.at(process->pid)->Start(); // The kernel itself is responsible for starting the main thread
 
