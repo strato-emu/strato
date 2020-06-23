@@ -82,7 +82,7 @@ namespace skyline::service {
         std::lock_guard serviceGuard(mutex);
         auto serviceObject = CreateService(ServiceString.at(serviceName));
         KHandle handle{};
-        if (response.isDomain) {
+        if (session.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
             handle = session.handleIndex;
@@ -97,7 +97,7 @@ namespace skyline::service {
     void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule) { // NOLINT(performance-unnecessary-value-param)
         std::lock_guard serviceGuard(mutex);
         KHandle handle{};
-        if (response.isDomain) {
+        if (session.isDomain) {
             session.domainTable[session.handleIndex] = serviceObject;
             response.domainObjects.push_back(session.handleIndex);
             handle = session.handleIndex++;
@@ -131,7 +131,7 @@ namespace skyline::service {
 
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
             ipc::IpcRequest request(session->isDomain, state);
-            ipc::IpcResponse response(session->isDomain, state);
+            ipc::IpcResponse response(state);
 
             switch (request.header->type) {
                 case ipc::CommandType::Request:
@@ -154,8 +154,7 @@ namespace skyline::service {
                     } else {
                         session->serviceObject->HandleRequest(*session, request, response);
                     }
-                    if (!response.nWrite)
-                        response.WriteResponse();
+                    response.WriteResponse(session->isDomain);
                     break;
                 case ipc::CommandType::Control:
                 case ipc::CommandType::ControlWithContext:
@@ -174,7 +173,7 @@ namespace skyline::service {
                         default:
                             throw exception("Unknown Control Command: {}", request.payload->value);
                     }
-                    response.WriteResponse();
+                    response.WriteResponse(false);
                     break;
                 case ipc::CommandType::Close:
                     state.logger->Debug("Closing Session");

@@ -310,8 +310,6 @@ namespace skyline {
             std::vector<u8> payload; //!< This holds all of the contents to be pushed to the payload
 
           public:
-            bool nWrite{}; //!< This is to signal the IPC handler to not write this, as it will be manually written
-            bool isDomain{}; //!< If this is a domain request
             u32 errorCode{}; //!< The error code to respond with, it is 0 (Success) by default
             std::vector<KHandle> copyHandles; //!< A vector of handles to copy
             std::vector<KHandle> moveHandles; //!< A vector of handles to move
@@ -321,7 +319,7 @@ namespace skyline {
              * @param isDomain If the following request is a domain request
              * @param state The state of the device
              */
-            IpcResponse(bool isDomain, const DeviceState &state);
+            IpcResponse(const DeviceState &state);
 
             /**
              * @brief Writes an object to the payload
@@ -350,8 +348,9 @@ namespace skyline {
 
             /**
              * @brief Writes this IpcResponse object's contents into TLS
+             * @param isDomain Indicates if this is a domain response
              */
-            void WriteResponse();
+            void WriteResponse(bool isDomain);
         };
     }
 }

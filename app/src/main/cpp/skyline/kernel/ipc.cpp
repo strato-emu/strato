@@ -76,7 +76,7 @@ namespace skyline::kernel::ipc {
         auto padding = util::AlignUp(offset, constant::IpcPaddingSum) - offset; // Calculate the amount of padding at the front
         pointer += padding;
 
-        if (isDomain && (header->type == CommandType::Request)) {
+        if (isDomain && (header->type == CommandType::Request || header->type == CommandType::RequestWithContext)) {
             domain = reinterpret_cast<DomainHeaderRequest *>(pointer);
             pointer += sizeof(DomainHeaderRequest);
 
@@ -102,7 +102,7 @@ namespace skyline::kernel::ipc {
 
         payloadOffset = cmdArg;
 
-        if (payload->magic != util::MakeMagic<u32>("SFCI") && header->type != CommandType::Control) // SFCI is the magic in received IPC messages
+        if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext)) // SFCI is the magic in received IPC messages
             state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
 
         pointer += constant::IpcPaddingSum - padding;
@@ -124,7 +124,7 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        if (header->type == CommandType::Request) {
+        if (header->type == CommandType::Request || header->type == CommandType::RequestWithContext) {
             state.logger->Debug("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), u64(cmdArgSz));
             if (header->handleDesc)
                 state.logger->Debug("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", bool(handleDesc->sendPid), u32(handleDesc->copyCount), u32(handleDesc->moveCount));
@@ -134,9 +134,9 @@ namespace skyline::kernel::ipc {
         }
     }
 
-    IpcResponse::IpcResponse(bool isDomain, const DeviceState &state) : isDomain(isDomain), state(state) {}
+    IpcResponse::IpcResponse(const DeviceState &state) : state(state) {}
 
-    void IpcResponse::WriteResponse() {
+    void IpcResponse::WriteResponse(bool isDomain) {
         auto tls = state.process->GetPointer<u8>(state.thread->tls);
         u8 *pointer = tls;
 
