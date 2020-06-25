@@ -14,6 +14,7 @@ namespace skyline::loader {
      */
     enum class RomFormat {
         NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
+        NSO, //!< The NSO format: https://switchbrew.org/wiki/NSO
         XCI, //!< The XCI format: https://switchbrew.org/wiki/XCI
         NSP, //!< The NSP format from "nspwn" exploit: https://switchbrew.org/wiki/Switch_System_Flaws
     };

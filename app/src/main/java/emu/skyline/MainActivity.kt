@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                         }
                     }
 
-                    romFd.close();
+                    romFd.close()
                 }
             }
         }
@@ -111,10 +111,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
             try {
                 runOnUiThread { adapter.clear() }
 
-                val foundNros = addEntries("nro", RomFormat.NRO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                var foundRoms = addEntries("nro", RomFormat.NRO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                foundRoms = foundRoms or addEntries("nso", RomFormat.NSO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
 
                 runOnUiThread {
-                    if (!foundNros)
+                    if (!foundRoms)
                         adapter.addHeader(getString(R.string.no_rom))
 
                     try {

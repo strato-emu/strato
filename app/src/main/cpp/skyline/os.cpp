@@ -3,6 +3,7 @@
 
 #include "vfs/os_backing.h"
 #include "loader/nro.h"
+#include "loader/nso.h"
 #include "nce/guest.h"
 #include "os.h"
 
@@ -14,8 +15,11 @@ namespace skyline::kernel {
 
         if (romType == loader::RomFormat::NRO) {
             state.loader = std::make_shared<loader::NroLoader>(romFile);
-        } else
+        } else if (romType == loader::RomFormat::NSO) {
+            state.loader = std::make_shared<loader::NsoLoader>(romFile);
+        } else {
             throw exception("Unsupported ROM extension.");
+        }
 
         auto process = CreateProcess(constant::BaseAddress, 0, constant::DefStackSize);
         state.loader->LoadProcessData(process, state);

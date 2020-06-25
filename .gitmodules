@@ -11,3 +11,6 @@
 [submodule "app/libraries/vkhpp"]
 	path = app/libraries/vkhpp
 	url = https://github.com/skyline-emu/vkhpp
+[submodule "app/libraries/lz4"]
+	path = app/libraries/lz4
+	url = https://github.com/lz4/lz4.git

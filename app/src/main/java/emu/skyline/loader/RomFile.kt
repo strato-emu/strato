@@ -24,8 +24,9 @@ import java.util.*
  */
 enum class RomFormat(val format: Int){
     NRO(0),
-    XCI(1),
-    NSP(2),
+    NSO(1),
+    XCI(2),
+    NSP(3),
 }
 
 /**
@@ -172,7 +173,7 @@ internal class RomFile(val context : Context, val format : RomFormat, val file :
     private external fun destroy(instance : Long)
 
     /**
-     * This is used to get the [AppEntry] for the specified NRO
+     * This is used to get the [AppEntry] for the specified ROM
      */
     fun getAppEntry(uri : Uri) : AppEntry {
         return if (hasAssets(instance)) {

@@ -18,6 +18,8 @@ set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
 add_subdirectory("libraries/tinyxml2")
 add_subdirectory("libraries/fmt")
 add_subdirectory("libraries/oboe")
+add_subdirectory("libraries/lz4/contrib/cmake_unofficial")
+include_directories("libraries/lz4/lib")
 include_directories("libraries/oboe/include")
 include_directories("libraries/vkhpp/include")
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
@@ -40,6 +42,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/loader/loader.cpp
         ${source_DIR}/skyline/loader/nro.cpp
+        ${source_DIR}/skyline/loader/nso.cpp
         ${source_DIR}/skyline/kernel/memory.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp
         ${source_DIR}/skyline/kernel/svc.cpp
@@ -101,5 +104,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/vfs/nacp.cpp
         )
 
-target_link_libraries(skyline vulkan android fmt tinyxml2 oboe)
+target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static)
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions)
