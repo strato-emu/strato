@@ -5,6 +5,7 @@
 
 #include <vfs/backing.h>
 #include <vfs/nacp.h>
+#include "executable.h"
 
 namespace skyline::loader {
     /**
@@ -22,7 +23,24 @@ namespace skyline::loader {
      */
     class Loader {
       protected:
+        /**
+         * @brief This contains information about the placement of an executable in memory
+         */
+        struct ExecutableLoadInfo {
+            size_t base; //!< The base of the loaded executable
+            size_t size; //!< The total size of the loaded executable
+        };
+
         std::shared_ptr<vfs::Backing> backing; //!< The backing of the loader
+
+        /**
+         * @brief This loads an executable into memory
+         * @param process The process to load the executable into
+         * @param executable The executable itself
+         * @param offset The offset from the base address that the executable should be placed at
+         * @return An ExecutableLoadInfo struct containing the load base and size
+         */
+        static ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset = 0);
 
       public:
         std::shared_ptr<vfs::NACP> nacp; //!< The NACP of the current application

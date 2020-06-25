@@ -38,6 +38,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/os.cpp
+        ${source_DIR}/skyline/loader/loader.cpp
         ${source_DIR}/skyline/loader/nro.cpp
         ${source_DIR}/skyline/kernel/memory.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp

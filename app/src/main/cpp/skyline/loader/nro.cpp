@@ -38,52 +38,28 @@ namespace skyline::loader {
         return buffer;
     }
 
-    std::vector<u8> NroLoader::GetSegment(NroSegmentType segment) {
-        NroSegmentHeader &segmentHeader = header.segments[static_cast<int>(segment)];
-        std::vector<u8> buffer(segmentHeader.size);
+    std::vector<u8> NroLoader::GetSegment(const NroSegmentHeader &segment) {
+        std::vector<u8> buffer(segment.size);
 
-        backing->Read(buffer.data(), segmentHeader.offset, segmentHeader.size);
+        backing->Read(buffer.data(), segment.offset, segment.size);
         return buffer;
     }
 
     void NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
-        std::vector<u8> text = GetSegment(loader::NroLoader::NroSegmentType::Text);
-        std::vector<u8> rodata = GetSegment(loader::NroLoader::NroSegmentType::RO);
-        std::vector<u8> data = GetSegment(loader::NroLoader::NroSegmentType::Data);
+        Executable nroExecutable{};
 
-        u64 textSize = text.size();
-        u64 rodataSize = rodata.size();
-        u64 dataSize = data.size();
-        u64 bssSize = header.bssSize;
+        nroExecutable.text.contents = GetSegment(header.text);
+        nroExecutable.text.offset = 0;
 
-        std::vector<u32> patch = state.nce->PatchCode(text, constant::BaseAddress, textSize + rodataSize + dataSize + bssSize);
+        nroExecutable.ro.contents = GetSegment(header.ro);
+        nroExecutable.ro.offset = header.text.size;
 
-        if (!util::IsAligned(textSize, PAGE_SIZE) || !util::IsAligned(rodataSize, PAGE_SIZE) || !util::IsAligned(dataSize, PAGE_SIZE))
-            throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, rodataSize, dataSize);
+        nroExecutable.data.contents = GetSegment(header.data);
+        nroExecutable.data.offset = header.text.size + header.ro.size;
 
-        u64 patchSize = patch.size() * sizeof(u32);
-        u64 padding = util::AlignUp(textSize + rodataSize + dataSize + bssSize + patchSize, PAGE_SIZE) - (textSize + rodataSize + dataSize + bssSize + patchSize);
+        nroExecutable.bssSize = header.bssSize;
 
-        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress, textSize, memory::Permission{true, true, true}, memory::states::CodeStatic); // R-X
-        state.logger->Debug("Successfully mapped section .text @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress, textSize);
-
-        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize, rodataSize, memory::Permission{true, false, false}, memory::states::CodeReadOnly); // R--
-        state.logger->Debug("Successfully mapped section .ro @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize, rodataSize);
-
-        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize, dataSize, memory::Permission{true, true, false}, memory::states::CodeStatic); // RW-
-        state.logger->Debug("Successfully mapped section .data @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize, dataSize);
-
-        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize + dataSize, bssSize, memory::Permission{true, true, true}, memory::states::CodeMutable); // RWX
-        state.logger->Debug("Successfully mapped section .bss @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize + dataSize, bssSize);
-
-        process->NewHandle<kernel::type::KPrivateMemory>(constant::BaseAddress + textSize + rodataSize + dataSize + bssSize, patchSize + padding, memory::Permission{true, true, true}, memory::states::CodeStatic); // RWX
-        state.logger->Debug("Successfully mapped section .patch @ 0x{0:X}, Size = 0x{1:X}", constant::BaseAddress + textSize + rodataSize + dataSize + bssSize, patchSize);
-
-        process->WriteMemory(text.data(), constant::BaseAddress, textSize);
-        process->WriteMemory(rodata.data(), constant::BaseAddress + textSize, rodataSize);
-        process->WriteMemory(data.data(), constant::BaseAddress + textSize + rodataSize, dataSize);
-        process->WriteMemory(patch.data(), constant::BaseAddress + textSize + rodataSize + dataSize + bssSize, patchSize);
-
-        state.os->memory.InitializeRegions(constant::BaseAddress, textSize + rodataSize + dataSize + bssSize + patchSize + padding, memory::AddressSpaceType::AddressSpace39Bit);
+        auto loadInfo = LoadExecutable(process, state, nroExecutable);
+        state.os->memory.InitializeRegions(loadInfo.base, loadInfo.size, memory::AddressSpaceType::AddressSpace39Bit);
     }
 }

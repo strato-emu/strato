@@ -33,7 +33,9 @@ namespace skyline::loader {
             u32 size; //!< The size of the NRO
             u32 flags; //!< The flags used with the NRO
 
-            NroSegmentHeader segments[3]; //!< The .text segment header
+            NroSegmentHeader text; //!< The .text segment header
+            NroSegmentHeader ro; //!< The .rodata segment header
+            NroSegmentHeader data; //!< The .data segment header
 
             u32 bssSize; //!< The size of the bss segment
             u32 _pad2_;
@@ -46,7 +48,7 @@ namespace skyline::loader {
         } header{};
 
         /**
-         * @brief This holds a single asset sections's offset and size
+         * @brief This holds a single asset section's offset and size
          */
         struct NroAssetSection {
             u64 offset; //!< The offset of the region
@@ -65,20 +67,11 @@ namespace skyline::loader {
         } assetHeader{};
 
         /**
-         * @brief This enumerates the segments withing an NRO file
-         */
-        enum class NroSegmentType : int {
-            Text = 0, //!< The .text section
-            RO = 1, //!< The .rodata section
-            Data = 2 //!< The .data section
-        };
-
-        /**
          * @brief This reads the data of the specified segment
-         * @param segment The type of segment to read
+         * @param segment The header of the segment to read
          * @return A buffer containing the data of the requested segment
          */
-        std::vector<u8> GetSegment(NroSegmentType segment);
+        std::vector<u8> GetSegment(const NroSegmentHeader &segment);
 
       public:
         NroLoader(const std::shared_ptr<vfs::Backing> &backing);
