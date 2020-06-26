@@ -7,7 +7,7 @@
 #include "os_backing.h"
 
 namespace skyline::vfs {
-    OsBacking::OsBacking(int fd) : fd(fd) {
+    OsBacking::OsBacking(int fd) : Backing(), fd(fd) {
         struct stat fileInfo;
 
         if (fstat(fd, &fileInfo))
@@ -17,6 +17,9 @@ namespace skyline::vfs {
     }
 
     size_t OsBacking::Read(u8 *output, size_t offset, size_t size) {
+        if (!mode.read)
+            throw exception("Attempting to read a backing that is not readable");
+
         auto ret = pread64(fd, output, size, offset);
 
         if (ret < 0)
