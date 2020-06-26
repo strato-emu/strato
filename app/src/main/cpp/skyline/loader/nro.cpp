@@ -9,7 +9,7 @@
 #include "nro.h"
 
 namespace skyline::loader {
-    NroLoader::NroLoader(const std::shared_ptr<vfs::Backing> &backing) : Loader(backing) {
+    NroLoader::NroLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
         backing->Read(&header);
 
         if (header.magic != util::MakeMagic<u32>("NRO0"))

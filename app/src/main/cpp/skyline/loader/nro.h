@@ -66,6 +66,8 @@ namespace skyline::loader {
             NroAssetSection romFs; //!< The header describing the location of the RomFS
         } assetHeader{};
 
+        std::shared_ptr<vfs::Backing> backing; //!< The backing of the NRO loader
+
         /**
          * @brief This reads the data of the specified segment
          * @param segment The header of the segment to read

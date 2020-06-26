@@ -67,6 +67,8 @@ namespace skyline::loader {
         };
         static_assert(sizeof(NsoHeader) == 0x100);
 
+        std::shared_ptr<vfs::Backing> backing; //!< The backing of the NSO loader
+
         /**
          * @brief This reads the specified segment from the backing and decompresses it if needed
          * @param segment The header of the segment to read

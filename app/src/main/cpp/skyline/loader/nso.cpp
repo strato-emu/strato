@@ -8,7 +8,7 @@
 #include "nso.h"
 
 namespace skyline::loader {
-    NsoLoader::NsoLoader(const std::shared_ptr<vfs::Backing> &backing) : Loader(backing) {
+    NsoLoader::NsoLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
         u32 magic{};
         backing->Read(&magic);
 
