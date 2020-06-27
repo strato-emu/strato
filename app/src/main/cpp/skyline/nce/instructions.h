@@ -102,6 +102,29 @@ namespace skyline {
         static_assert(sizeof(Mrs) == sizeof(u32));
 
         /**
+         * @brief A bit-field struct that encapsulates a MSR instruction. See https://developer.arm.com/docs/ddi0596/g/base-instructions-alphabetic-order/msr-register-move-general-purpose-register-to-system-register.
+         */
+        struct Msr {
+            /**
+             * @brief Returns if the opcode is valid or not
+             * @return If the opcode represents a valid MSR instruction
+             */
+            inline constexpr bool Verify() {
+                return (sig == 0xD51);
+            }
+
+            union {
+                struct {
+                    u8 srcReg  : 5; //!< 5-bit destination register
+                    u32 destReg : 15; //!< 15-bit source register
+                    u16 sig    : 12; //!< 16-bit signature (0xD51)
+                };
+                u32 raw{}; //!< The raw value of the instruction
+            };
+        };
+        static_assert(sizeof(Msr) == sizeof(u32));
+
+        /**
          * @brief A bit-field struct that encapsulates a B instruction. See https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/b-branch.
          */
         struct B {

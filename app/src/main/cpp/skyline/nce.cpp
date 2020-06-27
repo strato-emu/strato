@@ -209,6 +209,7 @@ namespace skyline {
     }
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
+        constexpr u32 TpidrEl0 = 0x5e82;      // ID of TPIDR_EL0 in MRS
         constexpr u32 TpidrroEl0 = 0x5E83;    // ID of TPIDRRO_EL0 in MRS
         constexpr u32 CntfrqEl0 = 0x5F00;     // ID of CNTFRQ_EL0 in MRS
         constexpr u32 CntpctEl0 = 0x5F01;     // ID of CNTPCT_EL0 in MRS
@@ -237,6 +238,7 @@ namespace skyline {
         for (u32 *address = start; address < end; address++) {
             auto instrSvc = reinterpret_cast<instr::Svc *>(address);
             auto instrMrs = reinterpret_cast<instr::Mrs *>(address);
+            auto instrMsr = reinterpret_cast<instr::Msr *>(address);
 
             if (instrSvc->Verify()) {
                 // If this is an SVC we need to branch to saveCtx then to the SVC Handler after putting the PC + SVC into X0 and W1 and finally loadCtx before returning to where we were before
@@ -277,8 +279,8 @@ namespace skyline {
                 patch.push_back(ldrLr);
                 patch.push_back(bret.raw);
             } else if (instrMrs->Verify()) {
-                if (instrMrs->srcReg == TpidrroEl0) {
-                    // If this moves TPIDRRO_EL0 into a register then we retrieve the value of our virtual TPIDRRO_EL0 from TLS and write it to the register
+                if (instrMrs->srcReg == TpidrroEl0 || instrMrs->srcReg == TpidrEl0) {
+                    // If this moves TPIDR(RO)_EL0 into a register then we retrieve the value of our virtual TPIDR(RO)_EL0 from TLS and write it to the register
                     instr::B bJunc(offset);
 
                     u32 strX0{};
@@ -290,7 +292,12 @@ namespace skyline {
                     constexpr u32 mrsX0 = 0xD53BD040; // MRS X0, TPIDR_EL0
                     offset += sizeof(mrsX0);
 
-                    constexpr u32 ldrTls = 0xF9408000; // LDR X0, [X0, #256] (ThreadContext::tpidrroEl0)
+                    u32 ldrTls;
+                    if (instrMrs->srcReg == TpidrroEl0)
+                        ldrTls = 0xF9408000; // LDR X0, [X0, #256] (ThreadContext::tpidrroEl0)
+                    else
+                        ldrTls = 0xF9408400; // LDR X0, [X0, #264] (ThreadContext::tpidrEl0)
+
                     offset += sizeof(ldrTls);
 
                     u32 movXn{};
@@ -361,6 +368,41 @@ namespace skyline {
                         // If this moves CNTPCT_EL0 into a register, change the instruction to move CNTVCT_EL0 instead as Linux or most other OSes don't allow access to CNTPCT_EL0 rather only CNTVCT_EL0 can be accessed from userspace
                         *address = instr::Mrs(CntvctEl0, regs::X(instrMrs->destReg)).raw;
                     }
+                }
+            } else if (instrMsr->Verify()) {
+                if (instrMsr->destReg == TpidrEl0) {
+                    // If this moves a register into TPIDR_EL0 then we retrieve the value of the register and write it to our virtual TPIDR_EL0 in TLS
+                    instr::B bJunc(offset);
+
+                    // Used to avoid conflicts as we cannot read the source register from the stack
+                    bool x0x1 = instrMrs->srcReg != regs::X0 && instrMrs->srcReg != regs::X1;
+
+                    // Push two registers to stack that can be used to load the TLS and arguments into
+                    u32 pushXn = x0x1 ? 0xA9BF07E0 : 0xA9BF0FE2; // STP X(0/2), X(1/3), [SP, #-16]!
+                    offset += sizeof(pushXn);
+
+                    u32 loadRealTls = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
+                    offset += sizeof(loadRealTls);
+
+                    instr::Mov moveParam(x0x1 ? regs::X1 : regs::X3, regs::X(instrMsr->srcReg));
+                    offset += sizeof(moveParam);
+
+                    u32 storeEmuTls = x0x1 ? 0xF9008401 : 0xF9008403; // STR X(1/3), [X0, #264] (ThreadContext::tpidrEl0)
+                    offset += sizeof(storeEmuTls);
+
+                    u32 popXn = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
+                    offset += sizeof(popXn);
+
+                    instr::B bret(-offset + sizeof(u32));
+                    offset += sizeof(bret);
+
+                    *address = bJunc.raw;
+                    patch.push_back(pushXn);
+                    patch.push_back(loadRealTls);
+                    patch.push_back(moveParam.raw);
+                    patch.push_back(storeEmuTls);
+                    patch.push_back(popXn);
+                    patch.push_back(bret.raw);
                 }
             }
 
