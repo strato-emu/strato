@@ -274,7 +274,7 @@ namespace skyline::kernel::svc {
     }
 
     void GetThreadPriority(DeviceState &state) {
-        auto handle = state.ctx->registers.w0;
+        auto handle = state.ctx->registers.w1;
         try {
             auto priority = state.process->GetHandle<type::KThread>(handle)->priority;
             state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
