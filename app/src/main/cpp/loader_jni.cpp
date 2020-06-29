@@ -4,6 +4,7 @@
 #include "skyline/vfs/os_backing.h"
 #include "skyline/loader/nro.h"
 #include "skyline/loader/nso.h"
+#include "skyline/loader/nca.h"
 #include "skyline/jvm.h"
 
 extern "C" JNIEXPORT jlong JNICALL Java_emu_skyline_loader_RomFile_initialize(JNIEnv *env, jobject thiz, jint jformat, jint fd) {
@@ -17,6 +18,8 @@ extern "C" JNIEXPORT jlong JNICALL Java_emu_skyline_loader_RomFile_initialize(JN
                 return reinterpret_cast<jlong>(new skyline::loader::NroLoader(backing));
             case skyline::loader::RomFormat::NSO:
                 return reinterpret_cast<jlong>(new skyline::loader::NsoLoader(backing));
+            case skyline::loader::RomFormat::NCA:
+                return reinterpret_cast<jlong>(new skyline::loader::NcaLoader(backing));
             default:
                 return 0;
         }

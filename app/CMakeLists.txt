@@ -43,6 +43,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/loader/loader.cpp
         ${source_DIR}/skyline/loader/nro.cpp
         ${source_DIR}/skyline/loader/nso.cpp
+        ${source_DIR}/skyline/loader/nca.cpp
         ${source_DIR}/skyline/kernel/memory.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp
         ${source_DIR}/skyline/kernel/svc.cpp
@@ -104,6 +105,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp
         ${source_DIR}/skyline/vfs/nacp.cpp
+        ${source_DIR}/skyline/vfs/nca.cpp
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static)

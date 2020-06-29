@@ -113,6 +113,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
 
                 var foundRoms = addEntries("nro", RomFormat.NRO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
                 foundRoms = foundRoms or addEntries("nso", RomFormat.NSO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                foundRoms = foundRoms or addEntries("nca", RomFormat.NCA, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
 
                 runOnUiThread {
                     if (!foundRoms)

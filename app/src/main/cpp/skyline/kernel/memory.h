@@ -213,6 +213,7 @@ namespace skyline {
     namespace loader {
         class NroLoader;
         class NsoLoader;
+        class NcaLoader;
     }
 
     namespace kernel {
@@ -324,6 +325,7 @@ namespace skyline {
             friend class type::KProcess;
             friend class loader::NroLoader;
             friend class loader::NsoLoader;
+            friend class loader::NcaLoader;
 
             friend void svc::SetMemoryAttribute(DeviceState &state);
 

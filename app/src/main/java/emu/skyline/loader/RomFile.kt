@@ -25,8 +25,9 @@ import java.util.*
 enum class RomFormat(val format: Int){
     NRO(0),
     NSO(1),
-    XCI(2),
-    NSP(3),
+    NCA(2),
+    XCI(3),
+    NSP(4),
 }
 
 /**
