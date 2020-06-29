@@ -27,7 +27,7 @@ We have recieved a fair share of advice from the team behind [yuzu](https://yuzu
 
 [<img align="left" height="10%" width="10%" src="https://avatars3.githubusercontent.com/u/31827450?v=4"/>](https://ryujinx.org/)
 [**Switchbrew**](https://github.com/switchbrew/)<br>
-We've extensively used Switchbrew whether that be their [wiki](https://switchbrew.org/) with it's collosal amount of information on the Switch that has saved us countless hours of time or [libNX](https://github.com/switchbrew/libnx) which was crucial to initial development of the emulator to ensure that our implementations were correct.
+We've extensively used Switchbrew whether that be their [wiki](https://switchbrew.org/) with it's collosal amount of information on the Switch that has saved us countless hours of time or [libnx](https://github.com/switchbrew/libnx) which was crucial to initial development of the emulator to ensure that our implementations were correct.
 
 ### Disclaimer
 * Nintendo Switch is a trademark of Nintendo Co., Ltd.
