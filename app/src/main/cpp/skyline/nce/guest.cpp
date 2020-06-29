@@ -289,9 +289,9 @@ namespace skyline::guest {
 
         ctx->state = ThreadState::Running;
 
-        asm("MOV LR, XZR\n\t"
-            "MOV X0, %0\n\t"
-            "MOV X1, %1\n\t"
+        asm("MOV LR, %0\n\t"
+            "MOV X0, %1\n\t"
+            "MOV X1, %2\n\t"
             "MOV X2, XZR\n\t"
             "MOV X3, XZR\n\t"
             "MOV X4, XZR\n\t"
@@ -299,7 +299,7 @@ namespace skyline::guest {
             "MOV X6, XZR\n\t"
             "MOV X7, XZR\n\t"
             "MOV X8, XZR\n\t"
-            "MOV X9, %2\n\t"
+            "MOV X9, XZR\n\t"
             "MOV X10, XZR\n\t"
             "MOV X11, XZR\n\t"
             "MOV X12, XZR\n\t"
@@ -354,7 +354,7 @@ namespace skyline::guest {
             "DUP V29.16B, WZR\n\t"
             "DUP V30.16B, WZR\n\t"
             "DUP V31.16B, WZR\n\t"
-            "BR X9"::"r"(ctx->registers.x0), "r"(ctx->registers.x1), "r"(address) : "x0", "x1", "x9");
+            "RET"::"r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
 
         __builtin_unreachable();
     }
