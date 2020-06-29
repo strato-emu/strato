@@ -5,6 +5,7 @@
 #include "loader/nro.h"
 #include "loader/nso.h"
 #include "loader/nca.h"
+#include "loader/nsp.h"
 #include "nce/guest.h"
 #include "os.h"
 
@@ -20,6 +21,8 @@ namespace skyline::kernel {
             state.loader = std::make_shared<loader::NsoLoader>(romFile);
         } else if (romType == loader::RomFormat::NCA) {
             state.loader = std::make_shared<loader::NcaLoader>(romFile);
+        } else if (romType == loader::RomFormat::NSP) {
+            state.loader = std::make_shared<loader::NspLoader>(romFile);
         } else {
             throw exception("Unsupported ROM extension.");
         }
