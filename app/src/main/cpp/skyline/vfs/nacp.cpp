@@ -8,8 +8,14 @@ namespace skyline::vfs {
         backing->Read(&nacpContents);
 
         // TODO: Select based on language settings, complete struct, yada yada
-        ApplicationTitle &languageEntry = nacpContents.titleEntries[0];
-        applicationName = std::string(languageEntry.applicationName.data(), languageEntry.applicationName.size());
-        applicationPublisher = std::string(languageEntry.applicationPublisher.data(), languageEntry.applicationPublisher.size());
+
+        // Iterate till we get to the first populated entry
+        for (auto &entry : nacpContents.titleEntries) {
+            if (entry.applicationName.front() == '\0')
+                continue;
+
+            applicationName = std::string(entry.applicationName.data(), entry.applicationName.size());
+            applicationPublisher = std::string(entry.applicationPublisher.data(), entry.applicationPublisher.size());
+        }
     }
 }

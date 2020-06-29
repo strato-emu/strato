@@ -26,7 +26,7 @@ namespace skyline::vfs {
          * @brief This struct encapsulates all the data within an NACP file
          */
         struct NacpData {
-            ApplicationTitle titleEntries[0x10]; //!< Title entries for each language
+            std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
             u8 _pad_[0x4000 - (0x10 * 0x300)];
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
