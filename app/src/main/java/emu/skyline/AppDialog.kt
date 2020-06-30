@@ -81,7 +81,7 @@ class AppDialog(val item : AppItem? = null) : BottomSheetDialogFragment() {
                 val info = ShortcutInfo.Builder(context, item.title)
                 info.setShortLabel(item.meta.name)
                 info.setActivity(ComponentName(context!!, EmulationActivity::class.java))
-                info.setIcon(Icon.createWithBitmap(item.icon ?: missingIcon))
+                info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
 
                 val intent = Intent(context, EmulationActivity::class.java)
                 intent.data = item.uri
