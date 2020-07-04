@@ -19,6 +19,7 @@
 #include "pl/IPlatformServiceManager.h"
 #include "aocsrv/IAddOnContentManager.h"
 #include "pctl/IParentalControlServiceFactory.h"
+#include "lm/ILogService.h"
 #include "serviceman.h"
 
 namespace skyline::service {
@@ -81,6 +82,9 @@ namespace skyline::service {
                 break;
             case Service::pctl_IParentalControlServiceFactory:
                 serviceObj = std::make_shared<pctl::IParentalControlServiceFactory>(state, *this);
+                break;
+            case Service::lm_ILogService:
+                serviceObj = std::make_shared<lm::ILogService>(state, *this);
                 break;
             default:
                 throw exception("CreateService called on missing object, type: {}", serviceType);

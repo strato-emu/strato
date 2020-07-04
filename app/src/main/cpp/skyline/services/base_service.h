@@ -65,6 +65,8 @@ namespace skyline::service {
         pl_IPlatformServiceManager,
         aocsrv_IAddOnContentManager,
         pctl_IParentalControlServiceFactory,
+        lm_ILogService,
+        lm_ILogger
     };
 
     /**
@@ -94,7 +96,8 @@ namespace skyline::service {
         {"pctl", Service::pctl_IParentalControlServiceFactory},
         {"pctl:a", Service::pctl_IParentalControlServiceFactory},
         {"pctl:s", Service::pctl_IParentalControlServiceFactory},
-        {"pctl:r", Service::pctl_IParentalControlServiceFactory}
+        {"pctl:r", Service::pctl_IParentalControlServiceFactory},
+        {"lm", Service::lm_ILogService}
     };
 
     class ServiceManager;
