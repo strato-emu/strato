@@ -66,7 +66,8 @@ namespace skyline::service {
         aocsrv_IAddOnContentManager,
         pctl_IParentalControlServiceFactory,
         lm_ILogService,
-        lm_ILogger
+        lm_ILogger,
+        account_IAccountServiceForApplication,
     };
 
     /**
@@ -97,7 +98,8 @@ namespace skyline::service {
         {"pctl:a", Service::pctl_IParentalControlServiceFactory},
         {"pctl:s", Service::pctl_IParentalControlServiceFactory},
         {"pctl:r", Service::pctl_IParentalControlServiceFactory},
-        {"lm", Service::lm_ILogService}
+        {"lm", Service::lm_ILogService},
+        {"acc:u0", Service::account_IAccountServiceForApplication},
     };
 
     class ServiceManager;
