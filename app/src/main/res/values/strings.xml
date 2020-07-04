@@ -59,6 +59,12 @@
     <string name="ktstd_description">We use Kotlin Standard Library for accessing convenience functions in Kotlin (Apache License 2.0)</string>
     <string name="mtico">Material Design Icons</string>
     <string name="mtico_description">We use Material Design Icons to have consistent iconography throughout the application (Apache License 2.0)</string>
+    <string name="open_sans">Open Sans</string>
+    <string name="open_sans_description">We use Open Sans as our FOSS shared font replacement for Latin, Korean and Chinese (Apache License 2.0)</string>
+    <string name="roboto">Roboto</string>
+    <string name="roboto_description">We use Roboto as our FOSS shared font replacement for Nintendo\'s extended character set (Apache License 2.0)</string>
+    <string name="source_sans_pro">Source Sans Pro</string>
+    <string name="source_sans_pro_description">We use Source Sans Pro as our FOSS shared font replacement for Extended Chinese (SIL Open Font License 1.1)</string>
     <string name="perf_stats">Show Performance Statistics</string>
     <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
     <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>

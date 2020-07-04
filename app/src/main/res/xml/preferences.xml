@@ -127,5 +127,20 @@
                 libraryUrl="https://material.io/resources/icons"
                 app:summary="@string/mtico_description"
                 app:title="@string/mtico" />
+        <emu.skyline.preference.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://fonts.google.com/specimen/Open+Sans"
+                app:summary="@string/open_sans_description"
+                app:title="@string/open_sans" />
+        <emu.skyline.preference.LicensePreference
+                libraryLicense="@string/apache2_license"
+                libraryUrl="https://fonts.google.com/specimen/Roboto"
+                app:summary="@string/roboto_description"
+                app:title="@string/roboto" />
+        <emu.skyline.preference.LicensePreference
+                libraryLicense="@string/sil_open_font_license"
+                libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
+                app:summary="@string/source_sans_pro_description"
+                app:title="@string/source_sans_pro" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

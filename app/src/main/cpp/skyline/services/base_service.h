@@ -59,6 +59,7 @@ namespace skyline::service {
         visrv_ISystemDisplayService,
         visrv_IManagerDisplayService,
         hosbinder_IHOSBinderDriver,
+        pl_IPlatformServiceManager
     };
 
     /**
@@ -82,6 +83,7 @@ namespace skyline::service {
         {"nvdrv:s", Service::nvdrv_INvDrvServices},
         {"nvdrv:t", Service::nvdrv_INvDrvServices},
         {"vi:m", Service::visrv_IManagerRootService},
+        {"pl:u", Service::pl_IPlatformServiceManager}
     };
 
     class ServiceManager;
