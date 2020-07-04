@@ -104,6 +104,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/visrv/IManagerRootService.cpp
         ${source_DIR}/skyline/services/visrv/ISystemDisplayService.cpp
         ${source_DIR}/skyline/services/pl/IPlatformServiceManager.cpp
+        ${source_DIR}/skyline/services/aocsrv/IAddOnContentManager.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp
