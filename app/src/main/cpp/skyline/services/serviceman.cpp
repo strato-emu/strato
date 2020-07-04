@@ -3,6 +3,7 @@
 
 #include <kernel/types/KProcess.h>
 #include "sm/IUserInterface.h"
+#include "settings/ISettingsServer.h"
 #include "settings/ISystemSettingsServer.h"
 #include "apm/IManager.h"
 #include "am/IApplicationProxyService.h"
@@ -33,6 +34,9 @@ namespace skyline::service {
                 break;
             case Service::fatalsrv_IService:
                 serviceObj = std::make_shared<fatalsrv::IService>(state, *this);
+                break;
+            case Service::settings_ISettingsServer:
+                serviceObj = std::make_shared<settings::ISettingsServer>(state, *this);
                 break;
             case Service::settings_ISystemSettingsServer:
                 serviceObj = std::make_shared<settings::ISystemSettingsServer>(state, *this);
