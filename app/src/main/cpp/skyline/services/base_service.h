@@ -42,6 +42,8 @@ namespace skyline::service {
         am_ILibraryAppletCreator,
         am_IDebugFunctions,
         am_IAppletCommonFunctions,
+        am_IStorage,
+        am_IStorageAccessor,
         audio_IAudioOutManager,
         audio_IAudioOut,
         audio_IAudioRendererManager,

@@ -83,6 +83,8 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/controller/ILibraryAppletCreator.cpp
         ${source_DIR}/skyline/services/am/controller/ISelfController.cpp
         ${source_DIR}/skyline/services/am/controller/IWindowController.cpp
+        ${source_DIR}/skyline/services/am/storage/IStorage.cpp
+        ${source_DIR}/skyline/services/am/storage/IStorageAccessor.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
         ${source_DIR}/skyline/services/hid/IAppletResource.cpp
         ${source_DIR}/skyline/services/timesrv/IStaticService.cpp
