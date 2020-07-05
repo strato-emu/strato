@@ -38,7 +38,7 @@ namespace skyline::service::hosbinder {
         i64 slot{-1};
         while (slot == -1) {
             for (auto &buffer : queue) {
-                if (buffer.second->status == BufferStatus::Free && buffer.second->gbpBuffer.width == data->width && buffer.second->gbpBuffer.height == data->height && buffer.second->gbpBuffer.usage == data->usage) {
+                if (buffer.second->status == BufferStatus::Free && buffer.second->gbpBuffer.width == data->width && buffer.second->gbpBuffer.height == data->height && (buffer.second->gbpBuffer.usage & data->usage) == data->usage) {
                     slot = buffer.first;
                     buffer.second->status = BufferStatus::Dequeued;
                     break;
@@ -51,7 +51,8 @@ namespace skyline::service::hosbinder {
             u32 slot;
             u32 _unk_[13];
         } output{
-            .slot = static_cast<u32>(slot)
+            .slot = static_cast<u32>(slot),
+            ._unk_ = {1, 0x24}
         };
         out.WriteData(output);
 
