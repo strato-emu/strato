@@ -6,7 +6,7 @@
 
 namespace skyline::service::audio::IAudioRenderer {
     IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters)
-        : releaseEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
+        : systemEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
         {0x0, SFUNC(IAudioRenderer::GetSampleRate)},
         {0x1, SFUNC(IAudioRenderer::GetSampleCount)},
         {0x2, SFUNC(IAudioRenderer::GetMixBufferCount)},
@@ -16,7 +16,7 @@ namespace skyline::service::audio::IAudioRenderer {
         {0x6, SFUNC(IAudioRenderer::Stop)},
         {0x7, SFUNC(IAudioRenderer::QuerySystemEvent)},
     }) {
-        track = state.audio->OpenTrack(constant::ChannelCount, parameters.sampleRate, [this]() { releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(constant::ChannelCount, parameters.sampleRate, []() {});
         track->Start();
 
         memoryPools.resize(parameters.effectCount + parameters.voiceCount * 4);
@@ -80,6 +80,7 @@ namespace skyline::service::audio::IAudioRenderer {
             effects[i].ProcessInput(effectsIn[i]);
 
         UpdateAudio();
+        systemEvent->Signal();
 
         UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,
@@ -178,8 +179,8 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem(releaseEvent);
-        state.logger->Debug("Audren Buffer Release Event Handle: 0x{:X}", handle);
+        auto handle = state.process->InsertItem(systemEvent);
+        state.logger->Debug("Audren System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }
 }

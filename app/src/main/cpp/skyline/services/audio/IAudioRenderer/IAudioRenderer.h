@@ -66,11 +66,11 @@ namespace skyline {
             AudioRendererParameters parameters; //!< The parameters to use for the renderer
             RevisionInfo revisionInfo{}; //!< Stores info about supported features for the audren revision used
             std::shared_ptr<skyline::audio::AudioTrack> track; //!< The audio track associated with the audio renderer
-            std::shared_ptr<type::KEvent> releaseEvent; //!< The KEvent that is signalled when a buffer has been released
+            std::shared_ptr<type::KEvent> systemEvent; //!< The KEvent that is signalled when the DSP has processed all the commands
             std::vector<MemoryPool> memoryPools; //!< An vector of all memory pools that the guest may need
             std::vector<Effect> effects; //!< An vector of all effects that the guest may need
             std::vector<Voice> voices; //!< An vector of all voices that the guest may need
-            std::array<i16, constant::MixBufferSize * constant::ChannelCount> sampleBuffer; //!< The final output data that is appended to the stream
+            std::array<i16, constant::MixBufferSize * constant::ChannelCount> sampleBuffer{}; //!< The final output data that is appended to the stream
             skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The current state of playback
 
             /**
