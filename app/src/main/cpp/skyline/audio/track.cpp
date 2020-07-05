@@ -32,6 +32,7 @@ namespace skyline::audio {
 
     std::vector<u64> AudioTrack::GetReleasedBuffers(u32 max) {
         std::vector<u64> bufferIds;
+        std::unique_lock trackGuard(bufferLock);
 
         for (u32 index = 0; index < max; index++) {
             if (!identifiers.back().released)
