@@ -65,7 +65,7 @@ namespace skyline::service::visrv {
 
         Parcel parcel(state);
         LayerParcel data{
-            .type = 0x20,
+            .type = 0x2,
             .pid = 0,
             .bufferId = 0, // As we only have one layer and buffer
             .string = "dispdrv"

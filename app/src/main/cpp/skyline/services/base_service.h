@@ -93,6 +93,8 @@ namespace skyline::service {
         {"nvdrv:s", Service::nvdrv_INvDrvServices},
         {"nvdrv:t", Service::nvdrv_INvDrvServices},
         {"vi:m", Service::visrv_IManagerRootService},
+        {"vi:u", Service::visrv_IManagerRootService},
+        {"vi:s", Service::visrv_IManagerRootService},
         {"pl:u", Service::pl_IPlatformServiceManager},
         {"aoc:u", Service::aocsrv_IAddOnContentManager},
         {"pctl", Service::pctl_IParentalControlServiceFactory},
