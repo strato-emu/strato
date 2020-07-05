@@ -9,7 +9,7 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState, int mmapFlags) : initialState(memState), KMemory(state, KType::KSharedMemory) {
+    KSharedMemory::KSharedMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState, int mmapFlags, bool shared) : initialState(memState), KMemory(state, KType::KSharedMemory) {
         if (address && !util::PageAligned(address))
             throw exception("KSharedMemory was created with non-page-aligned address: 0x{:X}", address);
 
@@ -22,6 +22,26 @@ namespace skyline::kernel::type {
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
         kernel = {.address = address, .size = size, .permission = permission};
+
+        if (shared) {
+            guest = kernel;
+
+            BlockDescriptor block{
+                .address = address,
+                .size = size,
+                .permission = permission,
+            };
+
+            ChunkDescriptor chunk{
+                .address = address,
+                .host = address,
+                .size = size,
+                .state = initialState,
+                .blockList = {block},
+            };
+
+            state.os->memory.InsertChunk(chunk);
+        }
     }
 
     u64 KSharedMemory::Map(const u64 address, const u64 size, memory::Permission permission) {

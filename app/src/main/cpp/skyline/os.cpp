@@ -36,8 +36,9 @@ namespace skyline::kernel {
     }
 
     std::shared_ptr<type::KProcess> OS::CreateProcess(u64 entry, u64 argument, size_t stackSize) {
-        auto stack = std::make_shared<type::KSharedMemory>(state, 0, stackSize, memory::Permission{true, true, false}, memory::states::Reserved, MAP_NORESERVE | MAP_STACK);
+        auto stack = std::make_shared<type::KSharedMemory>(state, memory.stack.address, stackSize, memory::Permission{true, true, false}, memory::states::Stack, MAP_NORESERVE | MAP_STACK, true);
         stack->guest = stack->kernel;
+
         if (mprotect(reinterpret_cast<void *>(stack->guest.address), PAGE_SIZE, PROT_NONE))
             throw exception("Failed to create guard pages");
 
