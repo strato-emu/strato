@@ -22,6 +22,8 @@ namespace skyline::kernel::ipc {
         header = reinterpret_cast<CommandHeader *>(pointer);
         pointer += sizeof(CommandHeader);
 
+        size_t cBufferLengthSize = util::AlignUp(((header->cFlag == BufferCFlag::None) ? 0 : ((header->cFlag > BufferCFlag::SingleDescriptor) ? (static_cast<u8>(header->cFlag) - 2) : 1)) * sizeof(u16), sizeof(u32));
+
         if (header->handleDesc) {
             handleDesc = reinterpret_cast<HandleDescriptor *>(pointer);
             pointer += sizeof(HandleDescriptor) + (handleDesc->sendPid ? sizeof(u64) : 0);
@@ -85,7 +87,7 @@ namespace skyline::kernel::ipc {
 
             cmdArg = pointer;
             cmdArgSz = domain->payloadSz - sizeof(PayloadHeader);
-            pointer += domain->payloadSz;
+            pointer += cmdArgSz;
 
             for (u8 index = 0; domain->inputCount > index; index++) {
                 domainObjects.push_back(*reinterpret_cast<KHandle *>(pointer));
@@ -96,7 +98,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(PayloadHeader);
 
             cmdArg = pointer;
-            cmdArgSz = (header->rawSize * sizeof(u32)) - (constant::IpcPaddingSum + sizeof(PayloadHeader));
+            cmdArgSz = (header->rawSize * sizeof(u32)) - (constant::IpcPaddingSum + sizeof(PayloadHeader)) - cBufferLengthSize;
             pointer += cmdArgSz;
         }
 
@@ -105,7 +107,7 @@ namespace skyline::kernel::ipc {
         if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext)) // SFCI is the magic in received IPC messages
             state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
 
-        pointer += constant::IpcPaddingSum - padding;
+        pointer += constant::IpcPaddingSum - padding + cBufferLengthSize;
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC = reinterpret_cast<BufferDescriptorC *>(pointer);
