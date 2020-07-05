@@ -312,7 +312,8 @@ namespace skyline {
 
             friend void svc::MapMemory(skyline::DeviceState &state);
 
-            memory::Region base{}; //!< The Region object for the entire address space
+            memory::Region addressSpace{}; //!< The Region object for the entire address space
+            memory::Region base{}; //!< The Region object for the entire address space accessible to the application
             memory::Region code{}; //!< The Region object for the code memory region
             memory::Region alias{}; //!< The Region object for the alias memory region
             memory::Region heap{}; //!< The Region object for the heap memory region
@@ -323,9 +324,10 @@ namespace skyline {
 
             /**
              * @param address The address to query in the memory map
+             * @param requireMapped This specifies if only mapped regions should be returned otherwise unmapped but valid regions will also be returned
              * @return A DescriptorPack retrieved from the memory map
              */
-            std::optional<DescriptorPack> Get(u64 address);
+            std::optional<DescriptorPack> Get(u64 address, bool requireMapped = true);
 
             /**
              * @brief The total amount of space in bytes occupied by all memory mappings

@@ -124,6 +124,8 @@ namespace skyline::kernel {
                 throw exception("32-bit address spaces are not supported");
 
             case memory::AddressSpaceType::AddressSpace36Bit: {
+                addressSpace.address = 0;
+                addressSpace.size = 1UL << 36;
                 base.address = constant::BaseAddress;
                 base.size = 0xFF8000000;
                 code.address = base.address;
@@ -142,6 +144,8 @@ namespace skyline::kernel {
             }
 
             case memory::AddressSpaceType::AddressSpace39Bit: {
+                addressSpace.address = 0;
+                addressSpace.size = 1UL << 39;
                 base.address = constant::BaseAddress;
                 base.size = 0x7FF8000000;
                 code.address = util::AlignDown(address, 0x200000);
@@ -164,11 +168,49 @@ namespace skyline::kernel {
 
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
-    std::optional<DescriptorPack> MemoryManager::Get(u64 address) {
+    std::optional<DescriptorPack> MemoryManager::Get(u64 address, bool requireMapped) {
         auto chunk = GetChunk(address);
 
         if (chunk)
             return DescriptorPack{*GetBlock(address, chunk), *chunk};
+
+        // If the requested address is in the address space but no chunks are present then we return a new unmapped region
+        if (addressSpace.IsInside(address) && !requireMapped) {
+            auto upperChunk = std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+                return address < chunk.address;
+            });
+
+            u64 upperAddress{};
+            u64 lowerAddress{};
+
+            if (upperChunk != chunkList.end()) {
+                upperAddress = upperChunk->address;
+
+                if (upperChunk == chunkList.begin()) {
+                    lowerAddress = addressSpace.address;
+                } else {
+                    upperChunk--;
+                    lowerAddress = upperChunk->address + upperChunk->size;
+                }
+            } else {
+                upperAddress = addressSpace.address + addressSpace.size;
+                lowerAddress = chunkList.back().address + chunkList.back().size;
+            }
+
+            u64 size = upperAddress - lowerAddress;
+
+            return DescriptorPack{
+                .chunk = {
+                    .address = lowerAddress,
+                    .size = size,
+                    .state = memory::states::Unmapped
+                },
+                .block = {
+                    .address = lowerAddress,
+                    .size = size,
+                }
+            };
+        }
 
         return std::nullopt;
     }

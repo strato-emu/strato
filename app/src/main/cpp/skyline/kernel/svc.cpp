@@ -180,7 +180,7 @@ namespace skyline::kernel::svc {
         memory::MemoryInfo memInfo{};
 
         auto address = state.ctx->registers.x2;
-        auto descriptor = state.os->memory.Get(address);
+        auto descriptor = state.os->memory.Get(address, false);
 
         if (descriptor) {
             memInfo = {
@@ -195,16 +195,15 @@ namespace skyline::kernel::svc {
 
             state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(descriptor->block.attributes.isUncached), descriptor->block.permission.r ? "R" : "-", descriptor->block.permission.w ? "W" : "-", descriptor->block.permission.x ? "X" : "-");
         } else {
-            auto region = state.os->memory.base;
-            auto baseEnd = region.address + region.size;
+            auto addressSpaceEnd = state.os->memory.addressSpace.address + state.os->memory.addressSpace.size;
 
             memInfo = {
-                .address = region.address,
-                .size = ~baseEnd + 1,
-                .type = static_cast<u32>(memory::MemoryType::Unmapped),
+                .address = addressSpaceEnd,
+                .size = ~addressSpaceEnd + 1,
+                .type = static_cast<u32>(memory::MemoryType::Reserved),
             };
 
-            state.logger->Debug("svcQueryMemory: Cannot find block of address: 0x{:X}", address);
+            state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", address);
         }
 
         state.process->WriteMemory(memInfo, state.ctx->registers.x0);
