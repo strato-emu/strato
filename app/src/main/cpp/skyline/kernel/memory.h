@@ -171,22 +171,9 @@ namespace skyline {
         };
 
         /**
-         * @brief This enumerates all of the memory regions in the process address space
-         */
-        enum class Regions {
-            Base, //!< The region representing the entire address space
-            Code, //!< The code region contains all of the loaded in code
-            Alias, //!< The alias region is reserved for allocating thread stack before 2.0.0
-            Heap, //!< The heap region is reserved for heap allocations
-            Stack, //!< The stack region is reserved for allocating thread stack after 2.0.0
-            TlsIo, //!< The TLS/IO region is reserved for allocating TLS and Device MMIO
-        };
-
-        /**
          * @brief This struct is used to hold the location and size of a memory region
          */
         struct Region {
-            Regions id; //!< The ID of the region
             u64 address; //!< The base address of the region
             u64 size; //!< The size of the region in bytes
 
@@ -265,12 +252,6 @@ namespace skyline {
           private:
             const DeviceState &state; //!< The state of the device
             std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
-            memory::Region base{memory::Regions::Base}; //!< The Region object for the entire address space
-            memory::Region code{memory::Regions::Code}; //!< The Region object for the code memory region
-            memory::Region alias{memory::Regions::Alias}; //!< The Region object for the alias memory region
-            memory::Region heap{memory::Regions::Heap}; //!< The Region object for the heap memory region
-            memory::Region stack{memory::Regions::Stack}; //!< The Region object for the stack memory region
-            memory::Region tlsIo{memory::Regions::TlsIo}; //!< The Region object for the TLS/IO memory region
 
             /**
              * @param address The address to find a chunk at
@@ -331,6 +312,13 @@ namespace skyline {
 
             friend void svc::MapMemory(skyline::DeviceState &state);
 
+            memory::Region base{}; //!< The Region object for the entire address space
+            memory::Region code{}; //!< The Region object for the code memory region
+            memory::Region alias{}; //!< The Region object for the alias memory region
+            memory::Region heap{}; //!< The Region object for the heap memory region
+            memory::Region stack{}; //!< The Region object for the stack memory region
+            memory::Region tlsIo{}; //!< The Region object for the TLS/IO memory region
+
             MemoryManager(const DeviceState &state);
 
             /**
@@ -338,12 +326,6 @@ namespace skyline {
              * @return A DescriptorPack retrieved from the memory map
              */
             std::optional<DescriptorPack> Get(u64 address);
-
-            /**
-             * @param region The region to retrieve
-             * @return A Region object for the specified region
-             */
-            memory::Region GetRegion(memory::Regions region);
 
             /**
              * @brief The total amount of space in bytes occupied by all memory mappings

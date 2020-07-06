@@ -88,7 +88,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
+        auto stack = state.os->memory.stack;
         if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
@@ -137,7 +137,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto stack = state.os->memory.GetRegion(memory::Regions::Stack);
+        auto stack = state.os->memory.stack;
         if (!stack.IsInside(source)) {
             state.ctx->registers.w0 = constant::status::InvMemRange;
             state.logger->Warn("svcUnmapMemory: Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
@@ -195,7 +195,7 @@ namespace skyline::kernel::svc {
 
             state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(descriptor->block.attributes.isUncached), descriptor->block.permission.r ? "R" : "-", descriptor->block.permission.w ? "W" : "-", descriptor->block.permission.x ? "X" : "-");
         } else {
-            auto region = state.os->memory.GetRegion(memory::Regions::Base);
+            auto region = state.os->memory.base;
             auto baseEnd = region.address + region.size;
 
             memInfo = {
@@ -645,19 +645,19 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::AliasRegionBaseAddr:
-                out = state.os->memory.GetRegion(memory::Regions::Alias).address;
+                out = state.os->memory.alias.address;
                 break;
 
             case constant::infoState::AliasRegionSize:
-                out = state.os->memory.GetRegion(memory::Regions::Alias).size;
+                out = state.os->memory.alias.size;
                 break;
 
             case constant::infoState::HeapRegionBaseAddr:
-                out = state.os->memory.GetRegion(memory::Regions::Heap).address;
+                out = state.os->memory.heap.address;
                 break;
 
             case constant::infoState::HeapRegionSize:
-                out = state.os->memory.GetRegion(memory::Regions::Heap).size;
+                out = state.os->memory.heap.size;
                 break;
 
             case constant::infoState::TotalMemoryAvailable:
@@ -669,19 +669,19 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::AddressSpaceBaseAddr:
-                out = state.os->memory.GetRegion(memory::Regions::Base).address;
+                out = state.os->memory.base.address;
                 break;
 
             case constant::infoState::AddressSpaceSize:
-                out = state.os->memory.GetRegion(memory::Regions::Base).size;
+                out = state.os->memory.base.size;
                 break;
 
             case constant::infoState::StackRegionBaseAddr:
-                out = state.os->memory.GetRegion(memory::Regions::Stack).address;
+                out = state.os->memory.stack.address;
                 break;
 
             case constant::infoState::StackRegionSize:
-                out = state.os->memory.GetRegion(memory::Regions::Stack).size;
+                out = state.os->memory.stack.size;
                 break;
 
             case constant::infoState::PersonalMmHeapSize:

@@ -39,7 +39,7 @@ namespace skyline::kernel::type {
 
         u64 address;
         if (tlsPages.empty()) {
-            auto region = state.os->memory.GetRegion(memory::Regions::TlsIo);
+            auto region = state.os->memory.tlsIo;
             address = region.size ? region.address : 0;
         } else {
             address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
@@ -57,7 +57,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeMemory() {
         constexpr size_t DefHeapSize = 0x200000; // The default amount of heap
-        heap = NewHandle<KPrivateMemory>(state.os->memory.GetRegion(memory::Regions::Heap).address, DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
+        heap = NewHandle<KPrivateMemory>(state.os->memory.heap.address, DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
         threads[pid]->tls = GetTlsSlot();
     }
 

@@ -285,7 +285,7 @@ namespace skyline {
              * @param size The length of the string (0 means the string is null terminated)
              */
             inline std::string_view PopString(size_t size = 0) {
-                auto view = size ? std::string_view(reinterpret_cast<const char*>(payloadOffset), size) : std::string_view(reinterpret_cast<const char*>(payloadOffset));
+                auto view = size ? std::string_view(reinterpret_cast<const char *>(payloadOffset), size) : std::string_view(reinterpret_cast<const char *>(payloadOffset));
                 payloadOffset += view.length();
                 return view;
             }

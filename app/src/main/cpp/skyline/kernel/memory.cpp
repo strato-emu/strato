@@ -173,23 +173,6 @@ namespace skyline::kernel {
         return std::nullopt;
     }
 
-    memory::Region MemoryManager::GetRegion(memory::Regions region) {
-        switch (region) {
-            case memory::Regions::Base:
-                return base;
-            case memory::Regions::Code:
-                return code;
-            case memory::Regions::Alias:
-                return alias;
-            case memory::Regions::Heap:
-                return heap;
-            case memory::Regions::Stack:
-                return stack;
-            case memory::Regions::TlsIo:
-                return tlsIo;
-        }
-    }
-
     size_t MemoryManager::GetProgramSize() {
         size_t size = 0;
 
