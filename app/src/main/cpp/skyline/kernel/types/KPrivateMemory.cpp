@@ -126,6 +126,11 @@ namespace skyline::kernel::type {
             throw exception("An error occurred while updating private memory's permissions in child process");
 
         auto chunk = state.os->memory.GetChunk(address);
+
+        // If a static code region has been mapped as writable it needs to be changed to mutable
+        if (chunk->state.value == memory::states::CodeStatic.value && permission.w)
+            chunk->state = memory::states::CodeMutable;
+
         BlockDescriptor block{
             .address = address,
             .size = size,

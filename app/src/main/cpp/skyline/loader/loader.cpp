@@ -33,10 +33,10 @@ namespace skyline::loader {
         process->NewHandle<kernel::type::KPrivateMemory>(base + executable.ro.offset, roSize, memory::Permission{true, false, false}, memory::states::CodeReadOnly); // R--
         state.logger->Debug("Successfully mapped section .rodata @ 0x{0:X}, Size = 0x{1:X}", base + executable.ro.offset, roSize);
 
-        process->NewHandle<kernel::type::KPrivateMemory>(base + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeStatic); // RW-
+        process->NewHandle<kernel::type::KPrivateMemory>(base + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
         state.logger->Debug("Successfully mapped section .data @ 0x{0:X}, Size = 0x{1:X}", base + executable.data.offset, dataSize);
 
-        process->NewHandle<kernel::type::KPrivateMemory>(base + patchOffset, patchSize + padding, memory::Permission{true, true, true}, memory::states::CodeStatic); // RWX
+        process->NewHandle<kernel::type::KPrivateMemory>(base + patchOffset, patchSize + padding, memory::Permission{true, true, true}, memory::states::CodeMutable); // RWX
         state.logger->Debug("Successfully mapped section .patch @ 0x{0:X}, Size = 0x{1:X}", base + patchOffset, patchSize + padding);
 
         process->WriteMemory(executable.text.contents.data(), base + executable.text.offset, textSize);
