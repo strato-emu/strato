@@ -664,7 +664,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::TotalMemoryUsage:
-                out = state.process->heap->address + constant::DefStackSize + state.os->memory.GetProgramSize();
+                out = state.process->heap->size + constant::DefStackSize + state.os->memory.GetProgramSize();
                 break;
 
             case constant::infoState::AddressSpaceBaseAddr:
