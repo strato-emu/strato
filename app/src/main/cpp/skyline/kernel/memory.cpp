@@ -107,7 +107,7 @@ namespace skyline::kernel {
                         endBlock.address = (block.address + block.size);
                         endBlock.size = (iter->address + iter->size) - endBlock.address;
 
-                        iter->size = iter->address - block.address;
+                        iter->size = block.address - iter->address;
                         chunk->blockList.insert(std::next(iter), {block, endBlock});
                     }
                     return;
