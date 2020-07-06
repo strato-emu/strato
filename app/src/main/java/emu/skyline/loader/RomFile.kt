@@ -10,6 +10,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.view.Surface
@@ -104,8 +105,13 @@ class AppEntry : Serializable {
         if (author != null)
             output.writeUTF(author)
         output.writeBoolean(icon != null)
-        if (icon != null)
-            icon!!.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, output)
+        if (icon != null) {
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                icon!!.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, output)
+            else
+                icon!!.compress(Bitmap.CompressFormat.WEBP, 100, output)
+        }
     }
 
     /**

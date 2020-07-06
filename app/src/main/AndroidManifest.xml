@@ -43,11 +43,6 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.SettingsActivity" />
         </activity>
-        <activity android:name="emu.skyline.preference.LicenseDialog">
-            <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="emu.skyline.SettingsActivity" />
-        </activity>
         <activity
                 android:name="emu.skyline.EmulationActivity"
                 android:configChanges="orientation|screenSize"
