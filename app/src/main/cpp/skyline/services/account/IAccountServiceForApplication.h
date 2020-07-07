@@ -6,17 +6,30 @@
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
-namespace skyline::service::account {
-    /**
-     * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
-     */
-    class IAccountServiceForApplication : public BaseService {
-      public:
-        IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
-
+namespace skyline {
+    namespace service::account {
         /**
-         * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
+         * @brief This hold an account's user ID
          */
-        void InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-    };
+        struct UserId {
+            u64 upper; //!< The upper 64 bits of the user ID
+            u64 lower; //!< The lower 64 bits of the user ID
+        };
+        /**
+        * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
+        */
+        class IAccountServiceForApplication : public BaseService {
+          public:
+            IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
+
+            /**
+            * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
+            */
+            void InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        };
+    }
+
+    namespace constant {
+        constexpr service::account::UserId DefaultUserId = {0x0000000000000001, 0x0000000000000000}; //!< The default user ID
+    }
 }
