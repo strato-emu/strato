@@ -25,6 +25,11 @@ namespace skyline::service::am {
         void GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This writes a buffer to the storage at the specified offset
+         */
+        void Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This returns a buffer containing the contents of the storage at the specified offset
          */
         void Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
