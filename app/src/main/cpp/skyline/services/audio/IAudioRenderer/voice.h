@@ -5,6 +5,7 @@
 
 #include <array>
 #include <audio/resampler.h>
+#include <audio/adpcm_decoder.h>
 #include <audio.h>
 #include <common.h>
 
@@ -91,6 +92,7 @@ namespace skyline::service::audio::IAudioRenderer {
         std::array<WaveBuffer, 4> waveBuffers; //!< An array containing the state of all four wave buffers
         std::vector<i16> samples; //!< A vector containing processed sample data
         skyline::audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a stream
+        std::optional<skyline::audio::AdpcmDecoder> adpcmDecoder; //!< The decoder object used for decoding ADPCM encoded samples
 
         bool acquired{false}; //!< If the voice is in use
         bool bufferReload{true}; //!< If the buffer needs to be updated

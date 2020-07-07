@@ -30,16 +30,23 @@ namespace skyline::service::audio::IAudioRenderer {
             return;
 
         if (input.firstUpdate) {
-            if (input.format != skyline::audio::AudioFormat::Int16)
+            if (input.format != skyline::audio::AudioFormat::Int16 && input.format != skyline::audio::AudioFormat::ADPCM)
                 throw exception("Unsupported voice PCM format: {}", input.format);
 
             format = input.format;
             sampleRate = input.sampleRate;
 
-            if (input.channelCount > 2)
+            if (input.channelCount > (input.format == skyline::audio::AudioFormat::ADPCM ? 1 : 2))
                 throw exception("Unsupported voice channel count: {}", input.channelCount);
 
             channelCount = static_cast<u8>(input.channelCount);
+
+            if (input.format == skyline::audio::AudioFormat::ADPCM) {
+                std::vector<std::array<i16, 2>> adpcmCoefficients(input.adpcmCoeffsSize / (sizeof(u16) * 2));
+                state.process->ReadMemory(adpcmCoefficients.data(), input.adpcmCoeffsPosition, input.adpcmCoeffsSize);
+
+                adpcmDecoder = skyline::audio::AdpcmDecoder(adpcmCoefficients);
+            }
 
             SetWaveBufferIndex(static_cast<u8>(input.baseWaveBufferIndex));
         }
@@ -59,6 +66,12 @@ namespace skyline::service::audio::IAudioRenderer {
             case skyline::audio::AudioFormat::Int16:
                 samples.resize(currentBuffer.size / sizeof(i16));
                 state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
+                break;
+            case skyline::audio::AudioFormat::ADPCM: {
+                    std::vector<u8> adpcmData(currentBuffer.size);
+                    state.process->ReadMemory(adpcmData.data(), currentBuffer.address, currentBuffer.size);
+                    samples = adpcmDecoder->Decode(adpcmData);
+                }
                 break;
             default:
                 throw exception("Unsupported PCM format used by Voice: {}", format);

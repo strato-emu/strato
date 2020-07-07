@@ -37,6 +37,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio.cpp
         ${source_DIR}/skyline/audio/track.cpp
         ${source_DIR}/skyline/audio/resampler.cpp
+        ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/os.cpp
