@@ -110,6 +110,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/pl/IPlatformServiceManager.cpp
         ${source_DIR}/skyline/services/aocsrv/IAddOnContentManager.cpp
         ${source_DIR}/skyline/services/pctl/IParentalControlServiceFactory.cpp
+        ${source_DIR}/skyline/services/pctl/IParentalControlService.cpp
         ${source_DIR}/skyline/services/lm/ILogService.cpp
         ${source_DIR}/skyline/services/lm/ILogger.cpp
         ${source_DIR}/skyline/services/account/IAccountServiceForApplication.cpp

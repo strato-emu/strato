@@ -66,6 +66,7 @@ namespace skyline::service {
         pl_IPlatformServiceManager,
         aocsrv_IAddOnContentManager,
         pctl_IParentalControlServiceFactory,
+        pctl_IParentalControlService,
         lm_ILogService,
         lm_ILogger,
         account_IAccountServiceForApplication,
