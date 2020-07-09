@@ -25,6 +25,7 @@
 #include "nfp/IUserManager.h"
 #include "nifm/IStaticService.h"
 #include "socket/bsd/IClient.h"
+#include "ssl/ISslService.h"
 #include "serviceman.h"
 
 namespace skyline::service {
@@ -105,6 +106,9 @@ namespace skyline::service {
                 break;
             case Service::socket_IClient:
                 serviceObj = std::make_shared<socket::IClient>(state, *this);
+                break;
+            case Service::ssl_ISslService:
+                serviceObj = std::make_shared<ssl::ISslService>(state, *this);
                 break;
             default:
                 throw exception("CreateService called on missing object, type: {}", serviceType);

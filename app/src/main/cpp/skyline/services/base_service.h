@@ -79,6 +79,7 @@ namespace skyline::service {
         nifm_IGeneralService,
         nifm_IRequest,
         socket_IClient,
+        ssl_ISslService,
     };
 
     /**
@@ -117,6 +118,7 @@ namespace skyline::service {
         {"nfp:user", Service::nfp_IUserManager},
         {"nifm:u", Service::nifm_IStaticService},
         {"bsd:u", Service::socket_IClient},
+        {"ssl", Service::ssl_ISslService},
     };
 
     class ServiceManager;
