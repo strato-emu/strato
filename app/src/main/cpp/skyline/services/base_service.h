@@ -78,6 +78,7 @@ namespace skyline::service {
         nifm_IStaticService,
         nifm_IGeneralService,
         nifm_IRequest,
+        socket_IClient,
     };
 
     /**
@@ -115,6 +116,7 @@ namespace skyline::service {
         {"friend:u", Service::friends_IServiceCreator},
         {"nfp:user", Service::nfp_IUserManager},
         {"nifm:u", Service::nifm_IStaticService},
+        {"bsd:u", Service::socket_IClient},
     };
 
     class ServiceManager;

@@ -122,6 +122,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nifm/IStaticService.cpp
         ${source_DIR}/skyline/services/nifm/IGeneralService.cpp
         ${source_DIR}/skyline/services/nifm/IRequest.cpp
+        ${source_DIR}/skyline/services/socket/bsd/IClient.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp

@@ -24,6 +24,7 @@
 #include "friends/IServiceCreator.h"
 #include "nfp/IUserManager.h"
 #include "nifm/IStaticService.h"
+#include "socket/bsd/IClient.h"
 #include "serviceman.h"
 
 namespace skyline::service {
@@ -101,6 +102,9 @@ namespace skyline::service {
                 break;
             case Service::nifm_IStaticService:
                 serviceObj = std::make_shared<nifm::IStaticService>(state, *this);
+                break;
+            case Service::socket_IClient:
+                serviceObj = std::make_shared<socket::IClient>(state, *this);
                 break;
             default:
                 throw exception("CreateService called on missing object, type: {}", serviceType);
