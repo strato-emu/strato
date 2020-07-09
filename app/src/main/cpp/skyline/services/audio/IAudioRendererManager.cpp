@@ -10,7 +10,8 @@ namespace skyline::service::audio {
     IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audio_IAudioRendererManager, "audio:IAudioRendererManager", {
         {0x0, SFUNC(IAudioRendererManager::OpenAudioRenderer)},
         {0x1, SFUNC(IAudioRendererManager::GetAudioRendererWorkBufferSize)},
-        {0x2, SFUNC(IAudioRendererManager::GetAudioDeviceService)}
+        {0x2, SFUNC(IAudioRendererManager::GetAudioDeviceService)},
+        {0x4, SFUNC(IAudioRendererManager::GetAudioDeviceService)}
     }) {}
 
     void IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
