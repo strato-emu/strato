@@ -38,6 +38,11 @@ namespace skyline::service::am {
         void SetFocusHandlingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This function toggles whether a restart message should be sent (https://switchbrew.org/wiki/Applet_Manager_services#SetRestartMessageEnabled)
+         */
+        void SetRestartMessageEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This function takes a u8 bool flag and has no output (Stubbed) (https://switchbrew.org/wiki/Applet_Manager_services#SetOutOfFocusSuspendingEnabled)
          */
         void SetOutOfFocusSuspendingEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

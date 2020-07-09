@@ -12,6 +12,7 @@ namespace skyline::service::am {
         {0xB, SFUNC(ISelfController::SetOperationModeChangedNotification)},
         {0xC, SFUNC(ISelfController::SetPerformanceModeChangedNotification)},
         {0xD, SFUNC(ISelfController::SetFocusHandlingMode)},
+        {0xE, SFUNC(ISelfController::SetRestartMessageEnabled)},
         {0x10, SFUNC(ISelfController::SetOutOfFocusSuspendingEnabled)},
         {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)}
     }) {}
@@ -30,6 +31,8 @@ namespace skyline::service::am {
     void ISelfController::SetPerformanceModeChangedNotification(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void ISelfController::SetFocusHandlingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+
+    void ISelfController::SetRestartMessageEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void ISelfController::SetOutOfFocusSuspendingEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
