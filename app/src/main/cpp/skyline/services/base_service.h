@@ -80,6 +80,7 @@ namespace skyline::service {
         nifm_IRequest,
         socket_IClient,
         ssl_ISslService,
+        prepo_IPrepoService
     };
 
     /**
@@ -119,6 +120,7 @@ namespace skyline::service {
         {"nifm:u", Service::nifm_IStaticService},
         {"bsd:u", Service::socket_IClient},
         {"ssl", Service::ssl_ISslService},
+        {"prepo:u", Service::prepo_IPrepoService}
     };
 
     class ServiceManager;
