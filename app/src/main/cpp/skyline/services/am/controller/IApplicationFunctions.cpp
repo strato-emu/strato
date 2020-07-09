@@ -8,8 +8,11 @@
 namespace skyline::service::am {
     IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IApplicationFunctions, "am:IApplicationFunctions", {
         {0x1, SFUNC(IApplicationFunctions::PopLaunchParameter)},
+        {0x14, SFUNC(IApplicationFunctions::EnsureSaveData)},
         {0x15, SFUNC(IApplicationFunctions::GetDesiredLanguage)},
-        {0x28, SFUNC(IApplicationFunctions::NotifyRunning)}
+        {0x28, SFUNC(IApplicationFunctions::NotifyRunning)},
+        {0x42, SFUNC(IApplicationFunctions::InitializeGamePlayRecording)},
+        {0x43, SFUNC(IApplicationFunctions::SetGamePlayRecordingState)},
     }) {}
 
     void IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -25,6 +28,10 @@ namespace skyline::service::am {
         manager.RegisterService(storageService, session, response);
     }
 
+    void IApplicationFunctions::EnsureSaveData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(0);
+    }
+
     void IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(util::MakeMagic<u64>("en-US"));
     }
@@ -32,4 +39,8 @@ namespace skyline::service::am {
     void IApplicationFunctions::NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u8>(1);
     }
+
+    void IApplicationFunctions::InitializeGamePlayRecording(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+
+    void IApplicationFunctions::SetGamePlayRecordingState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 }
