@@ -71,6 +71,8 @@ namespace skyline::service {
         lm_ILogger,
         account_IAccountServiceForApplication,
         account_IManagerForApplication,
+        friends_IServiceCreator,
+        friends_IFriendService,
     };
 
     /**
@@ -105,6 +107,7 @@ namespace skyline::service {
         {"pctl:r", Service::pctl_IParentalControlServiceFactory},
         {"lm", Service::lm_ILogService},
         {"acc:u0", Service::account_IAccountServiceForApplication},
+        {"friend:u", Service::friends_IServiceCreator},
     };
 
     class ServiceManager;

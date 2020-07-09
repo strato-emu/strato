@@ -21,6 +21,7 @@
 #include "pctl/IParentalControlServiceFactory.h"
 #include "lm/ILogService.h"
 #include "account/IAccountServiceForApplication.h"
+#include "friends/IServiceCreator.h"
 #include "serviceman.h"
 
 namespace skyline::service {
@@ -89,6 +90,9 @@ namespace skyline::service {
                 break;
             case Service::account_IAccountServiceForApplication:
                 serviceObj = std::make_shared<account::IAccountServiceForApplication>(state, *this);
+                break;
+            case Service::friends_IServiceCreator:
+                serviceObj = std::make_shared<friends::IServiceCreator>(state, *this);
                 break;
             default:
                 throw exception("CreateService called on missing object, type: {}", serviceType);
