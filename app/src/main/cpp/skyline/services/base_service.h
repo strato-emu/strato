@@ -49,6 +49,7 @@ namespace skyline::service {
         audio_IAudioOut,
         audio_IAudioRendererManager,
         audio_IAudioRenderer,
+        audio_IAudioDevice,
         hid_IHidServer,
         hid_IAppletResource,
         timesrv_IStaticService,

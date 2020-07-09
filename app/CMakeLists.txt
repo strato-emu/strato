@@ -60,6 +60,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/fatalsrv/IService.cpp
         ${source_DIR}/skyline/services/audio/IAudioOutManager.cpp
         ${source_DIR}/skyline/services/audio/IAudioOut.cpp
+        ${source_DIR}/skyline/services/audio/IAudioDevice.cpp
         ${source_DIR}/skyline/services/audio/IAudioRendererManager.cpp
         ${source_DIR}/skyline/services/audio/IAudioRenderer/IAudioRenderer.cpp
         ${source_DIR}/skyline/services/audio/IAudioRenderer/voice.cpp

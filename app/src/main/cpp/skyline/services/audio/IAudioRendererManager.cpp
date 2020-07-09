@@ -3,12 +3,14 @@
 
 #include <kernel/types/KProcess.h>
 #include "IAudioRenderer/IAudioRenderer.h"
+#include "IAudioDevice.h"
 #include "IAudioRendererManager.h"
 
 namespace skyline::service::audio {
     IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audio_IAudioRendererManager, "audio:IAudioRendererManager", {
         {0x0, SFUNC(IAudioRendererManager::OpenAudioRenderer)},
-        {0x1, SFUNC(IAudioRendererManager::GetAudioRendererWorkBufferSize)}
+        {0x1, SFUNC(IAudioRendererManager::GetAudioRendererWorkBufferSize)},
+        {0x2, SFUNC(IAudioRendererManager::GetAudioDeviceService)}
     }) {}
 
     void IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -83,5 +85,9 @@ namespace skyline::service::audio {
 
         state.logger->Debug("IAudioRendererManager: Work buffer size: 0x{:X}", size);
         response.Push<i64>(size);
+    }
+
+    void IAudioRendererManager::GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IAudioDevice), session, response);
     }
 }
