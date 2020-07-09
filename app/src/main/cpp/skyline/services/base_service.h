@@ -70,6 +70,7 @@ namespace skyline::service {
         lm_ILogService,
         lm_ILogger,
         account_IAccountServiceForApplication,
+        account_IManagerForApplication,
     };
 
     /**

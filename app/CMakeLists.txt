@@ -114,6 +114,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/lm/ILogService.cpp
         ${source_DIR}/skyline/services/lm/ILogger.cpp
         ${source_DIR}/skyline/services/account/IAccountServiceForApplication.cpp
+        ${source_DIR}/skyline/services/account/IManagerForApplication.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp

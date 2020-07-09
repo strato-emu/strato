@@ -14,6 +14,14 @@ namespace skyline {
         struct UserId {
             u64 upper; //!< The upper 64 bits of the user ID
             u64 lower; //!< The lower 64 bits of the user ID
+
+            /**
+             * @param userId The user ID to compare with
+             * @return Whether this user ID matches the one given as a parameter
+             */
+            inline constexpr bool operator==(const UserId& userId) {
+                return upper == userId.upper && lower == userId.lower;
+            }
         };
         /**
         * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
@@ -23,9 +31,24 @@ namespace skyline {
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
 
             /**
+            * @brief This checks if the given user ID exists
+            */
+            void GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+            * @brief This returns the user ID of the last active user on the console
+            */
+            void GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
             * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
             */
             void InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+            * @brief This returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info
+            */
+            void GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
         };
     }
 
