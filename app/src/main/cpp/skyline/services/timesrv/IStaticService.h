@@ -25,6 +25,11 @@ namespace skyline::service::timesrv {
         void GetStandardNetworkSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This returns a handle to a ISteadyClock for a steady timepoint
+         */
+        void GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This returns a handle to a ITimeZoneService for reading time zone information
          */
         void GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

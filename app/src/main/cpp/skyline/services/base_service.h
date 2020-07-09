@@ -55,6 +55,7 @@ namespace skyline::service {
         timesrv_IStaticService,
         timesrv_ISystemClock,
         timesrv_ITimeZoneService,
+        timesrv_ISteadyClock,
         fssrv_IFileSystemProxy,
         fssrv_IFileSystem,
         fssrv_IStorage,
