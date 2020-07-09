@@ -101,6 +101,11 @@ namespace skyline {
         void SetThreadPriority(DeviceState &state);
 
         /**
+         * @brief Clears a KEvent of it's signal (https://switchbrew.org/wiki/SVC#ClearEvent)
+         */
+        void ClearEvent(DeviceState &state);
+
+        /**
          * @brief Maps the block supplied by the handle (https://switchbrew.org/wiki/SVC#MapSharedMemory)
          */
         void MapSharedMemory(DeviceState &state);
@@ -202,7 +207,7 @@ namespace skyline {
             nullptr, // 0x0f
             nullptr, // 0x10
             nullptr, // 0x11
-            nullptr, // 0x12
+            ClearEvent, // 0x12
             MapSharedMemory, // 0x13
             nullptr, // 0x14
             CreateTransferMemory, // 0x15

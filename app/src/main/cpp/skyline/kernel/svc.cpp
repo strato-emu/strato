@@ -300,6 +300,12 @@ namespace skyline::kernel::svc {
         }
     }
 
+    void ClearEvent(DeviceState &state) {
+        auto object = state.process->GetHandle<type::KEvent>(state.ctx->registers.w0);
+        object->signalled = false;
+        state.ctx->registers.w0 = constant::status::Success;
+    }
+
     void MapSharedMemory(DeviceState &state) {
         try {
             auto object = state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0);
