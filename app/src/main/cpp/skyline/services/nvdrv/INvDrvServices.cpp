@@ -60,7 +60,8 @@ namespace skyline::service::nvdrv {
         {0x2, SFUNC(INvDrvServices::Close)},
         {0x3, SFUNC(INvDrvServices::Initialize)},
         {0x4, SFUNC(INvDrvServices::QueryEvent)},
-        {0x8, SFUNC(INvDrvServices::SetAruidByPID)}
+        {0x8, SFUNC(INvDrvServices::SetAruidByPID)},
+        {0xd, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
     }) {}
 
     void INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -134,4 +135,6 @@ namespace skyline::service::nvdrv {
     void INvDrvServices::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(constant::status::Success);
     }
+
+    void INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 }
