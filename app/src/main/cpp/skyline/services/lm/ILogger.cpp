@@ -46,13 +46,15 @@ namespace skyline::service::lm {
         } data = state.process->GetReference<Data>(request.inputBuf.at(0).address);
 
         std::ostringstream logMessage;
-        logMessage << "Guest log: ";
+        logMessage << "Guest log:";
 
         u64 offset = sizeof(Data);
         while (offset < request.inputBuf.at(0).size) {
             auto fieldType = state.process->GetObject<LogFieldType>(request.inputBuf.at(0).address + offset++);
             auto length = state.process->GetObject<u8>(request.inputBuf.at(0).address + offset++);
             auto address = request.inputBuf.at(0).address + offset;
+
+            logMessage << " ";
 
             switch  (fieldType) {
                 case LogFieldType::Start:
