@@ -75,6 +75,9 @@ namespace skyline::service {
         friends_IFriendService,
         nfp_IUserManager,
         nfp_IUser,
+        nifm_IStaticService,
+        nifm_IGeneralService,
+        nifm_IRequest,
     };
 
     /**
@@ -111,6 +114,7 @@ namespace skyline::service {
         {"acc:u0", Service::account_IAccountServiceForApplication},
         {"friend:u", Service::friends_IServiceCreator},
         {"nfp:user", Service::nfp_IUserManager},
+        {"nifm:u", Service::nifm_IStaticService},
     };
 
     class ServiceManager;

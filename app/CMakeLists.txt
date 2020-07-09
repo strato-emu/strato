@@ -119,6 +119,9 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/friends/IFriendService.cpp
         ${source_DIR}/skyline/services/nfp/IUserManager.cpp
         ${source_DIR}/skyline/services/nfp/IUser.cpp
+        ${source_DIR}/skyline/services/nifm/IStaticService.cpp
+        ${source_DIR}/skyline/services/nifm/IGeneralService.cpp
+        ${source_DIR}/skyline/services/nifm/IRequest.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp
