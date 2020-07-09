@@ -18,6 +18,16 @@ namespace skyline::service::am {
         ISelfController(const DeviceState &state, ServiceManager &manager);
 
         /**
+         * @brief This function prevents the running application from being quit via the home button (https://switchbrew.org/wiki/Applet_Manager_services#LockExit)
+         */
+        void LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This function allows the running application to be quit via the home button (https://switchbrew.org/wiki/Applet_Manager_services#UnlockExit)
+         */
+        void UnlockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This function obtains a handle to the library applet launchable event (https://switchbrew.org/wiki/Applet_Manager_services#GetLibraryAppletLaunchableEvent)
          */
         void GetLibraryAppletLaunchableEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

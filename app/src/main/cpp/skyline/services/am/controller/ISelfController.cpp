@@ -8,6 +8,8 @@
 
 namespace skyline::service::am {
     ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ISelfController, "am:ISelfController", {
+        {0x1, SFUNC(ISelfController::LockExit)},
+        {0x2, SFUNC(ISelfController::UnlockExit)},
         {0x9, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)},
         {0xB, SFUNC(ISelfController::SetOperationModeChangedNotification)},
         {0xC, SFUNC(ISelfController::SetPerformanceModeChangedNotification)},
@@ -16,6 +18,10 @@ namespace skyline::service::am {
         {0x10, SFUNC(ISelfController::SetOutOfFocusSuspendingEnabled)},
         {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)}
     }) {}
+
+    void ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+
+    void ISelfController::UnlockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void ISelfController::GetLibraryAppletLaunchableEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         libraryAppletLaunchableEvent->Signal();
