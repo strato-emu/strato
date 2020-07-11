@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
         }
 
         thread(start = true) {
-            val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
+            val snackbar = Snackbar.make(coordinatorLayout, getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
             runOnUiThread {
                 snackbar.show()
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
