@@ -15,6 +15,7 @@ namespace skyline::service::audio::IAudioRenderer {
         {0x5, SFUNC(IAudioRenderer::Start)},
         {0x6, SFUNC(IAudioRenderer::Stop)},
         {0x7, SFUNC(IAudioRenderer::QuerySystemEvent)},
+        {0xA, SFUNC(IAudioRenderer::RequestUpdate)},
     }) {
         track = state.audio->OpenTrack(constant::ChannelCount, parameters.sampleRate, []() {});
         track->Start();

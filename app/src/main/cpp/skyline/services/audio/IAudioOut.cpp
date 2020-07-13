@@ -12,7 +12,9 @@ namespace skyline::service::audio {
         {0x3, SFUNC(IAudioOut::AppendAudioOutBuffer)},
         {0x4, SFUNC(IAudioOut::RegisterBufferEvent)},
         {0x5, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)},
-        {0x6, SFUNC(IAudioOut::ContainsAudioOutBuffer)}
+        {0x6, SFUNC(IAudioOut::ContainsAudioOutBuffer)},
+        {0x7, SFUNC(IAudioOut::AppendAudioOutBuffer)},
+        {0x8, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)}
     }) {
         track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
     }

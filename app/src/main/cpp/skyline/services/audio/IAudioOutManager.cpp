@@ -8,7 +8,9 @@
 namespace skyline::service::audio {
     IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audio_IAudioOutManager, "audio:IAudioOutManager", {
         {0x0, SFUNC(IAudioOutManager::ListAudioOuts)},
-        {0x1, SFUNC(IAudioOutManager::OpenAudioOut)}
+        {0x1, SFUNC(IAudioOutManager::OpenAudioOut)},
+        {0x2, SFUNC(IAudioOutManager::ListAudioOuts)},
+        {0x3, SFUNC(IAudioOutManager::OpenAudioOut)}
     }) {}
 
     void IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
