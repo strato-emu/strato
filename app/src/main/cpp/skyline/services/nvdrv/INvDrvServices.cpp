@@ -77,6 +77,10 @@ namespace skyline::service::nvdrv {
         auto cmd = request.Pop<u32>();
 
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
+
+        // Strip the permissions from the command leaving only the ID
+        cmd &= 0xffff;
+
         try {
             if (request.inputBuf.empty() || request.outputBuf.empty()) {
                 if (request.inputBuf.empty()) {

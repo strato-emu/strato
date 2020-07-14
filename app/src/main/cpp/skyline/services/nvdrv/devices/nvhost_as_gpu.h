@@ -12,5 +12,30 @@ namespace skyline::service::nvdrv::device {
     class NvHostAsGpu : public NvDevice {
       public:
         NvHostAsGpu(const DeviceState &state);
+
+        /**
+         * @brief This initializes the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_INITIALIZE_EX)
+         */
+        void InitializeEx(IoctlData &buffer);
+
+        /**
+         * @brief This returns the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_GET_VA_REGIONS)
+         */
+        void GetVaRegions(IoctlData &buffer);
+
+        /**
+         * @brief This reserves a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_SPACE)
+         */
+        void AllocSpace(IoctlData &buffer);
+
+        /**
+         * @brief This maps a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_MODIFY)
+         */
+        void Modify(IoctlData &buffer);
+
+        /**
+         * @brief This binds a channel to the address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_BIND_CHANNEL)
+         */
+        void BindChannel(IoctlData &buffer);
     };
 }

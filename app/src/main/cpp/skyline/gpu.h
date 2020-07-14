@@ -9,6 +9,7 @@
 #include <kernel/types/KEvent.h>
 #include <services/nvdrv/devices/nvmap.h>
 #include "gpu/texture.h"
+#include "gpu/memory_manager.h"
 
 namespace skyline::gpu {
     /**
@@ -28,6 +29,7 @@ namespace skyline::gpu {
         i32 format{}; //!< The format of the display window
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< This KEvent is triggered every time a frame is drawn
         std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< This KEvent is triggered every time a buffer is freed
+        vmm::MemoryManager memoryManager; //!< The GPU Virtual Memory Manager
 
         /**
          * @param window The ANativeWindow to render to

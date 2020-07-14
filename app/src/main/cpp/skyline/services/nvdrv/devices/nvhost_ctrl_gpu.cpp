@@ -6,11 +6,11 @@
 
 namespace skyline::service::nvdrv::device {
     NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_ctrl_gpu, {
-        {0x80044701, NFUNC(NvHostCtrlGpu::ZCullGetCtxSize)},
-        {0x80284702, NFUNC(NvHostCtrlGpu::ZCullGetInfo)},
-        {0xC0184706, NFUNC(NvHostCtrlGpu::GetTpcMasks)},
-        {0xC0B04705, NFUNC(NvHostCtrlGpu::GetCharacteristics)},
-        {0x80084714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)}
+        {0x4701, NFUNC(NvHostCtrlGpu::ZCullGetCtxSize)},
+        {0x4702, NFUNC(NvHostCtrlGpu::ZCullGetInfo)},
+        {0x4706, NFUNC(NvHostCtrlGpu::GetTpcMasks)},
+        {0x4705, NFUNC(NvHostCtrlGpu::GetCharacteristics)},
+        {0x4714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)}
     }) {}
 
     void NvHostCtrlGpu::ZCullGetCtxSize(IoctlData &buffer) {

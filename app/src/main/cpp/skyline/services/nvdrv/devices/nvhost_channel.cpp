@@ -6,16 +6,22 @@
 
 namespace skyline::service::nvdrv::device {
     NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : NvDevice(state, type, {
-        {0x40044801, NFUNC(NvHostChannel::SetNvmapFd)},
-        {0xC0104809, NFUNC(NvHostChannel::AllocObjCtx)},
-        {0xC010480B, NFUNC(NvHostChannel::ZcullBind)},
-        {0xC018480C, NFUNC(NvHostChannel::SetErrorNotifier)},
-        {0x4004480D, NFUNC(NvHostChannel::SetPriority)},
-        {0xC020481A, NFUNC(NvHostChannel::AllocGpfifoEx2)},
-        {0x40084714, NFUNC(NvHostChannel::SetUserData)}
+        {0x4801, NFUNC(NvHostChannel::SetNvmapFd)},
+        {0x4803, NFUNC(NvHostChannel::SetSubmitTimeout)},
+        {0x4808, NFUNC(NvHostChannel::SubmitGpFifo)},
+        {0x4809, NFUNC(NvHostChannel::AllocObjCtx)},
+        {0x480B, NFUNC(NvHostChannel::ZcullBind)},
+        {0x480C, NFUNC(NvHostChannel::SetErrorNotifier)},
+        {0x480D, NFUNC(NvHostChannel::SetPriority)},
+        {0x481A, NFUNC(NvHostChannel::AllocGpfifoEx2)},
+        {0x4714, NFUNC(NvHostChannel::SetUserData)},
     }) {}
 
     void NvHostChannel::SetNvmapFd(IoctlData &buffer) {}
+
+    void NvHostChannel::SetSubmitTimeout(IoctlData &buffer) {}
+
+    void NvHostChannel::SubmitGpFifo(IoctlData &buffer) {}
 
     void NvHostChannel::AllocObjCtx(IoctlData &buffer) {}
 

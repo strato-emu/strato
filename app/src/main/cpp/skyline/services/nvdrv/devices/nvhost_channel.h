@@ -28,6 +28,16 @@ namespace skyline::service::nvdrv::device {
         void SetNvmapFd(IoctlData &buffer);
 
         /**
+         * @brief This sets the timeout for the channel (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CHANNEL_SET_SUBMIT_TIMEOUT)
+         */
+        void SetSubmitTimeout(IoctlData &buffer);
+
+        /**
+         * @brief This submits a command to the GPFIFO (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO)
+         */
+        void SubmitGpFifo(IoctlData &buffer);
+
+        /**
          * @brief This allocates a graphic context object (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX)
          */
         void AllocObjCtx(IoctlData &buffer);

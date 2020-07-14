@@ -12,5 +12,10 @@ namespace skyline::service::nvdrv::device {
     class NvHostCtrl : public NvDevice {
       public:
         NvHostCtrl(const DeviceState &state);
+
+        /**
+         * @brief This registers a GPU event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_REGISTER)
+         */
+        void EventRegister(IoctlData &buffer);
     };
 }
