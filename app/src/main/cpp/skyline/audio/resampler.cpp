@@ -135,7 +135,7 @@ namespace skyline::audio {
         }();
 
         for (size_t outIndex = 0, inIndex = 0; outIndex < outputSize; outIndex += channelCount) {
-            auto lutIndex = (fraction >> 8) << 2;
+            auto lutIndex = fraction >> 8;
 
             for (u8 channel = 0; channel < channelCount; channel++) {
                 i32 data = inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
