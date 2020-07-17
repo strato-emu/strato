@@ -8,7 +8,7 @@
     <androidx.cardview.widget.CardView
             android:id="@+id/app_item_grid"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/app_card_margin_half"
             android:clickable="true"
@@ -18,46 +18,64 @@
             app:cardElevation="@dimen/app_card_margin"
             app:cardUseCompatPadding="true">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="155dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:orientation="vertical">
+                android:layout_height="155dp">
 
             <ImageView
                     android:id="@+id/icon"
                     android:layout_width="match_parent"
-                    android:layout_height="155dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentTop="false"
+                    android:layout_centerHorizontal="true"
                     android:contentDescription="@string/icon"
+                    android:foreground="@drawable/background_gradient"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     tools:src="@drawable/default_icon" />
 
             <TextView
                     android:id="@+id/text_title"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:alpha="242.25"
                     android:ellipsize="marquee"
                     android:marqueeRepeatLimit="marquee_forever"
-                    android:paddingStart="15dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="15dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
                     android:singleLine="true"
-                    android:textAlignment="center"
                     android:textAppearance="?android:attr/textAppearanceListItem"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintBottom_toTopOf="@id/text_subtitle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constraintStart_toStartOf="parent"
                     tools:text="Title" />
 
             <TextView
                     android:id="@+id/text_subtitle"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:alpha="242.25"
                     android:ellipsize="marquee"
                     android:fadingEdge="horizontal"
                     android:marqueeRepeatLimit="marquee_forever"
-                    android:paddingBottom="15dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
                     android:singleLine="true"
-                    android:textAlignment="center"
                     android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                    android:textColor="@android:color/tertiary_text_light"
+                    android:textColor="@android:color/white"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constraintStart_toStartOf="parent"
                     tools:text="Subtitle" />
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 </FrameLayout>

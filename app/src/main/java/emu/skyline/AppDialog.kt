@@ -15,10 +15,11 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import emu.skyline.adapter.AppItem
+import emu.skyline.data.AppItem
 import kotlinx.android.synthetic.main.app_dialog.*
 
 /**
@@ -26,7 +27,7 @@ import kotlinx.android.synthetic.main.app_dialog.*
  *
  * @param item This is used to hold the [AppItem] between instances
  */
-class AppDialog(val item : AppItem? = null) : BottomSheetDialogFragment() {
+class AppDialog(val item : AppItem) : BottomSheetDialogFragment() {
 
     /**
      * This inflates the layout of the dialog after initial view creation
@@ -47,10 +48,9 @@ class AppDialog(val item : AppItem? = null) : BottomSheetDialogFragment() {
         dialog?.setOnKeyListener { _, keyCode, event ->
             if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_DOWN) {
                 dialog?.onBackPressed()
-                true
-            } else {
-                false
+                return@setOnKeyListener true
             }
+            false
         }
     }
 
@@ -60,38 +60,35 @@ class AppDialog(val item : AppItem? = null) : BottomSheetDialogFragment() {
     override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (item is AppItem) {
-            val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context?.theme)?.toBitmap(256, 256)
+        val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
 
-            game_icon.setImageBitmap(item.icon ?: missingIcon)
-            game_title.text = item.title
-            game_subtitle.text = item.subTitle ?: getString(R.string.metadata_missing)
+        game_icon.setImageBitmap(item.icon ?: missingIcon)
+        game_title.text = item.title
+        game_subtitle.text = item.subTitle ?: getString(R.string.metadata_missing)
 
-            game_play.setOnClickListener {
-                val intent = Intent(activity, EmulationActivity::class.java)
-                intent.data = item.uri
+        game_play.setOnClickListener {
+            val intent = Intent(activity, EmulationActivity::class.java)
+            intent.data = item.uri
 
-                startActivity(intent)
-            }
+            startActivity(intent)
+        }
 
-            val shortcutManager = activity?.getSystemService(ShortcutManager::class.java)!!
-            game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
+        val shortcutManager = requireActivity().getSystemService(ShortcutManager::class.java)
+        game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
 
-            game_pin.setOnClickListener {
-                val info = ShortcutInfo.Builder(context, item.title)
-                info.setShortLabel(item.meta.name)
-                info.setActivity(ComponentName(context!!, EmulationActivity::class.java))
-                info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
+        game_pin.setOnClickListener {
+            val info = ShortcutInfo.Builder(context, item.title)
+            info.setShortLabel(item.meta.name)
+            info.setActivity(ComponentName(requireActivity(), EmulationActivity::class.java))
+            info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
 
-                val intent = Intent(context, EmulationActivity::class.java)
-                intent.data = item.uri
-                intent.action = Intent.ACTION_VIEW
+            val intent = Intent(context, EmulationActivity::class.java)
+            intent.data = item.uri
+            intent.action = Intent.ACTION_VIEW
 
-                info.setIntent(intent)
+            info.setIntent(intent)
 
-                shortcutManager.requestPinShortcut(info.build(), null)
-            }
-        } else
-            activity?.supportFragmentManager?.beginTransaction()?.remove(this)?.commit()
+            shortcutManager.requestPinShortcut(info.build(), null)
+        }
     }
 }

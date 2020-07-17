@@ -7,109 +7,48 @@ package emu.skyline.adapter
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.net.Uri
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.R
-import emu.skyline.adapter.ElementType.Header
-import emu.skyline.adapter.ElementType.Item
-import emu.skyline.loader.AppEntry
-
-/**
- * This class is a wrapper around [AppEntry], it is used for passing around game metadata
- */
-class AppItem(val meta : AppEntry) : BaseItem() {
-    /**
-     * The icon of the application
-     */
-    val icon : Bitmap?
-        get() = meta.icon
-
-    /**
-     * The title of the application
-     */
-    val title : String
-        get() = meta.name
-
-    /**
-     * The string used as the sub-title, we currently use the author
-     */
-    val subTitle : String?
-        get() = meta.author
-
-    /**
-     * The URI of the application's image file
-     */
-    val uri : Uri
-        get() = meta.uri
-
-    /**
-     * The format of the application ROM as a string
-     */
-    private val type : String
-        get() = meta.format.name
-
-    /**
-     * The name and author is used as the key
-     */
-    override fun key() : String? {
-        return if (meta.author != null) meta.name + " " + meta.author else meta.name
-    }
-}
+import emu.skyline.data.AppItem
 
 /**
  * This enumerates the type of layouts the menu can be in
  */
-enum class LayoutType {
-    List,
-    Grid,
+enum class LayoutType(val layoutRes : Int) {
+    List(R.layout.app_item_linear),
+    Grid(R.layout.app_item_grid),
+    GridCompact(R.layout.app_item_grid_compact)
 }
+
+private typealias AppInteractionFunc = (appItem : AppItem) -> Unit
 
 /**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val context : Context?, private val layoutType : LayoutType) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>(), View.OnClickListener {
-    private val missingIcon = context?.resources?.getDrawable(R.drawable.default_icon, context.theme)?.toBitmap(256, 256)
-    private val missingString = context?.getString(R.string.metadata_missing)
+internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : Int, private val onClick : AppInteractionFunc, private val onLongClick : AppInteractionFunc) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>() {
+
+    private lateinit var context : Context
+    private val missingIcon by lazy { ContextCompat.getDrawable(context, R.drawable.default_icon)!!.toBitmap(256, 256) }
+    private val missingString by lazy { context.getString(R.string.metadata_missing) }
 
     /**
      * This adds a header to the view with the contents of [string]
      */
     fun addHeader(string : String) {
         super.addHeader(BaseHeader(string))
-    }
-
-    /**
-     * The onClick handler for the supplied [view], used for the icon preview
-     */
-    override fun onClick(view : View) {
-        val position = view.tag as Int
-
-        if (getItem(position) is AppItem) {
-            val item = getItem(position) as AppItem
-
-            if (view.id == R.id.icon) {
-                val builder = Dialog(context!!)
-                builder.requestWindowFeature(Window.FEATURE_NO_TITLE)
-                builder.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
-                val imageView = ImageView(context)
-                imageView.setImageBitmap(item.icon ?: missingIcon)
-
-                builder.addContentView(imageView, RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                builder.show()
-            }
-        }
     }
 
     /**
@@ -134,38 +73,49 @@ internal class AppAdapter(val context : Context?, private val layoutType : Layou
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
      */
     override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder {
+        context = parent.context
+
         val inflater = LayoutInflater.from(context)
-        var holder : RecyclerView.ViewHolder? = null
-
-        if (viewType == Item.ordinal) {
-            val view = inflater.inflate(if (layoutType == LayoutType.List) R.layout.app_item_linear else R.layout.app_item_grid, parent, false)
-            holder = ItemViewHolder(view, view.findViewById(R.id.icon), view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
-
-            if (layoutType == LayoutType.List) {
-                if (context is View.OnClickListener)
-                    view.setOnClickListener(context as View.OnClickListener)
-
-                if (context is View.OnLongClickListener)
-                    view.setOnLongClickListener(context as View.OnLongClickListener)
-            } else {
-                holder.card = view.findViewById(R.id.app_item_grid)
-
-                if (context is View.OnClickListener)
-                    holder.card!!.setOnClickListener(context as View.OnClickListener)
-
-                if (context is View.OnLongClickListener)
-                    holder.card!!.setOnLongClickListener(context as View.OnLongClickListener)
-
-                holder.title.isSelected = true
-            }
-        } else if (viewType == Header.ordinal) {
-            val view = inflater.inflate(R.layout.section_item, parent, false)
-            holder = HeaderViewHolder(view)
-
-            holder.header = view.findViewById(R.id.text_title)
+        val view = when (ElementType.values()[viewType]) {
+            ElementType.Item -> inflater.inflate(layoutType.layoutRes, parent, false)
+            ElementType.Header -> inflater.inflate(R.layout.section_item, parent, false)
         }
 
-        return holder!!
+        Log.i("blaa", "onCreateViewHolder")
+
+        return when (ElementType.values()[viewType]) {
+            ElementType.Item -> {
+                ItemViewHolder(view, view.findViewById(R.id.icon), view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle)).apply {
+                    if (layoutType == LayoutType.List) {
+                        view.apply {
+                            if (context is View.OnClickListener) {
+                                setOnClickListener(context as View.OnClickListener)
+                            }
+                            if (context is View.OnLongClickListener) {
+                                setOnLongClickListener(context as View.OnLongClickListener)
+                            }
+                        }
+                    } else {
+                        card = view.findViewById(R.id.app_item_grid)
+                        card!!.apply {
+                            if (context is View.OnClickListener) {
+                                setOnClickListener(context as View.OnClickListener)
+                            }
+                            if (context is View.OnLongClickListener) {
+                                setOnLongClickListener(context as View.OnLongClickListener)
+                            }
+                        }
+
+                        title.isSelected = true
+                    }
+                }
+            }
+            ElementType.Header -> {
+                HeaderViewHolder(view).apply {
+                    header = view.findViewById(R.id.text_title)
+                }
+            }
+        }
     }
 
     /**
@@ -183,16 +133,45 @@ internal class AppAdapter(val context : Context?, private val layoutType : Layou
             holder.icon.setImageBitmap(item.icon ?: missingIcon)
 
             if (layoutType == LayoutType.List) {
-                holder.icon.setOnClickListener(this)
-                holder.icon.tag = position
+                holder.icon.setOnClickListener { showIconDialog(item) }
             }
 
-            holder.card?.tag = item
-            holder.parent.tag = item
+            when (layoutType) {
+                LayoutType.List -> holder.itemView
+                LayoutType.Grid, LayoutType.GridCompact -> holder.card!!
+            }.apply {
+                setOnClickListener { onClick.invoke(item) }
+                setOnLongClickListener { true.also { onLongClick.invoke(item) } }
+            }
+
+            // Increase margin of edges to avoid huge gap in between items
+            if (layoutType == LayoutType.Grid || layoutType == LayoutType.GridCompact) {
+
+                holder.itemView.layoutParams = LinearLayout.LayoutParams(holder.itemView.layoutParams.width, holder.itemView.layoutParams.height).apply {
+                    if (position % gridSpan == 0) {
+                        marginStart = holder.itemView.resources.getDimensionPixelSize(R.dimen.app_card_margin) * 2
+                    } else if (position % gridSpan == gridSpan - 1) {
+                        marginEnd = holder.itemView.resources.getDimensionPixelSize(R.dimen.app_card_margin) * 2
+                    }
+                }
+                holder.itemView.requestLayout()
+            }
         } else if (item is BaseHeader) {
             val holder = viewHolder as HeaderViewHolder
 
             holder.header!!.text = item.title
         }
+    }
+
+    private fun showIconDialog(appItem : AppItem) {
+        val builder = Dialog(context)
+        builder.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        builder.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val imageView = ImageView(context)
+        imageView.setImageBitmap(appItem.icon ?: missingIcon)
+
+        builder.addContentView(imageView, RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        builder.show()
     }
 }

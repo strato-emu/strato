@@ -13,7 +13,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
-import android.view.Surface
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -23,12 +22,12 @@ import java.util.*
 /**
  * An enumeration of all supported ROM formats
  */
-enum class RomFormat(val format: Int){
-    NRO(0),
-    NSO(1),
-    NCA(2),
-    XCI(3),
-    NSP(4),
+enum class RomFormat(val extension : String) {
+    NRO("nro"),
+    NSO("nso"),
+    NCA("nca"),
+    XCI("xci"),
+    NSP("nsp"),
 }
 
 /**
@@ -185,7 +184,7 @@ internal class RomFile(val context : Context, val format : RomFormat, val file :
     fun getAppEntry(uri : Uri) : AppEntry {
         return if (hasAssets(instance)) {
             val rawIcon = getIcon(instance)
-            val icon = if (rawIcon.size != 0) BitmapFactory.decodeByteArray(rawIcon, 0, rawIcon.size) else null
+            val icon = if (rawIcon.isNotEmpty()) BitmapFactory.decodeByteArray(rawIcon, 0, rawIcon.size) else null
 
             AppEntry(getApplicationName(instance), getApplicationPublisher(instance), format, uri, icon)
         } else {

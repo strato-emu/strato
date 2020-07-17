@@ -10,12 +10,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnLongClickListener
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.R
+import emu.skyline.data.BaseItem
 
 /**
  * This class is used to hold all data about a log entry
@@ -32,7 +32,7 @@ internal class LogItem(val message : String, val level : String) : BaseItem() {
 /**
  * This adapter is used for displaying logs outputted by the application
  */
-internal class LogAdapter internal constructor(val context : Context, val compact : Boolean, private val debug_level : Int, private val level_str : Array<String>) : HeaderAdapter<LogItem, BaseHeader, RecyclerView.ViewHolder>(), OnLongClickListener {
+internal class LogAdapter internal constructor(val context : Context, val compact : Boolean, private val debug_level : Int, private val level_str : Array<String>) : HeaderAdapter<LogItem, BaseHeader, RecyclerView.ViewHolder>() {
     private val clipboard : ClipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     /**
@@ -73,40 +73,32 @@ internal class LogAdapter internal constructor(val context : Context, val compac
     private class HeaderViewHolder(val parent : View, var header : TextView) : RecyclerView.ViewHolder(parent)
 
     /**
-     * The onLongClick handler for the supplied [view], used to copy a log into the clipboard
-     */
-    override fun onLongClick(view : View) : Boolean {
-        val item = view.tag as LogItem
-        clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.message + " (" + item.level + ")"))
-        Toast.makeText(view.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
-        return false
-    }
-
-    /**
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
      */
     override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(context)
-        var holder : RecyclerView.ViewHolder? = null
 
-        if (viewType == ElementType.Item.ordinal) {
-            if (compact) {
-                val view = inflater.inflate(R.layout.log_item_compact, parent, false)
-                holder = ItemViewHolder(view, view.findViewById(R.id.text_title))
-
-                view.setOnLongClickListener(this)
-            } else {
-                val view = inflater.inflate(R.layout.log_item, parent, false)
-                holder = ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
-
-                view.setOnLongClickListener(this)
+        val view = when (ElementType.values()[viewType]) {
+            ElementType.Item -> {
+                inflater.inflate(if (compact) R.layout.log_item_compact else R.layout.log_item, parent, false)
             }
-        } else if (viewType == ElementType.Header.ordinal) {
-            val view = inflater.inflate(R.layout.section_item, parent, false)
-            holder = HeaderViewHolder(view, view.findViewById(R.id.text_title))
+            ElementType.Header -> {
+                inflater.inflate(R.layout.log_item, parent, false)
+            }
         }
 
-        return holder!!
+        return when (ElementType.values()[viewType]) {
+            ElementType.Item -> {
+                if (compact) {
+                    ItemViewHolder(view, view.findViewById(R.id.text_title))
+                } else {
+                    ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
+                }
+            }
+            ElementType.Header -> {
+                HeaderViewHolder(view, view.findViewById(R.id.text_title))
+            }
+        }
     }
 
     /**
@@ -121,7 +113,10 @@ internal class LogAdapter internal constructor(val context : Context, val compac
             holder.title.text = item.message
             holder.subtitle?.text = item.level
 
-            holder.parent.tag = item
+            holder.parent.setOnClickListener {
+                clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.message + " (" + item.level + ")"))
+                Toast.makeText(holder.itemView.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
+            }
         } else if (item is BaseHeader) {
             val holder = viewHolder as HeaderViewHolder
 

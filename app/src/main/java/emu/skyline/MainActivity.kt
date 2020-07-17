@@ -25,9 +25,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.AppAdapter
-import emu.skyline.adapter.AppItem
 import emu.skyline.adapter.GridLayoutSpan
 import emu.skyline.adapter.LayoutType
+import emu.skyline.data.AppItem
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
 import kotlinx.android.synthetic.main.main_activity.*
@@ -37,7 +37,7 @@ import java.io.IOException
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
-class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClickListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener {
     /**
      * This is used to get/set shared preferences
      */
@@ -51,14 +51,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
      */
-    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
+    private fun addEntries(romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                foundCurrent = addEntries(extension, romFormat, file, foundCurrent)
+                foundCurrent = addEntries(romFormat, file, foundCurrent)
             } else {
-                if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
+                if (romFormat.extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
                     val romFd = contentResolver.openFileDescriptor(file.uri, "r")!!
                     val romFile = RomFile(this, romFormat, romFd)
 
@@ -111,14 +111,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
             try {
                 runOnUiThread { adapter.clear() }
 
-                var foundRoms = addEntries("nro", RomFormat.NRO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
-                foundRoms = foundRoms or addEntries("nso", RomFormat.NSO, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
-                foundRoms = foundRoms or addEntries("nca", RomFormat.NCA, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
-                foundRoms = foundRoms or addEntries("nsp", RomFormat.NSP, DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!)
+                val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!
+
+                var foundRoms = addEntries(RomFormat.NRO, searchLocation)
+                foundRoms = foundRoms or addEntries(RomFormat.NSO, searchLocation)
+                foundRoms = foundRoms or addEntries(RomFormat.NCA, searchLocation)
+                foundRoms = foundRoms or addEntries(RomFormat.NSP, searchLocation)
 
                 runOnUiThread {
-                    if (!foundRoms)
+                    if (!foundRoms) {
                         adapter.addHeader(getString(R.string.no_rom))
+                    }
 
                     try {
                         adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
@@ -172,28 +175,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
         open_fab.setOnClickListener(this)
         log_fab.setOnClickListener(this)
 
-        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
-
-        adapter = AppAdapter(this, layoutType)
-        app_list.adapter = adapter
-
-        when (layoutType) {
-            LayoutType.List -> {
-                app_list.layoutManager = LinearLayoutManager(this)
-                app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
-            }
-
-            LayoutType.Grid -> {
-                val itemWidth = 225
-                val metrics = resources.displayMetrics
-                val span = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
-
-                val layoutManager = GridLayoutManager(this, span)
-                layoutManager.spanSizeLookup = GridLayoutSpan(adapter, span)
-
-                app_list.layoutManager = layoutManager
-            }
-        }
+        setupAppList()
 
         app_list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             var y : Int = 0
@@ -202,23 +184,43 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                 y += dy
 
                 if (!app_list.isInTouchMode) {
-                    if (y == 0)
-                        toolbar_layout.setExpanded(true)
-                    else
-                        toolbar_layout.setExpanded(false)
+                    toolbar_layout.setExpanded(y == 0)
                 }
 
                 super.onScrolled(recyclerView, dx, dy)
             }
         })
+    }
+
+    private fun setupAppList() {
+        val itemWidth = 225
+        val metrics = resources.displayMetrics
+        val gridSpan = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
+
+        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
+
+        adapter = AppAdapter(layoutType = layoutType, gridSpan = gridSpan, onClick = selectStartGame, onLongClick = selectShowGameDialog)
+        app_list.adapter = adapter
+
+        app_list.layoutManager = when (layoutType) {
+            LayoutType.List -> LinearLayoutManager(this).also { app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL)) }
+            LayoutType.Grid, LayoutType.GridCompact -> GridLayoutManager(this, gridSpan).apply {
+                spanSizeLookup = GridLayoutSpan(adapter, gridSpan).also {
+                    if (app_list.itemDecorationCount > 0) {
+                        app_list.removeItemDecorationAt(0)
+                    }
+                }
+            }
+        }
 
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
 
             startActivityForResult(intent, 1)
-        } else
+        } else {
             refreshAdapter(!sharedPreferences.getBoolean("refresh_required", false))
+        }
     }
 
     /**
@@ -245,12 +247,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
     }
 
     /**
-     * This handles on-click interaction with [R.id.log_fab], [R.id.open_fab], [R.id.app_item_linear] and [R.id.app_item_grid]
+     * This handles on-click interaction with [R.id.log_fab], [R.id.open_fab]
      */
     override fun onClick(view : View) {
         when (view.id) {
             R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
-
             R.id.open_fab -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
@@ -258,40 +259,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
 
                 startActivityForResult(intent, 2)
             }
-
-            R.id.app_item_linear, R.id.app_item_grid -> {
-                val tag = view.tag
-                if (tag is AppItem) {
-                    if (sharedPreferences.getBoolean("select_action", false)) {
-                        val dialog = AppDialog(tag)
-                        dialog.show(supportFragmentManager, "game")
-                    } else {
-                        val intent = Intent(this, EmulationActivity::class.java)
-                        intent.data = tag.uri
-                        startActivity(intent)
-                    }
-                }
-            }
         }
     }
 
-    /**
-     * This handles long-click interaction with [R.id.app_item_linear] and [R.id.app_item_grid]
-     */
-    override fun onLongClick(view : View?) : Boolean {
-        when (view?.id) {
-            R.id.app_item_linear, R.id.app_item_grid -> {
-                val tag = view.tag
-                if (tag is AppItem) {
-                    val dialog = AppDialog(tag)
-                    dialog.show(supportFragmentManager, "game")
-
-                    return true
-                }
-            }
+    private val selectStartGame : (appItem : AppItem) -> Unit = {
+        if (sharedPreferences.getBoolean("select_action", false)) {
+            AppDialog(it).show(supportFragmentManager, "game")
+        } else {
+            startActivity(Intent(this, EmulationActivity::class.java).apply { data = it.uri })
         }
+    }
 
-        return false
+    private val selectShowGameDialog : (appItem : AppItem) -> Unit = {
+        AppDialog(it).show(supportFragmentManager, "game")
     }
 
     /**
@@ -348,6 +328,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClick
                         refreshAdapter(false)
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
+        if (layoutType != adapter.layoutType) {
+            setupAppList()
         }
     }
 }

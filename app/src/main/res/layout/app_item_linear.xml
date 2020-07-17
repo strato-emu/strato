@@ -1,40 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:id="@+id/app_item_linear"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        android:orientation="vertical"
-        android:padding="15dp">
+        android:padding="16dp">
 
     <ImageView
             android:id="@+id/icon"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="false"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:contentDescription="@string/icon" />
+            android:contentDescription="@string/icon"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/default_icon" />
 
     <TextView
             android:id="@+id/text_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignTop="@id/icon"
-            android:layout_toEndOf="@id/icon"
+            android:layout_marginStart="10dp"
             android:textAppearance="?android:attr/textAppearanceListItem"
-            tools:ignore="RelativeOverlap" />
+            app:layout_constraintBottom_toTopOf="@+id/text_subtitle"
+            app:layout_constraintStart_toEndOf="@id/icon"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Title" />
 
     <TextView
             android:id="@+id/text_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/text_title"
-            android:layout_alignStart="@id/text_title"
+            android:layout_marginStart="10dp"
             android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-            android:textColor="@android:color/tertiary_text_light" />
-</RelativeLayout>
+            android:textColor="@android:color/tertiary_text_light"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/icon"
+            app:layout_constraintTop_toBottomOf="@+id/text_title"
+            tools:text="SubTitle" />
+</androidx.constraintlayout.widget.ConstraintLayout>
