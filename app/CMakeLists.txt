@@ -118,6 +118,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/lm/ILogger.cpp
         ${source_DIR}/skyline/services/account/IAccountServiceForApplication.cpp
         ${source_DIR}/skyline/services/account/IManagerForApplication.cpp
+        ${source_DIR}/skyline/services/account/IProfile.cpp
         ${source_DIR}/skyline/services/friends/IServiceCreator.cpp
         ${source_DIR}/skyline/services/friends/IFriendService.cpp
         ${source_DIR}/skyline/services/nfp/IUserManager.cpp

@@ -62,6 +62,11 @@
                 android:summaryOn="@string/log_compact_desc_on"
                 app:key="log_compact"
                 app:title="@string/log_compact" />
+        <emu.skyline.preference.CustomEditTextPreference
+                android:defaultValue="@string/username_default"
+                app:key="username_value"
+                app:limit="32"
+                app:title="@string/username" />
     </PreferenceCategory>
     <PreferenceCategory
             android:key="category_system"

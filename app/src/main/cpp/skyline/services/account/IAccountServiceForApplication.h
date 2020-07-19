@@ -19,8 +19,12 @@ namespace skyline {
              * @param userId The user ID to compare with
              * @return Whether this user ID matches the one given as a parameter
              */
-            inline constexpr bool operator==(const UserId& userId) {
+            inline constexpr bool operator==(const UserId &userId) {
                 return upper == userId.upper && lower == userId.lower;
+            }
+
+            inline constexpr bool operator!=(const UserId &userId) {
+                return !(*this == userId);
             }
         };
         /**
@@ -44,6 +48,11 @@ namespace skyline {
             * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
             */
             void InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+             * @brief This returns a handle to an IProfile which can be used for reading user information
+             */
+            void GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info

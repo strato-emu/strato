@@ -73,6 +73,7 @@ namespace skyline::service {
         lm_ILogger,
         account_IAccountServiceForApplication,
         account_IManagerForApplication,
+        account_IProfile,
         friends_IServiceCreator,
         friends_IFriendService,
         nfp_IUserManager,

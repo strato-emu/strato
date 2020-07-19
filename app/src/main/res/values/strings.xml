@@ -38,6 +38,8 @@
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="theme">Theme</string>
+    <string name="username">Username</string>
+    <string name="username_default">@string/app_name</string>
     <!-- Licenses -->
     <string name="licenses">Licenses</string>
     <string name="skyline_license_description">The license of Skyline (MPL 2.0)</string>
