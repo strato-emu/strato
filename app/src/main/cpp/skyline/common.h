@@ -41,6 +41,7 @@ namespace skyline {
             constexpr u32 NoMessages = 0x680; //!< "No message available"
             constexpr u32 ServiceInvName = 0xC15; //!< "Invalid name"
             constexpr u32 ServiceNotReg = 0xE15; //!< "Service not registered"
+            constexpr u32 InvUser = 0xC87C; //!< Invalid user
             constexpr u32 InvSize = 0xCA01; //!< "Invalid size"
             constexpr u32 InvAddress = 0xCC01; //!< "Invalid address"
             constexpr u32 InvState = 0xD401; //!< "Invalid MemoryState"

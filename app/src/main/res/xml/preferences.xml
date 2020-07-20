@@ -65,7 +65,7 @@
         <emu.skyline.preference.CustomEditTextPreference
                 android:defaultValue="@string/username_default"
                 app:key="username_value"
-                app:limit="32"
+                app:limit="31"
                 app:title="@string/username" />
     </PreferenceCategory>
     <PreferenceCategory

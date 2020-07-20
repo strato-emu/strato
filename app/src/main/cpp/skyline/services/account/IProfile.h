@@ -16,7 +16,6 @@ namespace skyline::service::account {
         IProfile(const DeviceState &state, ServiceManager &manager, const UserId &userId);
 
       private:
-
         UserId userId;
 
         /**

@@ -29,7 +29,7 @@ namespace skyline::service::account {
     void IAccountServiceForApplication::GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<UserId>();
         if (id != constant::DefaultUserId) {
-            response.errorCode = constant::InvUser;
+            response.errorCode = constant::status::InvUser;
             return;
         }
 

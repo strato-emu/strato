@@ -16,7 +16,6 @@ import emu.skyline.R
  * This class adapts [EditTextPreference] so that it supports setting the value as the summary automatically. Also added useful attributes.
  */
 class CustomEditTextPreference : EditTextPreference {
-
     constructor(context : Context, attrs : AttributeSet?, defStyleAttr : Int, defStyleRes : Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         attrs?.let {
             val a = context.obtainStyledAttributes(it, R.styleable.CustomEditTextPreference, defStyleAttr, 0)
