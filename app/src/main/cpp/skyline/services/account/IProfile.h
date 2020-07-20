@@ -8,23 +8,6 @@
 
 namespace skyline::service::account {
 
-    /// UserData
-    typedef struct {
-        u32 unk_x0;                ///< Unknown.
-        u32 iconID;                ///< Icon ID. 0 = Mii, the rest are character icon IDs.
-        u8 iconBackgroundColorID;  ///< Profile icon background color ID
-        u8 unk_x9[0x7];            ///< Unknown.
-        u8 miiID[0x10];            ///< Some ID related to the Mii? All zeros when a character icon is used.
-        u8 unk_x20[0x60];          ///< Usually zeros?
-    } AccountUserData;
-
-    /// ProfileBase
-    typedef struct {
-        UserId uid;        ///< \ref AccountUid
-        u64 lastEditTimestamp; ///< POSIX UTC timestamp, for the last account edit.
-        char nickname[0x20];   ///< UTF-8 Nickname.
-    } AccountProfileBase;
-
     /**
     * @brief IProfile provides functions for reading user profile (https://switchbrew.org/wiki/Account_services#IProfile)
     */
@@ -33,8 +16,11 @@ namespace skyline::service::account {
         IProfile(const DeviceState &state, ServiceManager &manager, const UserId &userId);
 
       private:
+
+        UserId userId;
+
         /**
-         * @brief This returns AccountUserData (optional) and AccountProfileBase
+         * @brief This returns AccountUserData and AccountProfileBase objects that describe the user's information
          */
         void Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };

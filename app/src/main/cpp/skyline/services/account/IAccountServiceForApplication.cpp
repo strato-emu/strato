@@ -2,8 +2,8 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include "IManagerForApplication.h"
-#include "IAccountServiceForApplication.h"
 #include "IProfile.h"
+#include "IAccountServiceForApplication.h"
 
 namespace skyline::service::account {
     IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::account_IAccountServiceForApplication, "account:IAccountServiceForApplication", {
@@ -29,7 +29,7 @@ namespace skyline::service::account {
     void IAccountServiceForApplication::GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<UserId>();
         if (id != constant::DefaultUserId) {
-            response.errorCode = constant::status::InvArg;
+            response.errorCode = constant::InvUser;
             return;
         }
 

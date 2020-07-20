@@ -54,7 +54,6 @@ namespace skyline {
             constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
             constexpr u32 NotFound = 0xF201; //!< "Not found"
             constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
-            constexpr u32 InvArg = 0x2c7c; //!< "Argument is invalid"
         }
     };
 

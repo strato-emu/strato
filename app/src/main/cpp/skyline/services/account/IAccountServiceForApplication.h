@@ -15,10 +15,6 @@ namespace skyline {
             u64 upper; //!< The upper 64 bits of the user ID
             u64 lower; //!< The lower 64 bits of the user ID
 
-            /**
-             * @param userId The user ID to compare with
-             * @return Whether this user ID matches the one given as a parameter
-             */
             inline constexpr bool operator==(const UserId &userId) {
                 return upper == userId.upper && lower == userId.lower;
             }
@@ -63,5 +59,7 @@ namespace skyline {
 
     namespace constant {
         constexpr service::account::UserId DefaultUserId = {0x0000000000000001, 0x0000000000000000}; //!< The default user ID
+
+        constexpr u32 InvUser = 0xC87C; //!< Invalid user
     }
 }
