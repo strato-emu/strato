@@ -9,7 +9,6 @@ import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,13 +32,12 @@ enum class LayoutType(val layoutRes : Int) {
     GridCompact(R.layout.app_item_grid_compact)
 }
 
-private typealias AppInteractionFunc = (appItem : AppItem) -> Unit
+private typealias InteractionFunction = (appItem : AppItem) -> Unit
 
 /**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : Int, private val onClick : AppInteractionFunc, private val onLongClick : AppInteractionFunc) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>() {
-
+internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : Int, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>() {
     private lateinit var context : Context
     private val missingIcon by lazy { ContextCompat.getDrawable(context, R.drawable.default_icon)!!.toBitmap(256, 256) }
     private val missingString by lazy { context.getString(R.string.metadata_missing) }
@@ -78,38 +76,20 @@ internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : In
         val inflater = LayoutInflater.from(context)
         val view = when (ElementType.values()[viewType]) {
             ElementType.Item -> inflater.inflate(layoutType.layoutRes, parent, false)
+
             ElementType.Header -> inflater.inflate(R.layout.section_item, parent, false)
         }
-
-        Log.i("blaa", "onCreateViewHolder")
 
         return when (ElementType.values()[viewType]) {
             ElementType.Item -> {
                 ItemViewHolder(view, view.findViewById(R.id.icon), view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle)).apply {
-                    if (layoutType == LayoutType.List) {
-                        view.apply {
-                            if (context is View.OnClickListener) {
-                                setOnClickListener(context as View.OnClickListener)
-                            }
-                            if (context is View.OnLongClickListener) {
-                                setOnLongClickListener(context as View.OnLongClickListener)
-                            }
-                        }
-                    } else {
+                    if (layoutType == LayoutType.Grid || layoutType == LayoutType.GridCompact) {
                         card = view.findViewById(R.id.app_item_grid)
-                        card!!.apply {
-                            if (context is View.OnClickListener) {
-                                setOnClickListener(context as View.OnClickListener)
-                            }
-                            if (context is View.OnLongClickListener) {
-                                setOnLongClickListener(context as View.OnLongClickListener)
-                            }
-                        }
-
                         title.isSelected = true
                     }
                 }
             }
+
             ElementType.Header -> {
                 HeaderViewHolder(view).apply {
                     header = view.findViewById(R.id.text_title)
@@ -146,7 +126,6 @@ internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : In
 
             // Increase margin of edges to avoid huge gap in between items
             if (layoutType == LayoutType.Grid || layoutType == LayoutType.GridCompact) {
-
                 holder.itemView.layoutParams = LinearLayout.LayoutParams(holder.itemView.layoutParams.width, holder.itemView.layoutParams.height).apply {
                     if (position % gridSpan == 0) {
                         marginStart = holder.itemView.resources.getDimensionPixelSize(R.dimen.app_card_margin) * 2

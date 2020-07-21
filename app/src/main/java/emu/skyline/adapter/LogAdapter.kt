@@ -79,12 +79,9 @@ internal class LogAdapter internal constructor(val context : Context, val compac
         val inflater = LayoutInflater.from(context)
 
         val view = when (ElementType.values()[viewType]) {
-            ElementType.Item -> {
-                inflater.inflate(if (compact) R.layout.log_item_compact else R.layout.log_item, parent, false)
-            }
-            ElementType.Header -> {
-                inflater.inflate(R.layout.log_item, parent, false)
-            }
+            ElementType.Item -> inflater.inflate(if (compact) R.layout.log_item_compact else R.layout.log_item, parent, false)
+
+            ElementType.Header -> inflater.inflate(R.layout.log_item, parent, false)
         }
 
         return when (ElementType.values()[viewType]) {

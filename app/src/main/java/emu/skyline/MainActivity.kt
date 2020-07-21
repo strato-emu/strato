@@ -51,14 +51,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
      */
-    private fun addEntries(romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
+    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                foundCurrent = addEntries(romFormat, file, foundCurrent)
+                foundCurrent = addEntries(extension, romFormat, file, foundCurrent)
             } else {
-                if (romFormat.extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
+                if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
                     val romFd = contentResolver.openFileDescriptor(file.uri, "r")!!
                     val romFile = RomFile(this, romFormat, romFd)
 
@@ -113,15 +113,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!
 
-                var foundRoms = addEntries(RomFormat.NRO, searchLocation)
-                foundRoms = foundRoms or addEntries(RomFormat.NSO, searchLocation)
-                foundRoms = foundRoms or addEntries(RomFormat.NCA, searchLocation)
-                foundRoms = foundRoms or addEntries(RomFormat.NSP, searchLocation)
+                var foundRoms = addEntries("nro", RomFormat.NRO, searchLocation)
+                foundRoms = foundRoms or addEntries("nso", RomFormat.NSO, searchLocation)
+                foundRoms = foundRoms or addEntries("nca", RomFormat.NCA, searchLocation)
+                foundRoms = foundRoms or addEntries("nsp", RomFormat.NSP, searchLocation)
 
                 runOnUiThread {
-                    if (!foundRoms) {
-                        adapter.addHeader(getString(R.string.no_rom))
-                    }
+                    if (!foundRoms) adapter.addHeader(getString(R.string.no_rom))
 
                     try {
                         adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
@@ -204,11 +202,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         app_list.layoutManager = when (layoutType) {
             LayoutType.List -> LinearLayoutManager(this).also { app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL)) }
+
             LayoutType.Grid, LayoutType.GridCompact -> GridLayoutManager(this, gridSpan).apply {
                 spanSizeLookup = GridLayoutSpan(adapter, gridSpan).also {
-                    if (app_list.itemDecorationCount > 0) {
-                        app_list.removeItemDecorationAt(0)
-                    }
+                    if (app_list.itemDecorationCount > 0) app_list.removeItemDecorationAt(0)
                 }
             }
         }

@@ -22,12 +22,12 @@ import java.util.*
 /**
  * An enumeration of all supported ROM formats
  */
-enum class RomFormat(val extension : String) {
-    NRO("nro"),
-    NSO("nso"),
-    NCA("nca"),
-    XCI("xci"),
-    NSP("nsp"),
+enum class RomFormat(val format : Int) {
+    NRO(0),
+    NSO(1),
+    NCA(2),
+    XCI(3),
+    NSP(4),
 }
 
 /**
