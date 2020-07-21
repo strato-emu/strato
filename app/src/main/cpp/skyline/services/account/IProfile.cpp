@@ -28,9 +28,8 @@ namespace skyline::service::account {
         };
 
         auto username = state.settings->GetString("username_value");
-        size_t usernameSize = std::min(accountProfileBase.nickname.size(), username.size());
+        size_t usernameSize = std::min(accountProfileBase.nickname.size() - 1, username.size());
         std::memcpy(accountProfileBase.nickname.data(), username.c_str(), usernameSize);
-        accountProfileBase.nickname[accountProfileBase.nickname.size() - 1] = '\0';
 
         auto userData = state.process->GetPointer<AccountUserData>(request.outputBuf.at(0).address);
         userData->iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
