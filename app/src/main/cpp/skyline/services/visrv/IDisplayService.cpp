@@ -10,7 +10,7 @@ namespace skyline::service::visrv {
     IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, serviceType, serviceName, vTable) {}
 
     void IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        request.Skip<u32>();
+        request.Skip<u64>();
         auto displayId = request.Pop<u64>();
 
         state.logger->Debug("Creating Stray Layer on Display: {}", displayId);
@@ -23,7 +23,7 @@ namespace skyline::service::visrv {
 
         Parcel parcel(state);
         LayerParcel data{
-            .type = 0x20,
+            .type = 0x2,
             .pid = 0,
             .bufferId = 0, // As we only have one layer and buffer
             .string = "dispdrv"
