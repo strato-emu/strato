@@ -10,6 +10,7 @@
 #include <services/nvdrv/devices/nvmap.h>
 #include "gpu/texture.h"
 #include "gpu/memory_manager.h"
+#include "gpu/gpfifo.h"
 
 namespace skyline::gpu {
     /**
@@ -30,6 +31,7 @@ namespace skyline::gpu {
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< This KEvent is triggered every time a frame is drawn
         std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< This KEvent is triggered every time a buffer is freed
         vmm::MemoryManager memoryManager; //!< The GPU Virtual Memory Manager
+        gpfifo::GPFIFO gpfifo;
 
         /**
          * @param window The ANativeWindow to render to

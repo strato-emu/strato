@@ -12,7 +12,7 @@ extern skyline::u16 fps;
 extern skyline::u32 frametime;
 
 namespace skyline::gpu {
-    GPU::GPU(const DeviceState &state) : state(state), memoryManager(state), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+    GPU::GPU(const DeviceState &state) : state(state), memoryManager(state), gpfifo(state), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
@@ -24,6 +24,8 @@ namespace skyline::gpu {
     }
 
     void GPU::Loop() {
+        gpfifo.Run();
+
         if (surfaceUpdate) {
             if (Surface == nullptr)
                 return;

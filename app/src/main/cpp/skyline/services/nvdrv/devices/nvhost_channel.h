@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "nvfence.h"
 #include "nvdevice.h"
 
 namespace skyline::service::nvdrv::device {
@@ -17,6 +18,7 @@ namespace skyline::service::nvdrv::device {
             High = 0x94
         };
 
+        NvFence channelFence{};
         u32 timeslice{};
 
       public:

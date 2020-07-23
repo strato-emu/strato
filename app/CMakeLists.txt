@@ -40,6 +40,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
+        ${source_DIR}/skyline/gpu/gpfifo.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/loader/loader.cpp
