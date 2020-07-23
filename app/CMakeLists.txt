@@ -105,6 +105,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_channel.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_as_gpu.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost_syncpoint.cpp
         ${source_DIR}/skyline/services/hosbinder/IHOSBinderDriver.cpp
         ${source_DIR}/skyline/services/visrv/IDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IApplicationDisplayService.cpp

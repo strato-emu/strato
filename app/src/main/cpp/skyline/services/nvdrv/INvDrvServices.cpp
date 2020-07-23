@@ -54,7 +54,7 @@ namespace skyline::service::nvdrv {
         return fdIndex++;
     }
 
-    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::nvdrv_INvDrvServices, "INvDrvServices", {
+    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : hostSyncpoint(state), BaseService(state, manager, Service::nvdrv_INvDrvServices, "INvDrvServices", {
         {0x0, SFUNC(INvDrvServices::Open)},
         {0x1, SFUNC(INvDrvServices::Ioctl)},
         {0x2, SFUNC(INvDrvServices::Close)},

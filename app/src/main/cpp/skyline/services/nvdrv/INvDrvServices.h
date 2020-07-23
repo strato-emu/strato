@@ -8,6 +8,7 @@
 #include <kernel/types/KTransferMemory.h>
 #include <gpu.h>
 #include "devices/nvdevice.h"
+#include "devices/nvhost_syncpoint.h"
 
 namespace skyline::service::nvdrv {
     /**
@@ -43,6 +44,8 @@ namespace skyline::service::nvdrv {
         }
 
       public:
+        NvHostSyncpoint hostSyncpoint;
+
         /**
          * @brief Returns a particular device with a specific type
          * @tparam objectClass The class of the device to return
