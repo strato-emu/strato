@@ -140,4 +140,5 @@ add_library(skyline SHARED
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static)
+set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=c++2a")
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions -Wall -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)
