@@ -35,7 +35,7 @@ namespace skyline {
             * @param chunk The chunk to check
             * @return If the given chunk can be contained wholly within this chunk
             */
-            inline bool CanContain(const ChunkDescriptor& chunk) {
+            inline bool CanContain(const ChunkDescriptor &chunk) {
                 return (chunk.address >= this->address) && ((this->size + this->address) >= (chunk.size + chunk.address));
             }
         };
@@ -45,6 +45,7 @@ namespace skyline {
         */
         class MemoryManager {
           private:
+            const DeviceState &state;
             std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
 
             /**
@@ -63,7 +64,7 @@ namespace skyline {
             u64 InsertChunk(const ChunkDescriptor &newChunk);
 
           public:
-            MemoryManager();
+            MemoryManager(const DeviceState &state);
 
             /**
              * @brief This reserves a region of the GPU address space so it can be automatically used when mapping
@@ -96,6 +97,11 @@ namespace skyline {
              * @return The virtual address of the region base
              */
             u64 MapFixed(u64 address, u64 cpuAddress, u64 size);
+
+            /**
+             * @brief Reads in a buffer from a region of the GPU virtual address space
+             */
+            void Read(u8 *destination, u64 address, u64 size) const;
         };
     }
 }
