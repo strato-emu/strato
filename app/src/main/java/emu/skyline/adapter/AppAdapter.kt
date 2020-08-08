@@ -14,7 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -122,18 +121,6 @@ internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : In
             }.apply {
                 setOnClickListener { onClick.invoke(item) }
                 setOnLongClickListener { true.also { onLongClick.invoke(item) } }
-            }
-
-            // Increase margin of edges to avoid huge gap in between items
-            if (layoutType == LayoutType.Grid || layoutType == LayoutType.GridCompact) {
-                holder.itemView.layoutParams = LinearLayout.LayoutParams(holder.itemView.layoutParams.width, holder.itemView.layoutParams.height).apply {
-                    if (position % gridSpan == 0) {
-                        marginStart = holder.itemView.resources.getDimensionPixelSize(R.dimen.app_card_margin) * 2
-                    } else if (position % gridSpan == gridSpan - 1) {
-                        marginEnd = holder.itemView.resources.getDimensionPixelSize(R.dimen.app_card_margin) * 2
-                    }
-                }
-                holder.itemView.requestLayout()
             }
         } else if (item is BaseHeader) {
             val holder = viewHolder as HeaderViewHolder

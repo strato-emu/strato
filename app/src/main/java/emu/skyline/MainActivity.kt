@@ -66,10 +66,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         romFile.use {
                             val entry = romFile.getAppEntry(file.uri)
 
+                            val finalFoundCurrent = foundCurrent
                             runOnUiThread {
-                                if (!foundCurrent) {
-                                    adapter.addHeader(romFormat.name)
-                                }
+                                if (!finalFoundCurrent) adapter.addHeader(romFormat.name)
 
                                 adapter.addItem(AppItem(entry))
                             }
@@ -334,6 +333,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
         if (layoutType != adapter.layoutType) {
             setupAppList()
+        }
+
+        val gridCardMagin = resources.getDimensionPixelSize(R.dimen.app_card_margin_half)
+        when (layoutType) {
+            LayoutType.List -> app_list.setPadding(0, 0, 0, 0)
+            LayoutType.Grid, LayoutType.GridCompact -> app_list.setPadding(gridCardMagin, 0, gridCardMagin, 0)
         }
     }
 }

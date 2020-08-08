@@ -7,7 +7,7 @@
 
     <androidx.cardview.widget.CardView
             android:id="@+id/app_item_grid"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/app_card_margin_half"
@@ -19,15 +19,14 @@
             app:cardUseCompatPadding="true">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="155dp"
-                android:layout_height="155dp">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
             <ImageView
                     android:id="@+id/icon"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_alignParentTop="false"
-                    android:layout_centerHorizontal="true"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
                     android:contentDescription="@string/icon"
                     android:foreground="@drawable/background_gradient"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -38,7 +37,7 @@
 
             <TextView
                     android:id="@+id/text_title"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:alpha="242.25"
                     android:ellipsize="marquee"
@@ -51,14 +50,13 @@
                     android:textStyle="bold"
                     app:layout_constrainedWidth="true"
                     app:layout_constraintBottom_toTopOf="@id/text_subtitle"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="@id/icon"
+                    app:layout_constraintStart_toStartOf="@id/icon"
                     tools:text="Title" />
 
             <TextView
                     android:id="@+id/text_subtitle"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:alpha="242.25"
@@ -70,11 +68,9 @@
                     android:singleLine="true"
                     android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                     android:textColor="@android:color/white"
-                    app:layout_constrainedWidth="true"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintBottom_toBottomOf="@id/icon"
+                    app:layout_constraintEnd_toEndOf="@id/icon"
+                    app:layout_constraintStart_toStartOf="@id/icon"
                     tools:text="Subtitle" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>

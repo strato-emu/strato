@@ -64,7 +64,7 @@ abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHeader?, Vie
             filter.filter(searchTerm)
         } else {
             visibleArray.add(elementArray.size - 1)
-            notifyDataSetChanged()
+            notifyItemInserted(visibleArray.size)
         }
     }
 
@@ -73,9 +73,10 @@ abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHeader?, Vie
      */
     fun addHeader(header : HeaderType) {
         elementArray.add(header)
-        if (searchTerm.isEmpty())
+        if (searchTerm.isEmpty()) {
             visibleArray.add(elementArray.size - 1)
-        notifyDataSetChanged()
+            notifyItemInserted(visibleArray.size)
+        }
     }
 
     /**
@@ -137,7 +138,7 @@ abstract class HeaderAdapter<ItemType : BaseItem?, HeaderType : BaseHeader?, Vie
     /**
      * This returns an instance of the filter object which is used to search for items in the view
      */
-    override fun getFilter() : Filter = object : Filter() {
+    override fun getFilter() = object : Filter() {
         /**
          * We use Jaro-Winkler distance for string similarity (https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance)
          */

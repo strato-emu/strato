@@ -92,6 +92,7 @@ internal class LogAdapter internal constructor(val context : Context, val compac
                     ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
                 }
             }
+
             ElementType.Header -> {
                 HeaderViewHolder(view, view.findViewById(R.id.text_title))
             }
