@@ -22,16 +22,18 @@ namespace skyline::vfs {
         };
         static_assert(sizeof(ApplicationTitle) == 0x300);
 
+      public:
         /**
          * @brief This struct encapsulates all the data within an NACP file
          */
         struct NacpData {
             std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
-            u8 _pad_[0x4000 - (0x10 * 0x300)];
+            u8 _pad0_[0x78];
+            u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
+            u8 _pad1_[0xf80];
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
-      public:
         /**
          * @param backing The backing for the NACP
          */

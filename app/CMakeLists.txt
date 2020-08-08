@@ -97,6 +97,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/timesrv/ITimeZoneService.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystemProxy.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystem.cpp
+        ${source_DIR}/skyline/services/fssrv/IFile.cpp
         ${source_DIR}/skyline/services/fssrv/IStorage.cpp
         ${source_DIR}/skyline/services/nvdrv/INvDrvServices.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvmap.cpp
@@ -129,6 +130,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/socket/bsd/IClient.cpp
         ${source_DIR}/skyline/services/ssl/ISslService.cpp
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
+        ${source_DIR}/skyline/vfs/os_filesystem.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp

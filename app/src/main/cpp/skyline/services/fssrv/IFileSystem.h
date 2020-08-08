@@ -3,26 +3,39 @@
 
 #pragma once
 
+#include <vfs/filesystem.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::fssrv {
     /**
-     * @brief These are the possible types of the filesystem
-     */
-    enum class FsType {
-        Nand, //!< The internal NAND storage
-        SdCard, //!< The external SDCard storage
-        GameCard, //!< The Game-Card of the inserted game (https://switchbrew.org/wiki/Gamecard)
-    };
-
-    /**
      * @brief IFileSystem is used to interact with a filesystem (https://switchbrew.org/wiki/Filesystem_services#IFileSystem)
      */
     class IFileSystem : public BaseService {
-      public:
-        FsType type; //!< The type of filesystem this class represents
+      private:
+        std::shared_ptr<vfs::FileSystem> backing;
 
-        IFileSystem(FsType type, const DeviceState &state, ServiceManager &manager);
+      public:
+        IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @brief This creates a file at the specified path in the filesystem
+         */
+        void CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This queries the DirectoryEntryType of the given path (https://switchbrew.org/wiki/Filesystem_services#GetEntryType)
+         */
+        void GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This returns an IFile handle for the requested path (https://switchbrew.org/wiki/Filesystem_services#OpenFile)
+         */
+        void OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This commits all changes to the filesystem (https://switchbrew.org/wiki/Filesystem_services#Commit)
+         */
+        void Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

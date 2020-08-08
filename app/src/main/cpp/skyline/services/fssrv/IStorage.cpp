@@ -11,8 +11,20 @@ namespace skyline::service::fssrv {
     }) {}
 
     void IStorage::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto offset = request.Pop<u64>();
-        auto size = request.Pop<u64>();
+        auto offset = request.Pop<i64>();
+        auto size = request.Pop<i64>();
+
+        if (offset < 0) {
+            state.logger->Warn("Trying to read a file with a negative offset");
+            response.errorCode = constant::status::InvAddress;
+            return;
+        }
+
+        if (size < 0) {
+            state.logger->Warn("Trying to read a file with a negative size");
+            response.errorCode = constant::status::InvSize;
+            return;
+        }
 
         backing->Read(state.process->GetPointer<u8>(request.outputBuf.at(0).address), offset, size);
     }

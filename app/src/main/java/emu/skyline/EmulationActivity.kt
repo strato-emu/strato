@@ -35,11 +35,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private lateinit var preferenceFd : ParcelFileDescriptor
 
     /**
-     * The file descriptor of the Log file
-     */
-    private lateinit var logFd : ParcelFileDescriptor
-
-    /**
      * The surface object used for displaying frames
      */
     private var surface : Surface? = null
@@ -61,9 +56,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      * @param romType The type of the ROM as an enum value
      * @param romFd The file descriptor of the ROM object
      * @param preferenceFd The file descriptor of the Preference XML
-     * @param logFd The file descriptor of the Log file
+     * @param appFilesPath The full path to the app files directory
      */
-    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, logFd : Int)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String)
 
     /**
      * This sets the halt flag in libskyline to the provided value, if set to true it causes libskyline to halt emulation
@@ -90,7 +85,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private external fun getFrametime() : Float
 
     /**
-     * This executes the specified ROM, [preferenceFd] and [logFd] are assumed to be valid beforehand
+     * This executes the specified ROM, [preferenceFd] is assumed to be valid beforehand
      *
      * @param rom The URI of the ROM to execute
      */
@@ -102,7 +97,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
             while ((surface == null))
                 Thread.yield()
 
-            executeApplication(Uri.decode(rom.toString()), romType, romFd.fd, preferenceFd.fd, logFd.fd)
+            executeApplication(Uri.decode(rom.toString()), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
 
             if (shouldFinish)
                 runOnUiThread { finish() }
@@ -112,7 +107,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     }
 
     /**
-     * This makes the window fullscreen then sets up [preferenceFd] and [logFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
+     * This makes the window fullscreen then sets up [preferenceFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
      */
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState : Bundle?) {
@@ -135,9 +130,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
         val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
         preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)
-
-        val log = File("${applicationInfo.dataDir}/skyline.log")
-        logFd = ParcelFileDescriptor.open(log, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_READ_WRITE)
 
         game_view.holder.addCallback(this)
 
@@ -186,7 +178,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
         romFd.close()
         preferenceFd.close()
-        logFd.close()
 
         super.onDestroy()
     }

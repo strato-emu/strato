@@ -61,5 +61,37 @@ namespace skyline::vfs {
         inline size_t Read(T *output, size_t offset = 0, size_t size = 0) {
             return Read(reinterpret_cast<u8 *>(output), offset, size ? size : sizeof(T));
         }
+
+        /**
+         * @brief Writes from a buffer to a particular offset in the backing
+         * @param input The object to write to the backing
+         * @param offset The offset where the input buffer should be written
+         * @param size The amount to write
+         * @return The amount of bytes written
+         */
+        virtual size_t Write(u8 *input, size_t offset, size_t size) {
+            throw exception("This backing does not support being written to");
+        }
+
+        /**
+         * @brief Writes from a buffer to a particular offset in the backing (template version)
+         * @tparam T The type of object to write
+         * @param input The object to write to the backing
+         * @param offset The offset where the input buffer should be written
+         * @param size The amount to write
+         * @return The amount of bytes written
+         */
+        template<typename T>
+        inline size_t Write(T *output, size_t offset = 0, size_t size = 0) {
+            return Write(reinterpret_cast<u8 *>(output), offset, size ? size : sizeof(T));
+        }
+
+        /**
+         * @brief Resizes a backing to the given size
+         * @param size The new size for the backing
+         */
+        virtual void Resize(size_t size) {
+            throw exception("This backing does not support being resized");
+        }
     };
 }

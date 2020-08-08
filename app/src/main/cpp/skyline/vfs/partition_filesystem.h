@@ -54,7 +54,7 @@ namespace skyline::vfs {
 
         std::shared_ptr<Backing> OpenFile(std::string path, Backing::Mode mode = {true, false, false});
 
-        bool FileExists(std::string path);
+        std::optional<Directory::EntryType> GetEntryType(std::string path);
 
         std::shared_ptr<Directory> OpenDirectory(std::string path, Directory::ListMode listMode);
     };

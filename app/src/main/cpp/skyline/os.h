@@ -25,13 +25,14 @@ namespace skyline::kernel {
         std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
         service::ServiceManager serviceManager; //!< This manages all of the service functions
         MemoryManager memory; //!< The MemoryManager object for this process
+        std::string appFilesPath; //!< The full path to the app's files directory
 
         /**
          * @param logger An instance of the Logger class
          * @param settings An instance of the Settings class
          * @param window The ANativeWindow object to draw the screen to
          */
-        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings);
+        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath);
 
         /**
          * @brief Execute a particular ROM file. This launches the main process and calls the NCE class to handle execution.

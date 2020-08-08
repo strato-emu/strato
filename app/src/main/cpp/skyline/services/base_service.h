@@ -58,6 +58,7 @@ namespace skyline::service {
         timesrv_ISteadyClock,
         fssrv_IFileSystemProxy,
         fssrv_IFileSystem,
+        fssrv_IFile,
         fssrv_IStorage,
         nvdrv_INvDrvServices,
         visrv_IManagerRootService,

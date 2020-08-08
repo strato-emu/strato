@@ -5,7 +5,7 @@
 #include "rom_filesystem.h"
 
 namespace skyline::vfs {
-    RomFileSystem::RomFileSystem(std::shared_ptr <Backing> backing) : FileSystem(), backing(backing) {
+    RomFileSystem::RomFileSystem(std::shared_ptr<Backing> backing) : FileSystem(), backing(backing) {
         backing->Read(&header);
 
         TraverseDirectory(0, "");
@@ -52,7 +52,7 @@ namespace skyline::vfs {
             TraverseDirectory(entry.siblingOffset, path);
     }
 
-    std::shared_ptr <Backing> RomFileSystem::OpenFile(std::string path, Backing::Mode mode) {
+    std::shared_ptr<Backing> RomFileSystem::OpenFile(std::string path, Backing::Mode mode) {
         try {
             const auto &entry = fileMap.at(path);
             return std::make_shared<RegionBacking>(backing, header.dataOffset + entry.offset, entry.size, mode);
@@ -61,11 +61,16 @@ namespace skyline::vfs {
         }
     }
 
-    bool RomFileSystem::FileExists(std::string path) {
-        return fileMap.count(path);
+    std::optional<Directory::EntryType> RomFileSystem::GetEntryType(std::string path) {
+        if (fileMap.count(path))
+            return Directory::EntryType::File;
+        else if (directoryMap.count(path))
+            return Directory::EntryType::Directory;
+
+        return std::nullopt;
     }
 
-    std::shared_ptr <Directory> RomFileSystem::OpenDirectory(std::string path, Directory::ListMode listMode) {
+    std::shared_ptr<Directory> RomFileSystem::OpenDirectory(std::string path, Directory::ListMode listMode) {
         try {
             auto &entry = directoryMap.at(path);
             return std::make_shared<RomFileSystemDirectory>(backing, header, entry, listMode);
@@ -74,10 +79,10 @@ namespace skyline::vfs {
         }
     }
 
-    RomFileSystemDirectory::RomFileSystemDirectory(const std::shared_ptr <Backing> &backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode) : Directory(listMode), backing(backing), header(header), ownEntry(ownEntry) {}
+    RomFileSystemDirectory::RomFileSystemDirectory(const std::shared_ptr<Backing> &backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode) : Directory(listMode), backing(backing), header(header), ownEntry(ownEntry) {}
 
-    std::vector <RomFileSystemDirectory::Entry> RomFileSystemDirectory::Read() {
-        std::vector <Entry> contents;
+    std::vector<RomFileSystemDirectory::Entry> RomFileSystemDirectory::Read() {
+        std::vector<Entry> contents;
 
         if (listMode.file) {
             RomFileSystem::RomFsFileEntry romFsFileEntry;

@@ -40,8 +40,11 @@ namespace skyline::vfs {
         }
     }
 
-    bool PartitionFileSystem::FileExists(std::string path) {
-        return fileMap.count(path);
+    std::optional<Directory::EntryType> PartitionFileSystem::GetEntryType(std::string path) {
+        if (fileMap.count(path))
+            return Directory::EntryType::File;
+
+        return std::nullopt;
     }
 
     std::shared_ptr<Directory> PartitionFileSystem::OpenDirectory(std::string path, Directory::ListMode listMode) {

@@ -63,7 +63,7 @@ class LogActivity : AppCompatActivity() {
             log_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
 
         try {
-            logFile = File("${applicationInfo.dataDir}/skyline.log")
+            logFile = File(applicationContext.filesDir.canonicalPath + "/skyline.log")
 
             logFile.forEachLine {
                 adapter.add(it)

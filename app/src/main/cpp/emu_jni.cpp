@@ -24,7 +24,7 @@ void signalHandler(int signal) {
     FaultCount++;
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jint logFd) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
     Halt = false;
     FaultCount = 0;
     fps = 0;
@@ -41,13 +41,17 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     auto jvmManager = std::make_shared<skyline::JvmManager>(env, instance);
     auto settings = std::make_shared<skyline::Settings>(preferenceFd);
-    auto logger = std::make_shared<skyline::Logger>(logFd, static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))));
+
+    auto appFilesPath = env->GetStringUTFChars(appFilesPathJstring, nullptr);
+    auto logger = std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))));
     //settings->List(logger); // (Uncomment when you want to print out all settings strings)
 
     auto start = std::chrono::steady_clock::now();
 
     try {
-        skyline::kernel::OS os(jvmManager, logger, settings);
+        skyline::kernel::OS os(jvmManager, logger, settings, std::string(appFilesPath));
+        env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
+
         auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
         logger->Info("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);

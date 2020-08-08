@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun refreshAdapter(tryLoad : Boolean) {
         if (tryLoad) {
             try {
-                adapter.load(File("${applicationInfo.dataDir}/roms.bin"))
+                adapter.load(File(applicationContext.filesDir.canonicalPath + "/roms.bin"))
                 return
             } catch (e : Exception) {
                 Log.w("refreshFiles", "Ran into exception while loading: ${e.message}")
@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     if (!foundRoms) adapter.addHeader(getString(R.string.no_rom))
 
                     try {
-                        adapter.save(File("${applicationInfo.dataDir}/roms.bin"))
+                        adapter.save(File(applicationContext.filesDir.canonicalPath + "/roms.bin"))
                     } catch (e : IOException) {
                         Log.w("refreshFiles", "Ran into exception while saving: ${e.message}")
                     }
