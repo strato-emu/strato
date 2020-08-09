@@ -6,7 +6,8 @@
 
 namespace skyline::service::account {
     IProfile::IProfile(const DeviceState &state, ServiceManager &manager, const UserId &userId) : userId(userId), BaseService(state, manager, Service::account_IProfile, "account:IProfile", {
-        {0x0, SFUNC(IProfile::Get)}
+        {0x0, SFUNC(IProfile::Get)},
+        {0x1, SFUNC(IProfile::GetBase)}
     }) {}
 
     void IProfile::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -19,6 +20,13 @@ namespace skyline::service::account {
             u8 _unk2_[0x60];
         };
 
+        auto userData = state.process->GetPointer<AccountUserData>(request.outputBuf.at(0).address);
+        userData->iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
+
+        GetBase(session, request, response);
+    }
+
+    void IProfile::GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct {
             UserId uid;                        //!< The UID of the corresponding account
             u64 lastEditTimestamp;             //!< A POSIX UTC timestamp denoting the last account edit
@@ -30,9 +38,6 @@ namespace skyline::service::account {
         auto username = state.settings->GetString("username_value");
         size_t usernameSize = std::min(accountProfileBase.nickname.size() - 1, username.size());
         std::memcpy(accountProfileBase.nickname.data(), username.c_str(), usernameSize);
-
-        auto userData = state.process->GetPointer<AccountUserData>(request.outputBuf.at(0).address);
-        userData->iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
 
         response.Push(accountProfileBase);
     }
