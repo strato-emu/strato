@@ -42,11 +42,11 @@ namespace skyline::gpu::vmm {
                 }
 
                 if (extension)
-                    chunkList.insert(std::next(chunk), ChunkDescriptor(newChunk.address + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuAddress + oldChunk.size + newChunk.size) : 0, oldChunk.state));
+                    chunkList.insert(std::next(chunk), ChunkDescriptor(newChunk.address + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuAddress + newSize + newChunk.size) : 0, oldChunk.state));
 
                 return newChunk.address;
             } else if (chunk->address + chunk->size > newChunk.address) {
-                chunk->size = (newChunk.address - chunk->address);
+                chunk->size = newChunk.address - chunk->address;
 
                 // Deletes all chunks that are within the chunk being inserted and split the final one
                 auto tailChunk = std::next(chunk);
@@ -68,6 +68,14 @@ namespace skyline::gpu::vmm {
                 if (tailChunk->state == ChunkState::Mapped)
                     tailChunk->cpuAddress += chunkSliceOffset;
 
+
+                // If the size of the head chunk is zero then we can directly replace it with our new one rather than inserting it
+                auto headChunk = std::prev(tailChunk);
+                if (headChunk->size == 0)
+                    *headChunk = newChunk;
+                else
+                    chunkList.insert(std::next(headChunk), newChunk);
+
                 return newChunk.address;
             }
         }
@@ -78,10 +86,10 @@ namespace skyline::gpu::vmm {
     u64 MemoryManager::AllocateSpace(u64 size) {
         size = util::AlignUp(size, constant::GpuPageSize);
         auto newChunk = FindChunk(size, ChunkState::Unmapped);
-        if (!newChunk.has_value())
+        if (!newChunk)
             return 0;
 
-        auto chunk = newChunk.value();
+        auto chunk = *newChunk;
         chunk.size = size;
         chunk.state = ChunkState::Allocated;
 
@@ -100,10 +108,10 @@ namespace skyline::gpu::vmm {
     u64 MemoryManager::MapAllocated(u64 address, u64 size) {
         size = util::AlignUp(size, constant::GpuPageSize);
         auto mappedChunk = FindChunk(size, ChunkState::Allocated);
-        if (!mappedChunk.has_value())
+        if (!mappedChunk)
             return 0;
 
-        auto chunk = mappedChunk.value();
+        auto chunk = *mappedChunk;
         chunk.cpuAddress = address;
         chunk.size = size;
         chunk.state = ChunkState::Mapped;
@@ -120,13 +128,30 @@ namespace skyline::gpu::vmm {
         return InsertChunk(ChunkDescriptor(address, size, cpuAddress, ChunkState::Mapped));
     }
 
+    bool MemoryManager::Unmap(u64 address) {
+        if ((address & (constant::GpuPageSize - 1)) != 0)
+            return false;
+
+        auto chunk = std::find_if(chunkList.begin(), chunkList.end(), [address](const ChunkDescriptor &chunk) -> bool {
+            return chunk.address == address;
+        });
+
+        if (chunk == chunkList.end())
+            return false;
+
+        chunk->state = ChunkState::Allocated;
+        chunk->cpuAddress = 0;
+
+        return true;
+    }
+
     void MemoryManager::Read(u8 *destination, u64 address, u64 size) const {
         auto chunk = --std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         });
 
         if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
-            throw exception("Failed to read region in GPU address space - address: {#:X} size: {#:X}", address, size);
+            throw exception("Failed to read region in GPU address space - address: 0x{:X} size: 0x{:X}", address, size);
 
         u64 chunkOffset = address - chunk->address;
         u64 destinationOffset{};
@@ -143,6 +168,33 @@ namespace skyline::gpu::vmm {
             chunkOffset = 0;
             size -= readSize;
             destinationOffset += readSize;
+            chunk++;
+        }
+    }
+
+    void MemoryManager::Write(u8 *source, u64 address, u64 size) const {
+        auto chunk = --std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+            return address < chunk.address;
+        });
+
+        if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+            throw exception("Failed to write to region in GPU address space - address: {#:X} size: {#:X}", address, size);
+
+        u64 chunkOffset = address - chunk->address;
+        u64 sourceOffset{};
+
+        // A continuous region in the GPU address space may be made up of several discontinuous regions in physical memory so we have to iterate over all chunks
+        while (size != 0) {
+            if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+                throw exception("Failed to write to region in GPU address space - address: {#:X} size: {#:X}", address, size);
+
+            u64 writeSize = std::min(chunk->size - chunkOffset, size);
+            state.process->WriteMemory(source + sourceOffset, chunk->cpuAddress + chunkOffset, writeSize);
+
+            // After the first read all further reads will start from the base of the chunk
+            chunkOffset = 0;
+            size -= writeSize;
+            sourceOffset += writeSize;
             chunk++;
         }
     }

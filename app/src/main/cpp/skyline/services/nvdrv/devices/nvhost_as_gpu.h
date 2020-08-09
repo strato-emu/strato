@@ -14,14 +14,9 @@ namespace skyline::service::nvdrv::device {
         NvHostAsGpu(const DeviceState &state);
 
         /**
-         * @brief This initializes the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_INITIALIZE_EX)
+         * @brief This binds a channel to the address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_BIND_CHANNEL)
          */
-        void InitializeEx(IoctlData &buffer);
-
-        /**
-         * @brief This returns the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_GET_VA_REGIONS)
-         */
-        void GetVaRegions(IoctlData &buffer);
+        void BindChannel(IoctlData &buffer);
 
         /**
          * @brief This reserves a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_SPACE)
@@ -29,13 +24,28 @@ namespace skyline::service::nvdrv::device {
         void AllocSpace(IoctlData &buffer);
 
         /**
+         * @brief This unmaps a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_UNMAP_BUFFER)
+         */
+        void UnmapBuffer(IoctlData &buffer);
+
+        /**
          * @brief This maps a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_MODIFY)
          */
         void Modify(IoctlData &buffer);
 
         /**
-         * @brief This binds a channel to the address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_BIND_CHANNEL)
+         * @brief This returns the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_GET_VA_REGIONS)
          */
-        void BindChannel(IoctlData &buffer);
+        void GetVaRegions(IoctlData &buffer);
+
+        /**
+         * @brief This initializes the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_INITIALIZE_EX)
+         */
+        void InitializeEx(IoctlData &buffer);
+
+        /**
+         * @brief Remaps a region of the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_REMAP)
+         */
+        void Remap(IoctlData &buffer);
     };
 }

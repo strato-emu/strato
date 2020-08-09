@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <span>
 #include <common.h>
 
 namespace skyline {
@@ -99,9 +100,51 @@ namespace skyline {
             u64 MapFixed(u64 address, u64 cpuAddress, u64 size);
 
             /**
-             * @brief Reads in a buffer from a region of the GPU virtual address space
+             * @brief This unmaps the chunk that starts at 'offset' from the GPU address space
+             * @return Whether the operation succeeded
              */
+            bool Unmap(u64 address);
+
             void Read(u8 *destination, u64 address, u64 size) const;
+
+            /**
+             * @brief Reads in a span from a region of the GPU virtual address space
+             * @tparam T The type of span to read into
+             */
+            template<typename T>
+            void Read(std::span<T> destination, u64 address) const {
+                Read(reinterpret_cast<u8*>(destination.data()), address, destination.size_bytes());
+            }
+
+            /**
+             * @brief Reads in an object from a region of the GPU virtual address space
+             * @tparam T The type of object to return
+             */
+            template<typename T>
+            T Read(u64 address) const {
+                T obj;
+                Read(reinterpret_cast<u8*>(&obj), address, sizeof(T));
+                return obj;
+            }
+
+            void Write(u8 *source, u64 address, u64 size) const;
+
+            /**
+             * @brief Writes out a span to a region of the GPU virtual address space
+             */
+            template<typename T>
+            void Write(std::span<T> source, u64 address) const {
+                Write(reinterpret_cast<u8*>(source.data()), address, source.size_bytes());
+            }
+
+            /**
+             * @brief Reads in an object from a region of the GPU virtual address space
+             * @tparam T The type of object to return
+             */
+            template<typename T>
+            void Write(T source, u64 address) const {
+                Write(reinterpret_cast<u8*>(&source), address, sizeof(T));
+            }
         };
     }
 }

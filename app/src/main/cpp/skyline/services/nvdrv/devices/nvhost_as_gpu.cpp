@@ -10,41 +10,14 @@
 
 namespace skyline::service::nvdrv::device {
     NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_as_gpu, {
-        {0x4109, NFUNC(NvHostAsGpu::InitializeEx)},
-        {0x4108, NFUNC(NvHostAsGpu::GetVaRegions)},
-        {0x4102, NFUNC(NvHostAsGpu::AllocSpace)},
-        {0x4106, NFUNC(NvHostAsGpu::Modify)},
         {0x4101, NFUNC(NvHostAsGpu::BindChannel)},
-        {0x4114, NFUNC(NvHostAsGpu::BindChannel)}
+        {0x4102, NFUNC(NvHostAsGpu::AllocSpace)},
+        {0x4105, NFUNC(NvHostAsGpu::UnmapBuffer)},
+        {0x4106, NFUNC(NvHostAsGpu::Modify)},
+        {0x4108, NFUNC(NvHostAsGpu::GetVaRegions)},
+        {0x4109, NFUNC(NvHostAsGpu::InitializeEx)},
+        {0x4114, NFUNC(NvHostAsGpu::Remap)},
     }) {}
-
-    void NvHostAsGpu::InitializeEx(IoctlData &buffer) {
-        struct Data {
-            u32 bigPageSize;
-            i32 asFd;
-            u32 flags;
-            u32 reserved;
-            u64 vaRangeStart;
-            u64 vaRangeEnd;
-            u64 vaRangeSplit;
-        } addressSpace = state.process->GetObject<Data>(buffer.input.at(0).address);
-    }
-
-    void NvHostAsGpu::GetVaRegions(IoctlData &buffer) {
-        struct Data {
-            u64 _pad0_;
-            u32 bufferSize;
-            u32 _pad1_;
-
-            struct {
-                u64 offset;
-                u32 page_size;
-                u32 pad;
-                u64 pages;
-            } regions[2];
-        } regionInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
-        state.process->WriteMemory(regionInfo, buffer.output.at(0).address);
-    }
 
     void NvHostAsGpu::BindChannel(IoctlData &buffer) {
         struct Data {
@@ -74,6 +47,13 @@ namespace skyline::service::nvdrv::device {
         }
 
         state.process->WriteMemory(region, buffer.output.at(0).address);
+    }
+
+    void NvHostAsGpu::UnmapBuffer(IoctlData &buffer) {
+        auto offset = state.process->GetObject<u64>(buffer.input.at(0).address);
+
+        if (!state.gpu->memoryManager.Unmap(offset))
+            state.logger->Warn("Failed to unmap chunk at 0x{:X}", offset);
     }
 
     void NvHostAsGpu::Modify(IoctlData &buffer) {
@@ -106,5 +86,62 @@ namespace skyline::service::nvdrv::device {
         }
 
         state.process->WriteMemory(region, buffer.output.at(0).address);
+    }
+
+    void NvHostAsGpu::GetVaRegions(IoctlData &buffer) {
+        struct Data {
+            u64 _pad0_;
+            u32 bufferSize;
+            u32 _pad1_;
+
+            struct {
+                u64 offset;
+                u32 page_size;
+                u32 pad;
+                u64 pages;
+            } regions[2];
+        } regionInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
+        state.process->WriteMemory(regionInfo, buffer.output.at(0).address);
+    }
+
+    void NvHostAsGpu::InitializeEx(IoctlData &buffer) {
+        struct Data {
+            u32 bigPageSize;
+            i32 asFd;
+            u32 flags;
+            u32 reserved;
+            u64 vaRangeStart;
+            u64 vaRangeEnd;
+            u64 vaRangeSplit;
+        } addressSpace = state.process->GetObject<Data>(buffer.input.at(0).address);
+    }
+
+    void NvHostAsGpu::Remap(IoctlData &buffer) {
+        struct Entry {
+            u16 flags;
+            u16 kind;
+            u32 nvmapHandle;
+            u32 mapOffset;
+            u32 gpuOffset;
+            u32 pages;
+        };
+
+        size_t entryCount{buffer.input.at(0).size / sizeof(Entry)};
+        std::span entries(state.process->GetPointer<Entry>(buffer.input.at(0).address), entryCount);
+
+        for (auto entry : entries) {
+            try {
+                auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(entry.nvmapHandle);
+
+                u64 mapAddress = static_cast<u64>(entry.gpuOffset) << 0x10;
+                u64 mapPhysicalAddress = nvmap->address + (static_cast<u64>(entry.mapOffset) << 0x10);
+                u64 mapSize = static_cast<u64>(entry.pages) << 0x10;
+
+                state.gpu->memoryManager.MapFixed(mapAddress, mapPhysicalAddress, mapSize);
+            } catch (const std::exception &e) {
+                buffer.status = NvStatus::BadValue;
+                return;
+            }
+        }
     }
 }
