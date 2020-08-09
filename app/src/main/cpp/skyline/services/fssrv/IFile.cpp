@@ -8,6 +8,7 @@ namespace skyline::service::fssrv {
     IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, Service::fssrv_IFile, "fssrv:IFile", {
         {0x0, SFUNC(IFile::Read)},
         {0x1, SFUNC(IFile::Write)},
+        {0x2, SFUNC(IFile::Flush)},
         {0x3, SFUNC(IFile::SetSize)},
         {0x4, SFUNC(IFile::GetSize)}
     }) {}
@@ -62,6 +63,8 @@ namespace skyline::service::fssrv {
             response.errorCode = constant::status::GenericError;
         }
     }
+
+    void IFile::Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void IFile::SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         backing->Resize(request.Pop<u64>());

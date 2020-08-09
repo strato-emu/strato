@@ -29,6 +29,11 @@ namespace skyline::service::fssrv {
         void Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This flushes any written data to the IFile
+         */
+        void Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This sets the size of an IFile
          */
         void SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
