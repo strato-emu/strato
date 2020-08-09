@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 #include <services/serviceman.h>
 
@@ -11,6 +12,9 @@ namespace skyline::service::am {
      * @brief This has functions that are used to notify an application about it's state (https://switchbrew.org/wiki/Applet_Manager_services#IApplicationFunctions)
      */
     class IApplicationFunctions : public BaseService {
+      private:
+        std::shared_ptr<type::KEvent> gpuErrorEvent; //!< The event signalled on GPU errors
+
       public:
         IApplicationFunctions(const DeviceState &state, ServiceManager &manager);
 
@@ -35,6 +39,11 @@ namespace skyline::service::am {
         void NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This returns a UUID, however what it refers to is currently unknown (https://switchbrew.org/wiki/Applet_Manager_services#GetPseudoDeviceId)
+         */
+        void GetPseudoDeviceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This initializes gameplay recording (https://switchbrew.org/wiki/Applet_Manager_services#InitializeGamePlayRecording)
          */
         void InitializeGamePlayRecording(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -43,5 +52,10 @@ namespace skyline::service::am {
          * @brief This controls the gameplay recording state (https://switchbrew.org/wiki/Applet_Manager_services#SetGamePlayRecordingState)
          */
         void SetGamePlayRecordingState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This obtains a handle to the system GPU error KEvent (https://switchbrew.org/wiki/Applet_Manager_services#GetGpuErrorDetectedSystemEvent)
+         */
+        void GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }
