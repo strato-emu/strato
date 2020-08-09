@@ -5,12 +5,12 @@
 #include "nvhost_ctrl_gpu.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_ctrl_gpu, {
+    NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : errorNotifierEvent(std::make_shared<type::KEvent>(state)), unknownEvent(std::make_shared<type::KEvent>(state)), NvDevice(state, NvDeviceType::nvhost_ctrl_gpu, {
         {0x4701, NFUNC(NvHostCtrlGpu::ZCullGetCtxSize)},
         {0x4702, NFUNC(NvHostCtrlGpu::ZCullGetInfo)},
         {0x4706, NFUNC(NvHostCtrlGpu::GetTpcMasks)},
         {0x4705, NFUNC(NvHostCtrlGpu::GetCharacteristics)},
-        {0x4714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)}
+        {0x4714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)},
     }) {}
 
     void NvHostCtrlGpu::ZCullGetCtxSize(IoctlData &buffer) {
@@ -146,4 +146,16 @@ namespace skyline::service::nvdrv::device {
 
         state.process->WriteMemory(data, buffer.output[0].address);
     }
+
+    std::shared_ptr<type::KEvent> NvHostCtrlGpu::QueryEvent(u32 eventId) {
+        switch (eventId) {
+            case 1:
+                return errorNotifierEvent;
+            case 2:
+                return unknownEvent;
+            default:
+                return nullptr;
+        }
+    }
+
 }
