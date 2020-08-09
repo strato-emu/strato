@@ -11,6 +11,9 @@
 #include "gpu/texture.h"
 #include "gpu/memory_manager.h"
 #include "gpu/gpfifo.h"
+#include "gpu/syncpoint.h"
+#include "gpu/engines/engine.h"
+#include "gpu/engines/maxwell_3d.h"
 
 namespace skyline::gpu {
     /**
@@ -31,7 +34,13 @@ namespace skyline::gpu {
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< This KEvent is triggered every time a frame is drawn
         std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< This KEvent is triggered every time a buffer is freed
         vmm::MemoryManager memoryManager; //!< The GPU Virtual Memory Manager
+        std::shared_ptr<engine::Engine> fermi2D;
+        std::shared_ptr<engine::Maxwell3D> maxwell3D;
+        std::shared_ptr<engine::Engine> maxwellCompute;
+        std::shared_ptr<engine::Engine> maxwellDma;
+        std::shared_ptr<engine::Engine> keplerMemory;
         gpfifo::GPFIFO gpfifo;
+        std::array<Syncpoint, constant::MaxHwSyncpointCount> syncpoints{};
 
         /**
          * @param window The ANativeWindow to render to

@@ -12,11 +12,12 @@ extern skyline::u16 fps;
 extern skyline::u32 frametime;
 
 namespace skyline::gpu {
-    GPU::GPU(const DeviceState &state) : state(state), memoryManager(state), gpfifo(state), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+    GPU::GPU(const DeviceState &state) : state(state), memoryManager(state), gpfifo(state), fermi2D(std::make_shared<engine::Engine>(state)), keplerMemory(std::make_shared<engine::Engine>(state)), maxwell3D(std::make_shared<engine::Maxwell3D>(state)), maxwellCompute(std::make_shared<engine::Engine>(state)), maxwellDma(std::make_shared<engine::Engine>(state)), window(ANativeWindow_fromSurface(state.jvm->GetEnv(), Surface)), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
         ANativeWindow_acquire(window);
         resolution.width = static_cast<u32>(ANativeWindow_getWidth(window));
         resolution.height = static_cast<u32>(ANativeWindow_getHeight(window));
         format = ANativeWindow_getFormat(window);
+        vsyncEvent->Signal();
     }
 
     GPU::~GPU() {
