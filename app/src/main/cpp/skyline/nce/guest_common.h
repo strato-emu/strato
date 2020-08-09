@@ -5,6 +5,8 @@
 
 #include <cstdint>
 
+#define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
+
 namespace skyline {
     using u128 = __uint128_t; //!< Unsigned 128-bit integer
     using u64 = __uint64_t; //!< Unsigned 64-bit integer

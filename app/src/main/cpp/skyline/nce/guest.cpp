@@ -9,8 +9,6 @@
 #include <asm/unistd.h>
 #include "guest_common.h"
 
-#define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
-
 namespace skyline::guest {
     FORCE_INLINE void SaveCtxStack() {
         asm("SUB SP, SP, #240\n\t"
