@@ -27,6 +27,12 @@ namespace skyline {
         * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
         */
         class IAccountServiceForApplication : public BaseService {
+          private:
+            /**
+             * @brief Writes a vector of 128-bit user IDs to an output buffer
+             */
+            void WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds);
+
           public:
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
 
@@ -34,6 +40,16 @@ namespace skyline {
             * @brief This checks if the given user ID exists
             */
             void GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+            * @brief This returns a list of all user accounts on the console
+            */
+            void ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+            * @brief This returns a list of all open user accounts on the console
+            */
+            void ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns the user ID of the last active user on the console
