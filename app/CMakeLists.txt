@@ -39,9 +39,12 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu.cpp
+        ${source_DIR}/skyline/gpu/macro_interpreter.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
         ${source_DIR}/skyline/gpu/gpfifo.cpp
+        ${source_DIR}/skyline/gpu/syncpoint.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
+        ${source_DIR}/skyline/gpu/engines/maxwell_3d.cpp
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/loader/loader.cpp
         ${source_DIR}/skyline/loader/nro.cpp
@@ -124,6 +127,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/account/IProfile.cpp
         ${source_DIR}/skyline/services/friends/IServiceCreator.cpp
         ${source_DIR}/skyline/services/friends/IFriendService.cpp
+        ${source_DIR}/skyline/services/friends/INotificationService.cpp
         ${source_DIR}/skyline/services/nfp/IUserManager.cpp
         ${source_DIR}/skyline/services/nfp/IUser.cpp
         ${source_DIR}/skyline/services/nifm/IStaticService.cpp
@@ -131,6 +135,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nifm/IRequest.cpp
         ${source_DIR}/skyline/services/socket/bsd/IClient.cpp
         ${source_DIR}/skyline/services/ssl/ISslService.cpp
+        ${source_DIR}/skyline/services/ssl/ISslContext.cpp
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
         ${source_DIR}/skyline/vfs/os_filesystem.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp

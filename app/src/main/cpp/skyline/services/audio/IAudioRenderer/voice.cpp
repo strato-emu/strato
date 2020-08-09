@@ -68,11 +68,11 @@ namespace skyline::service::audio::IAudioRenderer {
                 state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
                 break;
             case skyline::audio::AudioFormat::ADPCM: {
-                    std::vector<u8> adpcmData(currentBuffer.size);
-                    state.process->ReadMemory(adpcmData.data(), currentBuffer.address, currentBuffer.size);
-                    samples = adpcmDecoder->Decode(adpcmData);
-                }
+                std::vector<u8> adpcmData(currentBuffer.size);
+                state.process->ReadMemory(adpcmData.data(), currentBuffer.address, currentBuffer.size);
+                samples = adpcmDecoder->Decode(adpcmData);
                 break;
+            }
             default:
                 throw exception("Unsupported PCM format used by Voice: {}", format);
         }

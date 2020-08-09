@@ -56,7 +56,7 @@ namespace skyline::service::lm {
 
             logMessage << " ";
 
-            switch  (fieldType) {
+            switch (fieldType) {
                 case LogFieldType::Start:
                     offset += length;
                     continue;

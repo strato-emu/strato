@@ -10,6 +10,6 @@ namespace skyline::service::apm {
     }) {}
 
     void IManager::OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(std::make_shared<ISession>(state, manager), session, response);
+        manager.RegisterService(SRVREG(ISession), session, response);
     }
 }

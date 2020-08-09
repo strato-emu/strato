@@ -24,7 +24,7 @@ namespace skyline::loader {
             }
         }
 
-        if (!programNca.has_value() || !controlNca.has_value())
+        if (!programNca || !controlNca)
             throw exception("Incomplete NSP file");
 
         romFs = programNca->romFs;

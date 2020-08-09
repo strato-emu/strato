@@ -27,8 +27,8 @@ namespace skyline::service::fssrv {
 
         auto type = backing->GetEntryType(path);
 
-        if (type.has_value()) {
-            response.Push(type.value());
+        if (type) {
+            response.Push(*type);
         } else {
             response.Push<u32>(0);
             response.errorCode = constant::status::PathDoesNotExist;

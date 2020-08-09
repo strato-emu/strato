@@ -59,7 +59,6 @@ namespace skyline::vfs {
         return true;
     }
 
-
     std::shared_ptr<Backing> OsFileSystem::OpenFile(std::string path, Backing::Mode mode) {
         if (!(mode.read || mode.write))
             throw exception("Cannot open a file that is neither readable or writable");

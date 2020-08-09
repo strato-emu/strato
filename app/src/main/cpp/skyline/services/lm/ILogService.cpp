@@ -10,6 +10,6 @@ namespace skyline::service::lm {
     }) {}
 
     void ILogService::OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(std::make_shared<ILogger>(state, manager), session, response);
+        manager.RegisterService(SRVREG(ILogger), session, response);
     }
 }

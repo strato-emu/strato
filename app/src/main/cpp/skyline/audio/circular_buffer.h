@@ -15,7 +15,7 @@ namespace skyline::audio {
     template<typename Type, size_t Size>
     class CircularBuffer {
       private:
-        std::array <Type, Size> array{}; //!< The internal array holding the circular buffer
+        std::array<Type, Size> array{}; //!< The internal array holding the circular buffer
         Type *start{array.begin()}; //!< The start/oldest element of the internal array
         Type *end{array.begin()}; //!< The end/newest element of the internal array
         bool empty{true}; //!< This boolean is used to differentiate between the buffer being full or empty
@@ -145,7 +145,7 @@ namespace skyline::audio {
          * @brief This appends data from a vector to the buffer
          * @param sampleData A reference to a vector containing the data to be appended
          */
-        inline void Append(const std::vector <Type> &data) {
+        inline void Append(const std::vector<Type> &data) {
             Append(const_cast<Type *>(data.data()), data.size());
         }
     };

@@ -83,7 +83,7 @@ namespace skyline::gpu {
                         opcode += opcode->immediate;
                         return true;
                     } else {
-                        Opcode* targetOpcode = opcode + opcode->immediate;
+                        Opcode *targetOpcode = opcode + opcode->immediate;
 
                         // Step into delay slot
                         opcode++;

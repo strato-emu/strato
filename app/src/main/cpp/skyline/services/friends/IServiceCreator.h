@@ -18,5 +18,10 @@ namespace skyline::service::friends {
          * @brief This opens an IFriendService that can be used by applications to access user friend info
          */
         void CreateFriendService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This opens an INotificationService that can be used by applications to receive notifications
+         */
+        void CreateNotificationService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

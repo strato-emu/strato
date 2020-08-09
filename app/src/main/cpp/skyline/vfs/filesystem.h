@@ -64,7 +64,7 @@ namespace skyline::vfs {
          */
         inline bool FileExists(std::string path) {
             auto entry = GetEntryType(path);
-            return entry.has_value() && entry.value() == Directory::EntryType::File;
+            return entry && *entry == Directory::EntryType::File;
         }
 
         /**
@@ -74,7 +74,7 @@ namespace skyline::vfs {
          */
         inline bool DirectoryExists(std::string path) {
             auto entry = GetEntryType(path);
-            return entry.has_value() && entry.value() == Directory::EntryType::Directory;
+            return entry && *entry == Directory::EntryType::Directory;
         }
 
         /**

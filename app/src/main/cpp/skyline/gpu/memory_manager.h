@@ -113,7 +113,7 @@ namespace skyline {
              */
             template<typename T>
             void Read(std::span<T> destination, u64 address) const {
-                Read(reinterpret_cast<u8*>(destination.data()), address, destination.size_bytes());
+                Read(reinterpret_cast<u8 *>(destination.data()), address, destination.size_bytes());
             }
 
             /**
@@ -123,7 +123,7 @@ namespace skyline {
             template<typename T>
             T Read(u64 address) const {
                 T obj;
-                Read(reinterpret_cast<u8*>(&obj), address, sizeof(T));
+                Read(reinterpret_cast<u8 *>(&obj), address, sizeof(T));
                 return obj;
             }
 
@@ -134,7 +134,7 @@ namespace skyline {
              */
             template<typename T>
             void Write(std::span<T> source, u64 address) const {
-                Write(reinterpret_cast<u8*>(source.data()), address, source.size_bytes());
+                Write(reinterpret_cast<u8 *>(source.data()), address, source.size_bytes());
             }
 
             /**
@@ -143,7 +143,7 @@ namespace skyline {
              */
             template<typename T>
             void Write(T source, u64 address) const {
-                Write(reinterpret_cast<u8*>(&source), address, sizeof(T));
+                Write(reinterpret_cast<u8 *>(&source), address, sizeof(T));
             }
         };
     }

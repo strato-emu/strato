@@ -328,26 +328,26 @@ namespace skyline {
                     };
 
                     enum class CounterType : u8 {
-                        Zero                               = 0x0,
-                        InputVertices                      = 0x1,
-                        InputPrimitives                    = 0x3,
-                        VertexShaderInvocations            = 0x5,
-                        GeometryShaderInvocations          = 0x7,
-                        GeometryShaderPrimitives           = 0x9,
-                        ZcullStats0                        = 0xa,
+                        Zero = 0x0,
+                        InputVertices = 0x1,
+                        InputPrimitives = 0x3,
+                        VertexShaderInvocations = 0x5,
+                        GeometryShaderInvocations = 0x7,
+                        GeometryShaderPrimitives = 0x9,
+                        ZcullStats0 = 0xa,
                         TransformFeedbackPrimitivesWritten = 0xb,
-                        ZcullStats1                        = 0xc,
-                        ZcullStats2                        = 0xe,
-                        ClipperInputPrimitives             = 0xf,
-                        ZcullStats3                        = 0x10,
-                        ClipperOutputPrimitives            = 0x11,
-                        PrimitivesGenerated                = 0x12,
-                        FragmentShaderInvocations          = 0x13,
-                        SamplesPassed                      = 0x15,
-                        TransformFeedbackOffset            = 0x1a,
-                        TessControlShaderInvocations       = 0x1b,
-                        TessEvaluationShaderInvocations    = 0x1d,
-                        TessEvaluationShaderPrimitives     = 0x1f
+                        ZcullStats1 = 0xc,
+                        ZcullStats2 = 0xe,
+                        ClipperInputPrimitives = 0xf,
+                        ZcullStats3 = 0x10,
+                        ClipperOutputPrimitives = 0x11,
+                        PrimitivesGenerated = 0x12,
+                        FragmentShaderInvocations = 0x13,
+                        SamplesPassed = 0x15,
+                        TransformFeedbackOffset = 0x1a,
+                        TessControlShaderInvocations = 0x1b,
+                        TessEvaluationShaderInvocations = 0x1d,
+                        TessEvaluationShaderPrimitives = 0x1f
                     };
 
                     enum class StructureSize : u8 {
