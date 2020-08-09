@@ -4,22 +4,22 @@
 #pragma once
 
 #include <common.h>
-#include "nvhost_syncpoint.h"
+#include "devices/nvhost_syncpoint.h"
 
-namespace skyline::service::nvdrv::device {
+namespace skyline::service::nvdrv {
     /**
      * @brief This holds information about a fence
      */
-    struct NvFence {
+    struct Fence {
         u32 id{};
         u32 value{};
 
         /**
          * @brief Synchronizes the fence's value with its underlying syncpoint
          */
-        static inline void UpdateValue(const NvHostSyncpoint &hostSyncpoint) {
-            //TODO: Implement this
+        inline void UpdateValue(NvHostSyncpoint &hostSyncpoint) {
+            value = hostSyncpoint.UpdateMin(id);
         }
     };
-    static_assert(sizeof(NvFence) == 0x8);
+    static_assert(sizeof(Fence) == 0x8);
 }

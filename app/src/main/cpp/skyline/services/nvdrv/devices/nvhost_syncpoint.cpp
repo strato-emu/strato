@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+
+#include <gpu.h>
 #include "nvhost_syncpoint.h"
 
 namespace skyline::service::nvdrv {
@@ -14,13 +16,10 @@ namespace skyline::service::nvdrv {
     }
 
     u32 NvHostSyncpoint::ReserveSyncpoint(u32 id, bool clientManaged) {
-        if (id >= constant::MaxHwSyncpointCount)
-            throw exception("Requested syncpoint ID is too high");
-
-        if (syncpoints.at(id).assigned)
+        if (syncpoints.at(id).reserved)
             throw exception("Requested syncpoint is in use");
 
-        syncpoints.at(id).assigned = true;
+        syncpoints.at(id).reserved = true;
         syncpoints.at(id).clientManaged = clientManaged;
 
         return id;
@@ -28,7 +27,7 @@ namespace skyline::service::nvdrv {
 
     u32 NvHostSyncpoint::FindFreeSyncpoint() {
         for (u32 i = 0; i < constant::MaxHwSyncpointCount; i++)
-            if (!syncpoints[i].assigned)
+            if (!syncpoints[i].reserved)
                 return i;
 
         throw exception("Failed to find a free syncpoint!");
@@ -42,6 +41,9 @@ namespace skyline::service::nvdrv {
     bool NvHostSyncpoint::HasSyncpointExpired(u32 id, u32 threshold) {
         const SyncpointInfo &syncpoint = syncpoints.at(id);
 
+        if (!syncpoint.reserved)
+            throw exception("Cannot check the expiry status of an unreserved syncpoint!");
+
         if (syncpoint.clientManaged)
             return static_cast<i32>(syncpoint.counterMin - threshold) >= 0;
         else
@@ -49,6 +51,24 @@ namespace skyline::service::nvdrv {
     }
 
     u32 NvHostSyncpoint::IncrementSyncpointMaxExt(u32 id, u32 amount) {
+        if (!syncpoints.at(id).reserved)
+            throw exception("Cannot increment an unreserved syncpoint!");
+
         return syncpoints.at(id).counterMax += amount;
+    }
+
+    u32 NvHostSyncpoint::ReadSyncpointMinValue(u32 id) {
+        if (!syncpoints.at(id).reserved)
+            throw exception("Cannot read an unreserved syncpoint!");
+
+        return syncpoints.at(id).counterMin;
+    }
+
+    u32 NvHostSyncpoint::UpdateMin(u32 id) {
+        if (!syncpoints.at(id).reserved)
+            throw exception("Cannot update an unreserved syncpoint!");
+
+        syncpoints.at(id).counterMin = state.gpu->syncpoints.at(id).value.load();
+        return syncpoints.at(id).counterMin;
     }
 }

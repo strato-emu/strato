@@ -9,10 +9,10 @@
 #include "nvhost_channel.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : NvDevice(state, type, {
+    NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state)), errorNotifierEvent(std::make_shared<type::KEvent>(state)), NvDevice(state, type, {
         {0x4801, NFUNC(NvHostChannel::SetNvmapFd)},
         {0x4803, NFUNC(NvHostChannel::SetSubmitTimeout)},
-        {0x4808, NFUNC(NvHostChannel::SubmitGpFifo)},
+        {0x4808, NFUNC(NvHostChannel::SubmitGpfifo)},
         {0x4809, NFUNC(NvHostChannel::AllocObjCtx)},
         {0x480B, NFUNC(NvHostChannel::ZcullBind)},
         {0x480C, NFUNC(NvHostChannel::SetErrorNotifier)},
@@ -30,12 +30,12 @@ namespace skyline::service::nvdrv::device {
 
     void NvHostChannel::SetSubmitTimeout(IoctlData &buffer) {}
 
-    void NvHostChannel::SubmitGpFifo(IoctlData &buffer) {
+    void NvHostChannel::SubmitGpfifo(IoctlData &buffer) {
         struct Data {
             u64 address;
             u32 numEntries;
             union {
-                struct {
+                struct __attribute__((__packed__)) {
                     bool fenceWait : 1;
                     bool fenceIncrement : 1;
                     bool hwFormat : 1;
@@ -46,8 +46,8 @@ namespace skyline::service::nvdrv::device {
                 };
                 u32 raw;
             } flags;
-            NvFence fence;
-        } args = state.process->GetReference<Data>(buffer.input.at(0).address);
+            Fence fence;
+        } args = state.process->GetReference<Data>(buffer.output.at(0).address);
 
         auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
 
@@ -57,21 +57,19 @@ namespace skyline::service::nvdrv::device {
                 return;
             }
 
-            if (hostSyncpoint.HasSyncpointExpired(args.fence.id, args.fence.value)) {
-                state.logger->Warn("GPU Syncpoints are not currently supported!");
-            }
+            if (hostSyncpoint.HasSyncpointExpired(args.fence.id, args.fence.value))
+                throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
         state.gpu->gpfifo.Push(std::span(state.process->GetPointer<gpu::gpfifo::GpEntry>(args.address), args.numEntries));
 
-        bool increment = args.flags.fenceIncrement || args.flags.incrementWithValue;
-        u32 amount = increment ? (args.flags.fenceIncrement ? 2 : 0) + (args.flags.incrementWithValue ? args.fence.value : 0) : 0;
-        args.fence.value = hostSyncpoint.IncrementSyncpointMaxExt(args.fence.id, amount);
         args.fence.id = channelFence.id;
 
-        if (args.flags.fenceIncrement) {
-            state.logger->Warn("GPU Syncpoints are not currently supported!");
-        }
+        u32 increment = (args.flags.fenceIncrement ? 2 : 0) + (args.flags.incrementWithValue ? args.fence.value : 0);
+        args.fence.value = hostSyncpoint.IncrementSyncpointMaxExt(args.fence.id, increment);
+
+        if (args.flags.fenceIncrement)
+            throw exception("Incrementing a fence through SubmitGpfifo is unimplemented");
 
         args.flags.raw = 0;
     }
@@ -103,11 +101,27 @@ namespace skyline::service::nvdrv::device {
             u32 numEntries;
             u32 numJobs;
             u32 flags;
-            NvFence fence;
+            Fence fence;
             u32 reserved[3];
         } args = state.process->GetReference<Data>(buffer.input.at(0).address);
+
+        channelFence.UpdateValue(state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint);
         args.fence = channelFence;
     }
 
     void NvHostChannel::SetUserData(IoctlData &buffer) {}
+
+    std::shared_ptr<type::KEvent> NvHostChannel::QueryEvent(u32 eventId) {
+        switch (eventId) {
+            case 1:
+                return smExceptionBreakpointIntReportEvent;
+            case 2:
+                return smExceptionBreakpointPauseReportEvent;
+            case 3:
+                return errorNotifierEvent;
+            default:
+                return nullptr;
+        }
+    }
+
 }

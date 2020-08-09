@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "nvfence.h"
+#include <services/nvdrv/fence.h>
 #include "nvdevice.h"
 
 namespace skyline::service::nvdrv::device {
@@ -18,8 +18,11 @@ namespace skyline::service::nvdrv::device {
             High = 0x94
         };
 
-        NvFence channelFence{};
+        Fence channelFence{};
         u32 timeslice{};
+        std::shared_ptr<type::KEvent> smExceptionBreakpointIntReportEvent;
+        std::shared_ptr<type::KEvent> smExceptionBreakpointPauseReportEvent;
+        std::shared_ptr<type::KEvent> errorNotifierEvent;
 
       public:
         NvHostChannel(const DeviceState &state, NvDeviceType type);
@@ -37,7 +40,7 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This submits a command to the GPFIFO (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO)
          */
-        void SubmitGpFifo(IoctlData &buffer);
+        void SubmitGpfifo(IoctlData &buffer);
 
         /**
          * @brief This allocates a graphic context object (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX)
@@ -68,5 +71,7 @@ namespace skyline::service::nvdrv::device {
          * @brief This sets the user specific data (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_USER_DATA)
          */
         void SetUserData(IoctlData &buffer);
+
+        std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
     };
 }

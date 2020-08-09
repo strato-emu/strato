@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <kernel/ipc.h>
+#include <kernel/types/KEvent.h>
 
 #define NFUNC(function) std::bind(&function, this, std::placeholders::_1)
 
@@ -149,6 +150,8 @@ namespace skyline::service::nvdrv::device {
          */
         NvDevice(const DeviceState &state, NvDeviceType deviceType, std::unordered_map<u32, std::function<void(IoctlData &)>> vTable) : state(state), deviceType(deviceType), vTable(vTable) {}
 
+        virtual ~NvDevice() = default;
+
         /**
          * @brief This returns the name of the current service
          * @note It may not return the exact name the service was initialized with if there are multiple entries in ServiceString
@@ -181,6 +184,10 @@ namespace skyline::service::nvdrv::device {
             } catch (std::exception &e) {
                 throw exception("{} (Device: {})", e.what(), getName());
             }
+        }
+
+        virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
+            return nullptr;
         }
     };
 }

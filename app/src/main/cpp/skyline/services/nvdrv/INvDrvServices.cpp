@@ -129,11 +129,19 @@ namespace skyline::service::nvdrv {
     void INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto eventId = request.Pop<u32>();
-        auto event = std::make_shared<type::KEvent>(state);
-        auto handle = state.process->InsertItem<type::KEvent>(event);
+        auto device = fdMap.at(fd);
+        auto event = device->QueryEvent(eventId);
 
-        state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
-        response.copyHandles.push_back(handle);
+        if (event != nullptr) {
+            auto handle = state.process->InsertItem<type::KEvent>(event);
+
+            state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
+            response.copyHandles.push_back(handle);
+
+            response.Push<u32>(device::NvStatus::Success);
+        } else {
+            response.Push<u32>(device::NvStatus::BadValue);
+        }
     }
 
     void INvDrvServices::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

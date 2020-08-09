@@ -78,9 +78,9 @@ namespace skyline::service::nvdrv::device {
         struct Data {
             u32 handle;   // In
             u32 _pad0_;
-            u32 address;  // Out
+            u64 address;  // Out
             u32 size;     // Out
-            u64 flags;    // Out
+            u32 flags;    // Out
         } data = state.process->GetObject<Data>(buffer.input[0].address);
 
         const auto &object = handleTable.at(data.handle);
