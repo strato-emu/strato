@@ -77,6 +77,7 @@ namespace skyline::service {
         account_IProfile,
         friends_IServiceCreator,
         friends_IFriendService,
+        friends_INotificationService,
         nfp_IUserManager,
         nfp_IUser,
         nifm_IStaticService,
@@ -84,6 +85,7 @@ namespace skyline::service {
         nifm_IRequest,
         socket_IClient,
         ssl_ISslService,
+        ssl_ISslContext,
         prepo_IPrepoService
     };
 
@@ -164,6 +166,7 @@ namespace skyline::service {
                 state.logger->Warn("Cannot find function in service '{0}' (Type: {1}): 0x{2:X} ({2})", serviceName, serviceType, static_cast<u32>(request.payload->value));
                 return;
             }
+
             try {
                 function(session, request, response);
             } catch (std::exception &e) {
