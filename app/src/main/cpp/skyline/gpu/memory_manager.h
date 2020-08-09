@@ -17,7 +17,7 @@ namespace skyline {
         */
         enum ChunkState {
             Unmapped, //!< The chunk is unmapped
-            Allocated, //!< The chunk is allocated but unmapped
+            Reserved, //!< The chunk is reserved
             Mapped //!< The chunk is mapped and a CPU side address is present
         };
 
@@ -68,19 +68,19 @@ namespace skyline {
             MemoryManager(const DeviceState &state);
 
             /**
-             * @brief This reserves a region of the GPU address space so it can be automatically used when mapping
+             * @brief This reserves a region of the GPU address space so it will not be chosen automatically when mapping
              * @param size The size of the region to reserve
              * @return The virtual GPU base address of the region base
              */
-            u64 AllocateSpace(u64 size);
+            u64 ReserveSpace(u64 size);
 
             /**
-             * @brief This reserves a fixed region of the GPU address space so it can be automatically used when mapping
+             * @brief This reserves a fixed region of the GPU address space so it will not be chosen automatically when mapping
              * @param address The virtual base address of the region to allocate
              * @param size The size of the region to allocate
              * @return The virtual address of the region base
              */
-            u64 AllocateFixed(u64 address, u64 size);
+            u64 ReserveFixed(u64 address, u64 size);
 
             /**
              * @brief This maps a physical CPU memory region to an automatically chosen virtual memory region
@@ -88,7 +88,7 @@ namespace skyline {
              * @param size The size of the region to map
              * @return The virtual address of the region base
              */
-            u64 MapAllocated(u64 address, u64 size);
+            u64 MapAllocate(u64 address, u64 size);
 
             /**
              * @brief This maps a physical CPU memory region to a fixed virtual memory region

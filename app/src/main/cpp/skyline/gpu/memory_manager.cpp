@@ -83,7 +83,7 @@ namespace skyline::gpu::vmm {
         throw exception("Failed to insert chunk into GPU address space!");
     }
 
-    u64 MemoryManager::AllocateSpace(u64 size) {
+    u64 MemoryManager::ReserveSpace(u64 size) {
         size = util::AlignUp(size, constant::GpuPageSize);
         auto newChunk = FindChunk(size, ChunkState::Unmapped);
         if (!newChunk)
@@ -91,23 +91,23 @@ namespace skyline::gpu::vmm {
 
         auto chunk = *newChunk;
         chunk.size = size;
-        chunk.state = ChunkState::Allocated;
+        chunk.state = ChunkState::Reserved;
 
         return InsertChunk(chunk);
     }
 
-    u64 MemoryManager::AllocateFixed(u64 address, u64 size) {
+    u64 MemoryManager::ReserveFixed(u64 address, u64 size) {
         if ((address & (constant::GpuPageSize - 1)) != 0)
             return 0;
 
         size = util::AlignUp(size, constant::GpuPageSize);
 
-        return InsertChunk(ChunkDescriptor(address, size, 0, ChunkState::Allocated));
+        return InsertChunk(ChunkDescriptor(address, size, 0, ChunkState::Reserved));
     }
 
-    u64 MemoryManager::MapAllocated(u64 address, u64 size) {
+    u64 MemoryManager::MapAllocate(u64 address, u64 size) {
         size = util::AlignUp(size, constant::GpuPageSize);
-        auto mappedChunk = FindChunk(size, ChunkState::Allocated);
+        auto mappedChunk = FindChunk(size, ChunkState::Unmapped);
         if (!mappedChunk)
             return 0;
 
@@ -139,7 +139,7 @@ namespace skyline::gpu::vmm {
         if (chunk == chunkList.end())
             return false;
 
-        chunk->state = ChunkState::Allocated;
+        chunk->state = ChunkState::Reserved;
         chunk->cpuAddress = 0;
 
         return true;

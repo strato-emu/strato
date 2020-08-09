@@ -37,9 +37,9 @@ namespace skyline::service::nvdrv::device {
         u64 size = static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize);
 
         if (region.flags & 1)
-            region.offset = state.gpu->memoryManager.AllocateFixed(region.offset, size);
+            region.offset = state.gpu->memoryManager.ReserveFixed(region.offset, size);
         else
-            region.offset = state.gpu->memoryManager.AllocateSpace(size);
+            region.offset = state.gpu->memoryManager.ReserveSpace(size);
 
         if (region.offset == 0) {
             state.logger->Warn("Failed to allocate GPU address space region!");
@@ -78,7 +78,7 @@ namespace skyline::service::nvdrv::device {
         if (region.flags & 1)
             region.offset = state.gpu->memoryManager.MapFixed(region.offset, mapPhysicalAddress, mapSize);
         else
-            region.offset = state.gpu->memoryManager.MapAllocated(mapPhysicalAddress, mapSize);
+            region.offset = state.gpu->memoryManager.MapAllocate(mapPhysicalAddress, mapSize);
 
         if (region.offset == 0) {
             state.logger->Warn("Failed to map GPU address space region!");
