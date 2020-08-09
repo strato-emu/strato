@@ -13,6 +13,7 @@ namespace skyline::service::am {
     class ISelfController : public BaseService {
       private:
         std::shared_ptr<kernel::type::KEvent> libraryAppletLaunchableEvent; //!< This KEvent is triggered when the library applet is launchable
+        std::shared_ptr<kernel::type::KEvent> accumulatedSuspendedTickChangedEvent; //!< This KEvent is triggered when the time the system has spent in suspend is updated
 
       public:
         ISelfController(const DeviceState &state, ServiceManager &manager);
@@ -61,5 +62,10 @@ namespace skyline::service::am {
          * @brief This function returns an output u64 LayerId (https://switchbrew.org/wiki/Applet_Manager_services#CreateManagedDisplayLayer)
          */
         void CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This obtains a handle to the system sleep time change KEvent  (https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickChangedEvent)
+         */
+        void GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

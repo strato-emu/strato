@@ -7,7 +7,7 @@
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ISelfController, "am:ISelfController", {
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ISelfController, "am:ISelfController", {
         {0x1, SFUNC(ISelfController::LockExit)},
         {0x2, SFUNC(ISelfController::UnlockExit)},
         {0x9, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)},
@@ -16,7 +16,8 @@ namespace skyline::service::am {
         {0xD, SFUNC(ISelfController::SetFocusHandlingMode)},
         {0xE, SFUNC(ISelfController::SetRestartMessageEnabled)},
         {0x10, SFUNC(ISelfController::SetOutOfFocusSuspendingEnabled)},
-        {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)}
+        {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)},
+        {0x5b, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)}
     }) {}
 
     void ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
@@ -51,5 +52,12 @@ namespace skyline::service::am {
         hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
 
         response.Push<u64>(0);
+    }
+
+    void ISelfController::GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto handle = state.process->InsertItem(accumulatedSuspendedTickChangedEvent);
+        state.logger->Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
+
+        response.copyHandles.push_back(handle);
     }
 }
