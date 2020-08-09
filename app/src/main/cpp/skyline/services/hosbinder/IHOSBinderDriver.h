@@ -32,14 +32,6 @@ namespace skyline::service::hosbinder {
     };
 
     /**
-     * @brief This represents conditions for the completion of an asynchronous graphics operation
-     */
-    struct Fence {
-        u32 syncptId; //!< The ID of the syncpoint
-        u32 syncptValue; //!< The value of the syncpoint
-    };
-
-    /**
      * @brief nvnflinger:dispdrv or nns::hosbinder::IHOSBinderDriver is responsible for writing buffers to the display
      */
     class IHOSBinderDriver : public BaseService {

@@ -5,6 +5,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/nvdrv/INvDrvServices.h>
+#include <services/nvdrv/fence.h>
 #include <gpu/format.h>
 #include "IHOSBinderDriver.h"
 #include "display.h"
@@ -70,7 +71,7 @@ namespace skyline::service::hosbinder {
             u32 stickyTransform;
             u64 _unk0_;
             u32 swapInterval;
-            Fence fence[4];
+            nvdrv::Fence fence[4];
         } *data = reinterpret_cast<Data *>(in.data.data());
 
         auto buffer = queue.at(data->slot);
@@ -104,7 +105,7 @@ namespace skyline::service::hosbinder {
     void IHOSBinderDriver::CancelBuffer(Parcel &parcel) {
         struct Data {
             u32 slot;
-            Fence fence[4];
+            nvdrv::Fence fence[4];
         } *data = reinterpret_cast<Data *>(parcel.data.data());
         FreeBuffer(data->slot);
         state.logger->Debug("CancelBuffer: Slot: {}", data->slot);
