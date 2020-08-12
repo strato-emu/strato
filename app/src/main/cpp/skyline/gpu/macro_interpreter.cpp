@@ -67,7 +67,7 @@ namespace skyline::gpu {
                 break;
             }
             case Opcode::Operation::ReadImmediate: {
-                u32 result = maxwell3D.regs.raw[registers[opcode->srcA] + opcode->immediate];
+                u32 result = maxwell3D.registers.raw[registers[opcode->srcA] + opcode->immediate];
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }

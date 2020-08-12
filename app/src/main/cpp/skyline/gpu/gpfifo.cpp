@@ -32,7 +32,7 @@ namespace skyline::gpu::gpfifo {
 
             state.logger->Info("Bound GPU engine 0x{:X} to subchannel {}", params.argument, params.subChannel);
             return;
-        } else if (params.method < constant::GpfifoRegisterSize) {
+        } else if (params.method < constant::GpfifoRegisterCount) {
             gpfifoEngine.CallMethod(params);
         } else {
             if (subchannels.at(params.subChannel) == nullptr)

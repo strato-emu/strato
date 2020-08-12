@@ -52,11 +52,11 @@ namespace skyline::vfs {
       public:
         PartitionFileSystem(std::shared_ptr<Backing> backing);
 
-        std::shared_ptr<Backing> OpenFile(std::string path, Backing::Mode mode = {true, false, false});
+        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
 
-        std::optional<Directory::EntryType> GetEntryType(std::string path);
+        std::optional<Directory::EntryType> GetEntryType(const std::string &path);
 
-        std::shared_ptr<Directory> OpenDirectory(std::string path, Directory::ListMode listMode);
+        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
     };
 
     /**

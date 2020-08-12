@@ -10,12 +10,18 @@ namespace skyline::gpu {
         class Maxwell3D;
     }
 
+    /**
+     * @brief The MacroInterpreter class handles interpreting macros. Macros are small programs that run on the GPU and are used for things like instanced rendering.
+     */
     class MacroInterpreter {
       private:
         /**
          * @brief This holds a single macro opcode
          */
+#pragma pack(push, 1)
         union Opcode {
+            u32 raw;
+
             enum class Operation : u8 {
                 AluRegister = 0,
                 AddImmediate = 1,
@@ -54,16 +60,16 @@ namespace skyline::gpu {
                 NonZero = 1,
             };
 
-            struct __attribute__((__packed__)) {
+            struct {
                 Operation operation : 3;
                 u8 _pad0_ : 1;
                 AssignmentOperation assignmentOperation : 3;
             };
 
-            struct __attribute__((__packed__)) {
+            struct {
                 u8 _pad1_ : 4;
                 BranchCondition branchCondition : 1;
-                u8 noDelay : 1;
+                bool noDelay : 1;
                 u8 _pad2_ : 1;
                 u8 exit : 1;
                 u8 dest : 3;
@@ -72,12 +78,12 @@ namespace skyline::gpu {
                 AluOperation aluOperation : 5;
             };
 
-            struct __attribute__((__packed__)) {
+            struct {
                 u16 _pad3_ : 14;
                 i32 immediate : 18;
             };
 
-            struct __attribute__((__packed__)) {
+            struct {
                 u32 _pad_ : 17;
                 u8 srcBit : 5;
                 u8 size : 5;
@@ -87,21 +93,20 @@ namespace skyline::gpu {
                     return (1 << size) - 1;
                 }
             } bitfield;
-
-            u32 raw;
         };
+#pragma pack(pop)
         static_assert(sizeof(Opcode) == sizeof(u32));
 
         /**
          * @brief This holds information about the Maxwell 3D method to be called in 'Send'
          */
         union MethodAddress {
+            u32 raw;
+
             struct {
                 u16 address : 12;
                 u8 increment : 6;
             };
-
-            u32 raw;
         };
 
         engine::Maxwell3D &maxwell3D;

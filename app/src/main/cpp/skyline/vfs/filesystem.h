@@ -28,7 +28,7 @@ namespace skyline::vfs {
          * @param size The size of the file to create
          * @return Whether creating the file succeeded
          */
-        virtual bool CreateFile(std::string path, size_t size) {
+        virtual bool CreateFile(const std::string &path, size_t size) {
             throw exception("This filesystem does not support creating files");
         };
 
@@ -38,7 +38,7 @@ namespace skyline::vfs {
          * @param parents Whether all parent directories in the given path should be created
          * @return Whether creating the directory succeeded
          */
-        virtual bool CreateDirectory(std::string path, bool parents) {
+        virtual bool CreateDirectory(const std::string &path, bool parents) {
             throw exception("This filesystem does not support creating directories");
         };
 
@@ -48,21 +48,21 @@ namespace skyline::vfs {
          * @param mode The mode to open the file with
          * @return A shared pointer to a Backing object of the file
          */
-        virtual std::shared_ptr<Backing> OpenFile(std::string path, Backing::Mode mode = {true, false, false}) = 0;
+        virtual std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false}) = 0;
 
         /**
          * @brief Queries the type of the entry given by path
          * @param path The path to the entry
          * @return The type of the entry, if present
          */
-        virtual std::optional<Directory::EntryType> GetEntryType(std::string path) = 0;
+        virtual std::optional<Directory::EntryType> GetEntryType(const std::string &path) = 0;
 
         /**
          * @brief Checks if a given file exists in a filesystem
          * @param path The path to the file
          * @return Whether the file exists
          */
-        inline bool FileExists(std::string path) {
+        inline bool FileExists(const std::string &path) {
             auto entry = GetEntryType(path);
             return entry && *entry == Directory::EntryType::File;
         }
@@ -72,7 +72,7 @@ namespace skyline::vfs {
          * @param path The path to the directory
          * @return Whether the directory exists
          */
-        inline bool DirectoryExists(std::string path) {
+        inline bool DirectoryExists(const std::string &path) {
             auto entry = GetEntryType(path);
             return entry && *entry == Directory::EntryType::Directory;
         }
@@ -83,7 +83,7 @@ namespace skyline::vfs {
          * @param listMode The list mode for the directory
          * @return A shared pointer to a Directory object of the directory
          */
-        virtual std::shared_ptr<Directory> OpenDirectory(std::string path, Directory::ListMode listMode) {
+        virtual std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode) {
             throw exception("This filesystem does not support opening directories");
         };
     };

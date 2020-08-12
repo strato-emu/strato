@@ -9,11 +9,11 @@
 #include <gpu/macro_interpreter.h>
 #include "engine.h"
 
-#define MAXWELL3D_OFFSET(field) U32_OFFSET(skyline::gpu::engine::Maxwell3D::Regs, field)
+#define MAXWELL3D_OFFSET(field) U32_OFFSET(skyline::gpu::engine::Maxwell3D::Registers, field)
 
 namespace skyline {
     namespace constant {
-        constexpr u32 Maxwell3DRegisterSize = 0xe00; //!< The size of the GPFIFO's register space in units of u32
+        constexpr u32 Maxwell3DRegisterCounter = 0xe00; //!< The number of Maxwell 3D registers
     }
 
     namespace gpu::engine {
@@ -40,7 +40,10 @@ namespace skyline {
             * @brief This holds the Maxwell3D engine's register space
             * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def#L478
             */
-            union Regs {
+#pragma pack(push, 1)
+            union Registers {
+                std::array<u32, constant::Maxwell3DRegisterCounter> raw;
+
                 struct Address {
                     u32 high;
                     u32 low;
@@ -77,7 +80,7 @@ namespace skyline {
                     float translateY;
                     float translateZ;
 
-                    struct __attribute__((__packed__)) {
+                    struct {
                         Swizzle x : 3;
                         u8 _pad0_ : 1;
                         Swizzle y : 3;
@@ -88,7 +91,7 @@ namespace skyline {
                         u32 _pad3_ : 17;
                     } swizzles;
 
-                    struct __attribute__((__packed__)) {
+                    struct {
                         u8 x : 5;
                         u8 _pad0_ : 3;
                         u8 y : 5;
@@ -120,6 +123,8 @@ namespace skyline {
                 };
 
                 union VertexAttribute {
+                    u32 raw;
+
                     enum class Size : u8 {
                         Size_1x32 = 0x12,
                         Size_2x32 = 0x04,
@@ -148,7 +153,7 @@ namespace skyline {
                         Float = 7,
                     };
 
-                    struct __attribute__((__packed__)) {
+                    struct {
                         u8 bufferId : 5;
                         u8 _pad0_ : 1;
                         bool fixed : 1;
@@ -158,8 +163,6 @@ namespace skyline {
                         u8 _pad1_ : 1;
                         bool bgra : 1;
                     };
-
-                    u32 raw;
                 };
                 static_assert(sizeof(VertexAttribute) == sizeof(u32));
 
@@ -275,19 +278,19 @@ namespace skyline {
                     FrontAndBack = 0x408,
                 };
 
-                union ColorMask {
-                    struct __attribute__((__packed__)) {
+                union ColorWriteMask {
+                    u32 raw;
+
+                    struct {
                         u8 r : 4;
                         u8 g : 4;
                         u8 b : 4;
                         u8 a : 4;
                     };
-
-                    u32 raw;
                 };
-                static_assert(sizeof(ColorMask) == sizeof(u32));
+                static_assert(sizeof(ColorWriteMask) == sizeof(u32));
 
-                struct __attribute__((__packed__)) SemaphoreInfo {
+                struct SemaphoreInfo {
                     enum class Op : u8 {
                         Release = 0,
                         Acquire = 1,
@@ -372,6 +375,11 @@ namespace skyline {
                 };
                 static_assert(sizeof(SemaphoreInfo) == sizeof(u32));
 
+                enum class CoordOrigin : u8 {
+                    LowerLeft = 0,
+                    UpperLeft = 1
+                };
+
                 struct {
                     u32 _pad0_[0x40]; // 0x0
                     u32 noOperation; // 0x40
@@ -412,9 +420,9 @@ namespace skyline {
                     u32 _pad6_[0x68]; // 0x36d
 
                     struct {
-                        u32 funcRef; // 0x3d5
-                        u32 mask; // 0x3d6
-                        u32 funcMask; // 0x3d7
+                        u32 compareRef; // 0x3d5
+                        u32 writeMask; // 0x3d6
+                        u32 compareMask; // 0x3d7
                     } stencilBackExtra;
 
                     u32 _pad7_[0x13]; // 0x3d8
@@ -461,9 +469,9 @@ namespace skyline {
                             CompareOp op; // 0x4e4
                             i32 ref; // 0x4e5
                             u32 mask; // 0x4e6
-                        } func;
+                        } compare;
 
-                        u32 mask; // 0x4e7
+                        u32 writeMask; // 0x4e7
                     } stencilFront;
 
                     u32 _pad11_[0x4]; // 0x4e8
@@ -484,7 +492,7 @@ namespace skyline {
                     u32 multisampleEnable; // 0x54d
                     u32 depthTargetEnable; // 0x54e
 
-                    struct __attribute__((__packed__)) {
+                    struct {
                         bool alphaToCoverage : 1;
                         u8 _pad0_ : 3;
                         bool alphaToOne : 1;
@@ -509,22 +517,34 @@ namespace skyline {
 
                     u32 _pad18_[0x5]; // 0x560
 
+                    u32 stencilTwoSideEnable; // 0x565
+
                     struct {
-                        u32 stencilTwoSideEnable; // 0x565
                         StencilOp failOp; // 0x566
                         StencilOp zFailOp; // 0x567
                         StencilOp zPassOp; // 0x568
-                        CompareOp funcOp; // 0x569
+                        CompareOp compareOp; // 0x569
                     } stencilBack;
 
-                    u32 _pad19_[0xdc]; // 0x56a
+                    u32 _pad19_[0x17]; // 0x56a
+
+                    struct {
+                        u8 _unk_ : 2;
+                        CoordOrigin origin : 1;
+                        u16 enable : 10;
+                        u32 _pad_ : 19;
+                    } pointCoordReplace; // 0x581
+
+                    u32 _pad20_[0xc4]; // 0x582
                     u32 cullFaceEnable; // 0x646
                     FrontFace frontFace; // 0x647
                     CullFace cullFace; // 0x648
                     u32 pixelCentreImage; // 0x649
-                    u32 _pad20_[0x36]; // 0x64a
-                    std::array<ColorMask, 8> colorMask; // 0x680 For each render target
-                    u32 _pad21_[0x38]; // 0x688
+                    u32 _pad21_; // 0x64a
+                    u32 viewportTransformEnable; // 0x64b
+                    u32 _pad22_[0x34]; // 0x64a
+                    std::array<ColorWriteMask, 8> colorMask; // 0x680 For each render target
+                    u32 _pad23_[0x38]; // 0x688
 
                     struct {
                         Address address; // 0x6c0
@@ -532,18 +552,17 @@ namespace skyline {
                         SemaphoreInfo info; // 0x6c3
                     } semaphore;
 
-                    u32 _pad22_[0xbc]; // 0x6c4
+                    u32 _pad24_[0xbc]; // 0x6c4
                     std::array<Blend, 8> independentBlend; // 0x780 For each render target
-                    u32 _pad23_[0x100]; // 0x7c0
+                    u32 _pad25_[0x100]; // 0x7c0
                     u32 firmwareCall[0x20]; // 0x8c0
                 };
-
-                std::array<u32, constant::Maxwell3DRegisterSize> raw;
             };
-            static_assert(sizeof(Regs) == (constant::Maxwell3DRegisterSize * sizeof(u32)));
+            static_assert(sizeof(Registers) == (constant::Maxwell3DRegisterCounter * sizeof(u32)));
+#pragma pack(pop)
 
-            Regs regs{}; //!< The maxwell 3D register space
-            Regs shadowRegs{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
+            Registers registers{}; //!< The maxwell 3D register space
+            Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
 
             std::array<u32, 0x10000> macroCode{}; //!< This is used to store GPU macros, the 256kb size is from Ryujinx
 

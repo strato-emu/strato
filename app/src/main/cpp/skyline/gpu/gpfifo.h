@@ -18,18 +18,19 @@ namespace skyline::gpu {
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L155
          */
         struct GpEntry {
-            enum class Fetch {
+            enum class Fetch : u8 {
                 Unconditional = 0,
                 Conditional = 1,
             };
 
             union {
+                u32 entry0;
+
                 struct {
                     Fetch fetch : 1;
                     u8 _pad_ : 1;
                     u32 get : 30;
                 };
-                u32 entry0;
             };
 
             enum class Opcode : u8 {
@@ -39,36 +40,38 @@ namespace skyline::gpu {
                 PbCrc = 3,
             };
 
-            enum class Priv {
+            enum class Priv : u8 {
                 User = 0,
                 Kernel = 1,
             };
 
-            enum class Level {
+            enum class Level : u8 {
                 Main = 0,
                 Subroutine = 1,
             };
 
-            enum class Sync {
+            enum class Sync : u8 {
                 Proceed = 0,
                 Wait = 1,
             };
 
             union {
+                u32 entry1;
+
                 struct {
                     union {
                         u8 getHi;
                         Opcode opcode;
                     };
+
                     Priv priv : 1;
                     Level level : 1;
                     u32 size : 21;
                     Sync sync : 1;
                 };
-                u32 entry1;
             };
         };
-        static_assert(sizeof(GpEntry) == 0x8);
+        static_assert(sizeof(GpEntry) == sizeof(u64));
 
         /**
          * @brief This holds a single pushbuffer method header that describes a compressed method sequence
@@ -76,6 +79,8 @@ namespace skyline::gpu {
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L179
          */
         union PushBufferMethodHeader {
+            u32 raw;
+
             enum class TertOp : u8 {
                 Grp0IncMethod = 0,
                 Grp0SetSubDevMask = 1,
@@ -95,33 +100,28 @@ namespace skyline::gpu {
                 EndPbSegment = 7
             };
 
+            u16 methodAddress : 12;
             struct {
+                u8 _pad0_ : 4;
+                u16 subDeviceMask : 12;
+            };
+
+            struct {
+                u16 _pad1_ : 13;
+                u8 methodSubChannel : 3;
                 union {
-                    u16 methodAddress : 12;
-                    struct {
-                        u8 _pad0_ : 4;
-                        u16 subDeviceMask : 12;
-                    };
-
-                    struct {
-                        u16 _pad1_ : 13;
-                        u8 methodSubChannel : 3;
-                        union {
-                            TertOp tertOp : 3;
-                            u16 methodCount : 13;
-                            u16 immdData : 13;
-                        };
-                    };
-
-                    struct {
-                        u32 _pad2_ : 29;
-                        SecOp secOp : 3;
-                    };
+                    TertOp tertOp : 3;
+                    u16 methodCount : 13;
+                    u16 immdData : 13;
                 };
             };
-            u32 entry;
+
+            struct {
+                u32 _pad2_ : 29;
+                SecOp secOp : 3;
+            };
         };
-        static_assert(sizeof(PushBufferMethodHeader) == 0x4);
+        static_assert(sizeof(PushBufferMethodHeader) == sizeof(u32));
 
         /**
          * @brief The GPFIFO class handles creating pushbuffers from GP entries and then processing them

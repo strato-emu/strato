@@ -29,7 +29,7 @@ namespace skyline::service::fssrv {
         void Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This flushes any written data to the IFile
+         * @brief This flushes any written data to the IFile on the Switch, however the emulator processes any FS event immediately so this does nothing
          */
         void Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

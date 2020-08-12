@@ -97,8 +97,8 @@ namespace skyline::gpu::vmm {
     }
 
     u64 MemoryManager::ReserveFixed(u64 address, u64 size) {
-        if ((address & (constant::GpuPageSize - 1)) != 0)
-            return 0;
+        if (!util::IsAligned(address, constant::GpuPageSize))
+            return false;
 
         size = util::AlignUp(size, constant::GpuPageSize);
 
@@ -120,8 +120,8 @@ namespace skyline::gpu::vmm {
     }
 
     u64 MemoryManager::MapFixed(u64 address, u64 cpuAddress, u64 size) {
-        if ((address & (constant::GpuPageSize - 1)) != 0)
-            return 0;
+        if (!util::IsAligned(address, constant::GpuPageSize))
+            return false;
 
         size = util::AlignUp(size, constant::GpuPageSize);
 
@@ -129,7 +129,7 @@ namespace skyline::gpu::vmm {
     }
 
     bool MemoryManager::Unmap(u64 address) {
-        if ((address & (constant::GpuPageSize - 1)) != 0)
+        if (!util::IsAligned(address, constant::GpuPageSize))
             return false;
 
         auto chunk = std::find_if(chunkList.begin(), chunkList.end(), [address](const ChunkDescriptor &chunk) -> bool {
@@ -146,56 +146,62 @@ namespace skyline::gpu::vmm {
     }
 
     void MemoryManager::Read(u8 *destination, u64 address, u64 size) const {
-        auto chunk = --std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto chunk = std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         });
 
         if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
-            throw exception("Failed to read region in GPU address space - address: 0x{:X} size: 0x{:X}", address, size);
+            throw exception("Failed to read region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
-        u64 chunkOffset = address - chunk->address;
-        u64 destinationOffset{};
+        chunk--;
+
+        u64 initialSize{size};
+        u64 chunkOffset{address - chunk->address};
+        u64 readAddress{chunk->cpuAddress + chunkOffset};
+        u64 readSize{std::min(chunk->size - chunkOffset, size)};
 
         // A continuous region in the GPU address space may be made up of several discontinuous regions in physical memory so we have to iterate over all chunks
-        while (size != 0) {
-            if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
-                throw exception("Failed to read region in GPU address space - address: {#:X} size: {#:X}", address, size);
+        while (size) {
+            state.process->ReadMemory(destination + (initialSize - size), readAddress, readSize);
 
-            u64 readSize = std::min(chunk->size - chunkOffset, size);
-            state.process->ReadMemory(destination + destinationOffset, chunk->cpuAddress + chunkOffset, readSize);
-
-            // After the first read all further reads will start from the base of the chunk
-            chunkOffset = 0;
             size -= readSize;
-            destinationOffset += readSize;
-            chunk++;
+            if (size) {
+                if (++chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+                    throw exception("Failed to read region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
+
+                readAddress = chunk->cpuAddress;
+                readSize = std::min(chunk->size, size);
+            }
         }
     }
 
     void MemoryManager::Write(u8 *source, u64 address, u64 size) const {
-        auto chunk = --std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto chunk = std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         });
 
         if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
-            throw exception("Failed to write to region in GPU address space - address: {#:X} size: {#:X}", address, size);
+            throw exception("Failed to write region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
-        u64 chunkOffset = address - chunk->address;
-        u64 sourceOffset{};
+        chunk--;
+
+        u64 initialSize{size};
+        u64 chunkOffset{address - chunk->address};
+        u64 writeAddress{chunk->cpuAddress + chunkOffset};
+        u64 writeSize{std::min(chunk->size - chunkOffset, size)};
 
         // A continuous region in the GPU address space may be made up of several discontinuous regions in physical memory so we have to iterate over all chunks
-        while (size != 0) {
-            if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
-                throw exception("Failed to write to region in GPU address space - address: {#:X} size: {#:X}", address, size);
+        while (size) {
+            state.process->WriteMemory(source + (initialSize - size), writeAddress, writeSize);
 
-            u64 writeSize = std::min(chunk->size - chunkOffset, size);
-            state.process->WriteMemory(source + sourceOffset, chunk->cpuAddress + chunkOffset, writeSize);
-
-            // After the first read all further reads will start from the base of the chunk
-            chunkOffset = 0;
             size -= writeSize;
-            sourceOffset += writeSize;
-            chunk++;
+            if (size) {
+                if (++chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+                    throw exception("Failed to write region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
+
+                writeAddress = chunk->cpuAddress;
+                writeSize = std::min(chunk->size, size);
+            }
         }
     }
 }

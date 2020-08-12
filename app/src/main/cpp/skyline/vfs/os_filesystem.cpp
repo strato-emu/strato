@@ -10,13 +10,13 @@
 #include "os_filesystem.h"
 
 namespace skyline::vfs {
-    OsFileSystem::OsFileSystem(std::string basePath) : FileSystem(), basePath(basePath) {
+    OsFileSystem::OsFileSystem(const std::string &basePath) : FileSystem(), basePath(std::move(basePath)) {
         if (!DirectoryExists(basePath))
             if (!CreateDirectory(basePath, true))
                 throw exception("Error creating the OS filesystem backing directory");
     }
 
-    bool OsFileSystem::CreateFile(std::string path, size_t size) {
+    bool OsFileSystem::CreateFile(const std::string &path, size_t size) {
         auto fullPath = basePath + path;
 
         // Create a directory that will hold the file
@@ -39,7 +39,7 @@ namespace skyline::vfs {
         return true;
     }
 
-    bool OsFileSystem::CreateDirectory(std::string path, bool parents) {
+    bool OsFileSystem::CreateDirectory(const std::string &path, bool parents) {
         if (!parents) {
             int ret = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
             return ret == 0 || errno == EEXIST;
@@ -59,7 +59,7 @@ namespace skyline::vfs {
         return true;
     }
 
-    std::shared_ptr<Backing> OsFileSystem::OpenFile(std::string path, Backing::Mode mode) {
+    std::shared_ptr<Backing> OsFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
         if (!(mode.read || mode.write))
             throw exception("Cannot open a file that is neither readable or writable");
 
@@ -70,7 +70,7 @@ namespace skyline::vfs {
         return std::make_shared<OsBacking>(fd, true, mode);
     }
 
-    std::optional<Directory::EntryType> OsFileSystem::GetEntryType(std::string path) {
+    std::optional<Directory::EntryType> OsFileSystem::GetEntryType(const std::string &path) {
         auto fullPath = basePath + path;
 
         auto directory = opendir(fullPath.c_str());

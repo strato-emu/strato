@@ -26,6 +26,7 @@ namespace skyline::gpu {
 
     void GPU::Loop() {
         gpfifo.Run();
+        vsyncEvent->Signal();
 
         if (surfaceUpdate) {
             if (Surface == nullptr)

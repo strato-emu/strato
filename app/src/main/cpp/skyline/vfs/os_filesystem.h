@@ -14,14 +14,14 @@ namespace skyline::vfs {
         std::string basePath; //!< The base path for filesystem operations
 
       public:
-        OsFileSystem(std::string basePath);
+        OsFileSystem(const std::string &basePath);
 
-        bool CreateFile(std::string path, size_t size);
+        bool CreateFile(const std::string &path, size_t size);
 
-        bool CreateDirectory(std::string path, bool parents);
+        bool CreateDirectory(const std::string &path, bool parents);
 
-        std::shared_ptr<Backing> OpenFile(std::string path, Backing::Mode mode = {true, false, false});
+        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
 
-        std::optional<Directory::EntryType> GetEntryType(std::string path);
+        std::optional<Directory::EntryType> GetEntryType(const std::string &path);
     };
 }

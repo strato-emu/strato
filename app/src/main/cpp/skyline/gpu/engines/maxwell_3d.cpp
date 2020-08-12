@@ -11,72 +11,76 @@ namespace skyline::gpu::engine {
     }
 
     void Maxwell3D::ResetRegs() {
-        memset(&regs, 0, sizeof(regs));
+        registers = {};
 
-        regs.rasterizerEnable = true;
+        registers.rasterizerEnable = true;
 
-        for (auto &transform : regs.viewportTransform) {
-            transform.swizzles.x = Regs::ViewportTransform::Swizzle::PositiveX;
-            transform.swizzles.y = Regs::ViewportTransform::Swizzle::PositiveY;
-            transform.swizzles.z = Regs::ViewportTransform::Swizzle::PositiveZ;
-            transform.swizzles.w = Regs::ViewportTransform::Swizzle::PositiveW;
+        for (auto &transform : registers.viewportTransform) {
+            transform.swizzles.x = Registers::ViewportTransform::Swizzle::PositiveX;
+            transform.swizzles.y = Registers::ViewportTransform::Swizzle::PositiveY;
+            transform.swizzles.z = Registers::ViewportTransform::Swizzle::PositiveZ;
+            transform.swizzles.w = Registers::ViewportTransform::Swizzle::PositiveW;
         }
 
-        for (auto &viewport : regs.viewport) {
+        for (auto &viewport : registers.viewport) {
             viewport.depthRangeFar = 1.0f;
             viewport.depthRangeNear = 0.0f;
         }
 
-        regs.polygonMode.front = Regs::PolygonMode::Fill;
-        regs.polygonMode.back = Regs::PolygonMode::Fill;
+        registers.polygonMode.front = Registers::PolygonMode::Fill;
+        registers.polygonMode.back = Registers::PolygonMode::Fill;
 
-        regs.stencilFront.failOp = regs.stencilFront.zFailOp = regs.stencilFront.zPassOp = Regs::StencilOp::Keep;
-        regs.stencilFront.func.op = Regs::CompareOp::Always;
-        regs.stencilFront.func.mask = 0xFFFFFFFF;
-        regs.stencilFront.mask = 0xFFFFFFFF;
+        registers.stencilFront.failOp = registers.stencilFront.zFailOp = registers.stencilFront.zPassOp = Registers::StencilOp::Keep;
+        registers.stencilFront.compare.op = Registers::CompareOp::Always;
+        registers.stencilFront.compare.mask = 0xFFFFFFFF;
+        registers.stencilFront.writeMask = 0xFFFFFFFF;
 
-        regs.stencilBack.stencilTwoSideEnable = true;
-        regs.stencilBack.failOp = regs.stencilBack.zFailOp = regs.stencilBack.zPassOp = Regs::StencilOp::Keep;
-        regs.stencilBack.funcOp = Regs::CompareOp::Always;
-        regs.stencilBackExtra.funcMask = 0xFFFFFFFF;
-        regs.stencilBackExtra.mask = 0xFFFFFFFF;
+        registers.stencilTwoSideEnable = true;
+        registers.stencilBack.failOp = registers.stencilBack.zFailOp = registers.stencilBack.zPassOp = Registers::StencilOp::Keep;
+        registers.stencilBack.compareOp = Registers::CompareOp::Always;
+        registers.stencilBackExtra.compareMask = 0xFFFFFFFF;
+        registers.stencilBackExtra.writeMask = 0xFFFFFFFF;
 
-        regs.rtSeparateFragData = true;
+        registers.rtSeparateFragData = true;
 
-        for (auto &attribute : regs.vertexAttributeState)
+        for (auto &attribute : registers.vertexAttributeState)
             attribute.fixed = true;
 
-        regs.depthTestFunc = Regs::CompareOp::Always;
+        registers.depthTestFunc = Registers::CompareOp::Always;
 
-        regs.blend.colorOp = regs.blend.alphaOp = Regs::Blend::Op::Add;
-        regs.blend.colorSrcFactor = regs.blend.alphaSrcFactor = Regs::Blend::Factor::One;
-        regs.blend.colorDestFactor = regs.blend.alphaDestFactor = Regs::Blend::Factor::Zero;
+        registers.blend.colorOp = registers.blend.alphaOp = Registers::Blend::Op::Add;
+        registers.blend.colorSrcFactor = registers.blend.alphaSrcFactor = Registers::Blend::Factor::One;
+        registers.blend.colorDestFactor = registers.blend.alphaDestFactor = Registers::Blend::Factor::Zero;
 
-        regs.lineWidthSmooth = 1.0f;
-        regs.lineWidthAliased = 1.0f;
+        registers.lineWidthSmooth = 1.0f;
+        registers.lineWidthAliased = 1.0f;
 
-        regs.pointSpriteSize = 1.0f;
+        registers.pointSpriteEnable = true;
+        registers.pointSpriteSize = 1.0f;
+        registers.pointCoordReplace.enable = true;
 
-        regs.frontFace = Regs::FrontFace::CounterClockwise;
-        regs.cullFace = Regs::CullFace::Back;
+        registers.frontFace = Registers::FrontFace::CounterClockwise;
+        registers.cullFace = Registers::CullFace::Back;
 
-        for (auto &mask : regs.colorMask)
+        for (auto &mask : registers.colorMask)
             mask.r = mask.g = mask.b = mask.a = 1;
 
-        for (auto &blend : regs.independentBlend) {
-            blend.colorOp = blend.alphaOp = Regs::Blend::Op::Add;
-            blend.colorSrcFactor = blend.alphaSrcFactor = Regs::Blend::Factor::One;
-            blend.colorDestFactor = blend.alphaDestFactor = Regs::Blend::Factor::Zero;
+        for (auto &blend : registers.independentBlend) {
+            blend.colorOp = blend.alphaOp = Registers::Blend::Op::Add;
+            blend.colorSrcFactor = blend.alphaSrcFactor = Registers::Blend::Factor::One;
+            blend.colorDestFactor = blend.alphaDestFactor = Registers::Blend::Factor::Zero;
         }
+
+        registers.viewportTransformEnable = true;
     }
 
     void Maxwell3D::CallMethod(MethodParams params) {
         state.logger->Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", params.method, params.argument);
 
         // Methods that are greater than the register size are for macro control
-        if (params.method > constant::Maxwell3DRegisterSize) {
+        if (params.method > constant::Maxwell3DRegisterCounter) {
             if (!(params.method & 1))
-                macroInvocation.index = ((params.method - constant::Maxwell3DRegisterSize) >> 1) % macroPositions.size();
+                macroInvocation.index = ((params.method - constant::Maxwell3DRegisterCounter) >> 1) % macroPositions.size();
 
             macroInvocation.arguments.push_back(params.argument);
 
@@ -90,58 +94,58 @@ namespace skyline::gpu::engine {
             return;
         }
 
-        regs.raw[params.method] = params.argument;
+        registers.raw[params.method] = params.argument;
 
-        if (shadowRegs.mme.shadowRamControl == Regs::MmeShadowRamControl::MethodTrack || shadowRegs.mme.shadowRamControl == Regs::MmeShadowRamControl::MethodTrackWithFilter)
-            shadowRegs.raw[params.method] = params.argument;
-        else if (shadowRegs.mme.shadowRamControl == Regs::MmeShadowRamControl::MethodReplay)
-            params.argument = shadowRegs.raw[params.method];
+        if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodTrack || shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodTrackWithFilter)
+            shadowRegisters.raw[params.method] = params.argument;
+        else if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodReplay)
+            params.argument = shadowRegisters.raw[params.method];
 
         switch (params.method) {
             case MAXWELL3D_OFFSET(mme.instructionRamLoad):
-                if (regs.mme.instructionRamPointer >= macroCode.size())
+                if (registers.mme.instructionRamPointer >= macroCode.size())
                     throw exception("Macro memory is full!");
 
-                macroCode[regs.mme.instructionRamPointer++] = params.argument;
+                macroCode[registers.mme.instructionRamPointer++] = params.argument;
                 break;
             case MAXWELL3D_OFFSET(mme.startAddressRamLoad):
-                if (regs.mme.startAddressRamPointer >= macroPositions.size())
+                if (registers.mme.startAddressRamPointer >= macroPositions.size())
                     throw exception("Maximum amount of macros reached!");
 
-                macroPositions[regs.mme.startAddressRamPointer++] = params.argument;
+                macroPositions[registers.mme.startAddressRamPointer++] = params.argument;
                 break;
             case MAXWELL3D_OFFSET(mme.shadowRamControl):
-                shadowRegs.mme.shadowRamControl = static_cast<Regs::MmeShadowRamControl>(params.argument);
+                shadowRegisters.mme.shadowRamControl = static_cast<Registers::MmeShadowRamControl>(params.argument);
                 break;
             case MAXWELL3D_OFFSET(syncpointAction):
-                state.gpu->syncpoints.at(regs.syncpointAction.id).Increment();
+                state.gpu->syncpoints.at(registers.syncpointAction.id).Increment();
                 break;
             case MAXWELL3D_OFFSET(semaphore.info):
-                switch (regs.semaphore.info.op) {
-                    case Regs::SemaphoreInfo::Op::Release:
-                        WriteSemaphoreResult(regs.semaphore.payload);
+                switch (registers.semaphore.info.op) {
+                    case Registers::SemaphoreInfo::Op::Release:
+                        WriteSemaphoreResult(registers.semaphore.payload);
                         break;
-                    case Regs::SemaphoreInfo::Op::Counter:
+                    case Registers::SemaphoreInfo::Op::Counter:
                         HandleSemaphoreCounterOperation();
                         break;
                     default:
-                        state.logger->Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(regs.semaphore.info.op));
+                        state.logger->Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(registers.semaphore.info.op));
                         break;
                 }
                 break;
             case MAXWELL3D_OFFSET(firmwareCall[4]):
-                regs.raw[0xd00] = 1;
+                registers.raw[0xd00] = 1;
                 break;
         }
     }
 
     void Maxwell3D::HandleSemaphoreCounterOperation() {
-        switch (regs.semaphore.info.counterType) {
-            case Regs::SemaphoreInfo::CounterType::Zero:
+        switch (registers.semaphore.info.counterType) {
+            case Registers::SemaphoreInfo::CounterType::Zero:
                 WriteSemaphoreResult(0);
                 break;
             default:
-                state.logger->Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(regs.semaphore.info.counterType));
+                state.logger->Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(registers.semaphore.info.counterType));
                 break;
         }
     }
@@ -152,11 +156,11 @@ namespace skyline::gpu::engine {
             u64 timestamp;
         };
 
-        switch (regs.semaphore.info.structureSize) {
-            case Regs::SemaphoreInfo::StructureSize::OneWord:
-                state.gpu->memoryManager.Write<u32>(static_cast<u32>(result), regs.semaphore.address.Pack());
+        switch (registers.semaphore.info.structureSize) {
+            case Registers::SemaphoreInfo::StructureSize::OneWord:
+                state.gpu->memoryManager.Write<u32>(static_cast<u32>(result), registers.semaphore.address.Pack());
                 break;
-            case Regs::SemaphoreInfo::StructureSize::FourWords: {
+            case Registers::SemaphoreInfo::StructureSize::FourWords: {
                 // Convert the current nanosecond time to GPU ticks
                 constexpr u64 NsToTickNumerator = 384;
                 constexpr u64 NsToTickDenominator = 625;
@@ -164,7 +168,7 @@ namespace skyline::gpu::engine {
                 u64 nsTime = util::GetTimeNs();
                 u64 timestamp = (nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator;
 
-                state.gpu->memoryManager.Write<FourWordResult>(FourWordResult{result, timestamp}, regs.semaphore.address.Pack());
+                state.gpu->memoryManager.Write<FourWordResult>(FourWordResult{result, timestamp}, registers.semaphore.address.Pack());
                 break;
             }
         }

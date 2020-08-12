@@ -9,7 +9,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 GpfifoRegisterSize = 0x40; //!< The size of the GPFIFO's register space in units of u32
+        constexpr u32 GpfifoRegisterCount = 0x40; //!< The number of GPFIFO registers
     }
 
     namespace gpu::engine {
@@ -23,8 +23,11 @@ namespace skyline {
             * @brief This holds the GPFIFO engine's registers
             * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L65
             */
-            union Regs {
-                enum class SemaphoreOperation {
+#pragma pack(push, 1)
+            union Registers {
+                std::array<u32, constant::GpfifoRegisterCount> raw;
+
+                enum class SemaphoreOperation : u8 {
                     Acquire = 1,
                     Release = 2,
                     AcqGeq = 4,
@@ -32,22 +35,22 @@ namespace skyline {
                     Reduction = 16
                 };
 
-                enum class SemaphoreAcquireSwitch {
+                enum class SemaphoreAcquireSwitch : u8 {
                     Disabled = 0,
                     Enabled = 1
                 };
 
-                enum class SemaphoreReleaseWfi {
+                enum class SemaphoreReleaseWfi : u8 {
                     En = 0,
                     Dis = 1
                 };
 
-                enum class SemaphoreReleaseSize {
+                enum class SemaphoreReleaseSize : u8 {
                     SixteenBytes = 0,
                     FourBytes = 1
                 };
 
-                enum class SemaphoreReduction {
+                enum class SemaphoreReduction : u8 {
                     Min = 0,
                     Max = 1,
                     Xor = 2,
@@ -58,32 +61,32 @@ namespace skyline {
                     Dec = 7
                 };
 
-                enum class SemaphoreFormat {
+                enum class SemaphoreFormat : u8 {
                     Signed = 0,
                     Unsigned = 1
                 };
 
-                enum class MemOpTlbInvalidatePdb {
+                enum class MemOpTlbInvalidatePdb : u8 {
                     One = 0,
                     All = 1
                 };
 
-                enum class SyncpointOperation {
+                enum class SyncpointOperation : u8 {
                     Wait = 0,
                     Incr = 1
                 };
 
-                enum class SyncpointWaitSwitch {
+                enum class SyncpointWaitSwitch : u8 {
                     Dis = 0,
                     En = 1
                 };
 
-                enum class WfiScope {
+                enum class WfiScope : u8 {
                     CurrentScgType = 0,
                     All = 1
                 };
 
-                enum class YieldOp {
+                enum class YieldOp : u8 {
                     Nop = 0,
                     PbdmaTimeslice = 1,
                     RunlistTimeslice = 2,
@@ -93,8 +96,8 @@ namespace skyline {
                 struct {
                     struct {
                         u16 nvClass : 16;
-                        u16 engine : 5;
-                        u32 _pad_ : 11;
+                        u8 engine : 5;
+                        u16 _pad_ : 11;
                     } setObject;
 
                     u32 illegal;
@@ -114,7 +117,7 @@ namespace skyline {
 
                         u32 payload;
 
-                        struct __attribute__((__packed__)) {
+                        struct {
                             SemaphoreOperation operation : 5;
                             u8 _pad2_ : 7;
                             SemaphoreAcquireSwitch acquireSwitch : 1;
@@ -140,7 +143,7 @@ namespace skyline {
                     struct {
                         u32 payload;
 
-                        struct __attribute__((__packed__)) {
+                        struct {
                             SyncpointOperation operation : 1;
                             u8 _pad0_ : 3;
                             SyncpointWaitSwitch waitSwitch : 1;
@@ -162,9 +165,9 @@ namespace skyline {
                         u32 _pad_ : 30;
                     } yield;
                 };
-                std::array<u32, constant::GpfifoRegisterSize> raw;
-            } regs{};
-            static_assert(sizeof(Regs) == (constant::GpfifoRegisterSize << 2));
+            } registers{};
+            static_assert(sizeof(Registers) == (constant::GpfifoRegisterCount * sizeof(u32)));
+#pragma pack(pop)
 
           public:
             GPFIFO(const DeviceState &state) : Engine(state) {}
@@ -172,7 +175,7 @@ namespace skyline {
             void CallMethod(MethodParams params) {
                 state.logger->Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", params.method, params.argument);
 
-                regs.raw[params.method] = params.argument;
+                registers.raw[params.method] = params.argument;
             };
         };
     }

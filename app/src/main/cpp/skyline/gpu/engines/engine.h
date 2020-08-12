@@ -26,7 +26,7 @@ namespace skyline::gpu {
         u16 method;
         u32 argument;
         u32 subChannel;
-        bool lastCall; //!< Whether this is the last call in the pushbuffer entry to this specifc macro
+        bool lastCall; //!< If this is the last call in the pushbuffer entry to this specific macro
     };
 
     namespace engine {

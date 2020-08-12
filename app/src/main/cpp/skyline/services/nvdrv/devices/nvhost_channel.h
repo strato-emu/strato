@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <services/nvdrv/fence.h>
+#include <services/common/fence.h>
 #include "nvdevice.h"
 
 namespace skyline::service::nvdrv::device {

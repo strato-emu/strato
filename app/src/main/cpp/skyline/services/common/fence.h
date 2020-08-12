@@ -4,7 +4,7 @@
 #pragma once
 
 #include <common.h>
-#include "devices/nvhost_syncpoint.h"
+#include <services/nvdrv/devices/nvhost_syncpoint.h>
 
 namespace skyline::service::nvdrv {
     /**

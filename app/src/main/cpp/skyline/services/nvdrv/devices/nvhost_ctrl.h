@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <services/nvdrv/fence.h>
+#include <services/common/fence.h>
 #include "nvdevice.h"
 
 namespace skyline {
@@ -12,6 +12,9 @@ namespace skyline {
     }
 
     namespace service::nvdrv::device {
+        /**
+         * @brief This represents a single registered event with an attached fence
+         */
         class NvHostEvent {
           private:
             u64 waiterId{};
@@ -57,6 +60,8 @@ namespace skyline {
              * @brief This holds metadata about an event, it is used by QueryEvent and EventWait
              */
             union EventValue {
+                u32 val;
+
                 struct {
                     u8 _pad0_ : 4;
                     u32 syncpointIdAsync : 28;
@@ -71,8 +76,6 @@ namespace skyline {
                     bool nonAsync : 1;
                     u8 _pad12_ : 3;
                 };
-
-                u32 val;
             };
             static_assert(sizeof(EventValue) == sizeof(u32));
 

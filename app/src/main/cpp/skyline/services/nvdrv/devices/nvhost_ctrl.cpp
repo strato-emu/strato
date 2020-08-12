@@ -45,65 +45,6 @@ namespace skyline::service::nvdrv::device {
         {0x001F, NFUNC(NvHostCtrl::EventRegister)},
     }) {}
 
-    void NvHostCtrl::GetConfig(IoctlData &buffer) {
-        buffer.status = NvStatus::BadValue;
-    }
-
-    void NvHostCtrl::EventSignal(IoctlData &buffer) {
-        struct Data {
-            u16 _pad_;
-            u16 userEventId;
-        };
-        auto userEventId = state.process->GetObject<Data>(buffer.input.at(0).address).userEventId;
-        state.logger->Debug("Signalling nvhost event: {}", userEventId);
-
-        if (userEventId >= constant::NvHostEventCount || !events.at(userEventId)) {
-            buffer.status = NvStatus::BadValue;
-            return;
-        }
-
-        auto &event = *events.at(userEventId);
-
-        if (event.state == NvHostEvent::State::Waiting) {
-            event.state = NvHostEvent::State::Cancelling;
-            state.logger->Debug("Cancelling waiting nvhost event: {}", userEventId);
-            event.Cancel(state.gpu);
-        }
-
-        event.state = NvHostEvent::State::Cancelled;
-
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
-        hostSyncpoint.UpdateMin(event.fence.id);
-    }
-
-    void NvHostCtrl::EventWait(IoctlData &buffer) {
-        EventWaitImpl(buffer, false);
-    }
-
-    void NvHostCtrl::EventWaitAsync(IoctlData &buffer) {
-        EventWaitImpl(buffer, true);
-    }
-
-    void NvHostCtrl::EventRegister(IoctlData &buffer) {
-        auto userEventId = state.process->GetObject<u32>(buffer.input.at(0).address);
-        state.logger->Debug("Registering nvhost event: {}", userEventId);
-
-        if (events.at(userEventId))
-            throw exception("Recreating events is unimplemented");
-
-        events.at(userEventId) = NvHostEvent(state);
-    }
-
-    std::shared_ptr<type::KEvent> NvHostCtrl::QueryEvent(u32 eventId) {
-        auto eventValue = reinterpret_cast<EventValue *>(&eventId);
-        const auto &event = events.at(eventValue->nonAsync ? eventValue->eventSlotNonAsync : eventValue->eventSlotAsync);
-
-        if (event && event->fence.id == (eventValue->nonAsync ? eventValue->syncpointIdNonAsync : eventValue->syncpointIdAsync))
-            return event->event;
-
-        return nullptr;
-    }
-
     u32 NvHostCtrl::FindFreeEvent(u32 syncpointId) {
         u32 eventIndex{constant::NvHostEventCount}; //!< Holds the index of the last populated event in the event array
         u32 freeIndex{constant::NvHostEventCount}; //!< Holds the index of the first unused event id
@@ -207,5 +148,66 @@ namespace skyline::service::nvdrv::device {
             buffer.status = NvStatus::BadValue;
             return;
         }
+    }
+
+    void NvHostCtrl::GetConfig(IoctlData &buffer) {
+        buffer.status = NvStatus::BadValue;
+    }
+
+    void NvHostCtrl::EventSignal(IoctlData &buffer) {
+        struct Data {
+            u16 _pad_;
+            u16 userEventId;
+        };
+        auto userEventId = state.process->GetObject<Data>(buffer.input.at(0).address).userEventId;
+        state.logger->Debug("Signalling nvhost event: {}", userEventId);
+
+        if (userEventId >= constant::NvHostEventCount || !events.at(userEventId)) {
+            buffer.status = NvStatus::BadValue;
+            return;
+        }
+
+        auto &event = *events.at(userEventId);
+
+        if (event.state == NvHostEvent::State::Waiting) {
+            event.state = NvHostEvent::State::Cancelling;
+            state.logger->Debug("Cancelling waiting nvhost event: {}", userEventId);
+            event.Cancel(state.gpu);
+        }
+
+        event.state = NvHostEvent::State::Cancelled;
+
+        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
+        hostSyncpoint.UpdateMin(event.fence.id);
+    }
+
+    void NvHostCtrl::EventWait(IoctlData &buffer) {
+        EventWaitImpl(buffer, false);
+    }
+
+    void NvHostCtrl::EventWaitAsync(IoctlData &buffer) {
+        EventWaitImpl(buffer, true);
+    }
+
+    void NvHostCtrl::EventRegister(IoctlData &buffer) {
+        auto userEventId = state.process->GetObject<u32>(buffer.input.at(0).address);
+        state.logger->Debug("Registering nvhost event: {}", userEventId);
+
+        auto &event = events.at(userEventId);
+
+        if (event)
+            throw exception("Recreating events is unimplemented");
+
+        event = NvHostEvent(state);
+    }
+
+    std::shared_ptr<type::KEvent> NvHostCtrl::QueryEvent(u32 eventId) {
+        auto eventValue = EventValue{.val = eventId};
+        const auto &event = events.at(eventValue.nonAsync ? eventValue.eventSlotNonAsync : eventValue.eventSlotAsync);
+
+        if (event && event->fence.id == (eventValue.nonAsync ? eventValue.syncpointIdNonAsync : eventValue.syncpointIdAsync))
+            return event->event;
+
+        return nullptr;
     }
 }

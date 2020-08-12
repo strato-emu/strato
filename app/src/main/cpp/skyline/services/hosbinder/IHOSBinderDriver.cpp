@@ -5,7 +5,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/nvdrv/INvDrvServices.h>
-#include <services/nvdrv/fence.h>
+#include <services/common/fence.h>
 #include <gpu/format.h>
 #include "IHOSBinderDriver.h"
 #include "display.h"

@@ -9,7 +9,6 @@
 
 namespace skyline::service::nvdrv {
     /**
-     * @todo Implement the GPU side of this
      * @brief NvHostSyncpoint handles allocating and accessing host1x syncpoints
      * @url https://http.download.nvidia.com/tegra-public-appnotes/host1x.html
      * @url https://github.com/Jetson-TX1-AndroidTV/android_kernel_jetson_tx1_hdmi_primary/blob/jetson-tx1/drivers/video/tegra/host/nvhost_syncpt.c

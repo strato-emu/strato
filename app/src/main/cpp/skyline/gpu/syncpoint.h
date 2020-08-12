@@ -7,10 +7,13 @@
 
 namespace skyline {
     namespace constant {
-        constexpr size_t MaxHwSyncpointCount = 192;
+        constexpr size_t MaxHwSyncpointCount = 192; //!< The maximum number of HOST1X syncpoints on t210
     }
 
     namespace gpu {
+        /**
+         * @brief The Syncpoint class represents a single syncpoint in the GPU which is used for GPU -> CPU synchronisation
+         */
         class Syncpoint {
           private:
             /**

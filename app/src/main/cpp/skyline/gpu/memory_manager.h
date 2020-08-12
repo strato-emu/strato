@@ -47,7 +47,6 @@ namespace skyline {
         class MemoryManager {
           private:
             const DeviceState &state;
-            std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
 
             /**
              * @brief This finds a chunk of the specified type in the GPU address space that is larger than the given size
@@ -66,6 +65,7 @@ namespace skyline {
 
           public:
             MemoryManager(const DeviceState &state);
+            std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
 
             /**
              * @brief This reserves a region of the GPU address space so it will not be chosen automatically when mapping

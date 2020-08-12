@@ -23,14 +23,14 @@ namespace skyline {
              * @param offset The offset of the file entry to traverses the siblings of
              * @param path The path to the parent directory of the supplied file entry
              */
-            void TraverseFiles(u32 offset, std::string path);
+            void TraverseFiles(u32 offset, const std::string &path);
 
             /**
              * @brief Traverses the directories within the given directory, adds them to the directory map and calls TraverseFiles on them
              * @param offset The offset of the directory entry to traverses the directories in
              * @param path The path to the supplied directory entry
              */
-            void TraverseDirectory(u32 offset, std::string path);
+            void TraverseDirectory(u32 offset, const std::string &path);
 
           public:
             /**
@@ -79,11 +79,11 @@ namespace skyline {
 
             RomFileSystem(std::shared_ptr<Backing> backing);
 
-            std::shared_ptr<Backing> OpenFile(std::string path, Backing::Mode mode = {true, false, false});
+            std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
 
-            std::optional<Directory::EntryType> GetEntryType(std::string path);
+            std::optional<Directory::EntryType> GetEntryType(const std::string &path);
 
-            std::shared_ptr<Directory> OpenDirectory(std::string path, Directory::ListMode listMode);
+            std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
         };
 
         /**

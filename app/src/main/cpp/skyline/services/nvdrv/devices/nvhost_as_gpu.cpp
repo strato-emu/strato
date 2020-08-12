@@ -126,6 +126,8 @@ namespace skyline::service::nvdrv::device {
             u32 pages;
         };
 
+        constexpr u32 MinAlignmentShift{0x10}; // This shift is applied to all addresses passed to Remap
+
         size_t entryCount{buffer.input.at(0).size / sizeof(Entry)};
         std::span entries(state.process->GetPointer<Entry>(buffer.input.at(0).address), entryCount);
 
@@ -133,9 +135,9 @@ namespace skyline::service::nvdrv::device {
             try {
                 auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(entry.nvmapHandle);
 
-                u64 mapAddress = static_cast<u64>(entry.gpuOffset) << 0x10;
-                u64 mapPhysicalAddress = nvmap->address + (static_cast<u64>(entry.mapOffset) << 0x10);
-                u64 mapSize = static_cast<u64>(entry.pages) << 0x10;
+                u64 mapAddress = static_cast<u64>(entry.gpuOffset) << MinAlignmentShift;
+                u64 mapPhysicalAddress = nvmap->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift);
+                u64 mapSize = static_cast<u64>(entry.pages) << MinAlignmentShift;
 
                 state.gpu->memoryManager.MapFixed(mapAddress, mapPhysicalAddress, mapSize);
             } catch (const std::exception &e) {
