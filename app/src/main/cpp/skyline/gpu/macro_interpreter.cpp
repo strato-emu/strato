@@ -126,13 +126,13 @@ namespace skyline::gpu {
             case Opcode::AluOperation::Subtract: {
                 u64 result = static_cast<u64>(srcA) - srcB;
 
-                carryFlag = result & 0xffffffff;
+                carryFlag = result & 0xFFFFFFFF;
                 return static_cast<u32>(result);
             }
             case Opcode::AluOperation::SubtractWithBorrow: {
                 u64 result = static_cast<u64>(srcA) - srcB - !carryFlag;
 
-                carryFlag = result & 0xffffffff;
+                carryFlag = result & 0xFFFFFFFF;
                 return static_cast<u32>(result);
             }
             case Opcode::AluOperation::BitwiseXor:

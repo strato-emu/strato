@@ -52,7 +52,7 @@ namespace skyline::service::fssrv {
         SaveDataType type; //!< The type of savedata
         SaveDataRank rank; //!< The rank of the savedata
         u16 index; //!< The index of the savedata
-        u8 _pad_[0x1a];
+        u8 _pad_[0x1A];
     };
     static_assert(sizeof(SaveDataAttribute) == 0x40);
 

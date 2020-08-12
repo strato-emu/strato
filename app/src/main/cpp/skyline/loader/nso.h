@@ -33,7 +33,7 @@ namespace skyline::loader {
             u32 memoryOffset; //!< The memory offset where the region should be loaded
             u32 decompressedSize; //!< Size of the region after decompression
         };
-        static_assert(sizeof(NsoSegmentHeader) == 0xc);
+        static_assert(sizeof(NsoSegmentHeader) == 0xC);
 
         /**
          * @brief This holds the header of an NSO file

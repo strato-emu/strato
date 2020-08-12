@@ -56,9 +56,9 @@ namespace skyline {
                 Fw620 = 0x7, //!< 6.2.0
                 Fw700 = 0x8, //!< 7.0.0
                 Fw810 = 0x9, //!< 8.1.0
-                Fw900 = 0xa, //!< 9.0.0
-                Fw910 = 0xb, //!< 9.1.0
-                Invalid = 0xff, //!< An invalid key generation type
+                Fw900 = 0xA, //!< 9.0.0
+                Fw910 = 0xB, //!< 9.1.0
+                Invalid = 0xFF, //!< An invalid key generation type
             };
 
             /**
@@ -129,7 +129,7 @@ namespace skyline {
                 std::array<u8, 0x20> masterHash; //!< The master hash of the hierarchical integrity system
                 u8 _pad1_[0x18];
             };
-            static_assert(sizeof(HierarchicalIntegrityHashInfo) == 0xf8);
+            static_assert(sizeof(HierarchicalIntegrityHashInfo) == 0xF8);
 
             /**
              * @brief This holds the hash info header of the SHA256 hashing scheme for PFS0
@@ -142,9 +142,9 @@ namespace skyline {
                 u64 hashTableSize; //!< The size of the hash table
                 u64 pfs0Offset; //!< The offset from the end of the section header of the PFS0
                 u64 pfs0Size; //!< The size of the PFS0
-                u8 _pad1_[0xb0];
+                u8 _pad1_[0xB0];
             };
-            static_assert(sizeof(HierarchicalSha256HashInfo) == 0xf8);
+            static_assert(sizeof(HierarchicalSha256HashInfo) == 0xF8);
 
             /**
              * @brief This holds the header of each specific section in an NCA
@@ -184,15 +184,15 @@ namespace skyline {
                 u32 sdkVersion; //!< The version of the SDK the NCA was built with
                 NcaKeyGenerationType keyGenerationType; //!< The keyblob to use for decryption
                 u8 fixedKeyGeneration; //!< The fixed key index
-                u8 _pad0_[0xe];
+                u8 _pad0_[0xE];
                 std::array<u8, 0x10> rightsId; //!< The NCA's rights ID
                 std::array<NcaFsEntry, 4> fsEntries; //!< The filesystem entries for this NCA
                 std::array<std::array<u8, 0x20>, 4> sectionHashes; //!< This contains SHA-256 hashes for each filesystem header
                 std::array<std::array<u8, 0x10>, 4> encryptedKeyArea; //!< The encrypted key area for each filesystem
-                u8 _pad1_[0xc0];
+                u8 _pad1_[0xC0];
                 std::array<NcaSectionHeader, 4> sectionHeaders;
             } header{};
-            static_assert(sizeof(NcaHeader) == 0xc00);
+            static_assert(sizeof(NcaHeader) == 0xC00);
 
             std::shared_ptr<Backing> backing; //!< The backing for the NCA
 

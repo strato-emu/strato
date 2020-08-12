@@ -11,7 +11,7 @@ namespace skyline::service::fssrv {
         {0x0, SFUNC(IFileSystem::CreateFile)},
         {0x7, SFUNC(IFileSystem::GetEntryType)},
         {0x8, SFUNC(IFileSystem::OpenFile)},
-        {0xa, SFUNC(IFileSystem::Commit)}
+        {0xA, SFUNC(IFileSystem::Commit)}
     }) {}
 
     void IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

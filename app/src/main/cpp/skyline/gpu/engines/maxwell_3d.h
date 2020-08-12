@@ -13,7 +13,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 Maxwell3DRegisterCounter = 0xe00; //!< The number of Maxwell 3D registers
+        constexpr u32 Maxwell3DRegisterCounter = 0xE00; //!< The number of Maxwell 3D registers
     }
 
     namespace gpu::engine {
@@ -117,9 +117,9 @@ namespace skyline {
                 static_assert(sizeof(Viewport) == (0x4 * sizeof(u32)));
 
                 enum class PolygonMode : u32 {
-                    Point = 0x1b00,
-                    Line = 0x1b01,
-                    Fill = 0x1b02,
+                    Point = 0x1B00,
+                    Line = 0x1B01,
+                    Fill = 0x1B02,
                 };
 
                 union VertexAttribute {
@@ -130,14 +130,14 @@ namespace skyline {
                         Size_2x32 = 0x04,
                         Size_3x32 = 0x02,
                         Size_4x32 = 0x01,
-                        Size_1x16 = 0x1b,
-                        Size_2x16 = 0x0f,
+                        Size_1x16 = 0x1B,
+                        Size_2x16 = 0x0F,
                         Size_3x16 = 0x05,
                         Size_4x16 = 0x03,
-                        Size_1x8 = 0x1d,
+                        Size_1x8 = 0x1D,
                         Size_2x8 = 0x18,
                         Size_3x8 = 0x13,
-                        Size_4x8 = 0x0a,
+                        Size_4x8 = 0x0A,
                         Size_10_10_10_2 = 0x30,
                         Size_11_11_10 = 0x31,
                     };
@@ -197,8 +197,8 @@ namespace skyline {
                         AddGL = 0x8006,
                         SubtractGL = 0x8007,
                         ReverseSubtractGL = 0x8008,
-                        MinimumGL = 0x800a,
-                        MaximumGL = 0x800b
+                        MinimumGL = 0x800A,
+                        MaximumGL = 0x800B
                     };
 
                     enum class Factor : u32 {
@@ -211,8 +211,8 @@ namespace skyline {
                         DestAlpha = 0x7,
                         OneMinusDestAlpha = 0x8,
                         DestColor = 0x9,
-                        OneMinusDestColor = 0xa,
-                        SourceAlphaSaturate = 0xb,
+                        OneMinusDestColor = 0xA,
+                        SourceAlphaSaturate = 0xB,
                         Source1Color = 0x10,
                         OneMinusSource1Color = 0x11,
                         Source1Alpha = 0x12,
@@ -233,14 +233,14 @@ namespace skyline {
                         DestColorGL = 0x4306,
                         OneMinusDestColorGL = 0x4307,
                         SourceAlphaSaturateGL = 0x4308,
-                        ConstantColorGL = 0xc001,
-                        OneMinusConstantColorGL = 0xc002,
-                        ConstantAlphaGL = 0xc003,
-                        OneMinusConstantAlphaGL = 0xc004,
-                        Source1ColorGL = 0xc900,
-                        OneMinusSource1ColorGL = 0xc901,
-                        Source1AlphaGL = 0xc902,
-                        OneMinusSource1AlphaGL = 0xc903,
+                        ConstantColorGL = 0xC001,
+                        OneMinusConstantColorGL = 0xC002,
+                        ConstantAlphaGL = 0xC003,
+                        OneMinusConstantAlphaGL = 0xC004,
+                        Source1ColorGL = 0xC900,
+                        OneMinusSource1ColorGL = 0xC901,
+                        Source1AlphaGL = 0xC902,
+                        OneMinusSource1AlphaGL = 0xC903,
                     };
 
                     struct {
@@ -337,20 +337,20 @@ namespace skyline {
                         VertexShaderInvocations = 0x5,
                         GeometryShaderInvocations = 0x7,
                         GeometryShaderPrimitives = 0x9,
-                        ZcullStats0 = 0xa,
-                        TransformFeedbackPrimitivesWritten = 0xb,
-                        ZcullStats1 = 0xc,
-                        ZcullStats2 = 0xe,
-                        ClipperInputPrimitives = 0xf,
+                        ZcullStats0 = 0xA,
+                        TransformFeedbackPrimitivesWritten = 0xB,
+                        ZcullStats1 = 0xC,
+                        ZcullStats2 = 0xE,
+                        ClipperInputPrimitives = 0xF,
                         ZcullStats3 = 0x10,
                         ClipperOutputPrimitives = 0x11,
                         PrimitivesGenerated = 0x12,
                         FragmentShaderInvocations = 0x13,
                         SamplesPassed = 0x15,
-                        TransformFeedbackOffset = 0x1a,
-                        TessControlShaderInvocations = 0x1b,
-                        TessEvaluationShaderInvocations = 0x1d,
-                        TessEvaluationShaderPrimitives = 0x1f
+                        TransformFeedbackOffset = 0x1A,
+                        TessControlShaderInvocations = 0x1B,
+                        TessEvaluationShaderInvocations = 0x1D,
+                        TessEvaluationShaderPrimitives = 0x1F
                     };
 
                     enum class StructureSize : u8 {
@@ -394,7 +394,7 @@ namespace skyline {
                         MmeShadowRamControl shadowRamControl; // 0x49
                     } mme;
 
-                    u32 _pad2_[0x68]; // 0x4a
+                    u32 _pad2_[0x68]; // 0x4A
 
                     struct {
                         u16 id : 12;
@@ -403,101 +403,101 @@ namespace skyline {
                         u8 _pad1_ : 3;
                         bool increment : 1;
                         u16 _pad2_ : 11;
-                    } syncpointAction; // 0xb2
+                    } syncpointAction; // 0xB2
 
-                    u32 _pad3_[0x2c]; // 0xb3
-                    u32 rasterizerEnable; // 0xdf
-                    u32 _pad4_[0x1a0]; // 0xe0
+                    u32 _pad3_[0x2C]; // 0xB3
+                    u32 rasterizerEnable; // 0xDF
+                    u32 _pad4_[0x1A0]; // 0xE0
                     std::array<ViewportTransform, 0x10> viewportTransform; // 0x280
                     std::array<Viewport, 0x10> viewport; // 0x300
-                    u32 _pad5_[0x2b]; // 0x340
+                    u32 _pad5_[0x2B]; // 0x340
 
                     struct {
-                        PolygonMode front; // 0x36b
-                        PolygonMode back; // 0x36c
+                        PolygonMode front; // 0x36B
+                        PolygonMode back; // 0x36C
                     } polygonMode;
 
-                    u32 _pad6_[0x68]; // 0x36d
+                    u32 _pad6_[0x68]; // 0x36D
 
                     struct {
-                        u32 compareRef; // 0x3d5
-                        u32 writeMask; // 0x3d6
-                        u32 compareMask; // 0x3d7
+                        u32 compareRef; // 0x3D5
+                        u32 writeMask; // 0x3D6
+                        u32 compareMask; // 0x3D7
                     } stencilBackExtra;
 
-                    u32 _pad7_[0x13]; // 0x3d8
-                    u32 rtSeparateFragData; // 0x3eb
-                    u32 _pad8_[0x6c]; // 0x3ec
+                    u32 _pad7_[0x13]; // 0x3D8
+                    u32 rtSeparateFragData; // 0x3EB
+                    u32 _pad8_[0x6C]; // 0x3EC
                     std::array<VertexAttribute, 0x20> vertexAttributeState; // 0x458
-                    u32 _pad9_[0x4b]; // 0x478
-                    CompareOp depthTestFunc; // 0x4c3
-                    float alphaTestRef; // 0x4c4
-                    CompareOp alphaTestFunc; // 0x4c5
-                    u32 drawTFBStride; // 0x4c6
+                    u32 _pad9_[0x4B]; // 0x478
+                    CompareOp depthTestFunc; // 0x4C3
+                    float alphaTestRef; // 0x4C4
+                    CompareOp alphaTestFunc; // 0x4C5
+                    u32 drawTFBStride; // 0x4C6
 
                     struct {
-                        float r; // 0x4c7
-                        float g; // 0x4c8
-                        float b; // 0x4c9
-                        float a; // 0x4ca
+                        float r; // 0x4C7
+                        float g; // 0x4C8
+                        float b; // 0x4C9
+                        float a; // 0x4CA
                     } blendConstant;
 
-                    u32 _pad10_[0x4]; // 0x4cb
+                    u32 _pad10_[0x4]; // 0x4CB
 
                     struct {
-                        u32 seperateAlpha; // 0x4cf
-                        Blend::Op colorOp; // 0x4d0
-                        Blend::Factor colorSrcFactor; // 0x4d1
-                        Blend::Factor colorDestFactor; // 0x4d2
-                        Blend::Op alphaOp; // 0x4d3
-                        Blend::Factor alphaSrcFactor; // 0x4d4
-                        u32 _pad_; // 0x4d5
-                        Blend::Factor alphaDestFactor; // 0x4d6
+                        u32 seperateAlpha; // 0x4CF
+                        Blend::Op colorOp; // 0x4D0
+                        Blend::Factor colorSrcFactor; // 0x4D1
+                        Blend::Factor colorDestFactor; // 0x4D2
+                        Blend::Op alphaOp; // 0x4D3
+                        Blend::Factor alphaSrcFactor; // 0x4D4
+                        u32 _pad_; // 0x4D5
+                        Blend::Factor alphaDestFactor; // 0x4D6
 
-                        u32 enableCommon; // 0x4d7
-                        std::array<u32, 8> enable; // 0x4d8 For each render target
+                        u32 enableCommon; // 0x4D7
+                        std::array<u32, 8> enable; // 0x4D8 For each render target
                     } blend;
 
-                    u32 stencilEnable; // 0x4e0
+                    u32 stencilEnable; // 0x4E0
 
                     struct {
-                        StencilOp failOp; // 0x4e1
-                        StencilOp zFailOp; // 0x4e2
-                        StencilOp zPassOp; // 0x4e3
+                        StencilOp failOp; // 0x4E1
+                        StencilOp zFailOp; // 0x4E2
+                        StencilOp zPassOp; // 0x4E3
 
                         struct {
-                            CompareOp op; // 0x4e4
-                            i32 ref; // 0x4e5
-                            u32 mask; // 0x4e6
+                            CompareOp op; // 0x4E4
+                            i32 ref; // 0x4E5
+                            u32 mask; // 0x4E6
                         } compare;
 
-                        u32 writeMask; // 0x4e7
+                        u32 writeMask; // 0x4E7
                     } stencilFront;
 
-                    u32 _pad11_[0x4]; // 0x4e8
-                    float lineWidthSmooth; // 0x4ec
-                    float lineWidthAliased; // 0x4d
-                    u32 _pad12_[0x1f]; // 0x4ee
-                    u32 drawBaseVertex; // 0x50d
-                    u32 drawBaseInstance; // 0x50e
-                    u32 _pad13_[0x35]; // 0x50f
+                    u32 _pad11_[0x4]; // 0x4E8
+                    float lineWidthSmooth; // 0x4EC
+                    float lineWidthAliased; // 0x4D
+                    u32 _pad12_[0x1F]; // 0x4EE
+                    u32 drawBaseVertex; // 0x50D
+                    u32 drawBaseInstance; // 0x50E
+                    u32 _pad13_[0x35]; // 0x50F
                     u32 clipDistanceEnable; // 0x544
                     u32 sampleCounterEnable; // 0x545
                     float pointSpriteSize; // 0x546
                     u32 zCullStatCountersEnable; // 0x547
                     u32 pointSpriteEnable; // 0x548
                     u32 _pad14_; // 0x549
-                    u32 shaderExceptions; // 0x54a
-                    u32 _pad15_[0x2]; // 0x54b
-                    u32 multisampleEnable; // 0x54d
-                    u32 depthTargetEnable; // 0x54e
+                    u32 shaderExceptions; // 0x54A
+                    u32 _pad15_[0x2]; // 0x54B
+                    u32 multisampleEnable; // 0x54D
+                    u32 depthTargetEnable; // 0x54E
 
                     struct {
                         bool alphaToCoverage : 1;
                         u8 _pad0_ : 3;
                         bool alphaToOne : 1;
                         u32 _pad1_ : 27;
-                    } multisampleControl; // 0x54f
+                    } multisampleControl; // 0x54F
 
                     u32 _pad16_[0x7]; // 0x550
 
@@ -506,13 +506,13 @@ namespace skyline {
                         u32 maximumIndex; // 0x559
                     } texSamplerPool;
 
-                    u32 _pad17_; // 0x55a
-                    u32 polygonOffsetFactor; // 0x55b
-                    u32 lineSmoothEnable; // 0x55c
+                    u32 _pad17_; // 0x55A
+                    u32 polygonOffsetFactor; // 0x55B
+                    u32 lineSmoothEnable; // 0x55C
 
                     struct {
-                        Address address; // 0x55d
-                        u32 maximumIndex; // 0x55f
+                        Address address; // 0x55D
+                        u32 maximumIndex; // 0x55F
                     } texHeaderPool;
 
                     u32 _pad18_[0x5]; // 0x560
@@ -526,7 +526,7 @@ namespace skyline {
                         CompareOp compareOp; // 0x569
                     } stencilBack;
 
-                    u32 _pad19_[0x17]; // 0x56a
+                    u32 _pad19_[0x17]; // 0x56A
 
                     struct {
                         u8 _unk_ : 2;
@@ -535,27 +535,27 @@ namespace skyline {
                         u32 _pad_ : 19;
                     } pointCoordReplace; // 0x581
 
-                    u32 _pad20_[0xc4]; // 0x582
+                    u32 _pad20_[0xC4]; // 0x582
                     u32 cullFaceEnable; // 0x646
                     FrontFace frontFace; // 0x647
                     CullFace cullFace; // 0x648
                     u32 pixelCentreImage; // 0x649
-                    u32 _pad21_; // 0x64a
-                    u32 viewportTransformEnable; // 0x64b
-                    u32 _pad22_[0x34]; // 0x64a
+                    u32 _pad21_; // 0x64A
+                    u32 viewportTransformEnable; // 0x64B
+                    u32 _pad22_[0x34]; // 0x64A
                     std::array<ColorWriteMask, 8> colorMask; // 0x680 For each render target
                     u32 _pad23_[0x38]; // 0x688
 
                     struct {
-                        Address address; // 0x6c0
-                        u32 payload; // 0x6c2
-                        SemaphoreInfo info; // 0x6c3
+                        Address address; // 0x6C0
+                        u32 payload; // 0x6C2
+                        SemaphoreInfo info; // 0x6C3
                     } semaphore;
 
-                    u32 _pad24_[0xbc]; // 0x6c4
+                    u32 _pad24_[0xBC]; // 0x6C4
                     std::array<Blend, 8> independentBlend; // 0x780 For each render target
-                    u32 _pad25_[0x100]; // 0x7c0
-                    u32 firmwareCall[0x20]; // 0x8c0
+                    u32 _pad25_[0x100]; // 0x7C0
+                    u32 firmwareCall[0x20]; // 0x8C0
                 };
             };
             static_assert(sizeof(Registers) == (constant::Maxwell3DRegisterCounter * sizeof(u32)));

@@ -62,7 +62,7 @@ namespace skyline::service::audio {
                 splitterWorkSize += util::AlignUp(4 * params.splitterDestinationDataCount, 16);
         }
 
-        size = params.sinkCount * 0x170 + (params.sinkCount + params.subMixCount) * 0x280 + params.effectCount * 0x4C0 + ((size + splitterWorkSize + 0x30 * params.effectCount + (4 * params.voiceCount) + 0x8F) & ~0x3Fl) + ((params.voiceCount << 8) | 0x40);
+        size = params.sinkCount * 0x170 + (params.sinkCount + params.subMixCount) * 0x280 + params.effectCount * 0x4C0 + ((size + splitterWorkSize + 0x30 * params.effectCount + (4 * params.voiceCount) + 0x8F) & ~0x3FL) + ((params.voiceCount << 8) | 0x40);
 
         if (params.performanceManagerCount > 0) {
             i64 performanceMetricsBufferSize;
@@ -73,7 +73,7 @@ namespace skyline::service::audio {
                 performanceMetricsBufferSize = ((static_cast<i64>((params.voiceCount + params.effectCount + totalMixCount + params.sinkCount)) << 32) >> 0x1C) + 0x658;
             }
 
-            size += (performanceMetricsBufferSize * (params.performanceManagerCount + 1) + 0xFF) & ~0x3Fl;
+            size += (performanceMetricsBufferSize * (params.performanceManagerCount + 1) + 0xFF) & ~0x3FL;
         }
 
         if (revisionInfo.VaradicCommandBufferSizeSupported()) {

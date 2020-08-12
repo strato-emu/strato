@@ -85,7 +85,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
         UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,
-            .behaviorSize = 0xb0,
+            .behaviorSize = 0xB0,
             .memoryPoolSize = (parameters.effectCount + parameters.voiceCount * 4) * static_cast<u32>(sizeof(MemoryPoolOut)),
             .voiceSize = parameters.voiceCount * static_cast<u32>(sizeof(VoiceOut)),
             .effectSize = parameters.effectCount * static_cast<u32>(sizeof(EffectOut)),

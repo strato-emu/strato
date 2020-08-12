@@ -14,7 +14,7 @@ namespace skyline::service::audio {
         {0x5, SFUNC(IAudioDevice::GetActiveChannelCount)},
         {0x6, SFUNC(IAudioDevice::ListAudioDeviceName)},
         {0x7, SFUNC(IAudioDevice::SetAudioDeviceOutputVolume)},
-        {0xa, SFUNC(IAudioDevice::GetActiveAudioDeviceName)}
+        {0xA, SFUNC(IAudioDevice::GetActiveAudioDeviceName)}
     }) {}
 
     void IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

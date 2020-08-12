@@ -199,12 +199,12 @@ namespace skyline {
             ExitProcess, // 0x07
             CreateThread, // 0x08
             StartThread, // 0x09
-            ExitThread, // 0x0a
-            SleepThread, // 0x0b
-            GetThreadPriority, // 0x0c
-            SetThreadPriority, // 0x0d
-            nullptr, // 0x0e
-            nullptr, // 0x0f
+            ExitThread, // 0x0A
+            SleepThread, // 0x0B
+            GetThreadPriority, // 0x0C
+            SetThreadPriority, // 0x0D
+            nullptr, // 0x0E
+            nullptr, // 0x0F
             nullptr, // 0x10
             nullptr, // 0x11
             ClearEvent, // 0x12
@@ -215,12 +215,12 @@ namespace skyline {
             ResetSignal, // 0x17
             WaitSynchronization, // 0x18
             CancelSynchronization, // 0x19
-            ArbitrateLock, // 0x1a
-            ArbitrateUnlock, // 0x1b
-            WaitProcessWideKeyAtomic, // 0x1c
-            SignalProcessWideKey, // 0x1d
-            GetSystemTick, // 0x1e
-            ConnectToNamedPort, // 0x1f
+            ArbitrateLock, // 0x1A
+            ArbitrateUnlock, // 0x1B
+            WaitProcessWideKeyAtomic, // 0x1C
+            SignalProcessWideKey, // 0x1D
+            GetSystemTick, // 0x1E
+            ConnectToNamedPort, // 0x1F
             nullptr, // 0x20
             SendSyncRequest, // 0x21
             nullptr, // 0x22
@@ -231,12 +231,12 @@ namespace skyline {
             OutputDebugString, // 0x27
             nullptr, // 0x28
             GetInfo, // 0x29
-            nullptr, // 0x2a
-            nullptr, // 0x2b
-            nullptr, // 0x2c
-            nullptr, // 0x2d
-            nullptr, // 0x2e
-            nullptr, // 0x2f
+            nullptr, // 0x2A
+            nullptr, // 0x2B
+            nullptr, // 0x2C
+            nullptr, // 0x2D
+            nullptr, // 0x2E
+            nullptr, // 0x2F
             nullptr, // 0x30
             nullptr, // 0x31
             nullptr, // 0x32
@@ -247,12 +247,12 @@ namespace skyline {
             nullptr, // 0x37
             nullptr, // 0x38
             nullptr, // 0x39
-            nullptr, // 0x3a
-            nullptr, // 0x3b
-            nullptr, // 0x3c
-            nullptr, // 0x3d
-            nullptr, // 0x3e
-            nullptr, // 0x3f
+            nullptr, // 0x3A
+            nullptr, // 0x3B
+            nullptr, // 0x3C
+            nullptr, // 0x3D
+            nullptr, // 0x3E
+            nullptr, // 0x3F
             nullptr, // 0x40
             nullptr, // 0x41
             nullptr, // 0x42
@@ -263,12 +263,12 @@ namespace skyline {
             nullptr, // 0x47
             nullptr, // 0x48
             nullptr, // 0x49
-            nullptr, // 0x4a
-            nullptr, // 0x4b
-            nullptr, // 0x4c
-            nullptr, // 0x4d
-            nullptr, // 0x4e
-            nullptr, // 0x4f
+            nullptr, // 0x4A
+            nullptr, // 0x4B
+            nullptr, // 0x4C
+            nullptr, // 0x4D
+            nullptr, // 0x4E
+            nullptr, // 0x4F
             nullptr, // 0x50
             nullptr, // 0x51
             nullptr, // 0x52
@@ -279,12 +279,12 @@ namespace skyline {
             nullptr, // 0x57
             nullptr, // 0x58
             nullptr, // 0x59
-            nullptr, // 0x5a
-            nullptr, // 0x5b
-            nullptr, // 0x5c
-            nullptr, // 0x5d
-            nullptr, // 0x5e
-            nullptr, // 0x5f
+            nullptr, // 0x5A
+            nullptr, // 0x5B
+            nullptr, // 0x5C
+            nullptr, // 0x5D
+            nullptr, // 0x5E
+            nullptr, // 0x5F
             nullptr, // 0x60
             nullptr, // 0x61
             nullptr, // 0x62
@@ -295,12 +295,12 @@ namespace skyline {
             nullptr, // 0x67
             nullptr, // 0x68
             nullptr, // 0x69
-            nullptr, // 0x6a
-            nullptr, // 0x6b
-            nullptr, // 0x6c
-            nullptr, // 0x6d
-            nullptr, // 0x6e
-            nullptr, // 0x6f
+            nullptr, // 0x6A
+            nullptr, // 0x6B
+            nullptr, // 0x6C
+            nullptr, // 0x6D
+            nullptr, // 0x6E
+            nullptr, // 0x6F
             nullptr, // 0x70
             nullptr, // 0x71
             nullptr, // 0x72
@@ -311,12 +311,12 @@ namespace skyline {
             nullptr, // 0x77
             nullptr, // 0x78
             nullptr, // 0x79
-            nullptr, // 0x7a
-            nullptr, // 0x7b
-            nullptr, // 0x7c
-            nullptr, // 0x7d
-            nullptr, // 0x7e
-            nullptr // 0x7f
+            nullptr, // 0x7A
+            nullptr, // 0x7B
+            nullptr, // 0x7C
+            nullptr, // 0x7D
+            nullptr, // 0x7E
+            nullptr // 0x7F
         };
     }
 }

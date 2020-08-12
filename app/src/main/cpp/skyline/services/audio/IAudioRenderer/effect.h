@@ -20,9 +20,9 @@ namespace skyline::service::audio::IAudioRenderer {
     struct EffectIn {
         u8 _unk0_;
         u8 isNew; //!< Whether the effect was used in the previous samples
-        u8 _unk1_[0xbe];
+        u8 _unk1_[0xBE];
     };
-    static_assert(sizeof(EffectIn) == 0xc0);
+    static_assert(sizeof(EffectIn) == 0xC0);
 
     /**
      * @brief This is returned to inform the guest of the state of an effect

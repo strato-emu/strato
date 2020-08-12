@@ -12,8 +12,8 @@ namespace skyline::service::fssrv {
         {0x1, SFUNC(IFileSystemProxy::SetCurrentProcess)},
         {0x12, SFUNC(IFileSystemProxy::OpenSdCardFileSystem)},
         {0x33, SFUNC(IFileSystemProxy::OpenSaveDataFileSystem)},
-        {0xc8, SFUNC(IFileSystemProxy::OpenDataStorageByCurrentProcess)},
-        {0x3ed, SFUNC(IFileSystemProxy::GetGlobalAccessLogMode)},
+        {0xC8, SFUNC(IFileSystemProxy::OpenDataStorageByCurrentProcess)},
+        {0x3ED, SFUNC(IFileSystemProxy::GetGlobalAccessLogMode)},
     }) {}
 
     void IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

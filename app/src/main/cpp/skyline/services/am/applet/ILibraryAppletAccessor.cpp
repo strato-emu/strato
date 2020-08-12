@@ -9,8 +9,8 @@
 namespace skyline::service::am {
     ILibraryAppletAccessor::ILibraryAppletAccessor(const DeviceState &state, ServiceManager &manager) : stateChangeEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ILibraryAppletAccessor, "am:ILibraryAppletAccessor", {
         {0x0, SFUNC(ILibraryAppletAccessor::GetAppletStateChangedEvent)},
-        {0xa, SFUNC(ILibraryAppletAccessor::Start)},
-        {0x1e, SFUNC(ILibraryAppletAccessor::GetResult)},
+        {0xA, SFUNC(ILibraryAppletAccessor::Start)},
+        {0x1E, SFUNC(ILibraryAppletAccessor::GetResult)},
         {0x64, SFUNC(ILibraryAppletAccessor::PushInData)},
         {0x65, SFUNC(ILibraryAppletAccessor::PopOutData)},
     }) {}
@@ -31,7 +31,7 @@ namespace skyline::service::am {
     void ILibraryAppletAccessor::PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
 
     void ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 LaunchParameterMagic = 0xc79497ca; //!< This is the magic of the application launch parameters
+        constexpr u32 LaunchParameterMagic = 0xC79497CA; //!< This is the magic of the application launch parameters
         constexpr size_t LaunchParameterSize = 0x88; //!< This is the size of the launch parameter IStorage
 
         auto storageService = std::make_shared<IStorage>(state, manager, LaunchParameterSize);

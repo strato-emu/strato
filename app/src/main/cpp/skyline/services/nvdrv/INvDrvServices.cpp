@@ -61,7 +61,7 @@ namespace skyline::service::nvdrv {
         {0x3, SFUNC(INvDrvServices::Initialize)},
         {0x4, SFUNC(INvDrvServices::QueryEvent)},
         {0x8, SFUNC(INvDrvServices::SetAruidByPID)},
-        {0xd, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
+        {0xD, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
     }) {}
 
     void INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -79,7 +79,7 @@ namespace skyline::service::nvdrv {
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
 
         // Strip the permissions from the command leaving only the ID
-        cmd &= 0xffff;
+        cmd &= 0xFFFF;
 
         try {
             if (request.inputBuf.empty() || request.outputBuf.empty()) {

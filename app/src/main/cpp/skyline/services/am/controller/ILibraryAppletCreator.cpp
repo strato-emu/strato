@@ -8,7 +8,7 @@
 namespace skyline::service::am {
     ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_ILibraryAppletCreator, "am:ILibraryAppletCreator", {
         {0x0, SFUNC(ILibraryAppletCreator::CreateLibraryApplet)},
-        {0xa, SFUNC(ILibraryAppletCreator::CreateStorage)}
+        {0xA, SFUNC(ILibraryAppletCreator::CreateStorage)}
     }) {}
 
     void ILibraryAppletCreator::CreateLibraryApplet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

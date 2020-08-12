@@ -209,7 +209,7 @@ namespace skyline {
     }
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
-        constexpr u32 TpidrEl0 = 0x5e82;      // ID of TPIDR_EL0 in MRS
+        constexpr u32 TpidrEl0 = 0x5E82;      // ID of TPIDR_EL0 in MRS
         constexpr u32 TpidrroEl0 = 0x5E83;    // ID of TPIDRRO_EL0 in MRS
         constexpr u32 CntfrqEl0 = 0x5F00;     // ID of CNTFRQ_EL0 in MRS
         constexpr u32 CntpctEl0 = 0x5F01;     // ID of CNTPCT_EL0 in MRS

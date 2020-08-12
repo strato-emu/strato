@@ -134,7 +134,7 @@ namespace skyline::gpu::engine {
                 }
                 break;
             case MAXWELL3D_OFFSET(firmwareCall[4]):
-                registers.raw[0xd00] = 1;
+                registers.raw[0xD00] = 1;
                 break;
         }
     }

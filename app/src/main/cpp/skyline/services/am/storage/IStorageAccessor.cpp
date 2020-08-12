@@ -8,8 +8,8 @@
 namespace skyline::service::am {
     IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(parent), BaseService(state, manager, Service::am_IStorageAccessor, "am:IStorageAccessor", {
         {0x0, SFUNC(IStorageAccessor::GetSize)},
-        {0xa, SFUNC(IStorageAccessor::Write)},
-        {0xb, SFUNC(IStorageAccessor::Read)}
+        {0xA, SFUNC(IStorageAccessor::Write)},
+        {0xB, SFUNC(IStorageAccessor::Read)}
     }) {}
 
     void IStorageAccessor::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

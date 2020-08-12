@@ -35,8 +35,8 @@ namespace skyline::service::pl {
         {0x3, SFUNC(IPlatformServiceManager::GetSharedMemoryAddressOffset)},
         {0x4, SFUNC(IPlatformServiceManager::GetSharedMemoryNativeHandle)}
     }) {
-        constexpr u32 SharedFontResult = 0x7f9a0218; //!< This is the decrypted magic for a single font in the shared font data
-        constexpr u32 SharedFontMagic = 0x36f81a1e; //!< This is the encrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontResult = 0x7F9A0218; //!< This is the decrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontMagic = 0x36F81A1E; //!< This is the encrypted magic for a single font in the shared font data
         constexpr u32 SharedFontKey = SharedFontMagic ^SharedFontResult; //!< This is the XOR key for encrypting the font size
 
         auto pointer = reinterpret_cast<u32 *>(fontSharedMem->kernel.address);

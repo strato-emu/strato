@@ -22,7 +22,7 @@ namespace skyline::service::audio::IAudioRenderer {
         u16 a1; //!< The a1 constant
         u16 a2; //!< The a2 constant
     };
-    static_assert(sizeof(BiquadFilter) == 0xc);
+    static_assert(sizeof(BiquadFilter) == 0xC);
 
     /**
      * @brief This stores information of a wave buffer of samples

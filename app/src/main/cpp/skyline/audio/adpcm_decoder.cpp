@@ -11,7 +11,7 @@ namespace skyline::audio {
 
     std::vector<i16> AdpcmDecoder::Decode(const std::vector<u8> &adpcmData) {
         constexpr size_t BytesPerFrame = 0x8; //!< The number of bytes in a single frame
-        constexpr size_t SamplesPerFrame = 0xe; //!< The number of samples in a single frame
+        constexpr size_t SamplesPerFrame = 0xE; //!< The number of samples in a single frame
 
         size_t remainingSamples = (adpcmData.size() / BytesPerFrame) * SamplesPerFrame;
 

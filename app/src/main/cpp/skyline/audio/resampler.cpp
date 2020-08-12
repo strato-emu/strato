@@ -126,7 +126,7 @@ namespace skyline::audio {
         std::vector<i16> outputBuffer(outputSize);
 
         const std::array<skyline::audio::LutEntry, 128> &lut = [step] {
-            if (step > 0xaaaa)
+            if (step > 0xAAAA)
                 return CurveLut0;
             else if (step <= 0x8000)
                 return CurveLut1;
@@ -148,7 +148,7 @@ namespace skyline::audio {
 
             auto newOffset = fraction + step;
             inIndex += newOffset >> 15;
-            fraction = newOffset & 0x7fff;
+            fraction = newOffset & 0x7FFF;
         }
 
         return outputBuffer;

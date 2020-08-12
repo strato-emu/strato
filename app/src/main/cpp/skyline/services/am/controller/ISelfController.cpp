@@ -17,7 +17,7 @@ namespace skyline::service::am {
         {0xE, SFUNC(ISelfController::SetRestartMessageEnabled)},
         {0x10, SFUNC(ISelfController::SetOutOfFocusSuspendingEnabled)},
         {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)},
-        {0x5b, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)}
+        {0x5B, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)}
     }) {}
 
     void ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
