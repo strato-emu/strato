@@ -97,14 +97,31 @@ extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIE
     return static_cast<float>(frametime) / 100;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jlong id, jint state) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
+    while (input == nullptr)
+        asm("yield");
+    input->npad.controllers[index] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateControllers(JNIEnv *, jobject) {
+    while (input == nullptr)
+        asm("yield");
+    input->npad.Update(true);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jint state) {
     if (input) {
-        skyline::input::NpadButton button{.raw = static_cast<skyline::u64>(id)};
-        input->npad.at(skyline::input::NpadId::Player1).SetButtonState(button, static_cast<skyline::input::NpadButtonState>(state));
+        auto device = input->npad.controllers[index].device;
+        skyline::input::NpadButton button{.raw = static_cast<skyline::u64>(mask)};
+        if (device)
+            device->SetButtonState(button, static_cast<skyline::input::NpadButtonState>(state));
     }
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint id, jint value) {
-    if (input)
-        input->npad.at(skyline::input::NpadId::Player1).SetAxisValue(static_cast<skyline::input::NpadAxisId>(id), value);
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
+    if (input) {
+        auto device = input->npad.controllers[index].device;
+        if (device)
+            device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
+    }
 }

@@ -10,12 +10,12 @@ jobs:
 
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
       with:
         submodules: true
 
     - name: Restore Gradle Cache
-      uses: actions/cache@v1.0.3
+      uses: actions/cache@v2
       with:
         path: /root/.gradle/
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}
@@ -23,7 +23,7 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Restore CXX Cache
-      uses: actions/cache@v1.0.3
+      uses: actions/cache@v2
       with:
         path: app/.cxx/
         key: ${{ runner.os }}-cxx-${{ hashFiles('**/CMakeLists.txt') }}
@@ -37,7 +37,7 @@ jobs:
       run: ./gradlew --stacktrace lint
 
     - name: Upload Lint Report
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: lint-result.html
         path: app/build/reports/lint-results.html
@@ -46,19 +46,19 @@ jobs:
       run: ./gradlew assemble
 
     - name: Upload Debug APK
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: app-debug.apk
         path: app/build/outputs/apk/debug/
 
     - name: Upload Release APK
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: app-release.apk
         path: app/build/outputs/apk/release/
 
     - name: Upload R8 Mapping
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: mapping.txt
         path: app/build/outputs/mapping/release/

@@ -5,28 +5,95 @@
 #include "npad.h"
 
 namespace skyline::input {
-
     NpadManager::NpadManager(const DeviceState &state, input::HidSharedMemory *hid) : state(state), npads
-        {NpadDevice{hid->npad[0], NpadId::Player1}, {hid->npad[1], NpadId::Player2},
-         {hid->npad[2], NpadId::Player3}, {hid->npad[3], NpadId::Player4},
-         {hid->npad[4], NpadId::Player5}, {hid->npad[5], NpadId::Player6},
-         {hid->npad[6], NpadId::Player7}, {hid->npad[7], NpadId::Player8},
-         {hid->npad[8], NpadId::Unknown}, {hid->npad[9], NpadId::Handheld},
+        {NpadDevice{*this, hid->npad[0], NpadId::Player1}, {*this, hid->npad[1], NpadId::Player2},
+         {*this, hid->npad[2], NpadId::Player3}, {*this, hid->npad[3], NpadId::Player4},
+         {*this, hid->npad[4], NpadId::Player5}, {*this, hid->npad[5], NpadId::Player6},
+         {*this, hid->npad[6], NpadId::Player7}, {*this, hid->npad[7], NpadId::Player8},
+         {*this, hid->npad[8], NpadId::Unknown}, {*this, hid->npad[9], NpadId::Handheld},
         } {}
 
-    void NpadManager::Activate() {
-        if (styles.raw == 0) {
-            styles.proController = true;
-            styles.joyconHandheld = true;
-        }
+    void NpadManager::Update(bool host) {
+        if (host)
+            updated = true;
+        else
+            while (!updated)
+                asm("yield");
 
-        at(NpadId::Player1).Connect(state.settings->GetBool("operation_mode") ? NpadControllerType::Handheld : NpadControllerType::ProController);
-    }
-
-    void NpadManager::Deactivate() {
-        styles.raw = 0;
+        if (!activated)
+            return;
 
         for (auto &npad : npads)
             npad.Disconnect();
+
+        for (auto &controller : controllers)
+            controller.device = nullptr;
+
+        for (auto &id : supportedIds) {
+            if (id == NpadId::Unknown)
+                continue;
+
+            auto &device = at(id);
+
+            for (auto &controller : controllers) {
+                if (controller.device)
+                    continue;
+
+                NpadStyleSet style{};
+                if (id != NpadId::Handheld) {
+                    if (controller.type == NpadControllerType::ProController)
+                        style.proController = true;
+                    else if (controller.type == NpadControllerType::JoyconLeft)
+                        style.joyconLeft = true;
+                    else if (controller.type == NpadControllerType::JoyconRight)
+                        style.joyconRight = true;
+                    if (controller.type == NpadControllerType::JoyconDual || controller.partnerIndex != -1)
+                        style.joyconDual = true;
+                } else if (controller.type == NpadControllerType::Handheld) {
+                    style.joyconHandheld = true;
+                }
+                style = NpadStyleSet{.raw = style.raw & styles.raw};
+
+                if (style.raw) {
+                    if (style.proController) {
+                        device.Connect(NpadControllerType::ProController);
+                        controller.device = &device;
+                    } else if (style.joyconHandheld) {
+                        device.Connect(NpadControllerType::Handheld);
+                        controller.device = &device;
+                    } else if (style.joyconDual && device.GetAssignment() == NpadJoyAssignment::Dual) {
+                        device.Connect(NpadControllerType::JoyconDual);
+                        controller.device = &device;
+                        controllers.at(controller.partnerIndex).device = &device;
+                    } else if (style.joyconLeft || style.joyconRight) {
+                        device.Connect(controller.type);
+                        controller.device = &device;
+                    } else {
+                        continue;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    void NpadManager::Activate() {
+        supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
+        styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
+        activated = true;
+
+        Update();
+    }
+
+    void NpadManager::Deactivate() {
+        supportedIds = {};
+        styles = {};
+        activated = false;
+
+        for (auto &npad : npads)
+            npad.Disconnect();
+
+        for (auto &controller : controllers)
+            controller.device = nullptr;
     }
 }

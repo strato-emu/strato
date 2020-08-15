@@ -9,8 +9,8 @@ namespace skyline::input {
     /**
     * @brief This enumerates all the orientations of the Joy-Con(s)
     */
-    enum class NpadJoyOrientation : u64 {
-        Vertical = 0, //!< The Joy-Con is held vertically
+    enum class NpadJoyOrientation : i64 {
+        Vertical = 0, //!< The Joy-Con is held vertically (Default)
         Horizontal = 1, //!< The Joy-Con is held horizontally
     };
 
@@ -18,6 +18,7 @@ namespace skyline::input {
     * @brief This holds all the NPad styles (https://switchbrew.org/wiki/HID_services#NpadStyleTag)
     */
     union NpadStyleSet {
+        u32 raw;
         struct {
             bool proController  : 1; //!< The Pro Controller
             bool joyconHandheld : 1; //!< Joy-Cons in handheld mode
@@ -30,7 +31,6 @@ namespace skyline::input {
             bool nesHandheld    : 1; //!< NES controller in handheld mode
             bool snes           : 1; //!< SNES controller
         };
-        u32 raw;
     };
     static_assert(sizeof(NpadStyleSet) == 0x4);
 
@@ -46,10 +46,10 @@ namespace skyline::input {
      * @brief This enumerates all of the axis on NPad controllers
      */
     enum class NpadAxisId {
+        LX, //!< Left Stick X
+        LY, //!< Left Stick Y
         RX, //!< Right Stick X
         RY, //!< Right Stick Y
-        LX, //!< Left Stick X
-        LY //!< Left Stick Y
     };
 
     /**
@@ -68,14 +68,17 @@ namespace skyline::input {
         Handheld = 0x20 //!< Handheld mode
     };
 
+    class NpadManager;
+
+    /**
+     * @brief This class abstracts a single NPad device that controls it's own state and shared memory section
+     */
     class NpadDevice {
       private:
-        NpadId id; //!< The ID of this controller
-        NpadControllerType controllerType{}; //!< The type of this controller
-        u8 globalTimestamp{}; //!< The global timestamp of the state entries
-
-        NpadConnectionState connectionState{}; //!< The state of the connection
+        NpadManager &manager; //!< The manager responsible for managing this NpadDevice
         NpadSection &section; //!< The section in HID shared memory for this controller
+        NpadControllerInfo *controllerInfo; //!< The controller info for this controller's type
+        u64 globalTimestamp{}; //!< The global timestamp of the state entries
 
         /**
         * @brief This updates the headers and creates a new entry in HID Shared Memory
@@ -90,21 +93,37 @@ namespace skyline::input {
         NpadControllerInfo &GetControllerInfo();
 
       public:
-        bool supported{false}; //!< If this specific NpadId was marked by the application as supported
+        NpadId id; //!< The ID of this controller
+        NpadControllerType type{}; //!< The type of this controller
+        NpadConnectionState connectionState{}; //!< The state of the connection
+        bool explicitAssignment{false}; //!< If an assignment has explicitly been set or is the default for this controller
 
-        NpadDevice(NpadSection &section, NpadId id);
+        NpadDevice(NpadManager &manager, NpadSection &section, NpadId id);
 
         /**
         * @brief This sets a Joy-Con's Assignment Mode
         * @param assignment The assignment mode to set this controller to
+        * @param isDefault If this is setting the default assignment mode of the controller
         */
-        inline void SetAssignment(NpadJoyAssignment assignment) {
-            section.header.assignment = assignment;
+        inline void SetAssignment(NpadJoyAssignment assignment, bool isDefault) {
+            if (!isDefault) {
+                section.header.assignment = assignment;
+                explicitAssignment = true;
+            } else if (!explicitAssignment) {
+                section.header.assignment = assignment;
+            }
+        }
+
+        /**
+         * @return The assignment mode of this Joy-Con
+         */
+        inline NpadJoyAssignment GetAssignment() {
+            return section.header.assignment;
         }
 
         /**
         * @brief This connects this controller to the guest
-        * @param type The type of controller to connect
+        * @param type The type of controller to connect as
         */
         void Connect(NpadControllerType type);
 

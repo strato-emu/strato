@@ -10,6 +10,7 @@ namespace skyline::input {
      * @brief This enumerates all the modifier keys that can be used
      */
     union ModifierKey {
+        u64 raw;
         struct {
             bool LControl : 1; //!< Left Control Key
             bool LShift   : 1; //!< Left Shift Key
@@ -23,7 +24,6 @@ namespace skyline::input {
             bool ScrLock  : 1; //!< Scroll-Lock Key
             bool NumLock  : 1; //!< Num-Lock Key
         };
-        u64 raw;
     };
 
     /**

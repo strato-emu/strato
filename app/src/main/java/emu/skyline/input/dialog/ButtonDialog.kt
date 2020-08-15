@@ -197,7 +197,7 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
                                             context.axisMap[(guestEvent as AxisGuestEvent).axis]?.update()
                                     }
 
-                                    guestEvent = ButtonGuestEvent(controller.id, item.button)
+                                    guestEvent = ButtonGuestEvent(controller.id, item.button, threshold)
 
                                     context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
 

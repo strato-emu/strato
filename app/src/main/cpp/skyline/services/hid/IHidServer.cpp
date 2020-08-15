@@ -17,9 +17,7 @@ namespace skyline::service::hid {
         {0x7A, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingleByDefault)},
         {0x7B, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingle)},
         {0x7C, SFUNC(IHidServer::SetNpadJoyAssignmentModeDual)}
-    }) {
-        state.input->npad.Activate();
-    }
+    }) {}
 
     void IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAppletResource), session, response);
@@ -36,13 +34,15 @@ namespace skyline::service::hid {
         const auto &buffer = request.inputBuf.at(0);
         u64 address = buffer.address;
         size_t size = buffer.size / sizeof(NpadId);
+        std::vector<NpadId> supportedIds;
 
         for (size_t i = 0; i < size; i++) {
-            auto id = state.process->GetObject<NpadId>(address);
-            state.input->npad.at(id).supported = true;
-
+            supportedIds.push_back(state.process->GetObject<NpadId>(address));
             address += sizeof(NpadId);
         }
+
+        state.input->npad.supportedIds = supportedIds;
+        state.input->npad.Update();
     }
 
     void IHidServer::ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -60,16 +60,17 @@ namespace skyline::service::hid {
 
     void IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
+        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single, true);
+        state.input->npad.Update();
     }
 
     void IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
+        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single, false);
     }
 
     void IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
+        state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual, false);
     }
 }

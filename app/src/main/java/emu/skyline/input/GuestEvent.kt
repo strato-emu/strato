@@ -63,10 +63,10 @@ enum class ButtonState(val state : Boolean) {
  * This enumerates all of the axes on a controller that the emulator recognizes
  */
 enum class AxisId {
-    RX,
-    RY,
     LX,
     LY,
+    RX,
+    RY,
 }
 
 /**

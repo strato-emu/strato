@@ -32,6 +32,9 @@ abstract class HostEvent(val descriptor : String = "") : Serializable {
     abstract override fun hashCode() : Int
 }
 
+/**
+ * This class represents all events on the host that arise from a [KeyEvent]
+ */
 class KeyHostEvent(descriptor : String = "", val keyCode : Int) : HostEvent(descriptor) {
     /**
      * This returns the string representation of [keyCode]
@@ -49,7 +52,17 @@ class KeyHostEvent(descriptor : String = "", val keyCode : Int) : HostEvent(desc
     override fun hashCode() : Int = Objects.hash(descriptor, keyCode)
 }
 
+/**
+ * This class represents all events on the host that arise from a [MotionEvent]
+ */
 class MotionHostEvent(descriptor : String = "", val axis : Int, val polarity : Boolean) : HostEvent(descriptor) {
+    companion object {
+        /**
+         * This is an array of all the axes that are checked during a [MotionEvent]
+         */
+        val axes = arrayOf(MotionEvent.AXIS_X, MotionEvent.AXIS_Y, MotionEvent.AXIS_Z, MotionEvent.AXIS_RZ, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_THROTTLE, MotionEvent.AXIS_RUDDER, MotionEvent.AXIS_WHEEL, MotionEvent.AXIS_GAS, MotionEvent.AXIS_BRAKE).plus(IntRange(MotionEvent.AXIS_GENERIC_1, MotionEvent.AXIS_GENERIC_16).toList())
+    }
+
     /**
      * This returns the string representation of [axis] combined with [polarity]
      */

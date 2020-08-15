@@ -17,6 +17,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.R
 import emu.skyline.adapter.ControllerStickItem
 import emu.skyline.input.*
+import emu.skyline.input.MotionHostEvent.Companion.axes
 import kotlinx.android.synthetic.main.stick_dialog.*
 import java.util.*
 import kotlin.math.abs
@@ -265,10 +266,6 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
             var axisPolarity = false // The polarity of the axis for the currently selected event
             var axisRunnable : Runnable? = null // The Runnable that is used for counting down till an axis is selected
 
-            // The last values of the HAT axes so that they can be ignored in [View.OnGenericMotionListener] so they are passed onto [DialogInterface.OnKeyListener] as [KeyEvent]s
-            var oldDpadX = 0.0f
-            var oldDpadY = 0.0f
-
             stick_next.setOnClickListener {
                 gotoStage(1)
 
@@ -304,11 +301,7 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                                 }
 
                                 is AxisGuestEvent -> {
-                                    val coefficient = if (event.action == KeyEvent.ACTION_DOWN) {
-                                        if (guestEvent.polarity) 1 else -1
-                                    } else {
-                                        0
-                                    }
+                                    val coefficient = if (event.action == KeyEvent.ACTION_DOWN) if (guestEvent.polarity) 1 else -1 else 0
 
                                     if (guestEvent.axis == item.stick.xAxis) {
                                         stick_container?.translationX = dipToPixels(16.5f) * coefficient
@@ -402,18 +395,17 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                 }
             }
 
-            val axes = arrayOf(MotionEvent.AXIS_X, MotionEvent.AXIS_Y, MotionEvent.AXIS_Z, MotionEvent.AXIS_RZ, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_THROTTLE, MotionEvent.AXIS_RUDDER, MotionEvent.AXIS_WHEEL, MotionEvent.AXIS_GAS, MotionEvent.AXIS_BRAKE).plus(IntRange(MotionEvent.AXIS_GENERIC_1, MotionEvent.AXIS_GENERIC_16).toList())
-
             val axesHistory = arrayOfNulls<Float>(axes.size) // The last recorded value of an axis, this is used to eliminate any stagnant axes
             val axesMax = Array(axes.size) { 0f } // The maximum recorded value of the axis, this is to scale the axis to a stick accordingly (The value is also checked at runtime, so it's fine if this isn't the true maximum)
 
+            var oldHat = Pair(0.0f, 0.0f) // The last values of the HAT axes so that they can be ignored in [View.OnGenericMotionListener] so they are passed onto [DialogInterface.OnKeyListener] as [KeyEvent]s
+
             view?.setOnGenericMotionListener { _, event ->
                 // We retrieve the value of the HAT axes so that we can check for change and ignore any input from them so it'll be passed onto the [KeyEvent] handler
-                val dpadX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
-                val dpadY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+                val hat = Pair(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
 
                 // We want all input events from Joysticks and Buttons that are [MotionEvent.ACTION_MOVE] and not from the D-pad
-                if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE && dpadX == oldDpadX && dpadY == oldDpadY) {
+                if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE && hat == oldHat) {
                     if (stage == DialogStage.Stick) {
                         // When the stick is being previewed after everything is mapped we do a lookup into [InputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
                         for (axisItem in axes.withIndex()) {
@@ -592,8 +584,7 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
 
                     true
                 } else {
-                    oldDpadX = dpadX
-                    oldDpadY = dpadY
+                    oldHat = hat
 
                     false
                 }

@@ -15,9 +15,7 @@ import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
-import emu.skyline.input.AxisId
-import emu.skyline.input.ButtonId
-import emu.skyline.input.ButtonState
+import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
 import kotlinx.android.synthetic.main.emu_activity.*
 import java.io.File
@@ -39,13 +37,25 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private lateinit var preferenceFd : ParcelFileDescriptor
 
     /**
+     * The [InputManager] class handles loading/saving the input data
+     */
+    lateinit var input : InputManager
+
+    /**
+     * A boolean flag denoting the current operation mode of the emulator (Docked = true/Handheld = false)
+     */
+    private var operationMode : Boolean = true
+
+    /**
      * The surface object used for displaying frames
      */
+    @Volatile
     private var surface : Surface? = null
 
     /**
      * A boolean flag denoting if the emulation thread should call finish() or not
      */
+    @Volatile
     private var shouldFinish : Boolean = true
 
     /**
@@ -89,14 +99,63 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private external fun getFrametime() : Float
 
     /**
-     * This sets the state of a specific button
+     * This initializes a guest controller in libskyline
+     *
+     * @param index The arbitrary index of the controller, this is to handle matching with a partner Joy-Con
+     * @param type The type of the host controller
+     * @param partnerIndex The index of a partner Joy-Con if there is one
      */
-    private external fun setButtonState(id : Long, state : Int)
+    private external fun setController(index : Int, type : Int, partnerIndex : Int = -1)
 
     /**
-     * This sets the value of a specific axis
+     * This flushes the controller updates on the guest
      */
-    private external fun setAxisValue(id : Int, value : Int)
+    private external fun updateControllers()
+
+    /**
+     * This sets the state of the buttons specified in the mask on a specific controller
+     *
+     * @param index The index of the controller this is directed to
+     * @param mask The mask of the button that are being set
+     * @param state The state to set the button to
+     */
+    private external fun setButtonState(index : Int, mask : Long, state : Int)
+
+    /**
+     * This sets the value of a specific axis on a specific controller
+     *
+     * @param index The index of the controller this is directed to
+     * @param axis The ID of the axis that is being modified
+     * @param value The value to set the axis to
+     */
+    private external fun setAxisValue(index : Int, axis : Int, value : Int)
+
+    /**
+     * This initializes all of the controllers from [input] on the guest
+     */
+    private fun initializeControllers() {
+        for (entry in input.controllers) {
+            val controller = entry.value
+
+            if (controller.type != ControllerType.None) {
+                val type : Int = when (controller.type) {
+                    ControllerType.None -> throw IllegalArgumentException()
+                    ControllerType.HandheldProController -> if (operationMode) ControllerType.ProController.id else ControllerType.HandheldProController.id
+                    ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
+                }
+
+                val partnerIndex : Int? = when (controller) {
+                    is JoyConLeftController -> controller.partnerId
+                    is JoyConRightController -> controller.partnerId
+                    else -> null
+                }
+
+                setController(entry.key, type, partnerIndex ?: -1)
+            }
+        }
+
+        updateControllers()
+    }
 
     /**
      * This executes the specified ROM, [preferenceFd] is assumed to be valid beforehand
@@ -108,8 +167,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
         emulationThread = Thread {
-            while ((surface == null))
+            while (surface == null)
                 Thread.yield()
+
+            runOnUiThread { initializeControllers() }
 
             executeApplication(Uri.decode(rom.toString()), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
 
@@ -142,6 +203,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
 
+        input = InputManager(this)
+
         val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
         preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)
 
@@ -150,15 +213,19 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         if (sharedPreferences.getBoolean("perf_stats", false)) {
-            lateinit var perfRunnable : Runnable
-
-            perfRunnable = Runnable {
-                perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
-                perf_stats.postDelayed(perfRunnable, 250)
+            val perfRunnable = object : Runnable {
+                override fun run() {
+                    perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
+                    perf_stats.postDelayed(this, 250)
+                }
             }
 
             perf_stats.postDelayed(perfRunnable, 250)
         }
+
+        operationMode = sharedPreferences.getBoolean("operation_mode", operationMode)
+
+        windowManager.defaultDisplay.supportedModes.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
 
         executeApplication(intent.data!!)
     }
@@ -222,111 +289,91 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     }
 
     /**
-     * This handles passing on any key events to libskyline
+     * This handles translating any [KeyHostEvent]s to a [GuestEvent] that is passed into libskyline
      */
     override fun dispatchKeyEvent(event : KeyEvent) : Boolean {
+        if (event.repeatCount != 0)
+            return super.dispatchKeyEvent(event)
+
         val action : ButtonState = when (event.action) {
             KeyEvent.ACTION_DOWN -> ButtonState.Pressed
             KeyEvent.ACTION_UP -> ButtonState.Released
-            else -> return false
+            else -> return super.dispatchKeyEvent(event)
         }
 
-        val buttonMap : Map<Int, ButtonId> = mapOf(
-                KeyEvent.KEYCODE_BUTTON_A to ButtonId.A,
-                KeyEvent.KEYCODE_BUTTON_B to ButtonId.B,
-                KeyEvent.KEYCODE_BUTTON_X to ButtonId.X,
-                KeyEvent.KEYCODE_BUTTON_Y to ButtonId.Y,
-                KeyEvent.KEYCODE_BUTTON_THUMBL to ButtonId.LeftStick,
-                KeyEvent.KEYCODE_BUTTON_THUMBR to ButtonId.RightStick,
-                KeyEvent.KEYCODE_BUTTON_L1 to ButtonId.L,
-                KeyEvent.KEYCODE_BUTTON_R1 to ButtonId.R,
-                KeyEvent.KEYCODE_BUTTON_L2 to ButtonId.ZL,
-                KeyEvent.KEYCODE_BUTTON_R2 to ButtonId.ZR,
-                KeyEvent.KEYCODE_BUTTON_START to ButtonId.Plus,
-                KeyEvent.KEYCODE_BUTTON_SELECT to ButtonId.Minus,
-                KeyEvent.KEYCODE_DPAD_DOWN to ButtonId.DpadDown,
-                KeyEvent.KEYCODE_DPAD_UP to ButtonId.DpadUp,
-                KeyEvent.KEYCODE_DPAD_LEFT to ButtonId.DpadLeft,
-                KeyEvent.KEYCODE_DPAD_RIGHT to ButtonId.DpadRight)
+        return when (val guestEvent = input.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
+            is ButtonGuestEvent -> {
+                if (guestEvent.button != ButtonId.Menu)
+                    setButtonState(guestEvent.id, guestEvent.button.value(), action.ordinal)
+                true
+            }
 
-        return try {
-            setButtonState(buttonMap.getValue(event.keyCode).value(), action.ordinal)
-            true
-        } catch (ignored : NoSuchElementException) {
-            super.dispatchKeyEvent(event)
+            is AxisGuestEvent -> {
+                setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (if (action == ButtonState.Pressed) if (guestEvent.polarity) Short.MAX_VALUE else Short.MIN_VALUE else 0).toInt())
+                true
+            }
+
+            else -> super.dispatchKeyEvent(event)
         }
     }
 
     /**
-     * This is the controller HAT X value
+     * The last value of the axes so the stagnant axes can be eliminated to not wastefully look them up
      */
-    private var controllerHatX : Float = 0.0f
+    private val axesHistory = arrayOfNulls<Float>(MotionHostEvent.axes.size)
 
     /**
-     * This is the controller HAT Y value
+     * The last value of the HAT axes so it can be ignored in [onGenericMotionEvent] so they are handled by [dispatchKeyEvent] instead
      */
-    private var controllerHatY : Float = 0.0f
+    private var oldHat = Pair(0.0f, 0.0f)
 
     /**
-     * This handles passing on any motion events to libskyline
+     * This handles translating any [MotionHostEvent]s to a [GuestEvent] that is passed into libskyline
      */
-    override fun dispatchGenericMotionEvent(event : MotionEvent) : Boolean {
-        if ((event.source and InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD ||
-                (event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-            val hatXMap : Map<Float, ButtonId> = mapOf(
-                    -1.0f to ButtonId.DpadLeft,
-                    +1.0f to ButtonId.DpadRight)
+    override fun onGenericMotionEvent(event : MotionEvent) : Boolean {
+        if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
+            val hat = Pair(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
 
-            val hatYMap : Map<Float, ButtonId> = mapOf(
-                    -1.0f to ButtonId.DpadUp,
-                    +1.0f to ButtonId.DpadDown)
+            if (hat == oldHat) {
+                for (axisItem in MotionHostEvent.axes.withIndex()) {
+                    val axis = axisItem.value
+                    var value = event.getAxisValue(axis)
 
-            if (controllerHatX != event.getAxisValue(MotionEvent.AXIS_HAT_X)) {
-                if (event.getAxisValue(MotionEvent.AXIS_HAT_X) == 0.0f)
-                    setButtonState(hatXMap.getValue(controllerHatX).value(), ButtonState.Released.ordinal)
-                else
-                    setButtonState(hatXMap.getValue(event.getAxisValue(MotionEvent.AXIS_HAT_X)).value(), ButtonState.Pressed.ordinal)
+                    if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
+                        var polarity = value >= 0
 
-                controllerHatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+                        val guestEvent = input.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)] ?: if (value == 0f) {
+                            polarity = false
+                            input.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)]
+                        } else {
+                            null
+                        }
 
-                return true
-            }
+                        when (guestEvent) {
+                            is ButtonGuestEvent -> {
+                                if (guestEvent.button != ButtonId.Menu)
+                                    setButtonState(guestEvent.id, guestEvent.button.value(), if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.ordinal else ButtonState.Released.ordinal)
+                            }
 
-            if (controllerHatY != event.getAxisValue(MotionEvent.AXIS_HAT_Y)) {
-                if (event.getAxisValue(MotionEvent.AXIS_HAT_Y) == 0.0f)
-                    setButtonState(hatYMap.getValue(controllerHatY).value(), ButtonState.Released.ordinal)
-                else
-                    setButtonState(hatYMap.getValue(event.getAxisValue(MotionEvent.AXIS_HAT_Y)).value(), ButtonState.Pressed.ordinal)
+                            is AxisGuestEvent -> {
+                                value = guestEvent.value(value)
+                                value = if (polarity) abs(value) else -abs(value)
+                                value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value // TODO: Test this
 
-                controllerHatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+                                setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (value * Short.MAX_VALUE).toInt())
+                            }
+                        }
+                    }
 
-                return true
-            }
-        }
-
-        if ((event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK && event.action == MotionEvent.ACTION_MOVE) {
-            val axisMap : Map<Int, AxisId> = mapOf(
-                    MotionEvent.AXIS_X to AxisId.LX,
-                    MotionEvent.AXIS_Y to AxisId.LY,
-                    MotionEvent.AXIS_Z to AxisId.RX,
-                    MotionEvent.AXIS_RZ to AxisId.RY)
-
-            //TODO: Digital inputs based off of analog sticks
-            event.device.motionRanges.forEach {
-                if (axisMap.containsKey(it.axis)) {
-                    var axisValue : Float = event.getAxisValue(it.axis)
-                    if (abs(axisValue) <= it.flat)
-                        axisValue = 0.0f
-
-                    val ratio : Float = axisValue / (it.max - it.min)
-                    val rangedAxisValue : Int = (ratio * (Short.MAX_VALUE - Short.MIN_VALUE)).toInt()
-
-                    setAxisValue(axisMap.getValue(it.axis).ordinal, rangedAxisValue)
+                    axesHistory[axisItem.index] = value
                 }
+
+                return true
+            } else {
+                oldHat = hat
             }
-            return true
         }
 
-        return super.dispatchGenericMotionEvent(event)
+        return super.onGenericMotionEvent(event)
     }
 }

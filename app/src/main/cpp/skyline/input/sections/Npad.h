@@ -24,7 +24,7 @@ namespace skyline::input {
     * @brief This enumerates all the possible assignments of the Joy-Con(s)
     */
     enum class NpadJoyAssignment : u32 {
-        Dual = 0, //!< Dual Joy-Cons
+        Dual = 0, //!< Dual Joy-Cons (Default)
         Single = 1, //!< Single Joy-Con
     };
 
@@ -66,6 +66,7 @@ namespace skyline::input {
      * @brief This is a bit-field of all the buttons on an NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadButton)
      */
     union NpadButton {
+        u64 raw;
         struct {
             bool a               : 1; //!< The A button
             bool b               : 1; //!< The B button
@@ -91,12 +92,11 @@ namespace skyline::input {
             bool rightStickUp    : 1; //!< Right stick up
             bool rightStickRight : 1; //!< Right stick right
             bool rightStickDown  : 1; //!< Right stick down
-            bool leftSL          : 1; //!< Left Joy-Con SL button
+            bool leftSl          : 1; //!< Left Joy-Con SL button
             bool leftSr          : 1; //!< Left Joy-Con SR button
             bool rightSl         : 1; //!< Right Joy-Con SL button
             bool rightSr         : 1; //!< Right Joy-Con SR button
         };
-        u64 raw;
     };
     static_assert(sizeof(NpadButton) == 0x8);
 
@@ -104,15 +104,15 @@ namespace skyline::input {
     * @brief This structure holds data about the state of the connection with the controller
     */
     union NpadConnectionState {
+        u64 raw;
         struct {
-            bool connected : 1; //!< If the controller is connected
+            bool connected : 1; //!< If the controller is connected (Not in handheld mode)
             bool handheld : 1; //!< If the controller is in handheld mode
-            bool leftJoyconConnected : 1; //!< If the left Joy-Con is connected
+            bool leftJoyconConnected : 1; //!< If the left Joy-Con is connected (Not in handheld mode)
             bool leftJoyconHandheld : 1; //!< If the left Joy-Con is handheld
-            bool rightJoyconConnected : 1; //!< If the right Joy-Con is connected
+            bool rightJoyconConnected : 1; //!< If the right Joy-Con is connected (Not in handheld mode)
             bool rightJoyconHandheld : 1; //!< If the right Joy-Con is handheld
         };
-        u64 raw;
     };
     static_assert(sizeof(NpadConnectionState) == 0x8);
 
@@ -184,6 +184,7 @@ namespace skyline::input {
     * @brief This is a bit-field of all the device types (https://switchbrew.org/wiki/HID_services#DeviceType)
     */
     union NpadDeviceType {
+        u32 raw;
         struct {
             bool fullKey : 1; //!< Pro/GC controller
             bool debugPad : 1; //!< Debug controller
@@ -204,7 +205,6 @@ namespace skyline::input {
             u32 _unk_ : 15;
             bool system : 1; //!< Generic controller
         };
-        u32 raw;
     };
     static_assert(sizeof(NpadDeviceType) == 0x4);
 
@@ -212,23 +212,23 @@ namespace skyline::input {
     * @brief This structure holds the system properties of this NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemProperties)
     */
     union NpadSystemProperties {
-        struct {
-            bool singleCharging : 1; //!< Info 0 Charging
-            bool leftCharging : 1; //!< Info 1 Charging
-            bool rightCharging : 1; //!< Info 2 Charging
-            bool singlePowerConnected : 1; //!< Info 0 Connected
-            bool leftPowerConnected : 1; //!< Info 1 Connected
-            bool rightPowerConnected : 1; //!< Info 2 Connected
-            u64 _unk_ : 3;
-            bool unsupportedButtonPressedSystem : 1; //!< Unsupported buttons are pressed on system controller
-            bool unsupportedButtonPressedSystemExt : 1; //!< Unsupported buttons are pressed on system external controller
-            bool ABXYButtonOriented : 1; //!< Are the ABXY Buttons oriented
-            bool SLSRuttonOriented : 1; //!< Are the SLSR Buttons oriented
-            bool plusButtonCapability : 1; //!< Does the + button exist
-            bool minusButtonCapability : 1; //!< Does the - button exist
-            bool directionalButtonsSupported : 1; //!< Does the controller have a D-Pad
-        };
         u64 raw;
+        struct {
+            bool singleCharging : 1; //!< If a single unit is charging (Handheld, Pro-Con)
+            bool leftCharging : 1; //!< If the left Joy-Con is charging
+            bool rightCharging : 1; //!< If the right Joy-Con is charging
+            bool singlePowerConnected : 1; //!< If a single unit is connected to a power source (Handheld, Pro-Con)
+            bool leftPowerConnected : 1; //!< If the left Joy-Con is connected to a power source
+            bool rightPowerConnected : 1; //!< If the right Joy-Con is connected to a power source
+            u64 _unk_ : 3;
+            bool unsupportedButtonPressedSystem : 1; //!< If an unsupported buttons was pressed on system controller
+            bool unsupportedButtonPressedSystemExt : 1; //!< If an unsupported buttons was pressed on system external controller
+            bool abxyButtonsOriented : 1; //!< If the ABXY Buttons oriented
+            bool slSrButtonOriented : 1; //!< If the SL/SR Buttons oriented
+            bool plusButtonCapability : 1; //!< If the + button exists
+            bool minusButtonCapability : 1; //!< If the - button exists
+            bool directionalButtonsSupported : 1; //!< If the controller has a D-Pad
+        };
     };
     static_assert(sizeof(NpadSystemProperties) == 0x8);
 
@@ -236,10 +236,10 @@ namespace skyline::input {
     * @brief This structure holds data about the System Buttons (Home, Sleep and Capture) on an NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemButtonProperties)
     */
     union NpadSystemButtonProperties {
+        u32 raw;
         struct {
             bool unintendedHomeButtonInputProtectionEnabled : 1; //!< If the Unintended Home Button Input Protection is enabled or not
         };
-        u32 raw;
     };
     static_assert(sizeof(NpadSystemButtonProperties) == 0x4);
 
@@ -262,11 +262,11 @@ namespace skyline::input {
 
         NpadControllerInfo fullKeyController; //!< The Pro/GC controller data
         NpadControllerInfo handheldController; //!< The Handheld controller data
-        NpadControllerInfo dualController; //!< The Dual Joy-Con controller data
-        NpadControllerInfo leftController; //!< The Left Joy-Con controller data
-        NpadControllerInfo rightController; //!< The Right Joy-Con controller data
-        NpadControllerInfo palmaController; //!< The Poké Ball Plus controller data
-        NpadControllerInfo systemExtController; //!< The System External controller data
+        NpadControllerInfo dualController; //!< The Dual Joy-Con controller data (Only in Dual Mode, no input rotation based on rotation)
+        NpadControllerInfo leftController; //!< The Left Joy-Con controller data (Only in Single Mode, no input rotation based on rotation)
+        NpadControllerInfo rightController; //!< The Right Joy-Con controller data (Only in Single Mode, no input rotation based on rotation)
+        NpadControllerInfo digitalController; //!< The Default Digital controller data (Same as Default but Analog Sticks are converted into 8-directional Digital Sticks)
+        NpadControllerInfo defaultController; //!< The Default controller data (Inputs are rotated based on orientation and SL/SR are mapped to L/R incase it is a single JC)
 
         NpadSixaxisInfo fullKeySixaxis; //!< The Pro/GC IMU data
         NpadSixaxisInfo handheldSixaxis; //!< The Handheld IMU data
@@ -281,7 +281,9 @@ namespace skyline::input {
 
         NpadSystemProperties systemProperties; //!< The system properties of this controller
         NpadSystemButtonProperties buttonProperties; //!< The system button properties of this controller
-        NpadBatteryLevel batteryLevel[3]; //!< The battery level of this controller
+        NpadBatteryLevel singleBatteryLevel; //!< The battery level of a single unit (Handheld, Pro-Con)
+        NpadBatteryLevel leftBatteryLevel; //!< The battery level of the left Joy-Con
+        NpadBatteryLevel rightBatteryLevel; //!< The battery level of the right Joy-Con
 
         u32 _pad1_[0x395];
     };

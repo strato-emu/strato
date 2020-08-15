@@ -36,7 +36,7 @@ This can also be done by using `Ctrl + Alt + L` on Windows, `Ctrl + Shift + Alt 
 * Parameters: `camelCase`
 * Files and Directories: `snake_case` except for when they correspond to a HOS structure (EG: Services, Kernel Objects)
 
-**(1)** Except when the whole name is an abbreviation such as `OS` and `NCE` but not `JVMManager`
+**(1)** Except when the whole name is an abbreviation use UPPERCASE such as `OS` and `NCE` but not `JVMManager`
 
 ### Comments
 Use doxygen style comments for:
