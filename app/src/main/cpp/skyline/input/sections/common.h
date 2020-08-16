@@ -20,7 +20,7 @@ namespace skyline {
          */
         struct CommonHeader {
             u64 timestamp; //!< The timestamp of the latest entry in ticks
-            u64 entryCount{constant::HidEntryCount}; //!< The number of entries (17)
+            u64 entryCount; //!< The number of written entries
             u64 currentEntry; //!< The index of the latest entry
             u64 maxEntry{constant::HidEntryCount - 1}; //!< The maximum entry index (16)
         };

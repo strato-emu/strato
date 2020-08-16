@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include "shared_mem.h"
 
 namespace skyline::input {
@@ -96,6 +97,7 @@ namespace skyline::input {
         NpadId id; //!< The ID of this controller
         NpadControllerType type{}; //!< The type of this controller
         NpadConnectionState connectionState{}; //!< The state of the connection
+        std::shared_ptr<kernel::type::KEvent> updateEvent; //!< This event is triggered on the controller's style changing
         bool explicitAssignment{false}; //!< If an assignment has explicitly been set or is the default for this controller
 
         NpadDevice(NpadManager &manager, NpadSection &section, NpadId id);
@@ -123,9 +125,9 @@ namespace skyline::input {
 
         /**
         * @brief This connects this controller to the guest
-        * @param type The type of controller to connect as
+        * @param newType The type of controller to connect as
         */
-        void Connect(NpadControllerType type);
+        void Connect(NpadControllerType newType);
 
         /**
         * @brief This disconnects this controller from the guest

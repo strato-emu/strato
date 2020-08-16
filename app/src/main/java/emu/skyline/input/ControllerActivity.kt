@@ -148,11 +148,6 @@ class ControllerActivity : AppCompatActivity(), View.OnClickListener {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener {
-            if (!it)
-                toolbar_layout.setExpanded(false)
-        }
-
         controller_list.layoutManager = LinearLayoutManager(this)
         controller_list.adapter = adapter
 
@@ -173,23 +168,31 @@ class ControllerActivity : AppCompatActivity(), View.OnClickListener {
     override fun onClick(v : View?) {
         when (val tag = v!!.tag) {
             is ControllerTypeItem -> {
-                val type = manager.controllers[id]!!.type
+                val controller = manager.controllers[id]!!
 
                 val types = ControllerType.values().filter { !it.firstController || id == 0 }
                 val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
 
                 MaterialAlertDialogBuilder(this)
                         .setTitle(tag.content)
-                        .setSingleChoiceItems(typeNames, types.indexOf(type)) { dialog, typeIndex ->
-                            manager.controllers[id] = when (types[typeIndex]) {
-                                ControllerType.None -> Controller(id, ControllerType.None)
-                                ControllerType.HandheldProController -> HandheldController(id)
-                                ControllerType.ProController -> ProController(id)
-                                ControllerType.JoyConLeft -> JoyConLeftController(id)
-                                ControllerType.JoyConRight -> JoyConRightController(id)
-                            }
+                        .setSingleChoiceItems(typeNames, types.indexOf(controller.type)) { dialog, typeIndex ->
+                            val selectedType = types[typeIndex]
+                            if (controller.type != selectedType) {
+                                if (controller is JoyConLeftController)
+                                    controller.partnerId?.let { (manager.controllers[it] as JoyConRightController).partnerId = null }
+                                else if (controller is JoyConRightController)
+                                    controller.partnerId?.let { (manager.controllers[it] as JoyConLeftController).partnerId = null }
 
-                            update()
+                                manager.controllers[id] = when (selectedType) {
+                                    ControllerType.None -> Controller(id, ControllerType.None)
+                                    ControllerType.HandheldProController -> HandheldController(id)
+                                    ControllerType.ProController -> ProController(id)
+                                    ControllerType.JoyConLeft -> JoyConLeftController(id)
+                                    ControllerType.JoyConRight -> JoyConRightController(id)
+                                }
+
+                                update()
+                            }
 
                             dialog.dismiss()
                         }

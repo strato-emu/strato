@@ -5,9 +5,12 @@
 #include "npad.h"
 
 namespace skyline::input {
-    NpadDevice::NpadDevice(NpadManager &manager, NpadSection &section, NpadId id) : manager(manager), section(section), id(id) {}
+    NpadDevice::NpadDevice(NpadManager &manager, NpadSection &section, NpadId id) : manager(manager), section(section), id(id), updateEvent(std::make_shared<kernel::type::KEvent>(manager.state)) {}
 
-    void NpadDevice::Connect(NpadControllerType type) {
+    void NpadDevice::Connect(NpadControllerType newType) {
+        if (type == newType)
+            return;
+
         section.header.type = NpadControllerType::None;
         section.deviceType.raw = 0;
         section.buttonProperties.raw = 0;
@@ -15,7 +18,7 @@ namespace skyline::input {
         connectionState.raw = 0;
         connectionState.connected = true;
 
-        switch (type) {
+        switch (newType) {
             case NpadControllerType::ProController:
                 section.header.type = NpadControllerType::ProController;
                 section.deviceType.fullKey = true;
@@ -86,10 +89,10 @@ namespace skyline::input {
                 break;
 
             default:
-                throw exception("Unsupported controller type: {}", type);
+                throw exception("Unsupported controller type: {}", newType);
         }
 
-        switch (type) {
+        switch (newType) {
             case NpadControllerType::ProController:
             case NpadControllerType::JoyconLeft:
             case NpadControllerType::JoyconRight:
@@ -114,19 +117,24 @@ namespace skyline::input {
         section.leftBatteryLevel = NpadBatteryLevel::Full;
         section.rightBatteryLevel = NpadBatteryLevel::Full;
 
-        this->type = type;
+        type = newType;
         controllerInfo = &GetControllerInfo();
 
-        SetButtonState(NpadButton{}, NpadButtonState::Released);
+        updateEvent->Signal();
     }
 
     void NpadDevice::Disconnect() {
+        if (type == NpadControllerType::None)
+            return;
+
         section = {};
         explicitAssignment = false;
         globalTimestamp = 0;
 
         type = NpadControllerType::None;
         controllerInfo = nullptr;
+
+        updateEvent->Signal();
     }
 
     NpadControllerInfo &NpadDevice::GetControllerInfo() {
@@ -149,8 +157,9 @@ namespace skyline::input {
     NpadControllerState &NpadDevice::GetNextEntry(NpadControllerInfo &info) {
         auto &lastEntry = info.state.at(info.header.currentEntry);
 
-        info.header.currentEntry = (info.header.currentEntry != constant::HidEntryCount - 1) ? info.header.currentEntry + 1 : 0;
         info.header.timestamp = util::GetTimeTicks();
+        info.header.entryCount = std::min(static_cast<u8>(info.header.entryCount + 1), constant::HidEntryCount);
+        info.header.currentEntry = (info.header.currentEntry != constant::HidEntryCount - 1) ? info.header.currentEntry + 1 : 0;
 
         auto &entry = info.state.at(info.header.currentEntry);
 
@@ -210,7 +219,7 @@ namespace skyline::input {
             mask = orientedMask;
         }
 
-        for (NpadControllerState& controllerEntry : {std::ref(GetNextEntry(section.defaultController)), std::ref(GetNextEntry(section.digitalController))})
+        for (NpadControllerState &controllerEntry : {std::ref(GetNextEntry(section.defaultController)), std::ref(GetNextEntry(section.digitalController))})
             if (state == NpadButtonState::Pressed)
                 controllerEntry.buttons.raw |= mask.raw;
             else
@@ -224,7 +233,7 @@ namespace skyline::input {
             return;
 
         auto &controllerEntry = GetNextEntry(*controllerInfo);
-        auto& defaultEntry = GetNextEntry(section.defaultController);
+        auto &defaultEntry = GetNextEntry(section.defaultController);
 
         if (manager.orientation == NpadJoyOrientation::Vertical && (type != NpadControllerType::JoyconLeft && type != NpadControllerType::JoyconRight)) {
             switch (axis) {
@@ -266,7 +275,7 @@ namespace skyline::input {
             }
         }
 
-        auto& digitalEntry = GetNextEntry(section.digitalController);
+        auto &digitalEntry = GetNextEntry(section.digitalController);
         constexpr i16 threshold = 3276; // A 10% deadzone for the stick
 
         digitalEntry.buttons.leftStickUp = defaultEntry.leftY >= threshold;

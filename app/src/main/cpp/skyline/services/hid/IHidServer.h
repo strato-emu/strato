@@ -26,6 +26,11 @@ namespace skyline::service::hid {
         void SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This gets the style of controllers supported (https://switchbrew.org/wiki/HID_services#GetSupportedNpadStyleSet)
+         */
+        void GetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This sets the NpadIds which are supported (https://switchbrew.org/wiki/HID_services#SetSupportedNpadIdType)
          */
         void SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -41,9 +46,24 @@ namespace skyline::service::hid {
         void DeactivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This requests an event that's signalled on a specific NpadId changing (https://switchbrew.org/wiki/HID_services#AcquireNpadStyleSetUpdateEventHandle)
+         */
+        void AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This requests the activation of controllers with a specific HID revision (https://switchbrew.org/wiki/HID_services#ActivateNpadWithRevision)
+         */
+        void ActivateNpadWithRevision(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Sets the Joy-Con hold mode (https://switchbrew.org/wiki/HID_services#SetNpadJoyHoldType)
          */
         void SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Sets the Joy-Con hold mode (https://switchbrew.org/wiki/HID_services#GetNpadJoyHoldType)
+         */
+        void GetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Sets the Joy-Con assignment mode to Single by default (https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeSingleByDefault)

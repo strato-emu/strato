@@ -4,7 +4,8 @@
         android:id="@+id/toolbar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:descendantFocusability="afterDescendants"
+        android:fitsSystemWindows="true"
+        app:layout_scrollFlags="scroll|exitUntilCollapsed"
         app:liftOnScroll="true">
 
     <com.google.android.material.appbar.MaterialToolbar

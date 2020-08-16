@@ -19,7 +19,7 @@ class SettingsActivity : AppCompatActivity() {
     /**
      * This is the instance of [PreferenceFragment] that is shown inside [R.id.settings]
      */
-    private val preferenceFragment : PreferenceFragment = PreferenceFragment()
+    private val preferenceFragment = PreferenceFragment()
 
     /**
      * This is an instance of [InputManager] used by [ControllerPreference]

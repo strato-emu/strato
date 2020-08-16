@@ -23,9 +23,6 @@ namespace skyline::input {
         if (!activated)
             return;
 
-        for (auto &npad : npads)
-            npad.Disconnect();
-
         for (auto &controller : controllers)
             controller.device = nullptr;
 
@@ -74,6 +71,19 @@ namespace skyline::input {
                     break;
                 }
             }
+        }
+
+        // We do this to prevent triggering the event unless there's a real change in a device's style, which would be caused if we disconnected all controllers then reconnected them
+        for (auto &device : npads) {
+            bool connected = false;
+            for (auto &controller : controllers) {
+                if (controller.device == &device) {
+                    connected = true;
+                    break;
+                }
+            }
+            if (!connected)
+                device.Disconnect();
         }
     }
 

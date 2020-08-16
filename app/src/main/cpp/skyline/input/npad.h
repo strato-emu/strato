@@ -22,6 +22,8 @@ namespace skyline::input {
         bool activated{false}; //!< If this NpadManager is activated or not
         std::atomic<bool> updated{false}; //!< If this NpadManager has been updated by the guest
 
+        friend NpadDevice;
+
         /**
          * @brief This translates an NPad's ID into it's index in the array
          * @param id The ID of the NPad to translate
