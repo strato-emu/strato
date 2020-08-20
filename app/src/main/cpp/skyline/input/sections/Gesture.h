@@ -19,8 +19,8 @@ namespace skyline::input {
      * @brief The structure of the Gesture section (https://switchbrew.org/wiki/HID_Shared_Memory#Gesture)
      */
     struct GestureSection {
-        CommonHeader header; //!< The header for this section
-        std::array<GestureState, constant::HidEntryCount> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<GestureState, constant::HidEntryCount> entries;
         u64 _pad_[0x1F];
     };
     static_assert(sizeof(GestureSection) == 0x800);

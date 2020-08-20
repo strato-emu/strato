@@ -19,8 +19,8 @@ namespace skyline::input {
      * @brief The section structure for all Button sections (HomeButton, SleepButton, CaptureButton)
      */
     struct ButtonSection {
-        CommonHeader header; //!< The header for this section
-        std::array<ButtonState, constant::HidEntryCount> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<ButtonState, constant::HidEntryCount> entries;
         u64 _pad_[0x9];
     };
     static_assert(sizeof(ButtonSection) == 0x200);

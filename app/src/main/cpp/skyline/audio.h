@@ -18,7 +18,7 @@ namespace skyline::audio {
       private:
         oboe::AudioStreamBuilder builder; //!< The audio stream builder, used to open
         oboe::ManagedStream outputStream; //!< The output oboe audio stream
-        std::vector<std::shared_ptr<audio::AudioTrack>> audioTracks; //!< A vector of shared_ptr to every open audio track
+        std::vector<std::shared_ptr<AudioTrack>> audioTracks; //!< A vector of shared_ptr to every open audio track
         Mutex trackLock; //!< This mutex is used to ensure that audioTracks isn't modified while it is being used
 
       public:
@@ -31,13 +31,13 @@ namespace skyline::audio {
          * @param releaseCallback The callback to call when a buffer has been released
          * @return A shared pointer to a new AudioTrack object
          */
-        std::shared_ptr<audio::AudioTrack> OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback);
+        std::shared_ptr<AudioTrack> OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback);
 
         /**
          * @brief Closes a track and frees its data
          * @param track The track to close
          */
-        void CloseTrack(std::shared_ptr<audio::AudioTrack> &track);
+        void CloseTrack(std::shared_ptr<AudioTrack> &track);
 
         /**
          * @brief The callback oboe uses to get audio sample data

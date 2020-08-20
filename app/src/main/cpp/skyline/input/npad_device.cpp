@@ -8,27 +8,37 @@ namespace skyline::input {
     NpadDevice::NpadDevice(NpadManager &manager, NpadSection &section, NpadId id) : manager(manager), section(section), id(id), updateEvent(std::make_shared<kernel::type::KEvent>(manager.state)) {}
 
     void NpadDevice::Connect(NpadControllerType newType) {
-        if (type == newType)
+        if (type == newType) {
+            if (type == NpadControllerType::JoyconLeft || type == NpadControllerType::JoyconRight) {
+                switch (manager.orientation) {
+                    case NpadJoyOrientation::Vertical:
+                        section.systemProperties.abxyButtonsOriented = true;
+                        section.systemProperties.slSrButtonOriented = false;
+                        break;
+                    case NpadJoyOrientation::Horizontal:
+                        section.systemProperties.abxyButtonsOriented = false;
+                        section.systemProperties.slSrButtonOriented = true;
+                        break;
+                }
+            }
             return;
+        }
 
-        section.header.type = NpadControllerType::None;
-        section.deviceType.raw = 0;
-        section.buttonProperties.raw = 0;
+        section = {};
+        controllerInfo = nullptr;
 
-        connectionState.raw = 0;
-        connectionState.connected = true;
+        connectionState = {.connected = true};
 
         switch (newType) {
             case NpadControllerType::ProController:
                 section.header.type = NpadControllerType::ProController;
                 section.deviceType.fullKey = true;
 
-                section.systemProperties.directionalButtonsSupported = true;
                 section.systemProperties.abxyButtonsOriented = true;
                 section.systemProperties.plusButtonCapability = true;
                 section.systemProperties.minusButtonCapability = true;
 
-                connectionState.connected = true;
+                connectionState.handheld = true;
                 break;
 
             case NpadControllerType::Handheld:
@@ -36,13 +46,15 @@ namespace skyline::input {
                 section.deviceType.handheldLeft = true;
                 section.deviceType.handheldRight = true;
 
-                section.systemProperties.directionalButtonsSupported = true;
                 section.systemProperties.abxyButtonsOriented = true;
                 section.systemProperties.plusButtonCapability = true;
                 section.systemProperties.minusButtonCapability = true;
+                section.systemProperties.directionalButtonsSupported = true;
 
                 connectionState.handheld = true;
+                connectionState.leftJoyconConnected = true;
                 connectionState.leftJoyconHandheld = true;
+                connectionState.rightJoyconConnected = true;
                 connectionState.rightJoyconHandheld = true;
                 break;
 
@@ -52,12 +64,11 @@ namespace skyline::input {
                 section.deviceType.joyconRight = true;
                 section.header.assignment = NpadJoyAssignment::Dual;
 
-                section.systemProperties.directionalButtonsSupported = true;
                 section.systemProperties.abxyButtonsOriented = true;
                 section.systemProperties.plusButtonCapability = true;
                 section.systemProperties.minusButtonCapability = true;
+                section.systemProperties.directionalButtonsSupported = true;
 
-                connectionState.connected = true;
                 connectionState.leftJoyconConnected = true;
                 connectionState.rightJoyconConnected = true;
                 break;
@@ -67,11 +78,14 @@ namespace skyline::input {
                 section.deviceType.joyconLeft = true;
                 section.header.assignment = NpadJoyAssignment::Single;
 
-                section.systemProperties.directionalButtonsSupported = true;
-                section.systemProperties.slSrButtonOriented = true;
-                section.systemProperties.minusButtonCapability = true;
+                if (manager.orientation == NpadJoyOrientation::Vertical)
+                    section.systemProperties.abxyButtonsOriented = true;
+                else if (manager.orientation == NpadJoyOrientation::Horizontal)
+                    section.systemProperties.slSrButtonOriented = true;
 
-                connectionState.connected = true;
+                section.systemProperties.minusButtonCapability = true;
+                section.systemProperties.directionalButtonsSupported = true;
+
                 connectionState.leftJoyconConnected = true;
                 break;
 
@@ -80,11 +94,14 @@ namespace skyline::input {
                 section.deviceType.joyconRight = true;
                 section.header.assignment = NpadJoyAssignment::Single;
 
-                section.systemProperties.abxyButtonsOriented = true;
+                if (manager.orientation == NpadJoyOrientation::Vertical)
+                    section.systemProperties.abxyButtonsOriented = true;
+                else if (manager.orientation == NpadJoyOrientation::Horizontal)
+                    section.systemProperties.slSrButtonOriented = true;
+
                 section.systemProperties.slSrButtonOriented = true;
                 section.systemProperties.plusButtonCapability = true;
 
-                connectionState.connected = true;
                 connectionState.rightJoyconConnected = true;
                 break;
 
@@ -97,16 +114,20 @@ namespace skyline::input {
             case NpadControllerType::JoyconLeft:
             case NpadControllerType::JoyconRight:
                 section.header.singleColorStatus = NpadColorReadStatus::Success;
-                section.header.dualColorStatus = NpadColorReadStatus::Disconnected;
-                section.header.singleColor = {0, 0};
+                if (newType == NpadControllerType::ProController)
+                    section.header.singleColor = {0xFF2D2D2D, 0xFFE6E6E6}; // Normal Pro-Controller
+                else
+                    section.header.singleColor = {0x4655F5, 0x00000A}; // Blue Joy-Con (https://switchbrew.org/wiki/Joy-Con#Colors)
                 break;
 
             case NpadControllerType::Handheld:
             case NpadControllerType::JoyconDual:
-                section.header.singleColorStatus = NpadColorReadStatus::Disconnected;
                 section.header.dualColorStatus = NpadColorReadStatus::Success;
-                section.header.leftColor = {0, 0};
-                section.header.rightColor = {0, 0};
+                section.header.leftColor = {0x4655F5, 0x00000A};
+                section.header.rightColor = {0x4655F5, 0x00000A};
+
+                section.header.singleColorStatus = NpadColorReadStatus::Success; // Single color is also written for dual controllers
+                section.header.singleColor = section.header.leftColor;           // and is set to the color of the left JC
                 break;
 
             case NpadControllerType::None:
@@ -120,6 +141,10 @@ namespace skyline::input {
         type = newType;
         controllerInfo = &GetControllerInfo();
 
+        GetNextEntry(*controllerInfo);
+        GetNextEntry(section.defaultController);
+        globalTimestamp++;
+
         updateEvent->Signal();
     }
 
@@ -128,7 +153,6 @@ namespace skyline::input {
             return;
 
         section = {};
-        explicitAssignment = false;
         globalTimestamp = 0;
 
         type = NpadControllerType::None;
@@ -175,18 +199,18 @@ namespace skyline::input {
         return entry;
     }
 
-    void NpadDevice::SetButtonState(NpadButton mask, NpadButtonState state) {
-        if (!connectionState.connected || !controllerInfo)
+    void NpadDevice::SetButtonState(NpadButton mask, bool pressed) {
+        if (!connectionState.connected)
             return;
 
         auto &entry = GetNextEntry(*controllerInfo);
 
-        if (state == NpadButtonState::Pressed)
+        if (pressed)
             entry.buttons.raw |= mask.raw;
         else
             entry.buttons.raw &= ~mask.raw;
 
-        if ((type == NpadControllerType::JoyconLeft || type == NpadControllerType::JoyconRight) && manager.orientation == NpadJoyOrientation::Horizontal) {
+        if (manager.orientation == NpadJoyOrientation::Horizontal && (type == NpadControllerType::JoyconLeft || type == NpadControllerType::JoyconRight)) {
             NpadButton orientedMask{};
 
             if (mask.dpadUp)
@@ -219,74 +243,107 @@ namespace skyline::input {
             mask = orientedMask;
         }
 
-        for (NpadControllerState &controllerEntry : {std::ref(GetNextEntry(section.defaultController)), std::ref(GetNextEntry(section.digitalController))})
-            if (state == NpadButtonState::Pressed)
-                controllerEntry.buttons.raw |= mask.raw;
-            else
-                controllerEntry.buttons.raw &= ~mask.raw;
+        auto &defaultEntry = GetNextEntry(section.defaultController);
+        if (pressed)
+            defaultEntry.buttons.raw |= mask.raw;
+        else
+            defaultEntry.buttons.raw &= ~mask.raw;
 
         globalTimestamp++;
     }
 
     void NpadDevice::SetAxisValue(NpadAxisId axis, i32 value) {
-        if (!connectionState.connected || !controllerInfo)
+        if (!connectionState.connected)
             return;
 
         auto &controllerEntry = GetNextEntry(*controllerInfo);
         auto &defaultEntry = GetNextEntry(section.defaultController);
 
-        if (manager.orientation == NpadJoyOrientation::Vertical && (type != NpadControllerType::JoyconLeft && type != NpadControllerType::JoyconRight)) {
+        constexpr i16 threshold = std::numeric_limits<i16>::max() / 2; // A 50% deadzone for the stick buttons
+
+        if (manager.orientation == NpadJoyOrientation::Vertical || (type != NpadControllerType::JoyconLeft && type != NpadControllerType::JoyconRight)) {
             switch (axis) {
                 case NpadAxisId::LX:
                     controllerEntry.leftX = value;
                     defaultEntry.leftX = value;
+
+                    controllerEntry.buttons.leftStickLeft = controllerEntry.leftX <= -threshold;
+                    defaultEntry.buttons.leftStickLeft = controllerEntry.buttons.leftStickLeft;
+
+                    controllerEntry.buttons.leftStickRight = controllerEntry.leftX >= threshold;
+                    defaultEntry.buttons.leftStickRight = controllerEntry.buttons.leftStickRight;
                     break;
                 case NpadAxisId::LY:
                     controllerEntry.leftY = value;
                     defaultEntry.leftY = value;
+
+                    defaultEntry.buttons.leftStickUp = controllerEntry.buttons.leftStickUp;
+                    controllerEntry.buttons.leftStickUp = controllerEntry.leftY >= threshold;
+
+                    controllerEntry.buttons.leftStickDown = controllerEntry.leftY <= -threshold;
+                    defaultEntry.buttons.leftStickDown = controllerEntry.buttons.leftStickDown;
                     break;
                 case NpadAxisId::RX:
                     controllerEntry.rightX = value;
                     defaultEntry.rightX = value;
+
+                    controllerEntry.buttons.rightStickLeft = controllerEntry.rightX <= -threshold;
+                    defaultEntry.buttons.rightStickLeft = controllerEntry.buttons.rightStickLeft;
+
+                    controllerEntry.buttons.rightStickRight = controllerEntry.rightX >= threshold;
+                    defaultEntry.buttons.rightStickRight = controllerEntry.buttons.rightStickRight;
                     break;
                 case NpadAxisId::RY:
                     controllerEntry.rightY = value;
                     defaultEntry.rightY = value;
+
+                    controllerEntry.buttons.rightStickUp = controllerEntry.rightY >= threshold;
+                    defaultEntry.buttons.rightStickUp = controllerEntry.buttons.rightStickUp;
+
+                    controllerEntry.buttons.rightStickDown = controllerEntry.rightY <= -threshold;
+                    defaultEntry.buttons.rightStickDown = controllerEntry.buttons.rightStickDown;
                     break;
             }
         } else {
             switch (axis) {
                 case NpadAxisId::LX:
-                    controllerEntry.leftX = value;
-                    defaultEntry.leftY = value;
+                    controllerEntry.leftY = value;
+                    controllerEntry.buttons.leftStickUp = controllerEntry.leftY >= threshold;
+                    controllerEntry.buttons.leftStickDown = controllerEntry.leftY <= -threshold;
+
+                    defaultEntry.leftX = value;
+                    defaultEntry.buttons.leftStickLeft = defaultEntry.leftX <= -threshold;
+                    defaultEntry.buttons.leftStickRight = defaultEntry.leftX >= threshold;
                     break;
                 case NpadAxisId::LY:
-                    controllerEntry.leftY = value;
-                    defaultEntry.leftX = -value;
+                    controllerEntry.leftX = -value;
+                    controllerEntry.buttons.leftStickLeft = controllerEntry.leftX <= -threshold;
+                    controllerEntry.buttons.leftStickRight = controllerEntry.leftX >= threshold;
+
+                    defaultEntry.leftY = value;
+                    defaultEntry.buttons.leftStickUp = defaultEntry.leftY >= threshold;
+                    defaultEntry.buttons.leftStickDown = defaultEntry.leftY <= -threshold;
                     break;
                 case NpadAxisId::RX:
-                    controllerEntry.rightX = value;
-                    defaultEntry.rightY = value;
+                    controllerEntry.rightY = value;
+                    controllerEntry.buttons.rightStickUp = controllerEntry.rightY >= threshold;
+                    controllerEntry.buttons.rightStickDown = controllerEntry.rightY <= -threshold;
+
+                    defaultEntry.rightX = value;
+                    defaultEntry.buttons.rightStickLeft = defaultEntry.rightX <= -threshold;
+                    defaultEntry.buttons.rightStickRight = defaultEntry.rightX >= threshold;
                     break;
                 case NpadAxisId::RY:
-                    controllerEntry.rightY = value;
-                    defaultEntry.rightX = -value;
+                    controllerEntry.rightX = -value;
+                    controllerEntry.buttons.rightStickLeft = controllerEntry.rightX <= -threshold;
+                    controllerEntry.buttons.rightStickRight = controllerEntry.rightX >= threshold;
+
+                    defaultEntry.rightY = value;
+                    defaultEntry.buttons.rightStickUp = defaultEntry.rightY >= threshold;
+                    defaultEntry.buttons.rightStickDown = defaultEntry.rightY <= -threshold;
                     break;
             }
         }
-
-        auto &digitalEntry = GetNextEntry(section.digitalController);
-        constexpr i16 threshold = 3276; // A 10% deadzone for the stick
-
-        digitalEntry.buttons.leftStickUp = defaultEntry.leftY >= threshold;
-        digitalEntry.buttons.leftStickDown = defaultEntry.leftY <= -threshold;
-        digitalEntry.buttons.leftStickLeft = defaultEntry.leftX <= -threshold;
-        digitalEntry.buttons.leftStickRight = defaultEntry.leftX >= threshold;
-
-        digitalEntry.buttons.rightStickUp = defaultEntry.rightY >= threshold;
-        digitalEntry.buttons.rightStickDown = defaultEntry.rightY <= -threshold;
-        digitalEntry.buttons.rightStickLeft = defaultEntry.rightX <= -threshold;
-        digitalEntry.buttons.rightStickRight = defaultEntry.rightX >= threshold;
 
         globalTimestamp++;
     }

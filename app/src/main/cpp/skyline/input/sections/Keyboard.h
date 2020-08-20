@@ -12,17 +12,17 @@ namespace skyline::input {
     union ModifierKey {
         u64 raw;
         struct {
-            bool LControl : 1; //!< Left Control Key
-            bool LShift   : 1; //!< Left Shift Key
-            bool LAlt     : 1; //!< Left Alt Key
-            bool LWindows : 1; //!< Left Windows Key
-            bool RControl : 1; //!< Right Control Key
-            bool RShift   : 1; //!< Right Shift Key
-            bool RAlt     : 1; //!< Right Alt Key
-            bool RWindows : 1; //!< Right Windows Key
-            bool CapsLock : 1; //!< Caps-Lock Key
-            bool ScrLock  : 1; //!< Scroll-Lock Key
-            bool NumLock  : 1; //!< Num-Lock Key
+            bool lControl : 1; //!< Left Control Key
+            bool lShift   : 1; //!< Left Shift Key
+            bool lAlt     : 1; //!< Left Alt Key
+            bool lWindows : 1; //!< Left Windows Key
+            bool rControl : 1; //!< Right Control Key
+            bool rShift   : 1; //!< Right Shift Key
+            bool rAlt     : 1; //!< Right Alt Key
+            bool rWindows : 1; //!< Right Windows Key
+            bool capsLock : 1; //!< Caps-Lock Key
+            bool scrLock  : 1; //!< Scroll-Lock Key
+            bool numLock  : 1; //!< Num-Lock Key
         };
     };
 

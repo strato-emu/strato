@@ -30,8 +30,8 @@ namespace skyline::input {
      * @brief The structure of the Mouse section (https://switchbrew.org/wiki/HID_Shared_Memory#Mouse)
      */
     struct MouseSection {
-        CommonHeader header; //!< The header for this section
-        std::array<MouseState, constant::HidEntryCount> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<MouseState, constant::HidEntryCount> entries;
         u64 _pad_[0x16];
     };
     static_assert(sizeof(MouseSection) == 0x400);

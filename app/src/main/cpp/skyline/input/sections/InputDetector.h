@@ -19,8 +19,8 @@ namespace skyline::input {
      * @brief The structure of the InputDetector section (https://switchbrew.org/wiki/HID_Shared_Memory#InputDetector)
      */
     struct InputDetectorSection {
-        CommonHeader header; //!< The header for this section
-        std::array<InputDetectorState, 2> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<InputDetectorState, 2> entries;
         u64 _pad_[0x6];
     };
     static_assert(sizeof(InputDetectorSection) == 0x80);

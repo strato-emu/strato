@@ -56,7 +56,7 @@ class SettingsActivity : AppCompatActivity() {
     public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (refreshKey != null) {
+        refreshKey?.let {
             inputManager.syncObjects()
             preferenceFragment.refreshPreference(refreshKey!!)
 

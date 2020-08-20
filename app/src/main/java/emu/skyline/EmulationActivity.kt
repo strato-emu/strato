@@ -39,7 +39,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     /**
      * The [InputManager] class handles loading/saving the input data
      */
-    lateinit var input : InputManager
+    private lateinit var input : InputManager
 
     /**
      * A boolean flag denoting the current operation mode of the emulator (Docked = true/Handheld = false)
@@ -104,11 +104,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      * @param index The arbitrary index of the controller, this is to handle matching with a partner Joy-Con
      * @param type The type of the host controller
      * @param partnerIndex The index of a partner Joy-Con if there is one
+     * @note This is blocking and will stall till input has been initialized on the guest
      */
     private external fun setController(index : Int, type : Int, partnerIndex : Int = -1)
 
     /**
      * This flushes the controller updates on the guest
+     *
+     * @note This is blocking and will stall till input has been initialized on the guest
      */
     private external fun updateControllers()
 
@@ -172,7 +175,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
             runOnUiThread { initializeControllers() }
 
-            executeApplication(Uri.decode(rom.toString()), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
+            executeApplication(rom.toString(), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
 
             if (shouldFinish)
                 runOnUiThread { finish() }
@@ -195,7 +198,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
             window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -225,7 +228,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
         operationMode = sharedPreferences.getBoolean("operation_mode", operationMode)
 
-        windowManager.defaultDisplay.supportedModes.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+        @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
+        display?.supportedModes?.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
 
         executeApplication(intent.data!!)
     }

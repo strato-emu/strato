@@ -14,13 +14,13 @@ namespace skyline::input {
      */
     class Input {
       private:
-        const DeviceState &state; //!< The state of the device
+        const DeviceState &state;
 
       public:
         std::shared_ptr<kernel::type::KSharedMemory> kHid; //!< The kernel shared memory object for HID Shared Memory
-        input::HidSharedMemory *hid; //!< A pointer to HID Shared Memory on the host
+        HidSharedMemory *hid; //!< A pointer to HID Shared Memory on the host
 
-        input::NpadManager npad; //!< This manages all the NPad controllers
+        NpadManager npad; //!< This manages all the NPad controllers
 
         Input(const DeviceState &state);
     };

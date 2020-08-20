@@ -19,8 +19,8 @@ namespace skyline::input {
      * @brief The structure of the DebugPad section (https://switchbrew.org/wiki/HID_Shared_Memory#DebugPad)
      */
     struct DebugPadSection {
-        CommonHeader header; //!< The header for this section
-        std::array<DebugPadState, constant::HidEntryCount> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<DebugPadState, constant::HidEntryCount> entries;
         u64 _pad_[0x27];
     };
     static_assert(sizeof(DebugPadSection) == 0x400);

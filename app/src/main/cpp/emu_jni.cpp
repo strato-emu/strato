@@ -15,7 +15,7 @@ uint FaultCount;
 skyline::GroupMutex JniMtx;
 skyline::u16 fps;
 skyline::u32 frametime;
-skyline::input::Input *input;
+std::weak_ptr<skyline::input::Input> inputWeak;
 
 void signalHandler(int signal) {
     syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
@@ -52,7 +52,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings, std::string(appFilesPath));
-        input = os.state.input.get();
+        inputWeak = os.state.input;
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
 
         auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
@@ -65,6 +65,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     } catch (...) {
         logger->Error("An unknown exception has occurred");
     }
+
+    inputWeak.reset();
 
     logger->Info("Emulation has ended");
 
@@ -98,30 +100,38 @@ extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIE
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
-    while (input == nullptr)
-        asm("yield");
+    while (inputWeak.expired()); // If this isn't called then the guest won't know that the following host controller exists
+    auto input = inputWeak.lock();
+    std::lock_guard guard(input->npad.mutex);
     input->npad.controllers[index] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateControllers(JNIEnv *, jobject) {
-    while (input == nullptr)
-        asm("yield");
-    input->npad.Update(true);
+    while (inputWeak.expired()); // If this isn't called then the mappings will not update unless the guest initiates an update itself
+    auto input = inputWeak.lock();
+    std::unique_lock lock(input->npad.mutex);
+    input->npad.Update(lock, true);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jint state) {
-    if (input) {
+    try {
+        auto input = inputWeak.lock();
         auto device = input->npad.controllers[index].device;
         skyline::input::NpadButton button{.raw = static_cast<skyline::u64>(mask)};
         if (device)
-            device->SetButtonState(button, static_cast<skyline::input::NpadButtonState>(state));
+            device->SetButtonState(button, state);
+    } catch (const std::bad_weak_ptr) {
+        // We don't mind if we miss button updates while input hasn't been initialized
     }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
-    if (input) {
+    try {
+        auto input = inputWeak.lock();
         auto device = input->npad.controllers[index].device;
         if (device)
             device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
+    } catch (const std::bad_weak_ptr) {
+        // We don't mind if we miss axis updates while input hasn't been initialized
     }
 }

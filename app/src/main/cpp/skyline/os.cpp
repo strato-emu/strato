@@ -27,7 +27,7 @@ namespace skyline::kernel {
             throw exception("Unsupported ROM extension.");
         }
 
-        auto process = CreateProcess(constant::BaseAddress, 0, constant::DefStackSize);
+        process = CreateProcess(constant::BaseAddress, 0, constant::DefStackSize);
         state.loader->LoadProcessData(process, state);
         process->InitializeMemory();
         process->threads.at(process->pid)->Start(); // The kernel itself is responsible for starting the main thread
@@ -50,9 +50,7 @@ namespace skyline::kernel {
             throw exception("Call to clone() has failed: {}", strerror(errno));
 
         state.logger->Debug("Successfully created process with PID: {}", pid);
-        process = std::make_shared<kernel::type::KProcess>(state, pid, argument, stack, tlsMem);
-
-        return process;
+        return std::make_shared<kernel::type::KProcess>(state, pid, argument, stack, tlsMem);
     }
 
     void OS::KillThread(pid_t pid) {

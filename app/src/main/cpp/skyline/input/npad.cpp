@@ -13,12 +13,15 @@ namespace skyline::input {
          {*this, hid->npad[8], NpadId::Unknown}, {*this, hid->npad[9], NpadId::Handheld},
         } {}
 
-    void NpadManager::Update(bool host) {
-        if (host)
+    void NpadManager::Update(std::unique_lock<std::mutex> &lock, bool host) {
+        if (host) {
             updated = true;
-        else
-            while (!updated)
-                asm("yield");
+        } else if (!updated) {
+            lock.unlock();
+            while (!updated);
+            lock.lock();
+            return;
+        }
 
         if (!activated)
             return;
@@ -52,19 +55,13 @@ namespace skyline::input {
                 style = NpadStyleSet{.raw = style.raw & styles.raw};
 
                 if (style.raw) {
-                    if (style.proController) {
-                        device.Connect(NpadControllerType::ProController);
+                    if (style.proController || style.joyconHandheld || style.joyconLeft || style.joyconRight) {
+                        device.Connect(controller.type);
                         controller.device = &device;
-                    } else if (style.joyconHandheld) {
-                        device.Connect(NpadControllerType::Handheld);
-                        controller.device = &device;
-                    } else if (style.joyconDual && device.GetAssignment() == NpadJoyAssignment::Dual) {
+                    } else if (style.joyconDual && orientation == NpadJoyOrientation::Vertical && device.GetAssignment() == NpadJoyAssignment::Dual) {
                         device.Connect(NpadControllerType::JoyconDual);
                         controller.device = &device;
                         controllers.at(controller.partnerIndex).device = &device;
-                    } else if (style.joyconLeft || style.joyconRight) {
-                        device.Connect(controller.type);
-                        controller.device = &device;
                     } else {
                         continue;
                     }
@@ -75,8 +72,8 @@ namespace skyline::input {
 
         // We do this to prevent triggering the event unless there's a real change in a device's style, which would be caused if we disconnected all controllers then reconnected them
         for (auto &device : npads) {
-            bool connected = false;
-            for (auto &controller : controllers) {
+            bool connected{};
+            for (const auto &controller : controllers) {
                 if (controller.device == &device) {
                     connected = true;
                     break;
@@ -88,14 +85,18 @@ namespace skyline::input {
     }
 
     void NpadManager::Activate() {
+        std::unique_lock lock(mutex);
+
         supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
         styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
         activated = true;
 
-        Update();
+        Update(lock);
     }
 
     void NpadManager::Deactivate() {
+        std::unique_lock lock(mutex);
+
         supportedIds = {};
         styles = {};
         activated = false;

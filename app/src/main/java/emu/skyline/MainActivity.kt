@@ -184,9 +184,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
                 y += dy
 
-                if (!app_list.isInTouchMode) {
+                if (!app_list.isInTouchMode)
                     toolbar_layout.setExpanded(y == 0)
-                }
 
                 super.onScrolled(recyclerView, dx, dy)
             }

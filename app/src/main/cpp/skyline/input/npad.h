@@ -6,8 +6,11 @@
 #include "npad_device.h"
 
 namespace skyline::input {
+    /**
+     * @brief A controller equivalent to a physical one connected to the Switch, it's translation into a Player (NpadDevice) is also encapsulated here
+     */
     struct GuestController {
-        NpadControllerType type{}; //!< The type of the controller
+        NpadControllerType type{};
         i8 partnerIndex{-1}; //!< The index of a Joy-Con partner, if this has one
         NpadDevice *device{nullptr}; //!< A pointer to the NpadDevice that all events from this are redirected to
     };
@@ -17,8 +20,7 @@ namespace skyline::input {
      */
     class NpadManager {
       private:
-        const DeviceState &state; //!< The state of the device
-        std::array<NpadDevice, constant::NpadCount> npads; //!< An array of all the NPad devices
+        const DeviceState &state;
         bool activated{false}; //!< If this NpadManager is activated or not
         std::atomic<bool> updated{false}; //!< If this NpadManager has been updated by the guest
 
@@ -41,10 +43,12 @@ namespace skyline::input {
         }
 
       public:
-        std::array<GuestController, constant::ControllerCount> controllers; //!< An array of all the available guest controllers
+        std::mutex mutex; //!< This mutex must be locked before any modifications to class members
+        std::array<NpadDevice, constant::NpadCount> npads;
+        std::array<GuestController, constant::ControllerCount> controllers;
         std::vector<NpadId> supportedIds; //!< The NpadId(s) that are supported by the application
         NpadStyleSet styles; //!< The styles that are supported by the application
-        NpadJoyOrientation orientation{}; //!< The Joy-Con orientation to use
+        NpadJoyOrientation orientation{}; //!< The orientation all of Joy-Cons are in (This affects stick transformation for them)
 
         /**
          * @param hid A pointer to HID Shared Memory on the host
@@ -52,7 +56,6 @@ namespace skyline::input {
         NpadManager(const DeviceState &state, input::HidSharedMemory *hid);
 
         /**
-         * @param id The ID of the NPad to return
          * @return A reference to the NPad with the specified ID
          */
         constexpr inline NpadDevice &at(NpadId id) {
@@ -60,7 +63,6 @@ namespace skyline::input {
         }
 
         /**
-         * @param id The ID of the NPad to return
          * @return A reference to the NPad with the specified ID
          */
         constexpr inline NpadDevice &operator[](NpadId id) noexcept {
@@ -68,10 +70,11 @@ namespace skyline::input {
         }
 
         /**
-        * @brief This deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
+         * @brief This deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
+         * @param lock A unique_lock which locks the mutex in the class, it should be locked before modifications to any members and must not be passed in an unlocked state
          * @param host If the update is host-initiated rather than the guest
-        */
-        void Update(bool host = false);
+         */
+        void Update(std::unique_lock<std::mutex> &lock, bool host = false);
 
         /**
          * @brief This activates the mapping between guest controllers -> players, a call to this is required for function

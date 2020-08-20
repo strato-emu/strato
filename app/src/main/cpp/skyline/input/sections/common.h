@@ -10,7 +10,7 @@ namespace skyline {
     namespace constant {
         constexpr u8 HidEntryCount = 17; //!< The amount of entries in each HID device
         constexpr u8 NpadCount = 10; //!< The amount of NPads in shared memory
-        constexpr u8 ControllerCount = 8; //!< The maximum amount of host controllers
+        constexpr u8 ControllerCount = 8; //!< The maximum amount of guest controllers
         constexpr u32 NpadBatteryFull = 2; //!< The full battery state of an npad
     }
 

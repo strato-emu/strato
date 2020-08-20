@@ -59,7 +59,6 @@
                 android:configChanges="orientation|screenSize"
                 android:launchMode="singleInstance"
                 android:screenOrientation="landscape"
-                android:theme="@style/EmuTheme"
                 tools:ignore="LockedOrientationActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"

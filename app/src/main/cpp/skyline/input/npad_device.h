@@ -8,20 +8,20 @@
 
 namespace skyline::input {
     /**
-    * @brief This enumerates all the orientations of the Joy-Con(s)
-    */
+     * @brief This enumerates the orientations the Joy-Con(s) can be held in
+     */
     enum class NpadJoyOrientation : i64 {
-        Vertical = 0, //!< The Joy-Con is held vertically (Default)
-        Horizontal = 1, //!< The Joy-Con is held horizontally
+        Vertical = 0,
+        Horizontal = 1,
     };
 
     /**
-    * @brief This holds all the NPad styles (https://switchbrew.org/wiki/HID_services#NpadStyleTag)
-    */
+     * @brief A union of all the NPad styles (https://switchbrew.org/wiki/HID_services#NpadStyleTag)
+     */
     union NpadStyleSet {
         u32 raw;
         struct {
-            bool proController  : 1; //!< The Pro Controller
+            bool proController  : 1; //!< Pro Controller
             bool joyconHandheld : 1; //!< Joy-Cons in handheld mode
             bool joyconDual     : 1; //!< Joy-Cons in a pair
             bool joyconLeft     : 1; //!< Left Joy-Con only
@@ -36,15 +36,7 @@ namespace skyline::input {
     static_assert(sizeof(NpadStyleSet) == 0x4);
 
     /**
-     * @brief This enumerates the states that a button can be in
-     */
-    enum class NpadButtonState : bool {
-        Released = false, //!< The button isn't being pressed
-        Pressed = true //!< The button is being pressed
-    };
-
-    /**
-     * @brief This enumerates all of the axis on NPad controllers
+     * @brief This enumerates all of the axis on NPads
      */
     enum class NpadAxisId {
         LX, //!< Left Stick X
@@ -54,19 +46,19 @@ namespace skyline::input {
     };
 
     /**
-    * @brief This enumerates all the possible IDs for an NPad (https://switchbrew.org/wiki/HID_services#NpadIdType)
-    */
+     * @brief This enumerates all the possible IDs for an NPad (https://switchbrew.org/wiki/HID_services#NpadIdType)
+     */
     enum class NpadId : u32 {
-        Player1 = 0x0, //!< 1st Player
-        Player2 = 0x1, //!< 2nd Player
-        Player3 = 0x2, //!< 3rd Player
-        Player4 = 0x3, //!< 4th Player
-        Player5 = 0x4, //!< 5th Player
-        Player6 = 0x5, //!< 6th Player
-        Player7 = 0x6, //!< 7th Player
-        Player8 = 0x7, //!< 8th Player
-        Unknown = 0x10, //!< Unknown
-        Handheld = 0x20 //!< Handheld mode
+        Player1 = 0x0,
+        Player2 = 0x1,
+        Player3 = 0x2,
+        Player4 = 0x3,
+        Player5 = 0x4,
+        Player6 = 0x5,
+        Player7 = 0x6,
+        Player8 = 0x7,
+        Unknown = 0x10,
+        Handheld = 0x20,
     };
 
     class NpadManager;
@@ -78,14 +70,14 @@ namespace skyline::input {
       private:
         NpadManager &manager; //!< The manager responsible for managing this NpadDevice
         NpadSection &section; //!< The section in HID shared memory for this controller
-        NpadControllerInfo *controllerInfo; //!< The controller info for this controller's type
-        u64 globalTimestamp{}; //!< The global timestamp of the state entries
+        NpadControllerInfo *controllerInfo; //!< The NpadControllerInfo for this controller's type
+        u64 globalTimestamp{}; //!< An incrementing timestamp that's common across all sections
 
         /**
-        * @brief This updates the headers and creates a new entry in HID Shared Memory
-        * @param info The controller info of the NPad that needs to be updated
-        * @return The next entry that has been created with values from the last entry
-        */
+         * @brief This updates the headers and creates a new entry in HID Shared Memory
+         * @param info The controller info of the NPad that needs to be updated
+         * @return The next entry that has been created with values from the last entry
+         */
         NpadControllerState &GetNextEntry(NpadControllerInfo &info);
 
         /**
@@ -94,26 +86,19 @@ namespace skyline::input {
         NpadControllerInfo &GetControllerInfo();
 
       public:
-        NpadId id; //!< The ID of this controller
-        NpadControllerType type{}; //!< The type of this controller
-        NpadConnectionState connectionState{}; //!< The state of the connection
+        NpadId id;
+        NpadControllerType type{};
+        NpadConnectionState connectionState{};
         std::shared_ptr<kernel::type::KEvent> updateEvent; //!< This event is triggered on the controller's style changing
-        bool explicitAssignment{false}; //!< If an assignment has explicitly been set or is the default for this controller
 
         NpadDevice(NpadManager &manager, NpadSection &section, NpadId id);
 
         /**
-        * @brief This sets a Joy-Con's Assignment Mode
-        * @param assignment The assignment mode to set this controller to
-        * @param isDefault If this is setting the default assignment mode of the controller
-        */
-        inline void SetAssignment(NpadJoyAssignment assignment, bool isDefault) {
-            if (!isDefault) {
-                section.header.assignment = assignment;
-                explicitAssignment = true;
-            } else if (!explicitAssignment) {
-                section.header.assignment = assignment;
-            }
+         * @brief This sets a Joy-Con's Assignment Mode
+         * @param assignment The assignment mode to set this controller to
+         */
+        inline void SetAssignment(NpadJoyAssignment assignment) {
+            section.header.assignment = assignment;
         }
 
         /**
@@ -124,28 +109,28 @@ namespace skyline::input {
         }
 
         /**
-        * @brief This connects this controller to the guest
-        * @param newType The type of controller to connect as
-        */
+         * @brief This connects this controller to the guest
+         * @param newType The type of controller to connect as
+         */
         void Connect(NpadControllerType newType);
 
         /**
-        * @brief This disconnects this controller from the guest
-        */
+         * @brief This disconnects this controller from the guest
+         */
         void Disconnect();
 
         /**
-        * @brief This changes the state of buttons to the specified state
-        * @param mask A bit-field mask of all the buttons to change
-        * @param state The state to change the buttons to
-        */
-        void SetButtonState(NpadButton mask, NpadButtonState state);
+         * @brief This changes the state of buttons to the specified state
+         * @param mask A bit-field mask of all the buttons to change
+         * @param pressed If the buttons were pressed or released
+         */
+        void SetButtonState(NpadButton mask, bool pressed);
 
         /**
-        * @brief This sets the value of an axis to the specified value
-        * @param axis The axis to set the value of
-        * @param value The value to set
-        */
+         * @brief This sets the value of an axis to the specified value
+         * @param axis The axis to set the value of
+         * @param value The value to set
+         */
         void SetAxisValue(NpadAxisId axis, i32 value);
     };
 }

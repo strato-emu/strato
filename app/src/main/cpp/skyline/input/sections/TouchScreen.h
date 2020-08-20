@@ -42,8 +42,8 @@ namespace skyline::input {
      * @brief The structure of the TouchScreen section (https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreen)
      */
     struct TouchScreenSection {
-        CommonHeader header; //!< The header for this section
-        std::array<TouchScreenState, constant::HidEntryCount> entries; //!< An array of all of the entries
+        CommonHeader header;
+        std::array<TouchScreenState, constant::HidEntryCount> entries;
         u64 _pad_[0x79];
     };
     static_assert(sizeof(TouchScreenSection) == 0x3000);

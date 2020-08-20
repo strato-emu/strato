@@ -9,11 +9,6 @@
         <item name="colorOnSecondary">@color/colorOnSecondary</item>
     </style>
 
-    <style name="EmuTheme" parent="AppTheme">
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
-    </style>
-
     <style name="AppTheme.ActionBar" parent="">
         <item name="android:textColorPrimary">@color/colorOnPrimary</item>
         <item name="android:textColorSecondary">@color/colorOnPrimary</item>

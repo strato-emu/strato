@@ -89,9 +89,9 @@ namespace skyline {
         try {
             while (true) {
                 std::lock_guard guard(JniMtx);
-                if (!Halt) {
-                    state.gpu->Loop();
-                }
+                if (Halt)
+                    break;
+                state.gpu->Loop();
             }
         } catch (const std::exception &e) {
             state.logger->Error(e.what());
