@@ -51,14 +51,14 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto inputAddress = request.inputBuf.at(0).address;
+        auto inputAddress{request.inputBuf.at(0).address};
 
-        auto inputHeader = state.process->GetObject<UpdateDataHeader>(inputAddress);
+        auto inputHeader{state.process->GetObject<UpdateDataHeader>(inputAddress)};
         revisionInfo.SetUserRevision(inputHeader.revision);
         inputAddress += sizeof(UpdateDataHeader);
         inputAddress += inputHeader.behaviorSize; // Unused
 
-        auto memoryPoolCount = memoryPools.size();
+        auto memoryPoolCount{memoryPools.size()};
         std::vector<MemoryPoolIn> memoryPoolsIn(memoryPoolCount);
         state.process->ReadMemory(memoryPoolsIn.data(), inputAddress, memoryPoolCount * sizeof(MemoryPoolIn));
         inputAddress += inputHeader.memoryPoolSize;
@@ -128,11 +128,11 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::UpdateAudio() {
-        auto released = track->GetReleasedBuffers(2);
+        auto released{track->GetReleasedBuffers(2)};
 
         for (auto &tag : released) {
             MixFinalBuffer();
-            track->AppendBuffer(tag, sampleBuffer.data(), sampleBuffer.size());
+            track->AppendBuffer(tag, sampleBuffer);
         }
     }
 
@@ -149,14 +149,14 @@ namespace skyline::service::audio::IAudioRenderer {
             while (pendingSamples > 0) {
                 u32 voiceBufferOffset{};
                 u32 voiceBufferSize{};
-                auto &voiceSamples = voice.GetBufferData(pendingSamples, voiceBufferOffset, voiceBufferSize);
+                auto &voiceSamples{voice.GetBufferData(pendingSamples, voiceBufferOffset, voiceBufferSize)};
 
                 if (voiceBufferSize == 0)
                     break;
 
                 pendingSamples -= voiceBufferSize / constant::ChannelCount;
 
-                for (auto index = voiceBufferOffset; index < voiceBufferOffset + voiceBufferSize; index++) {
+                for (auto index{voiceBufferOffset}; index < voiceBufferOffset + voiceBufferSize; index++) {
                     if (writtenSamples == bufferOffset) {
                         sampleBuffer[bufferOffset] = skyline::audio::Saturate<i16, i32>(voiceSamples[index] * voice.volume);
 
@@ -180,7 +180,7 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem(systemEvent);
+        auto handle{state.process->InsertItem(systemEvent)};
         state.logger->Debug("Audren System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }

@@ -22,7 +22,7 @@ namespace skyline::service::nvdrv::device {
     void NvHostAsGpu::BindChannel(IoctlData &buffer) {
         struct Data {
             u32 fd;
-        } channelInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
+        } &channelInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
     }
 
     void NvHostAsGpu::AllocSpace(IoctlData &buffer) {
@@ -100,7 +100,7 @@ namespace skyline::service::nvdrv::device {
                 u32 pad;
                 u64 pages;
             } regions[2];
-        } regionInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
+        } &regionInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
         state.process->WriteMemory(regionInfo, buffer.output.at(0).address);
     }
 

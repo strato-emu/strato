@@ -47,7 +47,7 @@ namespace skyline::service::nvdrv::device {
                 u32 raw;
             } flags;
             Fence fence;
-        } args = state.process->GetReference<Data>(buffer.output.at(0).address);
+        } &args = state.process->GetReference<Data>(buffer.output.at(0).address);
 
         auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
 
@@ -103,7 +103,7 @@ namespace skyline::service::nvdrv::device {
             u32 flags;
             Fence fence;
             u32 reserved[3];
-        } args = state.process->GetReference<Data>(buffer.input.at(0).address);
+        } &args = state.process->GetReference<Data>(buffer.input.at(0).address);
 
         channelFence.UpdateValue(state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint);
         args.fence = channelFence;

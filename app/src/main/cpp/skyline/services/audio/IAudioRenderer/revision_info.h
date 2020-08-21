@@ -7,16 +7,16 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 SupportedRevision = 7; //!< The audren revision our implementation supports
-        constexpr u32 Rev0Magic = util::MakeMagic<u32>("REV0"); //!< The HOS 1.0 revision magic
-        constexpr u32 RevMagic = Rev0Magic + (SupportedRevision << 24); //!< The revision magic for our supported revision
+        constexpr u32 SupportedRevision{7}; //!< The audren revision our implementation supports
+        constexpr u32 Rev0Magic{util::MakeMagic<u32>("REV0")}; //!< The HOS 1.0 revision magic
+        constexpr u32 RevMagic{Rev0Magic + (SupportedRevision << 24)}; //!< The revision magic for our supported revision
 
         namespace supportTags {
-            constexpr u32 Splitter = 2; //!< The revision splitter support was added
-            constexpr u32 SplitterBugFix = 5; //!< The revision the splitter buffer was made aligned
-            constexpr u32 PerformanceMetricsDataFormatV2 = 5; //!< The revision a new performance metrics format is used
-            constexpr u32 VaradicCommandBufferSize = 5; //!< The revision support for varying command buffer sizes was added
-            constexpr u32 ElapsedFrameCount = 5; //!< The revision support for counting elapsed frames was added
+            constexpr u32 Splitter{2}; //!< The revision splitter support was added
+            constexpr u32 SplitterBugFix{5}; //!< The revision the splitter buffer was made aligned
+            constexpr u32 PerformanceMetricsDataFormatV2{5}; //!< The revision a new performance metrics format is used
+            constexpr u32 VaradicCommandBufferSize{5}; //!< The revision support for varying command buffer sizes was added
+            constexpr u32 ElapsedFrameCount{5}; //!< The revision support for counting elapsed frames was added
         };
     }
 

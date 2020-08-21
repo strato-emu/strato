@@ -3,17 +3,18 @@
 
 #include <array>
 #include <common.h>
+#include "common.h"
 #include "resampler.h"
 
 namespace skyline::audio {
     /**
-     * @brief This holds the coefficients of a single output frame
+     * @brief This holds the coefficients for each index of a single output frame
      */
     struct LutEntry {
-        i32 a; //!< The coefficient for the first index
-        i32 b; //!< The coefficient for the second index
-        i32 c; //!< The coefficient for the third index
-        i32 d; //!< The coefficient for the fourth index
+        i32 a;
+        i32 b;
+        i32 c;
+        i32 d;
     };
 
     // @fmt:off
@@ -51,7 +52,7 @@ namespace skyline::audio {
         {48, 7600, 19361, 5773},    {41, 7472, 19377, 5888},    {34, 7345, 19391, 6004},    {28, 7219, 19403, 6121},
         {22, 7093, 19412, 6239},    {15, 6968, 19419, 6359},    {9, 6845, 19424, 6479},     {3, 6722, 19426, 6600}}};
 
-    constexpr std::array<LutEntry, 128> CurveLut1 = {{
+    constexpr std::array<LutEntry, 128> CurveLut1{{
         {-68, 32639, 69, -5},         {-200, 32630, 212, -15},      {-328, 32613, 359, -26},      {-450, 32586, 512, -36},
         {-568, 32551, 669, -47},      {-680, 32507, 832, -58},      {-788, 32454, 1000, -69},     {-891, 32393, 1174, -80},
         {-990, 32323, 1352, -92},     {-1084, 32244, 1536, -103},   {-1173, 32157, 1724, -115},   {-1258, 32061, 1919, -128},
@@ -85,7 +86,7 @@ namespace skyline::audio {
         {-80, 1174, 32393, -891},     {-69, 1000, 32454, -788},     {-58, 832, 32507, -680},      {-47, 669, 32551, -568},
         {-36, 512, 32586, -450},      {-26, 359, 32613, -328},      {-15, 212, 32630, -200},      {-5, 69, 32639, -68}}};
 
-    constexpr std::array<LutEntry, 128> CurveLut2 = {{
+    constexpr std::array<LutEntry, 128> CurveLut2{{
         {3195, 26287, 3329, -32},   {3064, 26281, 3467, -34},   {2936, 26270, 3608, -38},   {2811, 26253, 3751, -42},
         {2688, 26230, 3897, -46},   {2568, 26202, 4046, -50},   {2451, 26169, 4199, -54},   {2338, 26130, 4354, -58},
         {2227, 26085, 4512, -63},   {2120, 26035, 4673, -67},   {2015, 25980, 4837, -72},   {1912, 25919, 5004, -76},
@@ -120,12 +121,12 @@ namespace skyline::audio {
         {-42, 3751, 26253, 2811},   {-38, 3608, 26270, 2936},   {-34, 3467, 26281, 3064},   {-32, 3329, 26287, 3195}}};
     // @fmt:on
 
-    std::vector<i16> Resampler::ResampleBuffer(const std::vector<i16> &inputBuffer, double ratio, u8 channelCount) {
-        auto step = static_cast<u32>(ratio * 0x8000);
-        auto outputSize = static_cast<size_t>(inputBuffer.size() / ratio);
+    std::vector<i16> Resampler::ResampleBuffer(std::span<i16> inputBuffer, double ratio, u8 channelCount) {
+        auto step{static_cast<u32>(ratio * 0x8000)};
+        auto outputSize{static_cast<size_t>(inputBuffer.size() / ratio)};
         std::vector<i16> outputBuffer(outputSize);
 
-        const std::array<skyline::audio::LutEntry, 128> &lut = [step] {
+        const std::array<LutEntry, 128> &lut = [step] {
             if (step > 0xAAAA)
                 return CurveLut0;
             else if (step <= 0x8000)
@@ -134,19 +135,19 @@ namespace skyline::audio {
                 return CurveLut2;
         }();
 
-        for (size_t outIndex = 0, inIndex = 0; outIndex < outputSize; outIndex += channelCount) {
-            auto lutIndex = fraction >> 8;
+        for (size_t outIndex{}, inIndex{}; outIndex < outputSize; outIndex += channelCount) {
+            u32 lutIndex{fraction >> 8};
 
-            for (u8 channel = 0; channel < channelCount; channel++) {
+            for (u8 channel{}; channel < channelCount; channel++) {
                 i32 data = inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
                     inputBuffer[(inIndex + 1) * channelCount + channel] * lut[lutIndex].b +
                     inputBuffer[(inIndex + 2) * channelCount + channel] * lut[lutIndex].c +
                     inputBuffer[(inIndex + 3) * channelCount + channel] * lut[lutIndex].d;
 
-                outputBuffer[outIndex + channel] = static_cast<i16>(std::clamp(data >> 15, static_cast<i32>(std::numeric_limits<i16>::min()), static_cast<i32>(std::numeric_limits<i16>::max())));
+                outputBuffer[outIndex + channel] = Saturate<i16, i32>(data >> 15);
             }
 
-            auto newOffset = fraction + step;
+            u32 newOffset{fraction + step};
             inIndex += newOffset >> 15;
             fraction = newOffset & 0x7FFF;
         }

@@ -8,10 +8,10 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u16 SampleRate = 48000; //!< The common sampling rate to use for audio output
-        constexpr u8 ChannelCount = 2; //!< The common amount of channels to use for audio output
-        constexpr u16 MixBufferSize = 960; //!< The size of the mix buffer by default
-        constexpr auto PcmFormat = oboe::AudioFormat::I16; //!< The common PCM data format to use for audio output
+        constexpr u16 SampleRate{48000}; //!< The common sampling rate to use for audio output
+        constexpr u8 ChannelCount{2}; //!< The common amount of channels to use for audio output
+        constexpr u16 MixBufferSize{960}; //!< The size of the mix buffer by default
+        constexpr auto PcmFormat{oboe::AudioFormat::I16}; //!< The common PCM data format to use for audio output
     };
 
     namespace audio {
@@ -41,9 +41,9 @@ namespace skyline {
          * @brief This stores information about pushed buffers
          */
         struct BufferIdentifier {
-            u64 tag; //!< The tag of the buffer
-            u64 finalSample; //!< The final sample this buffer will be played in
-            bool released; //!< If the buffer has been released
+            u64 tag;
+            u64 finalSample; //!< The final sample this buffer will be played in, after that the buffer can be safely released
+            bool released; //!< If the buffer has been released (fully played back)
         };
 
         /**

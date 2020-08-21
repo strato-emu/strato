@@ -10,22 +10,22 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This enumerates various states a memory pool can be in
      */
     enum class MemoryPoolState : u32 {
-        Invalid = 0, //!< The memory pool is invalid
-        Unknown = 1, //!< The memory pool is in an unknown state
-        RequestDetach = 2, //!< The memory pool should be detached from
-        Detached = 3, //!< The memory pool has been detached from
-        RequestAttach = 4, //!< The memory pool should be attached to
-        Attached = 5, //!< The memory pool has been attached to
-        Released = 6 //!< The memory pool has been released
+        Invalid = 0,
+        Unknown = 1,
+        RequestDetach = 2,
+        Detached = 3,
+        RequestAttach = 4,
+        Attached = 5,
+        Released = 6,
     };
 
     /**
      * @brief This is in input containing information about a memory pool for use by the dsp
      */
     struct MemoryPoolIn {
-        u64 address; //!< The address of the memory pool
-        u64 size; //!< The size of the memory pool
-        MemoryPoolState state; //!< The state that is requested for the memory pool
+        u64 address;
+        u64 size;
+        MemoryPoolState state;
         u32 _unk0_;
         u64 _unk1_;
     };
@@ -35,7 +35,7 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This is returned to inform the guest of the state of a memory pool
      */
     struct MemoryPoolOut {
-        MemoryPoolState state = MemoryPoolState::Detached; //!< The state of the memory pool
+        MemoryPoolState state = MemoryPoolState::Detached;
         u32 _unk0_;
         u64 _unk1_;
     };
@@ -46,7 +46,7 @@ namespace skyline::service::audio::IAudioRenderer {
     */
     class MemoryPool {
       public:
-        MemoryPoolOut output{}; //!< The current output state
+        MemoryPoolOut output{};
 
         /**
          * @brief Processes the input memory pool data from the guest and sets internal data based off it

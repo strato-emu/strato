@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <span>
 #include <queue>
-
 #include <kernel/types/KEvent.h>
 #include <common.h>
 #include "common.h"
@@ -18,15 +18,15 @@ namespace skyline::audio {
         std::function<void()> releaseCallback; //!< Callback called when a buffer has been played
         std::deque<BufferIdentifier> identifiers; //!< Queue of all appended buffer identifiers
 
-        u8 channelCount; //!< The amount channels present in the track
-        u32 sampleRate; //!< The sample rate of the track
+        u8 channelCount;
+        u32 sampleRate;
 
       public:
-        CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A vector of all appended audio samples
+        CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A circular buffer with all appended audio samples
         Mutex bufferLock; //!< This mutex ensures that appending to buffers doesn't overlap
 
         AudioOutState playbackState{AudioOutState::Stopped}; //!< The current state of playback
-        u64 sampleCounter{}; //!< A counter used for tracking buffer status
+        u64 sampleCounter{}; //!< A counter used for tracking when buffers have been played and can be released
 
         /**
          * @param channelCount The amount channels that will be present in the track
@@ -64,22 +64,13 @@ namespace skyline::audio {
         /**
          * @brief Appends audio samples to the output buffer
          * @param tag The tag of the buffer
-         * @param address The address of the audio buffer
-         * @param size The size of the audio buffer in i16 units
+         * @param buffer A span containing the source sample buffer
          */
-        void AppendBuffer(u64 tag, const i16 *address, u64 size);
-
-        /**
-         * @brief Appends audio samples to the output buffer
-         * @param tag The tag of the buffer
-         * @param sampleData A reference to a vector containing I16 format PCM data
-         */
-        void AppendBuffer(u64 tag, const std::vector<i16> &sampleData = {}) {
-            AppendBuffer(tag, sampleData.data(), sampleData.size());
-        }
+        void AppendBuffer(u64 tag, std::span<i16> buffer = {});
 
         /**
          * @brief Checks if any buffers have been released and calls the appropriate callback for them
+         * @note bufferLock MUST be locked when calling this
          */
         void CheckReleasedBuffers();
     };

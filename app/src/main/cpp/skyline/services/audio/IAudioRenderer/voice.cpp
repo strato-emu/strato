@@ -6,7 +6,7 @@
 
 namespace skyline::service::audio::IAudioRenderer {
     void Voice::SetWaveBufferIndex(u8 index) {
-        bufferIndex = static_cast<u8>(index & 3);
+        bufferIndex = index & 3;
         bufferReload = true;
     }
 
@@ -57,7 +57,7 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void Voice::UpdateBuffers() {
-        const auto &currentBuffer = waveBuffers.at(bufferIndex);
+        const auto &currentBuffer{waveBuffers.at(bufferIndex)};
 
         if (currentBuffer.size == 0)
             return;
@@ -68,9 +68,7 @@ namespace skyline::service::audio::IAudioRenderer {
                 state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
                 break;
             case skyline::audio::AudioFormat::ADPCM: {
-                std::vector<u8> adpcmData(currentBuffer.size);
-                state.process->ReadMemory(adpcmData.data(), currentBuffer.address, currentBuffer.size);
-                samples = adpcmDecoder->Decode(adpcmData);
+                samples = adpcmDecoder->Decode(std::span(state.process->GetPointer<u8>(currentBuffer.address), currentBuffer.size));
                 break;
             }
             default:
@@ -81,19 +79,19 @@ namespace skyline::service::audio::IAudioRenderer {
             samples = resampler.ResampleBuffer(samples, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
 
         if (channelCount == 1 && constant::ChannelCount != channelCount) {
-            auto originalSize = samples.size();
+            auto originalSize{samples.size()};
             samples.resize((originalSize / channelCount) * constant::ChannelCount);
 
-            for (auto monoIndex = originalSize - 1, targetIndex = samples.size(); monoIndex > 0; monoIndex--) {
-                auto sample = samples[monoIndex];
-                for (auto i = 0; i < constant::ChannelCount; i++)
+            for (auto monoIndex{originalSize - 1}, targetIndex{samples.size()}; monoIndex > 0; monoIndex--) {
+                auto sample{samples[monoIndex]};
+                for (u8 i{}; i < constant::ChannelCount; i++)
                     samples[--targetIndex] = sample;
             }
         }
     }
 
     std::vector<i16> &Voice::GetBufferData(u32 maxSamples, u32 &outOffset, u32 &outSize) {
-        WaveBuffer &currentBuffer = waveBuffers.at(bufferIndex);
+        auto &currentBuffer{waveBuffers.at(bufferIndex)};
 
         if (!acquired || playbackState != skyline::audio::AudioOutState::Started) {
             outSize = 0;

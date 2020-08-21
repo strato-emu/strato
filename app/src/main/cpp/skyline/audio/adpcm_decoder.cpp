@@ -9,11 +9,11 @@
 namespace skyline::audio {
     AdpcmDecoder::AdpcmDecoder(const std::vector<std::array<i16, 2>> &coefficients) : coefficients(coefficients) {}
 
-    std::vector<i16> AdpcmDecoder::Decode(const std::vector<u8> &adpcmData) {
-        constexpr size_t BytesPerFrame = 0x8; //!< The number of bytes in a single frame
-        constexpr size_t SamplesPerFrame = 0xE; //!< The number of samples in a single frame
+    std::vector<i16> AdpcmDecoder::Decode(std::span<u8> adpcmData) {
+        constexpr size_t BytesPerFrame{0x8};
+        constexpr size_t SamplesPerFrame{0xE};
 
-        size_t remainingSamples = (adpcmData.size() / BytesPerFrame) * SamplesPerFrame;
+        size_t remainingSamples{(adpcmData.size() / BytesPerFrame) * SamplesPerFrame};
 
         std::vector<i16> output;
         output.reserve(remainingSamples);
@@ -21,9 +21,9 @@ namespace skyline::audio {
         size_t inputOffset{};
 
         while (inputOffset < adpcmData.size()) {
-            FrameHeader header(adpcmData[inputOffset++]);
+            FrameHeader header{adpcmData[inputOffset++]};
 
-            size_t frameSamples = std::min(SamplesPerFrame, remainingSamples);
+            size_t frameSamples{std::min(SamplesPerFrame, remainingSamples)};
 
             i32 ctx{};
 

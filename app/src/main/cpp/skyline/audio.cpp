@@ -19,7 +19,7 @@ namespace skyline::audio {
     std::shared_ptr<AudioTrack> Audio::OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback) {
         std::lock_guard trackGuard(trackLock);
 
-        auto track = std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback);
+        auto track{std::make_shared<AudioTrack>(channelCount, sampleRate, releaseCallback)};
         audioTracks.push_back(track);
 
         return track;
@@ -33,29 +33,29 @@ namespace skyline::audio {
     }
 
     oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
-        auto destBuffer = static_cast<i16 *>(audioData);
-        auto streamSamples = static_cast<size_t>(numFrames) * audioStream->getChannelCount();
-        size_t writtenSamples = 0;
+        auto destBuffer{static_cast<i16 *>(audioData)};
+        auto streamSamples{static_cast<size_t>(numFrames) * audioStream->getChannelCount()};
+        size_t writtenSamples{};
 
-        std::unique_lock trackGuard(trackLock);
+        {
+            std::lock_guard trackGuard(trackLock);
 
-        for (auto &track : audioTracks) {
-            if (track->playbackState == AudioOutState::Stopped)
-                continue;
+            for (auto &track : audioTracks) {
+                if (track->playbackState == AudioOutState::Stopped)
+                    continue;
 
-            std::lock_guard bufferGuard(track->bufferLock);
+                std::lock_guard bufferGuard(track->bufferLock);
 
-            auto trackSamples = track->samples.Read(destBuffer, streamSamples, [](i16 *source, i16 *destination) {
-                *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
-            }, writtenSamples);
+                auto trackSamples = track->samples.Read(destBuffer, streamSamples, [](i16 *source, i16 *destination) {
+                    *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
+                }, writtenSamples);
 
-            writtenSamples = std::max(trackSamples, writtenSamples);
+                writtenSamples = std::max(trackSamples, writtenSamples);
 
-            track->sampleCounter += trackSamples;
-            track->CheckReleasedBuffers();
+                track->sampleCounter += trackSamples;
+                track->CheckReleasedBuffers();
+            }
         }
-
-        trackGuard.unlock();
 
         if (streamSamples > writtenSamples)
             memset(destBuffer + writtenSamples, 0, (streamSamples - writtenSamples) * sizeof(i16));

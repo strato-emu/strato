@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <span>
 #include <common.h>
 
 namespace skyline::audio {
@@ -15,14 +16,13 @@ namespace skyline::audio {
          * @brief This struct holds a single ADPCM frame header
          */
         union FrameHeader {
+            u8 raw;
+
             struct {
                 u8 scale : 4; //!< The scale factor for this frame
-                u8 coefficientIndex : 3; //!< The index of the coeffcients to use for this frame
+                u8 coefficientIndex : 3;
                 u8 _pad_ :1;
             };
-            u8 raw; //!< The raw value
-
-            FrameHeader(u8 raw) : raw(raw) {}
         };
         static_assert(sizeof(FrameHeader) == 0x1);
 
@@ -37,6 +37,6 @@ namespace skyline::audio {
          * @param adpcmData A buffer containing the raw ADPCM data
          * @return A buffer containing decoded single channel I16 PCM data
          */
-        std::vector<i16> Decode(const std::vector<u8> &adpcmData);
+        std::vector<i16> Decode(std::span<u8> adpcmData);
     };
 }

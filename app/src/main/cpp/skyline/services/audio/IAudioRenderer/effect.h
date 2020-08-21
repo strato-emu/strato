@@ -11,7 +11,7 @@ namespace skyline::service::audio::IAudioRenderer {
      */
     enum class EffectState : u8 {
         None = 0, //!< The effect isn't being used
-        New = 1 //!< The effect is new
+        New = 1,
     };
 
     /**
@@ -28,7 +28,7 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This is returned to inform the guest of the state of an effect
      */
     struct EffectOut {
-        EffectState state; //!< The state of the effect
+        EffectState state;
         u8 _pad0_[15];
     };
     static_assert(sizeof(EffectOut) == 0x10);
@@ -38,7 +38,7 @@ namespace skyline::service::audio::IAudioRenderer {
     */
     class Effect {
       public:
-        EffectOut output{}; //!< The current output state
+        EffectOut output{};
 
         inline void ProcessInput(const EffectIn &input) {
             if (input.isNew)

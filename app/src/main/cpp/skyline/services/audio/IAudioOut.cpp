@@ -44,32 +44,29 @@ namespace skyline::service::audio {
             u64 sampleCapacity;
             u64 sampleSize;
             u64 sampleOffset;
-        } data = state.process->GetObject<Data>(request.inputBuf.at(0).address);
+        } &data{state.process->GetReference<Data>(request.inputBuf.at(0).address)};
         auto tag = request.Pop<u64>();
 
         state.logger->Debug("IAudioOut: Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
 
         if (sampleRate != constant::SampleRate) {
-            tmpSampleBuffer.resize(data.sampleSize / sizeof(i16));
-            state.process->ReadMemory(tmpSampleBuffer.data(), data.sampleBufferPtr, data.sampleSize);
-            resampler.ResampleBuffer(tmpSampleBuffer, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
-
-            track->AppendBuffer(tag, tmpSampleBuffer);
+            auto resampledBuffer = resampler.ResampleBuffer(std::span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)), static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
+            track->AppendBuffer(tag, resampledBuffer);
         } else {
-            track->AppendBuffer(tag, state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize);
+            track->AppendBuffer(tag, std::span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)));
         }
     }
 
     void IAudioOut::RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem(releaseEvent);
+        auto handle{state.process->InsertItem(releaseEvent)};
         state.logger->Debug("IAudioOut: Buffer Release Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
     }
 
     void IAudioOut::GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto maxCount = static_cast<u32>(request.outputBuf.at(0).size >> 3);
-        std::vector<u64> releasedBuffers = track->GetReleasedBuffers(maxCount);
-        auto count = static_cast<u32>(releasedBuffers.size());
+        auto maxCount{static_cast<u32>(request.outputBuf.at(0).size >> 3)};
+        std::vector<u64> releasedBuffers{track->GetReleasedBuffers(maxCount)};
+        auto count{static_cast<u32>(releasedBuffers.size())};
 
         // Fill rest of output buffer with zeros
         releasedBuffers.resize(maxCount, 0);
@@ -79,7 +76,7 @@ namespace skyline::service::audio {
     }
 
     void IAudioOut::ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto tag = request.Pop<u64>();
+        auto tag{request.Pop<u64>()};
 
         response.Push(static_cast<u32>(track->ContainsBuffer(tag)));
     }

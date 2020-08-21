@@ -18,14 +18,13 @@ namespace skyline::service::audio {
     }
 
     void IAudioOutManager::OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u32 sampleRate = request.Pop<u32>();
-        request.Pop<u16>(); // Channel count is stored in the upper half of a u32
-        u16 channelCount = request.Pop<u16>();
+        auto sampleRate{request.Pop<u32>()};
+        auto channelCount{static_cast<u16>(request.Pop<u32>())};
 
-        state.logger->Debug("audoutU: Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
+        state.logger->Debug("Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
 
         sampleRate = sampleRate ? sampleRate : constant::SampleRate;
-        channelCount = channelCount ? channelCount : static_cast<u16>(constant::ChannelCount);
+        channelCount = channelCount ? channelCount : constant::ChannelCount;
         manager.RegisterService(std::make_shared<IAudioOut>(state, manager, channelCount, sampleRate), session, response);
 
         response.Push<u32>(sampleRate);

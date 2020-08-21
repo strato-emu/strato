@@ -43,7 +43,7 @@ namespace skyline::service::lm {
             LogLevel level;
             u8 verbosity;
             u32 payloadLength;
-        } data = state.process->GetReference<Data>(request.inputBuf.at(0).address);
+        } &data = state.process->GetReference<Data>(request.inputBuf.at(0).address);
 
         std::ostringstream logMessage;
         logMessage << "Guest log:";

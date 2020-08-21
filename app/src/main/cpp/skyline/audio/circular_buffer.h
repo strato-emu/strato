@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include <common.h>
 #include <array>
+#include <span>
+#include <common.h>
 
 namespace skyline::audio {
     /**
@@ -142,11 +143,11 @@ namespace skyline::audio {
         }
 
         /**
-         * @brief This appends data from a vector to the buffer
-         * @param sampleData A reference to a vector containing the data to be appended
+         * @brief This appends data from a span to the buffer
+         * @param data A span containing the data to be appended
          */
-        inline void Append(const std::vector<Type> &data) {
-            Append(const_cast<Type *>(data.data()), data.size());
+        inline void Append(std::span<Type> data) {
+            Append(data.data(), data.size());
         }
     };
 }

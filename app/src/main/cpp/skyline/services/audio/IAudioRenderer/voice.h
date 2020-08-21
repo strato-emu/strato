@@ -14,13 +14,13 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This stores data for configuring a biquadratic filter
      */
     struct BiquadFilter {
-        u8 enable; //!< Whether to enable the filter
+        u8 enable;
         u8 _pad0_;
-        u16 b0; //!< The b0 constant
-        u16 b1; //!< The b1 constant
-        u16 b2; //!< The b2 constant
-        u16 a1; //!< The a1 constant
-        u16 a2; //!< The a2 constant
+        u16 b0;
+        u16 b1;
+        u16 b2;
+        u16 a1;
+        u16 a2;
     };
     static_assert(sizeof(BiquadFilter) == 0xC);
 
@@ -28,16 +28,16 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This stores information of a wave buffer of samples
      */
     struct WaveBuffer {
-        u64 address; //!< The address of the wave buffer in guest memory
-        u64 size; //!< The size of the wave buffer
-        u32 firstSampleOffset; //!< The offset of the first sample in the buffer
-        u32 lastSampleOffset; //!< The offset of the last sample in the buffer
+        u64 address;
+        u64 size;
+        u32 firstSampleOffset;
+        u32 lastSampleOffset;
         u8 looping; //!< Whether to loop the buffer
         u8 lastBuffer; //!< Whether this is the last populated buffer
         u16 _unk0_;
         u32 _unk1_;
-        u64 adpcmLoopContextPosition; //!< The position of the ADPCM loop context data
-        u64 adpcmLoopContextSize; //!< The size of the ADPCM loop context data
+        u64 adpcmLoopContextPosition;
+        u64 adpcmLoopContextSize;
         u64 _unk2_;
     };
     static_assert(sizeof(WaveBuffer) == 0x38);
@@ -46,28 +46,28 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This is in input containing the configuration of a voice
      */
     struct VoiceIn {
-        u32 slot; //!< The slot of the voice
-        u32 nodeId; //!< The node ID of the voice
-        u8 firstUpdate; //!< Whether this voice is new
+        u32 slot;
+        u32 nodeId;
+        u8 firstUpdate; //!< Whether this voice is newly added
         u8 acquired; //!< Whether the sample is in use
-        skyline::audio::AudioOutState playbackState; //!< The playback state
-        skyline::audio::AudioFormat format; //!< The sample format
-        u32 sampleRate; //!< The sample rate
-        u32 priority; //!< The priority for this voice
+        skyline::audio::AudioOutState playbackState;
+        skyline::audio::AudioFormat format;
+        u32 sampleRate;
+        u32 priority;
         u32 _unk0_;
-        u32 channelCount; //!< The amount of channels the wave buffers contain
-        float pitch; //!< The pitch to play wave data at
-        float volume; //!< The volume to play wave data at
-        std::array<BiquadFilter, 2> biquadFilters; //!< Biquadratic filter configurations
-        u32 appendedWaveBuffersCount; //!< The amount of buffers appended
-        u32 baseWaveBufferIndex; //!< The start index of the buffer to use
+        u32 channelCount;
+        float pitch;
+        float volume;
+        std::array<BiquadFilter, 2> biquadFilters;
+        u32 appendedWaveBuffersCount;
+        u32 baseWaveBufferIndex;
         u32 _unk1_;
-        u64 adpcmCoeffsPosition; //!< The ADPCM coefficient position in wave data
-        u64 adpcmCoeffsSize; //!< The size of the ADPCM coefficient configuration data
-        u32 destination; //!< The voice destination address
+        u64 adpcmCoeffsPosition;
+        u64 adpcmCoeffsSize;
+        u32 destination;
         u32 _pad0_;
-        std::array<WaveBuffer, 4> waveBuffers; //!< The wave buffers for the voice
-        std::array<u32, 6> voiceChannelResourceIds; //!< A list of IDs corresponding to each channel
+        std::array<WaveBuffer, 4> waveBuffers;
+        std::array<u32, 6> voiceChannelResourceIds;
         u32 _pad1_[6];
     };
     static_assert(sizeof(VoiceIn) == 0x170);
@@ -77,8 +77,8 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This is returned to inform the guest of the state of a voice
      */
     struct VoiceOut {
-        u64 playedSamplesCount; //!< The amount of samples played
-        u32 playedWaveBuffersCount; //!< The amount of wave buffers fully played
+        u64 playedSamplesCount;
+        u32 playedWaveBuffersCount;
         u32 voiceDropsCount; //!< The amount of time audio frames have been dropped due to the rendering time limit
     };
     static_assert(sizeof(VoiceOut) == 0x10);
@@ -88,20 +88,20 @@ namespace skyline::service::audio::IAudioRenderer {
     */
     class Voice {
       private:
-        const DeviceState &state; //!< The emulator state object
-        std::array<WaveBuffer, 4> waveBuffers; //!< An array containing the state of all four wave buffers
+        const DeviceState &state;
+        std::array<WaveBuffer, 4> waveBuffers;
         std::vector<i16> samples; //!< A vector containing processed sample data
-        skyline::audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a stream
-        std::optional<skyline::audio::AdpcmDecoder> adpcmDecoder; //!< The decoder object used for decoding ADPCM encoded samples
+        skyline::audio::Resampler resampler; //!< The resampler object used for changing the sample rate of a wave buffer's stream
+        std::optional<skyline::audio::AdpcmDecoder> adpcmDecoder;
 
         bool acquired{false}; //!< If the voice is in use
-        bool bufferReload{true}; //!< If the buffer needs to be updated
+        bool bufferReload{true};
         u8 bufferIndex{}; //!< The index of the wave buffer currently in use
         u32 sampleOffset{}; //!< The offset in the sample data of the current wave buffer
-        u32 sampleRate{}; //!< The sample rate of the sample data
-        u8 channelCount{}; //!< The amount of channels in the sample data
-        skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped}; //!< The playback state of the voice
-        skyline::audio::AudioFormat format{skyline::audio::AudioFormat::Invalid}; //!< The format used for guest audio data
+        u32 sampleRate{};
+        u8 channelCount{};
+        skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped};
+        skyline::audio::AudioFormat format{skyline::audio::AudioFormat::Invalid};
 
         /**
          * @brief This updates the sample buffer with data from the current wave buffer and processes it
@@ -115,8 +115,8 @@ namespace skyline::service::audio::IAudioRenderer {
         void SetWaveBufferIndex(u8 index);
 
       public:
-        VoiceOut output{}; //!< The current output state
-        float volume{}; //!< The volume of the voice
+        VoiceOut output{};
+        float volume{};
 
         Voice(const DeviceState &state);
 
