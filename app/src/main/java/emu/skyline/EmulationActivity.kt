@@ -10,6 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.ConditionVariable
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import android.view.*
@@ -51,6 +52,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      */
     @Volatile
     private var surface : Surface? = null
+
+    /**
+     * A condition variable keeping track of if the surface is ready or not
+     */
+    private var surfaceReady = ConditionVariable()
 
     /**
      * A boolean flag denoting if the emulation thread should call finish() or not
@@ -120,9 +126,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      *
      * @param index The index of the controller this is directed to
      * @param mask The mask of the button that are being set
-     * @param state The state to set the button to
+     * @param pressed If the buttons are being pressed or released
      */
-    private external fun setButtonState(index : Int, mask : Long, state : Int)
+    private external fun setButtonState(index : Int, mask : Long, pressed : Boolean)
 
     /**
      * This sets the value of a specific axis on a specific controller
@@ -141,13 +147,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
             val controller = entry.value
 
             if (controller.type != ControllerType.None) {
-                val type : Int = when (controller.type) {
+                val type = when (controller.type) {
                     ControllerType.None -> throw IllegalArgumentException()
                     ControllerType.HandheldProController -> if (operationMode) ControllerType.ProController.id else ControllerType.HandheldProController.id
                     ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
                 }
 
-                val partnerIndex : Int? = when (controller) {
+                val partnerIndex = when (controller) {
                     is JoyConLeftController -> controller.partnerId
                     is JoyConRightController -> controller.partnerId
                     else -> null
@@ -170,10 +176,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
         emulationThread = Thread {
-            while (surface == null)
-                Thread.yield()
-
-            runOnUiThread { initializeControllers() }
+            surfaceReady.block()
 
             executeApplication(rom.toString(), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
 
@@ -216,14 +219,12 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         if (sharedPreferences.getBoolean("perf_stats", false)) {
-            val perfRunnable = object : Runnable {
+            perf_stats.postDelayed(object : Runnable {
                 override fun run() {
                     perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
                     perf_stats.postDelayed(this, 250)
                 }
-            }
-
-            perf_stats.postDelayed(perfRunnable, 250)
+            }, 250)
         }
 
         operationMode = sharedPreferences.getBoolean("operation_mode", operationMode)
@@ -274,6 +275,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         Log.d("surfaceCreated", "Holder: $holder")
         surface = holder.surface
         setSurface(surface)
+        surfaceReady.open()
     }
 
     /**
@@ -288,6 +290,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
      */
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d("surfaceDestroyed", "Holder: $holder")
+        surfaceReady.close()
         surface = null
         setSurface(surface)
     }
@@ -299,7 +302,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         if (event.repeatCount != 0)
             return super.dispatchKeyEvent(event)
 
-        val action : ButtonState = when (event.action) {
+        val action = when (event.action) {
             KeyEvent.ACTION_DOWN -> ButtonState.Pressed
             KeyEvent.ACTION_UP -> ButtonState.Released
             else -> return super.dispatchKeyEvent(event)
@@ -308,7 +311,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         return when (val guestEvent = input.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
             is ButtonGuestEvent -> {
                 if (guestEvent.button != ButtonId.Menu)
-                    setButtonState(guestEvent.id, guestEvent.button.value(), action.ordinal)
+                    setButtonState(guestEvent.id, guestEvent.button.value(), action.state)
                 true
             }
 
@@ -356,7 +359,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
                         when (guestEvent) {
                             is ButtonGuestEvent -> {
                                 if (guestEvent.button != ButtonId.Menu)
-                                    setButtonState(guestEvent.id, guestEvent.button.value(), if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.ordinal else ButtonState.Released.ordinal)
+                                    setButtonState(guestEvent.id, guestEvent.button.value(), if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.state else ButtonState.Released.state)
                             }
 
                             is AxisGuestEvent -> {

@@ -29,9 +29,9 @@ namespace skyline::service::hid {
 
     void IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet = request.Pop<NpadStyleSet>();
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.styles = styleSet;
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
 
         state.logger->Debug("Controller Support:\nPro-Controller: {}\nJoy-Con: Handheld: {}, Dual: {}, L: {}, R: {}\nGameCube: {}\nPokeBall: {}\nNES: {}, NES Handheld: {}, SNES: {}", static_cast<bool>(styleSet.proController), static_cast<bool>(styleSet.joyconHandheld), static_cast<bool>(styleSet.joyconDual), static_cast<bool>(styleSet.joyconLeft), static_cast<bool>
         (styleSet.joyconRight), static_cast<bool>(styleSet.gamecube), static_cast<bool>(styleSet.palma), static_cast<bool>(styleSet.nes), static_cast<bool>(styleSet.nesHandheld), static_cast<bool>(styleSet.snes));
@@ -45,16 +45,16 @@ namespace skyline::service::hid {
         const auto &buffer = request.inputBuf.at(0);
         u64 address = buffer.address;
         size_t size = buffer.size / sizeof(NpadId);
-        std::vector<NpadId> supportedIds;
 
+        std::vector<NpadId> supportedIds(size);
         for (size_t i = 0; i < size; i++) {
-            supportedIds.push_back(state.process->GetObject<NpadId>(address));
+            supportedIds[i] = state.process->GetObject<NpadId>(address);
             address += sizeof(NpadId);
         }
 
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.supportedIds = supportedIds;
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
     }
 
     void IHidServer::ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -75,10 +75,10 @@ namespace skyline::service::hid {
     }
 
     void IHidServer::SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         request.Skip<u64>();
         state.input->npad.orientation = request.Pop<NpadJoyOrientation>();
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
     }
 
     void IHidServer::GetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -87,22 +87,22 @@ namespace skyline::service::hid {
 
     void IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
     }
 
     void IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
     }
 
     void IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
-        std::unique_lock lock(state.input->npad.mutex);
+        std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
-        state.input->npad.Update(lock);
+        state.input->npad.Update();
     }
 }

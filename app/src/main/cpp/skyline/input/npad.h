@@ -22,7 +22,6 @@ namespace skyline::input {
       private:
         const DeviceState &state;
         bool activated{false}; //!< If this NpadManager is activated or not
-        std::atomic<bool> updated{false}; //!< If this NpadManager has been updated by the guest
 
         friend NpadDevice;
 
@@ -43,7 +42,7 @@ namespace skyline::input {
         }
 
       public:
-        std::mutex mutex; //!< This mutex must be locked before any modifications to class members
+        std::recursive_mutex mutex; //!< This mutex must be locked before any modifications to class members
         std::array<NpadDevice, constant::NpadCount> npads;
         std::array<GuestController, constant::ControllerCount> controllers;
         std::vector<NpadId> supportedIds; //!< The NpadId(s) that are supported by the application
@@ -71,10 +70,9 @@ namespace skyline::input {
 
         /**
          * @brief This deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
-         * @param lock A unique_lock which locks the mutex in the class, it should be locked before modifications to any members and must not be passed in an unlocked state
-         * @param host If the update is host-initiated rather than the guest
+         * @note If any class members were edited, the mutex shouldn't be released till this is called
          */
-        void Update(std::unique_lock<std::mutex> &lock, bool host = false);
+        void Update();
 
         /**
          * @brief This activates the mapping between guest controllers -> players, a call to this is required for function

@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setupAppList()
 
         app_list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            var y : Int = 0
+            var y = 0
 
             override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
                 y += dy

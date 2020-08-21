@@ -35,7 +35,7 @@ namespace skyline {
         /**
          * @brief Returns a pointer to the JNI environment for the current thread
          */
-        JNIEnv *GetEnv();
+        static JNIEnv *GetEnv();
 
         /**
          * @brief Retrieves a specific field of the given type from the activity
@@ -85,6 +85,14 @@ namespace skyline {
          * @param object The jobject to check
          * @return If the object is null or not
          */
-        bool CheckNull(jobject &object);
+        static bool CheckNull(jobject &object);
+
+        /**
+         * @brief A call to EmulationActivity.initializeControllers in Kotlin
+         */
+        void InitializeControllers();
+
+      private:
+        jmethodID initializeControllersId;
     };
 }

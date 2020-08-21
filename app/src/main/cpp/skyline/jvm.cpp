@@ -6,7 +6,7 @@
 thread_local JNIEnv *env;
 
 namespace skyline {
-    JvmManager::JvmManager(JNIEnv *environ, jobject instance) : instance(instance), instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))) {
+    JvmManager::JvmManager(JNIEnv *environ, jobject instance) : instance(instance), instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))), initializeControllersId(environ->GetMethodID(instanceClass, "initializeControllers", "()V")) {
         env = environ;
         if (env->GetJavaVM(&vm) < 0)
             throw exception("Cannot get JavaVM from environment");
@@ -36,5 +36,9 @@ namespace skyline {
 
     bool JvmManager::CheckNull(jobject &object) {
         return env->IsSameObject(object, nullptr);
+    }
+
+    void JvmManager::InitializeControllers() {
+        env->CallVoidMethod(instance, initializeControllersId);
     }
 }

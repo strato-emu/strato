@@ -65,12 +65,14 @@
             android:key="category_input"
             android:title="@string/input"
             app:initialExpandedChildrenCount="4">
+        <!--
         <CheckBoxPreference
                 android:defaultValue="true"
                 android:summaryOff="@string/osc_not_shown"
                 android:summaryOn="@string/osc_shown"
                 app:key="show_osc"
                 app:title="@string/show_osc" />
+        -->
         <emu.skyline.preference.ControllerPreference index="0" />
         <emu.skyline.preference.ControllerPreference index="1" />
         <emu.skyline.preference.ControllerPreference index="2" />

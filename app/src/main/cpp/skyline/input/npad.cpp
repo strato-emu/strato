@@ -13,15 +13,8 @@ namespace skyline::input {
          {*this, hid->npad[8], NpadId::Unknown}, {*this, hid->npad[9], NpadId::Handheld},
         } {}
 
-    void NpadManager::Update(std::unique_lock<std::mutex> &lock, bool host) {
-        if (host) {
-            updated = true;
-        } else if (!updated) {
-            lock.unlock();
-            while (!updated);
-            lock.lock();
-            return;
-        }
+    void NpadManager::Update() {
+        std::lock_guard guard(mutex);
 
         if (!activated)
             return;
@@ -85,17 +78,17 @@ namespace skyline::input {
     }
 
     void NpadManager::Activate() {
-        std::unique_lock lock(mutex);
+        std::lock_guard guard(mutex);
 
         supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
         styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
         activated = true;
 
-        Update(lock);
+        Update();
     }
 
     void NpadManager::Deactivate() {
-        std::unique_lock lock(mutex);
+        std::lock_guard guard(mutex);
 
         supportedIds = {};
         styles = {};
