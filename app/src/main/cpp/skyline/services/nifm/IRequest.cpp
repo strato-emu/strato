@@ -5,7 +5,7 @@
 #include "IRequest.h"
 
 namespace skyline::service::nifm {
-    IRequest::IRequest(const DeviceState &state, ServiceManager &manager) : event0(std::make_shared<type::KEvent>(state)), event1(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::nifm_IRequest, "nifm:IRequest", {
+    IRequest::IRequest(const DeviceState &state, ServiceManager &manager) : event0(std::make_shared<type::KEvent>(state)), event1(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x0, SFUNC(IRequest::GetRequestState)},
         {0x1, SFUNC(IRequest::GetResult)},
         {0x2, SFUNC(IRequest::GetSystemEventReadableHandles)},

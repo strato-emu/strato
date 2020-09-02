@@ -4,7 +4,7 @@
 #include "ISteadyClock.h"
 
 namespace skyline::service::timesrv {
-    ISteadyClock::ISteadyClock(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::timesrv_ISteadyClock, "timesrv:ISteadyClock", {
+    ISteadyClock::ISteadyClock(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(ISteadyClock::GetCurrentTimePoint)}
     }) {}
 

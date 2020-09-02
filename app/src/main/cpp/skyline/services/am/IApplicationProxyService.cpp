@@ -5,7 +5,7 @@
 #include "IApplicationProxyService.h"
 
 namespace skyline::service::am {
-    IApplicationProxyService::IApplicationProxyService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IApplicationProxyService, "am:IApplicationProxyService", {
+    IApplicationProxyService::IApplicationProxyService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IApplicationProxyService::OpenApplicationProxy)}
     }) {}
 

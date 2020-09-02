@@ -12,7 +12,7 @@
 #include "base_proxy.h"
 
 namespace skyline::service::am {
-    BaseProxy::BaseProxy(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, serviceType, serviceName, vTable) {}
+    BaseProxy::BaseProxy(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, vTable) {}
 
     void BaseProxy::GetCommonStateGetter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ICommonStateGetter), session, response);

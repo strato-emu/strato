@@ -4,7 +4,7 @@
 #include "IAudioController.h"
 
 namespace skyline::service::am {
-    IAudioController::IAudioController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IAudioController, "am:IAudioController", {
+    IAudioController::IAudioController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IAudioController::SetExpectedMasterVolume)},
         {0x1, SFUNC(IAudioController::GetMainAppletExpectedMasterVolume)},
         {0x2, SFUNC(IAudioController::GetLibraryAppletExpectedMasterVolume)}

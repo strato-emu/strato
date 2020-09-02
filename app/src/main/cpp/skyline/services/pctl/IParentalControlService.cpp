@@ -4,6 +4,6 @@
 #include "IParentalControlService.h"
 
 namespace skyline::service::pctl {
-    IParentalControlService::IParentalControlService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::pctl_IParentalControlService, "pctl:IParentalControlService", {
+    IParentalControlService::IParentalControlService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
     }) {}
 }

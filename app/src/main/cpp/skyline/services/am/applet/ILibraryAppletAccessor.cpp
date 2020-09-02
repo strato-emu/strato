@@ -7,7 +7,7 @@
 #include "ILibraryAppletAccessor.h"
 
 namespace skyline::service::am {
-    ILibraryAppletAccessor::ILibraryAppletAccessor(const DeviceState &state, ServiceManager &manager) : stateChangeEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ILibraryAppletAccessor, "am:ILibraryAppletAccessor", {
+    ILibraryAppletAccessor::ILibraryAppletAccessor(const DeviceState &state, ServiceManager &manager) : stateChangeEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x0, SFUNC(ILibraryAppletAccessor::GetAppletStateChangedEvent)},
         {0xA, SFUNC(ILibraryAppletAccessor::Start)},
         {0x1E, SFUNC(ILibraryAppletAccessor::GetResult)},

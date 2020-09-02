@@ -4,7 +4,7 @@
 #include "IPrepoService.h"
 
 namespace skyline::service::prepo {
-    IPrepoService::IPrepoService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::prepo_IPrepoService, "prepo:IPrepoService", {
+    IPrepoService::IPrepoService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x2775, SFUNC(IPrepoService::SaveReportWithUser)},
     }) {}
 

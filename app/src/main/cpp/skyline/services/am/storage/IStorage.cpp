@@ -5,7 +5,7 @@
 #include "IStorage.h"
 
 namespace skyline::service::am {
-    IStorage::IStorage(const DeviceState &state, ServiceManager &manager, size_t size) : content(size), BaseService(state, manager, Service::am_IStorage, "am:IStorage", {
+    IStorage::IStorage(const DeviceState &state, ServiceManager &manager, size_t size) : content(size), BaseService(state, manager, {
         {0x0, SFUNC(IStorage::Open)}
     }) {}
 

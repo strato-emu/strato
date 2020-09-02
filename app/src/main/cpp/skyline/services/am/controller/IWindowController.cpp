@@ -5,7 +5,7 @@
 #include "IWindowController.h"
 
 namespace skyline::service::am {
-    IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IWindowController, "am:IWindowController", {
+    IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x1, SFUNC(IWindowController::GetAppletResourceUserId)},
         {0xA, SFUNC(IWindowController::AcquireForegroundRights)}
     }) {}

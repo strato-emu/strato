@@ -6,7 +6,7 @@
 #include "IServiceCreator.h"
 
 namespace skyline::service::friends {
-    IServiceCreator::IServiceCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::friends_IServiceCreator, "friends:IServiceCreator", {
+    IServiceCreator::IServiceCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IServiceCreator::CreateFriendService)},
         {0x1, SFUNC(IServiceCreator::CreateNotificationService)},
     }) {}

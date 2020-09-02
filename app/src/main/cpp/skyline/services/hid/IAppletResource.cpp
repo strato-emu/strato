@@ -5,7 +5,7 @@
 #include "IAppletResource.h"
 
 namespace skyline::service::hid {
-    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hid_IAppletResource, "hid:IAppletResource", {
+    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IAppletResource::GetSharedMemoryHandle)}
     }) {}
 

@@ -7,7 +7,7 @@
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_IApplicationFunctions, "am:IApplicationFunctions", {
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x1, SFUNC(IApplicationFunctions::PopLaunchParameter)},
         {0x14, SFUNC(IApplicationFunctions::EnsureSaveData)},
         {0x15, SFUNC(IApplicationFunctions::GetDesiredLanguage)},

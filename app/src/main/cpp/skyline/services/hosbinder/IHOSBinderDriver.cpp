@@ -11,7 +11,7 @@
 #include "display.h"
 
 namespace skyline::service::hosbinder {
-    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hosbinder_IHOSBinderDriver, "hosbinder_IHOSBinderDriver", {
+    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IHOSBinderDriver::TransactParcel)},
         {0x1, SFUNC(IHOSBinderDriver::AdjustRefcount)},
         {0x2, SFUNC(IHOSBinderDriver::GetNativeHandle)},
@@ -124,7 +124,7 @@ namespace skyline::service::hosbinder {
         auto gbpBuffer = reinterpret_cast<GbpBuffer *>(pointer);
 
         std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
-        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap);
+        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap);
 
         if (gbpBuffer->nvmapHandle) {
             nvBuffer = nvmap->handleTable.at(gbpBuffer->nvmapHandle);

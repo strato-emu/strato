@@ -5,7 +5,7 @@
 #include "ILogService.h"
 
 namespace skyline::service::lm {
-    ILogService::ILogService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::lm_ILogService, "lm:ILogService", {
+    ILogService::ILogService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(ILogService::OpenLogger)}
     }) {}
 

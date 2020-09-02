@@ -4,7 +4,7 @@
 #include "ISession.h"
 
 namespace skyline::service::apm {
-    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::apm_ISession, "apm:ISession", {
+    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(ISession::SetPerformanceConfiguration)},
         {0x1, SFUNC(ISession::GetPerformanceConfiguration)}
     }) {}

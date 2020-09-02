@@ -7,7 +7,7 @@
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {
-    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::visrv_IManagerDisplayService, "visrv:IManagerDisplayService", {
+    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, {
         {0x7DA, SFUNC(IManagerDisplayService::CreateManagedLayer)},
         {0x7DB, SFUNC(IManagerDisplayService::DestroyManagedLayer)},
         {0x7DC, SFUNC(IDisplayService::CreateStrayLayer)},
@@ -19,7 +19,7 @@ namespace skyline::service::visrv {
         auto displayId = request.Pop<u64>();
         state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
@@ -31,7 +31,7 @@ namespace skyline::service::visrv {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Managed Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
 

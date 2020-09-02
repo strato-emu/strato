@@ -5,7 +5,7 @@
 #include "IStaticService.h"
 
 namespace skyline::service::nifm {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::nifm_IStaticService, "nifm:IStaticService", {
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x4, SFUNC(IStaticService::CreateGeneralService)},
         {0x5, SFUNC(IStaticService::CreateGeneralService)}
     }) {}

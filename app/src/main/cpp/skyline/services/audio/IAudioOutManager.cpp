@@ -6,7 +6,7 @@
 #include "IAudioOut.h"
 
 namespace skyline::service::audio {
-    IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::audio_IAudioOutManager, "audio:IAudioOutManager", {
+    IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IAudioOutManager::ListAudioOuts)},
         {0x1, SFUNC(IAudioOutManager::OpenAudioOut)},
         {0x2, SFUNC(IAudioOutManager::ListAudioOuts)},

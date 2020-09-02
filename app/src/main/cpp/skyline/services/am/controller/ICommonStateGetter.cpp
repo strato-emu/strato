@@ -10,7 +10,7 @@ namespace skyline::service::am {
         messageEvent->Signal();
     }
 
-    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ICommonStateGetter, "am:ICommonStateGetter", {
+    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x0, SFUNC(ICommonStateGetter::GetEventHandle)},
         {0x1, SFUNC(ICommonStateGetter::ReceiveMessage)},
         {0x5, SFUNC(ICommonStateGetter::GetOperationMode)},

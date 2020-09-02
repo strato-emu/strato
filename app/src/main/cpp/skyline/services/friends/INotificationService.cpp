@@ -5,7 +5,7 @@
 #include "INotificationService.h"
 
 namespace skyline::service::friends {
-    INotificationService::INotificationService(const DeviceState &state, ServiceManager &manager) : notificationEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::friends_INotificationService, "friends:INotificationService", {
+    INotificationService::INotificationService(const DeviceState &state, ServiceManager &manager) : notificationEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x0, SFUNC(INotificationService::GetEvent)},
     }) {}
 

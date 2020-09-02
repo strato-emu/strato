@@ -5,7 +5,7 @@
 #include "IGeneralService.h"
 
 namespace skyline::service::nifm {
-    IGeneralService::IGeneralService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::nifm_IGeneralService, "nifm:IGeneralService", {
+    IGeneralService::IGeneralService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x4, SFUNC(IGeneralService::CreateRequest)}
     }) {}
 

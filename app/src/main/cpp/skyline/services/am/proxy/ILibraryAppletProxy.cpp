@@ -4,7 +4,7 @@
 #include "ILibraryAppletProxy.h"
 
 namespace skyline::service::am {
-    ILibraryAppletProxy::ILibraryAppletProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, Service::am_ILibraryAppletProxy, "am:ILibraryAppletProxy", {
+    ILibraryAppletProxy::ILibraryAppletProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, {
         {0x0, SFUNC(BaseProxy::GetCommonStateGetter)},
         {0x1, SFUNC(BaseProxy::GetSelfController)},
         {0x2, SFUNC(BaseProxy::GetWindowController)},

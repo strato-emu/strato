@@ -5,7 +5,7 @@
 #include "IFile.h"
 
 namespace skyline::service::fssrv {
-    IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, Service::fssrv_IFile, "fssrv:IFile", {
+    IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, {
         {0x0, SFUNC(IFile::Read)},
         {0x1, SFUNC(IFile::Write)},
         {0x2, SFUNC(IFile::Flush)},

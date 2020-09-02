@@ -8,7 +8,7 @@
 #include "IAllSystemAppletProxiesService.h"
 
 namespace skyline::service::am {
-    IAllSystemAppletProxiesService::IAllSystemAppletProxiesService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_IAllSystemAppletProxiesService, "am:IAllSystemAppletProxiesService", {
+    IAllSystemAppletProxiesService::IAllSystemAppletProxiesService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x64, SFUNC(IAllSystemAppletProxiesService::OpenSystemAppletProxy)},
         {0xC8, SFUNC(IAllSystemAppletProxiesService::OpenLibraryAppletProxy)},
         {0xC9, SFUNC(IAllSystemAppletProxiesService::OpenLibraryAppletProxy)},

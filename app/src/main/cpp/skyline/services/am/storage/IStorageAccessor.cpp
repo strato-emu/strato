@@ -6,7 +6,7 @@
 #include "IStorageAccessor.h"
 
 namespace skyline::service::am {
-    IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(parent), BaseService(state, manager, Service::am_IStorageAccessor, "am:IStorageAccessor", {
+    IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(parent), BaseService(state, manager, {
         {0x0, SFUNC(IStorageAccessor::GetSize)},
         {0xA, SFUNC(IStorageAccessor::Write)},
         {0xB, SFUNC(IStorageAccessor::Read)}

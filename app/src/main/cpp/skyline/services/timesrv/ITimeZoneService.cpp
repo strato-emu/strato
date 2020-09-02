@@ -4,7 +4,7 @@
 #include "ITimeZoneService.h"
 
 namespace skyline::service::timesrv {
-    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::timesrv_ITimeZoneService, "timesrv:ITimeZoneService", {
+    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x65, SFUNC(ITimeZoneService::ToCalendarTimeWithMyRule)}
     }) {}
 

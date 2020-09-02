@@ -588,7 +588,7 @@ namespace skyline::kernel::svc {
 
         KHandle handle{};
         if (port.compare("sm:") >= 0) {
-            handle = state.os->serviceManager.NewSession(service::Service::sm_IUserInterface);
+            handle = state.process->NewHandle<type::KSession>(std::static_pointer_cast<service::BaseService>(state.os->serviceManager.smUserInterface)).handle;
         } else {
             state.logger->Warn("svcConnectToNamedPort: Connecting to invalid port: '{}'", port);
             state.ctx->registers.w0 = constant::status::NotFound;

@@ -7,7 +7,7 @@
 #include "IDisplayService.h"
 
 namespace skyline::service::visrv {
-    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, serviceType, serviceName, vTable) {}
+    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, vTable) {}
 
     void IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>();
@@ -15,7 +15,7 @@ namespace skyline::service::visrv {
 
         state.logger->Debug("Creating Stray Layer on Display: {}", displayId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Stray)
             throw exception("The application is creating more than one stray layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Stray;
@@ -37,7 +37,7 @@ namespace skyline::service::visrv {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Stray Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;

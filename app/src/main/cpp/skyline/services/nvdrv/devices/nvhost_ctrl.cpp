@@ -95,7 +95,7 @@ namespace skyline::service::nvdrv::device {
             return;
         }
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
+        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
 
         // Check if the syncpoint has already expired using the last known values
         if (hostSyncpoint.HasSyncpointExpired(args.fence.id, args.fence.value)) {
@@ -173,7 +173,7 @@ namespace skyline::service::nvdrv::device {
 
         event.state = NvHostEvent::State::Cancelled;
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
+        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
         hostSyncpoint.UpdateMin(event.fence.id);
     }
 

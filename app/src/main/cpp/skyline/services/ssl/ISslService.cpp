@@ -5,7 +5,7 @@
 #include "ISslService.h"
 
 namespace skyline::service::ssl {
-    ISslService::ISslService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::ssl_ISslService, "ssl:ISslService", {
+    ISslService::ISslService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(ISslService::CreateContext)},
         {0x5, SFUNC(ISslService::SetInterfaceVersion)}
     }) {}

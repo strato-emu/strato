@@ -70,7 +70,7 @@ namespace skyline::service::nvdrv::device {
         if (!region.nvmapHandle)
             return;
 
-        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(region.nvmapHandle);
+        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(region.nvmapHandle);
 
         u64 mapPhysicalAddress = region.bufferOffset + nvmap->address;
         u64 mapSize = region.mappingSize ? region.mappingSize : nvmap->size;
@@ -133,7 +133,7 @@ namespace skyline::service::nvdrv::device {
 
         for (auto entry : entries) {
             try {
-                auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(entry.nvmapHandle);
+                auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(entry.nvmapHandle);
 
                 u64 mapAddress = static_cast<u64>(entry.gpuOffset) << MinAlignmentShift;
                 u64 mapPhysicalAddress = nvmap->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift);

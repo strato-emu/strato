@@ -5,7 +5,7 @@
 #include "ISystemSettingsServer.h"
 
 namespace skyline::service::settings {
-    ISystemSettingsServer::ISystemSettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::settings_ISystemSettingsServer, "settings:ISystemSettingsServer", {
+    ISystemSettingsServer::ISystemSettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x3, SFUNC(ISystemSettingsServer::GetFirmwareVersion)}}) {}
 
     void ISystemSettingsServer::GetFirmwareVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

@@ -5,7 +5,7 @@
 #include "ISettingsServer.h"
 
 namespace skyline::service::settings {
-    ISettingsServer::ISettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::settings_ISettingsServer, "settings:ISettingsServer", {
+    ISettingsServer::ISettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x1, SFUNC(ISettingsServer::GetAvailableLanguageCodes)},
         {0x2, SFUNC(ISettingsServer::MakeLanguageCode)},
         {0x5, SFUNC(ISettingsServer::GetAvailableLanguageCodes2)}

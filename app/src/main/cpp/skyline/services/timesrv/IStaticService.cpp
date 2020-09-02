@@ -7,7 +7,7 @@
 #include "IStaticService.h"
 
 namespace skyline::service::timesrv {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::timesrv_IStaticService, "timesrv:IStaticService", {
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IStaticService::GetStandardUserSystemClock)},
         {0x1, SFUNC(IStaticService::GetStandardNetworkSystemClock)},
         {0x2, SFUNC(IStaticService::GetStandardSteadyClock)},

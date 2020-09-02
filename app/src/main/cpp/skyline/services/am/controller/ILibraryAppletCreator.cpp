@@ -6,7 +6,7 @@
 #include "ILibraryAppletCreator.h"
 
 namespace skyline::service::am {
-    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::am_ILibraryAppletCreator, "am:ILibraryAppletCreator", {
+    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(ILibraryAppletCreator::CreateLibraryApplet)},
         {0xA, SFUNC(ILibraryAppletCreator::CreateStorage)}
     }) {}

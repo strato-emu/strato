@@ -4,7 +4,7 @@
 #include "IClient.h"
 
 namespace skyline::service::socket {
-    IClient::IClient(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::socket_IClient, "socket:IClient", {
+    IClient::IClient(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IClient::RegisterClient)},
         {0x1, SFUNC(IClient::StartMonitoring)},
     }) {}

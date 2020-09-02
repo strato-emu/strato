@@ -7,7 +7,7 @@
 #include "IFileSystem.h"
 
 namespace skyline::service::fssrv {
-    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, Service::fssrv_IFileSystem, "fssrv:IFileSystem", {
+    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, {
         {0x0, SFUNC(IFileSystem::CreateFile)},
         {0x7, SFUNC(IFileSystem::GetEntryType)},
         {0x8, SFUNC(IFileSystem::OpenFile)},

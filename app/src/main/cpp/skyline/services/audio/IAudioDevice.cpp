@@ -6,7 +6,7 @@
 #include "IAudioDevice.h"
 
 namespace skyline::service::audio {
-    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::audio_IAudioDevice, "audio:IAudioDevice", {
+    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x0, SFUNC(IAudioDevice::ListAudioDeviceName)},
         {0x1, SFUNC(IAudioDevice::SetAudioDeviceOutputVolume)},
         {0x3, SFUNC(IAudioDevice::GetActiveAudioDeviceName)},

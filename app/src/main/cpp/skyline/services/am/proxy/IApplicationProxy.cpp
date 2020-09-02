@@ -5,7 +5,7 @@
 #include "IApplicationProxy.h"
 
 namespace skyline::service::am {
-    IApplicationProxy::IApplicationProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, Service::am_IApplicationProxy, "am:IApplicationProxy", {
+    IApplicationProxy::IApplicationProxy(const DeviceState &state, ServiceManager &manager) : BaseProxy(state, manager, {
         {0x0, SFUNC(BaseProxy::GetCommonStateGetter)},
         {0x1, SFUNC(BaseProxy::GetSelfController)},
         {0x2, SFUNC(BaseProxy::GetWindowController)},

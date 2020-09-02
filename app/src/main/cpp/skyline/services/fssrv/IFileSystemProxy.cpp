@@ -8,7 +8,7 @@
 #include "IStorage.h"
 
 namespace skyline::service::fssrv {
-    IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::fssrv_IFileSystemProxy, "fssrv:IFileSystemProxy", {
+    IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x1, SFUNC(IFileSystemProxy::SetCurrentProcess)},
         {0x12, SFUNC(IFileSystemProxy::OpenSdCardFileSystem)},
         {0x33, SFUNC(IFileSystemProxy::OpenSaveDataFileSystem)},

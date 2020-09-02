@@ -6,7 +6,7 @@
 #include "IApplicationDisplayService.h"
 
 namespace skyline::service::visrv {
-    IManagerRootService::IManagerRootService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::visrv_IManagerRootService, "visrv:IManagerRootService", {
+    IManagerRootService::IManagerRootService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x2, SFUNC(IManagerRootService::GetDisplayService)}
     }) {}
 

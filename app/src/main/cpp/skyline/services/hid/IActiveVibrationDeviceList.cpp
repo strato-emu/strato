@@ -7,7 +7,7 @@
 using namespace skyline::input;
 
 namespace skyline::service::hid {
-    IActiveVibrationDeviceList::IActiveVibrationDeviceList(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hid_IActiveVibrationDeviceList, "hid:IActiveVibrationDeviceList", {
+    IActiveVibrationDeviceList::IActiveVibrationDeviceList(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IActiveVibrationDeviceList::ActivateVibrationDevice)}
     }) {}
 

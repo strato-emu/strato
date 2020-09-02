@@ -29,7 +29,7 @@ namespace skyline::service::pl {
                                               {FontStandard, FontStandardLength}
                                           }};
 
-    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager, Service::pl_IPlatformServiceManager, "pl:IPlatformServiceManager", {
+    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager, {
         {0x1, SFUNC(IPlatformServiceManager::GetLoadState)},
         {0x2, SFUNC(IPlatformServiceManager::GetSize)},
         {0x3, SFUNC(IPlatformServiceManager::GetSharedMemoryAddressOffset)},

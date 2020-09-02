@@ -8,7 +8,7 @@
 using namespace skyline::input;
 
 namespace skyline::service::hid {
-    IHidServer::IHidServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::hid_IHidServer, "hid:IHidServer", {
+    IHidServer::IHidServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IHidServer::CreateAppletResource)},
         {0x64, SFUNC(IHidServer::SetSupportedNpadStyleSet)},
         {0x64, SFUNC(IHidServer::GetSupportedNpadStyleSet)},

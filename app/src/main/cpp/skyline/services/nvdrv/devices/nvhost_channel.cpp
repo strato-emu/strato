@@ -19,7 +19,7 @@ namespace skyline::service::nvdrv::device {
         {0x481A, NFUNC(NvHostChannel::AllocGpfifoEx2)},
         {0x4714, NFUNC(NvHostChannel::SetUserData)},
     }) {
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
+        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
 
         channelFence.id = hostSyncpoint.AllocateSyncpoint(false);
         channelFence.UpdateValue(hostSyncpoint);
@@ -48,7 +48,7 @@ namespace skyline::service::nvdrv::device {
             Fence fence;
         } &args = state.process->GetReference<Data>(buffer.output.at(0).address);
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint;
+        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
 
         if (args.flags.fenceWait) {
             if (args.flags.incrementWithValue) {
@@ -104,7 +104,7 @@ namespace skyline::service::nvdrv::device {
             u32 reserved[3];
         } &args = state.process->GetReference<Data>(buffer.input.at(0).address);
 
-        channelFence.UpdateValue(state.os->serviceManager.GetService<nvdrv::INvDrvServices>(Service::nvdrv_INvDrvServices)->hostSyncpoint);
+        channelFence.UpdateValue(state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint);
         args.fence = channelFence;
     }
 

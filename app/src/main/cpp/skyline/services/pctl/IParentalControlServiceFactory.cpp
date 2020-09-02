@@ -5,7 +5,7 @@
 #include "IParentalControlServiceFactory.h"
 
 namespace skyline::service::pctl {
-    IParentalControlServiceFactory::IParentalControlServiceFactory(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::pctl_IParentalControlServiceFactory, "pctl:IParentalControlServiceFactory", {
+    IParentalControlServiceFactory::IParentalControlServiceFactory(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IParentalControlServiceFactory::CreateService)},
         {0x1, SFUNC(IParentalControlServiceFactory::CreateService)}
     }) {}

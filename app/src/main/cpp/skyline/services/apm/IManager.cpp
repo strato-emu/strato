@@ -5,7 +5,7 @@
 #include "IManager.h"
 
 namespace skyline::service::apm {
-    IManager::IManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::apm_IManager, "apm:IManager", {
+    IManager::IManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IManager::OpenSession)}
     }) {}
 

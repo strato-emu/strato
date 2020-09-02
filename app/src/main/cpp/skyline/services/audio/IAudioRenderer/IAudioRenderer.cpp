@@ -6,7 +6,7 @@
 
 namespace skyline::service::audio::IAudioRenderer {
     IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters)
-        : systemEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager, Service::audio_IAudioRenderer, "audio:IAudioRenderer", {
+        : systemEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager, {
         {0x0, SFUNC(IAudioRenderer::GetSampleRate)},
         {0x1, SFUNC(IAudioRenderer::GetSampleCount)},
         {0x2, SFUNC(IAudioRenderer::GetMixBufferCount)},

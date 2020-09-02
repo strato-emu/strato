@@ -7,7 +7,7 @@
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, Service::am_ISelfController, "am:ISelfController", {
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
         {0x1, SFUNC(ISelfController::LockExit)},
         {0x2, SFUNC(ISelfController::UnlockExit)},
         {0x9, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)},
@@ -46,7 +46,7 @@ namespace skyline::service::am {
     void ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Managed Layer on Default Display");
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Managed;

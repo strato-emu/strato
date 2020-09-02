@@ -4,6 +4,6 @@
 #include "IFriendService.h"
 
 namespace skyline::service::friends {
-    IFriendService::IFriendService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::friends_IFriendService, "friends:IFriendService", {
+    IFriendService::IFriendService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
     }) {}
 }

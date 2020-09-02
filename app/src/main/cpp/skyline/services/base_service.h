@@ -4,6 +4,7 @@
 #pragma once
 
 #include <functional>
+#include <cxxabi.h>
 #include <kernel/ipc.h>
 #include <common.h>
 
@@ -16,119 +17,7 @@ namespace skyline::kernel::type {
 
 namespace skyline::service {
     using namespace kernel;
-
-    /**
-     * @brief This contains an enum for every service that's present
-     */
-    enum class Service {
-        sm_IUserInterface,
-        fatalsrv_IService,
-        settings_ISettingsServer,
-        settings_ISystemSettingsServer,
-        apm_IManager,
-        apm_ISession,
-        am_IAllSystemAppletProxiesService,
-        am_IApplicationProxyService,
-        am_IApplicationProxy,
-        am_ILibraryAppletProxy,
-        am_ISystemAppletProxy,
-        am_IOverlayAppletProxy,
-        am_ICommonStateGetter,
-        am_IApplicationFunctions,
-        am_ISelfController,
-        am_IWindowController,
-        am_IAudioController,
-        am_IDisplayController,
-        am_ILibraryAppletCreator,
-        am_ILibraryAppletAccessor,
-        am_IDebugFunctions,
-        am_IAppletCommonFunctions,
-        am_IStorage,
-        am_IStorageAccessor,
-        audio_IAudioOutManager,
-        audio_IAudioOut,
-        audio_IAudioRendererManager,
-        audio_IAudioRenderer,
-        audio_IAudioDevice,
-        hid_IHidServer,
-        hid_IAppletResource,
-        hid_IActiveVibrationDeviceList,
-        timesrv_IStaticService,
-        timesrv_ISystemClock,
-        timesrv_ITimeZoneService,
-        timesrv_ISteadyClock,
-        fssrv_IFileSystemProxy,
-        fssrv_IFileSystem,
-        fssrv_IFile,
-        fssrv_IStorage,
-        nvdrv_INvDrvServices,
-        visrv_IManagerRootService,
-        visrv_IApplicationDisplayService,
-        visrv_ISystemDisplayService,
-        visrv_IManagerDisplayService,
-        hosbinder_IHOSBinderDriver,
-        pl_IPlatformServiceManager,
-        aocsrv_IAddOnContentManager,
-        pctl_IParentalControlServiceFactory,
-        pctl_IParentalControlService,
-        lm_ILogService,
-        lm_ILogger,
-        account_IAccountServiceForApplication,
-        account_IManagerForApplication,
-        account_IProfile,
-        friends_IServiceCreator,
-        friends_IFriendService,
-        friends_INotificationService,
-        nfp_IUserManager,
-        nfp_IUser,
-        nifm_IStaticService,
-        nifm_IGeneralService,
-        nifm_IRequest,
-        socket_IClient,
-        ssl_ISslService,
-        ssl_ISslContext,
-        prepo_IPrepoService
-    };
-
-    /**
-     * @brief A map from every service's name as a std::string to the corresponding serviceEnum
-     */
-    const static std::unordered_map<std::string, Service> ServiceString{
-        {"fatal:u", Service::fatalsrv_IService},
-        {"set", Service::settings_ISettingsServer},
-        {"set:sys", Service::settings_ISystemSettingsServer},
-        {"apm", Service::apm_IManager},
-        {"appletOE", Service::am_IApplicationProxyService},
-        {"appletAE", Service::am_IAllSystemAppletProxiesService},
-        {"audout:u", Service::audio_IAudioOutManager},
-        {"audren:u", Service::audio_IAudioRendererManager},
-        {"hid", Service::hid_IHidServer},
-        {"time:s", Service::timesrv_IStaticService},
-        {"time:a", Service::timesrv_IStaticService},
-        {"time:u", Service::timesrv_IStaticService},
-        {"fsp-srv", Service::fssrv_IFileSystemProxy},
-        {"nvdrv", Service::nvdrv_INvDrvServices},
-        {"nvdrv:a", Service::nvdrv_INvDrvServices},
-        {"nvdrv:s", Service::nvdrv_INvDrvServices},
-        {"nvdrv:t", Service::nvdrv_INvDrvServices},
-        {"vi:m", Service::visrv_IManagerRootService},
-        {"vi:u", Service::visrv_IManagerRootService},
-        {"vi:s", Service::visrv_IManagerRootService},
-        {"pl:u", Service::pl_IPlatformServiceManager},
-        {"aoc:u", Service::aocsrv_IAddOnContentManager},
-        {"pctl", Service::pctl_IParentalControlServiceFactory},
-        {"pctl:a", Service::pctl_IParentalControlServiceFactory},
-        {"pctl:s", Service::pctl_IParentalControlServiceFactory},
-        {"pctl:r", Service::pctl_IParentalControlServiceFactory},
-        {"lm", Service::lm_ILogService},
-        {"acc:u0", Service::account_IAccountServiceForApplication},
-        {"friend:u", Service::friends_IServiceCreator},
-        {"nfp:user", Service::nfp_IUserManager},
-        {"nifm:u", Service::nifm_IStaticService},
-        {"bsd:u", Service::socket_IClient},
-        {"ssl", Service::ssl_ISslService},
-        {"prepo:u", Service::prepo_IPrepoService}
-    };
+    using ServiceName = u64; //!< Service names are a maximum of 8 bytes so we use a u64 to reference them
 
     class ServiceManager;
 
@@ -142,17 +31,26 @@ namespace skyline::service {
         std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> vTable; //!< This holds the mapping from a function's CmdId to the actual function
 
       public:
-        Service serviceType; //!< The type of this service
-        std::string serviceName; //!< The name of this service
-
         /**
          * @param state The state of the device
-         * @param hasLoop If the service has a loop or not
-         * @param serviceType The type of the service
-         * @param serviceName The name of the service
          * @param vTable The functions of the service
          */
-        BaseService(const DeviceState &state, ServiceManager &manager, Service serviceType, const std::string &serviceName, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), serviceType(serviceType), serviceName(serviceName), vTable(vTable) {}
+        BaseService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), vTable(vTable) {}
+
+        /**
+         * @note To be able to extract the name of the underlying class and ensure correct destruction order
+         */
+        virtual ~BaseService() = default;
+
+        std::string GetName() {
+            int status{};
+            size_t length{};
+            auto mangledName{typeid(*this).name()};
+
+            std::unique_ptr<char, decltype(&std::free)> demangled{ abi::__cxa_demangle(mangledName, nullptr, &length, &status), std::free};
+
+            return (status == 0) ? std::string(demangled.get() + std::char_traits<char>::length("skyline::service::")) : mangledName;
+        }
 
         /**
          * @brief This handles all IPC commands with type request to a service
@@ -164,14 +62,14 @@ namespace skyline::service {
             try {
                 function = vTable.at(request.payload->value);
             } catch (std::out_of_range &) {
-                state.logger->Warn("Cannot find function in service '{0}' (Type: {1}): 0x{2:X} ({2})", serviceName, serviceType, static_cast<u32>(request.payload->value));
+                state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
                 return;
             }
 
             try {
                 function(session, request, response);
             } catch (std::exception &e) {
-                throw exception("{} (Service: {})", e.what(), serviceName);
+                throw exception("{} (Service: {})", e.what(), GetName());
             }
         };
     };

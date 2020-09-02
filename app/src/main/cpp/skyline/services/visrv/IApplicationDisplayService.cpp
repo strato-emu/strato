@@ -9,7 +9,7 @@
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {
-    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, Service::visrv_IApplicationDisplayService, "visrv:IApplicationDisplayService", {
+    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager,  {
         {0x64, SFUNC(IApplicationDisplayService::GetRelayService)},
         {0x65, SFUNC(IApplicationDisplayService::GetSystemDisplayService)},
         {0x66, SFUNC(IApplicationDisplayService::GetManagerDisplayService)},
@@ -25,11 +25,11 @@ namespace skyline::service::visrv {
     }) {}
 
     void IApplicationDisplayService::GetRelayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false);
+        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
     }
 
     void IApplicationDisplayService::GetIndirectDisplayTransactionService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false);
+        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
     }
 
     void IApplicationDisplayService::GetSystemDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -43,14 +43,14 @@ namespace skyline::service::visrv {
     void IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string displayName(request.PopString());
         state.logger->Debug("Setting display as: {}", displayName);
-        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver)->SetDisplay(displayName);
+        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->SetDisplay(displayName);
 
         response.Push<u64>(0); // There's only one display
     }
 
     void IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Closing the display");
-        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver)->CloseDisplay();
+        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->CloseDisplay();
     }
 
     void IApplicationDisplayService::OpenLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -80,7 +80,7 @@ namespace skyline::service::visrv {
         u64 layerId = request.Pop<u64>();
         state.logger->Debug("Closing Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>(Service::hosbinder_IHOSBinderDriver);
+        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;

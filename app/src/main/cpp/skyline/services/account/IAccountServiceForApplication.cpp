@@ -7,7 +7,7 @@
 #include "IAccountServiceForApplication.h"
 
 namespace skyline::service::account {
-    IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, Service::account_IAccountServiceForApplication, "account:IAccountServiceForApplication", {
+    IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x1, SFUNC(IAccountServiceForApplication::GetUserExistence)},
         {0x2, SFUNC(IAccountServiceForApplication::ListAllUsers)},
         {0x3, SFUNC(IAccountServiceForApplication::ListOpenUsers)},
