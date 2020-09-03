@@ -8,6 +8,13 @@
 
 namespace skyline {
     namespace service::account {
+        namespace result {
+            constexpr Result NullArgument(124, 20);
+            constexpr Result InvalidArgument(124, 22);
+            constexpr Result InvalidInputBuffer(124, 32);
+            constexpr Result UserNotFound(124, 100);
+        }
+
         /**
          * @brief This hold an account's user ID
          */
@@ -31,7 +38,7 @@ namespace skyline {
             /**
              * @brief Writes a vector of 128-bit user IDs to an output buffer
              */
-            void WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds);
+            Result WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds);
 
           public:
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
@@ -39,37 +46,37 @@ namespace skyline {
             /**
             * @brief This checks if the given user ID exists
             */
-            void GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns a list of all user accounts on the console
             */
-            void ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns a list of all open user accounts on the console
             */
-            void ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns the user ID of the last active user on the console
             */
-            void GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
             */
-            void InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This returns a handle to an IProfile which can be used for reading user information
              */
-            void GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief This returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info
             */
-            void GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
         };
     }
 

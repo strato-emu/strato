@@ -17,11 +17,11 @@ namespace skyline::service::socket {
         /**
          * @brief This initializes a socket client with the given parameters (https://switchbrew.org/wiki/Sockets_services#Initialize)
          */
-        void RegisterClient(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result RegisterClient(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This starts the monitoring of the socket
          */
-        void StartMonitoring(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result StartMonitoring(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

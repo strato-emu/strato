@@ -17,11 +17,11 @@ namespace skyline::service::am {
         /**
          * @brief This returns the PID of the current application (https://switchbrew.org/wiki/Applet_Manager_services#GetAppletResourceUserId)
          */
-        void GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function has mo inputs or outputs (Stubbed) (https://switchbrew.org/wiki/Applet_Manager_services#AcquireForegroundRights)
          */
-        void AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

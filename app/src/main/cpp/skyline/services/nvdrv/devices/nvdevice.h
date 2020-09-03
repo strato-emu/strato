@@ -61,7 +61,7 @@ namespace skyline::service::nvdrv::device {
     /**
      * @brief This enumerates all the possible error codes returned by the Nvidia driver (https://switchbrew.org/wiki/NV_services#Errors)
      */
-    enum NvStatus : u32 {
+    enum class NvStatus : u32 {
         Success = 0x0, //!< The operation has succeeded
         NotImplemented = 0x1, //!< The operation is not implemented
         NotSupported = 0x2, //!< The operation is not supported

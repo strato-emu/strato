@@ -25,6 +25,32 @@
 namespace skyline {
     using KHandle = u32; //!< The type of a kernel handle
 
+    /**
+     * @brief The result of an operation in HOS
+     * @url https://switchbrew.org/wiki/Error_codes
+     */
+    union Result {
+        u32 raw{};
+        struct {
+            u16 module : 9;
+            u16 id : 12;
+        };
+
+        /**
+         * @note Success is 0, 0 - it is the only error that's not specific to a module
+         */
+        Result() {}
+
+        constexpr Result(u16 module, u16 id) {
+            this->module = module;
+            this->id = id;
+        }
+
+        constexpr operator u32() const {
+            return raw;
+        }
+    };
+
     namespace constant {
         // Memory
         constexpr u64 BaseAddress = 0x8000000; //!< The address space base
@@ -36,29 +62,6 @@ namespace skyline {
         constexpr u16 DockedResolutionH = 1080; //!< The height component of the docked resolution
         // Time
         constexpr u64 NsInSecond = 1000000000; //!< This is the amount of nanoseconds in a second
-        // Status codes
-        namespace status {
-            constexpr u32 Success = 0x0; //!< "Success"
-            constexpr u32 PathDoesNotExist = 0x202; //!< "Path does not exist"
-            constexpr u32 GenericError = 0x272; //!< "Generic error"
-            constexpr u32 NoMessages = 0x680; //!< "No message available"
-            constexpr u32 ServiceInvName = 0xC15; //!< "Invalid name"
-            constexpr u32 ServiceNotReg = 0xE15; //!< "Service not registered"
-            constexpr u32 InvUser = 0xC87C; //!< Invalid user
-            constexpr u32 InvSize = 0xCA01; //!< "Invalid size"
-            constexpr u32 InvAddress = 0xCC01; //!< "Invalid address"
-            constexpr u32 InvState = 0xD401; //!< "Invalid MemoryState"
-            constexpr u32 InvPermission = 0xD801; //!< "Invalid Permission"
-            constexpr u32 InvMemRange = 0xD801; //!< "Invalid Memory Range"
-            constexpr u32 InvPriority = 0xE001; //!< "Invalid Priority"
-            constexpr u32 InvHandle = 0xE401; //!< "Invalid handle"
-            constexpr u32 InvCombination = 0xE801; //!< "Invalid combination"
-            constexpr u32 Timeout = 0xEA01; //!< "Timeout"
-            constexpr u32 Interrupted = 0xEC01; //!< "Interrupted"
-            constexpr u32 MaxHandles = 0xEE01; //!< "Too many handles"
-            constexpr u32 NotFound = 0xF201; //!< "Not found"
-            constexpr u32 Unimpl = 0x177202; //!< "Unimplemented behaviour"
-        }
     };
 
     namespace util {

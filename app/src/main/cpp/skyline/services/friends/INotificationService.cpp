@@ -9,10 +9,11 @@ namespace skyline::service::friends {
         {0x0, SFUNC(INotificationService::GetEvent)},
     }) {}
 
-    void INotificationService::GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INotificationService::GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle = state.process->InsertItem(notificationEvent);
         state.logger->Debug("Friend Notification Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
+        return {};
     }
 }

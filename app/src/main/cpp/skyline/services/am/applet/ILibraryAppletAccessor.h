@@ -21,26 +21,26 @@ namespace skyline::service::am {
         /**
          * @brief This function returns a handle to the library applet state change event
          */
-        void GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function starts the library applet (https://switchbrew.org/wiki/Applet_Manager_services#Start)
          */
-        void Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function returns the exit code of the library applet (https://switchbrew.org/wiki/Applet_Manager_services#GetResult)
          */
-        void GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function pushes in data to the library applet (https://switchbrew.org/wiki/Applet_Manager_services#PushInData)
          */
-        void PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function receives data from the library applet (https://switchbrew.org/wiki/Applet_Manager_services#PopOutData)
          */
-        void PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

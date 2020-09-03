@@ -17,6 +17,6 @@ namespace skyline::service::lm {
         /**
          * @brief This opens an ILogger that can be used by applications to print log messages (https://switchbrew.org/wiki/Log_services#OpenLogger)
          */
-        void OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

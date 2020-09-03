@@ -161,7 +161,7 @@ namespace skyline::service::hosbinder {
                             gbpBuffer->nvmapHandle, gbpBuffer->offset, (1U << gbpBuffer->blockHeightLog2), gbpBuffer->size);
     }
 
-    void IHOSBinderDriver::TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHOSBinderDriver::TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId = request.Pop<u32>();
         auto code = request.Pop<TransactionCode>();
 
@@ -192,7 +192,7 @@ namespace skyline::service::hosbinder {
                     .height = constant::HandheldResolutionH,
                     .transformHint = 0,
                     .pendingBuffers = 0,
-                    .status = constant::status::Success,
+                    .status = 0,
                 };
                 out.WriteData(connect);
                 break;
@@ -207,20 +207,24 @@ namespace skyline::service::hosbinder {
         }
 
         out.WriteParcel(request.outputBuf.at(0));
+        return {};
     }
 
-    void IHOSBinderDriver::AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHOSBinderDriver::AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u32>();
         auto addVal = request.Pop<i32>();
         auto type = request.Pop<i32>();
         state.logger->Debug("Reference Change: {} {} reference", addVal, type ? "strong" : "weak");
+
+        return {};
     }
 
-    void IHOSBinderDriver::GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHOSBinderDriver::GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle = state.process->InsertItem(state.gpu->bufferEvent);
         state.logger->Debug("Display Buffer Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
-        response.Push<u32>(constant::status::Success);
+
+        return {};
     }
 
     void IHOSBinderDriver::SetDisplay(const std::string &name) {

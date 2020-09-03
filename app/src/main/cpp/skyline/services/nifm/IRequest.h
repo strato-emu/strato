@@ -22,21 +22,21 @@ namespace skyline::service::nifm {
         /**
          * @brief This returns the current state of the request (https://switchbrew.org/wiki/Network_Interface_services#GetRequestState)
          */
-        void GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the error code if a network bring up request fails (https://switchbrew.org/wiki/Network_Interface_services#GetResult)
          */
-        void GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns two KEvent handles that signal request on request updates (https://switchbrew.org/wiki/Network_Interface_services#GetSystemEventReadableHandles)
          */
-        void GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This submits a request to bring up a network (https://switchbrew.org/wiki/Network_Interface_services#Submit)
          */
-        void Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

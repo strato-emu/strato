@@ -9,7 +9,8 @@ namespace skyline::service::apm {
         {0x0, SFUNC(IManager::OpenSession)}
     }) {}
 
-    void IManager::OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IManager::OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISession), session, response);
+        return {};
     }
 }

@@ -28,11 +28,11 @@ namespace skyline::service::timesrv {
         /**
          * @brief This returns the amount of seconds since epoch
          */
-        void GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the system clock context
          */
-        void GetSystemClockContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetSystemClockContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

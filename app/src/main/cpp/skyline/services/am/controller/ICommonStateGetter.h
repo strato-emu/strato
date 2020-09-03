@@ -9,6 +9,10 @@
 #include <services/serviceman.h>
 
 namespace skyline::service::am {
+    namespace result {
+        constexpr Result NoMessages(128, 3);
+    }
+
     /**
      * @brief https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter
      */
@@ -53,31 +57,31 @@ namespace skyline::service::am {
         /**
          * @brief This returns the handle to a KEvent object that is signalled whenever RecieveMessage has a message (https://switchbrew.org/wiki/Applet_Manager_services#GetEventHandle)
          */
-        void GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns an #AppletMessage or 0x680 to indicate the lack of a message (https://switchbrew.org/wiki/Applet_Manager_services#ReceiveMessage)
          */
-        void ReceiveMessage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result ReceiveMessage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns if an application is in focus or not. It always returns in focus on the emulator (https://switchbrew.org/wiki/Applet_Manager_services#GetCurrentFocusState)
          */
-        void GetCurrentFocusState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetCurrentFocusState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the current OperationMode (https://switchbrew.org/wiki/Applet_Manager_services#GetOperationMode)
          */
-        void GetOperationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetOperationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the current PerformanceMode (Same as operationMode but u32) (https://switchbrew.org/wiki/Applet_Manager_services#GetPerformanceMode)
          */
-        void GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the current display width and height in two u32s (https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution)
          */
-        void GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

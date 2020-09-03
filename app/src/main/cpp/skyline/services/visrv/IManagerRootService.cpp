@@ -10,7 +10,8 @@ namespace skyline::service::visrv {
         {0x2, SFUNC(IManagerRootService::GetDisplayService)}
     }) {}
 
-    void IManagerRootService::GetDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IManagerRootService::GetDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IApplicationDisplayService), session, response);
+        return {};
     }
 }

@@ -48,6 +48,7 @@ namespace skyline::service::hosbinder {
         };
 
         std::unordered_map<u32, std::shared_ptr<Buffer>> queue; //!< A vector of shared pointers to all the queued buffers
+
         /**
          * @brief This the GbpBuffer struct of the specified buffer
          */
@@ -90,17 +91,17 @@ namespace skyline::service::hosbinder {
         /**
          * @brief This emulates the transaction of parcels between a IGraphicBufferProducer and the application (https://switchbrew.org/wiki/Nvnflinger_services#TransactParcel)
          */
-        void TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#AdjustRefcount)
          */
-        void AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle)
          */
-        void GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This sets displayId to a specific display type

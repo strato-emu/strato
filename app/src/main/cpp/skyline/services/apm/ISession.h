@@ -20,11 +20,11 @@ namespace skyline::service::apm {
         /**
          * @brief This sets performanceConfig to the given arguments, it doesn't affect anything else (https://switchbrew.org/wiki/PPC_services#SetPerformanceConfiguration)
          */
-        void SetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This retrieves the particular performanceConfig for a mode and returns it to the client (https://switchbrew.org/wiki/PPC_services#SetPerformanceConfiguration)
          */
-        void GetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

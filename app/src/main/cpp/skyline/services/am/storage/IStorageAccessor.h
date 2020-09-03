@@ -7,6 +7,9 @@
 #include <services/serviceman.h>
 
 namespace skyline::service::am {
+    namespace result {
+        constexpr Result OutOfBounds(128, 503);
+    }
     class IStorage;
 
     /**
@@ -22,16 +25,16 @@ namespace skyline::service::am {
         /**
          * @brief This returns the size of the storage in bytes
          */
-        void GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This writes a buffer to the storage at the specified offset
          */
-        void Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a buffer containing the contents of the storage at the specified offset
          */
-        void Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

@@ -9,5 +9,7 @@ namespace skyline::service::visrv {
         {0x908, SFUNC(IDisplayService::CreateStrayLayer)}
     }) {}
 
-    void ISystemDisplayService::SetLayerZ(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ISystemDisplayService::SetLayerZ(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

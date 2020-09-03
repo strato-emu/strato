@@ -64,15 +64,17 @@ namespace skyline::service::nvdrv {
         {0xD, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
     }) {}
 
-    void INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto buffer = request.inputBuf.at(0);
         auto path = state.process->GetString(buffer.address, buffer.size);
 
         response.Push<u32>(OpenDevice(path));
-        response.Push<u32>(constant::status::Success);
+        response.Push(device::NvStatus::Success);
+
+        return {};
     }
 
-    void INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto cmd = request.Pop<u32>();
 
@@ -87,25 +89,27 @@ namespace skyline::service::nvdrv {
                     device::IoctlData data(request.outputBuf.at(0));
 
                     fdMap.at(fd)->HandleIoctl(cmd, data);
-                    response.Push<u32>(data.status);
+                    response.Push(data.status);
                 } else {
                     device::IoctlData data(request.inputBuf.at(0));
 
                     fdMap.at(fd)->HandleIoctl(cmd, data);
-                    response.Push<u32>(data.status);
+                    response.Push(data.status);
                 }
             } else {
                 device::IoctlData data(request.inputBuf.at(0), request.outputBuf.at(0));
 
                 fdMap.at(fd)->HandleIoctl(cmd, data);
-                response.Push<u32>(data.status);
+                response.Push(data.status);
             }
         } catch (const std::out_of_range &) {
             throw exception("IOCTL was requested on an invalid file descriptor");
         }
+
+        return {};
     }
 
-    void INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         state.logger->Debug("Closing NVDRV device ({})", fd);
 
@@ -119,14 +123,16 @@ namespace skyline::service::nvdrv {
             state.logger->Warn("Trying to close non-existent FD");
         }
 
-        response.Push<u32>(constant::status::Success);
+        response.Push(device::NvStatus::Success);
+        return {};
     }
 
-    void INvDrvServices::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(constant::status::Success);
+    Result INvDrvServices::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(device::NvStatus::Success);
+        return {};
     }
 
-    void INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto eventId = request.Pop<u32>();
         auto device = fdMap.at(fd);
@@ -138,15 +144,20 @@ namespace skyline::service::nvdrv {
             state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
             response.copyHandles.push_back(handle);
 
-            response.Push<u32>(device::NvStatus::Success);
+            response.Push(device::NvStatus::Success);
         } else {
-            response.Push<u32>(device::NvStatus::BadValue);
+            response.Push(device::NvStatus::BadValue);
         }
+
+        return {};
     }
 
-    void INvDrvServices::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(constant::status::Success);
+    Result INvDrvServices::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(device::NvStatus::Success);
+        return {};
     }
 
-    void INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

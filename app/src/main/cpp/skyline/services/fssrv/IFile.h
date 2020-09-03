@@ -21,26 +21,26 @@ namespace skyline::service::fssrv {
         /**
          * @brief This reads a buffer from a region of an IFile
          */
-        void Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This writes a buffer to a region of an IFile
          */
-        void Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This flushes any written data to the IFile on the Switch, however the emulator processes any FS event immediately so this does nothing
          */
-        void Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This sets the size of an IFile
          */
-        void SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This obtains the size of an IFile
          */
-        void GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

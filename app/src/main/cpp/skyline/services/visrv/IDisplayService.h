@@ -27,16 +27,16 @@ namespace skyline::service::visrv {
         static_assert(sizeof(LayerParcel) == 0x28);
 
       public:
-        IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession & , ipc::IpcRequest & , ipc::IpcResponse & )>> &vTable);
+        IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<Result(type::KSession & , ipc::IpcRequest & , ipc::IpcResponse & )>> &vTable);
 
         /**
          * @brief This creates a stray layer using a display's ID and returns a layer ID and the corresponding buffer ID
          */
-        void CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This takes a layer ID and destroys the corresponding stray layer
          */
-        void DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

@@ -19,7 +19,7 @@ namespace skyline::service::am {
         {0x82, SFUNC(IApplicationFunctions::GetGpuErrorDetectedSystemEvent)},
     }) {}
 
-    void IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic = 0xC79497CA; //!< This is the magic of the application launch parameters
         constexpr size_t LaunchParameterSize = 0x88; //!< This is the size of the launch parameter IStorage
 
@@ -30,32 +30,42 @@ namespace skyline::service::am {
         storageService->Push(constant::DefaultUserId);
 
         manager.RegisterService(storageService, session, response);
+        return {};
     }
 
-    void IApplicationFunctions::EnsureSaveData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::EnsureSaveData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u8>(0);
+        return {};
     }
 
-    void IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(util::MakeMagic<u64>("en-US"));
+        return {};
     }
 
-    void IApplicationFunctions::NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u8>(1);
+        return {};
     }
 
-    void IApplicationFunctions::GetPseudoDeviceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::GetPseudoDeviceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u64>(0L);
         response.Push<u64>(0L);
+        return {};
     }
 
-    void IApplicationFunctions::InitializeGamePlayRecording(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IApplicationFunctions::InitializeGamePlayRecording(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IApplicationFunctions::SetGamePlayRecordingState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IApplicationFunctions::SetGamePlayRecordingState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem(gpuErrorEvent);
         state.logger->Debug("GPU Error Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+        return {};
     }
 }

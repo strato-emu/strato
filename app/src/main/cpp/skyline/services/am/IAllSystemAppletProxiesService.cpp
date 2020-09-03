@@ -16,19 +16,23 @@ namespace skyline::service::am {
         {0x15E, SFUNC(IAllSystemAppletProxiesService::OpenApplicationProxy)}
     }) {}
 
-    void IAllSystemAppletProxiesService::OpenLibraryAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAllSystemAppletProxiesService::OpenLibraryAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ILibraryAppletProxy), session, response);
+        return {};
     }
 
-    void IAllSystemAppletProxiesService::OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAllSystemAppletProxiesService::OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IApplicationProxy), session, response);
+        return {};
     }
 
-    void IAllSystemAppletProxiesService::OpenOverlayAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAllSystemAppletProxiesService::OpenOverlayAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IOverlayAppletProxy), session, response);
+        return {};
     }
 
-    void IAllSystemAppletProxiesService::OpenSystemAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAllSystemAppletProxiesService::OpenSystemAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISystemAppletProxy), session, response);
+        return {};
     }
 }

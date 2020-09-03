@@ -25,22 +25,22 @@ namespace skyline {
             /**
              * @brief This returns the loading state of the requested font (https://switchbrew.org/wiki/Shared_Database_services#GetLoadState)
              */
-            void GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This returns the size of the requested font (https://switchbrew.org/wiki/Shared_Database_services#GetSize)
              */
-            void GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This returns the offset in shared memory of the requested font (https://switchbrew.org/wiki/Shared_Database_services#GetSharedMemoryAddressOffset)
              */
-            void GetSharedMemoryAddressOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetSharedMemoryAddressOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This returns a handle to the whole font shared memory (https://switchbrew.org/wiki/Shared_Database_services#GetSharedMemoryNativeHandle)
              */
-            void GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
         };
     }
 }

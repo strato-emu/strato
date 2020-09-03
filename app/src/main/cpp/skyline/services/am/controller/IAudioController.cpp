@@ -10,16 +10,19 @@ namespace skyline::service::am {
         {0x2, SFUNC(IAudioController::GetLibraryAppletExpectedMasterVolume)}
     }) {}
 
-    void IAudioController::SetExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioController::SetExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         mainAppletVolume = request.Pop<float>();
         libraryAppletVolume = request.Pop<float>();
+        return {};
     }
 
-    void IAudioController::GetMainAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioController::GetMainAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<float>(mainAppletVolume);
+        return {};
     }
 
-    void IAudioController::GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioController::GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<float>(libraryAppletVolume);
+        return {};
     }
 }

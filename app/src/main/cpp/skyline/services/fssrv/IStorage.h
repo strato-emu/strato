@@ -21,11 +21,11 @@ namespace skyline::service::fssrv {
         /**
          * @brief This reads a buffer from a region of an IStorage (https://switchbrew.org/wiki/Filesystem_services#Read)
          */
-        void Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This obtains the size of an IStorage (https://switchbrew.org/wiki/Filesystem_services#GetSize)
          */
-        void GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

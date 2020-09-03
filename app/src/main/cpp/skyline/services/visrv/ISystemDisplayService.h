@@ -16,6 +16,6 @@ namespace skyline::service::visrv {
         /**
          * @brief Sets the Z index of a layer
          */
-        void SetLayerZ(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetLayerZ(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

@@ -309,7 +309,7 @@ namespace skyline {
             std::vector<u8> payload; //!< This holds all of the contents to be pushed to the payload
 
           public:
-            u32 errorCode{}; //!< The error code to respond with, it is 0 (Success) by default
+            Result errorCode{}; //!< The error code to respond with, it is 0 (Success) by default
             std::vector<KHandle> copyHandles; //!< A vector of handles to copy
             std::vector<KHandle> moveHandles; //!< A vector of handles to move
             std::vector<KHandle> domainObjects; //!< A vector of domain objects to write

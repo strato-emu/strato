@@ -37,36 +37,36 @@ namespace skyline::service::audio {
         /**
          * @brief Returns the playback state of the audio output (https://switchbrew.org/wiki/Audio_services#GetAudioOutState)
          */
-        void GetAudioOutState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetAudioOutState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
         * @brief Starts playback using data from appended samples (https://switchbrew.org/wiki/Audio_services#StartAudioOut)
         */
-        void StartAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result StartAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
         * @brief Stops playback of audio, waits for all samples to be released (https://switchbrew.org/wiki/Audio_services#StartAudioOut)
         */
-        void StopAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result StopAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
         * @brief Appends sample data to the output buffer (https://switchbrew.org/wiki/Audio_services#AppendAudioOutBuffer)
         */
-        void AppendAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result AppendAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Returns a handle to the sample release KEvent (https://switchbrew.org/wiki/Audio_services#AppendAudioOutBuffer)
          */
-        void RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Returns the IDs of all pending released buffers (https://switchbrew.org/wiki/Audio_services#GetReleasedAudioOutBuffer)
          */
-        void GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Checks if the given buffer ID is in the playback queue (https://switchbrew.org/wiki/Audio_services#ContainsAudioOutBuffer)
          */
-        void ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

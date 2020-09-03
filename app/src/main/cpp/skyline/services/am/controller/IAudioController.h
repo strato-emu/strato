@@ -21,16 +21,16 @@ namespace skyline::service::am {
         /**
          * @brief This sets the expected volumes for an application (https://switchbrew.org/wiki/Applet_Manager_services#SetExpectedMasterVolume)
          */
-        void SetExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the main applet volume that is expected by the application (https://switchbrew.org/wiki/Applet_Manager_services#GetMainAppletExpectedMasterVolume)
          */
-        void GetMainAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetMainAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns the library applet volume that is expected by the application (https://switchbrew.org/wiki/Applet_Manager_services#GetLibraryAppletExpectedMasterVolume)
          */
-        void GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

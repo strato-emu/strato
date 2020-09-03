@@ -17,7 +17,7 @@ namespace skyline::service::audio {
         {0xA, SFUNC(IAudioDevice::GetActiveAudioDeviceName)}
     }) {}
 
-    void IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u64 offset{};
         for (std::string deviceName : {"AudioTvOutput", "AudioStereoJackOutput", "AudioBuiltInSpeakerOutput"}) {
             if (offset + deviceName.size() + 1 > request.outputBuf.at(0).size)
@@ -26,26 +26,32 @@ namespace skyline::service::audio {
             state.process->WriteMemory(deviceName.c_str(), request.outputBuf.at(0).address + offset, deviceName.size() + 1);
             offset += deviceName.size() + 1;
         }
+        return {};
     }
 
-    void IAudioDevice::SetAudioDeviceOutputVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IAudioDevice::SetAudioDeviceOutputVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IAudioDevice::GetActiveAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioDevice::GetActiveAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string deviceName("AudioStereoJackOutput");
 
         if (deviceName.size() > request.outputBuf.at(0).size)
             throw exception("Too small a buffer supplied to GetActiveAudioDeviceName");
 
         state.process->WriteMemory(deviceName.c_str(), request.outputBuf.at(0).address, deviceName.size() + 1);
+        return {};
     }
 
-    void IAudioDevice::QueryAudioDeviceSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioDevice::QueryAudioDeviceSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(systemEvent)};
         state.logger->Debug("Audio Device System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+        return {};
     }
 
-    void IAudioDevice::GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioDevice::GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(constant::ChannelCount);
+        return {};
     }
 }

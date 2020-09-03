@@ -21,11 +21,11 @@ namespace skyline::service::account {
         /**
          * @brief This returns AccountUserData and AccountProfileBase objects that describe the user's information
          */
-        void Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns an AccountProfileBase object that describe the user's information
          */
-        void GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

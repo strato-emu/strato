@@ -9,7 +9,8 @@ namespace skyline::service::am {
         {0x0, SFUNC(IStorage::Open)}
     }) {}
 
-    void IStorage::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStorage::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<IStorageAccessor>(state, manager, shared_from_this()), session, response);
+        return {};
     }
 }

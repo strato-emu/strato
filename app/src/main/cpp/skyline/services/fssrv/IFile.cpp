@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
+#include "results.h"
 #include "IFile.h"
 
 namespace skyline::service::fssrv {
@@ -13,7 +14,7 @@ namespace skyline::service::fssrv {
         {0x4, SFUNC(IFile::GetSize)}
     }) {}
 
-    void IFile::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFile::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto readOption = request.Pop<u32>();
         request.Skip<u32>();
         auto offset = request.Pop<i64>();
@@ -21,20 +22,19 @@ namespace skyline::service::fssrv {
 
         if (offset < 0) {
             state.logger->Warn("Trying to read a file with a negative offset");
-            response.errorCode = constant::status::InvAddress;
-            return;
+            return result::InvalidOffset;
         }
 
         if (size < 0) {
             state.logger->Warn("Trying to read a file with a negative size");
-            response.errorCode = constant::status::InvSize;
-            return;
+            return result::InvalidSize;
         }
 
         response.Push<u32>(static_cast<u32>(backing->Read(state.process->GetPointer<u8>(request.outputBuf.at(0).address), offset, size)));
+        return {};
     }
 
-    void IFile::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFile::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto writeOption = request.Pop<u32>();
         request.Skip<u32>();
         auto offset = request.Pop<i64>();
@@ -42,35 +42,38 @@ namespace skyline::service::fssrv {
 
         if (offset < 0) {
             state.logger->Warn("Trying to write to a file with a negative offset");
-            response.errorCode = constant::status::InvAddress;
-            return;
+            return result::InvalidOffset;
         }
 
         if (size < 0) {
             state.logger->Warn("Trying to write to a file with a negative size");
-            response.errorCode = constant::status::InvSize;
-            return;
+            return result::InvalidSize;
         }
 
         if (request.inputBuf.at(0).size < size) {
             state.logger->Warn("The input buffer is not large enough to fit the requested size");
-            response.errorCode = constant::status::InvSize;
-            return;
+            return result::InvalidSize;
         }
 
         if (backing->Write(state.process->GetPointer<u8>(request.inputBuf.at(0).address), offset, request.inputBuf.at(0).size) != size) {
             state.logger->Warn("Failed to write all data to the backing");
-            response.errorCode = constant::status::GenericError;
+            return result::UnexpectedFailure;
         }
+
+        return {};
     }
 
-    void IFile::Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IFile::Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IFile::SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFile::SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         backing->Resize(request.Pop<u64>());
+        return {};
     }
 
-    void IFile::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFile::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u64>(backing->size);
+        return {};
     }
 }

@@ -31,19 +31,22 @@ namespace skyline::service::settings {
         util::MakeMagic<u64>("zh-Hant"),
     };
 
-    void ISettingsServer::GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISettingsServer::GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.process->WriteMemory(LanguageCodeList.data(), request.outputBuf.at(0).address, constant::OldLanguageCodeListSize * sizeof(u64));
 
         response.Push<i32>(constant::OldLanguageCodeListSize);
+        return {};
     }
 
-    void ISettingsServer::MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISettingsServer::MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u64>(LanguageCodeList.at(request.Pop<i32>()));
+        return {};
     }
 
-    void ISettingsServer::GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISettingsServer::GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.process->WriteMemory(LanguageCodeList.data(), request.outputBuf.at(0).address, constant::NewLanguageCodeListSize * sizeof(u64));
 
         response.Push<i32>(constant::NewLanguageCodeListSize);
+        return {};
     }
 }

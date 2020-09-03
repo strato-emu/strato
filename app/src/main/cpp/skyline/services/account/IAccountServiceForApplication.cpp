@@ -17,22 +17,35 @@ namespace skyline::service::account {
         {0x65, SFUNC(IAccountServiceForApplication::GetBaasAccountManagerForApplication)}
     }) {}
 
-    void IAccountServiceForApplication::GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAccountServiceForApplication::GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<UserId>();
 
+        // ID can't be zero
+        if (id == UserId{})
+            return result::NullArgument;
+
         response.Push<u32>(id == constant::DefaultUserId);
+        return {};
     }
 
-    void IAccountServiceForApplication::ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        // We only support one active user currently so hardcode this and ListOpenUsers
-        WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
+    Result IAccountServiceForApplication::ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        try {
+            // We only support one active user currently so hardcode this and ListOpenUsers
+            return WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
+        } catch (const std::out_of_range &e) {
+            return result::InvalidInputBuffer;
+        }
     }
 
-    void IAccountServiceForApplication::ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
+    Result IAccountServiceForApplication::ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        try {
+            return WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
+        } catch (const std::out_of_range &e) {
+            return result::InvalidInputBuffer;
+        }
     }
 
-    void IAccountServiceForApplication::WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds) {
+    Result IAccountServiceForApplication::WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds) {
         std::span outputUserIds(state.process->GetPointer<UserId>(buffer.address), buffer.size / sizeof(UserId));
 
         for (auto &userId : outputUserIds) {
@@ -43,25 +56,34 @@ namespace skyline::service::account {
                 userIds.pop_back();
             }
         }
+
+        return {};
     }
 
-    void IAccountServiceForApplication::GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAccountServiceForApplication::GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(constant::DefaultUserId);
+        return {};
     }
 
-    void IAccountServiceForApplication::InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IAccountServiceForApplication::InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IAccountServiceForApplication::GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAccountServiceForApplication::GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<UserId>();
-        if (id != constant::DefaultUserId) {
-            response.errorCode = constant::status::InvUser;
-            return;
-        }
+        if (id != constant::DefaultUserId)
+            return result::UserNotFound;
 
         manager.RegisterService(std::make_shared<IProfile>(state, manager, id), session, response);
+        return {};
     }
 
-    void IAccountServiceForApplication::GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAccountServiceForApplication::GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto id = request.Pop<UserId>();
+        if (id == UserId{})
+            return result::NullArgument;
+
         manager.RegisterService(SRVREG(IManagerForApplication), session, response);
+        return {};
     }
 }

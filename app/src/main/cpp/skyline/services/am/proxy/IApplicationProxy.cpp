@@ -16,7 +16,8 @@ namespace skyline::service::am {
         {0x3E8, SFUNC(BaseProxy::GetDebugFunctions)}
     }) {}
 
-    void IApplicationProxy::GetApplicationFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationProxy::GetApplicationFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IApplicationFunctions), session, response);
+        return {};
     }
 }

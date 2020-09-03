@@ -98,42 +98,42 @@ namespace skyline {
             /**
              * @brief Returns the sample rate (https://switchbrew.org/wiki/Audio_services#GetSampleRate)
              */
-            void GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief Returns the sample count (https://switchbrew.org/wiki/Audio_services#GetSampleCount)
             */
-            void GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Returns the number of mix buffers (https://switchbrew.org/wiki/Audio_services#GetMixBufferCount)
             */
-            void GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Returns the state of the renderer (https://switchbrew.org/wiki/Audio_services#GetAudioRendererState) (stubbed)?
             */
-            void GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Updates the audio renderer state and appends new data to playback buffers
             */
-            void RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Start the audio stream from the renderer
             */
-            void Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Stop the audio stream from the renderer
             */
-            void Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
             * @brief Returns a handle to the sample release KEvent
             */
-            void QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
         };
     }
 }

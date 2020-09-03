@@ -10,7 +10,8 @@ namespace skyline::service::nifm {
         {0x5, SFUNC(IStaticService::CreateGeneralService)}
     }) {}
 
-    void IStaticService::CreateGeneralService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::CreateGeneralService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IGeneralService), session, response);
+        return {};
     }
 }

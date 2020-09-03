@@ -10,7 +10,7 @@ namespace skyline::service::account {
         {0x1, SFUNC(IProfile::GetBase)}
     }) {}
 
-    void IProfile::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IProfile::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct AccountUserData {
             u32 _unk0_;
             u32 iconID;                        //!< Icon ID (0 = Mii, the rest are character icon IDs)
@@ -23,10 +23,10 @@ namespace skyline::service::account {
         auto userData = state.process->GetPointer<AccountUserData>(request.outputBuf.at(0).address);
         userData->iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
 
-        GetBase(session, request, response);
+        return GetBase(session, request, response);
     }
 
-    void IProfile::GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IProfile::GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct {
             UserId uid;                        //!< The UID of the corresponding account
             u64 lastEditTimestamp;             //!< A POSIX UTC timestamp denoting the last account edit
@@ -40,5 +40,7 @@ namespace skyline::service::account {
         std::memcpy(accountProfileBase.nickname.data(), username.c_str(), usernameSize);
 
         response.Push(accountProfileBase);
+
+        return {};
     }
 }

@@ -12,14 +12,17 @@ namespace skyline::service::nifm {
         {0x4, SFUNC(IRequest::Submit)},
     }) {}
 
-    void IRequest::GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IRequest::GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 Unsubmitted = 1; //!< The request has not been submitted
         response.Push<u32>(Unsubmitted);
+        return {};
     }
 
-    void IRequest::GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IRequest::GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IRequest::GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IRequest::GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem(event0);
         state.logger->Debug("Request Event 0 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
@@ -27,7 +30,11 @@ namespace skyline::service::nifm {
         handle = state.process->InsertItem(event1);
         state.logger->Debug("Request Event 1 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+
+        return {};
     }
 
-    void IRequest::Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IRequest::Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

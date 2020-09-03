@@ -14,15 +14,17 @@ namespace skyline::service::audio {
         {0x4, SFUNC(IAudioRendererManager::GetAudioDeviceService)}
     }) {}
 
-    void IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         IAudioRenderer::AudioRendererParameters params = request.Pop<IAudioRenderer::AudioRendererParameters>();
 
         state.logger->Debug("IAudioRendererManager: Opening a rev {} IAudioRenderer with sample rate: {}, voice count: {}, effect count: {}", IAudioRenderer::ExtractVersionFromRevision(params.revision), params.sampleRate, params.voiceCount, params.effectCount);
 
         manager.RegisterService(std::make_shared<IAudioRenderer::IAudioRenderer>(state, manager, params), session, response);
+
+        return {};
     }
 
-    void IAudioRendererManager::GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRendererManager::GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         IAudioRenderer::AudioRendererParameters params = request.Pop<IAudioRenderer::AudioRendererParameters>();
 
         IAudioRenderer::RevisionInfo revisionInfo{};
@@ -86,9 +88,11 @@ namespace skyline::service::audio {
 
         state.logger->Debug("IAudioRendererManager: Work buffer size: 0x{:X}", size);
         response.Push<i64>(size);
+        return {};
     }
 
-    void IAudioRendererManager::GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRendererManager::GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAudioDevice), session, response);
+        return {};
     }
 }

@@ -67,36 +67,36 @@ namespace skyline::service::nvdrv {
         /**
          * @brief Open a specific device and return a FD (https://switchbrew.org/wiki/NV_services#Open)
          */
-        void Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Close the specified FD (https://switchbrew.org/wiki/NV_services#Close)
          */
-        void Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Close the specified FD (https://switchbrew.org/wiki/NV_services#Close)
          */
-        void Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This initializes the driver (https://switchbrew.org/wiki/NV_services#Initialize)
          */
-        void Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a specific event from a device (https://switchbrew.org/wiki/NV_services#QueryEvent)
          */
-        void QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This sets the AppletResourceUserId which matches the PID (https://switchbrew.org/wiki/NV_services#SetAruidByPID)
          */
-        void SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This enables the graphics firmware memory margin (https://switchbrew.org/wiki/NV_services#SetGraphicsFirmwareMemoryMarginEnabled)
          */
-        void SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

@@ -106,44 +106,37 @@ namespace skyline::service::nvdrv::device {
             u32 result;          // Out
         } data = state.process->GetObject<Data>(buffer.input[0].address);
 
-        auto &object = handleTable.at(data.handle);
-        switch (data.parameter) {
-            case Parameter::Size:
-                data.result = object->size;
-                break;
+        try {
+            auto &object = handleTable.at(data.handle);
 
-            case Parameter::Alignment:
-            case Parameter::HeapMask:
-            case Parameter::Kind: {
-                if (object->status != NvMapObject::Status::Allocated)
-                    data.result = NvStatus::BadParameter;
-                switch (data.parameter) {
-                    case Parameter::Alignment:
-                        data.result = object->align;
-                        break;
-                    case Parameter::HeapMask:
-                        data.result = object->heapMask;
-                        break;
-                    case Parameter::Kind:
-                        data.result = object->kind;
-                        break;
-                    default:
-                        break;
-                }
-                break;
+
+            switch (data.parameter) {
+                case Parameter::Size:
+                    data.result = object->size;
+                    break;
+                case Parameter::Alignment:
+                    data.result = object->align;
+                    break;
+                case Parameter::HeapMask:
+                    data.result = object->heapMask;
+                    break;
+                case Parameter::Kind:
+                    data.result = object->kind;
+                    break;
+                case Parameter::Compr:
+                    data.result = 0;
+                    break;
+                default:
+                    buffer.status = NvStatus::NotImplemented;
+                    return;
             }
 
-            case Parameter::Base:
-                buffer.status = NvStatus::NotImplemented;
-                break;
-
-            case Parameter::Compr:
-                buffer.status = NvStatus::NotImplemented;
-                break;
+            state.process->WriteMemory(data, buffer.output[0].address);
+            state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
+        } catch (std::exception &e) {
+            buffer.status = NvStatus::BadParameter;
+            return;
         }
-
-        state.process->WriteMemory(data, buffer.output[0].address);
-        state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
     }
 
     void NvMap::GetId(IoctlData &buffer) {

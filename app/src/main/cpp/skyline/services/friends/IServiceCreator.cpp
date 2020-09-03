@@ -11,11 +11,13 @@ namespace skyline::service::friends {
         {0x1, SFUNC(IServiceCreator::CreateNotificationService)},
     }) {}
 
-    void IServiceCreator::CreateFriendService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IServiceCreator::CreateFriendService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IFriendService), session, response);
+        return {};
     }
 
-    void IServiceCreator::CreateNotificationService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IServiceCreator::CreateNotificationService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(INotificationService), session, response);
+        return {};
     }
 }

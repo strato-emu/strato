@@ -28,14 +28,14 @@ namespace skyline::service {
       protected:
         const DeviceState &state; //!< The state of the device
         ServiceManager &manager; //!< A reference to the service manager
-        std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> vTable; //!< This holds the mapping from a function's CmdId to the actual function
+        std::unordered_map<u32, std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> vTable; //!< This holds the mapping from a function's CmdId to the actual function
 
       public:
         /**
          * @param state The state of the device
          * @param vTable The functions of the service
          */
-        BaseService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), vTable(vTable) {}
+        BaseService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : state(state), manager(manager), vTable(vTable) {}
 
         /**
          * @note To be able to extract the name of the underlying class and ensure correct destruction order
@@ -57,17 +57,17 @@ namespace skyline::service {
          * @param request The corresponding IpcRequest object
          * @param response The corresponding IpcResponse object
          */
-        void HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-            std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)> function;
+        Result HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+            std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)> function;
             try {
                 function = vTable.at(request.payload->value);
             } catch (std::out_of_range &) {
                 state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
-                return;
+                return {};
             }
 
             try {
-                function(session, request, response);
+                return function(session, request, response);
             } catch (std::exception &e) {
                 throw exception("{} (Service: {})", e.what(), GetName());
             }

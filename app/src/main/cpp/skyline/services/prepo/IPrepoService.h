@@ -17,6 +17,6 @@ namespace skyline::service::prepo {
         /**
          * @brief This saves a play report for the given user
          */
-        void SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

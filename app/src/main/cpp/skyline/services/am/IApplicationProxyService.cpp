@@ -9,7 +9,8 @@ namespace skyline::service::am {
         {0x0, SFUNC(IApplicationProxyService::OpenApplicationProxy)}
     }) {}
 
-    void IApplicationProxyService::OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationProxyService::OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IApplicationProxy), session, response);
+        return {};
     }
 }

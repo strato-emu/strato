@@ -10,9 +10,12 @@ namespace skyline::service::ssl {
         {0x5, SFUNC(ISslService::SetInterfaceVersion)}
     }) {}
 
-    void ISslService::CreateContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISslService::CreateContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISslContext), session, response);
+        return {};
     }
 
-    void ISslService::SetInterfaceVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ISslService::SetInterfaceVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

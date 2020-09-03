@@ -17,6 +17,6 @@ namespace skyline::service::apm {
         /**
          * @brief This returns an handle to ISession
          */
-        void OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

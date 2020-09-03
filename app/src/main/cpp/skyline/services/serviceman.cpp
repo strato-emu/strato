@@ -154,7 +154,7 @@ namespace skyline::service {
                             auto service = session->domainTable.at(request.domain->objectId);
                             switch (static_cast<ipc::DomainCommand>(request.domain->command)) {
                                 case ipc::DomainCommand::SendMessage:
-                                    service->HandleRequest(*session, request, response);
+                                    response.errorCode = service->HandleRequest(*session, request, response);
                                     break;
                                 case ipc::DomainCommand::CloseVHandle:
                                     std::erase_if(serviceMap, [service](const auto &entry) {
@@ -167,7 +167,7 @@ namespace skyline::service {
                             throw exception("Invalid object ID was used with domain request");
                         }
                     } else {
-                        session->serviceObject->HandleRequest(*session, request, response);
+                        response.errorCode = session->serviceObject->HandleRequest(*session, request, response);
                     }
                     response.WriteResponse(session->isDomain);
                     break;

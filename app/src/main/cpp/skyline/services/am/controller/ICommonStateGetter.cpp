@@ -23,35 +23,38 @@ namespace skyline::service::am {
         QueueMessage(Message::FocusStateChange);
     }
 
-    void ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem(messageEvent);
         state.logger->Debug("Applet Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+        return {};
     }
 
-    void ICommonStateGetter::ReceiveMessage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (messageQueue.empty()) {
-            response.errorCode = constant::status::NoMessages;
-            return;
-        }
+    Result ICommonStateGetter::ReceiveMessage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (messageQueue.empty())
+            return result::NoMessages;
 
         response.Push(messageQueue.front());
         messageQueue.pop();
+        return {};
     }
 
-    void ICommonStateGetter::GetCurrentFocusState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ICommonStateGetter::GetCurrentFocusState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(focusState);
+        return {};
     }
 
-    void ICommonStateGetter::GetOperationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ICommonStateGetter::GetOperationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(operationMode);
+        return {};
     }
 
-    void ICommonStateGetter::GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ICommonStateGetter::GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(static_cast<u32>(operationMode));
+        return {};
     }
 
-    void ICommonStateGetter::GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ICommonStateGetter::GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (operationMode == OperationMode::Handheld) {
             response.Push<u32>(constant::HandheldResolutionW);
             response.Push<u32>(constant::HandheldResolutionH);
@@ -59,5 +62,6 @@ namespace skyline::service::am {
             response.Push<u32>(constant::DockedResolutionW);
             response.Push<u32>(constant::DockedResolutionH);
         }
+        return {};
     }
 }

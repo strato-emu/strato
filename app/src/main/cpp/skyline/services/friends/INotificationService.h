@@ -21,6 +21,6 @@ namespace skyline::service::friends {
         /**
          * @brief This returns a handle to the notification event
          */
-        void GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

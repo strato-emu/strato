@@ -17,6 +17,6 @@ namespace skyline::service::nfp {
         /**
          * @brief This initializes an NFP session
          */
-        void Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

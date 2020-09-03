@@ -9,21 +9,23 @@ namespace skyline::service::sm {
         {0x1, SFUNC(IUserInterface::GetService)}
     }) {}
 
-    void IUserInterface::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IUserInterface::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void IUserInterface::GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IUserInterface::GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto name = request.Pop<ServiceName>();
 
-        if (name) {
-            try {
-                manager.NewService(name, session, response);
-            } catch (std::out_of_range &) {
-                response.errorCode = constant::status::ServiceNotReg;
-                std::string_view stringName(reinterpret_cast<char *>(&name), sizeof(u64));
-                state.logger->Warn("Service has not been implemented: \"{}\"", stringName);
-            }
-        } else {
-            response.errorCode = constant::status::ServiceInvName;
+        if (!name)
+            return result::InvalidServiceName;
+
+        try {
+            manager.NewService(name, session, response);
+        } catch (std::out_of_range &) {
+            std::string_view stringName(reinterpret_cast<char *>(&name), sizeof(u64));
+            state.logger->Warn("Service has not been implemented: \"{}\"", stringName);
         }
+
+        return {};
     }
 }

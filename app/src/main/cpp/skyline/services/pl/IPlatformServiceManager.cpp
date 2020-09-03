@@ -50,26 +50,30 @@ namespace skyline::service::pl {
         }
     }
 
-    void IPlatformServiceManager::GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IPlatformServiceManager::GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 FontLoaded = 1; //!< This is returned to show that all fonts have been loaded into memory
 
         response.Push(FontLoaded);
+        return {};
     }
 
-    void IPlatformServiceManager::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IPlatformServiceManager::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fontId = request.Pop<u32>();
 
         response.Push<u32>(fontTable.at(fontId).length);
+        return {};
     }
 
-    void IPlatformServiceManager::GetSharedMemoryAddressOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IPlatformServiceManager::GetSharedMemoryAddressOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fontId = request.Pop<u32>();
 
         response.Push<u32>(fontTable.at(fontId).offset);
+        return {};
     }
 
-    void IPlatformServiceManager::GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IPlatformServiceManager::GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem<type::KSharedMemory>(fontSharedMem);
         response.copyHandles.push_back(handle);
+        return {};
     }
 }

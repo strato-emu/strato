@@ -9,10 +9,11 @@ namespace skyline::service::hid {
         {0x0, SFUNC(IAppletResource::GetSharedMemoryHandle)}
     }) {}
 
-    void IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem<type::KSharedMemory>(state.input->kHid);
         state.logger->Debug("HID Shared Memory Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
+        return {};
     }
 }

@@ -11,16 +11,18 @@ namespace skyline::service::am {
         {0xA, SFUNC(ILibraryAppletCreator::CreateStorage)}
     }) {}
 
-    void ILibraryAppletCreator::CreateLibraryApplet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILibraryAppletCreator::CreateLibraryApplet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ILibraryAppletAccessor), session, response);
+        return {};
     }
 
-    void ILibraryAppletCreator::CreateStorage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILibraryAppletCreator::CreateStorage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto size = request.Pop<i64>();
 
         if (size < 0)
             throw exception("Cannot create an IStorage with a negative size");
 
         manager.RegisterService(std::make_shared<IStorage>(state, manager, size), session, response);
+        return {};
     }
 }

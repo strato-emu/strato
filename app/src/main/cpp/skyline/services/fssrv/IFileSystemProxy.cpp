@@ -4,8 +4,9 @@
 #include <os.h>
 #include <vfs/os_filesystem.h>
 #include <loader/loader.h>
-#include "IFileSystemProxy.h"
+#include "results.h"
 #include "IStorage.h"
+#include "IFileSystemProxy.h"
 
 namespace skyline::service::fssrv {
     IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
@@ -16,15 +17,17 @@ namespace skyline::service::fssrv {
         {0x3ED, SFUNC(IFileSystemProxy::GetGlobalAccessLogMode)},
     }) {}
 
-    void IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         process = request.Pop<pid_t>();
+        return {};
     }
 
-    void IFileSystemProxy::OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystemProxy::OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch/sdmc/"), state, manager), session, response);
+        return {};
     }
 
-    void IFileSystemProxy::OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystemProxy::OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto spaceId = request.Pop<SaveDataSpaceId>();
         auto attribute = request.Pop<SaveDataAttribute>();
 
@@ -61,16 +64,20 @@ namespace skyline::service::fssrv {
         }();
 
         manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch" + saveDataPath), state, manager), session, response);
+        return {};
+
     }
 
-    void IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (state.loader->romFs)
-            manager.RegisterService(std::make_shared<IStorage>(state.loader->romFs, state, manager), session, response);
-        else
-            throw exception("Tried to call OpenDataStorageByCurrentProcess without a valid RomFS");
+    Result IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (!state.loader->romFs)
+            return result::NoRomFsAvailable;
+
+        manager.RegisterService(std::make_shared<IStorage>(state.loader->romFs, state, manager), session, response);
+        return {};
     }
 
-    void IFileSystemProxy::GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystemProxy::GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);
+        return {};
     }
 }

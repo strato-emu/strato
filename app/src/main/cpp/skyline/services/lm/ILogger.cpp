@@ -35,7 +35,7 @@ namespace skyline::service::lm {
         }
     }
 
-    void ILogger::Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILogger::Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct Data {
             u64 pid;
             u64 threadContext;
@@ -98,7 +98,10 @@ namespace skyline::service::lm {
                 break;
         }
 
+        return {};
     }
 
-    void ILogger::SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ILogger::SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

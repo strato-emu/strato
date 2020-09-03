@@ -7,9 +7,9 @@
 #include "IDisplayService.h"
 
 namespace skyline::service::visrv {
-    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<void(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, vTable) {}
+    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, vTable) {}
 
-    void IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>();
         auto displayId = request.Pop<u64>();
 
@@ -31,9 +31,10 @@ namespace skyline::service::visrv {
         parcel.WriteData(data);
 
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
+        return {};
     }
 
-    void IDisplayService::DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IDisplayService::DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Stray Layer: {}", layerId);
 
@@ -41,5 +42,6 @@ namespace skyline::service::visrv {
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+        return {};
     }
 }

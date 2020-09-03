@@ -9,5 +9,7 @@ namespace skyline::service::nfp {
         {0x0, SFUNC(IUser::Initialize)}
     }) {}
 
-    void IUser::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IUser::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

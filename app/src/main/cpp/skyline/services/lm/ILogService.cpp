@@ -9,7 +9,8 @@ namespace skyline::service::lm {
         {0x0, SFUNC(ILogService::OpenLogger)}
     }) {}
 
-    void ILogService::OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILogService::OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ILogger), session, response);
+        return {};
     }
 }

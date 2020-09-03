@@ -15,22 +15,29 @@ namespace skyline::service::am {
         {0x65, SFUNC(ILibraryAppletAccessor::PopOutData)},
     }) {}
 
-    void ILibraryAppletAccessor::GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILibraryAppletAccessor::GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         stateChangeEvent->Signal();
 
         KHandle handle = state.process->InsertItem(stateChangeEvent);
         state.logger->Debug("Applet State Change Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
+        return {};
     }
 
-    void ILibraryAppletAccessor::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ILibraryAppletAccessor::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void ILibraryAppletAccessor::GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ILibraryAppletAccessor::GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void ILibraryAppletAccessor::PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result ILibraryAppletAccessor::PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 
-    void ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic = 0xC79497CA; //!< This is the magic of the application launch parameters
         constexpr size_t LaunchParameterSize = 0x88; //!< This is the size of the launch parameter IStorage
 
@@ -41,5 +48,6 @@ namespace skyline::service::am {
         storageService->Push(constant::DefaultUserId);
 
         manager.RegisterService(storageService, session, response);
+        return {};
     }
 }

@@ -17,6 +17,6 @@ namespace skyline::service::nfp {
         /**
          * @brief This opens an IUser that can be used by applications to access NFC devices
          */
-        void CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

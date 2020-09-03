@@ -8,5 +8,7 @@ namespace skyline::service::prepo {
         {0x2775, SFUNC(IPrepoService::SaveReportWithUser)},
     }) {}
 
-    void IPrepoService::SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IPrepoService::SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

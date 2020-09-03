@@ -23,17 +23,17 @@ namespace skyline::service {
             /**
              * @brief This reads the available language codes that an application can use (pre 4.0.0)
              */
-            void GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This converts a language code list index to it's corresponding language code
              */
-            void MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
              * @brief This reads the available language codes that an application can use (post 4.0.0)
              */
-            void GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
         };
     }
 }

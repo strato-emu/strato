@@ -10,7 +10,8 @@ namespace skyline::service::pctl {
         {0x1, SFUNC(IParentalControlServiceFactory::CreateService)}
     }) {}
 
-    void IParentalControlServiceFactory::CreateService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IParentalControlServiceFactory::CreateService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IParentalControlService), session, response);
+        return {};
     }
 }

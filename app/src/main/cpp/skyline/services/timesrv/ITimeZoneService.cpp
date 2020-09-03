@@ -8,9 +8,9 @@ namespace skyline::service::timesrv {
         {0x65, SFUNC(ITimeZoneService::ToCalendarTimeWithMyRule)}
     }) {}
 
-    void ITimeZoneService::ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        time_t curTime = std::time(nullptr);
-        tm calender = *std::gmtime(&curTime);
+    Result ITimeZoneService::ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto curTime = std::time(nullptr);
+        auto calender = *std::gmtime(&curTime);
 
         CalendarTime calendarTime{
             .year = static_cast<u16>(calender.tm_year),
@@ -29,5 +29,6 @@ namespace skyline::service::timesrv {
             .utcRel = static_cast<u32>(calender.tm_gmtoff),
         };
         response.Push(calendarInfo);
+        return {};
     }
 }

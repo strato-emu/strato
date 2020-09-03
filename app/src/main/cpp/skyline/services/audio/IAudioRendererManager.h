@@ -17,16 +17,16 @@ namespace skyline::service::audio {
         /**
          * @brief Creates a new IAudioRenderer object and returns a handle to it
          */
-        void OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Calculates the size of the buffer the guest needs to allocate for IAudioRendererManager
          */
-        void GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a handle to an instance of an IAudioDevice (https://switchbrew.org/wiki/Audio_services#GetAudioDeviceService)
          */
-        void GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

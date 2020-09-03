@@ -9,7 +9,8 @@ namespace skyline::service::nfp {
         {0x0, SFUNC(IUserManager::CreateUserInterface)}
     }) {}
 
-    void IUserManager::CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IUserManager::CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IUser), session, response);
+        return {};
     }
 }

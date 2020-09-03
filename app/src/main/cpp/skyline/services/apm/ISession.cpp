@@ -9,15 +9,17 @@ namespace skyline::service::apm {
         {0x1, SFUNC(ISession::GetPerformanceConfiguration)}
     }) {}
 
-    void ISession::SetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISession::SetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto mode = request.Pop<u32>();
         auto config = request.Pop<u32>();
         performanceConfig.at(mode) = config;
         state.logger->Info("SetPerformanceConfiguration called with 0x{:X} ({})", config, mode ? "Docked" : "Handheld");
+        return {};
     }
 
-    void ISession::GetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u32 performanceMode = request.Pop<u32>();
+    Result ISession::GetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto performanceMode = request.Pop<u32>();
         response.Push<u32>(performanceConfig.at(performanceMode));
+        return {};
     }
 }

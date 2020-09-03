@@ -11,10 +11,12 @@ namespace skyline::service::hid {
         {0x0, SFUNC(IActiveVibrationDeviceList::ActivateVibrationDevice)}
     }) {}
 
-    void IActiveVibrationDeviceList::ActivateVibrationDevice(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IActiveVibrationDeviceList::ActivateVibrationDevice(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = request.Pop<NpadDeviceHandle>();
 
         if (!handle.isRight)
             state.input->npad.at(handle.id).vibrationRight = NpadVibrationValue{};
+
+        return {};
     }
 }

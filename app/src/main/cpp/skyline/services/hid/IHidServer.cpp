@@ -26,11 +26,12 @@ namespace skyline::service::hid {
         {0xCE, SFUNC(IHidServer::SendVibrationValues)}
     }) {}
 
-    void IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAppletResource), session, response);
+        return {};
     }
 
-    void IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet = request.Pop<NpadStyleSet>();
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.styles = styleSet;
@@ -38,13 +39,15 @@ namespace skyline::service::hid {
 
         state.logger->Debug("Controller Support:\nPro-Controller: {}\nJoy-Con: Handheld: {}, Dual: {}, L: {}, R: {}\nGameCube: {}\nPokeBall: {}\nNES: {}, NES Handheld: {}, SNES: {}", static_cast<bool>(styleSet.proController), static_cast<bool>(styleSet.joyconHandheld), static_cast<bool>(styleSet.joyconDual), static_cast<bool>(styleSet.joyconLeft), static_cast<bool>
         (styleSet.joyconRight), static_cast<bool>(styleSet.gamecube), static_cast<bool>(styleSet.palma), static_cast<bool>(styleSet.nes), static_cast<bool>(styleSet.nesHandheld), static_cast<bool>(styleSet.snes));
+        return {};
     }
 
-    void IHidServer::GetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::GetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(state.input->npad.styles);
+        return {};
     }
 
-    void IHidServer::SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         const auto &buffer = request.inputBuf.at(0);
         u64 address = buffer.address;
         size_t size = buffer.size / sizeof(NpadId);
@@ -58,62 +61,73 @@ namespace skyline::service::hid {
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.supportedIds = supportedIds;
         state.input->npad.Update();
+        return {};
     }
 
-    void IHidServer::ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.input->npad.Activate();
+        return {};
     }
 
-    void IHidServer::DeactivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::DeactivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.input->npad.Deactivate();
+        return {};
     }
 
-    void IHidServer::AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
         request.copyHandles.push_back(state.process->InsertItem(state.input->npad.at(id).updateEvent));
+        return {};
     }
 
-    void IHidServer::ActivateNpadWithRevision(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::ActivateNpadWithRevision(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.input->npad.Activate();
+        return {};
     }
 
-    void IHidServer::SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::lock_guard lock(state.input->npad.mutex);
         request.Skip<u64>();
         state.input->npad.orientation = request.Pop<NpadJoyOrientation>();
         state.input->npad.Update();
+        return {};
     }
 
-    void IHidServer::GetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::GetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(state.input->npad.orientation);
+        return {};
     }
 
-    void IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
+        return {};
     }
 
-    void IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
+        return {};
     }
 
-    void IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
         state.input->npad.Update();
+        return {};
     }
 
-    void IHidServer::CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IActiveVibrationDeviceList), session, response);
+        return {};
     }
 
-    void IHidServer::SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IHidServer::SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>(); // appletResourceUserId
 
         auto &handleBuf = request.inputBuf.at(0);
@@ -136,5 +150,7 @@ namespace skyline::service::hid {
                 }
             }
         }
+
+        return {};
     }
 }

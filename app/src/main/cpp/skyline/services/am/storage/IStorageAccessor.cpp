@@ -12,30 +12,34 @@ namespace skyline::service::am {
         {0xB, SFUNC(IStorageAccessor::Read)}
     }) {}
 
-    void IStorageAccessor::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStorageAccessor::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<i64>(parent->content.size());
+        return {};
     }
 
-    void IStorageAccessor::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStorageAccessor::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto offset = request.Pop<i64>();
-        auto size = request.inputBuf.at(0).size;
+        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size), static_cast<i64>(parent->content.size()) - offset);
 
-        if (offset + size > parent->content.size())
-            throw exception("Trying to write past the end of an IStorage");
+        if (offset > parent->content.size())
+            return result::OutOfBounds;
 
-        if (offset < 0)
-            throw exception("Trying to write before the start of an IStorage");
+        if (size > 0)
+            state.process->ReadMemory(parent->content.data() + offset, request.inputBuf.at(0).address, size);
 
-        state.process->ReadMemory(parent->content.data() + offset, request.inputBuf.at(0).address, size);
+        return {};
     }
 
-    void IStorageAccessor::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto offset = request.Pop<u64>();
-        auto size = request.outputBuf.at(0).size;
+    Result IStorageAccessor::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto offset = request.Pop<i64>();
+        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size), static_cast<i64>(parent->content.size()) - offset);
 
-        if (offset + size > parent->content.size())
-            throw exception("Trying to read past the end of an IStorage");
+        if (offset > parent->content.size())
+            return result::OutOfBounds;
 
-        state.process->WriteMemory(parent->content.data() + offset, request.outputBuf.at(0).address, size);
+        if (size > 0)
+            state.process->WriteMemory(parent->content.data() + offset, request.outputBuf.at(0).address, size);
+
+        return {};
     }
 }

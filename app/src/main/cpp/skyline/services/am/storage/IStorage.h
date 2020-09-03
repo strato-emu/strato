@@ -22,7 +22,7 @@ namespace skyline::service::am {
         /**
          * @brief This returns an IStorageAccessor that can read and write data to an IStorage
          */
-        void Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This function writes an object to the storage

@@ -9,7 +9,8 @@ namespace skyline::service::nifm {
         {0x4, SFUNC(IGeneralService::CreateRequest)}
     }) {}
 
-    void IGeneralService::CreateRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IGeneralService::CreateRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IRequest), session, response);
+        return {};
     }
 }

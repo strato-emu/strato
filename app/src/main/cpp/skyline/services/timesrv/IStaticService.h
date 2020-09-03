@@ -17,26 +17,26 @@ namespace skyline::service::timesrv {
         /**
          * @brief This returns a handle to a ISystemClock for user time
          */
-        void GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a handle to a ISystemClock for network time
          */
-        void GetStandardNetworkSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetStandardNetworkSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a handle to a ISteadyClock for a steady timepoint
          */
-        void GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a handle to a ITimeZoneService for reading time zone information
          */
-        void GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This returns a handle to a ISystemClock for local time
          */
-        void GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

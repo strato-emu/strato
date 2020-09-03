@@ -53,11 +53,11 @@ namespace skyline::service::lm {
         /**
          * @brief This prints a message to the log (https://switchbrew.org/wiki/Log_services#Log)
          */
-        void Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This sets the log destination (https://switchbrew.org/wiki/Log_services#SetDestination)
          */
-        void SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

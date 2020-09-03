@@ -15,23 +15,28 @@ namespace skyline::service::timesrv {
         {0x4, SFUNC(IStaticService::GetStandardLocalSystemClock)}
     }) {}
 
-    void IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISystemClock>(SystemClockType::User, state, manager), session, response);
+        return {};
     }
 
-    void IStaticService::GetStandardNetworkSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::GetStandardNetworkSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISystemClock>(SystemClockType::Network, state, manager), session, response);
+        return {};
     }
 
-    void IStaticService::GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISteadyClock>(state, manager), session, response);
+        return {};
     }
 
-    void IStaticService::GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ITimeZoneService>(state, manager), session, response);
+        return {};
     }
 
-    void IStaticService::GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IStaticService::GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISystemClock>(SystemClockType::Local, state, manager), session, response);
+        return {};
     }
 }

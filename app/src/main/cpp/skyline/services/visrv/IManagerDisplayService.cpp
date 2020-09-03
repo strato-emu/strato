@@ -14,7 +14,7 @@ namespace skyline::service::visrv {
         {0x1770, SFUNC(IManagerDisplayService::AddToLayerStack)}
     }) {}
 
-    void IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u32>();
         auto displayId = request.Pop<u64>();
         state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
@@ -25,9 +25,10 @@ namespace skyline::service::visrv {
         hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
 
         response.Push<u64>(0); // There's only one layer
+        return {};
     }
 
-    void IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Managed Layer: {}", layerId);
 
@@ -36,7 +37,11 @@ namespace skyline::service::visrv {
             state.logger->Warn("The application is destroying an uninitialized layer");
 
         hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+
+        return {};
     }
 
-    void IManagerDisplayService::AddToLayerStack(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IManagerDisplayService::AddToLayerStack(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

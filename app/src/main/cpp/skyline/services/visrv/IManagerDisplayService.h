@@ -16,16 +16,16 @@ namespace skyline::service::visrv {
         /**
          * @brief Creates a managed layer on a specific display
          */
-        void CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Destroys a managed layer created on a specific display
          */
-        void DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This takes a layer's ID and adds it to the layer stack
          */
-        void AddToLayerStack(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result AddToLayerStack(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

@@ -8,7 +8,8 @@ namespace skyline::service::timesrv {
         {0x0, SFUNC(ISteadyClock::GetCurrentTimePoint)}
     }) {}
 
-    void ISteadyClock::GetCurrentTimePoint(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result ISteadyClock::GetCurrentTimePoint(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(SteadyClockTimePoint{static_cast<u64>(std::time(nullptr))});
+        return {};
     }
 }

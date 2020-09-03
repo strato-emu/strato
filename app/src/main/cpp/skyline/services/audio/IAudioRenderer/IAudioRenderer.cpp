@@ -34,23 +34,27 @@ namespace skyline::service::audio::IAudioRenderer {
         state.audio->CloseTrack(track);
     }
 
-    void IAudioRenderer::GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(parameters.sampleRate);
+        return {};
     }
 
-    void IAudioRenderer::GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(parameters.sampleCount);
+        return {};
     }
 
-    void IAudioRenderer::GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(parameters.subMixCount);
+        return {};
     }
 
-    void IAudioRenderer::GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(static_cast<u32>(playbackState));
+        return {};
     }
 
-    void IAudioRenderer::RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto inputAddress{request.inputBuf.at(0).address};
 
         auto inputHeader{state.process->GetObject<UpdateDataHeader>(inputAddress)};
@@ -125,6 +129,8 @@ namespace skyline::service::audio::IAudioRenderer {
             state.process->WriteMemory(effect.output, outputAddress);
             outputAddress += sizeof(EffectOut);
         }
+
+        return {};
     }
 
     void IAudioRenderer::UpdateAudio() {
@@ -171,17 +177,20 @@ namespace skyline::service::audio::IAudioRenderer {
         }
     }
 
-    void IAudioRenderer::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         playbackState = skyline::audio::AudioOutState::Started;
+        return {};
     }
 
-    void IAudioRenderer::Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         playbackState = skyline::audio::AudioOutState::Stopped;
+        return {};
     }
 
-    void IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(systemEvent)};
         state.logger->Debug("Audren System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+        return {};
     }
 }

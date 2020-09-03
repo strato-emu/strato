@@ -3,6 +3,7 @@
 
 #include <kernel/types/KProcess.h>
 #include <vfs/filesystem.h>
+#include "results.h"
 #include "IFile.h"
 #include "IFileSystem.h"
 
@@ -14,42 +15,45 @@ namespace skyline::service::fssrv {
         {0xA, SFUNC(IFileSystem::Commit)}
     }) {}
 
-    void IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));
         auto mode = request.Pop<u64>();
         auto size = request.Pop<u32>();
 
-        response.errorCode = backing->CreateFile(path, size) ? constant::status::Success : constant::status::PathDoesNotExist;
+        return backing->CreateFile(path, size) ? Result{} : result::PathDoesNotExist;
     }
 
-    void IFileSystem::GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IFileSystem::GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));
 
         auto type = backing->GetEntryType(path);
 
         if (type) {
             response.Push(*type);
+            return {};
         } else {
             response.Push<u32>(0);
-            response.errorCode = constant::status::PathDoesNotExist;
+            return result::PathDoesNotExist;
         }
     }
 
-    void IFileSystem::OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));
+    Result IFileSystem::OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::string path(state.process->GetPointer<char>(request.inputBuf.at(0).address));
         auto mode = request.Pop<vfs::Backing::Mode>();
 
-        if (!backing->FileExists(path)) {
-            response.errorCode = constant::status::PathDoesNotExist;
-            return;
-        }
+        if (!backing->FileExists(path))
+            return result::PathDoesNotExist;
 
         auto file = backing->OpenFile(path, mode);
         if (file == nullptr)
-            response.errorCode = constant::status::GenericError;
+            return result::UnexpectedFailure;
         else
             manager.RegisterService(std::make_shared<IFile>(file, state, manager), session, response);
+
+        return {};
     }
 
-    void IFileSystem::Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IFileSystem::Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

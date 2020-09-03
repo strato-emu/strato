@@ -10,9 +10,12 @@ namespace skyline::service::am {
         {0xA, SFUNC(IWindowController::AcquireForegroundRights)}
     }) {}
 
-    void IWindowController::GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IWindowController::GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(static_cast<u64>(state.process->pid));
+        return {};
     }
 
-    void IWindowController::AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {}
+    Result IWindowController::AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

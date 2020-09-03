@@ -24,36 +24,42 @@ namespace skyline::service::visrv {
         {0x1452, SFUNC(IApplicationDisplayService::GetDisplayVsyncEvent)},
     }) {}
 
-    void IApplicationDisplayService::GetRelayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::GetRelayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
+        return {};
     }
 
-    void IApplicationDisplayService::GetIndirectDisplayTransactionService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::GetIndirectDisplayTransactionService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
+        return {};
     }
 
-    void IApplicationDisplayService::GetSystemDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::GetSystemDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISystemDisplayService), session, response);
+        return {};
     }
 
-    void IApplicationDisplayService::GetManagerDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::GetManagerDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IManagerDisplayService), session, response);
+        return {};
     }
 
-    void IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string displayName(request.PopString());
         state.logger->Debug("Setting display as: {}", displayName);
         state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->SetDisplay(displayName);
 
         response.Push<u64>(0); // There's only one display
+        return {};
     }
 
-    void IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Closing the display");
         state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->CloseDisplay();
+        return {};
     }
 
-    void IApplicationDisplayService::OpenLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::OpenLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct InputStruct {
             char displayName[0x40];
             u64 layerId;
@@ -74,9 +80,10 @@ namespace skyline::service::visrv {
         parcel.objects.resize(4);
 
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
+        return {};
     }
 
-    void IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u64 layerId = request.Pop<u64>();
         state.logger->Debug("Closing Layer: {}", layerId);
 
@@ -84,21 +91,22 @@ namespace skyline::service::visrv {
         if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
-
-        response.Push<u32>(constant::status::Success);
+        return {};
     }
 
-    void IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto scalingMode = request.Pop<u64>();
         auto layerId = request.Pop<u64>();
 
         state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
+        return {};
     }
 
-    void IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle = state.process->InsertItem(state.gpu->vsyncEvent);
         state.logger->Debug("VSync Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
+        return {};
     }
 }
