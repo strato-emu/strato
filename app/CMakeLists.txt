@@ -98,6 +98,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/applet/ILibraryAppletAccessor.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
         ${source_DIR}/skyline/services/hid/IAppletResource.cpp
+        ${source_DIR}/skyline/services/hid/IActiveVibrationDeviceList.cpp
         ${source_DIR}/skyline/services/timesrv/IStaticService.cpp
         ${source_DIR}/skyline/services/timesrv/ISystemClock.cpp
         ${source_DIR}/skyline/services/timesrv/ISteadyClock.cpp

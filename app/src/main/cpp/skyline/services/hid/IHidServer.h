@@ -79,5 +79,15 @@ namespace skyline::service::hid {
          * @brief Sets the Joy-Con assignment mode to Dual (https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeDual)
          */
         void SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Returns an instance of #IActiveVibrationDeviceList (https://switchbrew.org/wiki/HID_services#CreateActiveVibrationDeviceList)
+         */
+        void CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Send vibration values to an NPad (https://switchbrew.org/wiki/HID_services#SendVibrationValues)
+         */
+        void SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

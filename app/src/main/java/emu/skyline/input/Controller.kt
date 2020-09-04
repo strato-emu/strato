@@ -15,7 +15,7 @@ import java.io.Serializable
  * @param firstController If the type only applies to the first controller
  */
 enum class ControllerType(val stringRes : Int, val firstController : Boolean, val sticks : Array<StickId> = arrayOf(), val buttons : Array<ButtonId> = arrayOf(), val id : Int) {
-    None(R.string.none, false, id=0b0),
+    None(R.string.none, false, id = 0b0),
     ProController(R.string.procon, false, arrayOf(StickId.Left, StickId.Right), arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y, ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus), 0b1),
     HandheldProController(R.string.handheld_procon, true, arrayOf(StickId.Left, StickId.Right), arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y, ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus), 0b10),
     JoyConLeft(R.string.ljoycon, false, arrayOf(StickId.Left), arrayOf(ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.ZL, ButtonId.Minus, ButtonId.LeftSL, ButtonId.LeftSR), 0b1000),
@@ -38,9 +38,10 @@ enum class GeneralType(val stringRes : Int, val compatibleControllers : Array<Co
  *
  * @param id The ID of the controller
  * @param type The type of the controller
- * @param rumbleDevice The device descriptor and the name of the device rumble/force-feedback will be passed onto
+ * @param rumbleDeviceDescriptor The device descriptor of the device rumble/force-feedback will be passed onto
+ * @param rumbleDeviceName The name of the device rumble/force-feedback will be passed onto
  */
-open class Controller(val id : Int, var type : ControllerType, var rumbleDevice : Pair<String, String>? = null) : Serializable {
+open class Controller(val id : Int, var type : ControllerType, var rumbleDeviceDescriptor : String? = null, var rumbleDeviceName : String? = null) : Serializable {
     /**
      * The current version of this class so that different versions won't be deserialized mistakenly
      */

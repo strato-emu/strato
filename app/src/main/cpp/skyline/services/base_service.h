@@ -52,6 +52,7 @@ namespace skyline::service {
         audio_IAudioDevice,
         hid_IHidServer,
         hid_IAppletResource,
+        hid_IActiveVibrationDeviceList,
         timesrv_IStaticService,
         timesrv_ISystemClock,
         timesrv_ITimeZoneService,

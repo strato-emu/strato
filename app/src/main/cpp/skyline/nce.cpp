@@ -16,6 +16,7 @@ extern skyline::GroupMutex JniMtx;
 
 namespace skyline {
     void NCE::KernelThread(pid_t thread) {
+        state.jvm->AttachThread();
         try {
             state.thread = state.process->threads.at(thread);
             state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.address);
@@ -76,6 +77,8 @@ namespace skyline {
                 state.os->KillThread(thread);
             }
         }
+
+        state.jvm->DetachThread();
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}

@@ -83,7 +83,8 @@ class ControllerGeneralItem(val context : ControllerActivity, val type : General
                     else
                         context.getString(R.string.none)
                 }
-                GeneralType.RumbleDevice -> controller.rumbleDevice?.second ?: context.getString(R.string.none)
+
+                GeneralType.RumbleDevice -> controller.rumbleDeviceName ?: context.getString(R.string.none)
             }
         }
     }

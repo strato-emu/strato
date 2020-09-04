@@ -22,6 +22,8 @@ namespace skyline {
          */
         JvmManager(JNIEnv *env, jobject instance);
 
+        ~JvmManager();
+
         /**
          * @brief Attach the current thread to the Java VM
          */
@@ -92,7 +94,19 @@ namespace skyline {
          */
         void InitializeControllers();
 
+        /**
+         * @brief A call to EmulationActivity.vibrateDevice in Kotlin
+         */
+        void VibrateDevice(jint index, const std::span<jlong> &timings, const std::span<jint> &amplitudes);
+
+        /**
+         * @brief A call to EmulationActivity.clearVibrationDevice in Kotlin
+         */
+        void ClearVibrationDevice(jint index);
+
       private:
         jmethodID initializeControllersId;
+        jmethodID vibrateDeviceId;
+        jmethodID clearVibrationDeviceId;
     };
 }

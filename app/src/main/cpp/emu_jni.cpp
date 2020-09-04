@@ -116,7 +116,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonSt
         auto device = input->npad.controllers[index].device;
         if (device)
             device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
-    } catch (const std::bad_weak_ptr&) {
+    } catch (const std::bad_weak_ptr &) {
         // We don't mind if we miss button updates while input hasn't been initialized
     }
 }
@@ -127,7 +127,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValu
         auto device = input->npad.controllers[index].device;
         if (device)
             device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
-    } catch (const std::bad_weak_ptr&) {
+    } catch (const std::bad_weak_ptr &) {
         // We don't mind if we miss axis updates while input hasn't been initialized
     }
 }

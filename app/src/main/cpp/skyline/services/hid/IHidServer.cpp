@@ -3,6 +3,7 @@
 
 #include <input.h>
 #include "IHidServer.h"
+#include "IActiveVibrationDeviceList.h"
 
 using namespace skyline::input;
 
@@ -20,7 +21,9 @@ namespace skyline::service::hid {
         {0x79, SFUNC(IHidServer::GetNpadJoyHoldType)},
         {0x7A, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingleByDefault)},
         {0x7B, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingle)},
-        {0x7C, SFUNC(IHidServer::SetNpadJoyAssignmentModeDual)}
+        {0x7C, SFUNC(IHidServer::SetNpadJoyAssignmentModeDual)},
+        {0xCB, SFUNC(IHidServer::CreateActiveVibrationDeviceList)},
+        {0xCE, SFUNC(IHidServer::SendVibrationValues)}
     }) {}
 
     void IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -104,5 +107,35 @@ namespace skyline::service::hid {
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
         state.input->npad.Update();
+    }
+
+    void IHidServer::CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IActiveVibrationDeviceList), session, response);
+    }
+
+    void IHidServer::SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        request.Skip<u64>(); // appletResourceUserId
+
+        auto &handleBuf = request.inputBuf.at(0);
+        std::span handles(reinterpret_cast<NpadDeviceHandle *>(handleBuf.address), handleBuf.size / sizeof(NpadDeviceHandle));
+        auto &valueBuf = request.inputBuf.at(1);
+        std::span values(reinterpret_cast<NpadVibrationValue *>(valueBuf.address), valueBuf.size / sizeof(NpadVibrationValue));
+
+        for (int i = 0; i < handles.size(); ++i) {
+            auto &handle = handles[i];
+
+            auto &device = state.input->npad.at(handle.id);
+            if (device.type == handle.GetType()) {
+                if (i + 1 != handles.size() && handles[i + 1].id == handle.id && handles[i + 1].isRight && !handle.isRight) {
+                    state.logger->Info("Vibration #{}&{} - Handle: 0x{:02X} (0b{:05b}), Vibration: {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz - {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz", i, i + 1, u8(handle.id), u8(handle.type), values[i].amplitudeLow, values[i].frequencyLow, values[i].amplitudeHigh, values[i].frequencyHigh, values[i + 1].amplitudeLow, values[i + 1].frequencyLow, values[i + 1].amplitudeHigh, values[i + 1].frequencyHigh);
+                    device.Vibrate(values[i], values[i + 1]);
+                    i++;
+                } else {
+                    auto &value = values[i];
+                    state.logger->Info("Vibration #{} - Handle: 0x{:02X} (0b{:05b}), Vibration: {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz", i, u8(handle.id), u8(handle.type), value.amplitudeLow, value.frequencyLow, value.amplitudeHigh, value.frequencyHigh);
+                    device.Vibrate(handle.isRight, value);
+                }
+            }
+        }
     }
 }

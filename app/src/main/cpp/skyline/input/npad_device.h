@@ -61,6 +61,50 @@ namespace skyline::input {
         Handheld = 0x20,
     };
 
+    /**
+     * @brief A handle to a specific device addressed by it's ID and type
+     * @note This is used by both Six-Axis and Vibration
+     */
+    union __attribute__((__packed__)) NpadDeviceHandle {
+        u32 raw;
+        struct {
+            u8 type;
+            NpadId id               : 8;
+            bool isRight            : 1; //!< If this is a right Joy-Con (Both) or right LRA in the Pro-Controller (Vibration)
+            bool isSixAxisSingle    : 1; //!< If the Six-Axis device is a single unit, either Handheld or Pro-Controller
+        };
+
+        constexpr NpadControllerType GetType() {
+            switch (type) {
+                case 3:
+                    return NpadControllerType::ProController;
+                case 4:
+                    return NpadControllerType::Handheld;
+                case 5:
+                    return NpadControllerType::JoyconDual;
+                case 6:
+                    return NpadControllerType::JoyconLeft;
+                case 7:
+                    return NpadControllerType::JoyconRight;
+            }
+            return NpadControllerType::None;
+        }
+    };
+
+    /**
+     * @brief The parameters to produce a vibration using an LRA
+     * @note The vibration is broken into a frequency band with the lower and high range supplied
+     * @note Amplitude is in arbitrary units from 0f to 1f
+     * @note Frequency is in Hertz
+     */
+    struct NpadVibrationValue {
+        float amplitudeLow;
+        float frequencyLow;
+        float amplitudeHigh;
+        float frequencyHigh;
+    };
+    static_assert(sizeof(NpadVibrationValue) == 0x10);
+
     class NpadManager;
 
     /**
@@ -85,8 +129,14 @@ namespace skyline::input {
         */
         NpadControllerInfo &GetControllerInfo();
 
+        void VibrateDevice(i8 index, const NpadVibrationValue &value);
+
       public:
         NpadId id;
+        i8 index{-1}; //!< The index of the device assigned to this player
+        i8 partnerIndex{-1}; //!< The index of a partner device, if present
+        NpadVibrationValue vibrationLeft; //!< Vibration for the left Joy-Con (Handheld/Pair), left LRA in a Pro-Controller or individual Joy-Cons
+        std::optional<NpadVibrationValue> vibrationRight; //!< Vibration for the right Joy-Con (Handheld/Pair) or right LRA in a Pro-Controller
         NpadControllerType type{};
         NpadConnectionState connectionState{};
         std::shared_ptr<kernel::type::KEvent> updateEvent; //!< This event is triggered on the controller's style changing
@@ -132,5 +182,9 @@ namespace skyline::input {
          * @param value The value to set
          */
         void SetAxisValue(NpadAxisId axis, i32 value);
+
+        void Vibrate(bool isRight, const NpadVibrationValue &value);
+
+        void Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right);
     };
 }

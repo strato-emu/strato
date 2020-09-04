@@ -62,6 +62,8 @@
     <string name="not_supported">Not Supported</string>
     <string name="press_any_button">Press any button on a controller</string>
     <string name="confirm_button_again">Confirm choice by pressing a button again</string>
+    <string name="builtin">Built-in</string>
+    <string name="builtin_vibrator">Built-in Vibrator</string>
     <string name="reset">Reset</string>
     <string name="buttons">Buttons</string>
     <string name="use_button_axis">Use any button or axis on a controller</string>

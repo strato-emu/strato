@@ -63,13 +63,29 @@
 
     </RelativeLayout>
 
-    <Button
-            android:id="@+id/rumble_reset"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
+    <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginEnd="10dp"
-            android:text="@string/reset" />
+            android:gravity="end"
+            android:orientation="horizontal">
+
+        <Button
+                android:id="@+id/rumble_builtin"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:text="@string/builtin"
+                android:visibility="gone" />
+
+        <Button
+                android:id="@+id/rumble_reset"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:text="@string/reset" />
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -6,12 +6,10 @@
 package emu.skyline
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.ConditionVariable
-import android.os.ParcelFileDescriptor
+import android.os.*
 import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
@@ -43,9 +41,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private lateinit var input : InputManager
 
     /**
+     * A map of [Vibrator]s that correspond to [InputManager.controllers]
+     */
+    private var vibrators = HashMap<Int, Vibrator>()
+
+    /**
      * A boolean flag denoting the current operation mode of the emulator (Docked = true/Handheld = false)
      */
-    private var operationMode : Boolean = true
+    private var operationMode = true
 
     /**
      * The surface object used for displaying frames
@@ -260,7 +263,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         shouldFinish = false
 
         setHalt(true)
-        emulationThread.join()
+        emulationThread.join(1000)
+
+        vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
+        vibrators.clear()
 
         romFd.close()
         preferenceFd.close()
@@ -382,5 +388,36 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         }
 
         return super.onGenericMotionEvent(event)
+    }
+
+    @SuppressLint("WrongConstant")
+    fun vibrateDevice(index : Int, timing : LongArray, amplitude : IntArray) {
+        val vibrator = if (vibrators[index] != null) {
+            vibrators[index]!!
+        } else {
+            input.controllers[index]?.rumbleDeviceDescriptor?.let {
+                if (it == "builtin") {
+                    val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    vibrators[index] = vibrator
+                    vibrator
+                } else {
+                    for (id in InputDevice.getDeviceIds()) {
+                        val device = InputDevice.getDevice(id)
+                        if (device.descriptor == input.controllers[index]?.rumbleDeviceDescriptor) {
+                            vibrators[index] = device.vibrator
+                            device.vibrator
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        val effect = VibrationEffect.createWaveform(timing, amplitude, 0)
+        vibrator.vibrate(effect)
+    }
+
+    fun clearVibrationDevice(index : Int) {
+        vibrators[index]?.cancel()
     }
 }

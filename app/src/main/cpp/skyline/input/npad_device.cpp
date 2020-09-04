@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <jvm.h>
 #include "npad_device.h"
 #include "npad.h"
 
@@ -154,6 +155,9 @@ namespace skyline::input {
 
         section = {};
         globalTimestamp = 0;
+
+        index = -1;
+        partnerIndex = -1;
 
         type = NpadControllerType::None;
         controllerInfo = nullptr;
@@ -346,5 +350,92 @@ namespace skyline::input {
         }
 
         globalTimestamp++;
+    }
+
+    void NpadDevice::VibrateDevice(i8 vibrateIndex, const NpadVibrationValue &value) {
+        std::array<jlong, 3> timings;
+        std::array<jint, 3> amplitudes;
+
+        jlong periodLow = 1000 / value.frequencyLow;
+        jlong periodHigh = 1000 / value.frequencyHigh;
+
+        jint amplitudeLow = value.amplitudeLow * 127;
+        jint amplitudeHigh = value.amplitudeHigh * 127;
+
+        if (amplitudeLow + amplitudeHigh == 0 || periodLow + periodHigh == 0) {
+            manager.state.jvm->ClearVibrationDevice(vibrateIndex);
+            return;
+        }
+
+        if (periodLow == periodHigh) {
+            timings = {periodLow, periodHigh, 0};
+            amplitudes = {std::min(amplitudeLow + amplitudeHigh, 255), 0, 0};
+        } else if (periodLow < periodHigh) {
+            timings = {periodLow, periodHigh - periodLow, periodHigh};
+            amplitudes = {std::min(amplitudeLow + amplitudeHigh, 255), amplitudeHigh, 0};
+        } else if (periodHigh < periodLow) {
+            timings = {periodHigh, periodLow - periodHigh, periodLow};
+            amplitudes = {std::min(amplitudeHigh + amplitudeLow, 255), amplitudeLow, 0};
+        }
+
+        manager.state.jvm->VibrateDevice(vibrateIndex, timings, amplitudes);
+    }
+
+    void NpadDevice::Vibrate(bool isRight, const NpadVibrationValue &value) {
+        if (isRight)
+            vibrationRight = value;
+        else
+            vibrationLeft = value;
+
+        if (vibrationRight)
+            Vibrate(vibrationLeft, *vibrationRight);
+        else
+            VibrateDevice(index, value);
+    }
+
+    void NpadDevice::Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right) {
+        if (partnerIndex == -1) {
+            std::array<jlong, 5> timings;
+            std::array<jint, 5> amplitudes;
+
+            std::array<std::pair<jlong, jint>, 4> vibrations{std::pair<jlong, jint>{1000 / left.frequencyLow, left.amplitudeLow * 64},
+                                                             {1000 / left.frequencyHigh, left.amplitudeHigh * 64},
+                                                             {1000 / right.frequencyLow, right.amplitudeLow * 64},
+                                                             {1000 / right.frequencyHigh, right.amplitudeHigh * 64},
+            };
+
+            jlong totalTime{};
+            std::sort(vibrations.begin(), vibrations.end(), [](const std::pair<jlong, jint> &a, const std::pair<jlong, jint> &b) {
+                return a.first < b.first;
+            });
+
+            jint totalAmplitude{};
+            for (const auto &vibration : vibrations)
+                totalAmplitude += vibration.second;
+
+            if (totalAmplitude == 0 || vibrations[3].first == 0) {
+                manager.state.jvm->ClearVibrationDevice(index);
+                return;
+            }
+
+            for (u8 i{0}; i < vibrations.size(); i++) {
+                const auto &vibration = vibrations[i];
+
+                auto time = vibration.first - totalTime;
+                timings[i] = time;
+                totalTime += time;
+
+                amplitudes[i] = std::min(totalAmplitude, 255);
+                totalAmplitude -= vibration.second;
+            }
+
+            timings[4] = totalTime;
+            amplitudes[4] = 0;
+
+            manager.state.jvm->VibrateDevice(index, timings, amplitudes);
+        } else {
+            VibrateDevice(index, left);
+            VibrateDevice(partnerIndex, right);
+        }
     }
 }

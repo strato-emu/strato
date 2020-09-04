@@ -6,8 +6,10 @@
 package emu.skyline.input.dialog
 
 import android.animation.LayoutTransition
+import android.content.Context
 import android.os.Bundle
 import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -50,10 +52,24 @@ class RumbleDialog(val item : ControllerGeneralItem) : BottomSheetDialogFragment
 
             // Set up the reset button to clear out [Controller.rumbleDevice] when pressed
             rumble_reset.setOnClickListener {
-                controller.rumbleDevice = null
+                controller.rumbleDeviceDescriptor = null
+                controller.rumbleDeviceName = null
                 item.update()
 
                 dismiss()
+            }
+
+            if (context.id == 0) {
+                rumble_builtin.visibility = View.VISIBLE
+                if (!(context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).hasVibrator())
+                    rumble_builtin.isEnabled = false
+                rumble_builtin.setOnClickListener {
+                    controller.rumbleDeviceDescriptor = "builtin"
+                    controller.rumbleDeviceName = getString(R.string.builtin_vibrator)
+                    item.update()
+
+                    dismiss()
+                }
             }
 
             // Ensure that layout animations are proper
@@ -80,7 +96,8 @@ class RumbleDialog(val item : ControllerGeneralItem) : BottomSheetDialogFragment
                                     vibrator.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
                                 } else {
                                     rumble_controller_supported.text = getString(R.string.not_supported)
-                                    rumble_title.text = getString(R.string.press_any_button)
+                                    dialog?.setOnKeyListener { _, _, _ -> false }
+                                    rumble_reset.requestFocus()
                                 }
 
                                 rumble_controller_icon.animate().apply {
@@ -97,16 +114,16 @@ class RumbleDialog(val item : ControllerGeneralItem) : BottomSheetDialogFragment
                             vibrator.hasVibrator() -> {
                                 vibrator.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
 
-                                controller.rumbleDevice = Pair(event.device.descriptor, event.device.name)
+                                controller.rumbleDeviceDescriptor = event.device.descriptor
+                                controller.rumbleDeviceName = event.device.name
 
                                 item.update()
 
                                 dismiss()
                             }
 
-                            // If the currently selected device doesn't have a vibrator then dismiss the dialog entirely
                             else -> {
-                                dismiss()
+                                return@setOnKeyListener false
                             }
                         }
                     }

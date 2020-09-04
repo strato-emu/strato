@@ -5,6 +5,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <span>
 #include <vector>
 #include <fstream>
 #include <syslog.h>

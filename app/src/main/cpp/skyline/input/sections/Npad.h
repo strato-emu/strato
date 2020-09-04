@@ -147,38 +147,38 @@ namespace skyline::input {
     /**
      * @brief This structure is used to hold a single sample of 3D data from the IMU
      */
-    struct SixaxisVector {
+    struct SixAxisVector {
         float x; //!< The data in the X-axis
         float y; //!< The data in the Y-axis
         float z; //!< The data in the Z-axis
     };
-    static_assert(sizeof(SixaxisVector) == 0xC);
+    static_assert(sizeof(SixAxisVector) == 0xC);
 
     /**
-    * @brief This structure contains data about the state of the controller's IMU (Sixaxis) (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSixAxisSensorHandheldState)
+    * @brief This structure contains data about the state of the controller's IMU (Six-Axis) (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSixAxisSensorHandheldState)
     */
-    struct NpadSixaxisState {
+    struct NpadSixAxisState {
         u64 globalTimestamp; //!< The global timestamp in samples
         u64 _unk0_;
         u64 localTimestamp; //!< The local timestamp in samples
 
-        SixaxisVector accelerometer;
-        SixaxisVector gyroscope;
-        SixaxisVector rotation;
-        std::array<SixaxisVector, 3> orientation; //!< The orientation basis data as a matrix
+        SixAxisVector accelerometer;
+        SixAxisVector gyroscope;
+        SixAxisVector rotation;
+        std::array<SixAxisVector, 3> orientation; //!< The orientation basis data as a matrix
 
         u64 _unk2_; //!< This is always 1
     };
-    static_assert(sizeof(NpadSixaxisState) == 0x68);
+    static_assert(sizeof(NpadSixAxisState) == 0x68);
 
     /**
-    * @brief This structure contains header and entries for the IMU (Sixaxis) data
+    * @brief This structure contains header and entries for the IMU (Six-Axis) data
     */
-    struct NpadSixaxisInfo {
+    struct NpadSixAxisInfo {
         CommonHeader header;
-        std::array<NpadSixaxisState, constant::HidEntryCount> state;
+        std::array<NpadSixAxisState, constant::HidEntryCount> state;
     };
-    static_assert(sizeof(NpadSixaxisInfo) == 0x708);
+    static_assert(sizeof(NpadSixAxisInfo) == 0x708);
 
     /**
     * @brief This is a bit-field of all the device types (https://switchbrew.org/wiki/HID_services#DeviceType)
@@ -268,12 +268,12 @@ namespace skyline::input {
         NpadControllerInfo palmaController; //!< The Poké Ball Plus controller data
         NpadControllerInfo defaultController; //!< The Default controller data (Inputs are rotated based on orientation and SL/SR are mapped to L/R incase it is a single JC)
 
-        NpadSixaxisInfo fullKeySixaxis; //!< The Pro/GC IMU data
-        NpadSixaxisInfo handheldSixaxis; //!< The Handheld IMU data
-        NpadSixaxisInfo dualLeftSixaxis; //!< The Left Joy-Con in dual mode's IMU data
-        NpadSixaxisInfo dualRightSixaxis; //!< The Left Joy-Con in dual mode's IMU data
-        NpadSixaxisInfo leftSixaxis; //!< The Left Joy-Con IMU data
-        NpadSixaxisInfo rightSixaxis; //!< The Right Joy-Con IMU data
+        NpadSixAxisInfo fullKeySixAxis; //!< The Pro/GC IMU data
+        NpadSixAxisInfo handheldSixAxis; //!< The Handheld IMU data
+        NpadSixAxisInfo dualLeftSixAxis; //!< The Left Joy-Con in dual mode's IMU data
+        NpadSixAxisInfo dualRightSixAxis; //!< The Left Joy-Con in dual mode's IMU data
+        NpadSixAxisInfo leftSixAxis; //!< The Left Joy-Con IMU data
+        NpadSixAxisInfo rightSixAxis; //!< The Right Joy-Con IMU data
 
         NpadDeviceType deviceType;
 
