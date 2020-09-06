@@ -6,6 +6,12 @@
 #include <kernel/types/KEvent.h>
 #include "shared_mem.h"
 
+namespace skyline::constant {
+    constexpr jlong MsInSecond = 1000; //!< The amount of milliseconds in a single second of time
+    constexpr jint AmplitudeMax = std::numeric_limits<u8>::max(); //!< The maximum amplitude for Android Vibration APIs
+    constexpr i8 NullIndex = -1; //!< The placeholder index value when there is no device present
+}
+
 namespace skyline::input {
     /**
      * @brief This enumerates the orientations the Joy-Con(s) can be held in
@@ -74,7 +80,7 @@ namespace skyline::input {
             bool isSixAxisSingle    : 1; //!< If the Six-Axis device is a single unit, either Handheld or Pro-Controller
         };
 
-        constexpr NpadControllerType GetType() {
+        constexpr NpadControllerType GetType() const {
             switch (type) {
                 case 3:
                     return NpadControllerType::ProController;
@@ -129,12 +135,10 @@ namespace skyline::input {
         */
         NpadControllerInfo &GetControllerInfo();
 
-        void VibrateDevice(i8 index, const NpadVibrationValue &value);
-
       public:
         NpadId id;
-        i8 index{-1}; //!< The index of the device assigned to this player
-        i8 partnerIndex{-1}; //!< The index of a partner device, if present
+        i8 index{constant::NullIndex}; //!< The index of the device assigned to this player
+        i8 partnerIndex{constant::NullIndex}; //!< The index of a partner device, if present
         NpadVibrationValue vibrationLeft; //!< Vibration for the left Joy-Con (Handheld/Pair), left LRA in a Pro-Controller or individual Joy-Cons
         std::optional<NpadVibrationValue> vibrationRight; //!< Vibration for the right Joy-Con (Handheld/Pair) or right LRA in a Pro-Controller
         NpadControllerType type{};
