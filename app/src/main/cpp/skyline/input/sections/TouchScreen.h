@@ -18,10 +18,10 @@ namespace skyline::input {
         u32 positionX; //!< The X position of this touch
         u32 positionY; //!< The Y position of this touch
 
-        u32 diameterX; //!< The diameter of the touch on the X-axis
-        u32 diameterY; //!< The diameter of the touch on the Y-axis
+        u32 minorAxis; //!< The diameter of the touch cross-section on the minor-axis in pixels
+        u32 majorAxis; //!< The diameter of the touch cross-section on the major-axis in pixels
 
-        u32 angle; //!< The angle of the touch
+        i32 angle; //!< The angle of the touch in degrees (from -89 to 90 [-90 and 90 aren't distinguishable]. On the Switch, this has limited resolution with only 90, -67, -45, 0, 45, 67, 90 being values)
         u32 _pad1_;
     };
     static_assert(sizeof(TouchScreenStateData) == 0x28);

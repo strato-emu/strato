@@ -20,7 +20,7 @@ import kotlinx.android.synthetic.main.emu_activity.*
 import java.io.File
 import kotlin.math.abs
 
-class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
+class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener {
     init {
         System.loadLibrary("skyline") // libskyline.so
     }
@@ -143,6 +143,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private external fun setAxisValue(index : Int, axis : Int, value : Int)
 
     /**
+     * This sets the values of the points on the guest touch-screen
+     *
+     * @param points An array of skyline::input::TouchScreenPoint in C++ represented as integers
+     */
+    private external fun setTouchState(points : IntArray)
+
+    /**
      * This initializes all of the controllers from [input] on the guest
      */
     private fun initializeControllers() {
@@ -234,6 +241,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
         @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
         display?.supportedModes?.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+
+        game_view.setOnTouchListener(this)
 
         executeApplication(intent.data!!)
     }
@@ -388,6 +397,30 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback {
         }
 
         return super.onGenericMotionEvent(event)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouch(view : View, event : MotionEvent) : Boolean {
+        val count = if(event.action != MotionEvent.ACTION_UP && event.action != MotionEvent.ACTION_CANCEL) event.pointerCount else 0
+        val points = IntArray(count * 5) // This is an array of skyline::input::TouchScreenPoint in C++ as that allows for efficient transfer of values to it
+        var offset = 0
+        for (index in 0 until count) {
+            val pointer = MotionEvent.PointerCoords()
+            event.getPointerCoords(index, pointer)
+
+            val x = 0f.coerceAtLeast(pointer.x * 1280 / view.width).toInt()
+            val y = 0f.coerceAtLeast(pointer.y * 720 / view.height).toInt()
+
+            points[offset++] = x
+            points[offset++] = y
+            points[offset++] = pointer.touchMinor.toInt()
+            points[offset++] = pointer.touchMajor.toInt()
+            points[offset++] = (pointer.orientation * 180 / Math.PI).toInt()
+        }
+
+        setTouchState(points)
+
+        return true
     }
 
     @SuppressLint("WrongConstant")

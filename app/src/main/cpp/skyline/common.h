@@ -31,7 +31,7 @@ namespace skyline {
      */
     union Result {
         u32 raw{};
-        struct {
+        struct __attribute__((packed)) {
             u16 module : 9;
             u16 id : 12;
         };
@@ -39,7 +39,7 @@ namespace skyline {
         /**
          * @note Success is 0, 0 - it is the only error that's not specific to a module
          */
-        Result() {}
+        Result() = default;
 
         constexpr Result(u16 module, u16 id) {
             this->module = module;

@@ -7,6 +7,7 @@
 #include "kernel/types/KSharedMemory.h"
 #include "input/shared_mem.h"
 #include "input/npad.h"
+#include "input/touch.h"
 
 namespace skyline::input {
     /**
@@ -20,7 +21,8 @@ namespace skyline::input {
         std::shared_ptr<kernel::type::KSharedMemory> kHid; //!< The kernel shared memory object for HID Shared Memory
         HidSharedMemory *hid; //!< A pointer to HID Shared Memory on the host
 
-        NpadManager npad; //!< This manages all the NPad controllers
+        NpadManager npad;
+        TouchManager touch;
 
         Input(const DeviceState &state);
     };
