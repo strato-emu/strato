@@ -124,7 +124,7 @@ namespace skyline::service::hosbinder {
         auto gbpBuffer = reinterpret_cast<GbpBuffer *>(pointer);
 
         std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
-        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap);
+        auto nvmap = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv:a")->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap);
 
         if (gbpBuffer->nvmapHandle) {
             nvBuffer = nvmap->handleTable.at(gbpBuffer->nvmapHandle);

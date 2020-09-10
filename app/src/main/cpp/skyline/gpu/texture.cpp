@@ -3,6 +3,7 @@
 
 #include <android/native_window.h>
 #include <kernel/types/KProcess.h>
+#include <unistd.h>
 #include "texture.h"
 
 namespace skyline::gpu {
@@ -25,8 +26,10 @@ namespace skyline::gpu {
             constexpr u8 gobWidth = 64; // The width of a GOB in bytes
             constexpr u8 gobHeight = 8; // The height of a GOB in lines
 
-            auto robHeight = gobHeight * guest->tileConfig.blockHeight; // The height of a single ROB (Row of Blocks) in lines
-            auto surfaceHeightRobs = util::AlignUp(dimensions.height / format.blockHeight, robHeight) / robHeight; // The height of the surface in ROBs (Row Of Blocks)
+            auto blockHeight = guest->tileConfig.blockHeight; // The height of the blocks in GOBs
+            auto robHeight = gobHeight * blockHeight; // The height of a single ROB (Row of Blocks) in lines
+            auto surfaceHeight = dimensions.height / format.blockHeight; // The height of the surface in lines
+            auto surfaceHeightRobs = util::AlignUp(surfaceHeight, robHeight) / robHeight; // The height of the surface in ROBs (Row Of Blocks)
             auto robWidthBytes = util::AlignUp((guest->tileConfig.surfaceWidth / format.blockWidth) * format.bpb, gobWidth); // The width of a ROB in bytes
             auto robWidthBlocks = robWidthBytes / gobWidth; // The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
             auto robBytes = robWidthBytes * robHeight; // The size of a ROB in bytes
@@ -35,11 +38,11 @@ namespace skyline::gpu {
             auto inputSector = texture; // The address of the input sector
             auto outputRob = output; // The address of the output block
 
-            for (u32 rob = 0; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
+            for (u32 rob = 0, y = 0, paddingY = 0; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
                 auto outputBlock = outputRob; // We iterate through a block independently of the ROB
                 for (u32 block = 0; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` Blocks
                     auto outputGob = outputBlock; // We iterate through a GOB independently of the block
-                    for (u32 gobY = 0; gobY < guest->tileConfig.blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
+                    for (u32 gobY = 0; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
                         for (u32 index = 0; index < sectorWidth * sectorHeight; index++) { // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
                             u32 xT = ((index << 3) & 0b10000) | ((index << 1) & 0b100000); // Morton-Swizzle on the X-axis
                             u32 yT = ((index >> 1) & 0b110) | (index & 0b1); // Morton-Swizzle on the Y-axis
@@ -48,9 +51,14 @@ namespace skyline::gpu {
                         }
                         outputGob += gobYOffset; // Increment the output GOB to the next Y-axis GOB
                     }
+                    inputSector += paddingY; // Increment the input sector to the next sector
                     outputBlock += gobWidth; // Increment the output block to the next block (As Block Width = 1 GOB Width)
                 }
                 outputRob += robBytes; // Increment the output block to the next ROB
+
+                y += robHeight; // Increment the Y position to the next ROB
+                blockHeight = static_cast<u8>(std::min(static_cast<u32>(blockHeight), (surfaceHeight - y) / gobHeight)); // Calculate the amount of Y GOBs which aren't padding
+                paddingY = (guest->tileConfig.blockHeight - blockHeight) * (sectorWidth * sectorWidth * sectorHeight); // Calculate the amount of padding between contiguous sectors
             }
         } else if (guest->tileMode == texture::TileMode::Pitch) {
             auto sizeLine = guest->format.GetSize(dimensions.width, 1); // The size of a single line of pixel data
