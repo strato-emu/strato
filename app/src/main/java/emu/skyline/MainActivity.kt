@@ -30,16 +30,18 @@ import emu.skyline.adapter.AppAdapter
 import emu.skyline.adapter.GridLayoutSpan
 import emu.skyline.adapter.LayoutType
 import emu.skyline.data.AppItem
+import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
 import kotlinx.android.synthetic.main.main_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity() {
     /**
      * This is used to get/set shared preferences
      */
@@ -50,8 +52,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
      */
     private lateinit var adapter : AppAdapter
 
+    private var reloading = AtomicBoolean()
+
     /**
-     * This adds all files in [directory] with [extension] as an entry in [adapter] using [loader] to load metadata
+     * This adds all files in [directory] with [extension] as an entry in [adapter] using [RomFile] to load metadata
      */
     private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
         var foundCurrent = found
@@ -61,25 +65,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 foundCurrent = addEntries(extension, romFormat, file, foundCurrent)
             } else {
                 if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
-                    val romFd = contentResolver.openFileDescriptor(file.uri, "r")!!
-                    val romFile = RomFile(this, romFormat, romFd)
+                    RomFile(this, romFormat, file.uri).let { romFile ->
+                        val finalFoundCurrent = foundCurrent
+                        runOnUiThread {
+                            if (!finalFoundCurrent) adapter.addHeader(romFormat.name)
 
-                    if (romFile.valid()) {
-                        romFile.use {
-                            val entry = romFile.getAppEntry(file.uri)
-
-                            val finalFoundCurrent = foundCurrent
-                            runOnUiThread {
-                                if (!finalFoundCurrent) adapter.addHeader(romFormat.name)
-
-                                adapter.addItem(AppItem(entry))
-                            }
-
-                            foundCurrent = true
+                            adapter.addItem(AppItem(romFile.appEntry))
                         }
-                    }
 
-                    romFd.close()
+                        foundCurrent = true
+                    }
                 }
             }
         }
@@ -102,6 +97,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
 
+        if (reloading.getAndSet(true)) return
         thread(start = true) {
             val snackbar = Snackbar.make(coordinatorLayout, getString(R.string.searching_roms), Snackbar.LENGTH_INDEFINITE)
             runOnUiThread {
@@ -148,6 +144,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 snackbar.dismiss()
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
+
+            reloading.set(false)
         }
     }
 
@@ -171,10 +169,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
         })
 
-        refresh_fab.setOnClickListener(this)
-        settings_fab.setOnClickListener(this)
-        open_fab.setOnClickListener(this)
-        log_fab.setOnClickListener(this)
+        refresh_fab.setOnClickListener { refreshAdapter(false) }
+
+        settings_fab.setOnClickListener { startActivityForResult(Intent(this, SettingsActivity::class.java), 3) }
+
+        open_fab.setOnClickListener { startActivity(Intent(this, LogActivity::class.java)) }
+
+        log_fab.setOnClickListener {
+            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }, 2)
+        }
 
         setupAppList()
 
@@ -217,7 +223,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
 
-        adapter = AppAdapter(layoutType = layoutType, gridSpan = gridSpan, onClick = selectStartGame, onLongClick = selectShowGameDialog)
+        adapter = AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
         app_list.adapter = adapter
 
         app_list.layoutManager = when (layoutType) {
@@ -263,37 +269,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return super.onCreateOptionsMenu(menu)
     }
 
-    /**
-     * This handles on-click interaction with [R.id.refresh_fab], [R.id.settings_fab], [R.id.log_fab], [R.id.open_fab]
-     */
-    override fun onClick(view : View) {
-        when (view.id) {
-            R.id.refresh_fab -> refreshAdapter(false)
-
-            R.id.settings_fab -> startActivityForResult(Intent(this, SettingsActivity::class.java), 3)
-
-            R.id.log_fab -> startActivity(Intent(this, LogActivity::class.java))
-
-            R.id.open_fab -> {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.type = "*/*"
-
-                startActivityForResult(intent, 2)
-            }
-        }
+    private fun selectStartGame(appItem : AppItem) {
+        if (sharedPreferences.getBoolean("select_action", false))
+            AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
+        else if (appItem.loaderResult == LoaderResult.Success)
+            startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri })
     }
 
-    private val selectStartGame : (appItem : AppItem) -> Unit = {
-        if (sharedPreferences.getBoolean("select_action", false)) {
-            AppDialog(it).show(supportFragmentManager, "game")
-        } else {
-            startActivity(Intent(this, EmulationActivity::class.java).apply { data = it.uri })
-        }
-    }
-
-    private val selectShowGameDialog : (appItem : AppItem) -> Unit = {
-        AppDialog(it).show(supportFragmentManager, "game")
+    private fun selectShowGameDialog(appItem : AppItem) {
+        AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
     }
 
     /**
@@ -363,8 +347,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         val gridCardMagin = resources.getDimensionPixelSize(R.dimen.app_card_margin_half)
         when (layoutType) {
-            LayoutType.List -> app_list.setPadding(0, 0, 0, 0)
-            LayoutType.Grid, LayoutType.GridCompact -> app_list.setPadding(gridCardMagin, 0, gridCardMagin, 0)
+            LayoutType.List -> app_list.post { app_list.setPadding(0, 0, 0, fab_parent.height) }
+            LayoutType.Grid, LayoutType.GridCompact -> app_list.post { app_list.setPadding(gridCardMagin, 0, gridCardMagin, fab_parent.height) }
         }
     }
 }

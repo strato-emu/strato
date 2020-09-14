@@ -52,6 +52,18 @@
                 app:title="@string/username" />
     </PreferenceCategory>
     <PreferenceCategory
+            android:key="category_keys"
+            android:title="@string/keys">
+        <emu.skyline.preference.FilePreference
+                app:key="prod_keys"
+                app:title="@string/prod_keys"
+                app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.FilePreference
+                app:key="title_keys"
+                app:title="@string/title_keys"
+                app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
             android:key="category_system"
             android:title="@string/system">
         <CheckBoxPreference

@@ -8,7 +8,7 @@
 #include "nca.h"
 
 namespace skyline::loader {
-    NcaLoader::NcaLoader(const std::shared_ptr<vfs::Backing> &backing) : nca(backing) {
+    NcaLoader::NcaLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : nca(backing, keyStore) {
         if (nca.exeFs == nullptr)
             throw exception("Only NCAs with an ExeFS can be loaded directly");
     }

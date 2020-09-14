@@ -20,20 +20,40 @@ import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.data.AppItem
+import emu.skyline.loader.LoaderResult
 import kotlinx.android.synthetic.main.app_dialog.*
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
- *
- * @param item This is used to hold the [AppItem] between instances
  */
-class AppDialog(val item : AppItem) : BottomSheetDialogFragment() {
+class AppDialog : BottomSheetDialogFragment() {
+    companion object {
+        /**
+         * @param item This is used to hold the [AppItem] between instances
+         */
+        fun newInstance(item : AppItem) : AppDialog {
+            val args = Bundle()
+            args.putSerializable("item", item)
+
+            val fragment = AppDialog()
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
+    private lateinit var item : AppItem
 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
     override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
         return requireActivity().layoutInflater.inflate(R.layout.app_dialog, container)
+    }
+
+    override fun onCreate(savedInstanceState : Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        item = arguments!!.getSerializable("item") as AppItem
     }
 
     /**
@@ -64,13 +84,11 @@ class AppDialog(val item : AppItem) : BottomSheetDialogFragment() {
 
         game_icon.setImageBitmap(item.icon ?: missingIcon)
         game_title.text = item.title
-        game_subtitle.text = item.subTitle ?: getString(R.string.metadata_missing)
+        game_subtitle.text = item.subTitle ?: item.loaderResultString(requireContext())
 
+        game_play.isEnabled = item.loaderResult == LoaderResult.Success
         game_play.setOnClickListener {
-            val intent = Intent(activity, EmulationActivity::class.java)
-            intent.data = item.uri
-
-            startActivity(intent)
+            startActivity(Intent(activity, EmulationActivity::class.java).apply { data = item.uri })
         }
 
         val shortcutManager = requireActivity().getSystemService(ShortcutManager::class.java)

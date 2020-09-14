@@ -40,6 +40,9 @@ android {
             shrinkResources false
         }
     }
+    androidExtensions {
+        experimental = true
+    }
     externalNativeBuild {
         cmake {
             version "3.10.2+"
@@ -63,7 +66,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'info.debatty:java-string-similarity:1.2.1'
+    implementation(name: 'mbedtls', ext: 'aar')
 }
 repositories {
     mavenCentral()
+    flatDir {
+        dirs 'libraries'
+    }
 }

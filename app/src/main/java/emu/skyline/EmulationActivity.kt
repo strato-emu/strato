@@ -21,6 +21,10 @@ import java.io.File
 import kotlin.math.abs
 
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener {
+    companion object {
+        private val Tag = EmulationActivity::class.java.name
+    }
+
     init {
         System.loadLibrary("skyline") // libskyline.so
     }
@@ -287,7 +291,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * This sets [surface] to [holder].surface and passes it into libskyline
      */
     override fun surfaceCreated(holder : SurfaceHolder) {
-        Log.d("surfaceCreated", "Holder: $holder")
+        Log.d(Tag, "surfaceCreated Holder: $holder")
         surface = holder.surface
         setSurface(surface)
         surfaceReady.open()
@@ -297,14 +301,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * This is purely used for debugging surface changes
      */
     override fun surfaceChanged(holder : SurfaceHolder, format : Int, width : Int, height : Int) {
-        Log.d("surfaceChanged", "Holder: $holder, Format: $format, Width: $width, Height: $height")
+        Log.d(Tag, "surfaceChanged Holder: $holder, Format: $format, Width: $width, Height: $height")
     }
 
     /**
      * This sets [surface] to null and passes it into libskyline
      */
     override fun surfaceDestroyed(holder : SurfaceHolder) {
-        Log.d("surfaceDestroyed", "Holder: $holder")
+        Log.d(Tag, "surfaceDestroyed Holder: $holder")
         surfaceReady.close()
         surface = null
         setSurface(surface)

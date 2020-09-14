@@ -21,6 +21,29 @@ namespace skyline::loader {
     };
 
     /**
+     * @brief This enumerates all possible results when parsing ROM files
+     * @note This needs to be synchronized with emu.skyline.loader.LoaderResult
+     */
+    enum class LoaderResult : int8_t {
+        Success,
+        ParsingError,
+        MissingHeaderKey,
+        MissingTitleKey,
+        MissingTitleKek,
+        MissingKeyArea
+    };
+
+    /**
+     * @brief An exception used specifically for errors related to loaders, it's used to communicate errors to the Kotlin-side of the loader
+     */
+    class loader_exception : public exception {
+      public:
+        const LoaderResult error;
+
+        loader_exception(LoaderResult error, const std::string &message = "No message") : exception("Loader exception {}: {}", error, message), error(error) {}
+    };
+
+    /**
      * @brief The Loader class provides an abstract interface for ROM loaders
      */
     class Loader {

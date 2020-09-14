@@ -61,23 +61,19 @@ class InputManager constructor(val context : Context) {
      * This function syncs the class with data from [file]
      */
     fun syncObjects() {
-        val fileInput = FileInputStream(file)
-        val objectInput = ObjectInputStream(fileInput)
+        ObjectInputStream(FileInputStream(file)).use {
+            @Suppress("UNCHECKED_CAST")
+            controllers = it.readObject() as HashMap<Int, Controller>
 
-        @Suppress("UNCHECKED_CAST")
-        controllers = objectInput.readObject() as HashMap<Int, Controller>
-
-        @Suppress("UNCHECKED_CAST")
-        eventMap = objectInput.readObject() as HashMap<HostEvent?, GuestEvent?>
+            @Suppress("UNCHECKED_CAST")
+            eventMap = it.readObject() as HashMap<HostEvent?, GuestEvent?>
+        }
     }
 
     /**
      * This function syncs [file] with data from the class and eliminates unused value from the map
      */
     fun syncFile() {
-        val fileOutput = FileOutputStream(file)
-        val objectOutput = ObjectOutputStream(fileOutput)
-
         for (controller in controllers.values) {
             for (button in ButtonId.values()) {
                 if (button != ButtonId.Menu && !(controller.type.buttons.contains(button) || controller.type.sticks.any { it.button == button })) {
@@ -100,9 +96,11 @@ class InputManager constructor(val context : Context) {
             }
         }
 
-        objectOutput.writeObject(controllers)
-        objectOutput.writeObject(eventMap)
+        ObjectOutputStream(FileOutputStream(file)).use {
+            it.writeObject(controllers)
+            it.writeObject(eventMap)
 
-        objectOutput.flush()
+            it.flush()
+        }
     }
 }

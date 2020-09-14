@@ -7,6 +7,7 @@
 #include <vfs/nca.h>
 #include <vfs/rom_filesystem.h>
 #include <vfs/partition_filesystem.h>
+#include <crypto/key_store.h>
 #include "loader.h"
 
 namespace skyline::loader {
@@ -21,7 +22,7 @@ namespace skyline::loader {
         std::optional<vfs::NCA> controlNca; //!< The main control NCA within the NSP
 
       public:
-        NspLoader(const std::shared_ptr<vfs::Backing> &backing);
+        NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
 
         std::vector<u8> GetIcon();
 

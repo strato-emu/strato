@@ -62,6 +62,19 @@ namespace skyline {
         constexpr u16 DockedResolutionH = 1080; //!< The height component of the docked resolution
         // Time
         constexpr u64 NsInSecond = 1000000000; //!< This is the amount of nanoseconds in a second
+    }
+
+    /**
+     * @brief This is a std::runtime_error with libfmt formatting
+     */
+    class exception : public std::runtime_error {
+      public:
+        /**
+         * @param formatStr The exception string to be written, with libfmt formatting
+         * @param args The arguments based on format_str
+         */
+        template<typename S, typename... Args>
+        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, args...)) {}
     };
 
     namespace util {
@@ -158,6 +171,28 @@ namespace skyline {
             }
 
             return object;
+        }
+
+        constexpr u8 HexDigitToByte(char digit) {
+            if (digit >= '0' && digit <= '9')
+                return digit - '0';
+            else if (digit >= 'a' && digit <= 'f')
+                return digit - 'a' + 10;
+            else if (digit >= 'A' && digit <= 'F')
+                return digit - 'A' + 10;
+            throw exception(fmt::format("Invalid hex char {}", digit));
+        }
+
+        template<size_t Size>
+        constexpr std::array<u8, Size> HexStringToArray(const std::string_view &hexString) {
+            if (hexString.size() != Size * 2)
+                throw exception("Invalid size");
+            std::array<u8, Size> result;
+            for (size_t i{}; i < Size; ++i) {
+                size_t hexStrIndex{i * 2};
+                result[i] = (HexDigitToByte(hexString[hexStrIndex]) << 4) | HexDigitToByte(hexString[hexStrIndex + 1]);
+            }
+            return result;
         }
     }
 
@@ -348,19 +383,6 @@ namespace skyline {
          * @brief Writes all settings keys and values to syslog. This function is for development purposes.
          */
         void List(const std::shared_ptr<Logger> &logger);
-    };
-
-    /**
-     * @brief This is a std::runtime_error with libfmt formatting
-     */
-    class exception : public std::runtime_error {
-      public:
-        /**
-         * @param formatStr The exception string to be written, with libfmt formatting
-         * @param args The arguments based on format_str
-         */
-        template<typename S, typename... Args>
-        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, args...)) {}
     };
 
     class NCE;

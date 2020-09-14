@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <vfs/nca.h>
+#include <crypto/key_store.h>
 #include "loader.h"
 
 namespace skyline::loader {
@@ -16,7 +17,7 @@ namespace skyline::loader {
         vfs::NCA nca; //!< The backing NCA of the loader
 
       public:
-        NcaLoader(const std::shared_ptr<vfs::Backing> &backing);
+        NcaLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
 
         /**
          * @brief This loads an ExeFS into memory

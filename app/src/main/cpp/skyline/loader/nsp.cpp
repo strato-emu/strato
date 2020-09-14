@@ -5,20 +5,22 @@
 #include "nsp.h"
 
 namespace skyline::loader {
-    NspLoader::NspLoader(const std::shared_ptr<vfs::Backing> &backing) : nsp(std::make_shared<vfs::PartitionFileSystem>(backing)) {
-        auto root = nsp->OpenDirectory("", {false, true});
+    NspLoader::NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : nsp(std::make_shared<vfs::PartitionFileSystem>(backing)) {
+        auto root{nsp->OpenDirectory("", {false, true})};
 
         for (const auto &entry : root->Read()) {
             if (entry.name.substr(entry.name.find_last_of(".") + 1) != "nca")
                 continue;
 
             try {
-                auto nca = vfs::NCA(nsp->OpenFile(entry.name));
+                auto nca{vfs::NCA(nsp->OpenFile(entry.name), keyStore)};
 
                 if (nca.contentType == vfs::NcaContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
                     programNca = std::move(nca);
                 else if (nca.contentType == vfs::NcaContentType::Control && nca.romFs != nullptr)
                     controlNca = std::move(nca);
+            } catch (const loader_exception &e) {
+                throw loader_exception(e.error);
             } catch (const std::exception &e) {
                 continue;
             }
@@ -40,7 +42,7 @@ namespace skyline::loader {
         if (romFs == nullptr)
             return std::vector<u8>();
 
-        auto root = controlRomFs->OpenDirectory("", {false, true});
+        auto root{controlRomFs->OpenDirectory("", {false, true})};
         std::shared_ptr<vfs::Backing> icon;
 
         // Use the first icon file available

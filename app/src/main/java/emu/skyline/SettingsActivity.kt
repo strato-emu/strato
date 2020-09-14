@@ -9,10 +9,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceGroup
 import emu.skyline.input.InputManager
+import emu.skyline.preference.ActivityResultDelegate
 import emu.skyline.preference.ControllerPreference
+import emu.skyline.preference.DocumentActivity
+import kotlinx.android.synthetic.main.settings_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 
 class SettingsActivity : AppCompatActivity() {
@@ -25,11 +28,6 @@ class SettingsActivity : AppCompatActivity() {
      * This is an instance of [InputManager] used by [ControllerPreference]
      */
     lateinit var inputManager : InputManager
-
-    /**
-     * The key of the element to force a refresh when [onActivityResult] is called
-     */
-    var refreshKey : String? = null
 
     /**
      * This initializes all of the elements in the activity and displays the settings fragment
@@ -51,30 +49,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     /**
-     * This is used to refresh the preferences after [emu.skyline.preference.FolderActivity] or [emu.skyline.input.ControllerActivity] has returned
+     * This is used to refresh the preferences after [DocumentActivity] or [emu.skyline.input.ControllerActivity] has returned
      */
     public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        refreshKey?.let {
-            inputManager.syncObjects()
-            preferenceFragment.refreshPreference(refreshKey!!)
+        preferenceFragment.delegateActivityResult(requestCode, resultCode, data)
 
-            refreshKey = null
-        }
+        settings
     }
 
     /**
-     * This fragment is used to display all of the preferences and handle refreshing the preferences
+     * This fragment is used to display all of the preferences
      */
     class PreferenceFragment : PreferenceFragmentCompat() {
+        private var requestCodeCounter = 0
+
         /**
-         * This forces refreshing a certain preference by indirectly calling [Preference.notifyChanged]
+         * Delegates activity result to all preferences which implement [ActivityResultDelegate]
          */
-        fun refreshPreference(key : String) {
-            val preference = preferenceManager.findPreference<Preference>(key)!!
-            preference.isSelectable = !preference.isSelectable
-            preference.isSelectable = !preference.isSelectable
+        fun delegateActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
+            preferenceScreen.delegateActivityResult(requestCode, resultCode, data)
         }
 
         /**
@@ -82,6 +77,25 @@ class SettingsActivity : AppCompatActivity() {
          */
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
+            preferenceScreen.assignActivityRequestCode()
+        }
+
+        private fun PreferenceGroup.assignActivityRequestCode() {
+            for (i in 0 until preferenceCount) {
+                when (val pref = getPreference(i)) {
+                    is PreferenceGroup -> pref.assignActivityRequestCode()
+                    is ActivityResultDelegate -> pref.requestCode = requestCodeCounter++
+                }
+            }
+        }
+
+        private fun PreferenceGroup.delegateActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
+            for (i in 0 until preferenceCount) {
+                when (val pref = getPreference(i)) {
+                    is PreferenceGroup -> pref.delegateActivityResult(requestCode, resultCode, data)
+                    is ActivityResultDelegate -> pref.onActivityResult(requestCode, resultCode, data)
+                }
+            }
         }
     }
 

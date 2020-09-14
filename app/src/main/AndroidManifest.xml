@@ -3,7 +3,6 @@
         xmlns:tools="http://schemas.android.com/tools"
         package="emu.skyline">
 
-    <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature
@@ -43,6 +42,11 @@
                     android:value="emu.skyline.MainActivity" />
         </activity>
         <activity android:name="emu.skyline.preference.FolderActivity">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="emu.skyline.SettingsActivity" />
+        </activity>
+        <activity android:name="emu.skyline.preference.FileActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.SettingsActivity" />

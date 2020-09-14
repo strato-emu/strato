@@ -19,12 +19,13 @@ namespace skyline::vfs {
         size_t stringTableOffset = sizeof(FsHeader) + (header.numFiles * entrySize);
         fileDataOffset = stringTableOffset + header.stringTableSize;
 
-        std::vector<char> stringTable(header.stringTableSize);
+        std::vector<char> stringTable(header.stringTableSize + 1);
         backing->Read(stringTable.data(), stringTableOffset, header.stringTableSize);
+        stringTable[header.stringTableSize] = 0;
 
-        for (u32 i = 0; i < header.numFiles; i++) {
-            PartitionFileEntry entry{};
-            backing->Read(&entry, sizeof(FsHeader) + i * entrySize);
+        for (u32 entryOffset{sizeof(FsHeader)}; entryOffset < header.numFiles * entrySize; entryOffset += entrySize) {
+            PartitionFileEntry entry;
+            backing->Read(&entry, entryOffset);
 
             std::string name(&stringTable[entry.stringTableOffset]);
             fileMap.emplace(name, std::move(entry));

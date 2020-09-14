@@ -13,43 +13,27 @@ import android.util.AttributeSet
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
-import emu.skyline.SettingsActivity
 
 /**
- * This preference shows the decoded URI of it's preference and launches [FolderActivity]
+ * This preference shows the decoded URI of it's preference and launches [DocumentActivity]
  */
-class FolderPreference : Preference {
-    /**
-     * The directory the preference is currently set to
-     */
-    private var mDirectory : String? = null
+class FolderPreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
+    override var requestCode = 0
 
-    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : super(context, attrs, defStyleAttr) {
+    init {
         summaryProvider = SummaryProvider<FolderPreference> { preference ->
-            preference.onSetInitialValue(null)
-            Uri.decode(preference.mDirectory) ?: ""
+            Uri.decode(preference.getPersistedString(""))
         }
     }
 
-    constructor(context : Context?, attrs : AttributeSet?) : this(context, attrs, R.attr.preferenceStyle)
-
-    constructor(context : Context?) : this(context, null)
-
     /**
-     * This launches [FolderActivity] on click to change the directory
+     * This launches [DocumentActivity] on click to change the directory
      */
     override fun onClick() {
-        if (context is SettingsActivity)
-            (context as SettingsActivity).refreshKey = key
-
-        val intent = Intent(context, FolderActivity::class.java)
-        (context as Activity).startActivityForResult(intent, 0)
+        (context as Activity).startActivityForResult(Intent(context, FolderActivity::class.java).apply { putExtra(DocumentActivity.KEY_NAME, key) }, requestCode)
     }
 
-    /**
-     * This sets the initial value of [mDirectory]
-     */
-    override fun onSetInitialValue(defaultValue : Any?) {
-        mDirectory = getPersistedString(defaultValue as String?)
+    override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
+        if (requestCode == requestCode) notifyChanged()
     }
 }

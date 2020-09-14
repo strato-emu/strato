@@ -13,16 +13,17 @@ namespace skyline::kernel {
     OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath) : state(this, process, jvmManager, settings, logger), memory(state), serviceManager(state), appFilesPath(appFilesPath) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
-        auto romFile = std::make_shared<vfs::OsBacking>(romFd);
+        auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
+        auto keyStore{std::make_shared<crypto::KeyStore>(appFilesPath)};
 
         if (romType == loader::RomFormat::NRO) {
             state.loader = std::make_shared<loader::NroLoader>(romFile);
         } else if (romType == loader::RomFormat::NSO) {
             state.loader = std::make_shared<loader::NsoLoader>(romFile);
         } else if (romType == loader::RomFormat::NCA) {
-            state.loader = std::make_shared<loader::NcaLoader>(romFile);
+            state.loader = std::make_shared<loader::NcaLoader>(romFile, keyStore);
         } else if (romType == loader::RomFormat::NSP) {
-            state.loader = std::make_shared<loader::NspLoader>(romFile);
+            state.loader = std::make_shared<loader::NspLoader>(romFile, keyStore);
         } else {
             throw exception("Unsupported ROM extension.");
         }
@@ -36,16 +37,16 @@ namespace skyline::kernel {
     }
 
     std::shared_ptr<type::KProcess> OS::CreateProcess(u64 entry, u64 argument, size_t stackSize) {
-        auto stack = std::make_shared<type::KSharedMemory>(state, memory.stack.address, stackSize, memory::Permission{true, true, false}, memory::states::Stack, MAP_NORESERVE | MAP_STACK, true);
+        auto stack{std::make_shared<type::KSharedMemory>(state, memory.stack.address, stackSize, memory::Permission{true, true, false}, memory::states::Stack, MAP_NORESERVE | MAP_STACK, true)};
         stack->guest = stack->kernel;
 
         if (mprotect(reinterpret_cast<void *>(stack->guest.address), PAGE_SIZE, PROT_NONE))
             throw exception("Failed to create guard pages");
 
-        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission{true, true, false}, memory::states::Reserved);
+        auto tlsMem{std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission{true, true, false}, memory::states::Reserved)};
         tlsMem->guest = tlsMem->kernel;
 
-        auto pid = clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), reinterpret_cast<void *>(stack->guest.address + stackSize), CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address));
+        auto pid{clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), reinterpret_cast<void *>(stack->guest.address + stackSize), CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address))};
         if (pid == -1)
             throw exception("Call to clone() has failed: {}", strerror(errno));
 

@@ -14,6 +14,9 @@
     <string name="pin">Pin</string>
     <string name="play">Play</string>
     <string name="searching_roms">Searching for ROMs</string>
+    <string name="invalid_file">Invalid file</string>
+    <string name="missing_title_key">Missing title key</string>
+    <string name="incomplete_prod_keys">Incomplete production keys</string>
     <!-- Toolbar Logger -->
     <string name="clear">Clear</string>
     <string name="share">Share</string>
@@ -42,6 +45,11 @@
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="username">Username</string>
     <string name="username_default">@string/app_name</string>
+    <string name="keys">Keys</string>
+    <string name="prod_keys">Production Keys</string>
+    <string name="title_keys">Title Keys</string>
+    <string name="import_keys_success">Successfully imported keys</string>
+    <string name="import_keys_failed">Failed to import keys</string>
     <!-- Input -->
     <string name="input">Input</string>
     <string name="show_osc">Show On-Screen Controls</string>

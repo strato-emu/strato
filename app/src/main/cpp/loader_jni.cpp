@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "skyline/crypto/key_store.h"
+#include "skyline/vfs/nca.h"
 #include "skyline/vfs/os_backing.h"
 #include "skyline/loader/nro.h"
 #include "skyline/loader/nso.h"
@@ -8,54 +10,53 @@
 #include "skyline/loader/nsp.h"
 #include "skyline/jvm.h"
 
-extern "C" JNIEXPORT jlong JNICALL Java_emu_skyline_loader_RomFile_initialize(JNIEnv *env, jobject thiz, jint jformat, jint fd) {
-    skyline::loader::RomFormat format = static_cast<skyline::loader::RomFormat>(jformat);
+extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring) {
+    skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
 
+    auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
+    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(appFilesPath)};
+    env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
+
+    std::unique_ptr<skyline::loader::Loader> loader;
     try {
-        auto backing = std::make_shared<skyline::vfs::OsBacking>(fd);
+        auto backing{std::make_shared<skyline::vfs::OsBacking>(fd)};
 
         switch (format) {
             case skyline::loader::RomFormat::NRO:
-                return reinterpret_cast<jlong>(new skyline::loader::NroLoader(backing));
+                loader = std::make_unique<skyline::loader::NroLoader>(backing);
+                break;
             case skyline::loader::RomFormat::NSO:
-                return reinterpret_cast<jlong>(new skyline::loader::NsoLoader(backing));
+                loader = std::make_unique<skyline::loader::NsoLoader>(backing);
+                break;
             case skyline::loader::RomFormat::NCA:
-                return reinterpret_cast<jlong>(new skyline::loader::NcaLoader(backing));
+                loader = std::make_unique<skyline::loader::NcaLoader>(backing, keyStore);
+                break;
             case skyline::loader::RomFormat::NSP:
-                return reinterpret_cast<jlong>(new skyline::loader::NspLoader(backing));
+                loader = std::make_unique<skyline::loader::NspLoader>(backing, keyStore);
+                break;
             default:
-                return 0;
+                return static_cast<jint>(skyline::loader::LoaderResult::ParsingError);
         }
+    } catch (const skyline::loader::loader_exception &e) {
+        return static_cast<jint>(e.error);
     } catch (const std::exception &e) {
-        return 0;
+        return static_cast<jint>(skyline::loader::LoaderResult::ParsingError);
     }
-}
 
-extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_loader_RomFile_hasAssets(JNIEnv *env, jobject thiz, jlong instance) {
-    return reinterpret_cast<skyline::loader::Loader *>(instance)->nacp != nullptr;
-}
+    jclass clazz{env->GetObjectClass(thiz)};
+    jfieldID applicationNameField{env->GetFieldID(clazz, "applicationName", "Ljava/lang/String;")};
+    jfieldID applicationAuthorField{env->GetFieldID(clazz, "applicationAuthor", "Ljava/lang/String;")};
+    jfieldID rawIconField{env->GetFieldID(clazz, "rawIcon", "[B")};
 
-extern "C" JNIEXPORT jbyteArray JNICALL Java_emu_skyline_loader_RomFile_getIcon(JNIEnv *env, jobject thiz, jlong instance) {
-    std::vector<skyline::u8> buffer = reinterpret_cast<skyline::loader::Loader *>(instance)->GetIcon();
+    if (loader->nacp) {
+        env->SetObjectField(thiz, applicationNameField, env->NewStringUTF(loader->nacp->applicationName.c_str()));
+        env->SetObjectField(thiz, applicationAuthorField, env->NewStringUTF(loader->nacp->applicationPublisher.c_str()));
 
-    jbyteArray result = env->NewByteArray(buffer.size());
-    env->SetByteArrayRegion(result, 0, buffer.size(), reinterpret_cast<const jbyte *>(buffer.data()));
+        auto icon{loader->GetIcon()};
+        jbyteArray iconByteArray{env->NewByteArray(icon.size())};
+        env->SetByteArrayRegion(iconByteArray, 0, icon.size(), reinterpret_cast<const jbyte *>(icon.data()));
+        env->SetObjectField(thiz, rawIconField, iconByteArray);
+    }
 
-    return result;
-}
-
-extern "C" JNIEXPORT jstring JNICALL Java_emu_skyline_loader_RomFile_getApplicationName(JNIEnv *env, jobject thiz, jlong instance) {
-    std::string applicationName = reinterpret_cast<skyline::loader::Loader *>(instance)->nacp->applicationName;
-
-    return env->NewStringUTF(applicationName.c_str());
-}
-
-extern "C" JNIEXPORT jstring JNICALL Java_emu_skyline_loader_RomFile_getApplicationPublisher(JNIEnv *env, jobject thiz, jlong instance) {
-    std::string applicationPublisher = reinterpret_cast<skyline::loader::Loader *>(instance)->nacp->applicationPublisher;
-
-    return env->NewStringUTF(applicationPublisher.c_str());
-}
-
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_loader_RomFile_destroy(JNIEnv *env, jobject thiz, jlong instance) {
-    delete reinterpret_cast<skyline::loader::NroLoader *>(instance);
+    return static_cast<jint>(skyline::loader::LoaderResult::Success);
 }

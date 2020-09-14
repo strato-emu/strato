@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <crypto/aes_cipher.h>
+#include <loader/loader.h>
+#include "ctr_encrypted_backing.h"
 #include "region_backing.h"
 #include "partition_filesystem.h"
 #include "nca.h"
@@ -8,17 +11,31 @@
 #include "directory.h"
 
 namespace skyline::vfs {
-    NCA::NCA(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
+    using namespace loader;
+
+    NCA::NCA(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : backing(backing), keyStore(keyStore) {
         backing->Read(&header);
 
-        if (header.magic != util::MakeMagic<u32>("NCA3"))
-            throw exception("Attempting to load an encrypted or invalid NCA");
+        if (header.magic != util::MakeMagic<u32>("NCA3")) {
+            if (!keyStore->headerKey)
+                throw loader_exception(LoaderResult::MissingHeaderKey);
+
+            crypto::AesCipher cipher(*keyStore->headerKey, MBEDTLS_CIPHER_AES_128_XTS);
+
+            cipher.XtsDecrypt({reinterpret_cast<u8 *>(&header), sizeof(NcaHeader)}, 0, 0x200);
+
+            // Check if decryption was successful
+            if (header.magic != util::MakeMagic<u32>("NCA3"))
+                throw loader_exception(LoaderResult::ParsingError);
+            encrypted = true;
+        }
 
         contentType = header.contentType;
+        rightsIdEmpty = header.rightsId == crypto::KeyStore::Key128{};
 
-        for (size_t i = 0; i < header.sectionHeaders.size(); i++) {
-            auto &sectionHeader = header.sectionHeaders.at(i);
-            auto &sectionEntry = header.fsEntries.at(i);
+        for (size_t i{}; i < header.sectionHeaders.size(); i++) {
+            auto &sectionHeader{header.sectionHeaders.at(i)};
+            auto &sectionEntry{header.fsEntries.at(i)};
 
             if (sectionHeader.fsType == NcaSectionFsType::PFS0 && sectionHeader.hashType == NcaSectionHashType::HierarchicalSha256)
                 ReadPfs0(sectionHeader, sectionEntry);
@@ -27,11 +44,11 @@ namespace skyline::vfs {
         }
     }
 
-    void NCA::ReadPfs0(const NcaSectionHeader &header, const NcaFsEntry &entry) {
-        size_t offset = static_cast<size_t>(entry.startOffset) * constant::MediaUnitSize + header.sha256HashInfo.pfs0Offset;
-        size_t size = constant::MediaUnitSize * static_cast<size_t>(entry.endOffset - entry.startOffset);
+    void NCA::ReadPfs0(const NcaSectionHeader &sectionHeader, const NcaFsEntry &entry) {
+        size_t offset{static_cast<size_t>(entry.startOffset) * constant::MediaUnitSize + sectionHeader.sha256HashInfo.pfs0Offset};
+        size_t size{constant::MediaUnitSize * static_cast<size_t>(entry.endOffset - entry.startOffset)};
 
-        auto pfs = std::make_shared<PartitionFileSystem>(std::make_shared<RegionBacking>(backing, offset, size));
+        auto pfs{std::make_shared<PartitionFileSystem>(CreateBacking(sectionHeader, std::make_shared<RegionBacking>(backing, offset, size), offset))};
 
         if (contentType == NcaContentType::Program) {
             // An ExeFS must always contain an NPDM and a main NSO, whereas the logo section will always contain a logo and a startup movie
@@ -44,10 +61,95 @@ namespace skyline::vfs {
         }
     }
 
-    void NCA::ReadRomFs(const NcaSectionHeader &header, const NcaFsEntry &entry) {
-        size_t offset = static_cast<size_t>(entry.startOffset) * constant::MediaUnitSize + header.integrityHashInfo.levels.back().offset;
-        size_t size = header.integrityHashInfo.levels.back().size;
+    void NCA::ReadRomFs(const NcaSectionHeader &sectionHeader, const NcaFsEntry &entry) {
+        size_t offset{static_cast<size_t>(entry.startOffset) * constant::MediaUnitSize + sectionHeader.integrityHashInfo.levels.back().offset};
+        size_t size{sectionHeader.integrityHashInfo.levels.back().size};
 
-        romFs = std::make_shared<RegionBacking>(backing, offset, size);
+        romFs = CreateBacking(sectionHeader, std::make_shared<RegionBacking>(backing, offset, size), offset);
+    }
+
+    std::shared_ptr<Backing> NCA::CreateBacking(const NcaSectionHeader &sectionHeader, std::shared_ptr<Backing> rawBacking, size_t offset) {
+        if (!encrypted)
+            return rawBacking;
+
+        switch (sectionHeader.encryptionType) {
+            case NcaSectionEncryptionType::None:
+                return rawBacking;
+            case NcaSectionEncryptionType::CTR:
+            case NcaSectionEncryptionType::BKTR: {
+                auto key{!rightsIdEmpty ? GetTitleKey() : GetKeyAreaKey(sectionHeader.encryptionType)};
+
+                std::array<u8, 0x10> ctr{};
+                u32 secureValueLE{__builtin_bswap32(sectionHeader.secureValue)};
+                u32 generationLE{__builtin_bswap32(sectionHeader.generation)};
+                std::memcpy(ctr.data(), &secureValueLE, 4);
+                std::memcpy(ctr.data() + 4, &generationLE, 4);
+
+                return std::make_shared<CtrEncryptedBacking>(ctr, key, std::move(rawBacking), offset);
+            }
+            default:
+                return nullptr;
+        }
+    }
+
+    u8 NCA::GetKeyGeneration() {
+        u8 legacyGen{static_cast<u8>(header.legacyKeyGenerationType)};
+        u8 gen{static_cast<u8>(header.keyGenerationType)};
+        gen = std::max<u8>(legacyGen, gen);
+        return gen > 0 ? gen - 1 : gen;
+    }
+
+    crypto::KeyStore::Key128 NCA::GetTitleKey() {
+        u8 keyGeneration{GetKeyGeneration()};
+
+        auto titleKey{keyStore->GetTitleKey(header.rightsId)};
+        auto &titleKek{keyStore->titleKek[keyGeneration]};
+
+        if (!titleKey)
+            throw loader_exception(LoaderResult::MissingTitleKey);
+        if (!titleKek)
+            throw loader_exception(LoaderResult::MissingTitleKek);
+
+        crypto::AesCipher cipher(*titleKek, MBEDTLS_CIPHER_AES_128_ECB);
+        cipher.Decrypt(*titleKey);
+        return *titleKey;
+    }
+
+    crypto::KeyStore::Key128 NCA::GetKeyAreaKey(NCA::NcaSectionEncryptionType type) {
+        auto keyArea{[&](crypto::KeyStore::IndexedKeys128 &keys) {
+            u8 keyGeneration{GetKeyGeneration()};
+
+            auto &keyArea{keys[keyGeneration]};
+
+            if (!keyArea)
+                throw loader_exception(LoaderResult::MissingKeyArea);
+
+            size_t keyAreaIndex;
+            switch (type) {
+                case NcaSectionEncryptionType::XTS:
+                    keyAreaIndex = 0;
+                    break;
+                case NcaSectionEncryptionType::CTR:
+                case NcaSectionEncryptionType::BKTR:
+                    keyAreaIndex = 2;
+                    break;
+                default:
+                    throw exception("Unsupported NcaSectionEncryptionType");
+            }
+
+            crypto::KeyStore::Key128 decryptedKeyArea;
+            crypto::AesCipher cipher(*keyArea, MBEDTLS_CIPHER_AES_128_ECB);
+            cipher.Decrypt(decryptedKeyArea.data(), header.encryptedKeyArea[keyAreaIndex].data(), decryptedKeyArea.size());
+            return decryptedKeyArea;
+        }};
+
+        switch (header.keyAreaEncryptionKeyType) {
+            case NcaKeyAreaEncryptionKeyType::Application:
+                return keyArea(keyStore->areaKeyApplication);
+            case NcaKeyAreaEncryptionKeyType::Ocean:
+                return keyArea(keyStore->areaKeyOcean);
+            case NcaKeyAreaEncryptionKeyType::System:
+                return keyArea(keyStore->areaKeySystem);
+        }
     }
 }

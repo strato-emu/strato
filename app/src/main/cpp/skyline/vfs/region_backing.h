@@ -12,7 +12,7 @@ namespace skyline::vfs {
     class RegionBacking : public Backing {
       private:
         std::shared_ptr<vfs::Backing> backing; //!< The parent backing
-        size_t offset; //!< The offset of the region in the parent backing
+        size_t baseOffset; //!< The offset of the region in the parent backing
 
       public:
         /**
@@ -20,7 +20,7 @@ namespace skyline::vfs {
          * @param offset The offset of the region start within the parent backing
          * @param size The size of the region in the parent backing
          */
-        RegionBacking(const std::shared_ptr<vfs::Backing> &backing, size_t offset, size_t size, Mode mode = {true, false, false}) : Backing(mode, size), backing(backing), offset(offset) {};
+        RegionBacking(const std::shared_ptr<vfs::Backing> &backing, size_t offset, size_t size, Mode mode = {true, false, false}) : Backing(mode, size), backing(backing), baseOffset(offset) {};
 
         inline size_t Read(u8 *output, size_t offset, size_t size) {
             if (!mode.read)
@@ -28,7 +28,7 @@ namespace skyline::vfs {
 
             size = std::min(offset + size, this->size) - offset;
 
-            return backing->Read(output, this->offset + offset, size);
+            return backing->Read(output, baseOffset + offset, size);
         }
     };
 }

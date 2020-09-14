@@ -4,6 +4,8 @@
 #pragma once
 
 #include <array>
+#include <crypto/key_store.h>
+#include <crypto/aes_cipher.h>
 #include "filesystem.h"
 
 namespace skyline {
@@ -195,10 +197,21 @@ namespace skyline {
             static_assert(sizeof(NcaHeader) == 0xC00);
 
             std::shared_ptr<Backing> backing; //!< The backing for the NCA
+            std::shared_ptr<crypto::KeyStore> keyStore;
+            bool encrypted{false};
+            bool rightsIdEmpty;
 
-            void ReadPfs0(const NcaSectionHeader &header, const NcaFsEntry &entry);
+            void ReadPfs0(const NcaSectionHeader &sectionHeader, const NcaFsEntry &entry);
 
-            void ReadRomFs(const NcaSectionHeader &header, const NcaFsEntry &entry);
+            void ReadRomFs(const NcaSectionHeader &sectionHeader, const NcaFsEntry &entry);
+
+            std::shared_ptr<Backing> CreateBacking(const NcaSectionHeader &sectionHeader, std::shared_ptr<Backing> rawBacking, size_t offset);
+
+            u8 GetKeyGeneration();
+
+            crypto::KeyStore::Key128 GetTitleKey();
+
+            crypto::KeyStore::Key128 GetKeyAreaKey(NcaSectionEncryptionType type);
 
           public:
             std::shared_ptr<FileSystem> exeFs; //!< The PFS0 filesystem for this NCA's ExeFS section
@@ -207,7 +220,7 @@ namespace skyline {
             std::shared_ptr<Backing> romFs; //!< The backing for this NCA's RomFS section
             NcaContentType contentType; //!< The content type of the NCA
 
-            NCA(const std::shared_ptr<vfs::Backing> &backing);
+            NCA(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
         };
     }
 }

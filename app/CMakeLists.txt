@@ -12,7 +12,7 @@ set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -Wno-unused-command-line-argument")
 if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_definitions(NDEBUG)
-endif()
+endif ()
 
 set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
 add_subdirectory("libraries/tinyxml2")
@@ -23,6 +23,8 @@ include_directories("libraries/lz4/lib")
 include_directories("libraries/oboe/include")
 include_directories("libraries/vkhpp/include")
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+
+find_package(mbedtls REQUIRED CONFIG)
 
 include_directories(${source_DIR}/skyline)
 
@@ -38,6 +40,8 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/track.cpp
         ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
+        ${source_DIR}/skyline/crypto/aes_cipher.cpp
+        ${source_DIR}/skyline/crypto/key_store.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/macro_interpreter.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
@@ -144,12 +148,13 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
         ${source_DIR}/skyline/vfs/os_filesystem.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
+        ${source_DIR}/skyline/vfs/ctr_encrypted_backing.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp
         ${source_DIR}/skyline/vfs/nacp.cpp
         ${source_DIR}/skyline/vfs/nca.cpp
         )
 
-target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static)
+target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static mbedtls::mbedcrypto)
 set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=c++2a")
 target_compile_options(skyline PRIVATE -Wno-c++17-extensions -Wall -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)

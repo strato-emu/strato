@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -13,7 +14,8 @@
             android:layout_height="150dp"
             android:contentDescription="@string/icon"
             android:focusable="false"
-            app:shapeAppearanceOverlay="@style/roundedAppImage" />
+            app:shapeAppearanceOverlay="@style/roundedAppImage"
+            tools:src="@drawable/default_icon" />
 
     <LinearLayout
             android:layout_width="wrap_content"
@@ -26,7 +28,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceListItem"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                tools:text="Title" />
 
         <TextView
                 android:id="@+id/game_subtitle"
@@ -34,7 +37,8 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                 android:textColor="@android:color/tertiary_text_light"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                tools:text="Subtitle" />
 
         <LinearLayout
                 android:id="@+id/linearLayout"

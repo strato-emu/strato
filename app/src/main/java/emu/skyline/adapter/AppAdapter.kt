@@ -36,10 +36,9 @@ private typealias InteractionFunction = (appItem : AppItem) -> Unit
 /**
  * This adapter is used to display all found applications using their metadata
  */
-internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : Int, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>() {
+internal class AppAdapter(val layoutType : LayoutType, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : HeaderAdapter<AppItem, BaseHeader, RecyclerView.ViewHolder>() {
     private lateinit var context : Context
     private val missingIcon by lazy { ContextCompat.getDrawable(context, R.drawable.default_icon)!!.toBitmap(256, 256) }
-    private val missingString by lazy { context.getString(R.string.metadata_missing) }
 
     /**
      * This adds a header to the view with the contents of [string]
@@ -105,7 +104,7 @@ internal class AppAdapter(val layoutType : LayoutType, private val gridSpan : In
 
         if (item is AppItem && holder is ItemViewHolder) {
             holder.title.text = item.title
-            holder.subtitle.text = item.subTitle ?: missingString
+            holder.subtitle.text = item.subTitle ?: item.loaderResultString(holder.subtitle.context)
 
             holder.icon.setImageBitmap(item.icon ?: missingIcon)
 
