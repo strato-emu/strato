@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
-#include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/GraphicBufferProducer.h>
 #include <services/hosbinder/display.h>
 #include "ISelfController.h"
 
@@ -61,10 +61,10 @@ namespace skyline::service::am {
     Result ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Managed Layer on Default Display");
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
-        hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
+        producer->layerStatus = hosbinder::LayerStatus::Managed;
 
         response.Push<u64>(0);
         return {};

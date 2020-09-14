@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-#include <common.h>
 #include <gpu/syncpoint.h>
 
 namespace skyline::service::nvdrv {

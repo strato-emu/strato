@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
-#include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/GraphicBufferProducer.h>
 #include <services/hosbinder/display.h>
 #include "IManagerDisplayService.h"
 
@@ -19,10 +19,10 @@ namespace skyline::service::visrv {
         auto displayId = request.Pop<u64>();
         state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus != hosbinder::LayerStatus::Uninitialized)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
-        hosBinder->layerStatus = hosbinder::LayerStatus::Managed;
+        producer->layerStatus = hosbinder::LayerStatus::Managed;
 
         response.Push<u64>(0); // There's only one layer
         return {};
@@ -32,11 +32,10 @@ namespace skyline::service::visrv {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Managed Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
-
-        hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+        producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
 
         return {};
     }

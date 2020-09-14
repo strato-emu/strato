@@ -53,7 +53,7 @@ class AppDialog : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
-        item = arguments!!.getSerializable("item") as AppItem
+        item = requireArguments().getSerializable("item") as AppItem
     }
 
     /**

@@ -4,6 +4,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/GraphicBufferProducer.h>
 #include "IApplicationDisplayService.h"
 #include "ISystemDisplayService.h"
 #include "IManagerDisplayService.h"
@@ -25,12 +26,12 @@ namespace skyline::service::visrv {
     }) {}
 
     Result IApplicationDisplayService::GetRelayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
+        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response);
         return {};
     }
 
     Result IApplicationDisplayService::GetIndirectDisplayTransactionService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response, false, util::MakeMagic<ServiceName>("dispdrv"));
+        manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response);
         return {};
     }
 
@@ -47,7 +48,9 @@ namespace skyline::service::visrv {
     Result IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string displayName(request.PopString());
         state.logger->Debug("Setting display as: {}", displayName);
-        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->SetDisplay(displayName);
+
+        auto producer = hosbinder::producer.lock();
+        producer->SetDisplay(displayName);
 
         response.Push<u64>(0); // There's only one display
         return {};
@@ -55,7 +58,8 @@ namespace skyline::service::visrv {
 
     Result IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Closing the display");
-        state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv")->CloseDisplay();
+        auto producer = hosbinder::producer.lock();
+        producer->CloseDisplay();
         return {};
     }
 
@@ -76,7 +80,7 @@ namespace skyline::service::visrv {
             .bufferId = 0, // As we only have one layer and buffer
             .string = "dispdrv"
         };
-        parcel.WriteData(data);
+        parcel.Push(data);
         parcel.objects.resize(4);
 
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
@@ -87,10 +91,11 @@ namespace skyline::service::visrv {
         u64 layerId = request.Pop<u64>();
         state.logger->Debug("Closing Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
-        hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+        producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
+
         return {};
     }
 

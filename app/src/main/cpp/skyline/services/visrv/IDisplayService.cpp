@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
-#include <services/hosbinder/IHOSBinderDriver.h>
+#include <services/hosbinder/GraphicBufferProducer.h>
 #include <services/hosbinder/display.h>
 #include "IDisplayService.h"
 
@@ -15,10 +15,11 @@ namespace skyline::service::visrv {
 
         state.logger->Debug("Creating Stray Layer on Display: {}", displayId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus == hosbinder::LayerStatus::Stray)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus == hosbinder::LayerStatus::Stray)
             throw exception("The application is creating more than one stray layer");
-        hosBinder->layerStatus = hosbinder::LayerStatus::Stray;
+        producer->layerStatus = hosbinder::LayerStatus::Stray;
+
         response.Push<u64>(0); // There's only one layer
 
         Parcel parcel(state);
@@ -28,7 +29,7 @@ namespace skyline::service::visrv {
             .bufferId = 0, // As we only have one layer and buffer
             .string = "dispdrv"
         };
-        parcel.WriteData(data);
+        parcel.Push(data);
 
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
         return {};
@@ -38,10 +39,11 @@ namespace skyline::service::visrv {
         auto layerId = request.Pop<u64>();
         state.logger->Debug("Destroying Stray Layer: {}", layerId);
 
-        auto hosBinder = state.os->serviceManager.GetService<hosbinder::IHOSBinderDriver>("dispdrv");
-        if (hosBinder->layerStatus == hosbinder::LayerStatus::Uninitialized)
+        auto producer = hosbinder::producer.lock();
+        if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
-        hosBinder->layerStatus = hosbinder::LayerStatus::Uninitialized;
+        producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
+
         return {};
     }
 }

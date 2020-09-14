@@ -31,7 +31,7 @@ namespace skyline {
                 Cancelling = 2,
                 Signaling = 3,
                 Signaled = 4,
-                Cancelled = 5
+                Cancelled = 5,
             };
 
             NvHostEvent(const DeviceState &state);

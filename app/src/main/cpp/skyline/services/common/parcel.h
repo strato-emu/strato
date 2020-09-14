@@ -28,6 +28,7 @@ namespace skyline::service {
       public:
         std::vector<u8> data; //!< A vector filled with data in the parcel
         std::vector<u8> objects; //!< A vector filled with objects in the parcel
+        size_t dataOffset{}; //!< This is the offset of the data read from the parcel
 
         /**
          * @brief This constructor fills in the Parcel object with data from a IPC buffer
@@ -53,15 +54,25 @@ namespace skyline::service {
         Parcel(const DeviceState &state);
 
         /**
+         * @return A reference to an item from the top of data
+         */
+        template<typename ValueType>
+        inline ValueType &Pop() {
+            ValueType &value = *reinterpret_cast<ValueType *>(data.data() + dataOffset);
+            dataOffset += sizeof(ValueType);
+            return value;
+        }
+
+        /**
          * @brief Writes some data to the Parcel
          * @tparam ValueType The type of the object to write
          * @param value The object to be written
          */
         template<typename ValueType>
-        void WriteData(const ValueType &value) {
+        void Push(const ValueType &value) {
             data.reserve(data.size() + sizeof(ValueType));
             auto item = reinterpret_cast<const u8 *>(&value);
-            for (uint index = 0; sizeof(ValueType) > index; index++) {
+            for (size_t index{}; sizeof(ValueType) > index; index++) {
                 data.push_back(*item);
                 item++;
             }
@@ -73,10 +84,10 @@ namespace skyline::service {
          * @param value The object to be written
          */
         template<typename ValueType>
-        void WriteObject(const ValueType &value) {
+        void PushObject(const ValueType &value) {
             objects.reserve(objects.size() + sizeof(ValueType));
             auto item = reinterpret_cast<const u8 *>(&value);
-            for (uint index = 0; sizeof(ValueType) > index; index++) {
+            for (size_t index{}; sizeof(ValueType) > index; index++) {
                 objects.push_back(*item);
                 item++;
             }

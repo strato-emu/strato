@@ -113,6 +113,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/fssrv/IFile.cpp
         ${source_DIR}/skyline/services/fssrv/IStorage.cpp
         ${source_DIR}/skyline/services/nvdrv/INvDrvServices.cpp
+        ${source_DIR}/skyline/services/nvdrv/driver.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvmap.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl_gpu.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl.cpp
@@ -120,6 +121,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_as_gpu.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_syncpoint.cpp
         ${source_DIR}/skyline/services/hosbinder/IHOSBinderDriver.cpp
+        ${source_DIR}/skyline/services/hosbinder/GraphicBufferProducer.cpp
         ${source_DIR}/skyline/services/visrv/IDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IApplicationDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IManagerDisplayService.cpp

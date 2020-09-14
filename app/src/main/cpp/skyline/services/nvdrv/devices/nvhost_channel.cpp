@@ -4,7 +4,7 @@
 #include <os.h>
 #include <gpu/gpfifo.h>
 #include <kernel/types/KProcess.h>
-#include <services/nvdrv/INvDrvServices.h>
+#include <services/nvdrv/driver.h>
 #include "nvhost_channel.h"
 
 namespace skyline::service::nvdrv::device {
@@ -19,7 +19,8 @@ namespace skyline::service::nvdrv::device {
         {0x481A, NFUNC(NvHostChannel::AllocGpfifoEx2)},
         {0x4714, NFUNC(NvHostChannel::SetUserData)},
     }) {
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
+        auto driver = nvdrv::driver.lock();
+        auto &hostSyncpoint = driver->hostSyncpoint;
 
         channelFence.id = hostSyncpoint.AllocateSyncpoint(false);
         channelFence.UpdateValue(hostSyncpoint);
@@ -48,7 +49,8 @@ namespace skyline::service::nvdrv::device {
             Fence fence;
         } &args = state.process->GetReference<Data>(buffer.output.at(0).address);
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
+        auto driver = nvdrv::driver.lock();
+        auto &hostSyncpoint = driver->hostSyncpoint;
 
         if (args.flags.fenceWait) {
             if (args.flags.incrementWithValue) {
@@ -104,7 +106,8 @@ namespace skyline::service::nvdrv::device {
             u32 reserved[3];
         } &args = state.process->GetReference<Data>(buffer.input.at(0).address);
 
-        channelFence.UpdateValue(state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint);
+        auto driver = nvdrv::driver.lock();
+        channelFence.UpdateValue(driver->hostSyncpoint);
         args.fence = channelFence;
     }
 

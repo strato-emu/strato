@@ -8,7 +8,7 @@
 
 namespace skyline {
     namespace service::hosbinder {
-        class IHOSBinderDriver;
+        class GraphicBufferProducer;
     }
     namespace gpu {
         namespace texture {
@@ -189,7 +189,7 @@ namespace skyline {
                 return presentation;
             }
 
-            friend service::hosbinder::IHOSBinderDriver;
+            friend service::hosbinder::GraphicBufferProducer;
         };
 
         /**

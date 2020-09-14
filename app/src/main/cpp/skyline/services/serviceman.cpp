@@ -100,7 +100,7 @@ namespace skyline::service {
         return serviceObject;
     }
 
-    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule, ServiceName name) { // NOLINT(performance-unnecessary-value-param)
+    void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
         std::lock_guard serviceGuard(mutex);
         KHandle handle{};
 
@@ -112,9 +112,6 @@ namespace skyline::service {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
-
-        if (!submodule)
-            serviceMap[name] = serviceObject;
 
         state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->GetName(), handle);
     }

@@ -49,7 +49,7 @@ namespace skyline::service {
          * @param submodule If the registered service is a submodule or not
          * @param name The name of the service to register if it's not a submodule - it will be added to the service map
          */
-        void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response, bool submodule = true, ServiceName name = {});
+        void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response);
 
         /**
          * @param serviceType The type of the service

@@ -4,7 +4,7 @@
 #include <os.h>
 #include <gpu.h>
 #include <kernel/types/KProcess.h>
-#include <services/nvdrv/INvDrvServices.h>
+#include <services/nvdrv/driver.h>
 #include "nvhost_ctrl.h"
 
 namespace skyline::service::nvdrv::device {
@@ -95,7 +95,8 @@ namespace skyline::service::nvdrv::device {
             return;
         }
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
+        auto driver = nvdrv::driver.lock();
+        auto &hostSyncpoint = driver->hostSyncpoint;
 
         // Check if the syncpoint has already expired using the last known values
         if (hostSyncpoint.HasSyncpointExpired(args.fence.id, args.fence.value)) {
@@ -173,7 +174,8 @@ namespace skyline::service::nvdrv::device {
 
         event.state = NvHostEvent::State::Cancelled;
 
-        auto &hostSyncpoint = state.os->serviceManager.GetService<nvdrv::INvDrvServices>("nvdrv")->hostSyncpoint;
+        auto driver = nvdrv::driver.lock();
+        auto &hostSyncpoint = driver->hostSyncpoint;
         hostSyncpoint.UpdateMin(event.fence.id);
     }
 

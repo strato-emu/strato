@@ -2,59 +2,12 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
-#include "devices/nvhost_ctrl.h"
-#include "devices/nvhost_ctrl_gpu.h"
-#include "devices/nvhost_channel.h"
-#include "devices/nvhost_as_gpu.h"
 #include "INvDrvServices.h"
+#include "driver.h"
+#include "devices/nvdevice.h"
 
 namespace skyline::service::nvdrv {
-    u32 INvDrvServices::OpenDevice(const std::string &path) {
-        state.logger->Debug("Opening NVDRV device ({}): {}", fdIndex, path);
-        auto type = device::nvDeviceMap.at(path);
-        for (const auto &device : fdMap) {
-            if (device.second->deviceType == type) {
-                device.second->refCount++;
-                fdMap[fdIndex] = device.second;
-                return fdIndex++;
-            }
-        }
-
-        std::shared_ptr<device::NvDevice> object;
-        switch (type) {
-            case device::NvDeviceType::nvhost_ctrl:
-                object = std::make_shared<device::NvHostCtrl>(state);
-                break;
-
-            case device::NvDeviceType::nvhost_gpu:
-            case device::NvDeviceType::nvhost_vic:
-            case device::NvDeviceType::nvhost_nvdec:
-                object = std::make_shared<device::NvHostChannel>(state, type);
-                break;
-
-            case device::NvDeviceType::nvhost_ctrl_gpu:
-                object = std::make_shared<device::NvHostCtrlGpu>(state);
-                break;
-
-            case device::NvDeviceType::nvmap:
-                object = std::make_shared<device::NvMap>(state);
-                break;
-
-            case device::NvDeviceType::nvhost_as_gpu:
-                object = std::make_shared<device::NvHostAsGpu>(state);
-                break;
-
-            default:
-                throw exception("Cannot find NVDRV device");
-        }
-
-        deviceMap[type] = object;
-        fdMap[fdIndex] = object;
-
-        return fdIndex++;
-    }
-
-    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : hostSyncpoint(state), BaseService(state, manager, {
+    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : driver(nvdrv::driver.expired() ? std::make_shared<Driver>(state) : nvdrv::driver.lock()), BaseService(state, manager, {
         {0x0, SFUNC(INvDrvServices::Open)},
         {0x1, SFUNC(INvDrvServices::Ioctl)},
         {0x2, SFUNC(INvDrvServices::Close)},
@@ -62,13 +15,16 @@ namespace skyline::service::nvdrv {
         {0x4, SFUNC(INvDrvServices::QueryEvent)},
         {0x8, SFUNC(INvDrvServices::SetAruidByPID)},
         {0xD, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
-    }) {}
+    }) {
+        if (nvdrv::driver.expired())
+            nvdrv::driver = driver;
+    }
 
     Result INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto buffer = request.inputBuf.at(0);
         auto path = state.process->GetString(buffer.address, buffer.size);
 
-        response.Push<u32>(OpenDevice(path));
+        response.Push<u32>(driver->OpenDevice(path));
         response.Push(device::NvStatus::Success);
 
         return {};
@@ -77,8 +33,9 @@ namespace skyline::service::nvdrv {
     Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto cmd = request.Pop<u32>();
-
         state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
+
+        auto device = driver->GetDevice(fd);
 
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
@@ -88,18 +45,18 @@ namespace skyline::service::nvdrv {
                 if (request.inputBuf.empty()) {
                     device::IoctlData data(request.outputBuf.at(0));
 
-                    fdMap.at(fd)->HandleIoctl(cmd, data);
+                    device->HandleIoctl(cmd, data);
                     response.Push(data.status);
                 } else {
                     device::IoctlData data(request.inputBuf.at(0));
 
-                    fdMap.at(fd)->HandleIoctl(cmd, data);
+                    device->HandleIoctl(cmd, data);
                     response.Push(data.status);
                 }
             } else {
                 device::IoctlData data(request.inputBuf.at(0), request.outputBuf.at(0));
 
-                fdMap.at(fd)->HandleIoctl(cmd, data);
+                device->HandleIoctl(cmd, data);
                 response.Push(data.status);
             }
         } catch (const std::out_of_range &) {
@@ -113,15 +70,7 @@ namespace skyline::service::nvdrv {
         auto fd = request.Pop<u32>();
         state.logger->Debug("Closing NVDRV device ({})", fd);
 
-        try {
-            auto device = fdMap.at(fd);
-            if (!--device->refCount)
-                deviceMap.erase(device->deviceType);
-
-            fdMap.erase(fd);
-        } catch (const std::out_of_range &) {
-            state.logger->Warn("Trying to close non-existent FD");
-        }
+        driver->CloseDevice(fd);
 
         response.Push(device::NvStatus::Success);
         return {};
@@ -135,7 +84,8 @@ namespace skyline::service::nvdrv {
     Result INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto eventId = request.Pop<u32>();
-        auto device = fdMap.at(fd);
+
+        auto device = driver->GetDevice(fd);
         auto event = device->QueryEvent(eventId);
 
         if (event != nullptr) {
