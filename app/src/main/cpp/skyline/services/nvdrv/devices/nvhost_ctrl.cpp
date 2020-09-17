@@ -37,7 +37,7 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_ctrl, {
+    NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state, {
         {0x001B, NFUNC(NvHostCtrl::GetConfig)},
         {0x001C, NFUNC(NvHostCtrl::EventSignal)},
         {0x001D, NFUNC(NvHostCtrl::EventWait)},

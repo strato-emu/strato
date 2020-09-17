@@ -8,7 +8,7 @@
 #include "nvhost_channel.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostChannel::NvHostChannel(const DeviceState &state, NvDeviceType type) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state)), errorNotifierEvent(std::make_shared<type::KEvent>(state)), NvDevice(state, type, {
+    NvHostChannel::NvHostChannel(const DeviceState &state) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state)), errorNotifierEvent(std::make_shared<type::KEvent>(state)), NvDevice(state, {
         {0x4801, NFUNC(NvHostChannel::SetNvmapFd)},
         {0x4803, NFUNC(NvHostChannel::SetSubmitTimeout)},
         {0x4808, NFUNC(NvHostChannel::SubmitGpfifo)},

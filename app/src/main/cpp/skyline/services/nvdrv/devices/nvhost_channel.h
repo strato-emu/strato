@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv::device {
         std::shared_ptr<type::KEvent> errorNotifierEvent;
 
       public:
-        NvHostChannel(const DeviceState &state, NvDeviceType type);
+        NvHostChannel(const DeviceState &state);
 
         /**
          * @brief This sets the nvmap file descriptor (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD)

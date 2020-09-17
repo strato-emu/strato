@@ -8,21 +8,24 @@
 #include <span>
 #include <vector>
 #include <fstream>
-#include <syslog.h>
 #include <mutex>
 #include <thread>
 #include <string>
-#include <sstream>
-#include <memory>
-#include <fmt/format.h>
-#include <sys/mman.h>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <sstream>
+#include <memory>
+#include <syslog.h>
+#include <sys/mman.h>
+#include <fmt/format.h>
+#include <frozen/unordered_map.h>
+#include <frozen/string.h>
 #include <jni.h>
 #include "nce/guest_common.h"
 
 namespace skyline {
+    namespace frz = frozen;
     using KHandle = u32; //!< The type of a kernel handle
 
     /**
@@ -193,6 +196,10 @@ namespace skyline {
                 result[i] = (HexDigitToByte(hexString[hexStrIndex]) << 4) | HexDigitToByte(hexString[hexStrIndex + 1]);
             }
             return result;
+        }
+
+        constexpr std::size_t Hash(const std::string_view& view) {
+            return frz::elsa<frz::string>{}(frz::string(view.data(), view.size()), 0);
         }
     }
 

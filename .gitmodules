@@ -14,3 +14,6 @@
 [submodule "app/libraries/lz4"]
 	path = app/libraries/lz4
 	url = https://github.com/lz4/lz4.git
+[submodule "app/libraries/frozen"]
+	path = app/libraries/frozen
+	url = https://github.com/serge-sans-paille/frozen

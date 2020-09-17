@@ -13,56 +13,45 @@ namespace skyline::service::nvdrv {
 
     u32 Driver::OpenDevice(const std::string &path) {
         state.logger->Debug("Opening NVDRV device ({}): {}", fdIndex, path);
-        auto type = device::nvDeviceMap.at(path);
-        for (const auto &device : fdMap) {
-            if (device.second->deviceType == type) {
-                device.second->refCount++;
-                fdMap[fdIndex] = device.second;
-                return fdIndex++;
-            }
-        }
 
-        std::shared_ptr<device::NvDevice> object;
-        switch (type) {
-            case device::NvDeviceType::nvhost_ctrl:
-                object = std::make_shared<device::NvHostCtrl>(state);
-                break;
-
-            case device::NvDeviceType::nvhost_gpu:
-            case device::NvDeviceType::nvhost_vic:
-            case device::NvDeviceType::nvhost_nvdec:
-                object = std::make_shared<device::NvHostChannel>(state, type);
-                break;
-
-            case device::NvDeviceType::nvhost_ctrl_gpu:
-                object = std::make_shared<device::NvHostCtrlGpu>(state);
-                break;
-
-            case device::NvDeviceType::nvmap:
-                object = std::make_shared<device::NvMap>(state);
-                break;
-
-            case device::NvDeviceType::nvhost_as_gpu:
-                object = std::make_shared<device::NvHostAsGpu>(state);
-                break;
+        switch (util::Hash(path)) {
+            #define NVDEVICE(type, name, devicePath)               \
+                case util::Hash(devicePath): {                     \
+                    std::shared_ptr<device::type> device{};        \
+                    if (name.expired()) {                          \
+                        device = device.make_shared(state);        \
+                        name = device;                             \
+                    } else {                                       \
+                        device = name.lock();                      \
+                    }                                              \
+                    devices.push_back(device);                     \
+                    break;                                         \
+                }
+            NVDEVICE_LIST
+            #undef NVDEVICE
 
             default:
                 throw exception("Cannot find NVDRV device");
         }
 
-        deviceMap[type] = object;
-        fdMap[fdIndex] = object;
-
         return fdIndex++;
     }
 
-    void Driver::CloseDevice(skyline::u32 fd) {
+    std::shared_ptr<device::NvDevice> Driver::GetDevice(u32 fd) {
         try {
-            auto& device = fdMap.at(fd);
-            if (!--device->refCount)
-                deviceMap.erase(device->deviceType);
+            auto item = devices.at(fd);
+            if (!item)
+                throw exception("GetDevice was called with a closed file descriptor: 0x{:X}", fd);
+            return item;
+        } catch (std::out_of_range) {
+            throw exception("GetDevice was called with invalid file descriptor: 0x{:X}", fd);
+        }
+    }
 
-            fdMap.erase(fd);
+    void Driver::CloseDevice(u32 fd) {
+        try {
+            auto &device = devices.at(fd);
+            device.reset();
         } catch (const std::out_of_range &) {
             state.logger->Warn("Trying to close non-existent FD");
         }

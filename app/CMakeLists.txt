@@ -22,6 +22,7 @@ add_subdirectory("libraries/lz4/contrib/cmake_unofficial")
 include_directories("libraries/lz4/lib")
 include_directories("libraries/oboe/include")
 include_directories("libraries/vkhpp/include")
+include_directories("libraries/frozen/include")
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 find_package(mbedtls REQUIRED CONFIG)
@@ -114,6 +115,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/fssrv/IStorage.cpp
         ${source_DIR}/skyline/services/nvdrv/INvDrvServices.cpp
         ${source_DIR}/skyline/services/nvdrv/driver.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvdevice.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvmap.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl_gpu.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_ctrl.cpp

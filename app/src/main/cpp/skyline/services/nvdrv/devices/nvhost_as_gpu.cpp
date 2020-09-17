@@ -9,7 +9,7 @@
 #include "nvhost_as_gpu.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state, NvDeviceType::nvhost_as_gpu, {
+    NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state, {
         {0x4101, NFUNC(NvHostAsGpu::BindChannel)},
         {0x4102, NFUNC(NvHostAsGpu::AllocSpace)},
         {0x4105, NFUNC(NvHostAsGpu::UnmapBuffer)},
@@ -71,10 +71,11 @@ namespace skyline::service::nvdrv::device {
             return;
 
         auto driver = nvdrv::driver.lock();
-        auto nvmap = driver->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(region.nvmapHandle);
+        auto nvmap = driver->nvMap.lock();
+        auto mapping = nvmap->handleTable.at(region.nvmapHandle);
 
-        u64 mapPhysicalAddress = region.bufferOffset + nvmap->address;
-        u64 mapSize = region.mappingSize ? region.mappingSize : nvmap->size;
+        u64 mapPhysicalAddress = region.bufferOffset + mapping->address;
+        u64 mapSize = region.mappingSize ? region.mappingSize : mapping->size;
 
         if (region.flags & 1)
             region.offset = state.gpu->memoryManager.MapFixed(region.offset, mapPhysicalAddress, mapSize);
@@ -135,10 +136,11 @@ namespace skyline::service::nvdrv::device {
         for (auto entry : entries) {
             try {
                 auto driver = nvdrv::driver.lock();
-                auto nvmap = driver->GetDevice<nvdrv::device::NvMap>(nvdrv::device::NvDeviceType::nvmap)->handleTable.at(entry.nvmapHandle);
+                auto nvmap = driver->nvMap.lock();
+                auto mapping = nvmap->handleTable.at(entry.nvmapHandle);
 
                 u64 mapAddress = static_cast<u64>(entry.gpuOffset) << MinAlignmentShift;
-                u64 mapPhysicalAddress = nvmap->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift);
+                u64 mapPhysicalAddress = mapping->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift);
                 u64 mapSize = static_cast<u64>(entry.pages) << MinAlignmentShift;
 
                 state.gpu->memoryManager.MapFixed(mapAddress, mapPhysicalAddress, mapSize);

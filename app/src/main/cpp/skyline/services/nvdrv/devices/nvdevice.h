@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cxxabi.h>
 #include <common.h>
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
@@ -11,54 +12,6 @@
 
 namespace skyline::service::nvdrv::device {
     using namespace kernel;
-
-    /**
-     * @brief An enumeration of all the devices that can be opened by nvdrv
-     */
-    enum class NvDeviceType {
-        nvhost_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl
-        nvhost_gpu, //!< https://switchbrew.org/wiki/NV_services#Channels
-        nvhost_nvdec, //!< https://switchbrew.org/wiki/NV_services#Channels
-        nvhost_vic, //!< https://switchbrew.org/wiki/NV_services#Channels
-        nvmap, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvmap
-        nvdisp_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvdisp-ctrl
-        nvdisp_disp0, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvdisp-disp0.2C_.2Fdev.2Fnvdisp-disp1
-        nvdisp_disp1, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvdisp-disp0.2C_.2Fdev.2Fnvdisp-disp1
-        nvcec_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvcec-ctrl
-        nvhdcp_up_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhdcp_up-ctrl
-        nvdcutil_disp0, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvdcutil-disp0.2C_.2Fdev.2Fnvdcutil-disp1
-        nvdcutil_disp1, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvdcutil-disp0.2C_.2Fdev.2Fnvdcutil-disp1
-        nvsched_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvsched-ctrl
-        nverpt_ctrl, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnverpt-ctrl
-        nvhost_as_gpu, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-as-gpu
-        nvhost_dbg_gpu, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-dbg-gpu
-        nvhost_prof_gpu, //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-prof-gpu
-        nvhost_ctrl_gpu //!< https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl-gpu
-    };
-
-    /**
-     * @brief A mapping from a device's path to it's nvDevice entry
-     */
-    const static std::unordered_map<std::string, NvDeviceType> nvDeviceMap{
-        {"/dev/nvhost-ctrl", NvDeviceType::nvhost_ctrl},
-        {"/dev/nvhost-gpu", NvDeviceType::nvhost_gpu},
-        {"/dev/nvhost-nvdec", NvDeviceType::nvhost_nvdec},
-        {"/dev/nvhost-vic", NvDeviceType::nvhost_vic},
-        {"/dev/nvmap", NvDeviceType::nvmap},
-        {"/dev/nvdisp-ctrl", NvDeviceType::nvdisp_ctrl},
-        {"/dev/nvdisp-disp0", NvDeviceType::nvdisp_disp0},
-        {"/dev/nvdisp-disp1", NvDeviceType::nvdisp_disp1},
-        {"/dev/nvcec-ctrl", NvDeviceType::nvcec_ctrl},
-        {"/dev/nvhdcp_up-ctrl", NvDeviceType::nvhdcp_up_ctrl},
-        {"/dev/nvdcutil-disp0", NvDeviceType::nvdcutil_disp0},
-        {"/dev/nvdcutil-disp1", NvDeviceType::nvdcutil_disp1},
-        {"/dev/nvsched-ctrl", NvDeviceType::nvsched_ctrl},
-        {"/dev/nverpt-ctrl", NvDeviceType::nverpt_ctrl},
-        {"/dev/nvhost-as-gpu", NvDeviceType::nvhost_as_gpu},
-        {"/dev/nvhost-dbg-gpu", NvDeviceType::nvhost_dbg_gpu},
-        {"/dev/nvhost-prof-gpu", NvDeviceType::nvhost_prof_gpu},
-        {"/dev/nvhost-ctrl-gpu", NvDeviceType::nvhost_ctrl_gpu},
-    };
 
     /**
      * @brief This enumerates all the possible error codes returned by the Nvidia driver (https://switchbrew.org/wiki/NV_services#Errors)
@@ -134,7 +87,7 @@ namespace skyline::service::nvdrv::device {
     };
 
     /**
-     * @brief NvDevice is the base class all /dev/nv* devices inherit from
+     * @brief NvDevice is the base class that all /dev/nv* devices inherit from
      */
     class NvDevice {
       protected:
@@ -142,53 +95,27 @@ namespace skyline::service::nvdrv::device {
         std::unordered_map<u32, std::function<void(IoctlData &)>> vTable; //!< This holds the mapping from an Ioctl to the actual function
 
       public:
-        u16 refCount{1}; //!< The amount of handles to the device
-        NvDeviceType deviceType; //!< The type of the device
-
         /**
          * @param state The state of the device
-         * @param deviceType The type of the device
          * @param vTable The functions in this device
          */
-        NvDevice(const DeviceState &state, NvDeviceType deviceType, std::unordered_map<u32, std::function<void(IoctlData &)>> vTable) : state(state), deviceType(deviceType), vTable(vTable) {}
+        NvDevice(const DeviceState &state, std::unordered_map<u32, std::function<void(IoctlData & )>> vTable);
 
         virtual ~NvDevice() = default;
 
         /**
-         * @brief This returns the name of the current service
-         * @note It may not return the exact name the service was initialized with if there are multiple entries in ServiceString
-         * @return The name of the service
+         * @return The name of the class
          */
-        std::string getName() {
-            std::string serviceName;
-            for (const auto&[name, type] : nvDeviceMap)
-                if (type == deviceType)
-                    serviceName = name;
-            return serviceName;
-        }
+        std::string GetName();
 
         /**
          * @brief This handles IOCTL calls for devices
          * @param cmd The IOCTL command that was called
          * @param input The input to the IOCTL call
          */
-        void HandleIoctl(u32 cmd, IoctlData &input) {
-            std::function<void(IoctlData &)> function;
-            try {
-                function = vTable.at(cmd);
-            } catch (std::out_of_range &) {
-                state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", getName(), cmd);
-                input.status = NvStatus::NotImplemented;
-                return;
-            }
-            try {
-                function(input);
-            } catch (std::exception &e) {
-                throw exception("{} (Device: {})", e.what(), getName());
-            }
-        }
+        void HandleIoctl(u32 cmd, IoctlData &input);
 
-        virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
+        inline virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
             return nullptr;
         }
     };
