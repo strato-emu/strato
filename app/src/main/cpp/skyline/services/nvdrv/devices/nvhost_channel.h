@@ -73,5 +73,17 @@ namespace skyline::service::nvdrv::device {
         void SetUserData(IoctlData &buffer);
 
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
+
+        NVDEVICE_DECL(
+            NVFUNC(0x4801, NvHostChannel, SetNvmapFd),
+            NVFUNC(0x4803, NvHostChannel, SetSubmitTimeout),
+            NVFUNC(0x4808, NvHostChannel, SubmitGpfifo),
+            NVFUNC(0x4809, NvHostChannel, AllocObjCtx),
+            NVFUNC(0x480B, NvHostChannel, ZcullBind),
+            NVFUNC(0x480C, NvHostChannel, SetErrorNotifier),
+            NVFUNC(0x480D, NvHostChannel, SetPriority),
+            NVFUNC(0x481A, NvHostChannel, AllocGpfifoEx2),
+            NVFUNC(0x4714, NvHostChannel, SetUserData)
+        )
     };
 }

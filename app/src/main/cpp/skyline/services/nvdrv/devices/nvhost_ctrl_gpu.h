@@ -43,5 +43,13 @@ namespace skyline::service::nvdrv::device {
         void GetActiveSlotMask(IoctlData &buffer);
 
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
+
+        NVDEVICE_DECL(
+            NVFUNC(0x4701, NvHostCtrlGpu, ZCullGetCtxSize),
+            NVFUNC(0x4702, NvHostCtrlGpu, ZCullGetInfo),
+            NVFUNC(0x4706, NvHostCtrlGpu, GetTpcMasks),
+            NVFUNC(0x4705, NvHostCtrlGpu, GetCharacteristics),
+            NVFUNC(0x4714, NvHostCtrlGpu, GetActiveSlotMask)
+        )
     };
 }

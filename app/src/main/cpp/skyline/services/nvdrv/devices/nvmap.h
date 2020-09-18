@@ -70,5 +70,14 @@ namespace skyline::service::nvdrv::device {
          * @brief This returns the ID of an NvMapObject from it's handle (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID)
          */
         void GetId(IoctlData &buffer);
+
+        NVDEVICE_DECL(
+            NVFUNC(0x0101, NvMap, Create),
+            NVFUNC(0x0103, NvMap, FromId),
+            NVFUNC(0x0104, NvMap, Alloc),
+            NVFUNC(0x0105, NvMap, Free),
+            NVFUNC(0x0109, NvMap, Param),
+            NVFUNC(0x010E, NvMap, GetId)
+        )
     };
 }

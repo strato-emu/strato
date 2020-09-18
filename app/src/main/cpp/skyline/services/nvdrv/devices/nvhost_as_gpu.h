@@ -47,5 +47,15 @@ namespace skyline::service::nvdrv::device {
          * @brief Remaps a region of the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_REMAP)
          */
         void Remap(IoctlData &buffer);
+
+        NVDEVICE_DECL(
+            NVFUNC(0x4101, NvHostAsGpu, BindChannel),
+            NVFUNC(0x4102, NvHostAsGpu, AllocSpace),
+            NVFUNC(0x4105, NvHostAsGpu, UnmapBuffer),
+            NVFUNC(0x4106, NvHostAsGpu, Modify),
+            NVFUNC(0x4108, NvHostAsGpu, GetVaRegions),
+            NVFUNC(0x4109, NvHostAsGpu, InitializeEx),
+            NVFUNC(0x4114, NvHostAsGpu, Remap)
+        )
     };
 }

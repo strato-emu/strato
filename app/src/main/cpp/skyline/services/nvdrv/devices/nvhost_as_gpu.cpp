@@ -9,15 +9,7 @@
 #include "nvhost_as_gpu.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state, {
-        {0x4101, NFUNC(NvHostAsGpu::BindChannel)},
-        {0x4102, NFUNC(NvHostAsGpu::AllocSpace)},
-        {0x4105, NFUNC(NvHostAsGpu::UnmapBuffer)},
-        {0x4106, NFUNC(NvHostAsGpu::Modify)},
-        {0x4108, NFUNC(NvHostAsGpu::GetVaRegions)},
-        {0x4109, NFUNC(NvHostAsGpu::InitializeEx)},
-        {0x4114, NFUNC(NvHostAsGpu::Remap)},
-    }) {}
+    NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state) {}
 
     void NvHostAsGpu::BindChannel(IoctlData &buffer) {
         struct Data {

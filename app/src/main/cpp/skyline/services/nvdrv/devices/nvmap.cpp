@@ -7,14 +7,7 @@
 namespace skyline::service::nvdrv::device {
     NvMap::NvMapObject::NvMapObject(u32 id, u32 size) : id(id), size(size) {}
 
-    NvMap::NvMap(const DeviceState &state) : NvDevice(state, {
-        {0x0101, NFUNC(NvMap::Create)},
-        {0x0103, NFUNC(NvMap::FromId)},
-        {0x0104, NFUNC(NvMap::Alloc)},
-        {0x0105, NFUNC(NvMap::Free)},
-        {0x0109, NFUNC(NvMap::Param)},
-        {0x010E, NFUNC(NvMap::GetId)}
-    }) {}
+    NvMap::NvMap(const DeviceState &state) : NvDevice(state) {}
 
     void NvMap::Create(IoctlData &buffer) {
         struct Data {

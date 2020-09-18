@@ -118,6 +118,14 @@ namespace skyline {
             void EventRegister(IoctlData &buffer);
 
             std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
+
+            NVDEVICE_DECL(
+                NVFUNC(0x001B, NvHostCtrl, GetConfig),
+                NVFUNC(0x001C, NvHostCtrl, EventSignal),
+                NVFUNC(0x001D, NvHostCtrl, EventWait),
+                NVFUNC(0x001E, NvHostCtrl, EventWaitAsync),
+                NVFUNC(0x001F, NvHostCtrl, EventRegister)
+            )
         };
     }
 }

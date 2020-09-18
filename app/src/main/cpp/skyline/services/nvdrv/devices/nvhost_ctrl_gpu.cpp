@@ -5,13 +5,7 @@
 #include "nvhost_ctrl_gpu.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : errorNotifierEvent(std::make_shared<type::KEvent>(state)), unknownEvent(std::make_shared<type::KEvent>(state)), NvDevice(state, {
-        {0x4701, NFUNC(NvHostCtrlGpu::ZCullGetCtxSize)},
-        {0x4702, NFUNC(NvHostCtrlGpu::ZCullGetInfo)},
-        {0x4706, NFUNC(NvHostCtrlGpu::GetTpcMasks)},
-        {0x4705, NFUNC(NvHostCtrlGpu::GetCharacteristics)},
-        {0x4714, NFUNC(NvHostCtrlGpu::GetActiveSlotMask)},
-    }) {}
+    NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : errorNotifierEvent(std::make_shared<type::KEvent>(state)), unknownEvent(std::make_shared<type::KEvent>(state)), NvDevice(state) {}
 
     void NvHostCtrlGpu::ZCullGetCtxSize(IoctlData &buffer) {
         u32 size = 0x1;

@@ -37,13 +37,7 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state, {
-        {0x001B, NFUNC(NvHostCtrl::GetConfig)},
-        {0x001C, NFUNC(NvHostCtrl::EventSignal)},
-        {0x001D, NFUNC(NvHostCtrl::EventWait)},
-        {0x001E, NFUNC(NvHostCtrl::EventWaitAsync)},
-        {0x001F, NFUNC(NvHostCtrl::EventRegister)},
-    }) {}
+    NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state) {}
 
     u32 NvHostCtrl::FindFreeEvent(u32 syncpointId) {
         u32 eventIndex{constant::NvHostEventCount}; //!< Holds the index of the last populated event in the event array

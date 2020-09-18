@@ -8,7 +8,13 @@
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 
-#define NFUNC(function) std::bind(&function, this, std::placeholders::_1)
+#define NVFUNC(id, Class, Function) std::pair<u32, std::function<void(Class*, IoctlData &)>>(id, &Class::Function)
+#define NVDEVICE_DECL_AUTO(name, value) decltype(value) name = value
+#define NVDEVICE_DECL(...)                                                                                              \
+NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                  \
+std::function<void(IoctlData &)> GetServiceFunction(u32 index) {                                                        \
+    return std::bind(functions.at(index), this, std::placeholders::_1);                                                 \
+}
 
 namespace skyline::service::nvdrv::device {
     using namespace kernel;
@@ -92,16 +98,13 @@ namespace skyline::service::nvdrv::device {
     class NvDevice {
       protected:
         const DeviceState &state; //!< The state of the device
-        std::unordered_map<u32, std::function<void(IoctlData &)>> vTable; //!< This holds the mapping from an Ioctl to the actual function
 
       public:
-        /**
-         * @param state The state of the device
-         * @param vTable The functions in this device
-         */
-        NvDevice(const DeviceState &state, std::unordered_map<u32, std::function<void(IoctlData & )>> vTable);
+        inline NvDevice(const DeviceState &state) : state(state) {}
 
         virtual ~NvDevice() = default;
+
+        virtual std::function<void(IoctlData &)> GetServiceFunction(u32 index) = 0;
 
         /**
          * @return The name of the class
