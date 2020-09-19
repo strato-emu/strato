@@ -9,138 +9,153 @@ namespace skyline::service::nvdrv::device {
 
     NvMap::NvMap(const DeviceState &state) : NvDevice(state) {}
 
-    void NvMap::Create(IoctlData &buffer) {
+    NvStatus NvMap::Create(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
             u32 size;   // In
             u32 handle; // Out
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
         handleTable[handleIndex] = std::make_shared<NvMapObject>(idIndex++, data.size);
         data.handle = handleIndex++;
 
-        state.process->WriteMemory(data, buffer.output[0].address);
-        state.logger->Debug("Create: Input: Size: 0x{:X}, Output: Handle: 0x{:X}, Status: {}", data.size, data.handle, buffer.status);
+        state.logger->Debug("Size: 0x{:X} -> Handle: 0x{:X}", data.size, data.handle);
+        return NvStatus::Success;
     }
 
-    void NvMap::FromId(IoctlData &buffer) {
+    NvStatus NvMap::FromId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
             u32 id;     // In
             u32 handle; // Out
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
-        bool found{};
         for (const auto &object : handleTable) {
             if (object.second->id == data.id) {
                 data.handle = object.first;
-                found = true;
-                break;
+                state.logger->Debug("ID: 0x{:X} -> Handle: 0x{:X}", data.id, data.handle);
+                return NvStatus::Success;
             }
         }
 
-        if (found)
-            state.process->WriteMemory(data, buffer.output[0].address);
-        else
-            buffer.status = NvStatus::BadValue;
-
-        state.logger->Debug("FromId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
+        state.logger->Warn("Handle not found for ID: 0x{:X}", data.id);
+        return NvStatus::BadValue;
     }
 
-    void NvMap::Alloc(IoctlData &buffer) {
+    NvStatus NvMap::Alloc(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
             u32 handle;   // In
             u32 heapMask; // In
             u32 flags;    // In
             u32 align;    // In
-            u8 kind;     // In
+            u8 kind;      // In
             u8 _pad0_[7];
             u64 address;  // InOut
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
-        auto &object = handleTable.at(data.handle);
-        object->heapMask = data.heapMask;
-        object->flags = data.flags;
-        object->align = data.align;
-        object->kind = data.kind;
-        object->address = data.address;
-        object->status = NvMapObject::Status::Allocated;
+        try {
+            auto &object = handleTable.at(data.handle);
+            object->heapMask = data.heapMask;
+            object->flags = data.flags;
+            object->align = data.align;
+            object->kind = data.kind;
+            object->address = data.address;
+            object->status = NvMapObject::Status::Allocated;
 
-        state.logger->Debug("Alloc: Input: Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}, Output: Status: {}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.address, buffer.status);
+            state.logger->Debug("Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.address);
+            return NvStatus::Success;
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
+            return NvStatus::BadParameter;
+        }
     }
 
-    void NvMap::Free(IoctlData &buffer) {
+    NvStatus NvMap::Free(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
             u32 handle;   // In
             u32 _pad0_;
             u64 address;  // Out
             u32 size;     // Out
             u32 flags;    // Out
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
-        const auto &object = handleTable.at(data.handle);
-        if (object.use_count() > 1) {
-            data.address = static_cast<u32>(object->address);
-            data.flags = 0x0;
-        } else {
-            data.address = 0x0;
-            data.flags = 0x1; // Not free yet
+        try {
+            const auto &object = handleTable.at(data.handle);
+            if (object.use_count() > 1) {
+                data.address = static_cast<u32>(object->address);
+                data.flags = 0x0;
+            } else {
+                data.address = 0x0;
+                data.flags = 0x1; // Not free yet
+            }
+
+            data.size = object->size;
+            handleTable.erase(data.handle);
+
+            state.logger->Debug("Handle: 0x{:X} -> Address: 0x{:X}, Size: 0x{:X}, Flags: 0x{:X}", data.handle, data.address, data.size, data.flags);
+            return NvStatus::Success;
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
+            return NvStatus::BadParameter;
         }
-
-        data.size = object->size;
-        handleTable.erase(data.handle);
-
-        state.process->WriteMemory(data, buffer.output[0].address);
     }
 
-    void NvMap::Param(IoctlData &buffer) {
+    NvStatus NvMap::Param(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         enum class Parameter : u32 { Size = 1, Alignment = 2, Base = 3, HeapMask = 4, Kind = 5, Compr = 6 }; // https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h#102
         struct Data {
             u32 handle;          // In
             Parameter parameter; // In
             u32 result;          // Out
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
         try {
             auto &object = handleTable.at(data.handle);
-
 
             switch (data.parameter) {
                 case Parameter::Size:
                     data.result = object->size;
                     break;
+
                 case Parameter::Alignment:
                     data.result = object->align;
                     break;
+
                 case Parameter::HeapMask:
                     data.result = object->heapMask;
                     break;
+
                 case Parameter::Kind:
                     data.result = object->kind;
                     break;
+
                 case Parameter::Compr:
                     data.result = 0;
                     break;
+
                 default:
-                    buffer.status = NvStatus::NotImplemented;
-                    return;
+                    state.logger->Warn("Parameter not implemented: 0x{:X}", data.parameter);
+                    return NvStatus::NotImplemented;
             }
 
-            state.process->WriteMemory(data, buffer.output[0].address);
-            state.logger->Debug("Param: Input: Handle: 0x{:X}, Parameter: {}, Output: Result: 0x{:X}, Status: {}", data.handle, data.parameter, data.result, buffer.status);
-        } catch (std::exception &e) {
-            buffer.status = NvStatus::BadParameter;
-            return;
+            state.logger->Debug("Handle: 0x{:X}, Parameter: {} -> Result: 0x{:X}", data.handle, data.parameter, data.result);
+            return NvStatus::Success;
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
+            return NvStatus::BadParameter;
         }
     }
 
-    void NvMap::GetId(IoctlData &buffer) {
+    NvStatus NvMap::GetId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
             u32 id;     // Out
             u32 handle; // In
-        } data = state.process->GetObject<Data>(buffer.input[0].address);
+        } &data = util::As<Data>(buffer);
 
-        data.id = handleTable.at(data.handle)->id;
-
-        state.process->WriteMemory(data, buffer.output[0].address);
-        state.logger->Debug("GetId: Input: Handle: 0x{:X}, Output: ID: 0x{:X}, Status: {}", data.handle, data.id, buffer.status);
+        try {
+            data.id = handleTable.at(data.handle)->id;
+            state.logger->Debug("Handle: 0x{:X} -> ID: 0x{:X}", data.handle, data.id);
+            return NvStatus::Success;
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
+            return NvStatus::BadParameter;
+        }
     }
 }

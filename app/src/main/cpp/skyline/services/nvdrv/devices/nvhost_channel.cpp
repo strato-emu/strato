@@ -16,14 +16,18 @@ namespace skyline::service::nvdrv::device {
         channelFence.UpdateValue(hostSyncpoint);
     }
 
-    void NvHostChannel::SetNvmapFd(IoctlData &buffer) {}
+    NvStatus NvHostChannel::SetNvmapFd(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
-    void NvHostChannel::SetSubmitTimeout(IoctlData &buffer) {}
+    NvStatus NvHostChannel::SetSubmitTimeout(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
-    void NvHostChannel::SubmitGpfifo(IoctlData &buffer) {
+    NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
-            u64 address;
-            u32 numEntries;
+            u64 address;    // In
+            u32 numEntries; // In
             union {
                 struct __attribute__((__packed__)) {
                     bool fenceWait : 1;
@@ -35,46 +39,50 @@ namespace skyline::service::nvdrv::device {
                     bool incrementWithValue : 1;
                 };
                 u32 raw;
-            } flags;
-            Fence fence;
-        } &args = state.process->GetReference<Data>(buffer.output.at(0).address);
+            } flags;        // In
+            Fence fence;    // InOut
+        } &data = util::As<Data>(buffer);
 
         auto driver = nvdrv::driver.lock();
         auto &hostSyncpoint = driver->hostSyncpoint;
 
-        if (args.flags.fenceWait) {
-            if (args.flags.incrementWithValue) {
-                buffer.status = NvStatus::BadValue;
-                return;
-            }
+        if (data.flags.fenceWait) {
+            if (data.flags.incrementWithValue)
+                return NvStatus::BadValue;
 
-            if (hostSyncpoint.HasSyncpointExpired(args.fence.id, args.fence.value))
+            if (hostSyncpoint.HasSyncpointExpired(data.fence.id, data.fence.value))
                 throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
-        state.gpu->gpfifo.Push(std::span(state.process->GetPointer<gpu::gpfifo::GpEntry>(args.address), args.numEntries));
+        state.gpu->gpfifo.Push(std::span(state.process->GetPointer<gpu::gpfifo::GpEntry>(data.address), data.numEntries));
 
-        args.fence.id = channelFence.id;
+        data.fence.id = channelFence.id;
 
-        u32 increment = (args.flags.fenceIncrement ? 2 : 0) + (args.flags.incrementWithValue ? args.fence.value : 0);
-        args.fence.value = hostSyncpoint.IncrementSyncpointMaxExt(args.fence.id, increment);
+        u32 increment = (data.flags.fenceIncrement ? 2 : 0) + (data.flags.incrementWithValue ? data.fence.value : 0);
+        data.fence.value = hostSyncpoint.IncrementSyncpointMaxExt(data.fence.id, increment);
 
-        if (args.flags.fenceIncrement)
+        if (data.flags.fenceIncrement)
             throw exception("Incrementing a fence through SubmitGpfifo is unimplemented");
 
-        args.flags.raw = 0;
+        data.flags.raw = 0;
+
+        return NvStatus::Success;
     }
 
-    void NvHostChannel::AllocObjCtx(IoctlData &buffer) {}
+    NvStatus NvHostChannel::AllocObjCtx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
-    void NvHostChannel::ZcullBind(IoctlData &buffer) {}
+    NvStatus NvHostChannel::ZcullBind(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
-    void NvHostChannel::SetErrorNotifier(IoctlData &buffer) {}
+    NvStatus NvHostChannel::SetErrorNotifier(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
-    void NvHostChannel::SetPriority(IoctlData &buffer) {
-        auto priority = state.process->GetObject<NvChannelPriority>(buffer.input.at(0).address);
-
-        switch (priority) {
+    NvStatus NvHostChannel::SetPriority(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        switch (util::As<NvChannelPriority>(buffer)) {
             case NvChannelPriority::Low:
                 timeslice = 1300;
                 break;
@@ -85,23 +93,29 @@ namespace skyline::service::nvdrv::device {
                 timeslice = 5200;
                 break;
         }
+
+        return NvStatus::Success;
     }
 
-    void NvHostChannel::AllocGpfifoEx2(IoctlData &buffer) {
+    NvStatus NvHostChannel::AllocGpfifoEx2(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
-            u32 numEntries;
-            u32 numJobs;
-            u32 flags;
-            Fence fence;
-            u32 reserved[3];
-        } &args = state.process->GetReference<Data>(buffer.input.at(0).address);
+            u32 numEntries;  // In
+            u32 numJobs;     // In
+            u32 flags;       // In
+            Fence fence;     // Out
+            u32 reserved[3]; // In
+        } &data = util::As<Data>(buffer);
 
         auto driver = nvdrv::driver.lock();
         channelFence.UpdateValue(driver->hostSyncpoint);
-        args.fence = channelFence;
+        data.fence = channelFence;
+
+        return NvStatus::Success;
     }
 
-    void NvHostChannel::SetUserData(IoctlData &buffer) {}
+    NvStatus NvHostChannel::SetUserData(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
+    }
 
     std::shared_ptr<type::KEvent> NvHostChannel::QueryEvent(u32 eventId) {
         switch (eventId) {

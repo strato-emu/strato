@@ -187,7 +187,7 @@ namespace skyline {
         }
 
         template<size_t Size>
-        constexpr std::array<u8, Size> HexStringToArray(const std::string_view &hexString) {
+        constexpr std::array<u8, Size> HexStringToArray(std::string_view hexString) {
             if (hexString.size() != Size * 2)
                 throw exception("Invalid size");
             std::array<u8, Size> result;
@@ -198,8 +198,22 @@ namespace skyline {
             return result;
         }
 
-        constexpr std::size_t Hash(const std::string_view& view) {
+        constexpr std::size_t Hash(std::string_view view) {
             return frz::elsa<frz::string>{}(frz::string(view.data(), view.size()), 0);
+        }
+
+        template<typename Out, typename In>
+        constexpr Out& As(const std::span<In> &span) {
+            if (span.size_bytes() < sizeof(Out))
+                throw exception("Span size less than Out type size");
+            return *reinterpret_cast<Out*>(span.data());
+        }
+
+        template<typename Out, typename In>
+        constexpr std::span<Out> AsSpan(const std::span<In> &span) {
+            if (span.size_bytes() < sizeof(Out))
+                throw exception("Span size less than Out type size");
+            return std::span(reinterpret_cast<Out*>(span.data()), span.size_bytes() / sizeof(Out));
         }
     }
 

@@ -8,12 +8,13 @@
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 
-#define NVFUNC(id, Class, Function) std::pair<u32, std::function<void(Class*, IoctlData &)>>(id, &Class::Function)
+#define NVFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<NvStatus(Class*, IoctlType, std::span<u8>, std::span<u8>)>, std::string_view>>{id, {&Class::Function, #Function}}
 #define NVDEVICE_DECL_AUTO(name, value) decltype(value) name = value
-#define NVDEVICE_DECL(...)                                                                                              \
-NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                  \
-std::function<void(IoctlData &)> GetServiceFunction(u32 index) {                                                        \
-    return std::bind(functions.at(index), this, std::placeholders::_1);                                                 \
+#define NVDEVICE_DECL(...)                                                                                                                        \
+NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                            \
+std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> GetIoctlFunction(u32 id) {                          \
+    auto& function = functions.at(id);                                                                                                            \
+    return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
 }
 
 namespace skyline::service::nvdrv::device {
@@ -49,53 +50,21 @@ namespace skyline::service::nvdrv::device {
     };
 
     /**
-     * @brief This holds all the input and output data for an IOCTL function
+     * @brief The IOCTL call variants, they have different buffer configurations
      */
-    struct IoctlData {
-        std::vector<kernel::ipc::InputBuffer> input; //!< A vector of all input IOCTL buffers
-        std::vector<kernel::ipc::OutputBuffer> output; //!< A vector of all output IOCTL buffers
-        NvStatus status{NvStatus::Success}; //!< The error code that is returned to the application
-
-        /**
-         * @brief This constructor takes 1 input buffer and 1 output buffer, it's used for Ioctl
-         * @param input An input buffer
-         * @param output An output buffer
-         */
-        IoctlData(kernel::ipc::InputBuffer input, kernel::ipc::OutputBuffer output) : input({input}), output({output}) {}
-
-        /**
-         * @brief This constructor takes 1 input buffer, it's used for Ioctl sometimes
-         * @param output An output buffer
-         */
-        IoctlData(kernel::ipc::InputBuffer input) : input({input}) {}
-
-        /**
-         * @brief This constructor takes 1 output buffer, it's used for Ioctl sometimes
-         * @param output An output buffer
-         */
-        IoctlData(kernel::ipc::OutputBuffer output) : output({output}) {}
-
-        /**
-         * @brief This constructor takes 2 input buffers and 1 output buffer, it's used for Ioctl1
-         * @param input1 The first input buffer
-         * @param input2 The second input buffer
-         * @param output An output buffer
-         */
-        IoctlData(kernel::ipc::InputBuffer input1, kernel::ipc::InputBuffer input2, kernel::ipc::OutputBuffer output) : input({input1, input2}), output({output}) {}
-
-        /**
-         * @brief This constructor takes 1 input buffer and 2 output buffers, it's used for Ioctl2
-         * @param input An input buffer
-         * @param output1 The first output buffer
-         * @param output2 The second output buffer
-         */
-        IoctlData(kernel::ipc::InputBuffer input, kernel::ipc::OutputBuffer output1, kernel::ipc::OutputBuffer output2) : input({input}), output({output1, output2}) {}
+    enum class IoctlType : u8 {
+        Ioctl,  //!< 1 input/output buffer
+        Ioctl2, //!< 1 input/output buffer + 1 input buffer
+        Ioctl3, //!< 1 input/output buffer + 1 output buffer
     };
 
     /**
      * @brief NvDevice is the base class that all /dev/nv* devices inherit from
      */
     class NvDevice {
+      private:
+        std::string name; //!< The name of the device
+
       protected:
         const DeviceState &state; //!< The state of the device
 
@@ -104,19 +73,19 @@ namespace skyline::service::nvdrv::device {
 
         virtual ~NvDevice() = default;
 
-        virtual std::function<void(IoctlData &)> GetServiceFunction(u32 index) = 0;
+        virtual std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> GetIoctlFunction(u32 id) = 0;
 
         /**
          * @return The name of the class
+         * @note The lifetime of the returned string is tied to that of the class
          */
-        std::string GetName();
+        const std::string& GetName();
 
         /**
          * @brief This handles IOCTL calls for devices
          * @param cmd The IOCTL command that was called
-         * @param input The input to the IOCTL call
          */
-        void HandleIoctl(u32 cmd, IoctlData &input);
+        NvStatus HandleIoctl(u32 cmd, IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         inline virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
             return nullptr;

@@ -33,7 +33,6 @@ namespace skyline::service::nvdrv {
     Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd = request.Pop<u32>();
         auto cmd = request.Pop<u32>();
-        state.logger->Debug("IOCTL on device: 0x{:X}, cmd: 0x{:X}", fd, cmd);
 
         auto device = driver->GetDevice(fd);
 
@@ -41,29 +40,25 @@ namespace skyline::service::nvdrv {
         cmd &= 0xFFFF;
 
         try {
+            std::optional<kernel::ipc::IpcBuffer> buffer{std::nullopt};
             if (request.inputBuf.empty() || request.outputBuf.empty()) {
-                if (request.inputBuf.empty()) {
-                    device::IoctlData data(request.outputBuf.at(0));
-
-                    device->HandleIoctl(cmd, data);
-                    response.Push(data.status);
-                } else {
-                    device::IoctlData data(request.inputBuf.at(0));
-
-                    device->HandleIoctl(cmd, data);
-                    response.Push(data.status);
-                }
+                if (!request.inputBuf.empty())
+                    buffer = request.inputBuf.at(0);
+                else if (!request.outputBuf.empty())
+                    buffer = request.outputBuf.at(0);
+                else
+                    throw exception("No IOCTL Buffers");
+            } else if (request.inputBuf.at(0).address == request.outputBuf.at(0).address) {
+                buffer = request.inputBuf.at(0);
             } else {
-                device::IoctlData data(request.inputBuf.at(0), request.outputBuf.at(0));
-
-                device->HandleIoctl(cmd, data);
-                response.Push(data.status);
+                throw exception("IOCTL Input Buffer != Output Buffer");
             }
-        } catch (const std::out_of_range &) {
-            throw exception("IOCTL was requested on an invalid file descriptor");
-        }
 
-        return {};
+            response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, std::span<u8>(reinterpret_cast<u8 *>(buffer->address), buffer->size), {}));
+            return {};
+        } catch (const std::out_of_range &) {
+            throw exception("IOCTL was requested on an invalid file descriptor: 0x{:X}", fd);
+        }
     }
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

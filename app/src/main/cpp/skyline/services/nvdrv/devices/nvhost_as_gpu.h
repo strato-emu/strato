@@ -16,37 +16,37 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This binds a channel to the address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_BIND_CHANNEL)
          */
-        void BindChannel(IoctlData &buffer);
+        NvStatus BindChannel(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This reserves a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_SPACE)
          */
-        void AllocSpace(IoctlData &buffer);
+        NvStatus AllocSpace(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This unmaps a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_UNMAP_BUFFER)
          */
-        void UnmapBuffer(IoctlData &buffer);
+        NvStatus UnmapBuffer(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This maps a region in the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_MODIFY)
          */
-        void Modify(IoctlData &buffer);
+        NvStatus Modify(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_GET_VA_REGIONS)
          */
-        void GetVaRegions(IoctlData &buffer);
+        NvStatus GetVaRegions(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
-         * @brief This initializes the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_INITIALIZE_EX)
+         * @brief This initializes the application's GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_AS_EX)
          */
-        void InitializeEx(IoctlData &buffer);
+        NvStatus AllocAsEx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief Remaps a region of the GPU address space (https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_REMAP)
          */
-        void Remap(IoctlData &buffer);
+        NvStatus Remap(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         NVDEVICE_DECL(
             NVFUNC(0x4101, NvHostAsGpu, BindChannel),
@@ -54,7 +54,7 @@ namespace skyline::service::nvdrv::device {
             NVFUNC(0x4105, NvHostAsGpu, UnmapBuffer),
             NVFUNC(0x4106, NvHostAsGpu, Modify),
             NVFUNC(0x4108, NvHostAsGpu, GetVaRegions),
-            NVFUNC(0x4109, NvHostAsGpu, InitializeEx),
+            NVFUNC(0x4109, NvHostAsGpu, AllocAsEx),
             NVFUNC(0x4114, NvHostAsGpu, Remap)
         )
     };

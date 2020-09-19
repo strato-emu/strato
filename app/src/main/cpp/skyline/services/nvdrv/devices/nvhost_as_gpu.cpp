@@ -11,20 +11,21 @@
 namespace skyline::service::nvdrv::device {
     NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state) {}
 
-    void NvHostAsGpu::BindChannel(IoctlData &buffer) {
-        struct Data {
-            u32 fd;
-        } &channelInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
+    NvStatus NvHostAsGpu::BindChannel(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        return NvStatus::Success;
     }
 
-    void NvHostAsGpu::AllocSpace(IoctlData &buffer) {
+    NvStatus NvHostAsGpu::AllocSpace(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
-            u32 pages;
-            u32 pageSize;
-            u32 flags;
+            u32 pages;    // In
+            u32 pageSize; // In
+            u32 flags;    // In
             u32 _pad_;
-            u64 offset;
-        } region = state.process->GetObject<Data>(buffer.input.at(0).address);
+            union {
+                u64 offset; // InOut
+                u64 align;  // In
+            };
+        } region = util::As<Data>(buffer);
 
         u64 size = static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize);
 
@@ -35,57 +36,62 @@ namespace skyline::service::nvdrv::device {
 
         if (region.offset == 0) {
             state.logger->Warn("Failed to allocate GPU address space region!");
-            buffer.status = NvStatus::BadParameter;
+            return NvStatus::BadParameter;
         }
 
-        state.process->WriteMemory(region, buffer.output.at(0).address);
+        return NvStatus::Success;
     }
 
-    void NvHostAsGpu::UnmapBuffer(IoctlData &buffer) {
-        auto offset = state.process->GetObject<u64>(buffer.input.at(0).address);
+    NvStatus NvHostAsGpu::UnmapBuffer(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        u64 offset{util::As<u64>(buffer)};
 
         if (!state.gpu->memoryManager.Unmap(offset))
             state.logger->Warn("Failed to unmap chunk at 0x{:X}", offset);
+
+        return NvStatus::Success;
     }
 
-    void NvHostAsGpu::Modify(IoctlData &buffer) {
+    NvStatus NvHostAsGpu::Modify(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
-            u32 flags;
-            u32 kind;
-            u32 nvmapHandle;
-            u32 pageSize;
-            u64 bufferOffset;
-            u64 mappingSize;
-            u64 offset;
-        } region = state.process->GetObject<Data>(buffer.input.at(0).address);
+            u32 flags;        // In
+            u32 kind;         // In
+            u32 nvmapHandle;  // In
+            u32 pageSize;     // InOut
+            u64 bufferOffset; // In
+            u64 mappingSize;  // In
+            u64 offset;       // InOut
+        }  &data = util::As<Data>(buffer);
 
-        if (!region.nvmapHandle)
-            return;
+        try {
+            auto driver = nvdrv::driver.lock();
+            auto nvmap = driver->nvMap.lock();
+            auto mapping = nvmap->handleTable.at(data.nvmapHandle);
 
-        auto driver = nvdrv::driver.lock();
-        auto nvmap = driver->nvMap.lock();
-        auto mapping = nvmap->handleTable.at(region.nvmapHandle);
+            u64 mapPhysicalAddress = data.bufferOffset + mapping->address;
+            u64 mapSize = data.mappingSize ? data.mappingSize : mapping->size;
 
-        u64 mapPhysicalAddress = region.bufferOffset + mapping->address;
-        u64 mapSize = region.mappingSize ? region.mappingSize : mapping->size;
+            if (data.flags & 1)
+                data.offset = state.gpu->memoryManager.MapFixed(data.offset, mapPhysicalAddress, mapSize);
+            else
+                data.offset = state.gpu->memoryManager.MapAllocate(mapPhysicalAddress, mapSize);
 
-        if (region.flags & 1)
-            region.offset = state.gpu->memoryManager.MapFixed(region.offset, mapPhysicalAddress, mapSize);
-        else
-            region.offset = state.gpu->memoryManager.MapAllocate(mapPhysicalAddress, mapSize);
+            if (data.offset == 0) {
+                state.logger->Warn("Failed to map GPU address space region!");
+                return NvStatus::BadParameter;
+            }
 
-        if (region.offset == 0) {
-            state.logger->Warn("Failed to map GPU address space region!");
-            buffer.status = NvStatus::BadParameter;
+            return NvStatus::Success;
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.nvmapHandle);
+            return NvStatus::BadParameter;
         }
-
-        state.process->WriteMemory(region, buffer.output.at(0).address);
     }
 
-    void NvHostAsGpu::GetVaRegions(IoctlData &buffer) {
+    NvStatus NvHostAsGpu::GetVaRegions(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        /*
         struct Data {
             u64 _pad0_;
-            u32 bufferSize;
+            u32 bufferSize; // InOut
             u32 _pad1_;
 
             struct {
@@ -93,38 +99,40 @@ namespace skyline::service::nvdrv::device {
                 u32 page_size;
                 u32 pad;
                 u64 pages;
-            } regions[2];
-        } &regionInfo = state.process->GetReference<Data>(buffer.input.at(0).address);
-        state.process->WriteMemory(regionInfo, buffer.output.at(0).address);
+            } regions[2];   // Out
+        } &regionInfo = util::As<Data>(buffer);
+        */
+        return NvStatus::Success;
     }
 
-    void NvHostAsGpu::InitializeEx(IoctlData &buffer) {
+    NvStatus NvHostAsGpu::AllocAsEx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        /*
         struct Data {
-            u32 bigPageSize;
-            i32 asFd;
-            u32 flags;
-            u32 reserved;
-            u64 vaRangeStart;
-            u64 vaRangeEnd;
-            u64 vaRangeSplit;
-        } addressSpace = state.process->GetObject<Data>(buffer.input.at(0).address);
+            u32 bigPageSize;  // In
+            i32 asFd;         // In
+            u32 flags;        // In
+            u32 reserved;     // In
+            u64 vaRangeStart; // In
+            u64 vaRangeEnd;   // In
+            u64 vaRangeSplit; // In
+        } addressSpace = util::As<Data>(buffer);
+        */
+        return NvStatus::Success;
     }
 
-    void NvHostAsGpu::Remap(IoctlData &buffer) {
+    NvStatus NvHostAsGpu::Remap(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Entry {
-            u16 flags;
-            u16 kind;
-            u32 nvmapHandle;
-            u32 mapOffset;
-            u32 gpuOffset;
-            u32 pages;
+            u16 flags;       // In
+            u16 kind;        // In
+            u32 nvmapHandle; // In
+            u32 mapOffset;   // In
+            u32 gpuOffset;   // In
+            u32 pages;       // In
         };
 
         constexpr u32 MinAlignmentShift{0x10}; // This shift is applied to all addresses passed to Remap
 
-        size_t entryCount{buffer.input.at(0).size / sizeof(Entry)};
-        std::span entries(state.process->GetPointer<Entry>(buffer.input.at(0).address), entryCount);
-
+        auto entries{util::AsSpan<Entry>(buffer)};
         for (auto entry : entries) {
             try {
                 auto driver = nvdrv::driver.lock();
@@ -136,10 +144,12 @@ namespace skyline::service::nvdrv::device {
                 u64 mapSize = static_cast<u64>(entry.pages) << MinAlignmentShift;
 
                 state.gpu->memoryManager.MapFixed(mapAddress, mapPhysicalAddress, mapSize);
-            } catch (const std::exception &e) {
-                buffer.status = NvStatus::BadValue;
-                return;
+            } catch (const std::out_of_range &) {
+                state.logger->Warn("Invalid NvMap handle: 0x{:X}", entry.nvmapHandle);
+                return NvStatus::BadParameter;
             }
         }
+
+        return NvStatus::Success;
     }
 }

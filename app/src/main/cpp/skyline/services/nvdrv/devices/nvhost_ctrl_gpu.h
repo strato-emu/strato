@@ -20,27 +20,27 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This returns a u32 GPU ZCULL Context Size (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZCULL_GET_CTX_SIZE)
          */
-        void ZCullGetCtxSize(IoctlData &buffer);
+        NvStatus ZCullGetCtxSize(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns a the GPU ZCULL Information (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZCULL_GET_INFO)
          */
-        void ZCullGetInfo(IoctlData &buffer);
+        NvStatus ZCullGetInfo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns a struct with certain GPU characteristics (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_CHARACTERISTICS)
          */
-        void GetCharacteristics(IoctlData &buffer);
+        NvStatus GetCharacteristics(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns the TPC mask value for each GPC (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_TPC_MASKS)
          */
-        void GetTpcMasks(IoctlData &buffer);
+        NvStatus GetTpcMasks(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns the mask value for a ZBC slot (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZBC_GET_ACTIVE_SLOT_MASK)
          */
-        void GetActiveSlotMask(IoctlData &buffer);
+        NvStatus GetActiveSlotMask(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
 

@@ -44,32 +44,32 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This creates an NvMapObject and returns an handle to it (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_CREATE)
          */
-        void Create(IoctlData &buffer);
+        NvStatus Create(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns the handle of an NvMapObject from it's ID (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID)
          */
-        void FromId(IoctlData &buffer);
+        NvStatus FromId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This allocates memory for an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC)
          */
-        void Alloc(IoctlData &buffer);
+        NvStatus Alloc(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This frees previously allocated memory (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE)
          */
-        void Free(IoctlData &buffer);
+        NvStatus Free(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns a particular parameter from an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_PARAM)
          */
-        void Param(IoctlData &buffer);
+        NvStatus Param(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This returns the ID of an NvMapObject from it's handle (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID)
          */
-        void GetId(IoctlData &buffer);
+        NvStatus GetId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         NVDEVICE_DECL(
             NVFUNC(0x0101, NvMap, Create),

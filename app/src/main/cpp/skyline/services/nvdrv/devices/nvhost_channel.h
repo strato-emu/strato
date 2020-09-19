@@ -30,47 +30,47 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This sets the nvmap file descriptor (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD)
          */
-        void SetNvmapFd(IoctlData &buffer);
+        NvStatus SetNvmapFd(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This sets the timeout for the channel (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CHANNEL_SET_SUBMIT_TIMEOUT)
          */
-        void SetSubmitTimeout(IoctlData &buffer);
+        NvStatus SetSubmitTimeout(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This submits a command to the GPFIFO (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO)
          */
-        void SubmitGpfifo(IoctlData &buffer);
+        NvStatus SubmitGpfifo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This allocates a graphic context object (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX)
          */
-        void AllocObjCtx(IoctlData &buffer);
+        NvStatus AllocObjCtx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ZCULL_BIND)
          */
-        void ZcullBind(IoctlData &buffer);
+        NvStatus ZcullBind(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_ERROR_NOTIFIER)
          */
-        void SetErrorNotifier(IoctlData &buffer);
+        NvStatus SetErrorNotifier(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This sets the priority of the channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_PRIORITY)
          */
-        void SetPriority(IoctlData &buffer);
+        NvStatus SetPriority(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This allocates a GPFIFO entry (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_GPFIFO_EX2)
          */
-        void AllocGpfifoEx2(IoctlData &buffer);
+        NvStatus AllocGpfifoEx2(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         /**
          * @brief This sets the user specific data (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_USER_DATA)
          */
-        void SetUserData(IoctlData &buffer);
+        NvStatus SetUserData(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
 
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
 
