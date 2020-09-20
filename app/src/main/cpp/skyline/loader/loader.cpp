@@ -14,10 +14,10 @@ namespace skyline::loader {
         u64 roSize = executable.ro.contents.size();
         u64 dataSize = executable.data.contents.size() + executable.bssSize;
 
-        if (!util::IsAligned(textSize, PAGE_SIZE) || !util::IsAligned(roSize, PAGE_SIZE) || !util::IsAligned(dataSize, PAGE_SIZE))
+        if (!util::PageAligned(textSize) || !util::PageAligned(roSize) || !util::PageAligned(dataSize))
             throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, roSize, dataSize);
 
-        if (!util::IsAligned(executable.text.offset, PAGE_SIZE) || !util::IsAligned(executable.ro.offset, PAGE_SIZE) || !util::IsAligned(executable.data.offset, PAGE_SIZE))
+        if (!util::PageAligned(executable.text.offset) || !util::PageAligned(executable.ro.offset) || !util::PageAligned(executable.data.offset))
             throw exception("LoadProcessData: Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
 
         // The data section will always be the last section in memory, so put the patch section after it

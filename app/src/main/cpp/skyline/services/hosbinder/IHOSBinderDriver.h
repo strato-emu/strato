@@ -10,7 +10,7 @@ namespace skyline::service::hosbinder {
     class GraphicBufferProducer;
 
     /**
-     * @brief nvnflinger:dispdrv or nns::hosbinder::IHOSBinderDriver is responsible for writing buffers to the display
+     * @brief nvnflinger:dispdrv or nns::hosbinder::IHOSBinderDriver is a translation layer between Android Binder IPC and HOS IPC to communicate with the Android display stack
      */
     class IHOSBinderDriver : public BaseService {
       private:

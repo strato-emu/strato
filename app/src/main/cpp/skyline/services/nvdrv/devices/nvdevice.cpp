@@ -18,19 +18,20 @@ namespace skyline::service::nvdrv::device {
     }
 
     NvStatus NvDevice::HandleIoctl(u32 cmd, IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+        std::string_view typeString{[type] {
+            switch (type) {
+                case IoctlType::Ioctl:
+                    return "IOCTL";
+                case IoctlType::Ioctl2:
+                    return "IOCTL2";
+                case IoctlType::Ioctl3:
+                    return "IOCTL3";
+            }
+        }()};
+
         std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> function;
         try {
             function = GetIoctlFunction(cmd);
-            std::string_view typeString{[type] {
-                switch (type) {
-                    case IoctlType::Ioctl:
-                        return "IOCTL";
-                    case IoctlType::Ioctl2:
-                        return "IOCTL2";
-                    case IoctlType::Ioctl3:
-                        return "IOCTL3";
-                }
-            }()};
             state.logger->Debug("{} @ {}: {}", typeString, GetName(), function.second);
         } catch (std::out_of_range &) {
             state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", GetName(), cmd);
@@ -39,8 +40,7 @@ namespace skyline::service::nvdrv::device {
         try {
             return function.first(type, buffer, inlineBuffer);
         } catch (const std::exception &e) {
-            throw exception("{} (Device: {})", e.what(), GetName());
+            throw exception("{} ({} @ {}: {})", e.what(), typeString, GetName(), function.second);
         }
-        exit(0);
     }
 }

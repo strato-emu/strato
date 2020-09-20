@@ -8,7 +8,6 @@
 #include <services/common/fence.h>
 #include <gpu/format.h>
 #include "GraphicBufferProducer.h"
-#include "display.h"
 
 namespace skyline::service::hosbinder {
     Buffer::Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::PresentationTexture> &texture) : gbpBuffer(gbpBuffer), texture(texture) {}
@@ -190,11 +189,21 @@ namespace skyline::service::hosbinder {
         }
     }
 
+    /**
+     * @brief A mapping from a display's name to it's displayType entry
+     */
+    static frz::unordered_map<frz::string, DisplayId, 5> DisplayTypeMap{
+        {"Default", DisplayId::Default},
+        {"External", DisplayId::External},
+        {"Edid", DisplayId::Edid},
+        {"Internal", DisplayId::Internal},
+        {"Null", DisplayId::Null},
+    };
+
     void GraphicBufferProducer::SetDisplay(const std::string &name) {
         try {
-            const auto type = DisplayTypeMap.at(name);
             if (displayId == DisplayId::Null)
-                displayId = type;
+                displayId = DisplayTypeMap.at(frz::string(name.data(), name.size()));
             else
                 throw exception("Trying to change display type from non-null type");
         } catch (const std::out_of_range &) {

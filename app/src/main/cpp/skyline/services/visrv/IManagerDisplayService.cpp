@@ -3,7 +3,6 @@
 
 #include <os.h>
 #include <services/hosbinder/GraphicBufferProducer.h>
-#include <services/hosbinder/display.h>
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {

@@ -5,7 +5,6 @@
 
 #include <gpu.h>
 #include <services/common/parcel.h>
-#include "display.h"
 
 namespace skyline::service::hosbinder {
     /**
@@ -51,7 +50,24 @@ namespace skyline::service::hosbinder {
     };
 
     /**
-     * @brief nvnflinger:dispdrv or nns::hosbinder::IHOSBinderDriver is responsible for writing buffers to the display
+     * @brief An enumeration of all the possible display IDs (https://switchbrew.org/wiki/Display_services#DisplayName)
+     */
+    enum class DisplayId : u64 {
+        Default, //!< Refers to the default display used by most applications
+        External, //!< Refers to an external display
+        Edid, //!< Refers to an external display with EDID capabilities
+        Internal, //!< Refers to the the internal display
+        Null, //!< Refers to the null display which is used for discarding data
+    };
+
+    enum class LayerStatus {
+        Uninitialized, //!< The layer hasn't been initialized
+        Stray, //!< The layer has been initialized as a stray layer
+        Managed, //!< The layer has been initialized as a managed layer
+    };
+
+    /**
+     * @brief IGraphicBufferProducer is responsible for presenting buffers to the display as well as compositing and frame pacing (https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp)
      */
     class GraphicBufferProducer {
       private:
@@ -110,7 +126,7 @@ namespace skyline::service::hosbinder {
             Disconnect = 11, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#396
             SetSidebandStream = 12, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#403
             AllocateBuffers = 13, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#413
-            SetPreallocatedBuffer = 14, //!< No source on this but it's used to set a existing buffer according to libtransistor and libNX
+            SetPreallocatedBuffer = 14, //!< No source on this but it's used to set a existing buffer according to libtransistor and libnx
         };
 
         GraphicBufferProducer(const DeviceState &state);

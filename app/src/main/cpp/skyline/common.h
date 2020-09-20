@@ -115,7 +115,6 @@ namespace skyline {
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
-            static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             multiple--;
             return (value + multiple) & ~(multiple);
         }
@@ -130,7 +129,6 @@ namespace skyline {
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
-            static_assert(std::is_integral<TypeVal>() && std::is_integral<TypeMul>());
             return value & ~(multiple - 1);
         }
 
@@ -138,9 +136,14 @@ namespace skyline {
          * @param value The value to check for alignment
          * @param multiple The multiple to check alignment with
          * @return If the address is aligned with the multiple
+         * @note The multiple must be divisible by 2
          */
-        constexpr inline bool IsAligned(u64 value, u64 multiple) {
-            return !(value & (multiple - 1U));
+        template<typename TypeVal, typename TypeMul>
+        constexpr inline bool IsAligned(TypeVal value, TypeMul multiple) {
+            if ((multiple & (multiple - 1)) == 0)
+                return !(value & (multiple - 1U));
+            else
+                return (value % multiple) == 0;
         }
 
         /**
@@ -203,17 +206,17 @@ namespace skyline {
         }
 
         template<typename Out, typename In>
-        constexpr Out& As(const std::span<In> &span) {
-            if (span.size_bytes() < sizeof(Out))
-                throw exception("Span size less than Out type size");
-            return *reinterpret_cast<Out*>(span.data());
+        constexpr Out &As(std::span<In> span) {
+            if (IsAligned(span.size_bytes(), sizeof(Out)))
+                return *reinterpret_cast<Out *>(span.data());
+            throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span.size_bytes(), sizeof(Out));
         }
 
         template<typename Out, typename In>
-        constexpr std::span<Out> AsSpan(const std::span<In> &span) {
-            if (span.size_bytes() < sizeof(Out))
-                throw exception("Span size less than Out type size");
-            return std::span(reinterpret_cast<Out*>(span.data()), span.size_bytes() / sizeof(Out));
+        constexpr std::span<Out> AsSpan(std::span<In> span) {
+            if (IsAligned(span.size_bytes(), sizeof(Out)))
+                return std::span(reinterpret_cast<Out *>(span.data()), span.size_bytes() / sizeof(Out));
+            throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span.size_bytes(), sizeof(Out));
         }
     }
 

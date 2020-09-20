@@ -29,8 +29,8 @@ namespace skyline::service::nvdrv {
     class Driver {
       private:
         const DeviceState &state;
-        std::vector<std::shared_ptr<device::NvDevice>> devices; //!< A map from an FD to a shared pointer to it's NvDevice object
-        u32 fdIndex{}; //!< The index of a file descriptor
+        std::vector<std::shared_ptr<device::NvDevice>> devices; //!< A vector of shared pointers to NvDevice object that correspond to FDs
+        u32 fdIndex{}; //!< The next file descriptor to assign
 
       public:
         NvHostSyncpoint hostSyncpoint;
