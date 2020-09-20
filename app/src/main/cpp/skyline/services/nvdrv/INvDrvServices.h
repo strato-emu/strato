@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv {
         Result Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Close the specified FD (https://switchbrew.org/wiki/NV_services#Close)
+         * @brief Perform an IOCTL on the specified FD (https://switchbrew.org/wiki/NV_services#Ioctl)
          */
         Result Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
@@ -45,9 +45,19 @@ namespace skyline::service::nvdrv {
         Result QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This sets the AppletResourceUserId which matches the PID (https://switchbrew.org/wiki/NV_services#SetAruidByPID)
+         * @brief This sets the AppletResourceUserId which matches the PID (https://switchbrew.org/wiki/NV_services#SetAruid)
          */
-        Result SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetAruid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Perform an IOCTL on the specified FD with an extra input buffer (https://switchbrew.org/wiki/NV_services#Ioctl2)
+         */
+        Result Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Perform an IOCTL on the specified FD with an extra output buffer (https://switchbrew.org/wiki/NV_services#Ioctl3)
+         */
+        Result Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This enables the graphics firmware memory margin (https://switchbrew.org/wiki/NV_services#SetGraphicsFirmwareMemoryMarginEnabled)

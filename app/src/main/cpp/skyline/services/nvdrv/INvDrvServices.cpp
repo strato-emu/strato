@@ -13,7 +13,7 @@ namespace skyline::service::nvdrv {
         {0x2, SFUNC(INvDrvServices::Close)},
         {0x3, SFUNC(INvDrvServices::Initialize)},
         {0x4, SFUNC(INvDrvServices::QueryEvent)},
-        {0x8, SFUNC(INvDrvServices::SetAruidByPID)},
+        {0x8, SFUNC(INvDrvServices::SetAruid)},
         {0xD, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
     }) {
         if (nvdrv::driver.expired())
@@ -39,26 +39,22 @@ namespace skyline::service::nvdrv {
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
 
-        try {
-            std::optional<kernel::ipc::IpcBuffer> buffer{std::nullopt};
-            if (request.inputBuf.empty() || request.outputBuf.empty()) {
-                if (!request.inputBuf.empty())
-                    buffer = request.inputBuf.at(0);
-                else if (!request.outputBuf.empty())
-                    buffer = request.outputBuf.at(0);
-                else
-                    throw exception("No IOCTL Buffers");
-            } else if (request.inputBuf.at(0).address == request.outputBuf.at(0).address) {
+        std::optional<kernel::ipc::IpcBuffer> buffer{std::nullopt};
+        if (request.inputBuf.empty() || request.outputBuf.empty()) {
+            if (!request.inputBuf.empty())
                 buffer = request.inputBuf.at(0);
-            } else {
-                throw exception("IOCTL Input Buffer != Output Buffer");
-            }
-
-            response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, std::span<u8>(reinterpret_cast<u8 *>(buffer->address), buffer->size), {}));
-            return {};
-        } catch (const std::out_of_range &) {
-            throw exception("IOCTL was requested on an invalid file descriptor: 0x{:X}", fd);
+            else if (!request.outputBuf.empty())
+                buffer = request.outputBuf.at(0);
+            else
+                throw exception("No IOCTL Buffers");
+        } else if (request.inputBuf.at(0).address == request.outputBuf.at(0).address) {
+            buffer = request.inputBuf.at(0);
+        } else {
+            throw exception("IOCTL Input Buffer (0x{:X}) != Output Buffer (0x{:X})", request.inputBuf[0].address, request.outputBuf[0].address);
         }
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, std::span<u8>(reinterpret_cast<u8 *>(buffer->address), buffer->size), {}));
+        return {};
     }
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -97,8 +93,44 @@ namespace skyline::service::nvdrv {
         return {};
     }
 
-    Result INvDrvServices::SetAruidByPID(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+    Result INvDrvServices::SetAruid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(device::NvStatus::Success);
+        return {};
+    }
+
+    Result INvDrvServices::Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto fd = request.Pop<u32>();
+        auto cmd = request.Pop<u32>();
+
+        auto device = driver->GetDevice(fd);
+
+        // Strip the permissions from the command leaving only the ID
+        cmd &= 0xFFFF;
+
+        if (request.inputBuf.size() < 2 || request.outputBuf.empty())
+            throw exception("Inadequate amount of buffers for IOCTL2: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
+        else if (request.inputBuf[0].address != request.outputBuf[0].address)
+            throw exception("IOCTL2 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Input Buffer #2: 0x{:X}]", request.inputBuf[0].address, request.outputBuf[0].address, request.inputBuf[1].address);
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl2, std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[0].address), request.inputBuf[0].size), std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[1].address), request.inputBuf[1].size)));
+        return {};
+    }
+
+    Result INvDrvServices::Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto fd = request.Pop<u32>();
+        auto cmd = request.Pop<u32>();
+
+        auto device = driver->GetDevice(fd);
+
+        // Strip the permissions from the command leaving only the ID
+        cmd &= 0xFFFF;
+
+        if (request.inputBuf.empty() || request.outputBuf.size() < 2)
+            throw exception("Inadequate amount of buffers for IOCTL3: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
+        else if (request.inputBuf[0].address != request.outputBuf[0].address)
+            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", request.inputBuf[0].address, request.outputBuf[0].address, request.outputBuf[1].address);
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[0].address), request.inputBuf[0].size), std::span<u8>(reinterpret_cast<u8 *>(request.outputBuf[1].address), request.outputBuf[1].size)));
         return {};
     }
 

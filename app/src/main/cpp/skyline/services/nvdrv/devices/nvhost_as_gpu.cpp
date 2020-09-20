@@ -17,9 +17,9 @@ namespace skyline::service::nvdrv::device {
 
     NvStatus NvHostAsGpu::AllocSpace(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
         struct Data {
-            u32 pages;    // In
-            u32 pageSize; // In
-            u32 flags;    // In
+            u32 pages;      // In
+            u32 pageSize;   // In
+            u32 flags;      // In
             u32 _pad_;
             union {
                 u64 offset; // InOut
