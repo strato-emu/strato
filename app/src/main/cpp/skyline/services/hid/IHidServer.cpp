@@ -10,12 +10,15 @@ using namespace skyline::input;
 namespace skyline::service::hid {
     IHidServer::IHidServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
         {0x0, SFUNC(IHidServer::CreateAppletResource)},
+        {0x1, SFUNC(IHidServer::ActivateDebugPad)},
+        {0xB, SFUNC(IHidServer::ActivateTouchScreen)},
         {0x64, SFUNC(IHidServer::SetSupportedNpadStyleSet)},
-        {0x64, SFUNC(IHidServer::GetSupportedNpadStyleSet)},
+        {0x65, SFUNC(IHidServer::GetSupportedNpadStyleSet)},
         {0x66, SFUNC(IHidServer::SetSupportedNpadIdType)},
         {0x67, SFUNC(IHidServer::ActivateNpad)},
         {0x68, SFUNC(IHidServer::DeactivateNpad)},
         {0x6A, SFUNC(IHidServer::AcquireNpadStyleSetUpdateEventHandle)},
+        {0x6C, SFUNC(IHidServer::GetPlayerLedPattern)},
         {0x6D, SFUNC(IHidServer::ActivateNpadWithRevision)},
         {0x78, SFUNC(IHidServer::SetNpadJoyHoldType)},
         {0x79, SFUNC(IHidServer::GetNpadJoyHoldType)},
@@ -28,6 +31,15 @@ namespace skyline::service::hid {
 
     Result IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAppletResource), session, response);
+        return {};
+    }
+
+    Result IHidServer::ActivateDebugPad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IHidServer::ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        state.input->touch.Activate();
         return {};
     }
 
@@ -77,6 +89,33 @@ namespace skyline::service::hid {
     Result IHidServer::AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<NpadId>();
         request.copyHandles.push_back(state.process->InsertItem(state.input->npad.at(id).updateEvent));
+        return {};
+    }
+
+    Result IHidServer::GetPlayerLedPattern(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto id = request.Pop<NpadId>();
+        response.Push<u64>([id] {
+            switch (id) {
+                case NpadId::Player1:
+                    return 0b0001;
+                case NpadId::Player2:
+                    return 0b0011;
+                case NpadId::Player3:
+                    return 0b0111;
+                case NpadId::Player4:
+                    return 0b1111;
+                case NpadId::Player5:
+                    return 0b1001;
+                case NpadId::Player6:
+                    return 0b0101;
+                case NpadId::Player7:
+                    return 0b1101;
+                case NpadId::Player8:
+                    return 0b0110;
+                default:
+                    return 0b0000;
+            }
+        }());
         return {};
     }
 

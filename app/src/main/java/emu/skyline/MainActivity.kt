@@ -173,14 +173,14 @@ class MainActivity : AppCompatActivity() {
 
         settings_fab.setOnClickListener { startActivityForResult(Intent(this, SettingsActivity::class.java), 3) }
 
-        open_fab.setOnClickListener { startActivity(Intent(this, LogActivity::class.java)) }
-
-        log_fab.setOnClickListener {
+        open_fab.setOnClickListener {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "*/*"
             }, 2)
         }
+
+        log_fab.setOnClickListener { startActivity(Intent(this, LogActivity::class.java)) }
 
         setupAppList()
 

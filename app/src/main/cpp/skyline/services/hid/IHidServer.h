@@ -21,6 +21,16 @@ namespace skyline::service::hid {
         Result CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This would activate the debug pad (if hid:dbg was used) on a development device
+         */
+        Result ActivateDebugPad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This activates the touch screen (if it's disabled, it is enabled by default)
+         */
+        Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This sets the style of controllers supported (https://switchbrew.org/wiki/HID_services#SetSupportedNpadStyleSet)
          */
         Result SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -49,6 +59,11 @@ namespace skyline::service::hid {
          * @brief This requests an event that's signalled on a specific NpadId changing (https://switchbrew.org/wiki/HID_services#AcquireNpadStyleSetUpdateEventHandle)
          */
         Result AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief This requests the LED pattern which represents a particular Player
+         */
+        Result GetPlayerLedPattern(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief This requests the activation of controllers with a specific HID revision (https://switchbrew.org/wiki/HID_services#ActivateNpadWithRevision)
