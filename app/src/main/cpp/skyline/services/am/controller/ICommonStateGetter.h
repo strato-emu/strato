@@ -83,5 +83,14 @@ namespace skyline::service::am {
          * @brief This returns the current display width and height in two u32s (https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution)
          */
         Result GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ICommonStateGetter, GetEventHandle),
+            SFUNC(0x1, ICommonStateGetter, ReceiveMessage),
+            SFUNC(0x5, ICommonStateGetter, GetOperationMode),
+            SFUNC(0x6, ICommonStateGetter, GetPerformanceMode),
+            SFUNC(0x9, ICommonStateGetter, GetCurrentFocusState),
+            SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution)
+        )
     };
 }

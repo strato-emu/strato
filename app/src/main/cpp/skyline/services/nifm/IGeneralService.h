@@ -18,5 +18,9 @@ namespace skyline::service::nifm {
          * @brief This creates an IRequest instance that can be used to bring up the network (https://switchbrew.org/wiki/Network_Interface_services#CreateRequest)
          */
         Result CreateRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x4, IGeneralService, CreateRequest)
+        )
     };
 }

@@ -34,6 +34,12 @@ namespace skyline::service {
              * @brief This reads the available language codes that an application can use (post 4.0.0)
              */
             Result GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            SERVICE_DECL(
+                SFUNC(0x1, ISettingsServer, GetAvailableLanguageCodes),
+                SFUNC(0x2, ISettingsServer, MakeLanguageCode),
+                SFUNC(0x5, ISettingsServer, GetAvailableLanguageCodes2)
+            )
         };
     }
 }

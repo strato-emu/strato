@@ -7,12 +7,7 @@
 #include "IAudioRendererManager.h"
 
 namespace skyline::service::audio {
-    IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IAudioRendererManager::OpenAudioRenderer)},
-        {0x1, SFUNC(IAudioRendererManager::GetAudioRendererWorkBufferSize)},
-        {0x2, SFUNC(IAudioRendererManager::GetAudioDeviceService)},
-        {0x4, SFUNC(IAudioRendererManager::GetAudioDeviceService)}
-    }) {}
+    IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         IAudioRenderer::AudioRendererParameters params = request.Pop<IAudioRenderer::AudioRendererParameters>();

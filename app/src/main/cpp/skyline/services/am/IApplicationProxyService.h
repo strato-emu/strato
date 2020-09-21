@@ -18,5 +18,9 @@ namespace skyline::service::am {
          * @brief This returns #IApplicationProxy (https://switchbrew.org/wiki/Applet_Manager_services#OpenApplicationProxy)
          */
         Result OpenApplicationProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IApplicationProxyService, OpenApplicationProxy)
+        )
     };
 }

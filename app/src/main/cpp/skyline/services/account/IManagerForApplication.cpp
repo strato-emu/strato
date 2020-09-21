@@ -4,6 +4,5 @@
 #include "IManagerForApplication.h"
 
 namespace skyline::service::account {
-    IManagerForApplication::IManagerForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-    }) {}
+    IManagerForApplication::IManagerForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 }

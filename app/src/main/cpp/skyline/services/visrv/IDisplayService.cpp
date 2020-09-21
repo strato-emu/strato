@@ -6,7 +6,7 @@
 #include "IDisplayService.h"
 
 namespace skyline::service::visrv {
-    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>> &vTable) : BaseService(state, manager, vTable) {}
+    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>();

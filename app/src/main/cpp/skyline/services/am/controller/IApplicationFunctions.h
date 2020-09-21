@@ -57,5 +57,17 @@ namespace skyline::service::am {
          * @brief This obtains a handle to the system GPU error KEvent (https://switchbrew.org/wiki/Applet_Manager_services#GetGpuErrorDetectedSystemEvent)
          */
         Result GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x1, IApplicationFunctions, PopLaunchParameter),
+            SFUNC(0x14, IApplicationFunctions, EnsureSaveData),
+            SFUNC(0x15, IApplicationFunctions, GetDesiredLanguage),
+            SFUNC(0x28, IApplicationFunctions, NotifyRunning),
+            SFUNC(0x32, IApplicationFunctions, GetPseudoDeviceId),
+            SFUNC(0x42, IApplicationFunctions, InitializeGamePlayRecording),
+            SFUNC(0x43, IApplicationFunctions, SetGamePlayRecordingState),
+            SFUNC(0x64, IApplicationFunctions, SetGamePlayRecordingState),
+            SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent)
+        )
     };
 }

@@ -35,5 +35,10 @@ namespace skyline::service::sm {
          * @brief This returns a handle to a service with it's name passed in as an argument (https://switchbrew.org/wiki/Services_API#GetService)
          */
         Result GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IUserInterface, Initialize),
+            SFUNC(0x1, IUserInterface, GetService)
+        )
     };
 }

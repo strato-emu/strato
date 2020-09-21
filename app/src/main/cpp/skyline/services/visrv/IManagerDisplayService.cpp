@@ -6,12 +6,7 @@
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {
-    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager, {
-        {0x7DA, SFUNC(IManagerDisplayService::CreateManagedLayer)},
-        {0x7DB, SFUNC(IManagerDisplayService::DestroyManagedLayer)},
-        {0x7DC, SFUNC(IDisplayService::CreateStrayLayer)},
-        {0x1770, SFUNC(IManagerDisplayService::AddToLayerStack)}
-    }) {}
+    IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager) {}
 
     Result IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u32>();

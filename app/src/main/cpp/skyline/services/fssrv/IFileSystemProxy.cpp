@@ -9,13 +9,7 @@
 #include "IFileSystemProxy.h"
 
 namespace skyline::service::fssrv {
-    IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x1, SFUNC(IFileSystemProxy::SetCurrentProcess)},
-        {0x12, SFUNC(IFileSystemProxy::OpenSdCardFileSystem)},
-        {0x33, SFUNC(IFileSystemProxy::OpenSaveDataFileSystem)},
-        {0xC8, SFUNC(IFileSystemProxy::OpenDataStorageByCurrentProcess)},
-        {0x3ED, SFUNC(IFileSystemProxy::GetGlobalAccessLogMode)},
-    }) {}
+    IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         process = request.Pop<pid_t>();

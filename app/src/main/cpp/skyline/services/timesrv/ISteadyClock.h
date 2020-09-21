@@ -26,5 +26,9 @@ namespace skyline::service::timesrv {
          * @brief This returns the current value of the steady clock
          */
         Result GetCurrentTimePoint(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ISteadyClock, GetCurrentTimePoint)
+        )
     };
 }

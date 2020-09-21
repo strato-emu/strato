@@ -38,5 +38,13 @@ namespace skyline::service::timesrv {
          * @brief This returns a handle to a ISystemClock for local time
          */
         Result GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IStaticService, GetStandardUserSystemClock),
+            SFUNC(0x1, IStaticService, GetStandardNetworkSystemClock),
+            SFUNC(0x2, IStaticService, GetStandardSteadyClock),
+            SFUNC(0x3, IStaticService, GetTimeZoneService),
+            SFUNC(0x4, IStaticService, GetStandardLocalSystemClock)
+        )
     };
 }

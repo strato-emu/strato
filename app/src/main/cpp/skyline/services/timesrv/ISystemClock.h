@@ -34,5 +34,10 @@ namespace skyline::service::timesrv {
          * @brief This returns the system clock context
          */
         Result GetSystemClockContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ISystemClock, GetCurrentTime),
+            SFUNC(0x2, ISystemClock, GetSystemClockContext)
+        )
     };
 }

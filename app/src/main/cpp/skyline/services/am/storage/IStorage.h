@@ -37,5 +37,9 @@ namespace skyline::service::am {
             std::memcpy(content.data() + offset, reinterpret_cast<const u8 *>(&value), sizeof(ValueType));
             offset += sizeof(ValueType);
         }
+
+        SERVICE_DECL(
+            SFUNC(0x0, IStorage, Open)
+        )
     };
 }

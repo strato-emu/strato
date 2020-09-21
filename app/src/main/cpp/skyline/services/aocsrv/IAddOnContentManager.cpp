@@ -4,6 +4,5 @@
 #include "IAddOnContentManager.h"
 
 namespace skyline::service::aocsrv {
-    IAddOnContentManager::IAddOnContentManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-    }) {}
+    IAddOnContentManager::IAddOnContentManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 }

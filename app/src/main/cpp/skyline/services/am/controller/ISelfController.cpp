@@ -6,18 +6,7 @@
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
-        {0x1, SFUNC(ISelfController::LockExit)},
-        {0x2, SFUNC(ISelfController::UnlockExit)},
-        {0x9, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)},
-        {0xB, SFUNC(ISelfController::SetOperationModeChangedNotification)},
-        {0xC, SFUNC(ISelfController::SetPerformanceModeChangedNotification)},
-        {0xD, SFUNC(ISelfController::SetFocusHandlingMode)},
-        {0xE, SFUNC(ISelfController::SetRestartMessageEnabled)},
-        {0x10, SFUNC(ISelfController::SetOutOfFocusSuspendingEnabled)},
-        {0x28, SFUNC(ISelfController::CreateManagedDisplayLayer)},
-        {0x5B, SFUNC(ISelfController::GetLibraryAppletLaunchableEvent)}
-    }) {}
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};

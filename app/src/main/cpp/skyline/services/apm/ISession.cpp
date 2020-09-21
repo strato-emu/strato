@@ -4,10 +4,7 @@
 #include "ISession.h"
 
 namespace skyline::service::apm {
-    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(ISession::SetPerformanceConfiguration)},
-        {0x1, SFUNC(ISession::GetPerformanceConfiguration)}
-    }) {}
+    ISession::ISession(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ISession::SetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto mode = request.Pop<u32>();

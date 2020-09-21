@@ -6,16 +6,7 @@
 #include "IAudioDevice.h"
 
 namespace skyline::service::audio {
-    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
-        {0x0, SFUNC(IAudioDevice::ListAudioDeviceName)},
-        {0x1, SFUNC(IAudioDevice::SetAudioDeviceOutputVolume)},
-        {0x3, SFUNC(IAudioDevice::GetActiveAudioDeviceName)},
-        {0x4, SFUNC(IAudioDevice::QueryAudioDeviceSystemEvent)},
-        {0x5, SFUNC(IAudioDevice::GetActiveChannelCount)},
-        {0x6, SFUNC(IAudioDevice::ListAudioDeviceName)},
-        {0x7, SFUNC(IAudioDevice::SetAudioDeviceOutputVolume)},
-        {0xA, SFUNC(IAudioDevice::GetActiveAudioDeviceName)}
-    }) {}
+    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u64 offset{};

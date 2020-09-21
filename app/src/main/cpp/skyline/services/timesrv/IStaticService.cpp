@@ -7,13 +7,7 @@
 #include "IStaticService.h"
 
 namespace skyline::service::timesrv {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IStaticService::GetStandardUserSystemClock)},
-        {0x1, SFUNC(IStaticService::GetStandardNetworkSystemClock)},
-        {0x2, SFUNC(IStaticService::GetStandardSteadyClock)},
-        {0x3, SFUNC(IStaticService::GetTimeZoneService)},
-        {0x4, SFUNC(IStaticService::GetStandardLocalSystemClock)}
-    }) {}
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISystemClock>(SystemClockType::User, state, manager), session, response);

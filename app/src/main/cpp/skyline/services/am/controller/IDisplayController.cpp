@@ -4,6 +4,5 @@
 #include "IDisplayController.h"
 
 namespace skyline::service::am {
-    IDisplayController::IDisplayController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-    }) {}
+    IDisplayController::IDisplayController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 }

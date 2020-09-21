@@ -6,10 +6,7 @@
 #include "IStorage.h"
 
 namespace skyline::service::fssrv {
-    IStorage::IStorage(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, {
-        {0x0, SFUNC(IStorage::Read)},
-        {0x4, SFUNC(IStorage::GetSize)}
-    }) {}
+    IStorage::IStorage(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
 
     Result IStorage::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto offset = request.Pop<i64>();

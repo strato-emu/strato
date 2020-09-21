@@ -67,5 +67,18 @@ namespace skyline::service::am {
          * @brief This obtains a handle to the system sleep time change KEvent  (https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickChangedEvent)
          */
         Result GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x1, ISelfController, LockExit),
+            SFUNC(0x2, ISelfController, UnlockExit),
+            SFUNC(0x9, ISelfController, GetLibraryAppletLaunchableEvent),
+            SFUNC(0xB, ISelfController, SetOperationModeChangedNotification),
+            SFUNC(0xC, ISelfController, SetPerformanceModeChangedNotification),
+            SFUNC(0xD, ISelfController, SetFocusHandlingMode),
+            SFUNC(0xE, ISelfController, SetRestartMessageEnabled),
+            SFUNC(0x10, ISelfController, SetOutOfFocusSuspendingEnabled),
+            SFUNC(0x28, ISelfController, CreateManagedDisplayLayer),
+            SFUNC(0x5B, ISelfController, GetLibraryAppletLaunchableEvent)
+        )
     };
 }

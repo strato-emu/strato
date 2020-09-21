@@ -29,6 +29,13 @@ namespace skyline {
              * @brief Creates a new audoutU::IAudioOut object and returns a handle to it (https://switchbrew.org/wiki/Audio_services#OpenAudioOut)
              */
             Result OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            SERVICE_DECL(
+                SFUNC(0x0, IAudioOutManager, ListAudioOuts),
+                SFUNC(0x1, IAudioOutManager, OpenAudioOut),
+                SFUNC(0x2, IAudioOutManager, ListAudioOuts),
+                SFUNC(0x3, IAudioOutManager, OpenAudioOut)
+            )
         };
     }
 }

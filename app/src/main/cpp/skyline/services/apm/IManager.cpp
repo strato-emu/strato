@@ -5,9 +5,7 @@
 #include "IManager.h"
 
 namespace skyline::service::apm {
-    IManager::IManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IManager::OpenSession)}
-    }) {}
+    IManager::IManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IManager::OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISession), session, response);

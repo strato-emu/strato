@@ -6,12 +6,7 @@
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager) : producer(hosbinder::producer.expired() ? std::make_shared<GraphicBufferProducer>(state) : hosbinder::producer.lock()), BaseService(state, manager, {
-        {0x0, SFUNC(IHOSBinderDriver::TransactParcel)},
-        {0x1, SFUNC(IHOSBinderDriver::AdjustRefcount)},
-        {0x2, SFUNC(IHOSBinderDriver::GetNativeHandle)},
-        {0x3, SFUNC(IHOSBinderDriver::TransactParcel)}
-    }) {
+    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager) : producer(hosbinder::producer.expired() ? std::make_shared<GraphicBufferProducer>(state) : hosbinder::producer.lock()), BaseService(state, manager) {
         if (hosbinder::producer.expired())
             hosbinder::producer = producer;
     }

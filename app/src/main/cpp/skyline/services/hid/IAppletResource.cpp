@@ -5,9 +5,7 @@
 #include "IAppletResource.h"
 
 namespace skyline::service::hid {
-    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IAppletResource::GetSharedMemoryHandle)}
-    }) {}
+    IAppletResource::IAppletResource(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAppletResource::GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = state.process->InsertItem<type::KSharedMemory>(state.input->kHid);

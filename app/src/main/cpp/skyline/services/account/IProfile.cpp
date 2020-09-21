@@ -5,10 +5,7 @@
 #include "IProfile.h"
 
 namespace skyline::service::account {
-    IProfile::IProfile(const DeviceState &state, ServiceManager &manager, const UserId &userId) : userId(userId), BaseService(state, manager, {
-        {0x0, SFUNC(IProfile::Get)},
-        {0x1, SFUNC(IProfile::GetBase)}
-    }) {}
+    IProfile::IProfile(const DeviceState &state, ServiceManager &manager, const UserId &userId) : userId(userId), BaseService(state, manager) {}
 
     Result IProfile::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct AccountUserData {

@@ -27,5 +27,10 @@ namespace skyline::service::account {
          * @brief This returns an AccountProfileBase object that describe the user's information
          */
         Result GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IProfile, Get),
+            SFUNC(0x1, IProfile, GetBase)
+        )
     };
 }

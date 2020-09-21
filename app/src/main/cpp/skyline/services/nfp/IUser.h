@@ -18,5 +18,9 @@ namespace skyline::service::nfp {
          * @brief This initializes an NFP session
          */
         Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IUser, Initialize)
+        )
     };
 }

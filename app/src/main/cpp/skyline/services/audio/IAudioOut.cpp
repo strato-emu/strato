@@ -5,17 +5,7 @@
 #include "IAudioOut.h"
 
 namespace skyline::service::audio {
-    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, u8 channelCount, u32 sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
-        {0x0, SFUNC(IAudioOut::GetAudioOutState)},
-        {0x1, SFUNC(IAudioOut::StartAudioOut)},
-        {0x2, SFUNC(IAudioOut::StopAudioOut)},
-        {0x3, SFUNC(IAudioOut::AppendAudioOutBuffer)},
-        {0x4, SFUNC(IAudioOut::RegisterBufferEvent)},
-        {0x5, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)},
-        {0x6, SFUNC(IAudioOut::ContainsAudioOutBuffer)},
-        {0x7, SFUNC(IAudioOut::AppendAudioOutBuffer)},
-        {0x8, SFUNC(IAudioOut::GetReleasedAudioOutBuffer)}
-    }) {
+    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, u8 channelCount, u32 sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {
         track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
     }
 

@@ -4,10 +4,7 @@
 #include "IClient.h"
 
 namespace skyline::service::socket {
-    IClient::IClient(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IClient::RegisterClient)},
-        {0x1, SFUNC(IClient::StartMonitoring)},
-    }) {}
+    IClient::IClient(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IClient::RegisterClient(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);

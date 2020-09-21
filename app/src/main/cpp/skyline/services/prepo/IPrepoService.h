@@ -18,5 +18,9 @@ namespace skyline::service::prepo {
          * @brief This saves a play report for the given user
          */
         Result SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x2775, IPrepoService, SaveReportWithUser)
+        )
     };
 }

@@ -12,7 +12,7 @@ namespace skyline::service::am {
      */
     class BaseProxy : public BaseService {
       public:
-        BaseProxy(const DeviceState &state, ServiceManager &manager, const std::unordered_map<u32, std::function<Result(type::KSession & , ipc::IpcRequest & , ipc::IpcResponse & )>> &vTable);
+        BaseProxy(const DeviceState &state, ServiceManager &manager);
 
         /**
          * @brief This returns #ICommonStateGetter (https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter)

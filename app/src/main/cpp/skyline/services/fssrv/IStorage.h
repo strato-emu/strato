@@ -27,5 +27,10 @@ namespace skyline::service::fssrv {
          * @brief This obtains the size of an IStorage (https://switchbrew.org/wiki/Filesystem_services#GetSize)
          */
         Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IStorage, Read),
+            SFUNC(0x4, IStorage, GetSize)
+        )
     };
 }

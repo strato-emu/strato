@@ -5,9 +5,7 @@
 #include "IUserManager.h"
 
 namespace skyline::service::nfp {
-    IUserManager::IUserManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IUserManager::CreateUserInterface)}
-    }) {}
+    IUserManager::IUserManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IUserManager::CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IUser), session, response);

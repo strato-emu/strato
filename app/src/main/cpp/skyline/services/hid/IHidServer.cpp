@@ -8,26 +8,7 @@
 using namespace skyline::input;
 
 namespace skyline::service::hid {
-    IHidServer::IHidServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IHidServer::CreateAppletResource)},
-        {0x1, SFUNC(IHidServer::ActivateDebugPad)},
-        {0xB, SFUNC(IHidServer::ActivateTouchScreen)},
-        {0x64, SFUNC(IHidServer::SetSupportedNpadStyleSet)},
-        {0x65, SFUNC(IHidServer::GetSupportedNpadStyleSet)},
-        {0x66, SFUNC(IHidServer::SetSupportedNpadIdType)},
-        {0x67, SFUNC(IHidServer::ActivateNpad)},
-        {0x68, SFUNC(IHidServer::DeactivateNpad)},
-        {0x6A, SFUNC(IHidServer::AcquireNpadStyleSetUpdateEventHandle)},
-        {0x6C, SFUNC(IHidServer::GetPlayerLedPattern)},
-        {0x6D, SFUNC(IHidServer::ActivateNpadWithRevision)},
-        {0x78, SFUNC(IHidServer::SetNpadJoyHoldType)},
-        {0x79, SFUNC(IHidServer::GetNpadJoyHoldType)},
-        {0x7A, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingleByDefault)},
-        {0x7B, SFUNC(IHidServer::SetNpadJoyAssignmentModeSingle)},
-        {0x7C, SFUNC(IHidServer::SetNpadJoyAssignmentModeDual)},
-        {0xCB, SFUNC(IHidServer::CreateActiveVibrationDeviceList)},
-        {0xCE, SFUNC(IHidServer::SendVibrationValues)}
-    }) {}
+    IHidServer::IHidServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IHidServer::CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IAppletResource), session, response);

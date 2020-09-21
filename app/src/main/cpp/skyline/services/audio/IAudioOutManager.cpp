@@ -6,12 +6,7 @@
 #include "IAudioOut.h"
 
 namespace skyline::service::audio {
-    IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IAudioOutManager::ListAudioOuts)},
-        {0x1, SFUNC(IAudioOutManager::OpenAudioOut)},
-        {0x2, SFUNC(IAudioOutManager::ListAudioOuts)},
-        {0x3, SFUNC(IAudioOutManager::OpenAudioOut)}
-    }) {}
+    IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.process->WriteMemory(reinterpret_cast<void *>(const_cast<char *>(constant::DefaultAudioOutName.data())), request.outputBuf.at(0).address, constant::DefaultAudioOutName.size());

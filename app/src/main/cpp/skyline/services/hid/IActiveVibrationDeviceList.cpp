@@ -7,9 +7,7 @@
 using namespace skyline::input;
 
 namespace skyline::service::hid {
-    IActiveVibrationDeviceList::IActiveVibrationDeviceList(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IActiveVibrationDeviceList::ActivateVibrationDevice)}
-    }) {}
+    IActiveVibrationDeviceList::IActiveVibrationDeviceList(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IActiveVibrationDeviceList::ActivateVibrationDevice(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle = request.Pop<NpadDeviceHandle>();

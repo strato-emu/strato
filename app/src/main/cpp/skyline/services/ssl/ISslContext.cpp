@@ -4,6 +4,5 @@
 #include "ISslContext.h"
 
 namespace skyline::service::ssl {
-    ISslContext::ISslContext(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-    }) {}
+    ISslContext::ISslContext(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 }

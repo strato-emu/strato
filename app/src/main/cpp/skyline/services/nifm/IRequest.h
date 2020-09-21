@@ -38,5 +38,12 @@ namespace skyline::service::nifm {
          * @brief This submits a request to bring up a network (https://switchbrew.org/wiki/Network_Interface_services#Submit)
          */
         Result Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IRequest, GetRequestState),
+            SFUNC(0x1, IRequest, GetResult),
+            SFUNC(0x2, IRequest, GetSystemEventReadableHandles),
+            SFUNC(0x4, IRequest, Submit)
+        )
     };
 }

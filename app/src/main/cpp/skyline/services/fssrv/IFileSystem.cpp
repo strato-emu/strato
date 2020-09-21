@@ -8,12 +8,7 @@
 #include "IFileSystem.h"
 
 namespace skyline::service::fssrv {
-    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, {
-        {0x0, SFUNC(IFileSystem::CreateFile)},
-        {0x7, SFUNC(IFileSystem::GetEntryType)},
-        {0x8, SFUNC(IFileSystem::OpenFile)},
-        {0xA, SFUNC(IFileSystem::Commit)}
-    }) {}
+    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
 
     Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));

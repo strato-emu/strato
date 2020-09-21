@@ -42,5 +42,13 @@ namespace skyline::service::fssrv {
          * @brief This obtains the size of an IFile
          */
         Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IFile, Read),
+            SFUNC(0x1, IFile, Write),
+            SFUNC(0x2, IFile, Flush),
+            SFUNC(0x3, IFile, SetSize),
+            SFUNC(0x4, IFile, GetSize)
+        )
     };
 }

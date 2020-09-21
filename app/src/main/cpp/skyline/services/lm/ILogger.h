@@ -59,5 +59,10 @@ namespace skyline::service::lm {
          * @brief This sets the log destination (https://switchbrew.org/wiki/Log_services#SetDestination)
          */
         Result SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ILogger, Log),
+            SFUNC(0x1, ILogger, SetDestination)
+        )
     };
 }

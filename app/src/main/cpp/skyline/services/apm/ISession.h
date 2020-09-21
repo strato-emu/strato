@@ -26,5 +26,10 @@ namespace skyline::service::apm {
          * @brief This retrieves the particular performanceConfig for a mode and returns it to the client (https://switchbrew.org/wiki/PPC_services#SetPerformanceConfiguration)
          */
         Result GetPerformanceConfiguration(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ISession, SetPerformanceConfiguration),
+            SFUNC(0x1, ISession, GetPerformanceConfiguration)
+        )
     };
 }

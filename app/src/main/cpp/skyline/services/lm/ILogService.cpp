@@ -5,9 +5,7 @@
 #include "ILogService.h"
 
 namespace skyline::service::lm {
-    ILogService::ILogService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(ILogService::OpenLogger)}
-    }) {}
+    ILogService::ILogService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ILogService::OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ILogger), session, response);

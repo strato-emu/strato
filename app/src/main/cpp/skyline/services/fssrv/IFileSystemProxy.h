@@ -89,5 +89,13 @@ namespace skyline::service::fssrv {
           * @brief This returns the filesystem log access mode (https://switchbrew.org/wiki/Filesystem_services#GetGlobalAccessLogMode)
           */
         Result GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x1, IFileSystemProxy, SetCurrentProcess),
+            SFUNC(0x12, IFileSystemProxy, OpenSdCardFileSystem),
+            SFUNC(0x33, IFileSystemProxy, OpenSaveDataFileSystem),
+            SFUNC(0xC8, IFileSystemProxy, OpenDataStorageByCurrentProcess),
+            SFUNC(0x3ED, IFileSystemProxy, GetGlobalAccessLogMode)
+        )
     };
 }

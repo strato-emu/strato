@@ -37,5 +37,9 @@ namespace skyline::service::settings {
          * @brief Writes the Firmware version to a 0xA buffer (https://switchbrew.org/wiki/Settings_services#GetFirmwareVersion)
          */
         Result GetFirmwareVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x3, ISystemSettingsServer, GetFirmwareVersion)
+        )
     };
 }

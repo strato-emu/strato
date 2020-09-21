@@ -33,5 +33,13 @@ namespace skyline::service::am {
          * @brief This returns #ISystemAppletProxy (https://switchbrew.org/wiki/Applet_Manager_services#OpenSystemAppletProxy)
          */
         Result OpenSystemAppletProxy(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x64, IAllSystemAppletProxiesService, OpenSystemAppletProxy),
+            SFUNC(0xC8, IAllSystemAppletProxiesService, OpenLibraryAppletProxy),
+            SFUNC(0xC9, IAllSystemAppletProxiesService, OpenLibraryAppletProxy),
+            SFUNC(0x12C, IAllSystemAppletProxiesService, OpenOverlayAppletProxy),
+            SFUNC(0x15E, IAllSystemAppletProxiesService, OpenApplicationProxy)
+        )
     };
 }

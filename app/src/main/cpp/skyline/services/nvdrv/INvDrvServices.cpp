@@ -7,15 +7,7 @@
 #include "devices/nvdevice.h"
 
 namespace skyline::service::nvdrv {
-    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : driver(nvdrv::driver.expired() ? std::make_shared<Driver>(state) : nvdrv::driver.lock()), BaseService(state, manager, {
-        {0x0, SFUNC(INvDrvServices::Open)},
-        {0x1, SFUNC(INvDrvServices::Ioctl)},
-        {0x2, SFUNC(INvDrvServices::Close)},
-        {0x3, SFUNC(INvDrvServices::Initialize)},
-        {0x4, SFUNC(INvDrvServices::QueryEvent)},
-        {0x8, SFUNC(INvDrvServices::SetAruid)},
-        {0xD, SFUNC(INvDrvServices::SetGraphicsFirmwareMemoryMarginEnabled)}
-    }) {
+    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager) : driver(nvdrv::driver.expired() ? std::make_shared<Driver>(state) : nvdrv::driver.lock()), BaseService(state, manager) {
         if (nvdrv::driver.expired())
             nvdrv::driver = driver;
     }

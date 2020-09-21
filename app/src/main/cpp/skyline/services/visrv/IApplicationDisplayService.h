@@ -62,5 +62,20 @@ namespace skyline::service::visrv {
          * @brief Returns a handle to a KEvent which is triggered every time a frame is drawn (https://switchbrew.org/wiki/Display_services#GetDisplayVsyncEvent)
          */
         Result GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x64, IApplicationDisplayService, GetRelayService),
+            SFUNC(0x65, IApplicationDisplayService, GetSystemDisplayService),
+            SFUNC(0x66, IApplicationDisplayService, GetManagerDisplayService),
+            SFUNC(0x67, IApplicationDisplayService, GetIndirectDisplayTransactionService),
+            SFUNC(0x3F2, IApplicationDisplayService, OpenDisplay),
+            SFUNC(0x3FC, IApplicationDisplayService, CloseDisplay),
+            SFUNC(0x7E4, IApplicationDisplayService, OpenLayer),
+            SFUNC(0x7E5, IApplicationDisplayService, CloseLayer),
+            SFUNC_BASE(0x7EE, IApplicationDisplayService, IDisplayService, CreateStrayLayer),
+            SFUNC_BASE(0x7EF, IApplicationDisplayService, IDisplayService, DestroyStrayLayer),
+            SFUNC(0x835, IApplicationDisplayService, SetLayerScalingMode),
+            SFUNC(0x1452, IApplicationDisplayService, GetDisplayVsyncEvent)
+        )
     };
 }

@@ -41,5 +41,16 @@ namespace skyline::service::audio {
          * @brief This returns the current output devices channel count
          */
         Result GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IAudioDevice, ListAudioDeviceName),
+            SFUNC(0x1, IAudioDevice, SetAudioDeviceOutputVolume),
+            SFUNC(0x3, IAudioDevice, GetActiveAudioDeviceName),
+            SFUNC(0x4, IAudioDevice, QueryAudioDeviceSystemEvent),
+            SFUNC(0x5, IAudioDevice, GetActiveChannelCount),
+            SFUNC(0x6, IAudioDevice, ListAudioDeviceName),
+            SFUNC(0x7, IAudioDevice, SetAudioDeviceOutputVolume),
+            SFUNC(0xA, IAudioDevice, GetActiveAudioDeviceName)
+        )
     };
 }

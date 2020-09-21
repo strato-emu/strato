@@ -68,5 +68,17 @@ namespace skyline::service::audio {
          * @brief Checks if the given buffer ID is in the playback queue (https://switchbrew.org/wiki/Audio_services#ContainsAudioOutBuffer)
          */
         Result ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IAudioOut, GetAudioOutState),
+            SFUNC(0x1, IAudioOut, StartAudioOut),
+            SFUNC(0x2, IAudioOut, StopAudioOut),
+            SFUNC(0x3, IAudioOut, AppendAudioOutBuffer),
+            SFUNC(0x4, IAudioOut, RegisterBufferEvent),
+            SFUNC(0x5, IAudioOut, GetReleasedAudioOutBuffer),
+            SFUNC(0x6, IAudioOut, ContainsAudioOutBuffer),
+            SFUNC(0x7, IAudioOut, AppendAudioOutBuffer),
+            SFUNC(0x8, IAudioOut, GetReleasedAudioOutBuffer)
+        )
     };
 }

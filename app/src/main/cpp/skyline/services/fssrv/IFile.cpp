@@ -6,13 +6,7 @@
 #include "IFile.h"
 
 namespace skyline::service::fssrv {
-    IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager, {
-        {0x0, SFUNC(IFile::Read)},
-        {0x1, SFUNC(IFile::Write)},
-        {0x2, SFUNC(IFile::Flush)},
-        {0x3, SFUNC(IFile::SetSize)},
-        {0x4, SFUNC(IFile::GetSize)}
-    }) {}
+    IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
 
     Result IFile::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto readOption = request.Pop<u32>();

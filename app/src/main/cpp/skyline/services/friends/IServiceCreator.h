@@ -23,5 +23,10 @@ namespace skyline::service::friends {
          * @brief This opens an INotificationService that can be used by applications to receive notifications
          */
         Result CreateNotificationService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IServiceCreator, CreateFriendService),
+            SFUNC(0x1, IServiceCreator, CreateNotificationService)
+        )
     };
 }

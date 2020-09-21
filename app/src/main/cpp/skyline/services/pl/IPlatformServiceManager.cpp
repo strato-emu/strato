@@ -29,12 +29,7 @@ namespace skyline::service::pl {
                                               {FontStandard, FontStandardLength}
                                           }};
 
-    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager, {
-        {0x1, SFUNC(IPlatformServiceManager::GetLoadState)},
-        {0x2, SFUNC(IPlatformServiceManager::GetSize)},
-        {0x3, SFUNC(IPlatformServiceManager::GetSharedMemoryAddressOffset)},
-        {0x4, SFUNC(IPlatformServiceManager::GetSharedMemoryNativeHandle)}
-    }) {
+    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager) {
         constexpr u32 SharedFontResult = 0x7F9A0218; //!< This is the decrypted magic for a single font in the shared font data
         constexpr u32 SharedFontMagic = 0x36F81A1E; //!< This is the encrypted magic for a single font in the shared font data
         constexpr u32 SharedFontKey = SharedFontMagic ^SharedFontResult; //!< This is the XOR key for encrypting the font size

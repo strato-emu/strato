@@ -37,5 +37,12 @@ namespace skyline::service::fssrv {
          * @brief This commits all changes to the filesystem (https://switchbrew.org/wiki/Filesystem_services#Commit)
          */
         Result Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IFileSystem, CreateFile),
+            SFUNC(0x7, IFileSystem, GetEntryType),
+            SFUNC(0x8, IFileSystem, OpenFile),
+            SFUNC(0xA, IFileSystem, Commit)
+        )
     };
 }

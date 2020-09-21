@@ -41,6 +41,13 @@ namespace skyline {
              * @brief This returns a handle to the whole font shared memory (https://switchbrew.org/wiki/Shared_Database_services#GetSharedMemoryNativeHandle)
              */
             Result GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            SERVICE_DECL(
+                SFUNC(0x1, IPlatformServiceManager, GetLoadState),
+                SFUNC(0x2, IPlatformServiceManager, GetSize),
+                SFUNC(0x3, IPlatformServiceManager, GetSharedMemoryAddressOffset),
+                SFUNC(0x4, IPlatformServiceManager, GetSharedMemoryNativeHandle)
+            )
         };
     }
 }

@@ -23,5 +23,10 @@ namespace skyline::service::socket {
          * @brief This starts the monitoring of the socket
          */
         Result StartMonitoring(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IClient, RegisterClient),
+            SFUNC(0x1, IClient, StartMonitoring)
+        )
     };
 }

@@ -23,5 +23,10 @@ namespace skyline::service::ssl {
          * @brief This sets the SSL interface version (https://switchbrew.org/wiki/SSL_services#SetInterfaceVersion)
          */
         Result SetInterfaceVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ISslService, CreateContext),
+            SFUNC(0x5, ISslService, SetInterfaceVersion)
+        )
     };
 }

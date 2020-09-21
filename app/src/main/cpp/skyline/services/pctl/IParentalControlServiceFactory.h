@@ -18,5 +18,10 @@ namespace skyline::service::pctl {
          * @brief This creates and initializes an IParentalControlService instance that can be used to read parental control configuration
          */
         Result CreateService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IParentalControlServiceFactory, CreateService),
+            SFUNC(0x1, IParentalControlServiceFactory, CreateService)
+        )
     };
 }

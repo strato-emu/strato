@@ -7,15 +7,7 @@
 #include "IAccountServiceForApplication.h"
 
 namespace skyline::service::account {
-    IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x1, SFUNC(IAccountServiceForApplication::GetUserExistence)},
-        {0x2, SFUNC(IAccountServiceForApplication::ListAllUsers)},
-        {0x3, SFUNC(IAccountServiceForApplication::ListOpenUsers)},
-        {0x4, SFUNC(IAccountServiceForApplication::GetLastOpenedUser)},
-        {0x5, SFUNC(IAccountServiceForApplication::GetProfile)},
-        {0x64, SFUNC(IAccountServiceForApplication::InitializeApplicationInfoV0)},
-        {0x65, SFUNC(IAccountServiceForApplication::GetBaasAccountManagerForApplication)}
-    }) {}
+    IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAccountServiceForApplication::GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id = request.Pop<UserId>();

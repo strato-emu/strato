@@ -32,5 +32,11 @@ namespace skyline::service::am {
          * @brief This returns the library applet volume that is expected by the application (https://switchbrew.org/wiki/Applet_Manager_services#GetLibraryAppletExpectedMasterVolume)
          */
         Result GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IAudioController, SetExpectedMasterVolume),
+            SFUNC(0x1, IAudioController, GetMainAppletExpectedMasterVolume),
+            SFUNC(0x2, IAudioController, GetLibraryAppletExpectedMasterVolume)
+        )
     };
 }

@@ -16,7 +16,7 @@ namespace skyline {
         }
 
         /**
-         * @brief This hold an account's user ID
+         * @brief An HOS account's user ID
          */
         struct UserId {
             u64 upper; //!< The upper 64 bits of the user ID
@@ -30,6 +30,7 @@ namespace skyline {
                 return !(*this == userId);
             }
         };
+
         /**
         * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
         */
@@ -77,6 +78,16 @@ namespace skyline {
             * @brief This returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info
             */
             Result GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            SERVICE_DECL(
+                SFUNC(0x1, IAccountServiceForApplication, GetUserExistence),
+                SFUNC(0x2, IAccountServiceForApplication, ListAllUsers),
+                SFUNC(0x3, IAccountServiceForApplication, ListOpenUsers),
+                SFUNC(0x4, IAccountServiceForApplication, GetLastOpenedUser),
+                SFUNC(0x5, IAccountServiceForApplication, GetProfile),
+                SFUNC(0x64, IAccountServiceForApplication, InitializeApplicationInfoV0),
+                SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication)
+            )
         };
     }
 

@@ -7,17 +7,7 @@
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
-        {0x1, SFUNC(IApplicationFunctions::PopLaunchParameter)},
-        {0x14, SFUNC(IApplicationFunctions::EnsureSaveData)},
-        {0x15, SFUNC(IApplicationFunctions::GetDesiredLanguage)},
-        {0x28, SFUNC(IApplicationFunctions::NotifyRunning)},
-        {0x32, SFUNC(IApplicationFunctions::GetPseudoDeviceId)},
-        {0x42, SFUNC(IApplicationFunctions::InitializeGamePlayRecording)},
-        {0x43, SFUNC(IApplicationFunctions::SetGamePlayRecordingState)},
-        {0x64, SFUNC(IApplicationFunctions::SetGamePlayRecordingState)},
-        {0x82, SFUNC(IApplicationFunctions::GetGpuErrorDetectedSystemEvent)},
-    }) {}
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic = 0xC79497CA; //!< This is the magic of the application launch parameters

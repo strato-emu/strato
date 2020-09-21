@@ -134,6 +134,18 @@ namespace skyline {
             * @brief Returns a handle to the sample release KEvent
             */
             Result QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            SERVICE_DECL(
+                SFUNC(0x0, IAudioRenderer, GetSampleRate),
+                SFUNC(0x1, IAudioRenderer, GetSampleCount),
+                SFUNC(0x2, IAudioRenderer, GetMixBufferCount),
+                SFUNC(0x3, IAudioRenderer, GetState),
+                SFUNC(0x4, IAudioRenderer, RequestUpdate),
+                SFUNC(0x5, IAudioRenderer, Start),
+                SFUNC(0x6, IAudioRenderer, Stop),
+                SFUNC(0x7, IAudioRenderer, QuerySystemEvent),
+                SFUNC(0xA, IAudioRenderer, RequestUpdate)
+            )
         };
     }
 }

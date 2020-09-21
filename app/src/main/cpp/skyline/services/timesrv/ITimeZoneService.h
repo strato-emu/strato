@@ -45,5 +45,9 @@ namespace skyline::service::timesrv {
          * @brief This receives a u64 #PosixTime (https://switchbrew.org/wiki/PSC_services#PosixTime), and returns a #CalendarTime (https://switchbrew.org/wiki/PSC_services#CalendarTime), #CalendarAdditionalInfo (https://switchbrew.org/wiki/PSC_services#CalendarAdditionalInfo)
          */
         Result ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x65, ITimeZoneService, ToCalendarTimeWithMyRule)
+        )
     };
 }

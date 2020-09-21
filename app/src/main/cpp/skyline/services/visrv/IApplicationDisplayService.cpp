@@ -10,20 +10,7 @@
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {
-    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager,  {
-        {0x64, SFUNC(IApplicationDisplayService::GetRelayService)},
-        {0x65, SFUNC(IApplicationDisplayService::GetSystemDisplayService)},
-        {0x66, SFUNC(IApplicationDisplayService::GetManagerDisplayService)},
-        {0x67, SFUNC(IApplicationDisplayService::GetIndirectDisplayTransactionService)},
-        {0x3F2, SFUNC(IApplicationDisplayService::OpenDisplay)},
-        {0x3FC, SFUNC(IApplicationDisplayService::CloseDisplay)},
-        {0x7E4, SFUNC(IApplicationDisplayService::OpenLayer)},
-        {0x7E5, SFUNC(IApplicationDisplayService::CloseLayer)},
-        {0x7EE, SFUNC(IDisplayService::CreateStrayLayer)},
-        {0x7EF, SFUNC(IDisplayService::DestroyStrayLayer)},
-        {0x835, SFUNC(IApplicationDisplayService::SetLayerScalingMode)},
-        {0x1452, SFUNC(IApplicationDisplayService::GetDisplayVsyncEvent)},
-    }) {}
+    IApplicationDisplayService::IApplicationDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager) {}
 
     Result IApplicationDisplayService::GetRelayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(hosbinder::IHOSBinderDriver), session, response);

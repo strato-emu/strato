@@ -6,10 +6,7 @@
 #include "ILibraryAppletCreator.h"
 
 namespace skyline::service::am {
-    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(ILibraryAppletCreator::CreateLibraryApplet)},
-        {0xA, SFUNC(ILibraryAppletCreator::CreateStorage)}
-    }) {}
+    ILibraryAppletCreator::ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ILibraryAppletCreator::CreateLibraryApplet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ILibraryAppletAccessor), session, response);

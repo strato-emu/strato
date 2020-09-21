@@ -18,5 +18,10 @@ namespace skyline::service::nifm {
          * @brief This opens an IGeneralService that can be used by applications to control the network connection (https://switchbrew.org/wiki/Network_Interface_services#CreateGeneralServiceOld)
          */
         Result CreateGeneralService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x4, IStaticService, CreateGeneralService),
+            SFUNC(0x5, IStaticService, CreateGeneralService)
+        )
     };
 }

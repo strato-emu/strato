@@ -5,10 +5,7 @@
 #include "IStaticService.h"
 
 namespace skyline::service::nifm {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x4, SFUNC(IStaticService::CreateGeneralService)},
-        {0x5, SFUNC(IStaticService::CreateGeneralService)}
-    }) {}
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IStaticService::CreateGeneralService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IGeneralService), session, response);

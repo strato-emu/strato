@@ -28,5 +28,12 @@ namespace skyline::service::audio {
          * @brief This returns a handle to an instance of an IAudioDevice (https://switchbrew.org/wiki/Audio_services#GetAudioDeviceService)
          */
         Result GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IAudioRendererManager, OpenAudioRenderer),
+            SFUNC(0x1, IAudioRendererManager, GetAudioRendererWorkBufferSize),
+            SFUNC(0x2, IAudioRendererManager, GetAudioDeviceService),
+            SFUNC(0x4, IAudioRendererManager, GetAudioDeviceService)
+        )
     };
 }

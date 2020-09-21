@@ -63,5 +63,15 @@ namespace skyline::service::nvdrv {
          * @brief This enables the graphics firmware memory margin (https://switchbrew.org/wiki/NV_services#SetGraphicsFirmwareMemoryMarginEnabled)
          */
         Result SetGraphicsFirmwareMemoryMarginEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, INvDrvServices, Open),
+            SFUNC(0x1, INvDrvServices, Ioctl),
+            SFUNC(0x2, INvDrvServices, Close),
+            SFUNC(0x3, INvDrvServices, Initialize),
+            SFUNC(0x4, INvDrvServices, QueryEvent),
+            SFUNC(0x8, INvDrvServices, SetAruid),
+            SFUNC(0xD, INvDrvServices, SetGraphicsFirmwareMemoryMarginEnabled)
+        )
     };
 }

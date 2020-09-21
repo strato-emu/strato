@@ -19,5 +19,9 @@ namespace skyline::service::hid {
          * @brief This opens a handle to HID shared memory (https://switchbrew.org/wiki/HID_services#GetSharedMemoryHandle)
          */
         Result GetSharedMemoryHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IAppletResource, GetSharedMemoryHandle)
+        )
     };
 }

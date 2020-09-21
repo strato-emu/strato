@@ -19,5 +19,9 @@ namespace skyline::service::visrv {
          * @brief This returns an handle to #IApplicationDisplayService (https://switchbrew.org/wiki/Display_services#GetDisplayService)
          */
         Result GetDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x2, IManagerRootService, GetDisplayService)
+        )
     };
 }

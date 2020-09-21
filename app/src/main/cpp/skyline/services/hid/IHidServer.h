@@ -104,5 +104,26 @@ namespace skyline::service::hid {
          * @brief Send vibration values to an NPad (https://switchbrew.org/wiki/HID_services#SendVibrationValues)
          */
         Result SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IHidServer, CreateAppletResource),
+            SFUNC(0x1, IHidServer, ActivateDebugPad),
+            SFUNC(0xB, IHidServer, ActivateTouchScreen),
+            SFUNC(0x64, IHidServer, SetSupportedNpadStyleSet),
+            SFUNC(0x65, IHidServer, GetSupportedNpadStyleSet),
+            SFUNC(0x66, IHidServer, SetSupportedNpadIdType),
+            SFUNC(0x67, IHidServer, ActivateNpad),
+            SFUNC(0x68, IHidServer, DeactivateNpad),
+            SFUNC(0x6A, IHidServer, AcquireNpadStyleSetUpdateEventHandle),
+            SFUNC(0x6C, IHidServer, GetPlayerLedPattern),
+            SFUNC(0x6D, IHidServer, ActivateNpadWithRevision),
+            SFUNC(0x78, IHidServer, SetNpadJoyHoldType),
+            SFUNC(0x79, IHidServer, GetNpadJoyHoldType),
+            SFUNC(0x7A, IHidServer, SetNpadJoyAssignmentModeSingleByDefault),
+            SFUNC(0x7B, IHidServer, SetNpadJoyAssignmentModeSingle),
+            SFUNC(0x7C, IHidServer, SetNpadJoyAssignmentModeDual),
+            SFUNC(0xCB, IHidServer, CreateActiveVibrationDeviceList),
+            SFUNC(0xCE, IHidServer, SendVibrationValues)
+        )
     };
 }

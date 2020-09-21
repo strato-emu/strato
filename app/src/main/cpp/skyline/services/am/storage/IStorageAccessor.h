@@ -36,5 +36,11 @@ namespace skyline::service::am {
          * @brief This returns a buffer containing the contents of the storage at the specified offset
          */
         Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IStorageAccessor, GetSize),
+            SFUNC(0xA, IStorageAccessor, Write),
+            SFUNC(0xB, IStorageAccessor, Read)
+        )
     };
 }

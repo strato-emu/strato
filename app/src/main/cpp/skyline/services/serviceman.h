@@ -51,6 +51,11 @@ namespace skyline::service {
          */
         void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response);
 
+        template<typename ServiceType>
+        inline void RegisterService(std::shared_ptr<ServiceType> serviceObject, type::KSession &session, ipc::IpcResponse &response) {
+            RegisterService(std::static_pointer_cast<BaseService>(serviceObject), session, response);
+        }
+
         /**
          * @param serviceType The type of the service
          * @tparam The class of the service

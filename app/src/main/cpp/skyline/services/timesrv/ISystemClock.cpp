@@ -5,10 +5,7 @@
 #include "ISystemClock.h"
 
 namespace skyline::service::timesrv {
-    ISystemClock::ISystemClock(const SystemClockType clockType, const DeviceState &state, ServiceManager &manager) : type(clockType), BaseService(state, manager, {
-        {0x0, SFUNC(ISystemClock::GetCurrentTime)},
-        {0x2, SFUNC(ISystemClock::GetSystemClockContext)}
-    }) {}
+    ISystemClock::ISystemClock(const SystemClockType clockType, const DeviceState &state, ServiceManager &manager) : type(clockType), BaseService(state, manager) {}
 
     Result ISystemClock::GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u64>(static_cast<u64>(std::time(nullptr)));

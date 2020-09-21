@@ -42,5 +42,13 @@ namespace skyline::service::am {
          * @brief This function receives data from the library applet (https://switchbrew.org/wiki/Applet_Manager_services#PopOutData)
          */
         Result PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, ILibraryAppletAccessor, GetAppletStateChangedEvent),
+            SFUNC(0xA, ILibraryAppletAccessor, Start),
+            SFUNC(0x1E, ILibraryAppletAccessor, GetResult),
+            SFUNC(0x64, ILibraryAppletAccessor, PushInData),
+            SFUNC(0x65, ILibraryAppletAccessor, PopOutData)
+        )
     };
 }

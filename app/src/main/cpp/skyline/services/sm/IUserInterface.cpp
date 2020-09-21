@@ -4,10 +4,7 @@
 #include "IUserInterface.h"
 
 namespace skyline::service::sm {
-    IUserInterface::IUserInterface(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IUserInterface::Initialize)},
-        {0x1, SFUNC(IUserInterface::GetService)}
-    }) {}
+    IUserInterface::IUserInterface(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IUserInterface::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};

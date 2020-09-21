@@ -23,5 +23,10 @@ namespace skyline::service::am {
          * @brief This function has mo inputs or outputs (Stubbed) (https://switchbrew.org/wiki/Applet_Manager_services#AcquireForegroundRights)
          */
         Result AcquireForegroundRights(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x1, IWindowController, GetAppletResourceUserId),
+            SFUNC(0xA, IWindowController, AcquireForegroundRights)
+        )
     };
 }

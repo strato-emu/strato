@@ -6,10 +6,7 @@
 #include "IServiceCreator.h"
 
 namespace skyline::service::friends {
-    IServiceCreator::IServiceCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x0, SFUNC(IServiceCreator::CreateFriendService)},
-        {0x1, SFUNC(IServiceCreator::CreateNotificationService)},
-    }) {}
+    IServiceCreator::IServiceCreator(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IServiceCreator::CreateFriendService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(IFriendService), session, response);

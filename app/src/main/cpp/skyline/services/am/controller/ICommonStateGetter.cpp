@@ -10,14 +10,7 @@ namespace skyline::service::am {
         messageEvent->Signal();
     }
 
-    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager, {
-        {0x0, SFUNC(ICommonStateGetter::GetEventHandle)},
-        {0x1, SFUNC(ICommonStateGetter::ReceiveMessage)},
-        {0x5, SFUNC(ICommonStateGetter::GetOperationMode)},
-        {0x6, SFUNC(ICommonStateGetter::GetPerformanceMode)},
-        {0x9, SFUNC(ICommonStateGetter::GetCurrentFocusState)},
-        {0x3C, SFUNC(ICommonStateGetter::GetDefaultDisplayResolution)}
-    }) {
+    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {
         operationMode = static_cast<OperationMode>(state.settings->GetBool("operation_mode"));
         state.logger->Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
         QueueMessage(Message::FocusStateChange);

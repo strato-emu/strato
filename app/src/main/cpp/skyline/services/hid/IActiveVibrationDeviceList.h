@@ -19,5 +19,9 @@ namespace skyline::service::hid {
          * @brief Activates a vibration device with the specified #VibrationDeviceHandle (https://switchbrew.org/wiki/HID_services#ActivateVibrationDevice)
          */
         Result ActivateVibrationDevice(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IActiveVibrationDeviceList, ActivateVibrationDevice)
+        )
     };
 }

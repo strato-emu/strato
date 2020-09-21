@@ -4,9 +4,7 @@
 #include "ITimeZoneService.h"
 
 namespace skyline::service::timesrv {
-    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-        {0x65, SFUNC(ITimeZoneService::ToCalendarTimeWithMyRule)}
-    }) {}
+    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ITimeZoneService::ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto curTime = std::time(nullptr);

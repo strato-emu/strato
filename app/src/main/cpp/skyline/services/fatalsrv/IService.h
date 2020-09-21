@@ -18,5 +18,11 @@ namespace skyline::service::fatalsrv {
          * @brief This throws an exception that causes emulation to quit
          */
         Result ThrowFatal(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IService, ThrowFatal),
+            SFUNC(0x1, IService, ThrowFatal),
+            SFUNC(0x2, IService, ThrowFatal)
+        )
     };
 }

@@ -4,6 +4,5 @@
 #include "IAppletCommonFunctions.h"
 
 namespace skyline::service::am {
-    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager, {
-    }) {}
+    IAppletCommonFunctions::IAppletCommonFunctions(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 }
