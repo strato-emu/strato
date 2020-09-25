@@ -3,9 +3,11 @@
 
 #pragma once
 
-#include <common.h>
-#include <services/base_service.h>
 #include "KSyncObject.h"
+
+namespace skyline::service {
+    class BaseService;
+}
 
 namespace skyline::kernel::type {
     /**

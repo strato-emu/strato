@@ -4,7 +4,6 @@
 #pragma once
 
 #include <kernel/types/KSession.h>
-#include <nce.h>
 #include "base_service.h"
 
 namespace skyline::service {

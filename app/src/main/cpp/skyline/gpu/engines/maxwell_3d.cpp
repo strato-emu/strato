@@ -2,7 +2,6 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu.h>
-#include <gpu/syncpoint.h>
 #include "maxwell_3d.h"
 
 namespace skyline::gpu::engine {

@@ -56,7 +56,7 @@ namespace skyline::kernel {
             if (chunk->address <= address && (chunk->address + chunk->size) > address)
                 chunk = chunkList.erase(chunk);
             else
-                ++chunk;
+                chunk++;
         }
     }
 
@@ -82,7 +82,7 @@ namespace skyline::kernel {
                 if (block->address > endAddress)
                     block = chunk->blockList.erase(block);
                 else
-                    ++block;
+                    block++;
             }
 
             auto end = std::prev(chunk->blockList.end());

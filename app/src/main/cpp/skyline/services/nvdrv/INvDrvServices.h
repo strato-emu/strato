@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::nvdrv {

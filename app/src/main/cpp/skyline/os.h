@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <thread>
-#include <sys/mman.h>
 #include "common.h"
 #include "loader/loader.h"
 #include "kernel/ipc.h"

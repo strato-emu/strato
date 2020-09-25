@@ -2,8 +2,8 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
-#include <gpu/gpfifo.h>
 #include <kernel/types/KProcess.h>
+#include <gpu/gpfifo.h>
 #include <services/nvdrv/driver.h>
 #include "nvhost_channel.h"
 

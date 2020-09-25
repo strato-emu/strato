@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-#include <span>
 #include <common.h>
 
 namespace skyline::audio {

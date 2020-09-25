@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <kernel/types/KProcess.h>
-#include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::hid {

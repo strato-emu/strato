@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <array>
 #include <vfs/backing.h>
-#include "common.h"
 
 namespace skyline::crypto {
     /**

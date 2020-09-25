@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include <services/base_service.h>
-#include <services/serviceman.h>
 #include <gpu.h>
+#include <services/serviceman.h>
 
 namespace skyline::service::visrv {
     /**

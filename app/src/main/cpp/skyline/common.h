@@ -9,6 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <mutex>
+#include <functional>
 #include <thread>
 #include <string>
 #include <cstdint>
@@ -106,6 +107,7 @@ namespace skyline {
 
         /**
          * @return The value aligned up to the next multiple
+         * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
@@ -115,6 +117,7 @@ namespace skyline {
 
         /**
          * @return The value aligned down to the previous multiple
+         * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
@@ -178,7 +181,7 @@ namespace skyline {
             if (hexString.size() != Size * 2)
                 throw exception("Invalid size");
             std::array<u8, Size> result;
-            for (size_t i{}; i < Size; ++i) {
+            for (size_t i{}; i < Size; i++) {
                 size_t hexStrIndex{i * 2};
                 result[i] = (HexDigitToByte(hexString[hexStrIndex]) << 4) | HexDigitToByte(hexString[hexStrIndex + 1]);
             }

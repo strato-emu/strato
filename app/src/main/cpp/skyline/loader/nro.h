@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <common.h>
 #include "loader.h"
 
 namespace skyline::loader {

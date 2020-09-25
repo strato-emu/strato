@@ -3,8 +3,11 @@
 
 #pragma once
 
-#include <gpu.h>
 #include <services/common/parcel.h>
+
+namespace skyline::gpu {
+    class PresentationTexture;
+}
 
 namespace skyline::service::hosbinder {
     /**

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <services/base_service.h>
+#include <kernel/types/KSharedMemory.h>
 #include <services/serviceman.h>
 
 namespace skyline {

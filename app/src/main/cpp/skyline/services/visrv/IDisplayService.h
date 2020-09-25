@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <services/base_service.h>
 #include <services/serviceman.h>
-#include <services/common/parcel.h>
 
 namespace skyline::service::visrv {
     /**

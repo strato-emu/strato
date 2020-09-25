@@ -3,10 +3,7 @@
 
 #pragma once
 
-#include <span>
-#include <queue>
 #include <kernel/types/KEvent.h>
-#include <common.h>
 #include "common.h"
 
 namespace skyline::audio {

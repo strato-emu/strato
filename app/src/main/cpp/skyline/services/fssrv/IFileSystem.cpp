@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <kernel/types/KProcess.h>
-#include <vfs/filesystem.h>
 #include "results.h"
 #include "IFile.h"
 #include "IFileSystem.h"

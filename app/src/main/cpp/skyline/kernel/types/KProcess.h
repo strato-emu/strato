@@ -4,11 +4,9 @@
 #pragma once
 
 #include <list>
-#include <kernel/memory.h>
 #include "KThread.h"
 #include "KPrivateMemory.h"
 #include "KTransferMemory.h"
-#include "KSharedMemory.h"
 #include "KSession.h"
 #include "KEvent.h"
 
@@ -26,6 +24,8 @@ namespace skyline {
         */
         class KProcess : public KSyncObject {
           private:
+            KHandle handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
+
             /**
             * @brief This class holds a single TLS page's status
             * @details tls_page_t holds the status of a single TLS page (A page is 4096 bytes on ARMv8).
@@ -110,10 +110,9 @@ namespace skyline {
                 WaitStatus(u8 priority, KHandle handle, u64 mutexAddress) : priority(priority), handle(handle), mutexAddress(mutexAddress) {}
             };
 
-            KHandle handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
             pid_t pid; //!< The PID of the process or TGID of the threads
             int memFd; //!< The file descriptor to the memory of the process
-            std::unordered_map<KHandle, std::shared_ptr<KObject>> handles; //!< A mapping from a handle_t to it's corresponding KObject which is the actual underlying object
+            std::vector<std::shared_ptr<KObject>> handles; //!< A vector of KObject which corresponds to the handle
             std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object
             std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
             std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
@@ -285,7 +284,7 @@ namespace skyline {
                     item = std::make_shared<objectClass>(state, handleIndex, args...);
                 else
                     item = std::make_shared<objectClass>(state, args...);
-                handles[handleIndex] = std::static_pointer_cast<KObject>(item);
+                handles.push_back(std::static_pointer_cast<KObject>(item));
                 return {item, handleIndex++};
             }
 
@@ -296,7 +295,7 @@ namespace skyline {
             */
             template<typename objectClass>
             KHandle InsertItem(std::shared_ptr<objectClass> &item) {
-                handles[handleIndex] = std::static_pointer_cast<KObject>(item);
+                handles.push_back(std::static_pointer_cast<KObject>(item));
                 return handleIndex++;
             }
 
@@ -326,13 +325,15 @@ namespace skyline {
                 else
                     throw exception("KProcess::GetHandle couldn't determine object type");
                 try {
-                    auto item = handles.at(handle);
-                    if (item->objectType == objectType)
+                    auto& item = handles.at(handle - constant::BaseHandleIndex);
+                    if (item != nullptr && item->objectType == objectType)
                         return std::static_pointer_cast<objectClass>(item);
+                    else if (item == nullptr)
+                        throw exception("GetHandle was called with a deleted handle: 0x{:X}", handle);
                     else
                         throw exception("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType);
                 } catch (std::out_of_range) {
-                    throw exception("GetHandle was called with invalid handle: 0x{:X}", handle);
+                    throw exception("GetHandle was called with an invalid handle: 0x{:X}", handle);
                 }
             }
 
@@ -348,7 +349,7 @@ namespace skyline {
             * @param handle The handle to delete
             */
             inline void DeleteHandle(KHandle handle) {
-                handles.erase(handle);
+                handles.at(handle - constant::BaseHandleIndex) = nullptr;
             }
 
             /**

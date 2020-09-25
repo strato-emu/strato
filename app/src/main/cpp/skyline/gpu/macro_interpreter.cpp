@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <kernel/types/KProcess.h>
 #include "engines/maxwell_3d.h"
 #include "memory_manager.h"
 #include "macro_interpreter.h"

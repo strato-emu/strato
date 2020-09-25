@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <kernel/types/KProcess.h>
 #include "IAudioRenderer/IAudioRenderer.h"
 #include "IAudioDevice.h"
 #include "IAudioRendererManager.h"
@@ -51,7 +50,6 @@ namespace skyline::service::audio {
         }
 
         i64 splitterWorkSize{};
-
         if (revisionInfo.SplitterSupported()) {
             splitterWorkSize += params.splitterDestinationDataCount * 0xE0 + params.splitterCount * 0x20;
 
@@ -63,7 +61,6 @@ namespace skyline::service::audio {
 
         if (params.performanceManagerCount > 0) {
             i64 performanceMetricsBufferSize{};
-
             if (revisionInfo.UsesPerformanceMetricDataFormatV2()) {
                 performanceMetricsBufferSize = (params.voiceCount + params.effectCount + totalMixCount + params.sinkCount) + 0x990;
             } else {
@@ -81,7 +78,7 @@ namespace skyline::service::audio {
 
         size = util::AlignUp(size, 0x1000);
 
-        state.logger->Debug("IAudioRendererManager: Work buffer size: 0x{:X}", size);
+        state.logger->Debug("Work buffer size: 0x{:X}", size);
         response.Push<i64>(size);
         return {};
     }

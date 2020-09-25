@@ -3,12 +3,7 @@
 
 #pragma once
 
-#include <queue>
-#include <oboe/Oboe.h>
-
-#include <kernel/types/KEvent.h>
 #include <audio/track.h>
-#include "common.h"
 
 namespace skyline::audio {
     /**

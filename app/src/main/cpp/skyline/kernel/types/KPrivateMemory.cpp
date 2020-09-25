@@ -5,6 +5,7 @@
 #include <asm/unistd.h>
 #include <unistd.h>
 #include <os.h>
+#include <nce.h>
 #include "KPrivateMemory.h"
 #include "KProcess.h"
 

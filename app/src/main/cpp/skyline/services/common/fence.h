@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <common.h>
 #include <services/nvdrv/devices/nvhost_syncpoint.h>
 
 namespace skyline::service::nvdrv {

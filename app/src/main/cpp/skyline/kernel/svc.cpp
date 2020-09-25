@@ -114,7 +114,6 @@ namespace skyline::kernel::svc {
         auto object = state.process->GetMemoryObject(source);
         if (!object)
             throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
-
         object->item->UpdatePermission(source, size, {false, false, false});
 
         state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
@@ -376,7 +375,7 @@ namespace skyline::kernel::svc {
     void CloseHandle(DeviceState &state) {
         auto handle = static_cast<KHandle>(state.ctx->registers.w0);
         try {
-            state.process->handles.erase(handle);
+            state.process->DeleteHandle(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.ctx->registers.w0 = Result{};
         } catch (const std::exception &) {

@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <input.h>
+#include <kernel/types/KProcess.h>
 #include "IAppletResource.h"
 
 namespace skyline::service::hid {

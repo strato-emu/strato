@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <forward_list>
 #include <common.h>
-#include "types/KObject.h"
 
 namespace skyline {
     namespace memory {

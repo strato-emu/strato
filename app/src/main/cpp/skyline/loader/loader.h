@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <vfs/backing.h>
 #include <vfs/nacp.h>
 #include "executable.h"
 

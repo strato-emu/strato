@@ -3,12 +3,7 @@
 
 #pragma once
 
-#include <syslog.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <vector>
-#include <unordered_map>
-#include "common.h"
 #include "kernel/types/KSharedMemory.h"
 
 namespace skyline {

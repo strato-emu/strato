@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <kernel/types/KEvent.h>
-#include <services/base_service.h>
 #include <services/serviceman.h>
 #include <audio.h>
 #include "memory_pool.h"

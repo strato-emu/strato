@@ -3,6 +3,7 @@
 
 #include <csignal>
 #include <unistd.h>
+#include <sys/resource.h>
 #include "skyline/loader/loader.h"
 #include "skyline/common.h"
 #include "skyline/os.h"

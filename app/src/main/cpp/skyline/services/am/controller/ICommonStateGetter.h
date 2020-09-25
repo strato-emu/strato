@@ -5,7 +5,6 @@
 
 #include <queue>
 #include <kernel/types/KEvent.h>
-#include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::am {
@@ -33,7 +32,7 @@ namespace skyline::service::am {
         };
 
         std::shared_ptr<type::KEvent> messageEvent; //!< The event signalled when there is a message available
-        std::queue<Message> messageQueue;
+        std::queue<Message> messageQueue; //!< A queue of all the messages that the program is yet to consume
 
         enum class FocusState : u8 {
             InFocus = 1, //!< The application is in foreground

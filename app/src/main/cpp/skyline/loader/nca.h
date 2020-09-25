@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <common.h>
 #include <vfs/nca.h>
-#include <crypto/key_store.h>
 #include "loader.h"
 
 namespace skyline::loader {

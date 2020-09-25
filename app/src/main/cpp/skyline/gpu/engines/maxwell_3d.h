@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-#include <common.h>
 #include <gpu/texture.h>
 #include <gpu/macro_interpreter.h>
 #include "engine.h"
@@ -561,7 +559,7 @@ namespace skyline {
             static_assert(sizeof(Registers) == (constant::Maxwell3DRegisterCounter * sizeof(u32)));
 #pragma pack(pop)
 
-            Registers registers{}; //!< The maxwell 3D register space
+            Registers registers{}; //!< The Maxwell 3D register space
             Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
 
             std::array<u32, 0x10000> macroCode{}; //!< This is used to store GPU macros, the 256kb size is from Ryujinx

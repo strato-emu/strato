@@ -3,10 +3,7 @@
 
 #pragma once
 
-#include <functional>
-#include <cxxabi.h>
 #include <kernel/ipc.h>
-#include <common.h>
 
 #define SFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<Result(Class*, type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view>>{id, {&Class::Function, #Function}}
 #define SFUNC_BASE(id, Class, BaseClass, Function) std::pair<u32, std::pair<std::function<Result(Class*, type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view>>{id, {&CallBaseFunction<Class, BaseClass, decltype(&BaseClass::Function), &BaseClass::Function>, #Function}}

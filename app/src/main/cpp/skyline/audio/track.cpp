@@ -19,7 +19,7 @@ namespace skyline::audio {
 
     bool AudioTrack::ContainsBuffer(u64 tag) {
         // Iterate from front of queue as we don't want released samples
-        for (auto identifier = identifiers.crbegin(); identifier != identifiers.crend(); ++identifier) {
+        for (auto identifier = identifiers.crbegin(); identifier != identifiers.crend(); identifier++) {
             if (identifier->released)
                 return false;
 

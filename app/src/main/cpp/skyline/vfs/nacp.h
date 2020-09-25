@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-#include <common.h>
 #include "backing.h"
 
 namespace skyline::vfs {

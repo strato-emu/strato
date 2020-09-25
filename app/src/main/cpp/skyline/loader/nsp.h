@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <common.h>
 #include <vfs/nca.h>
 #include <vfs/rom_filesystem.h>
 #include <vfs/partition_filesystem.h>

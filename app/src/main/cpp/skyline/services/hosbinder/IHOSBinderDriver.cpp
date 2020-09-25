@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <gpu.h>
 #include <kernel/types/KProcess.h>
 #include "IHOSBinderDriver.h"
 #include "GraphicBufferProducer.h"

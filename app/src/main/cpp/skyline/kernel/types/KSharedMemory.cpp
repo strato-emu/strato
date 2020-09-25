@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <asm/unistd.h>
 #include <os.h>
+#include <nce.h>
 #include "KSharedMemory.h"
 #include "KProcess.h"
 

@@ -6,6 +6,7 @@
 #include "loader/nso.h"
 #include "loader/nca.h"
 #include "loader/nsp.h"
+#include "nce.h"
 #include "nce/guest.h"
 #include "os.h"
 

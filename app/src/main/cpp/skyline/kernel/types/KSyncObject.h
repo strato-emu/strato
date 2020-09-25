@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <common.h>
 #include "KObject.h"
 
 namespace skyline::kernel::type {

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <crypto/key_store.h>
 #include <crypto/aes_cipher.h>
 #include "filesystem.h"

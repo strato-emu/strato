@@ -4,7 +4,6 @@
 #pragma once
 
 #include <vfs/filesystem.h>
-#include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::fssrv {

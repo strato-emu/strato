@@ -24,8 +24,8 @@ namespace skyline {
                 std::function<void()> callback;
             };
 
-            Mutex waiterLock{}; //!< Locks insertions and deletions of waiters
-            std::map<u64, Waiter> waiterMap{};
+            Mutex waiterLock; //!< Locks insertions and deletions of waiters
+            std::map<u64, Waiter> waiterMap;
             u64 nextWaiterId{1};
 
           public:

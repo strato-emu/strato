@@ -3,16 +3,12 @@
 
 #pragma once
 
-#include <queue>
 #include <android/native_window.h>
-#include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 #include <services/nvdrv/devices/nvmap.h>
-#include "gpu/texture.h"
 #include "gpu/memory_manager.h"
 #include "gpu/gpfifo.h"
 #include "gpu/syncpoint.h"
-#include "gpu/engines/engine.h"
 #include "gpu/engines/maxwell_3d.h"
 
 namespace skyline::gpu {

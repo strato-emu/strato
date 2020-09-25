@@ -4,7 +4,6 @@
 #pragma once
 
 #include <kernel/types/KEvent.h>
-#include <services/base_service.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::nifm {

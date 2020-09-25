@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include <array>
 #include <audio/resampler.h>
 #include <audio/adpcm_decoder.h>
 #include <audio.h>
-#include <common.h>
 
 namespace skyline::service::audio::IAudioRenderer {
     /**

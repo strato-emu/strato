@@ -165,8 +165,8 @@ namespace skyline::kernel::type {
             if (size <= PAGE_SIZE) {
                 std::vector<u8> buffer(size);
 
-                state.process->ReadMemory(buffer.data(), source, size);
-                state.process->WriteMemory(buffer.data(), destination, size);
+                ReadMemory(buffer.data(), source, size);
+                WriteMemory(buffer.data(), destination, size);
             } else {
                 Registers fregs{
                     .x0 = source,
@@ -180,20 +180,21 @@ namespace skyline::kernel::type {
     }
 
     std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u64 address) {
-        for (auto&[handle, object] : state.process->handles) {
+        for (KHandle index{}; index < handles.size(); index++) {
+            auto& object = handles[index];
             switch (object->objectType) {
                 case type::KType::KPrivateMemory:
                 case type::KType::KSharedMemory:
                 case type::KType::KTransferMemory: {
                     auto mem = std::static_pointer_cast<type::KMemory>(object);
                     if (mem->IsInside(address))
-                        return std::make_optional<KProcess::HandleOut<KMemory>>({mem, handle});
+                        return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
                 }
+
                 default:
                     break;
             }
         }
-
         return std::nullopt;
     }
 
@@ -213,7 +214,7 @@ namespace skyline::kernel::type {
             return false;
 
         std::shared_ptr<WaitStatus> status;
-        for (auto it = mtxWaiters.begin();; ++it) {
+        for (auto it = mtxWaiters.begin();; it++) {
             if (it != mtxWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
 
@@ -227,7 +228,7 @@ namespace skyline::kernel::type {
         lock.lock();
         status->flag = false;
 
-        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it) {
+        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); it++) {
             if ((*it)->handle == state.thread->handle) {
                 mtxWaiters.erase(it);
                 break;
@@ -270,7 +271,7 @@ namespace skyline::kernel::type {
         auto &condWaiters = conditionals[conditionalAddress];
 
         std::shared_ptr<WaitStatus> status;
-        for (auto it = condWaiters.begin();; ++it) {
+        for (auto it = condWaiters.begin();; it++) {
             if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
 
@@ -294,7 +295,7 @@ namespace skyline::kernel::type {
         else
             status->flag = false;
 
-        for (auto it = condWaiters.begin(); it != condWaiters.end(); ++it) {
+        for (auto it = condWaiters.begin(); it != condWaiters.end(); it++) {
             if ((*it)->handle == state.thread->handle) {
                 condWaiters.erase(it);
                 break;
@@ -339,7 +340,7 @@ namespace skyline::kernel::type {
                 auto &mtxWaiters = mutexes[thread->mutexAddress];
                 std::shared_ptr<WaitStatus> status;
 
-                for (auto it = mtxWaiters.begin();; ++it) {
+                for (auto it = mtxWaiters.begin();; it++) {
                     if (it != mtxWaiters.end() && (*it)->priority >= thread->priority)
                         continue;
                     status = std::make_shared<WaitStatus>(thread->priority, thread->handle);
@@ -352,7 +353,7 @@ namespace skyline::kernel::type {
                 mtxLock.lock();
                 status->flag = false;
 
-                for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); ++it) {
+                for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); it++) {
                     if ((*it)->handle == thread->handle) {
                         mtxWaiters.erase(it);
                         break;

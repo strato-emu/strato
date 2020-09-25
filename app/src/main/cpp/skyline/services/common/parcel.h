@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <common.h>
 #include <kernel/ipc.h>
 
 namespace skyline::service {

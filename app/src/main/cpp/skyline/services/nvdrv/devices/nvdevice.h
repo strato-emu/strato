@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <cxxabi.h>
-#include <common.h>
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 

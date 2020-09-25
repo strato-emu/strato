@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include "filesystem.h"
 
 namespace skyline::vfs {

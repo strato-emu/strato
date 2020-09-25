@@ -4,7 +4,6 @@
 #pragma once
 
 #include <common.h>
-#include "ipc.h"
 
 namespace skyline {
     namespace constant::infoState {

@@ -2,8 +2,6 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu.h>
-#include <os.h>
-#include <kernel/types/KProcess.h>
 #include <services/nvdrv/driver.h>
 #include <services/common/fence.h>
 #include <gpu/format.h>

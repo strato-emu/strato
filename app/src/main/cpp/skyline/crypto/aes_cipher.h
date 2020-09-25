@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-#include <span>
 #include <mbedtls/cipher.h>
 #include <common.h>
 
