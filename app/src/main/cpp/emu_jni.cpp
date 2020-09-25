@@ -139,9 +139,8 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchSta
         auto input = inputWeak.lock();
         jboolean isCopy{false};
 
-        std::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));
+        skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));
         input->touch.SetState(points);
-
         env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
     } catch (const std::bad_weak_ptr &) {
         // We don't mind if we miss axis updates while input hasn't been initialized

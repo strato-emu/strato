@@ -40,16 +40,16 @@ namespace skyline::service::lm {
             LogLevel level;
             u8 verbosity;
             u32 payloadLength;
-        } &data = state.process->GetReference<Data>(request.inputBuf.at(0).address);
+        } &data = request.inputBuf.at(0).as<Data>();
 
         std::ostringstream logMessage;
         logMessage << "Guest log:";
 
         u64 offset = sizeof(Data);
-        while (offset < request.inputBuf.at(0).size) {
-            auto fieldType = state.process->GetObject<LogFieldType>(request.inputBuf.at(0).address + offset++);
-            auto length = state.process->GetObject<u8>(request.inputBuf.at(0).address + offset++);
-            auto address = request.inputBuf.at(0).address + offset;
+        while (offset < request.inputBuf[0].size()) {
+            auto fieldType = request.inputBuf[0].subspan(offset++).as<LogFieldType>();
+            auto length = request.inputBuf[0].subspan(offset++).as<u8>();
+            auto object = request.inputBuf[0].subspan(offset, length);
 
             logMessage << " ";
 
@@ -58,24 +58,25 @@ namespace skyline::service::lm {
                     offset += length;
                     continue;
                 case LogFieldType::Line:
-                    logMessage << GetFieldName(fieldType) << ": " << state.process->GetObject<u32>(address);
+                    logMessage << GetFieldName(fieldType) << ": " << object.as<u32>();
                     offset += sizeof(u32);
                     continue;
                 case LogFieldType::DropCount:
-                    logMessage << GetFieldName(fieldType) << ": " << state.process->GetObject<u64>(address);
+                    logMessage << GetFieldName(fieldType) << ": " << object.as<u64>();
                     offset += sizeof(u64);
                     continue;
                 case LogFieldType::Time:
-                    logMessage << GetFieldName(fieldType) << ": " << state.process->GetObject<u64>(address) << "s";
+                    logMessage << GetFieldName(fieldType) << ": " << object.as<u64>() << "s";
                     offset += sizeof(u64);
                     continue;
                 case LogFieldType::Stop:
                     break;
                 default:
-                    logMessage << GetFieldName(fieldType) << ": " << state.process->GetString(address, length);
+                    logMessage << GetFieldName(fieldType) << ": " << object.as_string();
                     offset += length;
                     continue;
             }
+
             break;
         }
 

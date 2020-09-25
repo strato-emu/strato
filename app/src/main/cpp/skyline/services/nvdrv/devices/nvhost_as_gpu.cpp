@@ -11,11 +11,11 @@
 namespace skyline::service::nvdrv::device {
     NvHostAsGpu::NvHostAsGpu(const DeviceState &state) : NvDevice(state) {}
 
-    NvStatus NvHostAsGpu::BindChannel(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::BindChannel(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostAsGpu::AllocSpace(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::AllocSpace(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 pages;      // In
             u32 pageSize;   // In
@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv::device {
                 u64 offset; // InOut
                 u64 align;  // In
             };
-        } region = util::As<Data>(buffer);
+        } region = buffer.as<Data>();
 
         u64 size = static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize);
 
@@ -42,8 +42,8 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostAsGpu::UnmapBuffer(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
-        u64 offset{util::As<u64>(buffer)};
+    NvStatus NvHostAsGpu::UnmapBuffer(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        u64 offset{buffer.as<u64>()};
 
         if (!state.gpu->memoryManager.Unmap(offset))
             state.logger->Warn("Failed to unmap chunk at 0x{:X}", offset);
@@ -51,7 +51,7 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostAsGpu::Modify(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::Modify(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 flags;        // In
             u32 kind;         // In
@@ -60,7 +60,7 @@ namespace skyline::service::nvdrv::device {
             u64 bufferOffset; // In
             u64 mappingSize;  // In
             u64 offset;       // InOut
-        }  &data = util::As<Data>(buffer);
+        }  &data = buffer.as<Data>();
 
         try {
             auto driver = nvdrv::driver.lock();
@@ -87,7 +87,7 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvStatus NvHostAsGpu::GetVaRegions(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::GetVaRegions(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         /*
         struct Data {
             u64 _pad0_;
@@ -100,12 +100,12 @@ namespace skyline::service::nvdrv::device {
                 u32 pad;
                 u64 pages;
             } regions[2];   // Out
-        } &regionInfo = util::As<Data>(buffer);
+        } &regionInfo = buffer.as<Data>();
         */
         return NvStatus::Success;
     }
 
-    NvStatus NvHostAsGpu::AllocAsEx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::AllocAsEx(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         /*
         struct Data {
             u32 bigPageSize;  // In
@@ -115,12 +115,12 @@ namespace skyline::service::nvdrv::device {
             u64 vaRangeStart; // In
             u64 vaRangeEnd;   // In
             u64 vaRangeSplit; // In
-        } addressSpace = util::As<Data>(buffer);
+        } addressSpace = buffer.as<Data>();
         */
         return NvStatus::Success;
     }
 
-    NvStatus NvHostAsGpu::Remap(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostAsGpu::Remap(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Entry {
             u16 flags;       // In
             u16 kind;        // In
@@ -132,7 +132,7 @@ namespace skyline::service::nvdrv::device {
 
         constexpr u32 MinAlignmentShift{0x10}; // This shift is applied to all addresses passed to Remap
 
-        auto entries{util::AsSpan<Entry>(buffer)};
+        auto entries{buffer.cast<Entry>()};
         for (auto entry : entries) {
             try {
                 auto driver = nvdrv::driver.lock();

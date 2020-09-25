@@ -13,8 +13,7 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto buffer = request.inputBuf.at(0);
-        auto path = state.process->GetString(buffer.address, buffer.size);
+        auto path{request.inputBuf.at(0).as_string()};
 
         response.Push<u32>(driver->OpenDevice(path));
         response.Push(device::NvStatus::Success);
@@ -31,7 +30,7 @@ namespace skyline::service::nvdrv {
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
 
-        std::optional<kernel::ipc::IpcBuffer> buffer{std::nullopt};
+        span<u8> buffer{};
         if (request.inputBuf.empty() || request.outputBuf.empty()) {
             if (!request.inputBuf.empty())
                 buffer = request.inputBuf.at(0);
@@ -39,13 +38,16 @@ namespace skyline::service::nvdrv {
                 buffer = request.outputBuf.at(0);
             else
                 throw exception("No IOCTL Buffers");
-        } else if (request.inputBuf.at(0).address == request.outputBuf.at(0).address) {
-            buffer = request.inputBuf.at(0);
+        } else if (request.inputBuf[0].data() == request.outputBuf[0].data()) {
+            if (request.inputBuf[0].size() >= request.outputBuf[0].size())
+                buffer = request.inputBuf[0];
+            else
+                buffer = request.outputBuf[0];
         } else {
-            throw exception("IOCTL Input Buffer (0x{:X}) != Output Buffer (0x{:X})", request.inputBuf[0].address, request.outputBuf[0].address);
+            throw exception("IOCTL Input Buffer (0x{:X}) != Output Buffer (0x{:X})", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()));
         }
 
-        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, std::span<u8>(reinterpret_cast<u8 *>(buffer->address), buffer->size), {}));
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, buffer, {}));
         return {};
     }
 
@@ -101,10 +103,16 @@ namespace skyline::service::nvdrv {
 
         if (request.inputBuf.size() < 2 || request.outputBuf.empty())
             throw exception("Inadequate amount of buffers for IOCTL2: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
-        else if (request.inputBuf[0].address != request.outputBuf[0].address)
-            throw exception("IOCTL2 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Input Buffer #2: 0x{:X}]", request.inputBuf[0].address, request.outputBuf[0].address, request.inputBuf[1].address);
+        else if (request.inputBuf[0].data() != request.outputBuf[0].data())
+            throw exception("IOCTL2 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Input Buffer #2: 0x{:X}]", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()), fmt::ptr(request.inputBuf[1].data()));
 
-        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl2, std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[0].address), request.inputBuf[0].size), std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[1].address), request.inputBuf[1].size)));
+        span<u8> buffer{};
+        if (request.inputBuf[0].size() >= request.outputBuf[0].size())
+            buffer = request.inputBuf[0];
+        else
+            buffer = request.outputBuf[0];
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl2, buffer, request.inputBuf[1]));
         return {};
     }
 
@@ -119,10 +127,16 @@ namespace skyline::service::nvdrv {
 
         if (request.inputBuf.empty() || request.outputBuf.size() < 2)
             throw exception("Inadequate amount of buffers for IOCTL3: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
-        else if (request.inputBuf[0].address != request.outputBuf[0].address)
-            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", request.inputBuf[0].address, request.outputBuf[0].address, request.outputBuf[1].address);
+        else if (request.inputBuf[0].data() != request.outputBuf[0].data())
+            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()), fmt::ptr(request.outputBuf[1].data()));
 
-        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, std::span<u8>(reinterpret_cast<u8 *>(request.inputBuf[0].address), request.inputBuf[0].size), std::span<u8>(reinterpret_cast<u8 *>(request.outputBuf[1].address), request.outputBuf[1].size)));
+        span<u8> buffer{};
+        if (request.inputBuf[0].size() >= request.outputBuf[0].size())
+            buffer = request.inputBuf[0];
+        else
+            buffer = request.outputBuf[0];
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, buffer, request.outputBuf[1]));
         return {};
     }
 

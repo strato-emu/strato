@@ -17,7 +17,7 @@ namespace skyline::service::nvdrv::device {
         return name;
     }
 
-    NvStatus NvDevice::HandleIoctl(u32 cmd, IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvDevice::HandleIoctl(u32 cmd, IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         std::string_view typeString{[type] {
             switch (type) {
                 case IoctlType::Ioctl:
@@ -29,7 +29,7 @@ namespace skyline::service::nvdrv::device {
             }
         }()};
 
-        std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> function;
+        std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> function;
         try {
             function = GetIoctlFunction(cmd);
             state.logger->Debug("{} @ {}: {}", typeString, GetName(), function.second);

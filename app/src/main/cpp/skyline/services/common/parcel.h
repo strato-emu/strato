@@ -36,16 +36,7 @@ namespace skyline::service {
          * @param state The state of the device
          * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
          */
-        Parcel(kernel::ipc::InputBuffer &buffer, const DeviceState &state, bool hasToken = false);
-
-        /**
-         * @brief This constructor fills in the Parcel object with data from a Parcel on a remote process
-         * @param address The remote address of the parcel
-         * @param size The size of the parcel
-         * @param state The state of the device
-         * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
-         */
-        Parcel(u64 address, u64 size, const DeviceState &state, bool hasToken = false);
+        Parcel(span<u8> buffer, const DeviceState &state, bool hasToken = false);
 
         /**
          * @brief This constructor is used to create an empty parcel then write to a process
@@ -94,18 +85,10 @@ namespace skyline::service {
         }
 
         /**
-         * @brief Writes the Parcel object into a particular output buffer on a process
-         * @param buffer The buffer to write into
+         * @brief Writes the Parcel object out
+         * @param buffer The buffer to write the Parcel object to
          * @return The total size of the message
          */
-        u64 WriteParcel(kernel::ipc::OutputBuffer &buffer);
-
-        /**
-         * @brief Writes the Parcel object into the process's memory
-         * @param address The address to write the Parcel object to
-         * @param maxSize The maximum size of the Parcel
-         * @return The total size of the message
-         */
-        u64 WriteParcel(u64 address, u64 maxSize);
+        u64 WriteParcel(span<u8> buffer);
     };
 }

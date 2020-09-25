@@ -39,7 +39,7 @@ namespace skyline {
             /**
              * @brief Writes a vector of 128-bit user IDs to an output buffer
              */
-            Result WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds);
+            Result WriteUserList(span<u8> buffer, std::vector<UserId> userIds);
 
           public:
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);

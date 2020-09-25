@@ -24,7 +24,7 @@ namespace skyline::service::account {
         try {
             // We only support one active user currently so hardcode this and ListOpenUsers
             return WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
-        } catch (const std::out_of_range &e) {
+        } catch (const std::out_of_range &) {
             return result::InvalidInputBuffer;
         }
     }
@@ -32,14 +32,13 @@ namespace skyline::service::account {
     Result IAccountServiceForApplication::ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         try {
             return WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
-        } catch (const std::out_of_range &e) {
+        } catch (const std::out_of_range &) {
             return result::InvalidInputBuffer;
         }
     }
 
-    Result IAccountServiceForApplication::WriteUserList(ipc::OutputBuffer buffer, std::vector<UserId> userIds) {
-        std::span outputUserIds(state.process->GetPointer<UserId>(buffer.address), buffer.size / sizeof(UserId));
-
+    Result IAccountServiceForApplication::WriteUserList(span<u8> buffer, std::vector<UserId> userIds) {
+        span outputUserIds{buffer.cast<UserId>()};
         for (auto &userId : outputUserIds) {
             if (userIds.empty()) {
                 userId = UserId{};

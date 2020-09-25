@@ -72,12 +72,12 @@ namespace skyline::service::nvdrv::device {
         throw exception("Failed to find a free nvhost event!");
     }
 
-    NvStatus NvHostCtrl::EventWaitImpl(std::span<u8> buffer, bool async) {
+    NvStatus NvHostCtrl::EventWaitImpl(span<u8> buffer, bool async) {
         struct Data {
             Fence fence;      // In
             u32 timeout;      // In
             EventValue value; // InOut
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         if (data.fence.id >= constant::MaxHwSyncpointCount)
             return NvStatus::BadValue;
@@ -135,12 +135,12 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvStatus NvHostCtrl::GetConfig(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrl::GetConfig(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::BadValue;
     }
 
-    NvStatus NvHostCtrl::EventSignal(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
-        auto userEventId{util::As<u32>(buffer)};
+    NvStatus NvHostCtrl::EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        auto userEventId{buffer.as<u32>()};
         state.logger->Debug("Signalling nvhost event: {}", userEventId);
 
         if (userEventId >= constant::NvHostEventCount || !events.at(userEventId))
@@ -163,16 +163,16 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrl::EventWait(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrl::EventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return EventWaitImpl(buffer, false);
     }
 
-    NvStatus NvHostCtrl::EventWaitAsync(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrl::EventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return EventWaitImpl(buffer, true);
     }
 
-    NvStatus NvHostCtrl::EventRegister(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
-        auto userEventId{util::As<u32>(buffer)};
+    NvStatus NvHostCtrl::EventRegister(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        auto userEventId{buffer.as<u32>()};
         state.logger->Debug("Registering nvhost event: {}", userEventId);
 
         auto &event = events.at(userEventId);

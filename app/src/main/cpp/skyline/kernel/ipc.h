@@ -197,52 +197,6 @@ namespace skyline {
         };
 
         /**
-         * @brief Describes a buffer by holding the address and size
-         */
-        struct IpcBuffer {
-            u64 address; //!< The address of the buffer
-            size_t size; //!< The size of the buffer
-            IpcBufferType type; //!< The type of the buffer
-
-            /**
-             * @param address The address of the buffer
-             * @param size The size of the buffer
-             * @param type The type of the buffer
-             */
-            IpcBuffer(u64 address, size_t size, IpcBufferType type);
-        };
-
-        /**
-         * @brief This holds an input IPC buffer
-         */
-        struct InputBuffer : public IpcBuffer {
-            /**
-             * @param aBuf The X Buffer Descriptor that has contains the input data
-             */
-            InputBuffer(kernel::ipc::BufferDescriptorX *xBuf);
-
-            /**
-             * @param aBuf The A or W Buffer Descriptor that has contains the input data
-             */
-            InputBuffer(kernel::ipc::BufferDescriptorABW *aBuf, IpcBufferType type = IpcBufferType::A);
-        };
-
-        /**
-         * @brief This holds an output IPC buffer
-         */
-        struct OutputBuffer : public IpcBuffer {
-            /**
-             * @param bBuf The B or W Buffer Descriptor that has to be outputted to
-             */
-            OutputBuffer(kernel::ipc::BufferDescriptorABW *bBuf, IpcBufferType type = IpcBufferType::B);
-
-            /**
-             * @param cBuf The C Buffer Descriptor that has to be outputted to
-             */
-            OutputBuffer(kernel::ipc::BufferDescriptorC *cBuf);
-        };
-
-        /**
          * @brief This class encapsulates an IPC Request (https://switchbrew.org/wiki/IPC_Marshalling)
          */
         class IpcRequest {
@@ -260,8 +214,8 @@ namespace skyline {
             std::vector<KHandle> copyHandles; //!< A vector of handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
             std::vector<KHandle> moveHandles; //!< A vector of handles that should be moved from the server to the client process rather than copied
             std::vector<KHandle> domainObjects; //!< A vector of all input domain objects
-            std::vector<InputBuffer> inputBuf; //!< This is a vector of input buffers
-            std::vector<OutputBuffer> outputBuf; //!< This is a vector of output buffers
+            std::vector<span<u8>> inputBuf; //!< This is a vector of input buffers
+            std::vector<span<u8>> outputBuf; //!< This is a vector of output buffers
 
             /**
              * @param isDomain If the following request is a domain request

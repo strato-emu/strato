@@ -44,7 +44,7 @@ namespace skyline::audio {
         return bufferIds;
     }
 
-    void AudioTrack::AppendBuffer(u64 tag, std::span<i16> buffer) {
+    void AudioTrack::AppendBuffer(u64 tag, span<i16> buffer) {
         BufferIdentifier identifier{
             .released = false,
             .tag = tag,

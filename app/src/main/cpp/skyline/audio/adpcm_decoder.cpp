@@ -9,7 +9,7 @@
 namespace skyline::audio {
     AdpcmDecoder::AdpcmDecoder(const std::vector<std::array<i16, 2>> &coefficients) : coefficients(coefficients) {}
 
-    std::vector<i16> AdpcmDecoder::Decode(std::span<u8> adpcmData) {
+    std::vector<i16> AdpcmDecoder::Decode(span<u8> adpcmData) {
         constexpr size_t BytesPerFrame{0x8};
         constexpr size_t SamplesPerFrame{0xE};
 

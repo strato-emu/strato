@@ -17,8 +17,7 @@ namespace skyline::service::account {
             u8 _unk2_[0x60];
         };
 
-        auto userData = state.process->GetPointer<AccountUserData>(request.outputBuf.at(0).address);
-        userData->iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
+        request.outputBuf.at(0).as<AccountUserData>().iconBackgroundColorID = 0x1; // Color indexing starts at 0x1
 
         return GetBase(session, request, response);
     }

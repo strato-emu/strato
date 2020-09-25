@@ -22,7 +22,7 @@ namespace skyline::service::fssrv {
             return result::InvalidSize;
         }
 
-        backing->Read(state.process->GetPointer<u8>(request.outputBuf.at(0).address), offset, size);
+        backing->Read(request.outputBuf.at(0).data(), offset, size);
         return {};
     }
 

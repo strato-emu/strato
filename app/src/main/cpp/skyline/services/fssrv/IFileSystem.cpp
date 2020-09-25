@@ -11,7 +11,7 @@ namespace skyline::service::fssrv {
     IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
 
     Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));
+        std::string path{request.inputBuf.at(0).as<char>()};
         auto mode = request.Pop<u64>();
         auto size = request.Pop<u32>();
 
@@ -19,7 +19,7 @@ namespace skyline::service::fssrv {
     }
 
     Result IFileSystem::GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string path = std::string(state.process->GetPointer<char>(request.inputBuf.at(0).address));
+        std::string path{request.inputBuf.at(0).as<char>()};
 
         auto type = backing->GetEntryType(path);
 
@@ -33,7 +33,7 @@ namespace skyline::service::fssrv {
     }
 
     Result IFileSystem::OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string path(state.process->GetPointer<char>(request.inputBuf.at(0).address));
+        std::string path{request.inputBuf.at(0).as<char>()};
         auto mode = request.Pop<vfs::Backing::Mode>();
 
         if (!backing->FileExists(path))

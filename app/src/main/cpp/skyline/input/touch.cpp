@@ -14,7 +14,7 @@ namespace skyline::input {
         SetState({});
     }
 
-    void TouchManager::SetState(const std::span<TouchScreenPoint> &points) {
+    void TouchManager::SetState(const span<TouchScreenPoint> &points) {
         if (!activated)
             return;
 

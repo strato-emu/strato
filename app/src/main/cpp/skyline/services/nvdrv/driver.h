@@ -46,7 +46,7 @@ namespace skyline::service::nvdrv {
          * @param path The path of the device to open an FD to
          * @return The file descriptor to the device
          */
-        u32 OpenDevice(const std::string &path);
+        u32 OpenDevice(std::string_view path);
 
         /**
          * @brief Returns a particular device with a specific FD

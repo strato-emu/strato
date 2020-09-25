@@ -9,11 +9,11 @@ namespace skyline::service::nvdrv::device {
 
     NvMap::NvMap(const DeviceState &state) : NvDevice(state) {}
 
-    NvStatus NvMap::Create(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::Create(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 size;   // In
             u32 handle; // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         handleTable[handleIndex] = std::make_shared<NvMapObject>(idIndex++, data.size);
         data.handle = handleIndex++;
@@ -22,11 +22,11 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvMap::FromId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::FromId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 id;     // In
             u32 handle; // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         for (const auto &object : handleTable) {
             if (object.second->id == data.id) {
@@ -40,7 +40,7 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::BadValue;
     }
 
-    NvStatus NvMap::Alloc(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::Alloc(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 handle;   // In
             u32 heapMask; // In
@@ -49,7 +49,7 @@ namespace skyline::service::nvdrv::device {
             u8 kind;      // In
             u8 _pad0_[7];
             u64 address;  // InOut
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         try {
             auto &object = handleTable.at(data.handle);
@@ -68,14 +68,14 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvStatus NvMap::Free(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::Free(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 handle;   // In
             u32 _pad0_;
             u64 address;  // Out
             u32 size;     // Out
             u32 flags;    // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         try {
             const auto &object = handleTable.at(data.handle);
@@ -98,13 +98,13 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvStatus NvMap::Param(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         enum class Parameter : u32 { Size = 1, Alignment = 2, Base = 3, HeapMask = 4, Kind = 5, Compr = 6 }; // https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h#102
         struct Data {
             u32 handle;          // In
             Parameter parameter; // In
             u32 result;          // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         try {
             auto &object = handleTable.at(data.handle);
@@ -143,11 +143,11 @@ namespace skyline::service::nvdrv::device {
         }
     }
 
-    NvStatus NvMap::GetId(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvMap::GetId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 id;     // Out
             u32 handle; // In
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         try {
             data.id = handleTable.at(data.handle)->id;

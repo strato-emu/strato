@@ -111,7 +111,7 @@ namespace skyline {
              * @tparam T The type of span to read into
              */
             template<typename T>
-            void Read(std::span<T> destination, u64 address) const {
+            void Read(span<T> destination, u64 address) const {
                 Read(reinterpret_cast<u8 *>(destination.data()), address, destination.size_bytes());
             }
 
@@ -132,7 +132,7 @@ namespace skyline {
              * @brief Writes out a span to a region of the GPU virtual address space
              */
             template<typename T>
-            void Write(std::span<T> source, u64 address) const {
+            void Write(span<T> source, u64 address) const {
                 Write(reinterpret_cast<u8 *>(source.data()), address, source.size_bytes());
             }
 

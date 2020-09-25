@@ -8,11 +8,11 @@
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 
-#define NVFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<NvStatus(Class*, IoctlType, std::span<u8>, std::span<u8>)>, std::string_view>>{id, {&Class::Function, #Function}}
+#define NVFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<NvStatus(Class*, IoctlType, span<u8>, span<u8>)>, std::string_view>>{id, {&Class::Function, #Function}}
 #define NVDEVICE_DECL_AUTO(name, value) decltype(value) name = value
 #define NVDEVICE_DECL(...)                                                                                                                        \
 NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                            \
-std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> GetIoctlFunction(u32 id) {                          \
+std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) {                          \
     auto& function = functions.at(id);                                                                                                            \
     return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
 }
@@ -73,7 +73,7 @@ namespace skyline::service::nvdrv::device {
 
         virtual ~NvDevice() = default;
 
-        virtual std::pair<std::function<NvStatus(IoctlType, std::span<u8>, std::span<u8>)>, std::string_view> GetIoctlFunction(u32 id) = 0;
+        virtual std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) = 0;
 
         /**
          * @return The name of the class
@@ -85,7 +85,7 @@ namespace skyline::service::nvdrv::device {
          * @brief This handles IOCTL calls for devices
          * @param cmd The IOCTL command that was called
          */
-        NvStatus HandleIoctl(u32 cmd, IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus HandleIoctl(u32 cmd, IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         inline virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
             return nullptr;

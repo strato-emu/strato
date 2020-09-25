@@ -412,7 +412,7 @@ namespace skyline::input {
             amplitudes[i] = std::min(totalAmplitude, constant::AmplitudeMax);
         }
 
-        jvm->VibrateDevice(index, std::span(timings.begin(), timings.begin() + i), std::span(amplitudes.begin(), amplitudes.begin() + i));
+        jvm->VibrateDevice(index, span(timings.begin(), timings.begin() + i), span(amplitudes.begin(), amplitudes.begin() + i));
     }
 
     void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 index, const NpadVibrationValue &value) {

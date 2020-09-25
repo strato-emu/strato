@@ -9,13 +9,12 @@ namespace skyline::service::audio {
     IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u64 offset{};
-        for (std::string deviceName : {"AudioTvOutput", "AudioStereoJackOutput", "AudioBuiltInSpeakerOutput"}) {
-            if (offset + deviceName.size() + 1 > request.outputBuf.at(0).size)
-                throw exception("Too small a buffer supplied to ListAudioDeviceName");
-
-            state.process->WriteMemory(deviceName.c_str(), request.outputBuf.at(0).address + offset, deviceName.size() + 1);
-            offset += deviceName.size() + 1;
+        span buffer{request.outputBuf.at(0)};
+        for (std::string_view deviceName : {"AudioTvOutput\0", "AudioStereoJackOutput\0", "AudioBuiltInSpeakerOutput\0"}) {
+            if (deviceName.size() > buffer.size())
+                throw exception("The buffer supplied to ListAudioDeviceName is too small");
+            buffer.copy_from(deviceName);
+            buffer = buffer.subspan(deviceName.size());
         }
         return {};
     }
@@ -25,12 +24,10 @@ namespace skyline::service::audio {
     }
 
     Result IAudioDevice::GetActiveAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string deviceName("AudioStereoJackOutput");
-
-        if (deviceName.size() > request.outputBuf.at(0).size)
-            throw exception("Too small a buffer supplied to GetActiveAudioDeviceName");
-
-        state.process->WriteMemory(deviceName.c_str(), request.outputBuf.at(0).address, deviceName.size() + 1);
+        std::string_view deviceName{"AudioStereoJackOutput\0"};
+        if (deviceName.size() > request.outputBuf.at(0).size())
+            throw exception("The buffer supplied to GetActiveAudioDeviceName is too small");
+        request.outputBuf.at(0).copy_from(deviceName);
         return {};
     }
 

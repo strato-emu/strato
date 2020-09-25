@@ -87,7 +87,7 @@ namespace skyline {
              */
             u32 FindFreeEvent(u32 syncpointId);
 
-            NvStatus EventWaitImpl(std::span<u8> buffer, bool async);
+            NvStatus EventWaitImpl(span<u8> buffer, bool async);
 
           public:
             NvHostCtrl(const DeviceState &state);
@@ -95,27 +95,27 @@ namespace skyline {
             /**
              * @brief This gets the value of an nvdrv setting, it returns an error code on production switches (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_GET_CONFIG)
              */
-            NvStatus GetConfig(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+            NvStatus GetConfig(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
              * @brief This signals an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_SIGNAL)
              */
-            NvStatus EventSignal(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+            NvStatus EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
              * @brief This synchronously waits on an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT)
              */
-            NvStatus EventWait(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+            NvStatus EventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
              * @brief This asynchronously waits on an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT_ASYNC)
              */
-            NvStatus EventWaitAsync(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+            NvStatus EventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
              * @brief This registers an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_REGISTER)
              */
-            NvStatus EventRegister(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+            NvStatus EventRegister(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
 

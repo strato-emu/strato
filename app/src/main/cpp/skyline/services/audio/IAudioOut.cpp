@@ -37,16 +37,16 @@ namespace skyline::service::audio {
             u64 sampleCapacity;
             u64 sampleSize;
             u64 sampleOffset;
-        } &data{state.process->GetReference<Data>(request.inputBuf.at(0).address)};
+        } &data{request.inputBuf.at(0).as<Data>()};
         auto tag = request.Pop<u64>();
 
         state.logger->Debug("IAudioOut: Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
 
         if (sampleRate != constant::SampleRate) {
-            auto resampledBuffer = resampler.ResampleBuffer(std::span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)), static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
+            auto resampledBuffer = resampler.ResampleBuffer(span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)), static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
             track->AppendBuffer(tag, resampledBuffer);
         } else {
-            track->AppendBuffer(tag, std::span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)));
+            track->AppendBuffer(tag, span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)));
         }
 
         return {};
@@ -60,13 +60,13 @@ namespace skyline::service::audio {
     }
 
     Result IAudioOut::GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto maxCount{static_cast<u32>(request.outputBuf.at(0).size >> 3)};
+        auto maxCount{static_cast<u32>(request.outputBuf.at(0).size() >> 3)};
         std::vector<u64> releasedBuffers{track->GetReleasedBuffers(maxCount)};
         auto count{static_cast<u32>(releasedBuffers.size())};
 
         // Fill rest of output buffer with zeros
         releasedBuffers.resize(maxCount, 0);
-        state.process->WriteMemory(releasedBuffers.data(), request.outputBuf.at(0).address, request.outputBuf.at(0).size);
+        request.outputBuf.at(0).copy_from(releasedBuffers);
 
         response.Push<u32>(count);
         return {};

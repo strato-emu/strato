@@ -4,7 +4,7 @@
 #include "aes_cipher.h"
 
 namespace skyline::crypto {
-    AesCipher::AesCipher(std::span<u8> key, mbedtls_cipher_type_t type) {
+    AesCipher::AesCipher(span<u8> key, mbedtls_cipher_type_t type) {
         mbedtls_cipher_init(&decryptContext);
         if (mbedtls_cipher_setup(&decryptContext, mbedtls_cipher_info_from_type(type)) != 0)
             throw exception("Failed to setup decryption context");

@@ -105,13 +105,7 @@ namespace skyline {
         }
 
         /**
-         * @brief Aligns up a value to a multiple of two
-         * @tparam Type The type of the values
-         * @param value The value to round up
-         * @param multiple The multiple to round up to (Should be a multiple of 2)
-         * @tparam TypeVal The type of the value
-         * @tparam TypeMul The type of the multiple
-         * @return The aligned value
+         * @return The value aligned up to the next multiple
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
@@ -120,12 +114,7 @@ namespace skyline {
         }
 
         /**
-         * @brief Aligns down a value to a multiple of two
-         * @param value The value to round down
-         * @param multiple The multiple to round down to (Should be a multiple of 2)
-         * @tparam TypeVal The type of the value
-         * @tparam TypeMul The type of the multiple
-         * @return The aligned value
+         * @return The value aligned down to the previous multiple
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
@@ -133,10 +122,7 @@ namespace skyline {
         }
 
         /**
-         * @param value The value to check for alignment
-         * @param multiple The multiple to check alignment with
          * @return If the address is aligned with the multiple
-         * @note The multiple must be divisible by 2
          */
         template<typename TypeVal, typename TypeMul>
         constexpr inline bool IsAligned(TypeVal value, TypeMul multiple) {
@@ -147,7 +133,6 @@ namespace skyline {
         }
 
         /**
-         * @param value The value to check for alignment
          * @return If the value is page aligned
          */
         constexpr inline bool PageAligned(u64 value) {
@@ -155,7 +140,6 @@ namespace skyline {
         }
 
         /**
-         * @param value The value to check for alignment
          * @return If the value is word aligned
          */
         constexpr inline bool WordAligned(u64 value) {
@@ -201,24 +185,117 @@ namespace skyline {
             return result;
         }
 
+        /**
+         * @brief A compile-time hash function as std::hash isn't constexpr
+         */
         constexpr std::size_t Hash(std::string_view view) {
             return frz::elsa<frz::string>{}(frz::string(view.data(), view.size()), 0);
         }
-
-        template<typename Out, typename In>
-        constexpr Out &As(std::span<In> span) {
-            if (IsAligned(span.size_bytes(), sizeof(Out)))
-                return *reinterpret_cast<Out *>(span.data());
-            throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span.size_bytes(), sizeof(Out));
-        }
-
-        template<typename Out, typename In>
-        constexpr std::span<Out> AsSpan(std::span<In> span) {
-            if (IsAligned(span.size_bytes(), sizeof(Out)))
-                return std::span(reinterpret_cast<Out *>(span.data()), span.size_bytes() / sizeof(Out));
-            throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span.size_bytes(), sizeof(Out));
-        }
     }
+
+    /**
+     * @brief A custom wrapper over span that adds several useful methods to it
+     * @note This class is completely transparent, it implicitly converts from and to span
+     */
+    template<typename T, size_t Extent = std::dynamic_extent>
+    class span : public std::span<T, Extent> {
+      public:
+        using std::span<T, Extent>::span;
+        using std::span<T, Extent>::operator=;
+
+        typedef typename std::span<T, Extent>::element_type elementType;
+        typedef typename std::span<T, Extent>::index_type indexType;
+
+        constexpr span(const std::span<T, Extent> &spn) : std::span<T, Extent>(spn) {}
+
+        /**
+         * @brief We want to support implicitly casting from std::string_view -> span as it is just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
+         */
+        template<class Traits>
+        constexpr span(const std::basic_string_view<T, Traits> &string) : std::span<T, Extent>(const_cast<T *>(string.data()), string.size()) {}
+
+        template<typename Out>
+        constexpr Out &as() {
+            if (span::size_bytes() >= sizeof(Out))
+                return *reinterpret_cast<Out *>(span::data());
+            throw exception("Span size is less than Out type size (0x{:X}/0x{:X})", span::size_bytes(), sizeof(Out));
+        }
+
+        constexpr std::string_view as_string(indexType length = 0) {
+            return std::string_view(reinterpret_cast<char *>(span::data()), length ? length : span::size_bytes());
+        }
+
+        template<typename Out, size_t OutExtent = std::dynamic_extent>
+        constexpr span<Out> cast() {
+            if (util::IsAligned(span::size_bytes(), sizeof(Out)))
+                return span<Out, OutExtent>(reinterpret_cast<Out *>(span::data()), span::size_bytes() / sizeof(Out));
+            throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span::size_bytes(), sizeof(Out));
+        }
+
+        /**
+         * @brief Copies data from the supplied span into this one
+         * @param amount The amount of elements that need to be copied (in terms of the supplied span), 0 will try to copy the entirety of the other span
+         */
+        template<typename In, size_t InExtent>
+        constexpr void copy_from(const span<In, InExtent> spn, indexType amount = 0) {
+            auto size{amount ? amount * sizeof(In) : spn.size_bytes()};
+            if (span::size_bytes() < size)
+                throw exception("Data being copied is larger than this span");
+            std::memmove(span::data(), spn.data(), size);
+        }
+
+        /**
+         * @brief Implicit type conversion for copy_from, this allows passing in std::vector/std::array in directly is automatically passed by reference which is important for any containers
+         */
+        template<typename In>
+        constexpr void copy_from(const In &in, indexType amount = 0) {
+            copy_from(span<typename std::add_const<typename In::value_type>::type>(in), amount);
+        }
+
+        /** Base Class Functions that return an instance of it, we upcast them **/
+        template<size_t Count>
+        constexpr span<T, Count> first() const noexcept {
+            return std::span<T, Extent>::template first<Count>();
+        }
+
+        template<size_t Count>
+        constexpr span<T, Count> last() const noexcept {
+            return std::span<T, Extent>::template last<Count>();
+        }
+
+        constexpr span<elementType, std::dynamic_extent> first(indexType count) const noexcept {
+            return std::span<T, Extent>::first(count);
+        }
+
+        constexpr span<elementType, std::dynamic_extent> last(indexType count) const noexcept {
+            return std::span<T, Extent>::last(count);
+        }
+
+        template<size_t Offset, size_t Count = std::dynamic_extent>
+        constexpr auto subspan() const noexcept -> span<T, Count != std::dynamic_extent ? Count : Extent - Offset> {
+            return std::span<T, Extent>::template subspan<Offset, Count>();
+        }
+
+        constexpr span<T, std::dynamic_extent> subspan(indexType offset, indexType count = std::dynamic_extent) const noexcept {
+            return std::span<T, Extent>::subspan(offset, count);
+        }
+    };
+
+    /**
+     * @brief Deduction guides required for arguments to span, CTAD will fail for iterators, arrays and containers without this
+     */
+    template<class It, class End, size_t Extent = std::dynamic_extent>
+    span(It, End) -> span<typename std::iterator_traits<It>::value_type, Extent>;
+    template<class T, size_t Size>
+    span(T (&)[Size]) -> span<T, Size>;
+    template<class T, size_t Size>
+    span(std::array<T, Size> &) -> span<T, Size>;
+    template<class T, size_t Size>
+    span(const std::array<T, Size> &) -> span<const T, Size>;
+    template<class Container>
+    span(Container &) -> span<typename Container::value_type>;
+    template<class Container>
+    span(const Container &) -> span<const typename Container::value_type>;
 
     /**
      * @brief The Mutex class is a wrapper around an atomic bool used for synchronization

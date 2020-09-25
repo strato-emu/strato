@@ -7,7 +7,7 @@
 namespace skyline::service::settings {
     ISettingsServer::ISettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
-    constexpr std::array<u64, constant::NewLanguageCodeListSize> LanguageCodeList = {
+    constexpr std::array<u64, constant::NewLanguageCodeListSize> LanguageCodeList{
         util::MakeMagic<u64>("ja"),
         util::MakeMagic<u64>("en-US"),
         util::MakeMagic<u64>("fr"),
@@ -28,8 +28,7 @@ namespace skyline::service::settings {
     };
 
     Result ISettingsServer::GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.process->WriteMemory(LanguageCodeList.data(), request.outputBuf.at(0).address, constant::OldLanguageCodeListSize * sizeof(u64));
-
+        request.outputBuf.at(0).copy_from(span(LanguageCodeList).first(constant::OldLanguageCodeListSize));
         response.Push<i32>(constant::OldLanguageCodeListSize);
         return {};
     }
@@ -40,8 +39,7 @@ namespace skyline::service::settings {
     }
 
     Result ISettingsServer::GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.process->WriteMemory(LanguageCodeList.data(), request.outputBuf.at(0).address, constant::NewLanguageCodeListSize * sizeof(u64));
-
+        request.outputBuf.at(0).copy_from(LanguageCodeList);
         response.Push<i32>(constant::NewLanguageCodeListSize);
         return {};
     }

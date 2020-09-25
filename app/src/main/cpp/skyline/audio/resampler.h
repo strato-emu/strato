@@ -21,6 +21,6 @@ namespace skyline::audio {
          * @param ratio The conversion ratio needed
          * @param channelCount The amount of channels the buffer contains
          */
-        std::vector<i16> ResampleBuffer(std::span<i16> inputBuffer, double ratio, u8 channelCount);
+        std::vector<i16> ResampleBuffer(span<i16> inputBuffer, double ratio, u8 channelCount);
     };
 }

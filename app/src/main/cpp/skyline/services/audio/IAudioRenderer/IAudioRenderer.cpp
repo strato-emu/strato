@@ -45,32 +45,26 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     Result IAudioRenderer::RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto inputAddress{request.inputBuf.at(0).address};
+        auto input{request.inputBuf.at(0).data()};
 
-        auto inputHeader{state.process->GetObject<UpdateDataHeader>(inputAddress)};
+        auto inputHeader{*reinterpret_cast<UpdateDataHeader *>(input)};
         revisionInfo.SetUserRevision(inputHeader.revision);
-        inputAddress += sizeof(UpdateDataHeader);
-        inputAddress += inputHeader.behaviorSize; // Unused
+        input += sizeof(UpdateDataHeader);
+        input += inputHeader.behaviorSize; // Unused
 
-        auto memoryPoolCount{memoryPools.size()};
-        std::vector<MemoryPoolIn> memoryPoolsIn(memoryPoolCount);
-        state.process->ReadMemory(memoryPoolsIn.data(), inputAddress, memoryPoolCount * sizeof(MemoryPoolIn));
-        inputAddress += inputHeader.memoryPoolSize;
-
-        for (auto i = 0; i < memoryPoolsIn.size(); i++)
+        span memoryPoolsIn(reinterpret_cast<MemoryPoolIn*>(input), memoryPools.size());
+        input += inputHeader.memoryPoolSize;
+        for (auto i = 0; i < memoryPools.size(); i++)
             memoryPools[i].ProcessInput(memoryPoolsIn[i]);
 
-        inputAddress += inputHeader.voiceResourceSize;
-        std::vector<VoiceIn> voicesIn(parameters.voiceCount);
-        state.process->ReadMemory(voicesIn.data(), inputAddress, parameters.voiceCount * sizeof(VoiceIn));
-        inputAddress += inputHeader.voiceSize;
+        input += inputHeader.voiceResourceSize;
 
+        span voicesIn(reinterpret_cast<VoiceIn*>(input), parameters.voiceCount);
+        input += inputHeader.voiceSize;
         for (auto i = 0; i < voicesIn.size(); i++)
             voices[i].ProcessInput(voicesIn[i]);
 
-        std::vector<EffectIn> effectsIn(parameters.effectCount);
-        state.process->ReadMemory(effectsIn.data(), inputAddress, parameters.effectCount * sizeof(EffectIn));
-
+        span effectsIn(reinterpret_cast<EffectIn*>(input), parameters.effectCount);
         for (auto i = 0; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
 
@@ -100,24 +94,24 @@ namespace skyline::service::audio::IAudioRenderer {
             outputHeader.performanceManagerSize +
             outputHeader.elapsedFrameCountInfoSize;
 
-        u64 outputAddress = request.outputBuf.at(0).address;
+        auto output{request.outputBuf.at(0).data()};
 
-        state.process->WriteMemory(outputHeader, outputAddress);
-        outputAddress += sizeof(UpdateDataHeader);
+        *reinterpret_cast<UpdateDataHeader*>(output) = outputHeader;
+        output += sizeof(UpdateDataHeader);
 
         for (const auto &memoryPool : memoryPools) {
-            state.process->WriteMemory(memoryPool.output, outputAddress);
-            outputAddress += sizeof(MemoryPoolOut);
+            *reinterpret_cast<MemoryPoolOut*>(output) = memoryPool.output;
+            output += sizeof(MemoryPoolOut);
         }
 
         for (const auto &voice : voices) {
-            state.process->WriteMemory(voice.output, outputAddress);
-            outputAddress += sizeof(VoiceOut);
+            *reinterpret_cast<VoiceOut*>(output) = voice.output;
+            output += sizeof(VoiceOut);
         }
 
         for (const auto &effect : effects) {
-            state.process->WriteMemory(effect.output, outputAddress);
-            outputAddress += sizeof(EffectOut);
+            *reinterpret_cast<EffectOut*>(output) = effect.output;
+            output += sizeof(EffectOut);
         }
 
         return {};

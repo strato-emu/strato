@@ -20,27 +20,27 @@ namespace skyline::service::nvdrv::device {
         /**
          * @brief This returns a u32 GPU ZCULL Context Size (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZCULL_GET_CTX_SIZE)
          */
-        NvStatus ZCullGetCtxSize(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus ZCullGetCtxSize(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
          * @brief This returns a the GPU ZCULL Information (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZCULL_GET_INFO)
          */
-        NvStatus ZCullGetInfo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus ZCullGetInfo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
          * @brief This returns a struct with certain GPU characteristics (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_CHARACTERISTICS)
          */
-        NvStatus GetCharacteristics(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus GetCharacteristics(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
          * @brief This returns the TPC mask value for each GPC (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_TPC_MASKS)
          */
-        NvStatus GetTpcMasks(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus GetTpcMasks(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
          * @brief This returns the mask value for a ZBC slot (https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZBC_GET_ACTIVE_SLOT_MASK)
          */
-        NvStatus GetActiveSlotMask(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus GetActiveSlotMask(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
 

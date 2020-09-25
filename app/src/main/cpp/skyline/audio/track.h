@@ -66,7 +66,7 @@ namespace skyline::audio {
          * @param tag The tag of the buffer
          * @param buffer A span containing the source sample buffer
          */
-        void AppendBuffer(u64 tag, std::span<i16> buffer = {});
+        void AppendBuffer(u64 tag, span<i16> buffer = {});
 
         /**
          * @brief Checks if any buffers have been released and calls the appropriate callback for them

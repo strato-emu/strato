@@ -37,7 +37,7 @@ namespace skyline::crypto {
         }
 
       public:
-        AesCipher(std::span<u8> key, mbedtls_cipher_type_t type);
+        AesCipher(span<u8> key, mbedtls_cipher_type_t type);
 
         ~AesCipher();
 
@@ -54,7 +54,7 @@ namespace skyline::crypto {
         /**
          * @brief Decrypts data and writes back to it
          */
-        inline void Decrypt(std::span<u8> data) {
+        inline void Decrypt(span<u8> data) {
             Decrypt(data.data(), data.data(), data.size());
         }
 
@@ -66,7 +66,7 @@ namespace skyline::crypto {
         /**
          * @brief Decrypts data with XTS and writes back to it
          */
-        inline void XtsDecrypt(std::span<u8> data, size_t sector, size_t sectorSize) {
+        inline void XtsDecrypt(span<u8> data, size_t sector, size_t sectorSize) {
             XtsDecrypt(data.data(), data.data(), data.size(), sector, sectorSize);
         }
     };

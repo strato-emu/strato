@@ -97,7 +97,7 @@ namespace skyline {
         /**
          * @brief A call to EmulationActivity.vibrateDevice in Kotlin
          */
-        void VibrateDevice(jint index, const std::span<jlong> &timings, const std::span<jint> &amplitudes);
+        void VibrateDevice(jint index, const span<jlong> &timings, const span<jint> &amplitudes);
 
         /**
          * @brief A call to EmulationActivity.clearVibrationDevice in Kotlin

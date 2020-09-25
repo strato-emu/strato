@@ -40,7 +40,7 @@ namespace skyline::service::pl {
             *pointer++ = font.length ^ SharedFontKey;
             font.offset = reinterpret_cast<u64>(pointer) - fontSharedMem->kernel.address;
 
-            memcpy(pointer, font.data, font.length);
+            std::memcpy(pointer, font.data, font.length);
             pointer = reinterpret_cast<u32 *>(reinterpret_cast<u64>(pointer) + font.length);
         }
     }

@@ -11,7 +11,7 @@
 namespace skyline::service::nvdrv {
     Driver::Driver(const DeviceState &state) : state(state), hostSyncpoint(state) {}
 
-    u32 Driver::OpenDevice(const std::string &path) {
+    u32 Driver::OpenDevice(std::string_view path) {
         state.logger->Debug("Opening NVDRV device ({}): {}", fdIndex, path);
 
         switch (util::Hash(path)) {

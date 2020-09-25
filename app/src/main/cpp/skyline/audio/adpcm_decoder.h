@@ -37,6 +37,6 @@ namespace skyline::audio {
          * @param adpcmData A buffer containing the raw ADPCM data
          * @return A buffer containing decoded single channel I16 PCM data
          */
-        std::vector<i16> Decode(std::span<u8> adpcmData);
+        std::vector<i16> Decode(span<u8> adpcmData);
     };
 }

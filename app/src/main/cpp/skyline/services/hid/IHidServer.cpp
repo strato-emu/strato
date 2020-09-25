@@ -41,18 +41,9 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        const auto &buffer = request.inputBuf.at(0);
-        u64 address = buffer.address;
-        size_t size = buffer.size / sizeof(NpadId);
-
-        std::vector<NpadId> supportedIds(size);
-        for (size_t i = 0; i < size; i++) {
-            supportedIds[i] = state.process->GetObject<NpadId>(address);
-            address += sizeof(NpadId);
-        }
-
+        auto supportedIds{request.inputBuf.at(0).cast<NpadId>()};
         std::lock_guard lock(state.input->npad.mutex);
-        state.input->npad.supportedIds = supportedIds;
+        state.input->npad.supportedIds.assign(supportedIds.begin(), supportedIds.end());
         state.input->npad.Update();
         return {};
     }
@@ -150,10 +141,8 @@ namespace skyline::service::hid {
     Result IHidServer::SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>(); // appletResourceUserId
 
-        auto &handleBuf = request.inputBuf.at(0);
-        std::span handles(reinterpret_cast<NpadDeviceHandle *>(handleBuf.address), handleBuf.size / sizeof(NpadDeviceHandle));
-        auto &valueBuf = request.inputBuf.at(1);
-        std::span values(reinterpret_cast<NpadVibrationValue *>(valueBuf.address), valueBuf.size / sizeof(NpadVibrationValue));
+        auto handles{request.inputBuf.at(0).cast<NpadDeviceHandle>()};
+        auto values{request.inputBuf.at(1).cast<NpadVibrationValue>()};
 
         for (size_t i{}; i < handles.size(); ++i) {
             const auto &handle = handles[i];

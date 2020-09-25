@@ -15,26 +15,26 @@ namespace skyline::service::am {
 
     Result IStorageAccessor::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto offset = request.Pop<i64>();
-        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size), static_cast<i64>(parent->content.size()) - offset);
+        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset);
 
         if (offset > parent->content.size())
             return result::OutOfBounds;
 
-        if (size > 0)
-            state.process->ReadMemory(parent->content.data() + offset, request.inputBuf.at(0).address, size);
+        if (size)
+            request.outputBuf.at(0).copy_from(span(parent->content.data() + offset, size));
 
         return {};
     }
 
     Result IStorageAccessor::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto offset = request.Pop<i64>();
-        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size), static_cast<i64>(parent->content.size()) - offset);
+        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset);
 
         if (offset > parent->content.size())
             return result::OutOfBounds;
 
         if (size > 0)
-            state.process->WriteMemory(parent->content.data() + offset, request.outputBuf.at(0).address, size);
+            request.outputBuf.at(0).copy_from(span(parent->content.data() + offset, size));
 
         return {};
     }

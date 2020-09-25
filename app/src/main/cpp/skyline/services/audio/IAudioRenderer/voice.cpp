@@ -68,7 +68,7 @@ namespace skyline::service::audio::IAudioRenderer {
                 state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
                 break;
             case skyline::audio::AudioFormat::ADPCM: {
-                samples = adpcmDecoder->Decode(std::span(state.process->GetPointer<u8>(currentBuffer.address), currentBuffer.size));
+                samples = adpcmDecoder->Decode(span(state.process->GetPointer<u8>(currentBuffer.address), currentBuffer.size));
                 break;
             }
             default:

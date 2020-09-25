@@ -173,7 +173,7 @@ namespace skyline::gpu {
             /**
              * @brief Pushes a list of entries to the FIFO, these commands will be executed on calls to 'Step'
              */
-            void Push(std::span<GpEntry> entries);
+            void Push(span<GpEntry> entries);
         };
     }
 }

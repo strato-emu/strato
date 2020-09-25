@@ -5,16 +5,6 @@
 #include "types/KProcess.h"
 
 namespace skyline::kernel::ipc {
-    IpcBuffer::IpcBuffer(u64 address, size_t size, IpcBufferType type) : address(address), size(size), type(type) {}
-
-    InputBuffer::InputBuffer(kernel::ipc::BufferDescriptorX *xBuf) : IpcBuffer(xBuf->Address(), xBuf->size, IpcBufferType::X) {}
-
-    InputBuffer::InputBuffer(kernel::ipc::BufferDescriptorABW *aBuf, IpcBufferType type) : IpcBuffer(aBuf->Address(), aBuf->Size(), type) {}
-
-    OutputBuffer::OutputBuffer(kernel::ipc::BufferDescriptorABW *bBuf, IpcBufferType type) : IpcBuffer(bBuf->Address(), bBuf->Size(), type) {}
-
-    OutputBuffer::OutputBuffer(kernel::ipc::BufferDescriptorC *cBuf) : IpcBuffer(cBuf->address, cBuf->size, IpcBufferType::C) {}
-
     IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain) {
         u8 *tls = state.process->GetPointer<u8>(state.thread->tls);
         u8 *pointer = tls;
@@ -40,7 +30,7 @@ namespace skyline::kernel::ipc {
         for (u8 index = 0; header->xNo > index; index++) {
             auto bufX = reinterpret_cast<BufferDescriptorX *>(pointer);
             if (bufX->Address()) {
-                inputBuf.emplace_back(bufX);
+                inputBuf.emplace_back(state.process->GetPointer<u8>(bufX->Address()), u16(bufX->size));
                 state.logger->Debug("Buf X #{} AD: 0x{:X} SZ: 0x{:X} CTR: {}", index, u64(bufX->Address()), u16(bufX->size), u16(bufX->Counter()));
             }
             pointer += sizeof(BufferDescriptorX);
@@ -49,7 +39,7 @@ namespace skyline::kernel::ipc {
         for (u8 index = 0; header->aNo > index; index++) {
             auto bufA = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufA->Address()) {
-                inputBuf.emplace_back(bufA);
+                inputBuf.emplace_back(state.process->GetPointer<u8>(bufA->Address()), bufA->Size());
                 state.logger->Debug("Buf A #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufA->Address()), u64(bufA->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
@@ -58,7 +48,7 @@ namespace skyline::kernel::ipc {
         for (u8 index = 0; header->bNo > index; index++) {
             auto bufB = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufB->Address()) {
-                outputBuf.emplace_back(bufB);
+                outputBuf.emplace_back(state.process->GetPointer<u8>(bufB->Address()), bufB->Size());
                 state.logger->Debug("Buf B #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufB->Address()), u64(bufB->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
@@ -67,8 +57,8 @@ namespace skyline::kernel::ipc {
         for (u8 index = 0; header->wNo > index; index++) {
             auto bufW = reinterpret_cast<BufferDescriptorABW *>(pointer);
             if (bufW->Address()) {
-                inputBuf.emplace_back(bufW, IpcBufferType::W);
-                outputBuf.emplace_back(bufW, IpcBufferType::W);
+                outputBuf.emplace_back(state.process->GetPointer<u8>(bufW->Address()), bufW->Size());
+                outputBuf.emplace_back(state.process->GetPointer<u8>(bufW->Address()), bufW->Size());
                 state.logger->Debug("Buf W #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufW->Address()), u16(bufW->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
@@ -112,14 +102,14 @@ namespace skyline::kernel::ipc {
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC = reinterpret_cast<BufferDescriptorC *>(pointer);
             if (bufC->address) {
-                outputBuf.emplace_back(bufC);
+                outputBuf.emplace_back(state.process->GetPointer<u8>(bufC->address), u16(bufC->size));
                 state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", u64(bufC->address), u16(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index = 0; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC = reinterpret_cast<BufferDescriptorC *>(pointer);
                 if (bufC->address) {
-                    outputBuf.emplace_back(bufC);
+                    outputBuf.emplace_back(state.process->GetPointer<u8>(bufC->address), u16(bufC->size));
                     state.logger->Debug("Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufC->address), u16(bufC->size));
                 }
                 pointer += sizeof(BufferDescriptorC);

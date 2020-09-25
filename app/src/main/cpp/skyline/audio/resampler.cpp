@@ -121,7 +121,7 @@ namespace skyline::audio {
         {-42, 3751, 26253, 2811},   {-38, 3608, 26270, 2936},   {-34, 3467, 26281, 3064},   {-32, 3329, 26287, 3195}}};
     // @fmt:on
 
-    std::vector<i16> Resampler::ResampleBuffer(std::span<i16> inputBuffer, double ratio, u8 channelCount) {
+    std::vector<i16> Resampler::ResampleBuffer(span<i16> inputBuffer, double ratio, u8 channelCount) {
         auto step{static_cast<u32>(ratio * 0x8000)};
         auto outputSize{static_cast<size_t>(inputBuffer.size() / ratio)};
         std::vector<i16> outputBuffer(outputSize);

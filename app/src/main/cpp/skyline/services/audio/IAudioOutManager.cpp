@@ -9,7 +9,7 @@ namespace skyline::service::audio {
     IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.process->WriteMemory(reinterpret_cast<void *>(const_cast<char *>(constant::DefaultAudioOutName.data())), request.outputBuf.at(0).address, constant::DefaultAudioOutName.size());
+        request.outputBuf.at(0).copy_from(constant::DefaultAudioOutName);
         return {};
     }
 

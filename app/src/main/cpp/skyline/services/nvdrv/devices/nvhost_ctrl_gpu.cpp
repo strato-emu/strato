@@ -7,12 +7,12 @@
 namespace skyline::service::nvdrv::device {
     NvHostCtrlGpu::NvHostCtrlGpu(const DeviceState &state) : errorNotifierEvent(std::make_shared<type::KEvent>(state)), unknownEvent(std::make_shared<type::KEvent>(state)), NvDevice(state) {}
 
-    NvStatus NvHostCtrlGpu::ZCullGetCtxSize(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
-        util::As<u32>(buffer) = 0x1;
+    NvStatus NvHostCtrlGpu::ZCullGetCtxSize(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        buffer.as<u32>() = 0x1;
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrlGpu::ZCullGetInfo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrlGpu::ZCullGetInfo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct ZCullInfo {
             u32 widthAlignPixels{0x20};
             u32 heightAlignPixels{0x20};
@@ -26,11 +26,11 @@ namespace skyline::service::nvdrv::device {
             u32 subregionCount{0x10};
         } zCullInfo;
 
-        util::As<ZCullInfo>(buffer) = zCullInfo;
+        buffer.as<ZCullInfo>() = zCullInfo;
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrlGpu::GetCharacteristics(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrlGpu::GetCharacteristics(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct GpuCharacteristics {
             u32 arch{0x120};                             // NVGPU_GPU_ARCH_GM200
             u32 impl{0xB};                               // 0xB (NVGPU_GPU_IMPL_GM20B) or 0xE (NVGPU_GPU_IMPL_GM20B_B)
@@ -73,7 +73,7 @@ namespace skyline::service::nvdrv::device {
             u64 gpuCharacteristicsBufSize;         // InOut
             u64 gpuCharacteristicsBufAddr;         // In
             GpuCharacteristics gpuCharacteristics; // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         if (data.gpuCharacteristicsBufSize < sizeof(GpuCharacteristics))
             return NvStatus::InvalidSize;
@@ -84,12 +84,12 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrlGpu::GetTpcMasks(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrlGpu::GetTpcMasks(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 maskBufSize; // In
             u32 reserved[3]; // In
             u64 maskBuf;     // Out
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         if (data.maskBufSize)
             data.maskBuf = 0x3;
@@ -97,12 +97,12 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrlGpu::GetActiveSlotMask(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostCtrlGpu::GetActiveSlotMask(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 slot{0x07}; // Out
             u32 mask{0x01}; // Out
         } data;
-        util::As<Data>(buffer) = data;
+        buffer.as<Data>() = data;
         return NvStatus::Success;
     }
 

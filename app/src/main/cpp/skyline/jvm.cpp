@@ -47,7 +47,7 @@ namespace skyline {
         env->CallVoidMethod(instance, initializeControllersId);
     }
 
-    void JvmManager::VibrateDevice(jint index, const std::span<jlong> &timings, const std::span<jint> &amplitudes) {
+    void JvmManager::VibrateDevice(jint index, const span<jlong> &timings, const span<jint> &amplitudes) {
         auto jTimings = env->NewLongArray(timings.size());
         env->SetLongArrayRegion(jTimings, 0, timings.size(), timings.data());
         auto jAmplitudes = env->NewIntArray(amplitudes.size());

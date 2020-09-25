@@ -16,15 +16,15 @@ namespace skyline::service::nvdrv::device {
         channelFence.UpdateValue(hostSyncpoint);
     }
 
-    NvStatus NvHostChannel::SetNvmapFd(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SetNvmapFd(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SetSubmitTimeout(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SetSubmitTimeout(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u64 address;    // In
             u32 numEntries; // In
@@ -41,7 +41,7 @@ namespace skyline::service::nvdrv::device {
                 u32 raw;
             } flags;        // In
             Fence fence;    // InOut
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         auto driver = nvdrv::driver.lock();
         auto &hostSyncpoint = driver->hostSyncpoint;
@@ -54,7 +54,7 @@ namespace skyline::service::nvdrv::device {
                 throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
-        state.gpu->gpfifo.Push(std::span(state.process->GetPointer<gpu::gpfifo::GpEntry>(data.address), data.numEntries));
+        state.gpu->gpfifo.Push(span(state.process->GetPointer<gpu::gpfifo::GpEntry>(data.address), data.numEntries));
 
         data.fence.id = channelFence.id;
 
@@ -69,20 +69,20 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::AllocObjCtx(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::AllocObjCtx(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::ZcullBind(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::ZcullBind(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SetErrorNotifier(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SetErrorNotifier(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SetPriority(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
-        switch (util::As<NvChannelPriority>(buffer)) {
+    NvStatus NvHostChannel::SetPriority(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        switch (buffer.as<NvChannelPriority>()) {
             case NvChannelPriority::Low:
                 timeslice = 1300;
                 break;
@@ -97,14 +97,14 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::AllocGpfifoEx2(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::AllocGpfifoEx2(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 numEntries;  // In
             u32 numJobs;     // In
             u32 flags;       // In
             Fence fence;     // Out
             u32 reserved[3]; // In
-        } &data = util::As<Data>(buffer);
+        } &data = buffer.as<Data>();
 
         auto driver = nvdrv::driver.lock();
         channelFence.UpdateValue(driver->hostSyncpoint);
@@ -113,7 +113,7 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SetUserData(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SetUserData(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         return NvStatus::Success;
     }
 

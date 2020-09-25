@@ -146,7 +146,7 @@ namespace skyline::audio {
          * @brief This appends data from a span to the buffer
          * @param data A span containing the data to be appended
          */
-        inline void Append(std::span<Type> data) {
+        inline void Append(span<Type> data) {
             Append(data.data(), data.size());
         }
     };

@@ -89,7 +89,7 @@ namespace skyline::gpu::gpfifo {
         }
     }
 
-    void GPFIFO::Push(std::span<GpEntry> entries) {
+    void GPFIFO::Push(span<GpEntry> entries) {
         std::lock_guard lock(pushBufferQueueLock);
         bool beforeBarrier{false};
 
