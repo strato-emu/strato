@@ -19,7 +19,7 @@ namespace skyline::service::am {
     Result ISelfController::GetLibraryAppletLaunchableEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         libraryAppletLaunchableEvent->Signal();
 
-        KHandle handle = state.process->InsertItem(libraryAppletLaunchableEvent);
+        KHandle handle{state.process->InsertItem(libraryAppletLaunchableEvent)};
         state.logger->Debug("Library Applet Launchable Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
@@ -49,7 +49,7 @@ namespace skyline::service::am {
     Result ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Creating Managed Layer on Default Display");
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
         producer->layerStatus = hosbinder::LayerStatus::Managed;
@@ -59,7 +59,7 @@ namespace skyline::service::am {
     }
 
     Result ISelfController::GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem(accumulatedSuspendedTickChangedEvent);
+        auto handle{state.process->InsertItem(accumulatedSuspendedTickChangedEvent)};
         state.logger->Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);

@@ -43,12 +43,12 @@ namespace skyline::gpu::gpfifo {
     }
 
     void GPFIFO::Process(const std::vector<u32> &segment) {
-        for (auto entry = segment.begin(); entry != segment.end(); entry++) {
+        for (auto entry{segment.begin()}; entry != segment.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
             if (*entry == 0)
                 continue;
 
-            auto methodHeader = reinterpret_cast<const PushBufferMethodHeader *>(&*entry);
+            auto methodHeader{reinterpret_cast<const PushBufferMethodHeader *>(&*entry)};
 
             switch (methodHeader->secOp) {
                 case PushBufferMethodHeader::SecOp::IncMethod:
@@ -80,7 +80,7 @@ namespace skyline::gpu::gpfifo {
     void GPFIFO::Run() {
         std::lock_guard lock(pushBufferQueueLock);
         while (!pushBufferQueue.empty()) {
-            auto pushBuffer = pushBufferQueue.front();
+            auto pushBuffer{pushBufferQueue.front()};
             if (pushBuffer.segment.empty())
                 pushBuffer.Fetch(state.gpu->memoryManager);
 

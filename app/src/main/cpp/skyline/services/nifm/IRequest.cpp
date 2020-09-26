@@ -8,7 +8,7 @@ namespace skyline::service::nifm {
     IRequest::IRequest(const DeviceState &state, ServiceManager &manager) : event0(std::make_shared<type::KEvent>(state)), event1(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result IRequest::GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 Unsubmitted = 1; //!< The request has not been submitted
+        constexpr u32 Unsubmitted{1}; //!< The request has not been submitted
         response.Push<u32>(Unsubmitted);
         return {};
     }
@@ -18,7 +18,7 @@ namespace skyline::service::nifm {
     }
 
     Result IRequest::GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem(event0);
+        auto handle{state.process->InsertItem(event0)};
         state.logger->Debug("Request Event 0 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 

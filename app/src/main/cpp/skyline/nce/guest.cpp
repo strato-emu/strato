@@ -148,10 +148,10 @@ namespace skyline::guest {
                     SaveCtxTls();
                     LoadCtxStack();
                 } else if (ctx->threadCall == ThreadCall::Memcopy) {
-                    auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
-                    auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
-                    auto size = ctx->registers.x2;
-                    auto end = src + size;
+                    auto src{reinterpret_cast<u8 *>(ctx->registers.x0)};
+                    auto dest{reinterpret_cast<u8 *>(ctx->registers.x1)};
+                    auto size{ctx->registers.x2};
+                    auto end{src + size};
 
                     while (src < end)
                         *(src++) = *(dest++);
@@ -220,7 +220,7 @@ namespace skyline::guest {
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
-        for (u8 index = 0; index < 30; index++)
+        for (u8 index{}; index < 30; index++)
             ctx->registers.regs[index] = ucontext->uc_mcontext.regs[index];
 
         ctx->pc = ucontext->uc_mcontext.pc;
@@ -261,10 +261,10 @@ namespace skyline::guest {
                     LoadCtxStack();
                 }
             } else if (ctx->threadCall == ThreadCall::Memcopy) {
-                auto src = reinterpret_cast<u8 *>(ctx->registers.x0);
-                auto dest = reinterpret_cast<u8 *>(ctx->registers.x1);
-                auto size = ctx->registers.x2;
-                auto end = src + size;
+                auto src{reinterpret_cast<u8 *>(ctx->registers.x0)};
+                auto dest{reinterpret_cast<u8 *>(ctx->registers.x1)};
+                auto size{ctx->registers.x2};
+                auto end{src + size};
 
                 while (src < end)
                     *(src++) = *(dest++);

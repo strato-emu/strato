@@ -51,7 +51,7 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            auto &object = handleTable.at(data.handle);
+            auto &object{handleTable.at(data.handle)};
             object->heapMask = data.heapMask;
             object->flags = data.flags;
             object->align = data.align;
@@ -77,7 +77,7 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            const auto &object = handleTable.at(data.handle);
+            const auto &object{handleTable.at(data.handle)};
             if (object.use_count() > 1) {
                 data.address = static_cast<u32>(object->address);
                 data.flags = 0x0;
@@ -106,7 +106,7 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            auto &object = handleTable.at(data.handle);
+            auto &object{handleTable.at(data.handle)};
 
             switch (data.parameter) {
                 case Parameter::Size:

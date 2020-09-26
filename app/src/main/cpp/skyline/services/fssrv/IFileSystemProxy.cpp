@@ -22,14 +22,14 @@ namespace skyline::service::fssrv {
     }
 
     Result IFileSystemProxy::OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto spaceId = request.Pop<SaveDataSpaceId>();
-        auto attribute = request.Pop<SaveDataAttribute>();
+        auto spaceId{request.Pop<SaveDataSpaceId>()};
+        auto attribute{request.Pop<SaveDataAttribute>()};
 
         if (attribute.programId == 0)
             attribute.programId = state.loader->nacp->nacpContents.saveDataOwnerId;
 
-        std::string saveDataPath = [spaceId, &attribute]() {
-            std::string spaceIdStr = [spaceId]() {
+        std::string saveDataPath{[spaceId, &attribute]() {
+            std::string spaceIdStr{[spaceId]() {
                 switch (spaceId) {
                     case SaveDataSpaceId::System:
                         return "/nand/system";
@@ -40,7 +40,7 @@ namespace skyline::service::fssrv {
                     default:
                         throw exception("Unsupported savedata ID: {}", spaceId);
                 };
-            }();
+            }()};
 
             switch (attribute.type) {
                 case SaveDataType::System:
@@ -55,7 +55,7 @@ namespace skyline::service::fssrv {
                 default:
                     throw exception("Unsupported savedata type: {}", attribute.type);
             };
-        }();
+        }()};
 
         manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch" + saveDataPath), state, manager), session, response);
         return {};

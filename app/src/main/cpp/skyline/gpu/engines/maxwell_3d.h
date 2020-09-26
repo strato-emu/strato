@@ -11,7 +11,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 Maxwell3DRegisterCounter = 0xE00; //!< The number of Maxwell 3D registers
+        constexpr u32 Maxwell3DRegisterCounter{0xE00}; //!< The number of Maxwell 3D registers
     }
 
     namespace gpu::engine {

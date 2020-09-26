@@ -37,7 +37,7 @@ namespace skyline {
              * @return The value of the permission struct in Linux format
              */
             constexpr int Get() const {
-                int perm = 0;
+                int perm{};
                 if (r)
                     perm |= PROT_READ;
                 if (w)
@@ -145,27 +145,27 @@ namespace skyline {
          * @brief The preset states that different regions are set to (https://switchbrew.org/wiki/SVC#MemoryType)
          */
         namespace states {
-            constexpr MemoryState Unmapped = 0x00000000;
-            constexpr MemoryState Io = 0x00002001;
-            constexpr MemoryState CodeStatic = 0x00DC7E03;
-            constexpr MemoryState CodeMutable = 0x03FEBD04;
-            constexpr MemoryState Heap = 0x037EBD05;
-            constexpr MemoryState SharedMemory = 0x00402006;
-            constexpr MemoryState Alias = 0x00482907;
-            constexpr MemoryState AliasCode = 0x00DD7E08;
-            constexpr MemoryState AliasCodeData = 0x03FFBD09;
-            constexpr MemoryState Ipc = 0x005C3C0A;
-            constexpr MemoryState Stack = 0x005C3C0B;
-            constexpr MemoryState ThreadLocal = 0x0040200C;
-            constexpr MemoryState TransferMemoryIsolated = 0x015C3C0D;
-            constexpr MemoryState TransferMemory = 0x005C380E;
-            constexpr MemoryState SharedCode = 0x0040380F;
-            constexpr MemoryState Reserved = 0x00000010;
-            constexpr MemoryState NonSecureIpc = 0x005C3811;
-            constexpr MemoryState NonDeviceIpc = 0x004C2812;
-            constexpr MemoryState KernelStack = 0x00002013;
-            constexpr MemoryState CodeReadOnly = 0x00402214;
-            constexpr MemoryState CodeWritable = 0x00402015;
+            constexpr MemoryState Unmapped{0x00000000};
+            constexpr MemoryState Io{0x00002001};
+            constexpr MemoryState CodeStatic{0x00DC7E03};
+            constexpr MemoryState CodeMutable{0x03FEBD04};
+            constexpr MemoryState Heap{0x037EBD05};
+            constexpr MemoryState SharedMemory{0x00402006};
+            constexpr MemoryState Alias{0x00482907};
+            constexpr MemoryState AliasCode{0x00DD7E08};
+            constexpr MemoryState AliasCodeData{0x03FFBD09};
+            constexpr MemoryState Ipc{0x005C3C0A};
+            constexpr MemoryState Stack{0x005C3C0B};
+            constexpr MemoryState ThreadLocal{0x0040200C};
+            constexpr MemoryState TransferMemoryIsolated{0x015C3C0D};
+            constexpr MemoryState TransferMemory{0x005C380E};
+            constexpr MemoryState SharedCode{0x0040380F};
+            constexpr MemoryState Reserved{0x00000010};
+            constexpr MemoryState NonSecureIpc{0x005C3811};
+            constexpr MemoryState NonDeviceIpc{0x004C2812};
+            constexpr MemoryState KernelStack{0x00002013};
+            constexpr MemoryState CodeReadOnly{0x00402214};
+            constexpr MemoryState CodeWritable{0x00402015};
         };
 
         /**

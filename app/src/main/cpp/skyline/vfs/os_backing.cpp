@@ -24,7 +24,7 @@ namespace skyline::vfs {
         if (!mode.read)
             throw exception("Attempting to read a backing that is not readable");
 
-        auto ret = pread64(fd, output, size, offset);
+        auto ret{pread64(fd, output, size, offset)};
         if (ret < 0)
             throw exception("Failed to read from fd: {}", strerror(errno));
 
@@ -35,7 +35,7 @@ namespace skyline::vfs {
         if (!mode.write)
             throw exception("Attempting to write to a backing that is not writable");
 
-        auto ret = pwrite64(fd, output, size, offset);
+        auto ret{pwrite64(fd, output, size, offset)};
         if (ret < 0)
             throw exception("Failed to write to fd: {}", strerror(errno));
 
@@ -43,7 +43,7 @@ namespace skyline::vfs {
     }
 
     void OsBacking::Resize(size_t size) {
-        int ret = ftruncate(fd, size);
+        int ret{ftruncate(fd, size)};
         if (ret < 0)
             throw exception("Failed to resize file: {}", strerror(errno));
 

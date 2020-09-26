@@ -42,14 +42,14 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), -8); // Set the priority of this process to the highest value
 
-    auto jvmManager = std::make_shared<skyline::JvmManager>(env, instance);
-    auto settings = std::make_shared<skyline::Settings>(preferenceFd);
+    auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
+    auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
 
-    auto appFilesPath = env->GetStringUTFChars(appFilesPathJstring, nullptr);
-    auto logger = std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))));
+    auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
+    auto logger{std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))))};
     //settings->List(logger); // (Uncomment when you want to print out all settings strings)
 
-    auto start = std::chrono::steady_clock::now();
+    auto start{std::chrono::steady_clock::now()};
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings, std::string(appFilesPath));
@@ -57,7 +57,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         jvmManager->InitializeControllers();
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
 
-        auto romUri = env->GetStringUTFChars(romUriJstring, nullptr);
+        auto romUri{env->GetStringUTFChars(romUriJstring, nullptr)};
         logger->Info("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);
 
@@ -72,7 +72,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     logger->Info("Emulation has ended");
 
-    auto end = std::chrono::steady_clock::now();
+    auto end{std::chrono::steady_clock::now()};
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 }
 
@@ -102,7 +102,7 @@ extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIE
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
-    auto input = inputWeak.lock();
+    auto input{inputWeak.lock()};
     std::lock_guard guard(input->npad.mutex);
     input->npad.controllers[index] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
 }
@@ -113,8 +113,8 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateContr
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
     try {
-        auto input = inputWeak.lock();
-        auto device = input->npad.controllers[index].device;
+        auto input{inputWeak.lock()};
+        auto device{input->npad.controllers[index].device};
         if (device)
             device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
     } catch (const std::bad_weak_ptr &) {
@@ -124,8 +124,8 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonSt
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
     try {
-        auto input = inputWeak.lock();
-        auto device = input->npad.controllers[index].device;
+        auto input{inputWeak.lock()};
+        auto device{input->npad.controllers[index].device};
         if (device)
             device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
     } catch (const std::bad_weak_ptr &) {
@@ -137,7 +137,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchSta
     try {
         using Point = skyline::input::TouchScreenPoint;
 
-        auto input = inputWeak.lock();
+        auto input{inputWeak.lock()};
         jboolean isCopy{false};
 
         skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));

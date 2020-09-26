@@ -7,8 +7,8 @@ namespace skyline::service::timesrv {
     ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ITimeZoneService::ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto curTime = std::time(nullptr);
-        auto calender = *std::gmtime(&curTime);
+        auto curTime{std::time(nullptr)};
+        auto calender{*std::gmtime(&curTime)};
 
         CalendarTime calendarTime{
             .year = static_cast<u16>(calender.tm_year),

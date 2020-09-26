@@ -7,7 +7,7 @@
 namespace skyline::service::nvdrv::device {
     const std::string &NvDevice::GetName() {
         if (name.empty()) {
-            auto mangledName = typeid(*this).name();
+            auto mangledName{typeid(*this).name()};
 
             int status{};
             size_t length{};

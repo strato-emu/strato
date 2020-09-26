@@ -48,9 +48,9 @@ namespace skyline {
     }
 
     void JvmManager::VibrateDevice(jint index, const span<jlong> &timings, const span<jint> &amplitudes) {
-        auto jTimings = env->NewLongArray(timings.size());
+        auto jTimings{env->NewLongArray(timings.size())};
         env->SetLongArrayRegion(jTimings, 0, timings.size(), timings.data());
-        auto jAmplitudes = env->NewIntArray(amplitudes.size());
+        auto jAmplitudes{env->NewIntArray(amplitudes.size())};
         env->SetIntArrayRegion(jAmplitudes, 0, amplitudes.size(), amplitudes.data());
 
         env->CallVoidMethod(instance, vibrateDeviceId, index, jTimings, jAmplitudes);

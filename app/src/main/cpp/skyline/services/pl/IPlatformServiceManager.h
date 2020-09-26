@@ -8,7 +8,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 FontSharedMemSize = 0x1100000; //!< This is the total size of the font shared memory
+        constexpr u32 FontSharedMemSize{0x1100000}; //!< This is the total size of the font shared memory
     }
 
     namespace service::pl {

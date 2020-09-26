@@ -39,7 +39,7 @@ namespace skyline::service::nvdrv {
 
     std::shared_ptr<device::NvDevice> Driver::GetDevice(u32 fd) {
         try {
-            auto item = devices.at(fd);
+            auto item{devices.at(fd)};
             if (!item)
                 throw exception("GetDevice was called with a closed file descriptor: 0x{:X}", fd);
             return item;
@@ -50,7 +50,7 @@ namespace skyline::service::nvdrv {
 
     void Driver::CloseDevice(u32 fd) {
         try {
-            auto &device = devices.at(fd);
+            auto &device{devices.at(fd)};
             device.reset();
         } catch (const std::out_of_range &) {
             state.logger->Warn("Trying to close non-existent FD");

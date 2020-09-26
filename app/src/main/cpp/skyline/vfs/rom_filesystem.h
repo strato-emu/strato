@@ -7,7 +7,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 RomFsEmptyEntry = 0xFFFFFFFF; //!< The value a RomFS entry has it's offset set to if it is empty
+        constexpr u32 RomFsEmptyEntry{0xFFFFFFFF}; //!< The value a RomFS entry has it's offset set to if it is empty
     }
 
     namespace vfs {

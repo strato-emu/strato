@@ -9,11 +9,11 @@ namespace skyline::service::visrv {
 
     Result IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>();
-        auto displayId = request.Pop<u64>();
+        auto displayId{request.Pop<u64>()};
 
         state.logger->Debug("Creating Stray Layer on Display: {}", displayId);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus == hosbinder::LayerStatus::Stray)
             throw exception("The application is creating more than one stray layer");
         producer->layerStatus = hosbinder::LayerStatus::Stray;
@@ -34,10 +34,10 @@ namespace skyline::service::visrv {
     }
 
     Result IDisplayService::DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto layerId = request.Pop<u64>();
+        auto layerId{request.Pop<u64>()};
         state.logger->Debug("Destroying Stray Layer: {}", layerId);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         producer->layerStatus = hosbinder::LayerStatus::Uninitialized;

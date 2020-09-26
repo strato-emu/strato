@@ -7,8 +7,8 @@
 
 namespace skyline::service {
     namespace constant {
-        constexpr size_t OldLanguageCodeListSize = 15; //!< The size of the pre 4.0.0 language code list
-        constexpr size_t NewLanguageCodeListSize = 17; //!< The size of the post 4.0.0 language code list
+        constexpr size_t OldLanguageCodeListSize{15}; //!< The size of the pre 4.0.0 language code list
+        constexpr size_t NewLanguageCodeListSize{17}; //!< The size of the post 4.0.0 language code list
     }
 
     namespace settings {

@@ -18,7 +18,7 @@ namespace skyline::kernel::type {
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
-        auto host = mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);
+        auto host{mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0)};
         if (host == MAP_FAILED)
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -83,7 +83,7 @@ namespace skyline::kernel::type {
         if (fregs.x0 < 0)
             throw exception("An error occurred while remapping private memory in child process");
 
-        auto chunk = state.os->memory.GetChunk(address);
+        auto chunk{state.os->memory.GetChunk(address)};
         state.process->WriteMemory(reinterpret_cast<void *>(chunk->host), address, std::min(nSize, size), true);
 
         for (const auto &block : chunk->blockList) {
@@ -105,7 +105,7 @@ namespace skyline::kernel::type {
 
         munmap(reinterpret_cast<void *>(chunk->host), size);
 
-        auto host = mmap(reinterpret_cast<void *>(chunk->host), nSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);
+        auto host{mmap(reinterpret_cast<void *>(chunk->host), nSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0)};
         if (host == MAP_FAILED)
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -126,7 +126,7 @@ namespace skyline::kernel::type {
         if (fregs.x0 < 0)
             throw exception("An error occurred while updating private memory's permissions in child process");
 
-        auto chunk = state.os->memory.GetChunk(address);
+        auto chunk{state.os->memory.GetChunk(address)};
 
         // If a static code region has been mapped as writable it needs to be changed to mutable
         if (chunk->state.value == memory::states::CodeStatic.value && permission.w)
@@ -153,7 +153,7 @@ namespace skyline::kernel::type {
         } catch (const std::exception &) {
         }
 
-        auto chunk = state.os->memory.GetChunk(address);
+        auto chunk{state.os->memory.GetChunk(address)};
         if (chunk) {
             munmap(reinterpret_cast<void *>(chunk->host), chunk->size);
             state.os->memory.DeleteChunk(address);

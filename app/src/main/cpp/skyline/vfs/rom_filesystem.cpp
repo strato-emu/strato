@@ -21,7 +21,7 @@ namespace skyline::vfs {
                 std::vector<char> name(entry.nameSize);
                 backing->Read(name.data(), header.fileMetaTableOffset + offset + sizeof(RomFsFileEntry), entry.nameSize);
 
-                std::string fullPath = path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize);
+                std::string fullPath{path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize)};
                 fileMap.emplace(fullPath, entry);
             }
 
@@ -33,7 +33,7 @@ namespace skyline::vfs {
         RomFsDirectoryEntry entry{};
         backing->Read(&entry, header.dirMetaTableOffset + offset);
 
-        std::string childPath = path;
+        std::string childPath{path};
         if (entry.nameSize) {
             std::vector<char> name(entry.nameSize);
             backing->Read(name.data(), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry), entry.nameSize);
@@ -54,7 +54,7 @@ namespace skyline::vfs {
 
     std::shared_ptr<Backing> RomFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
         try {
-            const auto &entry = fileMap.at(path);
+            const auto &entry{fileMap.at(path)};
             return std::make_shared<RegionBacking>(backing, header.dataOffset + entry.offset, entry.size, mode);
         } catch (std::out_of_range &e) {
             return nullptr;
@@ -72,7 +72,7 @@ namespace skyline::vfs {
 
     std::shared_ptr<Directory> RomFileSystem::OpenDirectory(const std::string &path, Directory::ListMode listMode) {
         try {
-            auto &entry = directoryMap.at(path);
+            auto &entry{directoryMap.at(path)};
             return std::make_shared<RomFileSystemDirectory>(backing, header, entry, listMode);
         } catch (std::out_of_range &e) {
             return nullptr;
@@ -86,7 +86,7 @@ namespace skyline::vfs {
 
         if (listMode.file) {
             RomFileSystem::RomFsFileEntry romFsFileEntry;
-            u32 offset = ownEntry.fileOffset;
+            u32 offset{ownEntry.fileOffset};
 
             do {
                 backing->Read(&romFsFileEntry, header.fileMetaTableOffset + offset);
@@ -104,7 +104,7 @@ namespace skyline::vfs {
 
         if (listMode.directory) {
             RomFileSystem::RomFsDirectoryEntry romFsDirectoryEntry;
-            u32 offset = ownEntry.childOffset;
+            u32 offset{ownEntry.childOffset};
 
             do {
                 backing->Read(&romFsDirectoryEntry, header.dirMetaTableOffset + offset);

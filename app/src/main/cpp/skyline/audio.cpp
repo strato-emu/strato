@@ -46,9 +46,9 @@ namespace skyline::audio {
 
                 std::lock_guard bufferGuard(track->bufferLock);
 
-                auto trackSamples = track->samples.Read(destBuffer, streamSamples, [](i16 *source, i16 *destination) {
+                auto trackSamples{track->samples.Read(destBuffer, streamSamples, [](i16 *source, i16 *destination) {
                     *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
-                }, writtenSamples);
+                }, writtenSamples)};
 
                 writtenSamples = std::max(trackSamples, writtenSamples);
 

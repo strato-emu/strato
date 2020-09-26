@@ -8,34 +8,34 @@
 namespace skyline {
     namespace constant::infoState {
         // 1.0.0+
-        constexpr u8 AllowedCpuIdBitmask = 0x0;
-        constexpr u8 AllowedThreadPriorityMask = 0x1;
-        constexpr u8 AliasRegionBaseAddr = 0x2;
-        constexpr u8 AliasRegionSize = 0x3;
-        constexpr u8 HeapRegionBaseAddr = 0x4;
-        constexpr u8 HeapRegionSize = 0x5;
-        constexpr u8 TotalMemoryAvailable = 0x6;
-        constexpr u8 TotalMemoryUsage = 0x7;
-        constexpr u8 IsCurrentProcessBeingDebugged = 0x8;
-        constexpr u8 ResourceLimit = 0x9;
-        constexpr u8 IdleTickCount = 0xA;
-        constexpr u8 RandomEntropy = 0xB;
+        constexpr u8 AllowedCpuIdBitmask{0x0};
+        constexpr u8 AllowedThreadPriorityMask{0x1};
+        constexpr u8 AliasRegionBaseAddr{0x2};
+        constexpr u8 AliasRegionSize{0x3};
+        constexpr u8 HeapRegionBaseAddr{0x4};
+        constexpr u8 HeapRegionSize{0x5};
+        constexpr u8 TotalMemoryAvailable{0x6};
+        constexpr u8 TotalMemoryUsage{0x7};
+        constexpr u8 IsCurrentProcessBeingDebugged{0x8};
+        constexpr u8 ResourceLimit{0x9};
+        constexpr u8 IdleTickCount{0xA};
+        constexpr u8 RandomEntropy{0xB};
         // 2.0.0+
-        constexpr u8 AddressSpaceBaseAddr = 0xC;
-        constexpr u8 AddressSpaceSize = 0xD;
-        constexpr u8 StackRegionBaseAddr = 0xE;
-        constexpr u8 StackRegionSize = 0xF;
+        constexpr u8 AddressSpaceBaseAddr{0xC};
+        constexpr u8 AddressSpaceSize{0xD};
+        constexpr u8 StackRegionBaseAddr{0xE};
+        constexpr u8 StackRegionSize{0xF};
         // 3.0.0+
-        constexpr u8 PersonalMmHeapSize = 0x10;
-        constexpr u8 PersonalMmHeapUsage = 0x11;
-        constexpr u8 TitleId = 0x12;
+        constexpr u8 PersonalMmHeapSize{0x10};
+        constexpr u8 PersonalMmHeapUsage{0x11};
+        constexpr u8 TitleId{0x12};
         // 4.0.0+
-        constexpr u8 PrivilegedProcessId = 0x13;
+        constexpr u8 PrivilegedProcessId{0x13};
         // 5.0.0+
-        constexpr u8 UserExceptionContextAddr = 0x14;
+        constexpr u8 UserExceptionContextAddr{0x14};
         // 6.0.0+
-        constexpr u8 TotalMemoryAvailableWithoutMmHeap = 0x15;
-        constexpr u8 TotalMemoryUsedWithoutMmHeap = 0x16;
+        constexpr u8 TotalMemoryAvailableWithoutMmHeap{0x15};
+        constexpr u8 TotalMemoryUsedWithoutMmHeap{0x16};
     }
 
     namespace kernel::svc {

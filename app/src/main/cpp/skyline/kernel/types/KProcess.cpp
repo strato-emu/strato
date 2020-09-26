@@ -39,16 +39,16 @@ namespace skyline::kernel::type {
 
         u64 address;
         if (tlsPages.empty()) {
-            auto region = state.os->memory.tlsIo;
+            auto region{state.os->memory.tlsIo};
             address = region.size ? region.address : 0;
         } else {
             address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
         }
 
-        auto tlsMem = NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item;
+        auto tlsMem{NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item};
         tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
 
-        auto &tlsPage = tlsPages.back();
+        auto &tlsPage{tlsPages.back()};
         if (tlsPages.empty())
             tlsPage->ReserveSlot(); // User-mode exception handling
 
@@ -56,15 +56,15 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::InitializeMemory() {
-        constexpr size_t DefHeapSize = 0x200000; // The default amount of heap
+        constexpr size_t DefHeapSize{0x200000}; // The default amount of heap
         heap = NewHandle<KPrivateMemory>(state.os->memory.heap.address, DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
         threads[pid]->tls = GetTlsSlot();
     }
 
     KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), stack(stack), KSyncObject(state, KType::KProcess) {
-        constexpr auto DefaultPriority = 44; // The default priority of a process
+        constexpr u8 DefaultPriority{44}; // The default priority of a process
 
-        auto thread = NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, DefaultPriority, this, tlsMemory).item;
+        auto thread{NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, DefaultPriority, this, tlsMemory).item};
         threads[pid] = thread;
         state.nce->WaitThreadInit(thread);
 
@@ -79,8 +79,8 @@ namespace skyline::kernel::type {
     }
 
     std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority) {
-        auto size = (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
-        auto tlsMem = std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::states::Reserved);
+        auto size{(sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1)};
+        auto tlsMem{std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::states::Reserved)};
 
         Registers fregs{
             .x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO,
@@ -95,21 +95,21 @@ namespace skyline::kernel::type {
         if (static_cast<int>(fregs.x0) < 0)
             throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
 
-        auto pid = static_cast<pid_t>(fregs.x0);
-        auto process = NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item;
+        auto pid{static_cast<pid_t>(fregs.x0)};
+        auto process{NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item};
         threads[pid] = process;
 
         return process;
     }
 
     u64 KProcess::GetHostAddress(u64 address) {
-        auto chunk = state.os->memory.GetChunk(address);
+        auto chunk{state.os->memory.GetChunk(address)};
         return (chunk && chunk->host) ? chunk->host + (address - chunk->address) : 0;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
-            auto source = GetHostAddress(offset);
+            auto source{GetHostAddress(offset)};
 
             if (source) {
                 std::memcpy(destination, reinterpret_cast<void *>(source), size);
@@ -133,7 +133,7 @@ namespace skyline::kernel::type {
 
     void KProcess::WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
-            auto destination = GetHostAddress(offset);
+            auto destination{GetHostAddress(offset)};
 
             if (destination) {
                 std::memcpy(reinterpret_cast<void *>(destination), source, size);
@@ -156,8 +156,8 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::CopyMemory(u64 source, u64 destination, size_t size) {
-        auto sourceHost = GetHostAddress(source);
-        auto destinationHost = GetHostAddress(destination);
+        auto sourceHost{GetHostAddress(source)};
+        auto destinationHost{GetHostAddress(destination)};
 
         if (sourceHost && destinationHost) {
             std::memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
@@ -181,12 +181,12 @@ namespace skyline::kernel::type {
 
     std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u64 address) {
         for (KHandle index{}; index < handles.size(); index++) {
-            auto& object = handles[index];
+            auto& object{handles[index]};
             switch (object->objectType) {
                 case type::KType::KPrivateMemory:
                 case type::KType::KSharedMemory:
                 case type::KType::KTransferMemory: {
-                    auto mem = std::static_pointer_cast<type::KMemory>(object);
+                    auto mem{std::static_pointer_cast<type::KMemory>(object)};
                     if (mem->IsInside(address))
                         return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
                 }
@@ -201,11 +201,11 @@ namespace skyline::kernel::type {
     bool KProcess::MutexLock(u64 address, KHandle owner) {
         std::unique_lock lock(mutexLock);
 
-        auto mtx = GetPointer<u32>(address);
-        auto &mtxWaiters = mutexes[address];
+        auto mtx{GetPointer<u32>(address)};
+        auto &mtxWaiters{mutexes[address]};
 
         if (mtxWaiters.empty()) {
-            u32 mtxExpected = 0;
+            u32 mtxExpected{};
             if (__atomic_compare_exchange_n(mtx, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
                 return true;
         }
@@ -214,7 +214,7 @@ namespace skyline::kernel::type {
             return false;
 
         std::shared_ptr<WaitStatus> status;
-        for (auto it = mtxWaiters.begin();; it++) {
+        for (auto it{mtxWaiters.begin()};; it++) {
             if (it != mtxWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
 
@@ -228,7 +228,7 @@ namespace skyline::kernel::type {
         lock.lock();
         status->flag = false;
 
-        for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); it++) {
+        for (auto it{mtxWaiters.begin()}; it != mtxWaiters.end(); it++) {
             if ((*it)->handle == state.thread->handle) {
                 mtxWaiters.erase(it);
                 break;
@@ -241,13 +241,13 @@ namespace skyline::kernel::type {
     bool KProcess::MutexUnlock(u64 address) {
         std::unique_lock lock(mutexLock);
 
-        auto mtx = GetPointer<u32>(address);
-        auto &mtxWaiters = mutexes[address];
+        auto mtx{GetPointer<u32>(address)};
+        auto &mtxWaiters{mutexes[address]};
         u32 mtxDesired{};
         if (!mtxWaiters.empty())
             mtxDesired = (*mtxWaiters.begin())->handle | ((mtxWaiters.size() > 1) ? ~constant::MtxOwnerMask : 0);
 
-        u32 mtxExpected = (constant::MtxOwnerMask & state.thread->handle) | ~constant::MtxOwnerMask;
+        u32 mtxExpected{(constant::MtxOwnerMask & state.thread->handle) | ~constant::MtxOwnerMask};
         if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
             mtxExpected &= constant::MtxOwnerMask;
 
@@ -256,7 +256,7 @@ namespace skyline::kernel::type {
         }
 
         if (mtxDesired) {
-            auto status = (*mtxWaiters.begin());
+            auto status{(*mtxWaiters.begin())};
             status->flag = true;
             lock.unlock();
             while (status->flag);
@@ -268,10 +268,10 @@ namespace skyline::kernel::type {
 
     bool KProcess::ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout) {
         std::unique_lock lock(conditionalLock);
-        auto &condWaiters = conditionals[conditionalAddress];
+        auto &condWaiters{conditionals[conditionalAddress]};
 
         std::shared_ptr<WaitStatus> status;
-        for (auto it = condWaiters.begin();; it++) {
+        for (auto it{condWaiters.begin()};; it++) {
             if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
 
@@ -283,7 +283,7 @@ namespace skyline::kernel::type {
         lock.unlock();
 
         bool timedOut{};
-        auto start = util::GetTimeNs();
+        auto start{util::GetTimeNs()};
         while (!status->flag)
             if ((util::GetTimeNs() - start) >= timeout)
                 timedOut = true;
@@ -295,7 +295,7 @@ namespace skyline::kernel::type {
         else
             status->flag = false;
 
-        for (auto it = condWaiters.begin(); it != condWaiters.end(); it++) {
+        for (auto it{condWaiters.begin()}; it != condWaiters.end(); it++) {
             if ((*it)->handle == state.thread->handle) {
                 condWaiters.erase(it);
                 break;
@@ -310,14 +310,14 @@ namespace skyline::kernel::type {
     void KProcess::ConditionalVariableSignal(u64 address, u64 amount) {
         std::unique_lock condLock(conditionalLock);
 
-        auto &condWaiters = conditionals[address];
+        auto &condWaiters{conditionals[address]};
         u64 count{};
 
-        auto iter = condWaiters.begin();
+        auto iter{condWaiters.begin()};
         while (iter != condWaiters.end() && count < amount) {
-            auto &thread = *iter;
-            auto mtx = GetPointer<u32>(thread->mutexAddress);
-            u32 mtxValue = __atomic_load_n(mtx, __ATOMIC_SEQ_CST);
+            auto &thread{*iter};
+            auto mtx{GetPointer<u32>(thread->mutexAddress)};
+            u32 mtxValue{__atomic_load_n(mtx, __ATOMIC_SEQ_CST)};
 
             while (true) {
                 u32 mtxDesired{};
@@ -337,10 +337,10 @@ namespace skyline::kernel::type {
             if (mtxValue && ((mtxValue & constant::MtxOwnerMask) != state.thread->handle)) {
                 std::unique_lock mtxLock(mutexLock);
 
-                auto &mtxWaiters = mutexes[thread->mutexAddress];
+                auto &mtxWaiters{mutexes[thread->mutexAddress]};
                 std::shared_ptr<WaitStatus> status;
 
-                for (auto it = mtxWaiters.begin();; it++) {
+                for (auto it{mtxWaiters.begin()};; it++) {
                     if (it != mtxWaiters.end() && (*it)->priority >= thread->priority)
                         continue;
                     status = std::make_shared<WaitStatus>(thread->priority, thread->handle);
@@ -353,7 +353,7 @@ namespace skyline::kernel::type {
                 mtxLock.lock();
                 status->flag = false;
 
-                for (auto it = mtxWaiters.begin(); it != mtxWaiters.end(); it++) {
+                for (auto it{mtxWaiters.begin()}; it != mtxWaiters.end(); it++) {
                     if ((*it)->handle == thread->handle) {
                         mtxWaiters.erase(it);
                         break;

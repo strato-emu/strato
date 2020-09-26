@@ -137,10 +137,10 @@ namespace skyline::audio {
             u32 lutIndex{fraction >> 8};
 
             for (u8 channel{}; channel < channelCount; channel++) {
-                i32 data = inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
+                i32 data{inputBuffer[(inIndex + 0) * channelCount + channel] * lut[lutIndex].a +
                     inputBuffer[(inIndex + 1) * channelCount + channel] * lut[lutIndex].b +
                     inputBuffer[(inIndex + 2) * channelCount + channel] * lut[lutIndex].c +
-                    inputBuffer[(inIndex + 3) * channelCount + channel] * lut[lutIndex].d;
+                    inputBuffer[(inIndex + 3) * channelCount + channel] * lut[lutIndex].d};
 
                 outputBuffer[outIndex + channel] = Saturate<i16, i32>(data >> 15);
             }

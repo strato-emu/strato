@@ -12,7 +12,7 @@
 namespace skyline {
     void Mutex::lock() {
         while (true) {
-            for (int i = 0; i < 1000; ++i) {
+            for (int i{}; i < 1000; ++i) {
                 if (!flag.test_and_set(std::memory_order_acquire))
                     return;
 
@@ -23,9 +23,9 @@ namespace skyline {
     }
 
     void GroupMutex::lock(Group group) {
-        auto none = Group::None;
-        constexpr u64 timeout = 100; // The timeout in ns
-        auto end = util::GetTimeNs() + timeout;
+        auto none{Group::None};
+        constexpr u64 timeout{100}; // The timeout in ns
+        auto end{util::GetTimeNs() + timeout};
 
         while (true) {
             if (next == group) {
@@ -33,7 +33,7 @@ namespace skyline {
                     std::lock_guard lock(mtx);
 
                     if (flag == group) {
-                        auto groupT = group;
+                        auto groupT{group};
                         next.compare_exchange_strong(groupT, Group::None);
                         num++;
 
@@ -71,7 +71,7 @@ namespace skyline {
         if (pref.LoadFile(fdopen(fd, "r")))
             throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
 
-        tinyxml2::XMLElement *elem = pref.LastChild()->FirstChild()->ToElement();
+        tinyxml2::XMLElement *elem{pref.LastChild()->FirstChild()->ToElement()};
 
         while (elem) {
             switch (elem->Value()[0]) {

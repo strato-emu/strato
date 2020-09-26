@@ -8,7 +8,7 @@ namespace skyline::service::friends {
     INotificationService::INotificationService(const DeviceState &state, ServiceManager &manager) : notificationEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
 
     Result INotificationService::GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        KHandle handle = state.process->InsertItem(notificationEvent);
+        KHandle handle{state.process->InsertItem(notificationEvent)};
         state.logger->Debug("Friend Notification Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);

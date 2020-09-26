@@ -7,7 +7,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u64 GpuPageSize = 1 << 16; //!< The page size of the GPU address space
+        constexpr u64 GpuPageSize{1 << 16}; //!< The page size of the GPU address space
     }
 
     namespace gpu::vmm {

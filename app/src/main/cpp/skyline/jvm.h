@@ -47,7 +47,7 @@ namespace skyline {
          */
         template<typename objectType>
         inline objectType GetField(const char *key) {
-            JNIEnv *env = GetEnv();
+            JNIEnv *env{GetEnv()};
             if constexpr(std::is_same<objectType, jboolean>())
                 return env->GetBooleanField(instance, env->GetFieldID(instanceClass, key, "Z"));
             else if constexpr(std::is_same<objectType, jbyte>())

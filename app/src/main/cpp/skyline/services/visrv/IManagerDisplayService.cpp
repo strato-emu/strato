@@ -9,10 +9,10 @@ namespace skyline::service::visrv {
 
     Result IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u32>();
-        auto displayId = request.Pop<u64>();
+        auto displayId{request.Pop<u64>()};
         state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
             throw exception("The application is creating more than one layer");
         producer->layerStatus = hosbinder::LayerStatus::Managed;
@@ -22,10 +22,10 @@ namespace skyline::service::visrv {
     }
 
     Result IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto layerId = request.Pop<u64>();
+        auto layerId{request.Pop<u64>()};
         state.logger->Debug("Destroying Managed Layer: {}", layerId);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         producer->layerStatus = hosbinder::LayerStatus::Uninitialized;

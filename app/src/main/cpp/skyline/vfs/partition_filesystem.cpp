@@ -15,8 +15,8 @@ namespace skyline::vfs {
         else
             throw exception("Invalid filesystem magic: {}", header.magic);
 
-        size_t entrySize = hashed ? sizeof(HashedFileEntry) : sizeof(PartitionFileEntry);
-        size_t stringTableOffset = sizeof(FsHeader) + (header.numFiles * entrySize);
+        size_t entrySize{hashed ? sizeof(HashedFileEntry) : sizeof(PartitionFileEntry)};
+        size_t stringTableOffset{sizeof(FsHeader) + (header.numFiles * entrySize)};
         fileDataOffset = stringTableOffset + header.stringTableSize;
 
         std::vector<char> stringTable(header.stringTableSize + 1);
@@ -34,7 +34,7 @@ namespace skyline::vfs {
 
     std::shared_ptr<Backing> PartitionFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
         try {
-            auto &entry = fileMap.at(path);
+            auto &entry{fileMap.at(path)};
             return std::make_shared<RegionBacking>(backing, fileDataOffset + entry.offset, entry.size, mode);
         } catch (std::out_of_range &e) {
             return nullptr;

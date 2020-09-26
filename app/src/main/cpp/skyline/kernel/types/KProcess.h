@@ -12,10 +12,10 @@
 
 namespace skyline {
     namespace constant {
-        constexpr auto TlsSlotSize = 0x200; //!< The size of a single TLS slot
-        constexpr auto TlsSlots = PAGE_SIZE / TlsSlotSize; //!< The amount of TLS slots in a single page
-        constexpr KHandle BaseHandleIndex = 0xD000; // The index of the base handle
-        constexpr u32 MtxOwnerMask = 0xBFFFFFFF; //!< The mask of values which contain the owner of a mutex
+        constexpr u16 TlsSlotSize{0x200}; //!< The size of a single TLS slot
+        constexpr u8 TlsSlots{PAGE_SIZE / TlsSlotSize}; //!< The amount of TLS slots in a single page
+        constexpr KHandle BaseHandleIndex{0xD000}; // The index of the base handle
+        constexpr u32 MtxOwnerMask{0xBFFFFFFF}; //!< The mask of values which contain the owner of a mutex
     }
 
     namespace kernel::type {
@@ -24,7 +24,7 @@ namespace skyline {
         */
         class KProcess : public KSyncObject {
           private:
-            KHandle handleIndex = constant::BaseHandleIndex; //!< This is used to keep track of what to map as an handle
+            KHandle handleIndex{constant::BaseHandleIndex}; //!< This is used to keep track of what to map as an handle
 
             /**
             * @brief This class holds a single TLS page's status
@@ -35,8 +35,8 @@ namespace skyline {
             */
             struct TlsPage {
                 u64 address; //!< The address of the page allocated for TLS
-                u8 index = 0; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
-                bool slot[constant::TlsSlots]{0}; //!< An array of booleans denoting which TLS slots are reserved
+                u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
+                bool slot[constant::TlsSlots]{}; //!< An array of booleans denoting which TLS slots are reserved
 
                 /**
                 * @param address The address of the allocated page
@@ -173,7 +173,7 @@ namespace skyline {
             */
             template<typename Type>
             inline Type &GetReference(u64 address) {
-                auto source = GetPointer<Type>(address);
+                auto source{GetPointer<Type>(address)};
                 if (source)
                     return *source;
                 else
@@ -188,7 +188,7 @@ namespace skyline {
             */
             template<typename Type>
             inline Type GetObject(u64 address) {
-                auto source = GetPointer<Type>(address);
+                auto source{GetPointer<Type>(address)};
                 if (source) {
                     return *source;
                 } else {
@@ -205,7 +205,7 @@ namespace skyline {
             * @return A copy of a string in guest memory
             */
             inline std::string GetString(u64 address, size_t maxSize) {
-                auto source = GetPointer<char>(address);
+                auto source{GetPointer<char>(address)};
                 if (source)
                     return std::string(source, maxSize);
                 std::string debug(maxSize, '\0');
@@ -221,7 +221,7 @@ namespace skyline {
             */
             template<typename Type>
             inline void WriteMemory(Type &item, u64 address) {
-                auto destination = GetPointer<Type>(address);
+                auto destination{GetPointer<Type>(address)};
                 if (destination) {
                     *destination = item;
                 } else {
@@ -237,7 +237,7 @@ namespace skyline {
             */
             template<typename Type>
             inline void WriteMemory(const Type &item, u64 address) {
-                auto destination = GetPointer<Type>(address);
+                auto destination{GetPointer<Type>(address)};
                 if (destination) {
                     *destination = item;
                 } else {
@@ -325,7 +325,7 @@ namespace skyline {
                 else
                     throw exception("KProcess::GetHandle couldn't determine object type");
                 try {
-                    auto& item = handles.at(handle - constant::BaseHandleIndex);
+                    auto& item{handles.at(handle - constant::BaseHandleIndex)};
                     if (item != nullptr && item->objectType == objectType)
                         return std::static_pointer_cast<objectClass>(item);
                     else if (item == nullptr)

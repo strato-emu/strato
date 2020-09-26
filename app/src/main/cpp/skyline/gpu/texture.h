@@ -184,7 +184,7 @@ namespace skyline {
             std::shared_ptr<PresentationTexture> InitializePresentationTexture() {
                 if (host)
                     throw exception("Trying to create multiple PresentationTexture objects from a single GuestTexture");
-                auto presentation = std::make_shared<PresentationTexture>(state, shared_from_this(), dimensions, format);
+                auto presentation{std::make_shared<PresentationTexture>(state, shared_from_this(), dimensions, format)};
                 host = std::static_pointer_cast<Texture>(presentation);
                 return presentation;
             }

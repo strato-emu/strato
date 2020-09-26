@@ -48,9 +48,9 @@ namespace skyline::audio {
             }
 
             if (copyFunction && copyOffset) {
-                auto sourceEnd = start + ((copyOffset != -1) ? copyOffset : sizeEnd);
+                auto sourceEnd{start + ((copyOffset != -1) ? copyOffset : sizeEnd)};
 
-                for (auto source = start, destination = address; source < sourceEnd; source++, destination++)
+                for (auto source{start}, destination{address}; source < sourceEnd; source++, destination++)
                     copyFunction(source, destination);
 
                 if (copyOffset != -1) {
@@ -65,9 +65,9 @@ namespace skyline::audio {
 
             if (sizeBegin) {
                 if (copyFunction && copyOffset) {
-                    auto sourceEnd = array.begin() + ((copyOffset != -1) ? copyOffset : sizeBegin);
+                    auto sourceEnd{array.begin() + ((copyOffset != -1) ? copyOffset : sizeBegin)};
 
-                    for (auto source = array.begin(), destination = address; source < sourceEnd; source++, destination++)
+                    for (auto source{array.begin()}, destination{address}; source < sourceEnd; source++, destination++)
                         copyFunction(source, destination);
 
                     if (copyOffset != -1)
@@ -97,7 +97,7 @@ namespace skyline::audio {
 
             while (size) {
                 if (start <= end && end != array.end()) {
-                    auto sizeEnd = std::min(array.end() - end, size);
+                    auto sizeEnd{std::min(array.end() - end, size)};
                     std::memcpy(end, address, sizeEnd * sizeof(Type));
 
                     address += sizeEnd;
@@ -105,8 +105,8 @@ namespace skyline::audio {
 
                     end += sizeEnd;
                 } else {
-                    auto sizePreStart = (end == array.end()) ? std::min(start - array.begin(), size) : std::min(start - end, size);
-                    auto sizePostStart = std::min(array.end() - start, size - sizePreStart);
+                    auto sizePreStart{(end == array.end()) ? std::min(start - array.begin(), size) : std::min(start - end, size)};
+                    auto sizePostStart{std::min(array.end() - start, size - sizePreStart)};
 
                     if (sizePreStart)
                         std::memcpy((end == array.end()) ? array.begin() : end, address, sizePreStart * sizeof(Type));

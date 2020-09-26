@@ -115,7 +115,7 @@ namespace skyline::kernel::type {
 
             state.process->WriteMemory(reinterpret_cast<void *>(kernel.address), guest.address, std::min(guest.size, size), true);
 
-            auto chunk = state.os->memory.GetChunk(guest.address);
+            auto chunk{state.os->memory.GetChunk(guest.address)};
             for (const auto &block : chunk->blockList) {
                 if ((block.address - chunk->address) < guest.size) {
                     fregs = {
@@ -135,7 +135,7 @@ namespace skyline::kernel::type {
 
             munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
 
-            auto host = mmap(reinterpret_cast<void *>(chunk->host), size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);
+            auto host{mmap(reinterpret_cast<void *>(chunk->host), size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0)};
             if (host == MAP_FAILED)
                 throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -154,7 +154,7 @@ namespace skyline::kernel::type {
 
             munmap(reinterpret_cast<void *>(kernel.address), kernel.size);
 
-            auto address = mmap(reinterpret_cast<void *>(kernel.address), size, kernel.permission.Get(), MAP_SHARED, fd, 0);
+            auto address{mmap(reinterpret_cast<void *>(kernel.address), size, kernel.permission.Get(), MAP_SHARED, fd, 0)};
             if (address == MAP_FAILED)
                 throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -180,7 +180,7 @@ namespace skyline::kernel::type {
             if (fregs.x0 < 0)
                 throw exception("An error occurred while updating shared memory's permissions in guest");
 
-            auto chunk = state.os->memory.GetChunk(address);
+            auto chunk{state.os->memory.GetChunk(address)};
             BlockDescriptor block{
                 .address = address,
                 .size = size,

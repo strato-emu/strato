@@ -9,7 +9,7 @@ namespace skyline::service::account {
     IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAccountServiceForApplication::GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<UserId>();
+        auto id{request.Pop<UserId>()};
 
         // ID can't be zero
         if (id == UserId{})
@@ -60,7 +60,7 @@ namespace skyline::service::account {
     }
 
     Result IAccountServiceForApplication::GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<UserId>();
+        auto id{request.Pop<UserId>()};
         if (id != constant::DefaultUserId)
             return result::UserNotFound;
 
@@ -69,7 +69,7 @@ namespace skyline::service::account {
     }
 
     Result IAccountServiceForApplication::GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<UserId>();
+        auto id{request.Pop<UserId>()};
         if (id == UserId{})
             return result::NullArgument;
 

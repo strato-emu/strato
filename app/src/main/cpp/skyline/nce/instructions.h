@@ -337,7 +337,7 @@ namespace skyline {
         inline constexpr std::array<u32, sizeof(Type) / sizeof(u16)> MoveRegister(regs::X destination, Type value) {
             std::array<u32, sizeof(Type) / sizeof(u16)> instructions;
 
-            auto valuePointer = reinterpret_cast<u16 *>(&value);
+            auto valuePointer{reinterpret_cast<u16 *>(&value)};
             u8 offset{};
 
             for (auto &instruction : instructions) {

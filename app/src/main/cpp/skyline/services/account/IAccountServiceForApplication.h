@@ -91,6 +91,6 @@ namespace skyline {
     }
 
     namespace constant {
-        constexpr service::account::UserId DefaultUserId = {0x0000000000000001, 0x0000000000000000}; //!< The default user ID
+        constexpr service::account::UserId DefaultUserId{0x0000000000000001, 0x0000000000000000}; //!< The default user ID
     }
 }

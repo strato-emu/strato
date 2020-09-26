@@ -8,7 +8,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr std::string_view DefaultAudioOutName = "DeviceOut"; //!< The default audio output device name
+        constexpr std::string_view DefaultAudioOutName{"DeviceOut"}; //!< The default audio output device name
     };
 
     namespace service::audio {

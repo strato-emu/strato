@@ -8,7 +8,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 NvHostEventCount = 64; //!< The maximum number of nvhost events
+        constexpr u32 NvHostEventCount{64}; //!< The maximum number of nvhost events
     }
 
     namespace service::nvdrv::device {

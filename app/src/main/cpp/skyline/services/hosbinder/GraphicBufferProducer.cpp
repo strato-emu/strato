@@ -61,11 +61,11 @@ namespace skyline::service::hosbinder {
             nvdrv::Fence fence[4];
         } &data = in.Pop<Data>();
 
-        auto buffer = queue.at(data.slot);
+        auto buffer{queue.at(data.slot)};
         buffer->status = BufferStatus::Queued;
 
-        auto slot = data.slot;
-        auto bufferEvent = state.gpu->bufferEvent;
+        auto slot{data.slot};
+        auto bufferEvent{state.gpu->bufferEvent};
         buffer->texture->releaseCallback = [this, slot, bufferEvent]() {
             queue.at(slot)->status = BufferStatus::Free;
             bufferEvent->Signal();
@@ -116,12 +116,12 @@ namespace skyline::service::hosbinder {
             u32 _pad0_;
         } &data = in.Pop<Data>();
 
-        auto& gbpBuffer = in.Pop<GbpBuffer>();
+        auto& gbpBuffer{in.Pop<GbpBuffer>()};
 
         std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
 
-        auto driver = nvdrv::driver.lock();
-        auto nvmap = driver->nvMap.lock();
+        auto driver{nvdrv::driver.lock()};
+        auto nvmap{driver->nvMap.lock()};
 
         if (gbpBuffer.nvmapHandle) {
             nvBuffer = nvmap->handleTable.at(gbpBuffer.nvmapHandle);
@@ -149,7 +149,7 @@ namespace skyline::service::hosbinder {
                 throw exception("Unknown pixel format used for FB");
         }
 
-        auto texture = std::make_shared<gpu::GuestTexture>(state, nvBuffer->address + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1});
+        auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->address + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1})};
 
         queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializePresentationTexture());
         state.gpu->bufferEvent->Signal();

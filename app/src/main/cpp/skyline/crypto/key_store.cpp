@@ -49,7 +49,7 @@ namespace skyline::crypto {
         }
 
         if (keyName.size() > 2) {
-            auto it = indexedKey128Names.find(keyName.substr(0, keyName.size() - 2));
+            auto it{indexedKey128Names.find(keyName.substr(0, keyName.size() - 2))};
             if (it != indexedKey128Names.end()) {
                 size_t index{std::stoul(std::string(keyName.substr(it->first.size())), nullptr, 16)};
                 it->second[index] = util::HexStringToArray<16>(value);

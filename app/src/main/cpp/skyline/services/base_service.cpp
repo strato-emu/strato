@@ -7,7 +7,7 @@
 namespace skyline::service {
     const std::string &BaseService::GetName() {
         if (name.empty()) {
-            auto mangledName = typeid(*this).name();
+            auto mangledName{typeid(*this).name()};
 
             int status{};
             size_t length{};

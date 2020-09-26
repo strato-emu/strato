@@ -25,7 +25,7 @@ namespace skyline::audio {
 
             i32 ctx{};
 
-            for (size_t index = 0; index < frameSamples; index++) {
+            for (size_t index{}; index < frameSamples; index++) {
                 i32 sample{};
 
                 if (index & 1) {
@@ -35,10 +35,10 @@ namespace skyline::audio {
                     sample = (ctx << 24) >> 28;
                 }
 
-                i32 prediction = history[0] * coefficients[header.coefficientIndex][0] + history[1] * coefficients[header.coefficientIndex][1];
+                i32 prediction{history[0] * coefficients[header.coefficientIndex][0] + history[1] * coefficients[header.coefficientIndex][1]};
                 sample = (sample * (0x800 << header.scale) + prediction + 0x400) >> 11;
 
-                auto saturated = audio::Saturate<i16, i32>(sample);
+                auto saturated{audio::Saturate<i16, i32>(sample)};
                 output.push_back(saturated);
                 history[1] = history[0];
                 history[0] = saturated;

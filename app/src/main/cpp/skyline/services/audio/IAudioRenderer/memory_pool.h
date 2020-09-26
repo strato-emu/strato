@@ -35,7 +35,7 @@ namespace skyline::service::audio::IAudioRenderer {
      * @brief This is returned to inform the guest of the state of a memory pool
      */
     struct MemoryPoolOut {
-        MemoryPoolState state = MemoryPoolState::Detached;
+        MemoryPoolState state{MemoryPoolState::Detached};
         u32 _unk0_;
         u64 _unk1_;
     };

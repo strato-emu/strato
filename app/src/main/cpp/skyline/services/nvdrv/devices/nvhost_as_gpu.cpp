@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv::device {
             };
         } region = buffer.as<Data>();
 
-        u64 size = static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize);
+        u64 size{static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize)};
 
         if (region.flags & 1)
             region.offset = state.gpu->memoryManager.ReserveFixed(region.offset, size);
@@ -61,12 +61,12 @@ namespace skyline::service::nvdrv::device {
         }  &data = buffer.as<Data>();
 
         try {
-            auto driver = nvdrv::driver.lock();
-            auto nvmap = driver->nvMap.lock();
-            auto mapping = nvmap->handleTable.at(data.nvmapHandle);
+            auto driver{nvdrv::driver.lock()};
+            auto nvmap{driver->nvMap.lock()};
+            auto mapping{nvmap->handleTable.at(data.nvmapHandle)};
 
-            u64 mapPhysicalAddress = data.bufferOffset + mapping->address;
-            u64 mapSize = data.mappingSize ? data.mappingSize : mapping->size;
+            u64 mapPhysicalAddress{data.bufferOffset + mapping->address};
+            u64 mapSize{data.mappingSize ? data.mappingSize : mapping->size};
 
             if (data.flags & 1)
                 data.offset = state.gpu->memoryManager.MapFixed(data.offset, mapPhysicalAddress, mapSize);
@@ -133,13 +133,13 @@ namespace skyline::service::nvdrv::device {
         auto entries{buffer.cast<Entry>()};
         for (auto entry : entries) {
             try {
-                auto driver = nvdrv::driver.lock();
-                auto nvmap = driver->nvMap.lock();
-                auto mapping = nvmap->handleTable.at(entry.nvmapHandle);
+                auto driver{nvdrv::driver.lock()};
+                auto nvmap{driver->nvMap.lock()};
+                auto mapping{nvmap->handleTable.at(entry.nvmapHandle)};
 
-                u64 mapAddress = static_cast<u64>(entry.gpuOffset) << MinAlignmentShift;
-                u64 mapPhysicalAddress = mapping->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift);
-                u64 mapSize = static_cast<u64>(entry.pages) << MinAlignmentShift;
+                u64 mapAddress{static_cast<u64>(entry.gpuOffset) << MinAlignmentShift};
+                u64 mapPhysicalAddress{mapping->address + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
+                u64 mapSize{static_cast<u64>(entry.pages) << MinAlignmentShift};
 
                 state.gpu->memoryManager.MapFixed(mapAddress, mapPhysicalAddress, mapSize);
             } catch (const std::out_of_range &) {

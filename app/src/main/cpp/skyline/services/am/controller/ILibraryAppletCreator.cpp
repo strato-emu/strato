@@ -14,7 +14,7 @@ namespace skyline::service::am {
     }
 
     Result ILibraryAppletCreator::CreateStorage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto size = request.Pop<i64>();
+        auto size{request.Pop<i64>()};
 
         if (size < 0)
             throw exception("Cannot create an IStorage with a negative size");

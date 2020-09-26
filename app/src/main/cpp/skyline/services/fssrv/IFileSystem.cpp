@@ -10,8 +10,8 @@ namespace skyline::service::fssrv {
 
     Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path{request.inputBuf.at(0).as<char>()};
-        auto mode = request.Pop<u64>();
-        auto size = request.Pop<u32>();
+        auto mode{request.Pop<u64>()};
+        auto size{request.Pop<u32>()};
 
         return backing->CreateFile(path, size) ? Result{} : result::PathDoesNotExist;
     }
@@ -19,7 +19,7 @@ namespace skyline::service::fssrv {
     Result IFileSystem::GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path{request.inputBuf.at(0).as<char>()};
 
-        auto type = backing->GetEntryType(path);
+        auto type{backing->GetEntryType(path)};
 
         if (type) {
             response.Push(*type);
@@ -32,12 +32,12 @@ namespace skyline::service::fssrv {
 
     Result IFileSystem::OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path{request.inputBuf.at(0).as<char>()};
-        auto mode = request.Pop<vfs::Backing::Mode>();
+        auto mode{request.Pop<vfs::Backing::Mode>()};
 
         if (!backing->FileExists(path))
             return result::PathDoesNotExist;
 
-        auto file = backing->OpenFile(path, mode);
+        auto file{backing->OpenFile(path, mode)};
         if (file == nullptr)
             return result::UnexpectedFailure;
         else

@@ -30,11 +30,11 @@ namespace skyline::service::pl {
                                           }};
 
     IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager) {
-        constexpr u32 SharedFontResult = 0x7F9A0218; //!< This is the decrypted magic for a single font in the shared font data
-        constexpr u32 SharedFontMagic = 0x36F81A1E; //!< This is the encrypted magic for a single font in the shared font data
-        constexpr u32 SharedFontKey = SharedFontMagic ^SharedFontResult; //!< This is the XOR key for encrypting the font size
+        constexpr u32 SharedFontResult{0x7F9A0218}; //!< This is the decrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontMagic{0x36F81A1E}; //!< This is the encrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontKey{SharedFontMagic ^SharedFontResult}; //!< This is the XOR key for encrypting the font size
 
-        auto pointer = reinterpret_cast<u32 *>(fontSharedMem->kernel.address);
+        auto pointer{reinterpret_cast<u32 *>(fontSharedMem->kernel.address)};
         for (auto &font : fontTable) {
             *pointer++ = SharedFontResult;
             *pointer++ = font.length ^ SharedFontKey;
@@ -46,28 +46,25 @@ namespace skyline::service::pl {
     }
 
     Result IPlatformServiceManager::GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 FontLoaded = 1; //!< This is returned to show that all fonts have been loaded into memory
-
+        constexpr u32 FontLoaded{1}; //!< This is returned to show that all fonts have been loaded into memory
         response.Push(FontLoaded);
         return {};
     }
 
     Result IPlatformServiceManager::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fontId = request.Pop<u32>();
-
+        auto fontId{request.Pop<u32>()};
         response.Push<u32>(fontTable.at(fontId).length);
         return {};
     }
 
     Result IPlatformServiceManager::GetSharedMemoryAddressOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fontId = request.Pop<u32>();
-
+        auto fontId{request.Pop<u32>()};
         response.Push<u32>(fontTable.at(fontId).offset);
         return {};
     }
 
     Result IPlatformServiceManager::GetSharedMemoryNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto handle = state.process->InsertItem<type::KSharedMemory>(fontSharedMem);
+        auto handle{state.process->InsertItem<type::KSharedMemory>(fontSharedMem)};
         response.copyHandles.push_back(handle);
         return {};
     }

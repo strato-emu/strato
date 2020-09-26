@@ -7,8 +7,8 @@
 
 namespace skyline {
     namespace constant {
-        constexpr auto IpcPaddingSum = 0x10; // The sum of the padding surrounding the data payload
-        constexpr auto TlsIpcSize = 0x100; // The size of the IPC command buffer in a TLS slot
+        constexpr u8 IpcPaddingSum{0x10}; // The sum of the padding surrounding the data payload
+        constexpr u16 TlsIpcSize{0x100}; // The size of the IPC command buffer in a TLS slot
     }
 
     namespace kernel::ipc {
@@ -228,7 +228,7 @@ namespace skyline {
              */
             template<typename ValueType>
             inline ValueType &Pop() {
-                ValueType &value = *reinterpret_cast<ValueType *>(payloadOffset);
+                ValueType &value{*reinterpret_cast<ValueType *>(payloadOffset)};
                 payloadOffset += sizeof(ValueType);
                 return value;
             }
@@ -238,7 +238,7 @@ namespace skyline {
              * @param size The length of the string (0 means the string is null terminated)
              */
             inline std::string_view PopString(size_t size = 0) {
-                auto view = size ? std::string_view(reinterpret_cast<const char *>(payloadOffset), size) : std::string_view(reinterpret_cast<const char *>(payloadOffset));
+                auto view{size ? std::string_view(reinterpret_cast<const char *>(payloadOffset), size) : std::string_view(reinterpret_cast<const char *>(payloadOffset))};
                 payloadOffset += view.length();
                 return view;
             }
@@ -280,7 +280,7 @@ namespace skyline {
              */
             template<typename ValueType>
             inline void Push(const ValueType &value) {
-                auto size = payload.size();
+                auto size{payload.size()};
                 payload.resize(size + sizeof(ValueType));
 
                 std::memcpy(payload.data() + size, reinterpret_cast<const u8 *>(&value), sizeof(ValueType));
@@ -292,7 +292,7 @@ namespace skyline {
              */
             template<>
             inline void Push(const std::string &string) {
-                auto size = payload.size();
+                auto size{payload.size()};
                 payload.resize(size + string.size());
 
                 std::memcpy(payload.data() + size, string.data(), string.size());

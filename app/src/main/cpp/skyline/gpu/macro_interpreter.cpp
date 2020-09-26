@@ -23,7 +23,7 @@ namespace skyline::gpu {
     FORCE_INLINE bool MacroInterpreter::Step(Opcode *delayedOpcode) {
         switch (opcode->operation) {
             case Opcode::Operation::AluRegister: {
-                u32 result = HandleAlu(opcode->aluOperation, registers[opcode->srcA], registers[opcode->srcB]);
+                u32 result{HandleAlu(opcode->aluOperation, registers[opcode->srcA], registers[opcode->srcB])};
 
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
@@ -32,8 +32,8 @@ namespace skyline::gpu {
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, registers[opcode->srcA] + opcode->immediate);
                 break;
             case Opcode::Operation::BitfieldReplace: {
-                u32 src = registers[opcode->srcB];
-                u32 dest = registers[opcode->srcA];
+                u32 src{registers[opcode->srcB]};
+                u32 dest{registers[opcode->srcA]};
 
                 // Extract the source region
                 src = (src >> opcode->bitfield.srcBit) & opcode->bitfield.GetMask();
@@ -48,25 +48,25 @@ namespace skyline::gpu {
                 break;
             }
             case Opcode::Operation::BitfieldExtractShiftLeftImmediate: {
-                u32 src = registers[opcode->srcB];
-                u32 dest = registers[opcode->srcA];
+                u32 src{registers[opcode->srcB]};
+                u32 dest{registers[opcode->srcA]};
 
-                u32 result = ((src >> dest) & opcode->bitfield.GetMask()) << opcode->bitfield.destBit;
+                u32 result{((src >> dest) & opcode->bitfield.GetMask()) << opcode->bitfield.destBit};
 
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
             case Opcode::Operation::BitfieldExtractShiftLeftRegister: {
-                u32 src = registers[opcode->srcB];
-                u32 dest = registers[opcode->srcA];
+                u32 src{registers[opcode->srcB]};
+                u32 dest{registers[opcode->srcA]};
 
-                u32 result = ((src >> opcode->bitfield.srcBit) & opcode->bitfield.GetMask()) << dest;
+                u32 result{((src >> opcode->bitfield.srcBit) & opcode->bitfield.GetMask()) << dest};
 
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
             case Opcode::Operation::ReadImmediate: {
-                u32 result = maxwell3D.registers.raw[registers[opcode->srcA] + opcode->immediate];
+                u32 result{maxwell3D.registers.raw[registers[opcode->srcA] + opcode->immediate]};
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
@@ -74,15 +74,15 @@ namespace skyline::gpu {
                 if (delayedOpcode != nullptr)
                     throw exception("Cannot branch while inside a delay slot");
 
-                u32 value = registers[opcode->srcA];
-                bool branch = (opcode->branchCondition == Opcode::BranchCondition::Zero) ? (value == 0) : (value != 0);
+                u32 value{registers[opcode->srcA]};
+                bool branch{(opcode->branchCondition == Opcode::BranchCondition::Zero) ? (value == 0) : (value != 0)};
 
                 if (branch) {
                     if (opcode->noDelay) {
                         opcode += opcode->immediate;
                         return true;
                     } else {
-                        Opcode *targetOpcode = opcode + opcode->immediate;
+                        Opcode *targetOpcode{opcode + opcode->immediate};
 
                         // Step into delay slot
                         opcode++;
@@ -111,25 +111,25 @@ namespace skyline::gpu {
     FORCE_INLINE u32 MacroInterpreter::HandleAlu(Opcode::AluOperation operation, u32 srcA, u32 srcB) {
         switch (operation) {
             case Opcode::AluOperation::Add: {
-                u64 result = static_cast<u64>(srcA) + srcB;
+                u64 result{static_cast<u64>(srcA) + srcB};
 
                 carryFlag = result >> 32;
                 return static_cast<u32>(result);
             }
             case Opcode::AluOperation::AddWithCarry: {
-                u64 result = static_cast<u64>(srcA) + srcB + carryFlag;
+                u64 result{static_cast<u64>(srcA) + srcB + carryFlag};
 
                 carryFlag = result >> 32;
                 return static_cast<u32>(result);
             }
             case Opcode::AluOperation::Subtract: {
-                u64 result = static_cast<u64>(srcA) - srcB;
+                u64 result{static_cast<u64>(srcA) - srcB};
 
                 carryFlag = result & 0xFFFFFFFF;
                 return static_cast<u32>(result);
             }
             case Opcode::AluOperation::SubtractWithBorrow: {
-                u64 result = static_cast<u64>(srcA) - srcB - !carryFlag;
+                u64 result{static_cast<u64>(srcA) - srcB - !carryFlag};
 
                 carryFlag = result & 0xFFFFFFFF;
                 return static_cast<u32>(result);

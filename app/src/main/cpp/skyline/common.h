@@ -57,15 +57,15 @@ namespace skyline {
 
     namespace constant {
         // Memory
-        constexpr u64 BaseAddress = 0x8000000; //!< The address space base
-        constexpr u64 DefStackSize = 0x1E8480; //!< The default amount of stack: 2 MB
+        constexpr u64 BaseAddress{0x8000000}; //!< The address space base
+        constexpr u64 DefStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
         // Display
-        constexpr u16 HandheldResolutionW = 1280; //!< The width component of the handheld resolution
-        constexpr u16 HandheldResolutionH = 720; //!< The height component of the handheld resolution
-        constexpr u16 DockedResolutionW = 1920; //!< The width component of the docked resolution
-        constexpr u16 DockedResolutionH = 1080; //!< The height component of the docked resolution
+        constexpr u16 HandheldResolutionW{1280}; //!< The width component of the handheld resolution
+        constexpr u16 HandheldResolutionH{720}; //!< The height component of the handheld resolution
+        constexpr u16 DockedResolutionW{1920}; //!< The width component of the docked resolution
+        constexpr u16 DockedResolutionH{1080}; //!< The height component of the docked resolution
         // Time
-        constexpr u64 NsInSecond = 1000000000; //!< This is the amount of nanoseconds in a second
+        constexpr u64 NsInSecond{1000000000}; //!< This is the amount of nanoseconds in a second
     }
 
     /**
@@ -156,7 +156,7 @@ namespace skyline {
         template<typename Type>
         constexpr Type MakeMagic(std::string_view string) {
             Type object{};
-            auto offset = 0;
+            size_t offset{};
 
             for (auto &character : string) {
                 object |= static_cast<Type>(character) << offset;
@@ -356,7 +356,7 @@ namespace skyline {
       private:
         std::atomic<Group> flag{Group::None}; //!< An atomic flag to hold which group holds the mutex
         std::atomic<Group> next{Group::None}; //!< An atomic flag to hold which group will hold the mutex next
-        std::atomic<u8> num{0}; //!< An atomic u8 keeping track of how many users are holding the mutex
+        std::atomic<u8> num{}; //!< An atomic u8 keeping track of how many users are holding the mutex
         Mutex mtx; //!< A mutex to lock before changing of num and flag
     };
 

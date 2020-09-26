@@ -22,10 +22,10 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd = request.Pop<u32>();
-        auto cmd = request.Pop<u32>();
+        auto fd{request.Pop<u32>()};
+        auto cmd{request.Pop<u32>()};
 
-        auto device = driver->GetDevice(fd);
+        auto device{driver->GetDevice(fd)};
 
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
@@ -52,7 +52,7 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd = request.Pop<u32>();
+        auto fd{request.Pop<u32>()};
         state.logger->Debug("Closing NVDRV device ({})", fd);
 
         driver->CloseDevice(fd);
@@ -67,14 +67,14 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd = request.Pop<u32>();
-        auto eventId = request.Pop<u32>();
+        auto fd{request.Pop<u32>()};
+        auto eventId{request.Pop<u32>()};
 
-        auto device = driver->GetDevice(fd);
-        auto event = device->QueryEvent(eventId);
+        auto device{driver->GetDevice(fd)};
+        auto event{device->QueryEvent(eventId)};
 
         if (event != nullptr) {
-            auto handle = state.process->InsertItem<type::KEvent>(event);
+            auto handle{state.process->InsertItem<type::KEvent>(event)};
 
             state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: {}", fd, eventId, handle);
             response.copyHandles.push_back(handle);
@@ -93,10 +93,10 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd = request.Pop<u32>();
-        auto cmd = request.Pop<u32>();
+        auto fd{request.Pop<u32>()};
+        auto cmd{request.Pop<u32>()};
 
-        auto device = driver->GetDevice(fd);
+        auto device{driver->GetDevice(fd)};
 
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
@@ -117,10 +117,10 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd = request.Pop<u32>();
-        auto cmd = request.Pop<u32>();
+        auto fd{request.Pop<u32>()};
+        auto cmd{request.Pop<u32>()};
 
-        auto device = driver->GetDevice(fd);
+        auto device{driver->GetDevice(fd)};
 
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;

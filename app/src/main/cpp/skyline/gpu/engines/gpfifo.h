@@ -7,7 +7,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u32 GpfifoRegisterCount = 0x40; //!< The number of GPFIFO registers
+        constexpr u32 GpfifoRegisterCount{0x40}; //!< The number of GPFIFO registers
     }
 
     namespace gpu::engine {

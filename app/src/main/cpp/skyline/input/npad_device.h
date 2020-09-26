@@ -7,9 +7,9 @@
 #include "shared_mem.h"
 
 namespace skyline::constant {
-    constexpr jlong MsInSecond = 1000; //!< The amount of milliseconds in a single second of time
-    constexpr jint AmplitudeMax = std::numeric_limits<u8>::max(); //!< The maximum amplitude for Android Vibration APIs
-    constexpr i8 NullIndex = -1; //!< The placeholder index value when there is no device present
+    constexpr jlong MsInSecond{1000}; //!< The amount of milliseconds in a single second of time
+    constexpr jint AmplitudeMax{std::numeric_limits<u8>::max()}; //!< The maximum amplitude for Android Vibration APIs
+    constexpr i8 NullIndex{-1}; //!< The placeholder index value when there is no device present
 }
 
 namespace skyline::input {

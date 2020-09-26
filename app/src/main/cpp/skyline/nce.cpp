@@ -37,7 +37,7 @@ namespace skyline {
                     if (__predict_false(!Surface))
                         continue;
 
-                    auto svc = state.ctx->svc;
+                    auto svc{state.ctx->svc};
 
                     try {
                         if (kernel::svc::SvcTable[svc]) {
@@ -117,7 +117,7 @@ namespace skyline {
      */
     void ExecuteFunctionCtx(ThreadCall call, Registers &funcRegs, ThreadContext *ctx) __attribute__ ((optnone)) {
         ctx->threadCall = call;
-        Registers registers = ctx->registers;
+        Registers registers{ctx->registers};
 
         while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
 
@@ -138,17 +138,17 @@ namespace skyline {
         if (state.process->status == kernel::type::KProcess::Status::Exiting)
             throw exception("Executing function on Exiting process");
 
-        auto thread = state.thread ? state.thread : state.process->threads.at(state.process->pid);
+        auto thread{state.thread ? state.thread : state.process->threads.at(state.process->pid)};
         ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
     }
 
     void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) __attribute__ ((optnone)) {
-        auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
+        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address)};
         while (ctx->state == ThreadState::NotReady);
     }
 
     void NCE::StartThread(u64 entryArg, u32 handle, std::shared_ptr<kernel::type::KThread> &thread) {
-        auto ctx = reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address);
+        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address)};
         while (ctx->state != ThreadState::WaitInit);
 
         ctx->tpidrroEl0 = thread->tls;
@@ -169,8 +169,8 @@ namespace skyline {
 
         if (numHist) {
             std::vector<u32> instrs(numHist);
-            u64 size = sizeof(u32) * numHist;
-            u64 offset = ctx->pc - size + (2 * sizeof(u32));
+            u64 size{sizeof(u32) * numHist};
+            u64 offset{ctx->pc - size + (2 * sizeof(u32))};
 
             state.process->ReadMemory(instrs.data(), offset, size);
 
@@ -193,10 +193,10 @@ namespace skyline {
         if (ctx->sp)
             regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);
 
-        constexpr u8 numRegisters = 31; //!< The amount of general-purpose registers in ARMv8
+        constexpr u8 numRegisters{31}; //!< The amount of general-purpose registers in ARMv8
 
-        for (u8 index = 0; index < numRegisters - 2; index += 2) {
-            auto xStr = index < 10 ? " X" : "X";
+        for (u8 index{}; index < numRegisters - 2; index += 2) {
+            auto xStr{index < 10 ? " X" : "X"};
             regStr += fmt::format("\n{}{}: 0x{:<16X} {}{}: 0x{:X}", xStr, index, ctx->registers.regs[index], xStr, index + 1, ctx->registers.regs[index + 1]);
         }
 
@@ -210,16 +210,16 @@ namespace skyline {
     }
 
     std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 offset) {
-        constexpr u32 TpidrEl0 = 0x5E82;      // ID of TPIDR_EL0 in MRS
-        constexpr u32 TpidrroEl0 = 0x5E83;    // ID of TPIDRRO_EL0 in MRS
-        constexpr u32 CntfrqEl0 = 0x5F00;     // ID of CNTFRQ_EL0 in MRS
-        constexpr u32 CntpctEl0 = 0x5F01;     // ID of CNTPCT_EL0 in MRS
-        constexpr u32 CntvctEl0 = 0x5F02;     // ID of CNTVCT_EL0 in MRS
-        constexpr u32 TegraX1Freq = 19200000; // The clock frequency of the Tegra X1 (19.2 MHz)
+        constexpr u32 TpidrEl0{0x5E82};      // ID of TPIDR_EL0 in MRS
+        constexpr u32 TpidrroEl0{0x5E83};    // ID of TPIDRRO_EL0 in MRS
+        constexpr u32 CntfrqEl0{0x5F00};     // ID of CNTFRQ_EL0 in MRS
+        constexpr u32 CntpctEl0{0x5F01};     // ID of CNTPCT_EL0 in MRS
+        constexpr u32 CntvctEl0{0x5F02};     // ID of CNTVCT_EL0 in MRS
+        constexpr u32 TegraX1Freq{19200000}; // The clock frequency of the Tegra X1 (19.2 MHz)
 
-        u32 *start = reinterpret_cast<u32 *>(code.data());
-        u32 *end = start + (code.size() / sizeof(u32));
-        i64 patchOffset = offset;
+        u32 *start{reinterpret_cast<u32 *>(code.data())};
+        u32 *end{start + (code.size() / sizeof(u32))};
+        i64 patchOffset{offset};
 
         std::vector<u32> patch((guest::SaveCtxSize + guest::LoadCtxSize + guest::SvcHandlerSize) / sizeof(u32));
 
@@ -236,22 +236,22 @@ namespace skyline {
         if (!frequency)
             asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
 
-        for (u32 *address = start; address < end; address++) {
-            auto instrSvc = reinterpret_cast<instr::Svc *>(address);
-            auto instrMrs = reinterpret_cast<instr::Mrs *>(address);
-            auto instrMsr = reinterpret_cast<instr::Msr *>(address);
+        for (u32 *address{start}; address < end; address++) {
+            auto instrSvc{reinterpret_cast<instr::Svc *>(address)};
+            auto instrMrs{reinterpret_cast<instr::Mrs *>(address)};
+            auto instrMsr{reinterpret_cast<instr::Msr *>(address)};
 
             if (instrSvc->Verify()) {
                 // If this is an SVC we need to branch to saveCtx then to the SVC Handler after putting the PC + SVC into X0 and W1 and finally loadCtx before returning to where we were before
                 instr::B bJunc(offset);
 
-                constexpr u32 strLr = 0xF81F0FFE; // STR LR, [SP, #-16]!
+                constexpr u32 strLr{0xF81F0FFE}; // STR LR, [SP, #-16]!
                 offset += sizeof(strLr);
 
                 instr::BL bSvCtx(patchOffset - offset);
                 offset += sizeof(bSvCtx);
 
-                auto movPc = instr::MoveRegister<u64>(regs::X0, baseAddress + (address - start));
+                auto movPc{instr::MoveRegister<u64>(regs::X0, baseAddress + (address - start))};
                 offset += sizeof(u32) * movPc.size();
 
                 instr::Movz movCmd(regs::W1, static_cast<u16>(instrSvc->value));
@@ -263,7 +263,7 @@ namespace skyline {
                 instr::BL bLdCtx((patchOffset + guest::SaveCtxSize) - offset);
                 offset += sizeof(bLdCtx);
 
-                constexpr u32 ldrLr = 0xF84107FE; // LDR LR, [SP], #16
+                constexpr u32 ldrLr{0xF84107FE}; // LDR LR, [SP], #16
                 offset += sizeof(ldrLr);
 
                 instr::B bret(-offset + sizeof(u32));
@@ -290,7 +290,7 @@ namespace skyline {
                         offset += sizeof(strX0);
                     }
 
-                    constexpr u32 mrsX0 = 0xD53BD040; // MRS X0, TPIDR_EL0
+                    constexpr u32 mrsX0{0xD53BD040}; // MRS X0, TPIDR_EL0
                     offset += sizeof(mrsX0);
 
                     u32 ldrTls;
@@ -335,14 +335,14 @@ namespace skyline {
                         ldr.destReg = instrMrs->destReg;
                         offset += sizeof(ldr);
 
-                        constexpr u32 addSp = 0x910083FF; // ADD SP, SP, #32
+                        constexpr u32 addSp{0x910083FF}; // ADD SP, SP, #32
                         offset += sizeof(addSp);
 
                         instr::B bret(-offset + sizeof(u32));
                         offset += sizeof(bret);
 
                         *address = bJunc.raw;
-                        auto size = patch.size();
+                        auto size{patch.size()};
                         patch.resize(size + (guest::RescaleClockSize / sizeof(u32)));
                         std::memcpy(patch.data() + size, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize);
                         patch.push_back(ldr.raw);
@@ -352,7 +352,7 @@ namespace skyline {
                         // If this moves CNTFRQ_EL0 into a register then move the Tegra X1's clock frequency into the register (Rather than the host clock frequency)
                         instr::B bJunc(offset);
 
-                        auto movFreq = instr::MoveRegister<u32>(static_cast<regs::X>(instrMrs->destReg), TegraX1Freq);
+                        auto movFreq{instr::MoveRegister<u32>(static_cast<regs::X>(instrMrs->destReg), TegraX1Freq)};
                         offset += sizeof(u32) * movFreq.size();
 
                         instr::B bret(-offset + sizeof(u32));
@@ -376,22 +376,22 @@ namespace skyline {
                     instr::B bJunc(offset);
 
                     // Used to avoid conflicts as we cannot read the source register from the stack
-                    bool x0x1 = instrMrs->srcReg != regs::X0 && instrMrs->srcReg != regs::X1;
+                    bool x0x1{instrMrs->srcReg != regs::X0 && instrMrs->srcReg != regs::X1};
 
                     // Push two registers to stack that can be used to load the TLS and arguments into
-                    u32 pushXn = x0x1 ? 0xA9BF07E0 : 0xA9BF0FE2; // STP X(0/2), X(1/3), [SP, #-16]!
+                    u32 pushXn{x0x1 ? 0xA9BF07E0 : 0xA9BF0FE2}; // STP X(0/2), X(1/3), [SP, #-16]!
                     offset += sizeof(pushXn);
 
-                    u32 loadRealTls = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
+                    u32 loadRealTls{x0x1 ? 0xD53BD040 : 0xD53BD042}; // MRS X(0/2), TPIDR_EL0
                     offset += sizeof(loadRealTls);
 
                     instr::Mov moveParam(x0x1 ? regs::X1 : regs::X3, regs::X(instrMsr->srcReg));
                     offset += sizeof(moveParam);
 
-                    u32 storeEmuTls = x0x1 ? 0xF9008401 : 0xF9008403; // STR X(1/3), [X0, #264] (ThreadContext::tpidrEl0)
+                    u32 storeEmuTls{x0x1 ? 0xF9008401 : 0xF9008403}; // STR X(1/3), [X0, #264] (ThreadContext::tpidrEl0)
                     offset += sizeof(storeEmuTls);
 
-                    u32 popXn = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
+                    u32 popXn{x0x1 ? 0xA8C107E0 : 0xA8C10FE2}; // LDP X(0/2), X(1/3), [SP], #16
                     offset += sizeof(popXn);
 
                     instr::B bret(-offset + sizeof(u32));

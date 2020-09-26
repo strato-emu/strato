@@ -12,7 +12,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr auto BufferAlignment = 0x40; //!< The alignment for all audren buffers
+        constexpr u8 BufferAlignment{0x40}; //!< The alignment for all audren buffers
     }
 
     namespace service::audio::IAudioRenderer {

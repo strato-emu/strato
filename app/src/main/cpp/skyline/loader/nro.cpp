@@ -22,16 +22,16 @@ namespace skyline::loader {
             if (assetHeader.magic != util::MakeMagic<u32>("ASET"))
                 throw exception("Invalid ASET magic! 0x{0:X}", assetHeader.magic);
 
-            NroAssetSection &nacpHeader = assetHeader.nacp;
+            NroAssetSection &nacpHeader{assetHeader.nacp};
             nacp = std::make_shared<vfs::NACP>(std::make_shared<vfs::RegionBacking>(backing, header.size + nacpHeader.offset, nacpHeader.size));
 
-            NroAssetSection &romFsHeader = assetHeader.romFs;
+            NroAssetSection &romFsHeader{assetHeader.romFs};
             romFs = std::make_shared<vfs::RegionBacking>(backing, header.size + romFsHeader.offset, romFsHeader.size);
         }
     }
 
     std::vector<u8> NroLoader::GetIcon() {
-        NroAssetSection &segmentHeader = assetHeader.icon;
+        NroAssetSection &segmentHeader{assetHeader.icon};
         std::vector<u8> buffer(segmentHeader.size);
 
         backing->Read(buffer.data(), header.size + segmentHeader.offset, segmentHeader.size);
@@ -59,7 +59,7 @@ namespace skyline::loader {
 
         nroExecutable.bssSize = header.bssSize;
 
-        auto loadInfo = LoadExecutable(process, state, nroExecutable);
+        auto loadInfo{LoadExecutable(process, state, nroExecutable)};
         state.os->memory.InitializeRegions(loadInfo.base, loadInfo.size, memory::AddressSpaceType::AddressSpace39Bit);
     }
 }

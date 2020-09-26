@@ -15,11 +15,6 @@ namespace skyline::crypto {
         mbedtls_cipher_context_t decryptContext;
 
         /**
-         * @brief Buffer should grow bigger than 1 MiB
-         */
-        static constexpr size_t maxBufferSize = 1024 * 1024;
-
-        /**
          * @brief Buffer declared as class variable to avoid constant memory allocation
          */
         std::vector<u8> buffer;

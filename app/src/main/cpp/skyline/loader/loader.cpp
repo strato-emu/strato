@@ -8,11 +8,11 @@
 
 namespace skyline::loader {
     Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset) {
-        u64 base = constant::BaseAddress + offset;
+        u64 base{constant::BaseAddress + offset};
 
-        u64 textSize = executable.text.contents.size();
-        u64 roSize = executable.ro.contents.size();
-        u64 dataSize = executable.data.contents.size() + executable.bssSize;
+        u64 textSize{executable.text.contents.size()};
+        u64 roSize{executable.ro.contents.size()};
+        u64 dataSize{executable.data.contents.size() + executable.bssSize};
 
         if (!util::PageAligned(textSize) || !util::PageAligned(roSize) || !util::PageAligned(dataSize))
             throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, roSize, dataSize);
@@ -21,11 +21,11 @@ namespace skyline::loader {
             throw exception("LoadProcessData: Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
 
         // The data section will always be the last section in memory, so put the patch section after it
-        u64 patchOffset = executable.data.offset + dataSize;
+        u64 patchOffset{executable.data.offset + dataSize};
         std::vector<u32> patch = state.nce->PatchCode(executable.text.contents, base, patchOffset);
 
-        u64 patchSize = patch.size() * sizeof(u32);
-        u64 padding = util::AlignUp(patchSize, PAGE_SIZE) - patchSize;
+        u64 patchSize{patch.size() * sizeof(u32)};
+        u64 padding{util::AlignUp(patchSize, PAGE_SIZE) - patchSize};
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + executable.text.offset, textSize, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
         state.logger->Debug("Successfully mapped section .text @ 0x{0:X}, Size = 0x{1:X}", base + executable.text.offset, textSize);

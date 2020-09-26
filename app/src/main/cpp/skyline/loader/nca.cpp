@@ -17,13 +17,13 @@ namespace skyline::loader {
         if (exeFs == nullptr)
             throw exception("Cannot load a null ExeFS");
 
-        auto nsoFile = exeFs->OpenFile("rtld");
+        auto nsoFile{exeFs->OpenFile("rtld")};
         if (nsoFile == nullptr)
             throw exception("Cannot load an ExeFS that doesn't contain rtld");
 
-        auto loadInfo = NsoLoader::LoadNso(nsoFile, process, state);
-        u64 offset = loadInfo.size;
-        u64 base = loadInfo.base;
+        auto loadInfo{NsoLoader::LoadNso(nsoFile, process, state)};
+        u64 offset{loadInfo.size};
+        u64 base{loadInfo.base};
 
         state.logger->Info("Loaded nso 'rtld' at 0x{:X}", base);
 

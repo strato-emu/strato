@@ -12,7 +12,7 @@ namespace skyline::service::am {
     Result ILibraryAppletAccessor::GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         stateChangeEvent->Signal();
 
-        KHandle handle = state.process->InsertItem(stateChangeEvent);
+        KHandle handle{state.process->InsertItem(stateChangeEvent)};
         state.logger->Debug("Applet State Change Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
@@ -32,10 +32,10 @@ namespace skyline::service::am {
     }
 
     Result ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 LaunchParameterMagic = 0xC79497CA; //!< This is the magic of the application launch parameters
-        constexpr size_t LaunchParameterSize = 0x88; //!< This is the size of the launch parameter IStorage
+        constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< This is the magic of the application launch parameters
+        constexpr size_t LaunchParameterSize{0x88}; //!< This is the size of the launch parameter IStorage
 
-        auto storageService = std::make_shared<IStorage>(state, manager, LaunchParameterSize);
+        auto storageService{std::make_shared<IStorage>(state, manager, LaunchParameterSize)};
 
         storageService->Push<u32>(LaunchParameterMagic);
         storageService->Push<u32>(1);

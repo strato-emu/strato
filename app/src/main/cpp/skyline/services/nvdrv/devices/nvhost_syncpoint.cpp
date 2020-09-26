@@ -26,7 +26,7 @@ namespace skyline::service::nvdrv {
     }
 
     u32 NvHostSyncpoint::FindFreeSyncpoint() {
-        for (u32 i = 0; i < constant::MaxHwSyncpointCount; i++)
+        for (u32 i{}; i < constant::MaxHwSyncpointCount; i++)
             if (!syncpoints[i].reserved)
                 return i;
 
@@ -39,7 +39,7 @@ namespace skyline::service::nvdrv {
     }
 
     bool NvHostSyncpoint::HasSyncpointExpired(u32 id, u32 threshold) {
-        const SyncpointInfo &syncpoint = syncpoints.at(id);
+        const SyncpointInfo &syncpoint{syncpoints.at(id)};
 
         if (!syncpoint.reserved)
             throw exception("Cannot check the expiry status of an unreserved syncpoint!");

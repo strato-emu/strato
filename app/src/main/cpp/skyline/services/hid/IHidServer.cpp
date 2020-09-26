@@ -26,7 +26,7 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto styleSet = request.Pop<NpadStyleSet>();
+        auto styleSet{request.Pop<NpadStyleSet>()};
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.styles = styleSet;
         state.input->npad.Update();
@@ -60,13 +60,13 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<NpadId>();
+        auto id{request.Pop<NpadId>()};
         request.copyHandles.push_back(state.process->InsertItem(state.input->npad.at(id).updateEvent));
         return {};
     }
 
     Result IHidServer::GetPlayerLedPattern(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<NpadId>();
+        auto id{request.Pop<NpadId>()};
         response.Push<u64>([id] {
             switch (id) {
                 case NpadId::Player1:
@@ -111,7 +111,7 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<NpadId>();
+        auto id{request.Pop<NpadId>()};
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
@@ -119,7 +119,7 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<NpadId>();
+        auto id{request.Pop<NpadId>()};
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
@@ -127,7 +127,7 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto id = request.Pop<NpadId>();
+        auto id{request.Pop<NpadId>()};
         std::lock_guard lock(state.input->npad.mutex);
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
         state.input->npad.Update();
@@ -146,15 +146,15 @@ namespace skyline::service::hid {
         auto values{request.inputBuf.at(1).cast<NpadVibrationValue>()};
 
         for (size_t i{}; i < handles.size(); ++i) {
-            const auto &handle = handles[i];
-            auto &device = state.input->npad.at(handle.id);
+            const auto &handle{handles[i]};
+            auto &device{state.input->npad.at(handle.id)};
             if (device.type == handle.GetType()) {
                 if (i + 1 != handles.size() && handles[i + 1].id == handle.id && handles[i + 1].isRight && !handle.isRight) {
                     state.logger->Debug("Vibration #{}&{} - Handle: 0x{:02X} (0b{:05b}), Vibration: {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz - {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz", i, i + 1, u8(handle.id), u8(handle.type), values[i].amplitudeLow, values[i].frequencyLow, values[i].amplitudeHigh, values[i].frequencyHigh, values[i + 1].amplitudeLow, values[i + 1].frequencyLow, values[i + 1].amplitudeHigh, values[i + 1].frequencyHigh);
                     device.Vibrate(values[i], values[i + 1]);
                     i++;
                 } else {
-                    const auto &value = values[i];
+                    const auto &value{values[i]};
                     state.logger->Debug("Vibration #{} - Handle: 0x{:02X} (0b{:05b}), Vibration: {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz", i, u8(handle.id), u8(handle.type), value.amplitudeLow, value.frequencyLow, value.amplitudeHigh, value.frequencyHigh);
                     device.Vibrate(handle.isRight, value);
                 }

@@ -58,7 +58,7 @@ namespace skyline::kernel::type {
 
         nSize = nSize ? nSize : size;
 
-        ChunkDescriptor chunk = host ? hostChunk : *state.os->memory.GetChunk(address);
+        ChunkDescriptor chunk{host ? hostChunk : *state.os->memory.GetChunk(address)};
         chunk.address = nAddress;
         chunk.size = nSize;
         MemoryManager::ResizeChunk(&chunk, nSize);
@@ -167,7 +167,7 @@ namespace skyline::kernel::type {
 
             size = nSize;
 
-            auto chunk = state.os->memory.GetChunk(address);
+            auto chunk{state.os->memory.GetChunk(address)};
             MemoryManager::ResizeChunk(chunk, size);
         }
     }
@@ -196,7 +196,7 @@ namespace skyline::kernel::type {
             if (fregs.x0 < 0)
                 throw exception("An error occurred while updating transfer memory's permissions in guest");
 
-            auto chunk = state.os->memory.GetChunk(address);
+            auto chunk{state.os->memory.GetChunk(address)};
             MemoryManager::InsertBlock(chunk, block);
         }
     }

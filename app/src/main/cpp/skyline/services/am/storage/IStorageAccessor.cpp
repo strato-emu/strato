@@ -13,8 +13,8 @@ namespace skyline::service::am {
     }
 
     Result IStorageAccessor::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto offset = request.Pop<i64>();
-        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset);
+        auto offset{request.Pop<i64>()};
+        auto size{std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset)};
 
         if (offset > parent->content.size())
             return result::OutOfBounds;
@@ -26,8 +26,8 @@ namespace skyline::service::am {
     }
 
     Result IStorageAccessor::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto offset = request.Pop<i64>();
-        auto size = std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset);
+        auto offset{request.Pop<i64>()};
+        auto size{std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset)};
 
         if (offset > parent->content.size())
             return result::OutOfBounds;

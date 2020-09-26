@@ -26,7 +26,7 @@ namespace skyline::input {
             if (id == NpadId::Unknown)
                 continue;
 
-            auto &device = at(id);
+            auto &device{at(id)};
 
             for (auto &controller : controllers) {
                 if (controller.device)

@@ -43,10 +43,10 @@ namespace skyline::gpu {
         }
 
         if (!presentationQueue.empty()) {
-            auto &texture = presentationQueue.front();
+            auto &texture{presentationQueue.front()};
             presentationQueue.pop();
 
-            auto textureFormat = texture->GetAndroidFormat();
+            auto textureFormat{texture->GetAndroidFormat()};
             if (resolution != texture->dimensions || textureFormat != format) {
                 ANativeWindow_setBuffersGeometry(window, texture->dimensions.width, texture->dimensions.height, textureFormat);
                 resolution = texture->dimensions;
@@ -64,7 +64,7 @@ namespace skyline::gpu {
             texture->releaseCallback();
 
             if (frameTimestamp) {
-                auto now = util::GetTimeNs();
+                auto now{util::GetTimeNs()};
 
                 frametime = static_cast<u32>((now - frameTimestamp) / 10000); // frametime / 100 is the real ms value, this is to retain the first two decimals
                 fps = static_cast<u16>(constant::NsInSecond / (now - frameTimestamp));

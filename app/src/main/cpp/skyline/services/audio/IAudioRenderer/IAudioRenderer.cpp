@@ -54,18 +54,18 @@ namespace skyline::service::audio::IAudioRenderer {
 
         span memoryPoolsIn(reinterpret_cast<MemoryPoolIn*>(input), memoryPools.size());
         input += inputHeader.memoryPoolSize;
-        for (auto i = 0; i < memoryPools.size(); i++)
+        for (size_t i{}; i < memoryPools.size(); i++)
             memoryPools[i].ProcessInput(memoryPoolsIn[i]);
 
         input += inputHeader.voiceResourceSize;
 
         span voicesIn(reinterpret_cast<VoiceIn*>(input), parameters.voiceCount);
         input += inputHeader.voiceSize;
-        for (auto i = 0; i < voicesIn.size(); i++)
+        for (u32 i{}; i < voicesIn.size(); i++)
             voices[i].ProcessInput(voicesIn[i]);
 
         span effectsIn(reinterpret_cast<EffectIn*>(input), parameters.effectCount);
-        for (auto i = 0; i < effectsIn.size(); i++)
+        for (u32 i{}; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
 
         UpdateAudio();
@@ -127,14 +127,14 @@ namespace skyline::service::audio::IAudioRenderer {
     }
 
     void IAudioRenderer::MixFinalBuffer() {
-        u32 writtenSamples = 0;
+        u32 writtenSamples{};
 
         for (auto &voice : voices) {
             if (!voice.Playable())
                 continue;
 
             u32 bufferOffset{};
-            u32 pendingSamples = constant::MixBufferSize;
+            u32 pendingSamples{constant::MixBufferSize};
 
             while (pendingSamples > 0) {
                 u32 voiceBufferOffset{};

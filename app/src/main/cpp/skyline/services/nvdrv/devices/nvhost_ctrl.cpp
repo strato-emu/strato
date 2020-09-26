@@ -10,7 +10,7 @@ namespace skyline::service::nvdrv::device {
     NvHostEvent::NvHostEvent(const DeviceState &state) : event(std::make_shared<type::KEvent>(state)) {}
 
     void NvHostEvent::Signal() {
-        auto oldState = state;
+        auto oldState{state};
         state = State::Signaling;
 
         // This is to ensure that the HOS event isn't signalled when the nvhost event is cancelled
@@ -44,7 +44,7 @@ namespace skyline::service::nvdrv::device {
 
         for (u32 i{}; i < constant::NvHostEventCount; i++) {
             if (events[i]) {
-                const auto &event = *events[i];
+                const auto &event{*events[i]};
 
                 if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
                     eventIndex = i;
@@ -84,8 +84,8 @@ namespace skyline::service::nvdrv::device {
         if (data.timeout == 0)
             return NvStatus::Timeout;
 
-        auto driver = nvdrv::driver.lock();
-        auto &hostSyncpoint = driver->hostSyncpoint;
+        auto driver{nvdrv::driver.lock()};
+        auto &hostSyncpoint{driver->hostSyncpoint};
 
         // Check if the syncpoint has already expired using the last known values
         if (hostSyncpoint.HasSyncpointExpired(data.fence.id, data.fence.value)) {
@@ -94,7 +94,7 @@ namespace skyline::service::nvdrv::device {
         }
 
         // Sync the syncpoint with the GPU then check again
-        auto minVal = hostSyncpoint.UpdateMin(data.fence.id);
+        auto minVal{hostSyncpoint.UpdateMin(data.fence.id)};
         if (hostSyncpoint.HasSyncpointExpired(data.fence.id, data.fence.value)) {
             data.value.val = minVal;
             return NvStatus::Success;
@@ -112,7 +112,7 @@ namespace skyline::service::nvdrv::device {
             userEventId = FindFreeEvent(data.fence.id);
         }
 
-        auto& event = *events.at(userEventId);
+        auto& event{*events.at(userEventId)};
         if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
             state.logger->Debug("Now waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
             event.Wait(state.gpu, data.fence);
@@ -145,7 +145,7 @@ namespace skyline::service::nvdrv::device {
         if (userEventId >= constant::NvHostEventCount || !events.at(userEventId))
             return NvStatus::BadValue;
 
-        auto &event = *events.at(userEventId);
+        auto &event{*events.at(userEventId)};
 
         if (event.state == NvHostEvent::State::Waiting) {
             event.state = NvHostEvent::State::Cancelling;
@@ -155,8 +155,8 @@ namespace skyline::service::nvdrv::device {
 
         event.state = NvHostEvent::State::Cancelled;
 
-        auto driver = nvdrv::driver.lock();
-        auto &hostSyncpoint = driver->hostSyncpoint;
+        auto driver{nvdrv::driver.lock()};
+        auto &hostSyncpoint{driver->hostSyncpoint};
         hostSyncpoint.UpdateMin(event.fence.id);
 
         return NvStatus::Success;
@@ -174,7 +174,7 @@ namespace skyline::service::nvdrv::device {
         auto userEventId{buffer.as<u32>()};
         state.logger->Debug("Registering nvhost event: {}", userEventId);
 
-        auto &event = events.at(userEventId);
+        auto &event{events.at(userEventId)};
         if (event)
             throw exception("Recreating events is unimplemented");
         event = NvHostEvent(state);
@@ -184,7 +184,7 @@ namespace skyline::service::nvdrv::device {
 
     std::shared_ptr<type::KEvent> NvHostCtrl::QueryEvent(u32 eventId) {
         EventValue eventValue{.val = eventId};
-        const auto &event = events.at(eventValue.nonAsync ? eventValue.eventSlotNonAsync : eventValue.eventSlotAsync);
+        const auto &event{events.at(eventValue.nonAsync ? eventValue.eventSlotNonAsync : eventValue.eventSlotAsync)};
 
         if (event && event->fence.id == (eventValue.nonAsync ? eventValue.syncpointIdNonAsync : eventValue.syncpointIdAsync))
             return event->event;

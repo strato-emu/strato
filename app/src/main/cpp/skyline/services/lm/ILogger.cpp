@@ -44,11 +44,11 @@ namespace skyline::service::lm {
         std::ostringstream logMessage;
         logMessage << "Guest log:";
 
-        u64 offset = sizeof(Data);
+        u64 offset{sizeof(Data)};
         while (offset < request.inputBuf[0].size()) {
-            auto fieldType = request.inputBuf[0].subspan(offset++).as<LogFieldType>();
-            auto length = request.inputBuf[0].subspan(offset++).as<u8>();
-            auto object = request.inputBuf[0].subspan(offset, length);
+            auto fieldType{request.inputBuf[0].subspan(offset++).as<LogFieldType>()};
+            auto length{request.inputBuf[0].subspan(offset++).as<u8>()};
+            auto object{request.inputBuf[0].subspan(offset, length)};
 
             logMessage << " ";
 

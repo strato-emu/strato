@@ -7,13 +7,13 @@
 
 namespace skyline {
     namespace guest {
-        constexpr size_t SaveCtxSize = 20 * sizeof(u32); //!< The size of the SaveCtx function in 32-bit ARMv8 instructions
-        constexpr size_t LoadCtxSize = 20 * sizeof(u32); //!< The size of the LoadCtx function in 32-bit ARMv8 instructions
-        constexpr size_t RescaleClockSize = 16 * sizeof(u32); //!< The size of the RescaleClock function in 32-bit ARMv8 instructions
+        constexpr size_t SaveCtxSize{20 * sizeof(u32)}; //!< The size of the SaveCtx function in 32-bit ARMv8 instructions
+        constexpr size_t LoadCtxSize{20 * sizeof(u32)}; //!< The size of the LoadCtx function in 32-bit ARMv8 instructions
+        constexpr size_t RescaleClockSize{16 * sizeof(u32)}; //!< The size of the RescaleClock function in 32-bit ARMv8 instructions
         #ifdef NDEBUG
-        constexpr size_t SvcHandlerSize = 225 * sizeof(u32); //!< The size of the SvcHandler (Release) function in 32-bit ARMv8 instructions
+        constexpr size_t SvcHandlerSize{225 * sizeof(u32)}; //!< The size of the SvcHandler (Release) function in 32-bit ARMv8 instructions
         #else
-        constexpr size_t SvcHandlerSize = 400 * sizeof(u32); //!< The size of the SvcHandler (Debug) function in 32-bit ARMv8 instructions
+        constexpr size_t SvcHandlerSize{400 * sizeof(u32)}; //!< The size of the SvcHandler (Debug) function in 32-bit ARMv8 instructions
         #endif
 
         /**

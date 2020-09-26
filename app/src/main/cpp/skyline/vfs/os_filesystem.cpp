@@ -17,11 +17,11 @@ namespace skyline::vfs {
     }
 
     bool OsFileSystem::CreateFile(const std::string &path, size_t size) {
-        auto fullPath = basePath + path;
+        auto fullPath{basePath + path};
 
         // Create a directory that will hold the file
         CreateDirectory(fullPath.substr(0, fullPath.find_last_of('/')), true);
-        int fd = open(fullPath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        int fd{open(fullPath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)};
         if (fd < 0) {
             if (errno != ENOENT)
                 throw exception("Failed to create file: {}", strerror(errno));
@@ -30,7 +30,7 @@ namespace skyline::vfs {
         }
 
         // Truncate the file to desired length
-        int ret = ftruncate(fd, size);
+        int ret{ftruncate(fd, size)};
         close(fd);
 
         if (ret < 0)
@@ -41,15 +41,15 @@ namespace skyline::vfs {
 
     bool OsFileSystem::CreateDirectory(const std::string &path, bool parents) {
         if (!parents) {
-            int ret = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            int ret{mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
             return ret == 0 || errno == EEXIST;
         }
 
-        for (auto dir = basePath.begin(); dir != basePath.end(); dir++) {
-            auto nextDir = std::find(dir, basePath.end(), '/');
-            auto nextPath = "/" + std::string(basePath.begin(), nextDir);
+        for (auto dir{basePath.begin()}; dir != basePath.end(); dir++) {
+            auto nextDir{std::find(dir, basePath.end(), '/')};
+            auto nextPath{"/" + std::string(basePath.begin(), nextDir)};
 
-            int ret = mkdir(nextPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            int ret{mkdir(nextPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
             if (ret < 0 && errno != EEXIST && errno != EPERM)
                 return false;
 
@@ -63,7 +63,7 @@ namespace skyline::vfs {
         if (!(mode.read || mode.write))
             throw exception("Cannot open a file that is neither readable or writable");
 
-        int fd = open((basePath + path).c_str(), (mode.read && mode.write) ? O_RDWR : (mode.write ? O_WRONLY : O_RDONLY));
+        int fd{open((basePath + path).c_str(), (mode.read && mode.write) ? O_RDWR : (mode.write ? O_WRONLY : O_RDONLY))};
         if (fd < 0)
             throw exception("Failed to open file: {}", strerror(errno));
 
@@ -71,9 +71,9 @@ namespace skyline::vfs {
     }
 
     std::optional<Directory::EntryType> OsFileSystem::GetEntryType(const std::string &path) {
-        auto fullPath = basePath + path;
+        auto fullPath{basePath + path};
 
-        auto directory = opendir(fullPath.c_str());
+        auto directory{opendir(fullPath.c_str())};
         if (directory) {
             closedir(directory);
             return Directory::EntryType::Directory;

@@ -23,9 +23,10 @@ namespace skyline::crypto {
     }
 
     void AesCipher::Decrypt(u8 *destination, u8 *source, size_t size) {
-        std::optional<std::vector<u8>> buf{};
+        constexpr size_t maxBufferSize = 1024 * 1024; //!< Buffer shouldn't grow larger than 1 MiB
 
-        u8 *targetDestination = [&]() {
+        std::optional<std::vector<u8>> buf{};
+        u8 *targetDestination{[&]() {
             if (destination == source) {
                 if (size > maxBufferSize) {
                     buf.emplace(size);
@@ -37,7 +38,7 @@ namespace skyline::crypto {
                 }
             }
             return destination;
-        }();
+        }()};
 
         mbedtls_cipher_reset(&decryptContext);
 

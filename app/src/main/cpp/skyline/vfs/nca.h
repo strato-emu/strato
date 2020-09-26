@@ -9,7 +9,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr size_t MediaUnitSize = 0x200; //!< The unit size of entries in an NCA
+        constexpr size_t MediaUnitSize{0x200}; //!< The unit size of entries in an NCA
     }
 
     namespace vfs {

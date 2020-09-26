@@ -58,7 +58,7 @@ namespace skyline::loader {
     }
 
     void NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
-        auto loadInfo = LoadNso(backing, process, state);
+        auto loadInfo{LoadNso(backing, process, state)};
 
         state.os->memory.InitializeRegions(loadInfo.base, loadInfo.size, memory::AddressSpaceType::AddressSpace39Bit);
     }

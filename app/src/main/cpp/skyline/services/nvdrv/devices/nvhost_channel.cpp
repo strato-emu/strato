@@ -9,8 +9,8 @@
 
 namespace skyline::service::nvdrv::device {
     NvHostChannel::NvHostChannel(const DeviceState &state) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state)), errorNotifierEvent(std::make_shared<type::KEvent>(state)), NvDevice(state) {
-        auto driver = nvdrv::driver.lock();
-        auto &hostSyncpoint = driver->hostSyncpoint;
+        auto driver{nvdrv::driver.lock()};
+        auto &hostSyncpoint{driver->hostSyncpoint};
 
         channelFence.id = hostSyncpoint.AllocateSyncpoint(false);
         channelFence.UpdateValue(hostSyncpoint);
@@ -43,8 +43,8 @@ namespace skyline::service::nvdrv::device {
             Fence fence;    // InOut
         } &data = buffer.as<Data>();
 
-        auto driver = nvdrv::driver.lock();
-        auto &hostSyncpoint = driver->hostSyncpoint;
+        auto driver{nvdrv::driver.lock()};
+        auto &hostSyncpoint{driver->hostSyncpoint};
 
         if (data.flags.fenceWait) {
             if (data.flags.incrementWithValue)
@@ -58,7 +58,7 @@ namespace skyline::service::nvdrv::device {
 
         data.fence.id = channelFence.id;
 
-        u32 increment = (data.flags.fenceIncrement ? 2 : 0) + (data.flags.incrementWithValue ? data.fence.value : 0);
+        u32 increment{(data.flags.fenceIncrement ? 2 : 0) + (data.flags.incrementWithValue ? data.fence.value : 0)};
         data.fence.value = hostSyncpoint.IncrementSyncpointMaxExt(data.fence.id, increment);
 
         if (data.flags.fenceIncrement)
@@ -106,7 +106,7 @@ namespace skyline::service::nvdrv::device {
             u32 reserved[3]; // In
         } &data = buffer.as<Data>();
 
-        auto driver = nvdrv::driver.lock();
+        auto driver{nvdrv::driver.lock()};
         channelFence.UpdateValue(driver->hostSyncpoint);
         data.fence = channelFence;
 

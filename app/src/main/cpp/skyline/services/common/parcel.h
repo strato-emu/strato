@@ -48,7 +48,7 @@ namespace skyline::service {
          */
         template<typename ValueType>
         inline ValueType &Pop() {
-            ValueType &value = *reinterpret_cast<ValueType *>(data.data() + dataOffset);
+            ValueType &value{*reinterpret_cast<ValueType *>(data.data() + dataOffset)};
             dataOffset += sizeof(ValueType);
             return value;
         }
@@ -61,7 +61,7 @@ namespace skyline::service {
         template<typename ValueType>
         void Push(const ValueType &value) {
             data.reserve(data.size() + sizeof(ValueType));
-            auto item = reinterpret_cast<const u8 *>(&value);
+            auto item{reinterpret_cast<const u8 *>(&value)};
             for (size_t index{}; sizeof(ValueType) > index; index++) {
                 data.push_back(*item);
                 item++;
@@ -76,7 +76,7 @@ namespace skyline::service {
         template<typename ValueType>
         void PushObject(const ValueType &value) {
             objects.reserve(objects.size() + sizeof(ValueType));
-            auto item = reinterpret_cast<const u8 *>(&value);
+            auto item{reinterpret_cast<const u8 *>(&value)};
             for (size_t index{}; sizeof(ValueType) > index; index++) {
                 objects.push_back(*item);
                 item++;

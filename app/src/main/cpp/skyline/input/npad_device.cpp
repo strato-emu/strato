@@ -183,13 +183,13 @@ namespace skyline::input {
     }
 
     NpadControllerState &NpadDevice::GetNextEntry(NpadControllerInfo &info) {
-        auto &lastEntry = info.state.at(info.header.currentEntry);
+        auto &lastEntry{info.state.at(info.header.currentEntry)};
 
         info.header.timestamp = util::GetTimeTicks();
         info.header.entryCount = std::min(static_cast<u8>(info.header.entryCount + 1), constant::HidEntryCount);
         info.header.currentEntry = (info.header.currentEntry != constant::HidEntryCount - 1) ? info.header.currentEntry + 1 : 0;
 
-        auto &entry = info.state.at(info.header.currentEntry);
+        auto &entry{info.state.at(info.header.currentEntry)};
 
         entry.globalTimestamp = globalTimestamp;
         entry.localTimestamp = lastEntry.localTimestamp + 1;
@@ -207,7 +207,7 @@ namespace skyline::input {
         if (!connectionState.connected)
             return;
 
-        auto &entry = GetNextEntry(*controllerInfo);
+        auto &entry{GetNextEntry(*controllerInfo)};
 
         if (pressed)
             entry.buttons.raw |= mask.raw;
@@ -247,7 +247,7 @@ namespace skyline::input {
             mask = orientedMask;
         }
 
-        auto &defaultEntry = GetNextEntry(section.defaultController);
+        auto &defaultEntry{GetNextEntry(section.defaultController)};
         if (pressed)
             defaultEntry.buttons.raw |= mask.raw;
         else
@@ -260,10 +260,10 @@ namespace skyline::input {
         if (!connectionState.connected)
             return;
 
-        auto &controllerEntry = GetNextEntry(*controllerInfo);
-        auto &defaultEntry = GetNextEntry(section.defaultController);
+        auto &controllerEntry{GetNextEntry(*controllerInfo)};
+        auto &defaultEntry{GetNextEntry(section.defaultController)};
 
-        constexpr i16 threshold = std::numeric_limits<i16>::max() / 2; // A 50% deadzone for the stick buttons
+        constexpr i16 threshold{std::numeric_limits<i16>::max() / 2}; // A 50% deadzone for the stick buttons
 
         if (manager.orientation == NpadJoyOrientation::Vertical || (type != NpadControllerType::JoyconLeft && type != NpadControllerType::JoyconRight)) {
             switch (axis) {
@@ -389,7 +389,7 @@ namespace skyline::input {
 
             u8 startCycleCount{};
             for (u8 n{}; n < vibrations.size(); n++) {
-                auto &vibration = vibrations[n];
+                auto &vibration{vibrations[n]};
                 if (totalTime <= vibration.start) {
                     vibration.start = vibration.end + vibration.period;
                     totalAmplitude += vibration.amplitude;

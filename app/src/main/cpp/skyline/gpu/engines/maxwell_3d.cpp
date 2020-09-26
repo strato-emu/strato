@@ -161,11 +161,11 @@ namespace skyline::gpu::engine {
                 break;
             case Registers::SemaphoreInfo::StructureSize::FourWords: {
                 // Convert the current nanosecond time to GPU ticks
-                constexpr u64 NsToTickNumerator = 384;
-                constexpr u64 NsToTickDenominator = 625;
+                constexpr u64 NsToTickNumerator{384};
+                constexpr u64 NsToTickDenominator{625};
 
-                u64 nsTime = util::GetTimeNs();
-                u64 timestamp = (nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator;
+                u64 nsTime{util::GetTimeNs()};
+                u64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
                 state.gpu->memoryManager.Write<FourWordResult>(FourWordResult{result, timestamp}, registers.semaphore.address.Pack());
                 break;

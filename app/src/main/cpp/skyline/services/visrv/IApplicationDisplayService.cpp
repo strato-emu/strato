@@ -36,7 +36,7 @@ namespace skyline::service::visrv {
         std::string displayName(request.PopString());
         state.logger->Debug("Setting display as: {}", displayName);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         producer->SetDisplay(displayName);
 
         response.Push<u64>(0); // There's only one display
@@ -45,7 +45,7 @@ namespace skyline::service::visrv {
 
     Result IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         state.logger->Debug("Closing the display");
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         producer->CloseDisplay();
         return {};
     }
@@ -75,10 +75,10 @@ namespace skyline::service::visrv {
     }
 
     Result IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        u64 layerId = request.Pop<u64>();
+        u64 layerId{request.Pop<u64>()};
         state.logger->Debug("Closing Layer: {}", layerId);
 
-        auto producer = hosbinder::producer.lock();
+        auto producer{hosbinder::producer.lock()};
         if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
             state.logger->Warn("The application is destroying an uninitialized layer");
         producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
@@ -87,15 +87,15 @@ namespace skyline::service::visrv {
     }
 
     Result IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto scalingMode = request.Pop<u64>();
-        auto layerId = request.Pop<u64>();
+        auto scalingMode{request.Pop<u64>()};
+        auto layerId{request.Pop<u64>()};
 
         state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
         return {};
     }
 
     Result IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        KHandle handle = state.process->InsertItem(state.gpu->vsyncEvent);
+        KHandle handle{state.process->InsertItem(state.gpu->vsyncEvent)};
         state.logger->Debug("VSync Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);

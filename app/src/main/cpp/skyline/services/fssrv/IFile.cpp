@@ -8,10 +8,10 @@ namespace skyline::service::fssrv {
     IFile::IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
 
     Result IFile::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto readOption = request.Pop<u32>();
+        auto readOption{request.Pop<u32>()};
         request.Skip<u32>();
-        auto offset = request.Pop<i64>();
-        auto size = request.Pop<i64>();
+        auto offset{request.Pop<i64>()};
+        auto size{request.Pop<i64>()};
 
         if (offset < 0) {
             state.logger->Warn("Trying to read a file with a negative offset");
@@ -28,10 +28,10 @@ namespace skyline::service::fssrv {
     }
 
     Result IFile::Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto writeOption = request.Pop<u32>();
+        auto writeOption{request.Pop<u32>()};
         request.Skip<u32>();
-        auto offset = request.Pop<i64>();
-        auto size = request.Pop<i64>();
+        auto offset{request.Pop<i64>()};
+        auto size{request.Pop<i64>()};
 
         if (offset < 0) {
             state.logger->Warn("Trying to write to a file with a negative offset");

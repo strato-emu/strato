@@ -40,7 +40,7 @@ namespace skyline::service {
     ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)) {}
 
     std::shared_ptr<BaseService> ServiceManager::CreateService(ServiceName name) {
-        auto serviceIter = serviceMap.find(name);
+        auto serviceIter{serviceMap.find(name)};
         if (serviceIter != serviceMap.end())
             return (*serviceIter).second;
 
@@ -86,7 +86,7 @@ namespace skyline::service {
 
     std::shared_ptr<BaseService> ServiceManager::NewService(ServiceName name, type::KSession &session, ipc::IpcResponse &response) {
         std::lock_guard serviceGuard(mutex);
-        auto serviceObject = CreateService(name);
+        auto serviceObject{CreateService(name)};
         KHandle handle{};
         if (session.isDomain) {
             session.domainTable[++session.handleIndex] = serviceObject;
@@ -118,7 +118,7 @@ namespace skyline::service {
 
     void ServiceManager::CloseSession(KHandle handle) {
         std::lock_guard serviceGuard(mutex);
-        auto session = state.process->GetHandle<type::KSession>(handle);
+        auto session{state.process->GetHandle<type::KSession>(handle)};
         if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
             if (session->isDomain) {
                 for (const auto &domainEntry : session->domainTable)
@@ -135,7 +135,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::SyncRequestHandler(KHandle handle) {
-        auto session = state.process->GetHandle<type::KSession>(handle);
+        auto session{state.process->GetHandle<type::KSession>(handle)};
         state.logger->Debug("----Start----");
         state.logger->Debug("Handle is 0x{:X}", handle);
 
@@ -148,7 +148,7 @@ namespace skyline::service {
                 case ipc::CommandType::RequestWithContext:
                     if (session->isDomain) {
                         try {
-                            auto service = session->domainTable.at(request.domain->objectId);
+                            auto service{session->domainTable.at(request.domain->objectId)};
                             switch (static_cast<ipc::DomainCommand>(request.domain->command)) {
                                 case ipc::DomainCommand::SendMessage:
                                     response.errorCode = service->HandleRequest(*session, request, response);

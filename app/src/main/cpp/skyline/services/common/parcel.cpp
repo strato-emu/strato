@@ -10,7 +10,7 @@ namespace skyline::service {
         if (buffer.size() < (sizeof(ParcelHeader) + header.dataSize + header.objectsSize))
             throw exception("The size of the parcel according to the header exceeds the specified size");
 
-        constexpr auto tokenLength = 0x50; // The length of the token on BufferQueue parcels
+        constexpr u8 tokenLength{0x50}; // The length of the token on BufferQueue parcels
 
         data.resize(header.dataSize - (hasToken ? tokenLength : 0));
         memcpy(data.data(), buffer.data() + header.dataOffset + (hasToken ? tokenLength : 0), header.dataSize - (hasToken ? tokenLength : 0));
@@ -28,7 +28,7 @@ namespace skyline::service {
         header.objectsSize = static_cast<u32>(objects.size());
         header.objectsOffset = sizeof(ParcelHeader) + data.size();
 
-        auto totalSize = sizeof(ParcelHeader) + header.dataSize + header.objectsSize;
+        auto totalSize{sizeof(ParcelHeader) + header.dataSize + header.objectsSize};
 
         if (buffer.size() < totalSize)
             throw exception("The size of the parcel exceeds maxSize");

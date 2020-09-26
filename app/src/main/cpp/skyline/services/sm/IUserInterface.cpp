@@ -11,7 +11,7 @@ namespace skyline::service::sm {
     }
 
     Result IUserInterface::GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto name = request.Pop<ServiceName>();
+        auto name{request.Pop<ServiceName>()};
 
         if (!name)
             return result::InvalidServiceName;
