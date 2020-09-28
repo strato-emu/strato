@@ -7,9 +7,10 @@
 
 namespace skyline::audio {
     /**
-     * @brief This class is used to abstract an array into a circular buffer
+     * @brief An abstraction of an array into a circular buffer
      * @tparam Type The type of elements stored in the buffer
      * @tparam Size The maximum size of the circular buffer
+     * @url https://en.wikipedia.org/wiki/Circular_buffer
      */
     template<typename Type, size_t Size>
     class CircularBuffer {
@@ -17,24 +18,25 @@ namespace skyline::audio {
         std::array<Type, Size> array{}; //!< The internal array holding the circular buffer
         Type *start{array.begin()}; //!< The start/oldest element of the internal array
         Type *end{array.begin()}; //!< The end/newest element of the internal array
-        bool empty{true}; //!< This boolean is used to differentiate between the buffer being full or empty
-        Mutex mtx; //!< The mutex ensures that the buffer operations don't overlap
+        bool empty{true}; //!< If the buffer is full or empty, as start == end can mean either
+        Mutex mtx; //!< Synchronizes buffer operations so they don't overlap
 
       public:
         /**
-         * @brief This reads data from this buffer into the specified buffer
+         * @brief Reads data from this buffer into the specified buffer
          * @param address The address to write buffer data into
          * @param maxSize The maximum amount of data to write in units of Type
          * @param copyFunction If this is specified, then this is called rather than memcpy
          * @return The amount of data written into the input buffer in units of Type
          */
-        inline size_t Read(Type *address, ssize_t maxSize, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
+        inline size_t Read(span<Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
             std::lock_guard guard(mtx);
 
             if (empty)
                 return 0;
 
-            ssize_t size{}, sizeBegin{}, sizeEnd{};
+            Type* pointer{buffer.data()};
+            ssize_t maxSize{static_cast<ssize_t>(buffer.size())}, size{}, sizeBegin{}, sizeEnd{};
 
             if (start < end) {
                 sizeEnd = std::min(end - start, maxSize);
@@ -50,30 +52,30 @@ namespace skyline::audio {
             if (copyFunction && copyOffset) {
                 auto sourceEnd{start + ((copyOffset != -1) ? copyOffset : sizeEnd)};
 
-                for (auto source{start}, destination{address}; source < sourceEnd; source++, destination++)
+                for (auto source{start}, destination{pointer}; source < sourceEnd; source++, destination++)
                     copyFunction(source, destination);
 
                 if (copyOffset != -1) {
-                    std::memcpy(address + copyOffset, start + copyOffset, (sizeEnd - copyOffset) * sizeof(Type));
+                    std::memcpy(pointer + copyOffset, start + copyOffset, (sizeEnd - copyOffset) * sizeof(Type));
                     copyOffset -= sizeEnd;
                 }
             } else {
-                std::memcpy(address, start, sizeEnd * sizeof(Type));
+                std::memcpy(pointer, start, sizeEnd * sizeof(Type));
             }
 
-            address += sizeEnd;
+            pointer += sizeEnd;
 
             if (sizeBegin) {
                 if (copyFunction && copyOffset) {
                     auto sourceEnd{array.begin() + ((copyOffset != -1) ? copyOffset : sizeBegin)};
 
-                    for (auto source{array.begin()}, destination{address}; source < sourceEnd; source++, destination++)
+                    for (auto source{array.begin()}, destination{pointer}; source < sourceEnd; source++, destination++)
                         copyFunction(source, destination);
 
                     if (copyOffset != -1)
-                        std::memcpy(array.begin() + copyOffset, address + copyOffset, (sizeBegin - copyOffset) * sizeof(Type));
+                        std::memcpy(array.begin() + copyOffset, pointer + copyOffset, (sizeBegin - copyOffset) * sizeof(Type));
                 } else {
-                    std::memcpy(address, array.begin(), sizeBegin * sizeof(Type));
+                    std::memcpy(pointer, array.begin(), sizeBegin * sizeof(Type));
                 }
 
                 start = array.begin() + sizeBegin;
@@ -88,19 +90,19 @@ namespace skyline::audio {
         }
 
         /**
-         * @brief This appends data from the specified buffer into this buffer
-         * @param address The address of the buffer
-         * @param size The size of the buffer in units of Type
+         * @brief Appends data from the specified buffer into this buffer
          */
-        inline void Append(Type *address, ssize_t size) {
+        inline void Append(span<Type> buffer) {
             std::lock_guard guard(mtx);
 
+            Type* pointer{buffer.data()};
+            ssize_t size{static_cast<ssize_t>(buffer.size())};
             while (size) {
                 if (start <= end && end != array.end()) {
                     auto sizeEnd{std::min(array.end() - end, size)};
-                    std::memcpy(end, address, sizeEnd * sizeof(Type));
+                    std::memcpy(end, pointer, sizeEnd * sizeof(Type));
 
-                    address += sizeEnd;
+                    pointer += sizeEnd;
                     size -= sizeEnd;
 
                     end += sizeEnd;
@@ -109,18 +111,18 @@ namespace skyline::audio {
                     auto sizePostStart{std::min(array.end() - start, size - sizePreStart)};
 
                     if (sizePreStart)
-                        std::memcpy((end == array.end()) ? array.begin() : end, address, sizePreStart * sizeof(Type));
+                        std::memcpy((end == array.end()) ? array.begin() : end, pointer, sizePreStart * sizeof(Type));
 
                     if (end == array.end())
                         end = array.begin() + sizePreStart;
                     else
                         end += sizePreStart;
 
-                    address += sizePreStart;
+                    pointer += sizePreStart;
                     size -= sizePreStart;
 
                     if (sizePostStart)
-                        std::memcpy(end, address, sizePostStart * sizeof(Type));
+                        std::memcpy(end, pointer, sizePostStart * sizeof(Type));
 
                     if (start == array.end())
                         start = array.begin() + sizePostStart;
@@ -132,20 +134,12 @@ namespace skyline::audio {
                     else
                         end += sizePostStart;
 
-                    address += sizePostStart;
+                    pointer += sizePostStart;
                     size -= sizePostStart;
                 }
 
                 empty = false;
             }
-        }
-
-        /**
-         * @brief This appends data from a span to the buffer
-         * @param data A span containing the data to be appended
-         */
-        inline void Append(span<Type> data) {
-            Append(data.data(), data.size());
         }
     };
 }

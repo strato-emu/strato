@@ -8,14 +8,16 @@
 
 namespace skyline::service::visrv {
     /**
-     * @brief This service is used to get an handle to #IApplicationDisplayService (https://switchbrew.org/wiki/Display_services#vi:m)
+     * @brief This service is used to get an handle to #IApplicationDisplayService
+     * @url https://switchbrew.org/wiki/Display_services#vi:m
      */
     class IManagerRootService : public BaseService {
       public:
         IManagerRootService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns an handle to #IApplicationDisplayService (https://switchbrew.org/wiki/Display_services#GetDisplayService)
+         * @brief Returns an handle to #IApplicationDisplayService
+         * @url https://switchbrew.org/wiki/Display_services#GetDisplayService
          */
         Result GetDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

@@ -19,17 +19,20 @@ namespace skyline::service::hosbinder {
         IHOSBinderDriver(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This emulates the transaction of parcels between a IGraphicBufferProducer and the application (https://switchbrew.org/wiki/Nvnflinger_services#TransactParcel)
+         * @brief Emulates the transaction of parcels between a IGraphicBufferProducer and the application
+         * @url https://switchbrew.org/wiki/Nvnflinger_services#TransactParcel
          */
         Result TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#AdjustRefcount)
+         * @brief Adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols
+         * @url https://switchbrew.org/wiki/Nvnflinger_services#AdjustRefcount
          */
         Result AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols (https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle)
+         * @brief Adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols
+         * @url https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle
          */
         Result GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

@@ -7,7 +7,8 @@
 
 namespace skyline::service::ssl {
     /**
-     * @brief ISslContext is used to manage SSL certificates (https://switchbrew.org/wiki/SSL_services#ISslContext)
+     * @brief ISslContext is used to manage SSL certificates
+     * @url https://switchbrew.org/wiki/SSL_services#ISslContext
      */
     class ISslContext : public BaseService {
       public:

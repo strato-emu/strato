@@ -7,7 +7,8 @@
 
 namespace skyline::service::audio {
     /**
-     * @brief IAudioRendererManager or audren:u is used to manage audio renderer outputs (https://switchbrew.org/wiki/Audio_services#audren:u)
+     * @brief IAudioRendererManager or audren:u is used to manage audio renderer outputs
+     * @url https://switchbrew.org/wiki/Audio_services#audren:u
      */
     class IAudioRendererManager : public BaseService {
       public:
@@ -24,7 +25,8 @@ namespace skyline::service::audio {
         Result GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns a handle to an instance of an IAudioDevice (https://switchbrew.org/wiki/Audio_services#GetAudioDeviceService)
+         * @brief Returns a handle to an instance of an IAudioDevice
+         * @url https://switchbrew.org/wiki/Audio_services#GetAudioDeviceService
          */
         Result GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

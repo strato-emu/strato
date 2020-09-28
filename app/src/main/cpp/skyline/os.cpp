@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "nce.h"
+#include "nce/guest.h"
+#include "kernel/memory.h"
+#include "kernel/types/KProcess.h"
 #include "vfs/os_backing.h"
 #include "loader/nro.h"
 #include "loader/nso.h"
 #include "loader/nca.h"
 #include "loader/nsp.h"
-#include "nce.h"
-#include "nce/guest.h"
 #include "os.h"
 
 namespace skyline::kernel {

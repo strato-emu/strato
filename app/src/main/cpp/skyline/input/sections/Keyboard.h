@@ -6,9 +6,6 @@
 #include "common.h"
 
 namespace skyline::input {
-    /**
-     * @brief This enumerates all the modifier keys that can be used
-     */
     union ModifierKey {
         u64 raw;
         struct {
@@ -27,7 +24,7 @@ namespace skyline::input {
     };
 
     /**
-     * @brief The structure of an entry for Keyboard (https://switchbrew.org/wiki/HID_Shared_Memory#KeyboardState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#KeyboardState
      */
     struct KeyboardState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -39,7 +36,7 @@ namespace skyline::input {
     static_assert(sizeof(KeyboardState) == 0x38);
 
     /**
-     * @brief The structure of the Keyboard section (https://switchbrew.org/wiki/HID_Shared_Memory#Keyboard)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#Keyboard
      */
     struct KeyboardSection {
         CommonHeader header;

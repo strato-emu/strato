@@ -13,13 +13,10 @@ namespace skyline::service::nvdrv {
      */
     class NvHostSyncpoint {
       private:
-        /**
-        * @brief This holds information about a single syncpoint
-        */
         struct SyncpointInfo {
-            std::atomic<u32> counterMin;
-            std::atomic<u32> counterMax;
-            bool clientManaged;
+            std::atomic<u32> counterMin; //!< The least value the syncpoint can be (The value it was when it was last synchronized with the GPU for host managed syncpoints)
+            std::atomic<u32> counterMax; //!< The maximum value the syncpoint can reach according to the current usage
+            bool clientManaged;          //!< If the syncpoint is managed by the client (CPU) or host (GPU), it determines if the value is absolute or not
             bool reserved;
         };
 

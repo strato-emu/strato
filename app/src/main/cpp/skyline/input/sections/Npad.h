@@ -7,9 +7,6 @@
 
 namespace skyline::input {
     // @fmt:off
-    /**
-    * @brief This enumerates all of the types of an NPad controller
-    */
     enum class NpadControllerType : u32 {
         None          = 0,
         ProController = 0b1,
@@ -20,26 +17,17 @@ namespace skyline::input {
     };
     // @fmt:on
 
-    /**
-    * @brief This enumerates all the possible assignments of the Joy-Con(s)
-    */
     enum class NpadJoyAssignment : u32 {
         Dual = 0, //!< Dual Joy-Cons (A pair of Joy-Cons are combined into a single player, if possible)
         Single = 1, //!< Single Joy-Con (A single Joy-Con translates into a single player)
     };
 
-    /**
-    * @brief This enumerates the status codes for reading NPad colors
-    */
     enum class NpadColorReadStatus : u32 {
         Success = 0, //!< The color was read successfully
         Invalid = 1, //!< The color read in wasn't valid
-        Disconnected = 2 //!< The controller isn't connected
+        Disconnected = 2, //!< The controller isn't connected
     };
 
-    /**
-    * @brief This structure stores the color of a controller
-    */
     struct NpadColor {
         u32 bodyColor; //!< The color of the controller's body (This isn't always accurate and sometimes has magic values, especially with the Pro Controller)
         u32 buttonColor; //!< The color of the controller's buttons (Same as above)
@@ -47,8 +35,8 @@ namespace skyline::input {
     static_assert(sizeof(NpadColor) == 0x8);
 
     /**
-    * @brief The structure of the NPad headers (https://switchbrew.org/wiki/HID_Shared_Memory#NpadStateHeader)
-    */
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadStateHeader
+     */
     struct NpadHeader {
         NpadControllerType type;
         NpadJoyAssignment assignment;
@@ -63,7 +51,7 @@ namespace skyline::input {
     static_assert(sizeof(NpadHeader) == 0x28);
 
     /**
-     * @brief This is a bit-field of all the buttons on an NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadButton)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadButton
      */
     union NpadButton {
         u64 raw;
@@ -100,9 +88,6 @@ namespace skyline::input {
     };
     static_assert(sizeof(NpadButton) == 0x8);
 
-    /**
-    * @brief This structure holds data about the state of the connection with the controller
-    */
     union NpadConnectionState {
         u64 raw;
         struct {
@@ -117,8 +102,8 @@ namespace skyline::input {
     static_assert(sizeof(NpadConnectionState) == 0x8);
 
     /**
-    * @brief This structure contains data about the controller's current state (https://switchbrew.org/wiki/HID_Shared_Memory#NpadHandheldState)
-    */
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadHandheldState
+     */
     struct NpadControllerState {
         u64 globalTimestamp; //!< The global timestamp in samples
         u64 localTimestamp; //!< The local timestamp in samples
@@ -135,9 +120,6 @@ namespace skyline::input {
     };
     static_assert(sizeof(NpadControllerState) == 0x30);
 
-    /**
-    * @brief This structure contains the header and entries for the controller input
-    */
     struct NpadControllerInfo {
         CommonHeader header;
         std::array<NpadControllerState, constant::HidEntryCount> state;
@@ -145,7 +127,7 @@ namespace skyline::input {
     static_assert(sizeof(NpadControllerInfo) == 0x350);
 
     /**
-     * @brief This structure is used to hold a single sample of 3D data from the IMU
+     * @brief A single sample of 3D data from the IMU
      */
     struct SixAxisVector {
         float x; //!< The data in the X-axis
@@ -155,8 +137,8 @@ namespace skyline::input {
     static_assert(sizeof(SixAxisVector) == 0xC);
 
     /**
-    * @brief This structure contains data about the state of the controller's IMU (Six-Axis) (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSixAxisSensorHandheldState)
-    */
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadSixAxisSensorHandheldState
+     */
     struct NpadSixAxisState {
         u64 globalTimestamp; //!< The global timestamp in samples
         u64 _unk0_;
@@ -167,13 +149,10 @@ namespace skyline::input {
         SixAxisVector rotation;
         std::array<SixAxisVector, 3> orientation; //!< The orientation basis data as a matrix
 
-        u64 _unk2_; //!< This is always 1
+        u64 _unk2_; //!< Always 1
     };
     static_assert(sizeof(NpadSixAxisState) == 0x68);
 
-    /**
-    * @brief This structure contains header and entries for the IMU (Six-Axis) data
-    */
     struct NpadSixAxisInfo {
         CommonHeader header;
         std::array<NpadSixAxisState, constant::HidEntryCount> state;
@@ -181,8 +160,8 @@ namespace skyline::input {
     static_assert(sizeof(NpadSixAxisInfo) == 0x708);
 
     /**
-    * @brief This is a bit-field of all the device types (https://switchbrew.org/wiki/HID_services#DeviceType)
-    */
+     * @url https://switchbrew.org/wiki/HID_services#DeviceType
+     */
     union NpadDeviceType {
         u32 raw;
         struct {
@@ -209,8 +188,8 @@ namespace skyline::input {
     static_assert(sizeof(NpadDeviceType) == 0x4);
 
     /**
-    * @brief This structure holds the system properties of this NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemProperties)
-    */
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemProperties
+     */
     union NpadSystemProperties {
         u64 raw;
         struct {
@@ -233,7 +212,8 @@ namespace skyline::input {
     static_assert(sizeof(NpadSystemProperties) == 0x8);
 
     /**
-    * @brief This structure holds properties regarding the System Buttons (Home, Sleep and Capture) on an NPad (https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemButtonProperties)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemButtonProperties
+     * @note System Buttons = Home + Capture
     */
     union NpadSystemButtonProperties {
         u32 raw;
@@ -243,9 +223,6 @@ namespace skyline::input {
     };
     static_assert(sizeof(NpadSystemButtonProperties) == 0x4);
 
-    /**
-     * @brief This enumerates all the possible values for the NPad's battery level
-     */
     enum class NpadBatteryLevel : u32 {
         Empty = 0,
         Low = 1,
@@ -255,8 +232,8 @@ namespace skyline::input {
     };
 
     /**
-    * @brief The structure of the Npad section (https://switchbrew.org/wiki/HID_Shared_Memory#NpadState)
-    */
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadState
+     */
     struct NpadSection {
         NpadHeader header;
 

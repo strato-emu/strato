@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of an entry for BasicXpad (https://switchbrew.org/wiki/HID_Shared_Memory#BasicXpadState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#BasicXpadState
      */
     struct BasicXpadState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -16,7 +16,7 @@ namespace skyline::input {
     static_assert(sizeof(BasicXpadState) == 0x28);
 
     /**
-     * @brief The structure of the BasicXpad section (https://switchbrew.org/wiki/HID_Shared_Memory#BasicXpad)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#BasicXpad
      */
     struct BasicXpadSection {
         CommonHeader header;

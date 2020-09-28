@@ -18,7 +18,6 @@ namespace skyline::kernel::type {
         size_t size{}; //!< The size of the allocated memory
 
         /**
-         * @param state The state of the device
          * @param address The address to map to (If NULL then an arbitrary address is picked)
          * @param size The size of the allocation
          * @param permission The permissions for the allocated memory

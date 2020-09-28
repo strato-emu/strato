@@ -11,7 +11,8 @@ namespace skyline::gpu {
 
 namespace skyline::service::hosbinder {
     /**
-     * @brief This internal struct contains all data about the graphics buffer (https://github.com/reswitched/libtransistor/blob/0f0c36227842c344d163922fc98ee76229e9f0ee/lib/display/graphic_buffer_queue.c#L66)
+     * @brief A descriptor for the surfaceflinger graphics buffer
+     * @url https://github.com/reswitched/libtransistor/blob/0f0c36227842c344d163922fc98ee76229e9f0ee/lib/display/graphic_buffer_queue.c#L66
      */
     struct GbpBuffer {
         u32 magic; //!< The magic of the graphics buffer: 0x47424652
@@ -28,7 +29,7 @@ namespace skyline::service::hosbinder {
         u32 size; //!< The size of the buffer
         u32 _pad3_[8];
         u32 nvmapHandle; //!< The handle of the buffer in regards to /dev/nvmap
-        u32 offset; //!< This is the offset of the pixel data in the GPU Buffer
+        u32 offset; //!< The offset of the pixel data in the GPU Buffer
         u32 _pad4_;
         u32 blockHeightLog2; //!< The log2 of the block height
         u32 _pad5_[58];
@@ -53,7 +54,8 @@ namespace skyline::service::hosbinder {
     };
 
     /**
-     * @brief An enumeration of all the possible display IDs (https://switchbrew.org/wiki/Display_services#DisplayName)
+     * @brief An enumeration of all the possible display IDs
+     * @url https://switchbrew.org/wiki/Display_services#DisplayName
      */
     enum class DisplayId : u64 {
         Default, //!< Refers to the default display used by most applications
@@ -70,7 +72,8 @@ namespace skyline::service::hosbinder {
     };
 
     /**
-     * @brief IGraphicBufferProducer is responsible for presenting buffers to the display as well as compositing and frame pacing (https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp)
+     * @brief IGraphicBufferProducer is responsible for presenting buffers to the display as well as compositing and frame pacing
+     * @url https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp
      */
     class GraphicBufferProducer {
       private:
@@ -109,10 +112,10 @@ namespace skyline::service::hosbinder {
 
       public:
         DisplayId displayId{DisplayId::Null}; //!< The ID of this display
-        LayerStatus layerStatus{LayerStatus::Uninitialized}; //!< This is the status of the single layer the display has
+        LayerStatus layerStatus{LayerStatus::Uninitialized}; //!< The status of the single layer the display has
 
         /**
-         * @brief This enumerates the functions called by TransactParcel for android.gui.IGraphicBufferProducer
+         * @brief The functions called by TransactParcel for android.gui.IGraphicBufferProducer
          * @refitem https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#35
          */
         enum class TransactionCode : u32 {
@@ -135,19 +138,20 @@ namespace skyline::service::hosbinder {
         GraphicBufferProducer(const DeviceState &state);
 
         /**
-         * @brief The handler for Binder IPC transactions with IGraphicBufferProducer (https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#277)
+         * @brief The handler for Binder IPC transactions with IGraphicBufferProducer
+         * @url https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#277
          */
         void OnTransact(TransactionCode code, Parcel &in, Parcel &out);
 
         /**
-         * @brief This sets displayId to a specific display type
+         * @brief Sets displayId to a specific display type
          * @param name The name of the display
          * @note displayId has to be DisplayId::Null or this will throw an exception
          */
         void SetDisplay(const std::string &name);
 
         /**
-         * @brief This closes the display by setting displayId to DisplayId::Null
+         * @brief Closes the display by setting displayId to DisplayId::Null
          */
         void CloseDisplay();
     };

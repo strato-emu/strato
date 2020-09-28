@@ -8,14 +8,16 @@
 
 namespace skyline::service::hid {
     /**
-     * @brief IHidServer or hid service is used to access input devices (https://switchbrew.org/wiki/HID_services#hid)
+     * @brief IHidServer or hid service is used to access input devices
+     * @url https://switchbrew.org/wiki/HID_services#hid
      */
     class IHidServer : public BaseService {
       public:
         IHidServer(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns an IAppletResource (https://switchbrew.org/wiki/HID_services#CreateAppletResource)
+         * @brief Returns an IAppletResource
+         * @url https://switchbrew.org/wiki/HID_services#CreateAppletResource
          */
         Result CreateAppletResource(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
@@ -25,82 +27,96 @@ namespace skyline::service::hid {
         Result ActivateDebugPad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This activates the touch screen (if it's disabled, it is enabled by default)
+         * @brief Activates the touch screen (if it's disabled, it is enabled by default)
          */
         Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This sets the style of controllers supported (https://switchbrew.org/wiki/HID_services#SetSupportedNpadStyleSet)
+         * @brief Sets the style of controllers supported
+         * @url https://switchbrew.org/wiki/HID_services#SetSupportedNpadStyleSet
          */
         Result SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This gets the style of controllers supported (https://switchbrew.org/wiki/HID_services#GetSupportedNpadStyleSet)
+         * @brief Returns the style of controllers supported
+         * @url https://switchbrew.org/wiki/HID_services#GetSupportedNpadStyleSet
          */
         Result GetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This sets the NpadIds which are supported (https://switchbrew.org/wiki/HID_services#SetSupportedNpadIdType)
+         * @brief Sets the NpadIds which are supported
+         * @url https://switchbrew.org/wiki/HID_services#SetSupportedNpadIdType
          */
         Result SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests the activation of controllers (https://switchbrew.org/wiki/HID_services#ActivateNpad)
+         * @brief Activates the Npads in HID Shared Memory
+         * @url https://switchbrew.org/wiki/HID_services#ActivateNpad
          */
         Result ActivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests the deactivation of controllers (https://switchbrew.org/wiki/HID_services#DeactivateNpad)
+         * @brief Deactivates the Npads in HID Shared Memory
+         * @url https://switchbrew.org/wiki/HID_services#DeactivateNpad
          */
         Result DeactivateNpad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests an event that's signalled on a specific NpadId changing (https://switchbrew.org/wiki/HID_services#AcquireNpadStyleSetUpdateEventHandle)
+         * @brief Requests an event that's signalled on a specific NpadId changing
+         * @url https://switchbrew.org/wiki/HID_services#AcquireNpadStyleSetUpdateEventHandle
          */
         Result AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests the LED pattern which represents a particular Player
+         * @brief Requests the LED pattern which represents a particular Player
          */
         Result GetPlayerLedPattern(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This requests the activation of controllers with a specific HID revision (https://switchbrew.org/wiki/HID_services#ActivateNpadWithRevision)
+         * @brief Activates the Npads in HID Shared Memory with a specific HID revision
+         * @url https://switchbrew.org/wiki/HID_services#ActivateNpadWithRevision
          */
         Result ActivateNpadWithRevision(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Sets the Joy-Con hold mode (https://switchbrew.org/wiki/HID_services#SetNpadJoyHoldType)
+         * @brief Sets the Joy-Con hold mode
+         * @url https://switchbrew.org/wiki/HID_services#SetNpadJoyHoldType
          */
         Result SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Sets the Joy-Con hold mode (https://switchbrew.org/wiki/HID_services#GetNpadJoyHoldType)
+         * @brief Sets the Joy-Con hold mode
+         * @url https://switchbrew.org/wiki/HID_services#GetNpadJoyHoldType
          */
         Result GetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Sets the Joy-Con assignment mode to Single by default (https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeSingleByDefault)
+         * @brief Sets the Joy-Con assignment mode to Single by default
+         * @url https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeSingleByDefault
          */
         Result SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Sets the Joy-Con assignment mode to Single (https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeSingle)
+         * @brief Sets the Joy-Con assignment mode to Single
+         * @url https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeSingle
          */
         Result SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Sets the Joy-Con assignment mode to Dual (https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeDual)
+         * @brief Sets the Joy-Con assignment mode to Dual
+         * @url https://switchbrew.org/wiki/HID_services#SetNpadJoyAssignmentModeDual
          */
         Result SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Returns an instance of #IActiveVibrationDeviceList (https://switchbrew.org/wiki/HID_services#CreateActiveVibrationDeviceList)
+         * @brief Returns an instance of #IActiveVibrationDeviceList
+         * @url https://switchbrew.org/wiki/HID_services#CreateActiveVibrationDeviceList
          */
         Result CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Send vibration values to an NPad (https://switchbrew.org/wiki/HID_services#SendVibrationValues)
+         * @brief Send vibration values to an NPad
+         * @url https://switchbrew.org/wiki/HID_services#SendVibrationValues
          */
         Result SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

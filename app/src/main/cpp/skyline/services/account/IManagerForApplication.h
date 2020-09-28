@@ -7,7 +7,8 @@
 
 namespace skyline::service::account {
     /**
-    * @brief IManagerForApplication provides functions for reading Nintendo Online user information (https://switchbrew.org/wiki/Account_services#IManagerForApplication)
+    * @brief IManagerForApplication provides functions for reading Nintendo Online user information
+    * @url https://switchbrew.org/wiki/Account_services#IManagerForApplication
     */
     class IManagerForApplication : public BaseService {
       public:

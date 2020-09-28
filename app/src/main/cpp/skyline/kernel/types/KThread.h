@@ -17,7 +17,7 @@ namespace skyline::kernel::type {
         u64 entryArg; //!< An argument to pass to the process on entry
 
         /**
-         * @brief This holds a range of priorities for a corresponding system
+         * @brief A range of priorities for a corresponding system
          */
         struct Priority {
             i8 low; //!< The low range of priority
@@ -28,7 +28,7 @@ namespace skyline::kernel::type {
              * @param value The priority value to rescale
              * @return The rescaled priority value according to this range
              */
-            constexpr inline i8 Rescale(const Priority &priority, i8 value) {
+            constexpr i8 Rescale(const Priority &priority, i8 value) {
                 return static_cast<i8>(priority.low + ((static_cast<float>(priority.high - priority.low) / static_cast<float>(priority.low - priority.high)) * (static_cast<float>(value) - priority.low)));
             }
 
@@ -36,7 +36,7 @@ namespace skyline::kernel::type {
              * @param value The priority value to check for validity
              * @return If the supplied priority value is valid
              */
-            constexpr inline bool Valid(i8 value) {
+            constexpr bool Valid(i8 value) {
                 return (value >= low) && (value <= high);
             }
         };
@@ -45,12 +45,12 @@ namespace skyline::kernel::type {
         enum class Status {
             Created, //!< The thread has been created but has not been started yet
             Running, //!< The thread is running currently
-            Dead //!< The thread is dead and not running
-        } status = Status::Created; //!< The state of the thread
+            Dead,    //!< The thread is dead and not running
+        } status = Status::Created;
         std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
         std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
         KHandle handle; // The handle of the object in the handle table
-        pid_t tid; //!< The TID of the current thread
+        pid_t tid; //!< The Linux Thread ID of the current thread
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
         u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
         i8 priority; //!< The priority of a thread in Nintendo format
@@ -59,7 +59,6 @@ namespace skyline::kernel::type {
         Priority switchPriority{0, 63}; //!< The range of priorities for the Nintendo Switch
 
         /**
-         * @param state The state of the device
          * @param handle The handle of the current thread
          * @param selfTid The TID of this thread
          * @param entryPoint The address to start execution at
@@ -78,12 +77,12 @@ namespace skyline::kernel::type {
         ~KThread();
 
         /**
-         * @brief This starts this thread process
+         * @brief Starts this thread process
          */
         void Start();
 
         /**
-         * @brief This kills the thread
+         * @brief Kills the thread process
          */
         void Kill();
 

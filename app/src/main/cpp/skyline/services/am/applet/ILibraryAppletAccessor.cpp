@@ -32,8 +32,8 @@ namespace skyline::service::am {
     }
 
     Result ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< This is the magic of the application launch parameters
-        constexpr size_t LaunchParameterSize{0x88}; //!< This is the size of the launch parameter IStorage
+        constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
+        constexpr size_t LaunchParameterSize{0x88}; //!< The size of the launch parameter IStorage
 
         auto storageService{std::make_shared<IStorage>(state, manager, LaunchParameterSize)};
 

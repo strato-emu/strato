@@ -17,7 +17,7 @@
 namespace skyline {
     namespace input {
         /**
-         * @brief This encapsulates HID Shared Memory (https://switchbrew.org/wiki/HID_Shared_Memory)
+         * @url https://switchbrew.org/wiki/HID_Shared_Memory
          */
         struct HidSharedMemory {
             DebugPadSection debugPad; //!< The DebugPad section (https://switchbrew.org/wiki/HID_Shared_Memory#DebugPad)

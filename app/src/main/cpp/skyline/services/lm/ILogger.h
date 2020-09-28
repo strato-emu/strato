@@ -7,36 +7,31 @@
 
 namespace skyline::service::lm {
     /**
-     * @brief ILogger is used by applications to print messages to the system log (https://switchbrew.org/wiki/Log_services#ILogger)
+     * @brief ILogger is used by applications to print messages to the system log
+     * @url https://switchbrew.org/wiki/Log_services#ILogger
      */
     class ILogger : public BaseService {
       private:
-        /**
-         * @brief This enumerates the field types in a log message
-         */
         enum class LogFieldType : u8 {
-            Start = 0, //!< This is the first log message in the stream
-            Stop = 1, //!< This is the final log message in the stream
-            Message = 2, //!< This log field contains a general message
-            Line = 3, //!< This log field contains a line number
-            Filename = 4, //!< This log field contains a filename
-            Function = 5, //!< This log field contains a function name
-            Module = 6, //!< This log field contains a module name
-            Thread = 7, //!< This log field contains a thread name
-            DropCount = 8, //!< This log field contains the number of dropped messages
-            Time = 9, //!< This log field contains a timestamp
-            ProgramName = 10, //!< This log field contains the program's name
+            Start = 0, //!< The first log message in the stream
+            Stop = 1, //!< The final log message in the stream
+            Message = 2, //!< A log field with a general message
+            Line = 3, //!< A log field with a line number
+            Filename = 4, //!< A log field with a filename
+            Function = 5, //!< A log field with a function name
+            Module = 6, //!< A log field with a module name
+            Thread = 7, //!< A log field with a thread name
+            DropCount = 8, //!< A log field with the number of dropped messages
+            Time = 9, //!< A log field with a timestamp
+            ProgramName = 10, //!< A log field with the program's name
         };
 
-        /**
-          * @brief This enumerates the log levels for log messages
-          */
         enum class LogLevel : u8 {
-            Trace, //!< This is a trace log
-            Info, //!< This is an info log
-            Warning, //!< This is a warning log
-            Error, //!< This is an error log
-            Critical //!< This is a critical log
+            Trace,
+            Info,
+            Warning,
+            Error,
+            Critical,
         };
 
         /**
@@ -50,12 +45,14 @@ namespace skyline::service::lm {
         ILogger(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This prints a message to the log (https://switchbrew.org/wiki/Log_services#Log)
+         * @brief Prints a message to the log
+         * @url https://switchbrew.org/wiki/Log_services#Log
          */
         Result Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This sets the log destination (https://switchbrew.org/wiki/Log_services#SetDestination)
+         * @brief Sets the log destination
+         * @url https://switchbrew.org/wiki/Log_services#SetDestination
          */
         Result SetDestination(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

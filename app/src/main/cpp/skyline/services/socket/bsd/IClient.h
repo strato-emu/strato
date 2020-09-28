@@ -7,19 +7,21 @@
 
 namespace skyline::service::socket {
     /**
-     * @brief IClient or bsd:u is used by applications create network sockets (https://switchbrew.org/wiki/Sockets_services#bsd:u.2C_bsd:s)
+     * @brief IClient or bsd:u is used by applications create network sockets
+     * @url https://switchbrew.org/wiki/Sockets_services#bsd:u.2C_bsd:s
      */
     class IClient : public BaseService {
       public:
         IClient(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This initializes a socket client with the given parameters (https://switchbrew.org/wiki/Sockets_services#Initialize)
+         * @brief Initializes a socket client with the given parameters
+         * @url https://switchbrew.org/wiki/Sockets_services#Initialize
          */
         Result RegisterClient(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This starts the monitoring of the socket
+         * @brief Starts the monitoring of the socket
          */
         Result StartMonitoring(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

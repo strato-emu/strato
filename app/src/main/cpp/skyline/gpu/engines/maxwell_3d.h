@@ -16,16 +16,16 @@ namespace skyline {
 
     namespace gpu::engine {
         /**
-        * @brief The Maxwell 3D engine handles processing 3D graphics
-        */
+         * @brief The Maxwell 3D engine handles processing 3D graphics
+         */
         class Maxwell3D : public Engine {
           private:
-            std::array<size_t, 0x80> macroPositions{}; //!< This holds the positions of each individual macro in macro memory, there can be a maximum of 0x80 macros at any one time
+            std::array<size_t, 0x80> macroPositions{}; //!< The positions of each individual macro in macro memory, there can be a maximum of 0x80 macros at any one time
 
             struct {
                 u32 index;
                 std::vector<u32> arguments;
-            } macroInvocation{}; //!< This hold the index and arguments of the macro that is pending execution
+            } macroInvocation{}; //!< Data for a macro that is pending execution
 
             MacroInterpreter macroInterpreter;
 
@@ -35,9 +35,8 @@ namespace skyline {
 
           public:
             /**
-            * @brief This holds the Maxwell3D engine's register space
-            * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def#L478
-            */
+             * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def#L478
+             */
 #pragma pack(push, 1)
             union Registers {
                 std::array<u32, constant::Maxwell3DRegisterCounter> raw;
@@ -56,7 +55,7 @@ namespace skyline {
                     MethodTrack = 0,
                     MethodTrackWithFilter = 1,
                     MethodPassthrough = 2,
-                    MethodReplay = 3
+                    MethodReplay = 3,
                 };
 
                 struct ViewportTransform {
@@ -196,7 +195,7 @@ namespace skyline {
                         SubtractGL = 0x8007,
                         ReverseSubtractGL = 0x8008,
                         MinimumGL = 0x800A,
-                        MaximumGL = 0x800B
+                        MaximumGL = 0x800B,
                     };
 
                     enum class Factor : u32 {
@@ -293,7 +292,7 @@ namespace skyline {
                         Release = 0,
                         Acquire = 1,
                         Counter = 2,
-                        Trap = 3
+                        Trap = 3,
                     };
 
                     enum class ReductionOp : u8 {
@@ -348,7 +347,7 @@ namespace skyline {
                         TransformFeedbackOffset = 0x1A,
                         TessControlShaderInvocations = 0x1B,
                         TessEvaluationShaderInvocations = 0x1D,
-                        TessEvaluationShaderPrimitives = 0x1F
+                        TessEvaluationShaderPrimitives = 0x1F,
                     };
 
                     enum class StructureSize : u8 {
@@ -375,7 +374,7 @@ namespace skyline {
 
                 enum class CoordOrigin : u8 {
                     LowerLeft = 0,
-                    UpperLeft = 1
+                    UpperLeft = 1,
                 };
 
                 struct {
@@ -559,10 +558,10 @@ namespace skyline {
             static_assert(sizeof(Registers) == (constant::Maxwell3DRegisterCounter * sizeof(u32)));
 #pragma pack(pop)
 
-            Registers registers{}; //!< The Maxwell 3D register space
+            Registers registers{};
             Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
 
-            std::array<u32, 0x10000> macroCode{}; //!< This is used to store GPU macros, the 256kb size is from Ryujinx
+            std::array<u32, 0x10000> macroCode{}; //!< This stores GPU macros, the 256kb size is from Ryujinx
 
             Maxwell3D(const DeviceState &state);
 

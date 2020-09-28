@@ -7,7 +7,8 @@
 
 namespace skyline::service::nvdrv::device {
     /**
-     * @brief NvMap (/dev/nvmap) is used to map certain CPU memory as GPU memory (https://switchbrew.org/wiki/NV_services) (https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h)
+     * @brief NvMap (/dev/nvmap) is used to map certain CPU memory as GPU memory (https://switchbrew.org/wiki/NV_services)
+     * @url https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h
      */
     class NvMap : public NvDevice {
       public:
@@ -28,10 +29,6 @@ namespace skyline::service::nvdrv::device {
                 Allocated //!< The object has been allocated
             } status{Status::Created}; //!< This holds the status of the object
 
-            /**
-             * @param handle The ID of this object
-             * @param size The size of the object in bytes
-             */
             NvMapObject(u32 id, u32 size);
         };
 
@@ -42,32 +39,38 @@ namespace skyline::service::nvdrv::device {
         NvMap(const DeviceState &state);
 
         /**
-         * @brief This creates an NvMapObject and returns an handle to it (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_CREATE)
+         * @brief Creates an NvMapObject and returns an handle to it
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_CREATE
          */
         NvStatus Create(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This returns the handle of an NvMapObject from it's ID (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID)
+         * @brief Returns the handle of an NvMapObject from it's ID
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID
          */
         NvStatus FromId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This allocates memory for an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC)
+         * @brief Allocates memory for an NvMapObject
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC
          */
         NvStatus Alloc(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This frees previously allocated memory (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE)
+         * @brief Frees previously allocated memory
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE
          */
         NvStatus Free(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This returns a particular parameter from an NvMapObject (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_PARAM)
+         * @brief Returns a particular parameter from an NvMapObject
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_PARAM
          */
         NvStatus Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This returns the ID of an NvMapObject from it's handle (https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID)
+         * @brief Returns the ID of an NvMapObject from it's handle
+         * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID
          */
         NvStatus GetId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 

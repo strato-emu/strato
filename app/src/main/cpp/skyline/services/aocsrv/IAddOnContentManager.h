@@ -7,7 +7,8 @@
 
 namespace skyline::service::aocsrv {
     /**
-     * @brief IAddOnContentManager or aoc:u is used by applications to access add-on content information (https://switchbrew.org/wiki/NS_Services#aoc:u)
+     * @brief IAddOnContentManager or aoc:u is used by applications to access add-on content information
+     * @url https://switchbrew.org/wiki/NS_Services#aoc:u
      */
     class IAddOnContentManager : public BaseService {
       public:

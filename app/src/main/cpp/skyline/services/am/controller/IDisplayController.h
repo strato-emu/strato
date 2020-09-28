@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief This has functions used to capture the contents of a display (https://switchbrew.org/wiki/Applet_Manager_services#IDisplayController)
+     * @brief This is used to capture the contents of a display
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#IDisplayController
      */
     class IDisplayController : public BaseService {
       public:

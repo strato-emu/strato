@@ -19,19 +19,22 @@ namespace skyline::service::sm {
     }
 
     /**
-     * @brief IUserInterface or sm: is responsible for providing handles to services (https://switchbrew.org/wiki/Services_API)
+     * @brief IUserInterface or sm: is responsible for providing handles to services
+     * @url https://switchbrew.org/wiki/Services_API
      */
     class IUserInterface : public BaseService {
       public:
         IUserInterface(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This initializes the sm: service. (https://switchbrew.org/wiki/Services_API#Initialize)
+         * @brief Initializes the sm: service.
+         * @url https://switchbrew.org/wiki/Services_API#Initialize
          */
         Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns a handle to a service with it's name passed in as an argument (https://switchbrew.org/wiki/Services_API#GetService)
+         * @brief Returns a handle to a service with it's name passed in as an argument
+         * @url https://switchbrew.org/wiki/Services_API#GetService
          */
         Result GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

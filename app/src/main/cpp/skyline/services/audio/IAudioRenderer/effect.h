@@ -6,16 +6,13 @@
 #include <common.h>
 
 namespace skyline::service::audio::IAudioRenderer {
-    /**
-     * @brief This enumerates various states an effect can be in
-     */
     enum class EffectState : u8 {
         None = 0, //!< The effect isn't being used
         New = 1,
     };
 
     /**
-     * @brief This is in input containing information on what effects to use on an audio stream
+     * @brief Input containing information on what effects to use on an audio stream
      */
     struct EffectIn {
         u8 _unk0_;
@@ -25,7 +22,7 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(EffectIn) == 0xC0);
 
     /**
-     * @brief This is returned to inform the guest of the state of an effect
+     * @brief Returned to inform the guest of the state of an effect
      */
     struct EffectOut {
         EffectState state;
@@ -34,8 +31,8 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(EffectOut) == 0x10);
 
     /**
-    * @brief The Effect class stores the state of audio post processing effects
-    */
+     * @brief The Effect class stores the state of audio post processing effects
+     */
     class Effect {
       public:
         EffectOut output{};

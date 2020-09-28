@@ -13,24 +13,25 @@ namespace skyline::service {
 
     namespace settings {
         /**
-         * @brief ISettingsServer or 'set' provides access to user settings (https://switchbrew.org/wiki/Settings_services#set)
+         * @brief ISettingsServer or 'set' provides access to user settings
+         * @url https://switchbrew.org/wiki/Settings_services#set
          */
         class ISettingsServer : public BaseService {
           public:
             ISettingsServer(const DeviceState &state, ServiceManager &manager);
 
             /**
-             * @brief This reads the available language codes that an application can use (pre 4.0.0)
+             * @brief Reads the available language codes that an application can use (pre 4.0.0)
              */
             Result GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-             * @brief This converts a language code list index to it's corresponding language code
+             * @brief Converts a language code list index to it's corresponding language code
              */
             Result MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-             * @brief This reads the available language codes that an application can use (post 4.0.0)
+             * @brief Reads the available language codes that an application can use (post 4.0.0)
              */
             Result GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

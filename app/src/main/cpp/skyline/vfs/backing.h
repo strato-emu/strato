@@ -7,12 +7,12 @@
 
 namespace skyline::vfs {
     /**
-     * @brief The Backing class represents an abstract region of memory
+     * @brief The Backing class provides abstract access to a storage device, all access can be done without using a specific backing
      */
     class Backing {
       public:
         /**
-         * @brief This describes the modes that a backing is capable of
+         * @brief The capabilities of the Backing
          */
         union Mode {
             struct {
@@ -20,11 +20,10 @@ namespace skyline::vfs {
                 bool write : 1; //!< The backing is writable
                 bool append : 1; //!< The backing can be appended
             };
-            u32 raw; //!< The raw value of the mode
-        };
+            u32 raw;
+        } mode;
         static_assert(sizeof(Mode) == 0x4);
 
-        Mode mode; //!< The mode of the backing
         size_t size; //!< The size of the backing in bytes
 
         /**
@@ -51,7 +50,6 @@ namespace skyline::vfs {
 
         /**
          * @brief Read bytes from the backing at a particular offset to a buffer (template version)
-         * @tparam T The type of object to write to
          * @param output The object to write to
          * @param offset The offset to start reading from
          * @param size The amount to read in bytes

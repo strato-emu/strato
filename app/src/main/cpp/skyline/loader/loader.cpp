@@ -3,6 +3,7 @@
 
 #include <nce.h>
 #include <os.h>
+#include <kernel/types/KProcess.h>
 #include <kernel/memory.h>
 #include "loader.h"
 

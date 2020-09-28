@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of an entry for Gesture (https://switchbrew.org/wiki/HID_Shared_Memory#GestureState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#GestureState
      */
     struct GestureState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -16,7 +16,7 @@ namespace skyline::input {
     static_assert(sizeof(GestureState) == 0x68);
 
     /**
-     * @brief The structure of the Gesture section (https://switchbrew.org/wiki/HID_Shared_Memory#Gesture)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#Gesture
      */
     struct GestureSection {
         CommonHeader header;

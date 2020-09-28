@@ -7,7 +7,8 @@
 
 namespace skyline::input {
     /**
-     * @brief This structure holds information about a single touch point
+     * @brief A descriptor for a single point on the touch screen
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreenStateData
      */
     struct TouchScreenStateData {
         u64 timestamp; //!< The timestamp in samples
@@ -21,13 +22,13 @@ namespace skyline::input {
         u32 minorAxis; //!< The diameter of the touch cross-section on the minor-axis in pixels
         u32 majorAxis; //!< The diameter of the touch cross-section on the major-axis in pixels
 
-        i32 angle; //!< The angle of the touch in degrees (from -89 to 90 [-90 and 90 aren't distinguishable]. On the Switch, this has limited resolution with only 90, -67, -45, 0, 45, 67, 90 being values)
+        i32 angle; //!< The angle of the touch in degrees (from -89 to 90 [-90 and 90 aren't distinguishable], while on the Switch this has limited resolution with only 90, -67, -45, 0, 45, 67, 90 being values)
         u32 _pad1_;
     };
     static_assert(sizeof(TouchScreenStateData) == 0x28);
 
     /**
-     * @brief The structure of an entry for TouchScreen (https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreenState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreenState
      */
     struct TouchScreenState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -39,7 +40,7 @@ namespace skyline::input {
     static_assert(sizeof(TouchScreenState) == 0x298);
 
     /**
-     * @brief The structure of the TouchScreen section (https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreen)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreen
      */
     struct TouchScreenSection {
         CommonHeader header;

@@ -8,7 +8,8 @@
 
 namespace skyline::service::fssrv {
     /**
-     * @brief IFileSystem is used to interact with a filesystem (https://switchbrew.org/wiki/Filesystem_services#IFileSystem)
+     * @brief IFileSystem is used to interact with a filesystem
+     * @url https://switchbrew.org/wiki/Filesystem_services#IFileSystem
      */
     class IFileSystem : public BaseService {
       private:
@@ -18,22 +19,25 @@ namespace skyline::service::fssrv {
         IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This creates a file at the specified path in the filesystem
+         * @brief Creates a file at the specified path in the filesystem
          */
         Result CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This queries the DirectoryEntryType of the given path (https://switchbrew.org/wiki/Filesystem_services#GetEntryType)
+         * @brief Queries the DirectoryEntryType of the given path
+         * @url https://switchbrew.org/wiki/Filesystem_services#GetEntryType
          */
         Result GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns an IFile handle for the requested path (https://switchbrew.org/wiki/Filesystem_services#OpenFile)
+         * @brief Returns an IFile handle for the requested path
+         * @url https://switchbrew.org/wiki/Filesystem_services#OpenFile
          */
         Result OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This commits all changes to the filesystem (https://switchbrew.org/wiki/Filesystem_services#Commit)
+         * @brief Commits all changes to the filesystem
+         * @url https://switchbrew.org/wiki/Filesystem_services#Commit
          */
         Result Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

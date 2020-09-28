@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief This contains common various functions (https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions)
+     * @brief This contains common various functions
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions
      */
     class IAppletCommonFunctions : public BaseService {
       public:

@@ -11,7 +11,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The Input class manages translating host input to guest input
+     * @brief The Input class manages components responsible for translating host input to guest input
      */
     class Input {
       private:

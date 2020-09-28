@@ -15,9 +15,6 @@ namespace skyline::gpu {
      */
     class MacroInterpreter {
       private:
-        /**
-         * @brief This holds a single macro opcode
-         */
 #pragma pack(push, 1)
         union Opcode {
             u32 raw;
@@ -98,11 +95,10 @@ namespace skyline::gpu {
         static_assert(sizeof(Opcode) == sizeof(u32));
 
         /**
-         * @brief This holds information about the Maxwell 3D method to be called in 'Send'
+         * @brief Metadata about the Maxwell 3D method to be called in 'Send'
          */
         union MethodAddress {
             u32 raw;
-
             struct {
                 u16 address : 12;
                 u8 increment : 6;

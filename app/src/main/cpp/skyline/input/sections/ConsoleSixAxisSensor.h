@@ -7,7 +7,8 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of the ConsoleSixAxisSensor (SevenSixAxisSensor) section (https://switchbrew.org/wiki/HID_Shared_Memory#ConsoleSixAxisSensor)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#ConsoleSixAxisSensor
+     * @note Referred to as SevenSixAxisSensor in HID Services
      * @note This is seemingly used to calibrate the gyroscope bias values over time
      */
     struct ConsoleSixAxisSensorSection {

@@ -3,7 +3,7 @@
 
 #include <os.h>
 #include <kernel/types/KProcess.h>
-#include <gpu/gpfifo.h>
+#include <gpu.h>
 #include <services/nvdrv/driver.h>
 #include "nvhost_channel.h"
 

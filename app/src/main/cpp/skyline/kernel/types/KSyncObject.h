@@ -13,10 +13,6 @@ namespace skyline::kernel::type {
       public:
         std::atomic<bool> signalled{false}; //!< If the current object is signalled (Used as object stays signalled till the signal is consumed)
 
-        /**
-         * @param state The state of the device
-         * @param type The type of the object
-         */
         KSyncObject(const DeviceState &state, skyline::kernel::type::KType type) : KObject(state, type) {};
 
         /**

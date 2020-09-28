@@ -7,14 +7,16 @@
 
 namespace skyline::service::nifm {
     /**
-     * @brief IGeneralService is used by applications to control the network connection (https://switchbrew.org/wiki/Network_Interface_services#IGeneralService)
+     * @brief IGeneralService is used by applications to control the network connection
+     * @url https://switchbrew.org/wiki/Network_Interface_services#IGeneralService
      */
     class IGeneralService : public BaseService {
       public:
         IGeneralService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This creates an IRequest instance that can be used to bring up the network (https://switchbrew.org/wiki/Network_Interface_services#CreateRequest)
+         * @brief Creates an IRequest instance that can be used to bring up the network
+         * @url https://switchbrew.org/wiki/Network_Interface_services#CreateRequest
          */
         Result CreateRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

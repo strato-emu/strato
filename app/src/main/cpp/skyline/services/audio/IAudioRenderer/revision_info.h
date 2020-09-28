@@ -31,8 +31,8 @@ namespace skyline {
         }
 
         /**
-        * @brief The RevisionInfo class is used to query the supported features of various audren revisions
-        */
+         * @brief The RevisionInfo class is used to query the supported features of various audren revisions
+         */
         class RevisionInfo {
           private:
             u32 userRevision; //!< The current audren revision of the guest

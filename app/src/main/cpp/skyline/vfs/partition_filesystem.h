@@ -11,9 +11,6 @@ namespace skyline::vfs {
      */
     class PartitionFileSystem : public FileSystem {
       private:
-        /**
-         * @brief This holds the header of the filesystem
-         */
         struct FsHeader {
             u32 magic; //!< The filesystem magic: 'PFS0' or 'HFS0'
             u32 numFiles; //!< The number of files in the filesystem
@@ -22,9 +19,6 @@ namespace skyline::vfs {
         } header{};
         static_assert(sizeof(FsHeader) == 0x10);
 
-        /**
-         * @brief This holds a file entry in a partition filesystem
-         */
         struct PartitionFileEntry {
             u64 offset; //!< The offset of the file in the backing
             u64 size; //!< The size of the file
@@ -33,9 +27,6 @@ namespace skyline::vfs {
         };
         static_assert(sizeof(PartitionFileEntry) == 0x18);
 
-        /**
-         * @brief This holds a file entry in a hashed filesystem
-         */
         struct HashedFileEntry {
             PartitionFileEntry entry; //!< The base file entry
             u32 _pad_;

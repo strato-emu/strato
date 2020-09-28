@@ -11,35 +11,29 @@ namespace skyline::vfs {
      */
     class Directory {
       public:
-        /**
-         * @brief This enumerates the types of entry a directory can contain
-         */
         enum class EntryType : u32 {
-            Directory = 0x0, //!< The entry is a directory
-            File = 0x1, //!< The entry is a file
+            Directory = 0x0,
+            File = 0x1,
         };
 
-        /**
-         * @brief This hold information about a single directory entry
-         */
         struct Entry {
-            std::string name; //!< The name of the entry
-            EntryType type; //!< The type of the entry
+            std::string name;
+            EntryType type;
         };
 
         /**
-         * @brief This describes what will be returned when reading a directories contents
+         * @brief A descriptor for what will be returned when reading a directories contents
          */
         union ListMode {
             struct {
                 bool directory : 1; //!< The directory listing will contain subdirectories
                 bool file : 1; //!< The directory listing will contain files
             };
-            u32 raw; //!< The raw value of the listing mode
+            u32 raw;
         };
         static_assert(sizeof(ListMode) == 0x4);
 
-        ListMode listMode; //!< This describes what this directory will return when it is Read
+        ListMode listMode;
 
         Directory(ListMode listMode) : listMode(listMode) {}
 

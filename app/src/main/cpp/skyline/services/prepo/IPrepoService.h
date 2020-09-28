@@ -7,14 +7,15 @@
 
 namespace skyline::service::prepo {
     /**
-     * @brief IPrepoService or prepo:u is used by applications to store statistics (https://switchbrew.org/wiki/BCAT_services#prepo:a.2C_prepo:a2.2C_prepo:m.2C_prepo:u.2C_prepo:s)
+     * @brief IPrepoService or prepo:u is used by applications to store statistics
+     * @url https://switchbrew.org/wiki/BCAT_services#prepo:a.2C_prepo:a2.2C_prepo:m.2C_prepo:u.2C_prepo:s
      */
     class IPrepoService : public BaseService {
       public:
         IPrepoService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This saves a play report for the given user
+         * @brief Saves a play report for the given user
          */
         Result SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

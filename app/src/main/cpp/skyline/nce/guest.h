@@ -17,28 +17,28 @@ namespace skyline {
         #endif
 
         /**
-         * @brief This is the entry point for all guest threads
+         * @brief The entry point for all guest threads
          * @param address The address of the actual thread entry point
          */
         void GuestEntry(u64 address);
 
         /**
-         * @brief This saves the context from CPU registers into TLS
+         * @brief Saves the context from CPU registers into TLS
          */
         extern "C" void SaveCtx(void);
 
         /**
-         * @brief This loads the context from TLS into CPU registers
+         * @brief Loads the context from TLS into CPU registers
          */
         extern "C" void LoadCtx(void);
 
         /**
-         * @brief This rescales the clock to Tegra X1 levels and puts the output on stack
+         * @brief Rescales the clock to Tegra X1 levels and puts the output on stack
          */
         extern "C" __noreturn void RescaleClock(void);
 
         /**
-         * @brief This is used to handle all SVC calls
+         * @brief Handles all SVC calls
          * @param pc The address of PC when the call was being done
          * @param svc The SVC ID of the SVC being called
          */

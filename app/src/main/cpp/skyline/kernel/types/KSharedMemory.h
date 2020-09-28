@@ -12,26 +12,20 @@ namespace skyline::kernel::type {
     class KSharedMemory : public KMemory {
       private:
         int fd; //!< A file descriptor to the underlying shared memory
-        memory::MemoryState initialState; //!< This is to hold the initial state for the Map call
+        memory::MemoryState initialState; //!< The initial state is stored for the Map call
 
       public:
-        /**
-         * @brief This holds the address and size of a process's mapping
-         */
         struct MapInfo {
             u64 address;
             size_t size;
             memory::Permission permission;
 
-            /**
-             * @brief Returns if the object is valid
-             * @return If the MapInfo object is valid
-             */
-            inline bool Valid() { return address && size && permission.Get(); }
+            constexpr bool Valid() {
+                return address && size && permission.Get();
+            }
         } kernel, guest;
 
         /**
-         * @param state The state of the device
          * @param address The address of the allocation on the kernel (If NULL then an arbitrary address is picked)
          * @param size The size of the allocation on the kernel
          * @param permission The permission of the kernel process

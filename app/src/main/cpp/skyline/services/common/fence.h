@@ -7,11 +7,11 @@
 
 namespace skyline::service::nvdrv {
     /**
-     * @brief This holds information about a fence
+     * @brief A Fence is a synchronization primitive that describes a point in a Syncpoint to synchronize at
      */
     struct Fence {
-        u32 id{};
-        u32 value{};
+        u32 id{}; //!< The ID of the underlying syncpoint
+        u32 value{}; //!< The value of the syncpoint at which the fence is passed
 
         /**
          * @brief Synchronizes the fence's value with its underlying syncpoint

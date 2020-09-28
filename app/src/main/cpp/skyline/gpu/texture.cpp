@@ -9,6 +9,22 @@
 namespace skyline::gpu {
     GuestTexture::GuestTexture(const DeviceState &state, u64 address, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), address(address), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
+    std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> format, std::optional<texture::Dimensions> dimensions, texture::Swizzle swizzle) {
+        if (!host.expired())
+            throw exception("Trying to create multiple Texture objects from a single GuestTexture");
+        auto sharedHost{std::make_shared<Texture>(state, shared_from_this(), dimensions ? *dimensions : this->dimensions, format ? *format : this->format, swizzle)};
+        host = sharedHost;
+        return sharedHost;
+    }
+
+    std::shared_ptr<PresentationTexture> GuestTexture::InitializePresentationTexture() {
+        if (!host.expired())
+            throw exception("Trying to create multiple PresentationTexture objects from a single GuestTexture");
+        auto presentation{std::make_shared<PresentationTexture>(state, shared_from_this(), dimensions, format)};
+        host = std::static_pointer_cast<Texture>(presentation);
+        return presentation;
+    }
+
     Texture::Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : state(state), guest(guest), dimensions(dimensions), format(format), swizzle(swizzle) {
         SynchronizeHost();
     }

@@ -9,13 +9,12 @@
 namespace skyline::service {
     /**
      * @brief The ServiceManager class manages passing IPC requests to the right Service and running event loops of Services
-     * @todo This implementation varies significantly from HOS, this should be rectified much later on
      */
     class ServiceManager {
       private:
-        const DeviceState &state; //!< The state of the device
+        const DeviceState &state;
         std::unordered_map<ServiceName, std::shared_ptr<BaseService>> serviceMap; //!< A mapping from a Service to the underlying object
-        Mutex mutex; //!< This mutex is used to ensure concurrent access to services doesn't cause crashes
+        Mutex mutex; //!< Synchronizes concurrent access to services to prevent crashes
 
         /**
          * @brief Creates an instance of the service if it doesn't already exist, otherwise returns an existing instance
@@ -25,11 +24,8 @@ namespace skyline::service {
         std::shared_ptr<BaseService> CreateService(ServiceName name);
 
       public:
-        std::shared_ptr<BaseService> smUserInterface; //!< This is used by applications to open connections to services
+        std::shared_ptr<BaseService> smUserInterface; //!< Used by applications to open connections to services
 
-        /**
-         * @param state The state of the device
-         */
         ServiceManager(const DeviceState &state);
 
         /**

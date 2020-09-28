@@ -7,7 +7,8 @@
 
 namespace skyline::service::pctl {
     /**
-     * @brief IParentalControlService is used to access parental control configuration (https://switchbrew.org/wiki/Parental_Control_services#IParentalControlService)
+     * @brief IParentalControlService is used to access parental control configuration
+     * @url https://switchbrew.org/wiki/Parental_Control_services#IParentalControlService
      */
     class IParentalControlService : public BaseService {
       public:

@@ -11,12 +11,13 @@
 
 namespace skyline::loader {
     /**
-     * @brief The NspLoader class consolidates all the data in an NSP providing a simple way to load an application and access its metadata (https://switchbrew.org/wiki/NCA_Format#PFS0)
+     * @brief The NspLoader class consolidates all the data in an NSP providing a simple way to load an application and access its metadata
+     * @url https://switchbrew.org/wiki/NCA_Format#PFS0
      */
     class NspLoader : public Loader {
       private:
         std::shared_ptr<vfs::PartitionFileSystem> nsp; //!< A shared pointer to the NSP's PFS0
-        std::shared_ptr<vfs::RomFileSystem> controlRomFs; //!< A pointer to the control NCA's RomFS
+        std::shared_ptr<vfs::RomFileSystem> controlRomFs; //!< A shared pointer to the control NCA's RomFS
         std::optional<vfs::NCA> programNca; //!< The main program NCA within the NSP
         std::optional<vfs::NCA> controlNca; //!< The main control NCA within the NSP
 

@@ -53,7 +53,7 @@ namespace skyline {
         };
 
         /**
-         * @brief This holds certain attributes of a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryAttribute
+         * @url https://switchbrew.org/wiki/SVC#MemoryAttribute
          */
         union MemoryAttribute {
             struct {
@@ -66,7 +66,7 @@ namespace skyline {
         };
 
         /**
-         * @brief This contains information about a chunk of memory: https://switchbrew.org/wiki/SVC#MemoryInfo
+         * @url https://switchbrew.org/wiki/SVC#MemoryInfo
          */
         struct MemoryInfo {
             u64 address; //!< The base address of the mapping
@@ -74,14 +74,15 @@ namespace skyline {
             u32 type; //!< The MemoryType of the mapping
             u32 attributes; //!< The attributes of the mapping
             u32 permissions; //!< The permissions of the mapping
-            u32 ipcRefCount; //!< The IPC reference count (This is always 0)
-            u32 deviceRefCount; //!< The device reference count (This is always 0)
+            u32 ipcRefCount; //!< The IPC reference count (Always 0)
+            u32 deviceRefCount; //!< The device reference count (Always 0)
             u32 _pad0_;
         };
         static_assert(sizeof(MemoryInfo) == 0x28);
 
         /**
-         * @brief These are specific markers for the type of a memory region (https://switchbrew.org/wiki/SVC#MemoryType)
+         * @brief These are specific markers for the type of a memory region
+         * @url https://switchbrew.org/wiki/SVC#MemoryType
          */
         enum class MemoryType : u8 {
             Unmapped = 0x0,
@@ -105,11 +106,12 @@ namespace skyline {
             NonDeviceIpc = 0x12,
             KernelStack = 0x13,
             CodeReadOnly = 0x14,
-            CodeWritable = 0x15
+            CodeWritable = 0x15,
         };
 
         /**
-         * @brief This structure is used to hold the state of a certain block of memory (https://switchbrew.org/wiki/SVC#MemoryState)
+         * @brief The state of a certain block of memory
+         * @url https://switchbrew.org/wiki/SVC#MemoryState
          */
         union MemoryState {
             constexpr MemoryState(const u32 value) : value(value) {}
@@ -142,7 +144,8 @@ namespace skyline {
         static_assert(sizeof(MemoryState) == sizeof(u32));
 
         /**
-         * @brief The preset states that different regions are set to (https://switchbrew.org/wiki/SVC#MemoryType)
+         * @brief The preset states that different regions are set to
+         * @url https://switchbrew.org/wiki/SVC#MemoryType
          */
         namespace states {
             constexpr MemoryState Unmapped{0x00000000};
@@ -168,9 +171,6 @@ namespace skyline {
             constexpr MemoryState CodeWritable{0x00402015};
         };
 
-        /**
-         * @brief This struct is used to hold the location and size of a memory region
-         */
         struct Region {
             u64 address; //!< The base address of the region
             u64 size; //!< The size of the region in bytes
@@ -215,7 +215,7 @@ namespace skyline {
         }
 
         /**
-         * @brief This describes a single block of memory and all of it's individual attributes
+         * @brief A single block of memory and all of it's individual attributes
          */
         struct BlockDescriptor {
             u64 address; //!< The address of the current block
@@ -225,18 +225,18 @@ namespace skyline {
         };
 
         /**
-         * @brief This describes a single chunk of memory, this is owned by a memory backing
+         * @brief A single chunk of memory, this is owned by a memory backing
          */
         struct ChunkDescriptor {
             u64 address; //!< The address of the current chunk
             u64 size; //!< The size of the current chunk in bytes
             u64 host; //!< The address of the chunk in the host
             memory::MemoryState state; //!< The MemoryState for the current block
-            std::vector<BlockDescriptor> blockList; //!< This vector holds the block descriptors for all the children blocks of this Chunk
+            std::vector<BlockDescriptor> blockList; //!< The block descriptors for all the children blocks of this Chunk
         };
 
         /**
-         * @brief This contains both of the descriptors for a specific address
+         * @brief A pack of both the descriptors for a specific address
          */
         struct DescriptorPack {
             const BlockDescriptor block; //!< The block descriptor at the address
@@ -248,8 +248,8 @@ namespace skyline {
          */
         class MemoryManager {
           private:
-            const DeviceState &state; //!< The state of the device
-            std::vector<ChunkDescriptor> chunkList; //!< This vector holds all the chunk descriptors
+            const DeviceState &state;
+            std::vector<ChunkDescriptor> chunks;
 
             /**
              * @param address The address to find a chunk at
@@ -290,7 +290,7 @@ namespace skyline {
             static void InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block);
 
             /**
-             * @brief This initializes all of the regions in the address space
+             * @brief Initializes all of the regions in the address space
              * @param address The starting address of the code region
              * @param size The size of the code region
              * @param type The type of the address space
@@ -322,7 +322,7 @@ namespace skyline {
 
             /**
              * @param address The address to query in the memory map
-             * @param requireMapped This specifies if only mapped regions should be returned otherwise unmapped but valid regions will also be returned
+             * @param requireMapped If only mapped regions should be returned otherwise unmapped but valid regions will also be returned
              * @return A DescriptorPack retrieved from the memory map
              */
             std::optional<DescriptorPack> Get(u64 address, bool requireMapped = true);

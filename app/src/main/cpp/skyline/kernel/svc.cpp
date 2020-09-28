@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
+#include <kernel/types/KProcess.h>
 #include "results.h"
 #include "svc.h"
 
@@ -170,7 +171,7 @@ namespace skyline::kernel::svc {
         if (!sourceObject)
             throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
 
-        state.process->DeleteHandle(sourceObject->handle);
+        state.process->CloseHandle(sourceObject->handle);
 
         state.logger->Debug("svcUnmapMemory: Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->registers.w0 = Result{};
@@ -375,7 +376,7 @@ namespace skyline::kernel::svc {
     void CloseHandle(DeviceState &state) {
         auto handle{static_cast<KHandle>(state.ctx->registers.w0)};
         try {
-            state.process->DeleteHandle(handle);
+            state.process->CloseHandle(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.ctx->registers.w0 = Result{};
         } catch (const std::exception &) {
@@ -583,8 +584,7 @@ namespace skyline::kernel::svc {
     }
 
     void ConnectToNamedPort(DeviceState &state) {
-        constexpr u8 portSize{0x8}; //!< The size of a port name string
-        std::string_view port(state.process->GetPointer<char>(state.ctx->registers.x1), portSize);
+        std::string_view port(state.process->GetPointer<char>(state.ctx->registers.x1), sizeof(service::ServiceName));
 
         KHandle handle{};
         if (port.compare("sm:") >= 0) {
@@ -607,7 +607,7 @@ namespace skyline::kernel::svc {
     }
 
     void GetThreadId(DeviceState &state) {
-        constexpr KHandle threadSelf{0xFFFF8000}; // This is the handle used by threads to refer to themselves
+        constexpr KHandle threadSelf{0xFFFF8000}; // The handle used by threads to refer to themselves
         auto handle{state.ctx->registers.w1};
         pid_t pid{};
 

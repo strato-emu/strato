@@ -6,9 +6,6 @@
 #include <common.h>
 
 namespace skyline::service::audio::IAudioRenderer {
-    /**
-     * @brief This enumerates various states a memory pool can be in
-     */
     enum class MemoryPoolState : u32 {
         Invalid = 0,
         Unknown = 1,
@@ -19,9 +16,6 @@ namespace skyline::service::audio::IAudioRenderer {
         Released = 6,
     };
 
-    /**
-     * @brief This is in input containing information about a memory pool for use by the dsp
-     */
     struct MemoryPoolIn {
         u64 address;
         u64 size;
@@ -31,9 +25,6 @@ namespace skyline::service::audio::IAudioRenderer {
     };
     static_assert(sizeof(MemoryPoolIn) == 0x20);
 
-    /**
-     * @brief This is returned to inform the guest of the state of a memory pool
-     */
     struct MemoryPoolOut {
         MemoryPoolState state{MemoryPoolState::Detached};
         u32 _unk0_;
@@ -42,8 +33,8 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(MemoryPoolOut) == 0x10);
 
     /**
-    * @brief The MemoryPool class stores the state of a memory pool
-    */
+     * @brief The MemoryPool class stores the state of a memory pool
+     */
     class MemoryPool {
       public:
         MemoryPoolOut output{};

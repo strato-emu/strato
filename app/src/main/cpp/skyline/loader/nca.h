@@ -8,7 +8,8 @@
 
 namespace skyline::loader {
     /**
-     * @brief The NcaLoader class allows loading an NCA's ExeFS through the Loader interface (https://switchbrew.org/wiki/NSO)
+     * @brief The NcaLoader class allows loading an NCA's ExeFS through the Loader interface
+     * @url https://switchbrew.org/wiki/NSO
      */
     class NcaLoader : public Loader {
       private:
@@ -18,7 +19,7 @@ namespace skyline::loader {
         NcaLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
 
         /**
-         * @brief This loads an ExeFS into memory
+         * @brief Loads an ExeFS into memory
          * @param exefs A filesystem object containing the ExeFS filesystem to load into memory
          * @param process The process to load the ExeFS into
          */

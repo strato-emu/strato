@@ -58,7 +58,7 @@ namespace skyline::service::hosbinder {
             u32 stickyTransform;
             u64 _unk0_;
             u32 swapInterval;
-            nvdrv::Fence fence[4];
+            std::array<nvdrv::Fence, 4> fence;
         } &data = in.Pop<Data>();
 
         auto buffer{queue.at(data.slot)};

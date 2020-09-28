@@ -8,7 +8,7 @@
 
 namespace skyline::loader {
     /**
-     * @brief This enumerates the types of ROM files
+     * @brief The types of ROM files
      * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.RomFormat
      */
     enum class RomFormat {
@@ -20,7 +20,7 @@ namespace skyline::loader {
     };
 
     /**
-     * @brief This enumerates all possible results when parsing ROM files
+     * @brief All possible results when parsing ROM files
      * @note This needs to be synchronized with emu.skyline.loader.LoaderResult
      */
     enum class LoaderResult : int8_t {
@@ -29,7 +29,7 @@ namespace skyline::loader {
         MissingHeaderKey,
         MissingTitleKey,
         MissingTitleKek,
-        MissingKeyArea
+        MissingKeyArea,
     };
 
     /**
@@ -48,7 +48,7 @@ namespace skyline::loader {
     class Loader {
       protected:
         /**
-         * @brief This contains information about the placement of an executable in memory
+         * @brief Information about the placement of an executable in memory
          */
         struct ExecutableLoadInfo {
             size_t base; //!< The base of the loaded executable
@@ -56,7 +56,7 @@ namespace skyline::loader {
         };
 
         /**
-         * @brief This loads an executable into memory
+         * @brief Loads an executable into memory
          * @param process The process to load the executable into
          * @param executable The executable itself
          * @param offset The offset from the base address that the executable should be placed at
@@ -78,9 +78,8 @@ namespace skyline::loader {
         }
 
         /**
-         * @brief This loads in the data of the main process
+         * @brief Loads in the data of the main process
          * @param process The process to load in the data
-         * @param state The state of the device
          */
         virtual void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
     };

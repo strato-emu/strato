@@ -7,21 +7,16 @@
 
 namespace skyline::loader {
     /**
-     * @brief The NroLoader class abstracts access to an NRO file through the Loader interface (https://switchbrew.org/wiki/NRO)
+     * @brief The NroLoader class abstracts access to an NRO file through the Loader interface
+     * @url https://switchbrew.org/wiki/NRO
      */
     class NroLoader : public Loader {
       private:
-        /**
-         * @brief This holds a single data segment's offset and size
-         */
         struct NroSegmentHeader {
-            u32 offset; //!< The offset of the region
-            u32 size; //!< The size of the region
+            u32 offset;
+            u32 size;
         };
 
-        /**
-         * @brief This holds the header of an NRO file
-         */
         struct NroHeader {
             u32 _pad0_;
             u32 modOffset; //!< The offset of the MOD metadata
@@ -38,7 +33,7 @@ namespace skyline::loader {
 
             u32 bssSize; //!< The size of the bss segment
             u32 _pad2_;
-            u64 buildId[4]; //!< The build ID of the NRO
+            std::array<u64, 4> buildId; //!< The build ID of the NRO
             u64 _pad3_;
 
             NroSegmentHeader apiInfo; //!< The .apiInfo segment header
@@ -46,29 +41,27 @@ namespace skyline::loader {
             NroSegmentHeader dynsym; //!< The .dynsym segment header
         } header{};
 
-        /**
-         * @brief This holds a single asset section's offset and size
-         */
         struct NroAssetSection {
-            u64 offset; //!< The offset of the region
-            u64 size; //!< The size of the region
+            u64 offset;
+            u64 size;
         };
 
         /**
-        * @brief This holds various metadata about an NRO, it is only used by homebrew
-        */
+         * @brief The asset section was created by homebrew developers to store additional data for their applications to use
+         * @note This would actually be retrieved by NRO homebrew by reading the NRO file itself (reading it's own binary) but libnx homebrew wrongly detects the images to be running in NSO mode where the RomFS is handled by HOS, this allows us to just provide the parsed data from the asset section to it directly
+         */
         struct NroAssetHeader {
-            u32 magic; //!< The asset section magic "ASET"
-            u32 version; //!< The format version
-            NroAssetSection icon; //!< The header describing the location of the icon
-            NroAssetSection nacp; //!< The header describing the location of the NACP
-            NroAssetSection romFs; //!< The header describing the location of the RomFS
+            u32 magic; //!< "ASET"
+            u32 version;
+            NroAssetSection icon;
+            NroAssetSection nacp;
+            NroAssetSection romFs;
         } assetHeader{};
 
-        std::shared_ptr<vfs::Backing> backing; //!< The backing of the NRO loader
+        std::shared_ptr<vfs::Backing> backing;
 
         /**
-         * @brief This reads the data of the specified segment
+         * @brief Reads the data of the specified segment
          * @param segment The header of the segment to read
          * @return A buffer containing the data of the requested segment
          */

@@ -8,9 +8,6 @@
 #define U32_OFFSET(regs, field) (offsetof(regs, field) / sizeof(u32))
 
 namespace skyline::gpu {
-    /**
-     * @brief This enumerates the identifiers used to label a specific engine
-     */
     enum class EngineID {
         Fermi2D = 0x902D,
         KeplerMemory = 0xA140,
@@ -20,7 +17,7 @@ namespace skyline::gpu {
     };
 
     /**
-     * @brief This holds the parameters of a GPU engine method call
+     * @brief The parameters of a GPU engine method call
      */
     struct MethodParams {
         u16 method;
@@ -31,8 +28,8 @@ namespace skyline::gpu {
 
     namespace engine {
         /**
-        * @brief The Engine class provides an interface that can be used to communicate with the GPU's internal engines
-        */
+         * @brief The Engine class provides an interface that can be used to communicate with the GPU's internal engines
+         */
         class Engine {
           protected:
             const DeviceState &state;
@@ -43,8 +40,8 @@ namespace skyline::gpu {
             virtual ~Engine() = default;
 
             /**
-            * @brief Calls an engine method with the given parameters
-            */
+             * @brief Calls an engine method with the given parameters
+             */
             virtual void CallMethod(MethodParams params) {
                 state.logger->Warn("Called method in unimplemented engine: 0x{:X} args: 0x{:X}", params.method, params.argument);
             };

@@ -7,14 +7,15 @@
 
 namespace skyline::service::nfp {
     /**
-     * @brief IUserManager or nfp:user is used by applications to open an IUser instance for accessing NFC devices (https://switchbrew.org/wiki/NFC_services#nfp:user)
+     * @brief IUserManager or nfp:user is used by applications to open an IUser instance for accessing NFC devices
+     * @url https://switchbrew.org/wiki/NFC_services#nfp:user
      */
     class IUserManager : public BaseService {
       public:
         IUserManager(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This opens an IUser that can be used by applications to access NFC devices
+         * @brief Opens an IUser that can be used by applications to access NFC devices
          */
         Result CreateUserInterface(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

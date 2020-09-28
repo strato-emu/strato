@@ -8,37 +8,38 @@
 
 namespace skyline::service::fssrv {
     /**
-     * @brief IFile is an interface for accessing files (https://switchbrew.org/wiki/Filesystem_services#IFile)
+     * @brief IFile is an interface for accessing files
+     * @url https://switchbrew.org/wiki/Filesystem_services#IFile
      */
     class IFile : public BaseService {
       private:
-        std::shared_ptr<vfs::Backing> backing; //!< The backing of the IFile
+        std::shared_ptr<vfs::Backing> backing;
 
       public:
         IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This reads a buffer from a region of an IFile
+         * @brief Reads a buffer from a region of an IFile
          */
         Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This writes a buffer to a region of an IFile
+         * @brief Writes a buffer to a region of an IFile
          */
         Result Write(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This flushes any written data to the IFile on the Switch, however the emulator processes any FS event immediately so this does nothing
+         * @brief Flushes any written data to the IFile on the Switch, however the emulator processes any FS event immediately so this does nothing
          */
         Result Flush(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This sets the size of an IFile
+         * @brief Sets the size of an IFile
          */
         Result SetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This obtains the size of an IFile
+         * @brief Obtains the size of an IFile
          */
         Result GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

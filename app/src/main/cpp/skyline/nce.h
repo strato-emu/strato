@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include "common.h"
 #include <sys/wait.h>
-#include "kernel/types/KSharedMemory.h"
 
 namespace skyline {
     /**
@@ -12,11 +12,11 @@ namespace skyline {
      */
     class NCE {
       private:
-        DeviceState &state; //!< The state of the device
+        DeviceState &state;
         std::unordered_map<pid_t, std::shared_ptr<std::thread>> threadMap; //!< This maps all of the host threads to their corresponding kernel thread
 
         /**
-         * @brief This function is the event loop of a kernel thread managing a guest thread
+         * @brief The event loop of a kernel thread managing a guest thread
          * @param thread The PID of the thread to manage
          */
         void KernelThread(pid_t thread);
@@ -30,7 +30,7 @@ namespace skyline {
         ~NCE();
 
         /**
-         * @brief This function is the main event loop of the program
+         * @brief The main event loop of the program
          */
         void Execute();
 
@@ -65,14 +65,14 @@ namespace skyline {
         void StartThread(u64 entryArg, u32 handle, std::shared_ptr<kernel::type::KThread> &thread);
 
         /**
-         * @brief This prints out a trace and the CPU context
+         * @brief Prints out a trace and the CPU context
          * @param numHist The amount of previous instructions to print (Can be 0)
          * @param ctx The ThreadContext of the thread to log
          */
         void ThreadTrace(u16 numHist = 10, ThreadContext *ctx = nullptr);
 
         /**
-         * @brief This patches specific parts of the code
+         * @brief Patches specific parts of the code
          * @param code A vector with the code to be patched
          * @param baseAddress The address at which the code is mapped
          * @param offset The offset of the code block from the base address

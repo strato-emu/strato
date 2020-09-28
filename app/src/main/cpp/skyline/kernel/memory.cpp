@@ -6,11 +6,11 @@
 
 namespace skyline::kernel {
     ChunkDescriptor *MemoryManager::GetChunk(u64 address) {
-        auto chunk{std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto chunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         })};
 
-        if (chunk-- != chunkList.begin()) {
+        if (chunk-- != chunks.begin()) {
             if ((chunk->address + chunk->size) > address)
                 return chunk.base();
         }
@@ -37,24 +37,24 @@ namespace skyline::kernel {
     }
 
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {
-        auto upperChunk{std::upper_bound(chunkList.begin(), chunkList.end(), chunk.address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto upperChunk{std::upper_bound(chunks.begin(), chunks.end(), chunk.address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         })};
 
-        if (upperChunk != chunkList.begin()) {
+        if (upperChunk != chunks.begin()) {
             auto lowerChunk{std::prev(upperChunk)};
 
             if (lowerChunk->address + lowerChunk->size > chunk.address)
                 throw exception("InsertChunk: Descriptors are colliding: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", lowerChunk->address, lowerChunk->address + lowerChunk->size, chunk.address, chunk.address + chunk.size);
         }
 
-        chunkList.insert(upperChunk, chunk);
+        chunks.insert(upperChunk, chunk);
     }
 
     void MemoryManager::DeleteChunk(u64 address) {
-        for (auto chunk{chunkList.begin()}, end{chunkList.end()}; chunk != end;) {
+        for (auto chunk{chunks.begin()}, end{chunks.end()}; chunk != end;) {
             if (chunk->address <= address && (chunk->address + chunk->size) > address)
-                chunk = chunkList.erase(chunk);
+                chunk = chunks.erase(chunk);
             else
                 chunk++;
         }
@@ -176,17 +176,17 @@ namespace skyline::kernel {
 
         // If the requested address is in the address space but no chunks are present then we return a new unmapped region
         if (addressSpace.IsInside(address) && !requireMapped) {
-            auto upperChunk{std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+            auto upperChunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
                 return address < chunk.address;
             })};
 
             u64 upperAddress{};
             u64 lowerAddress{};
 
-            if (upperChunk != chunkList.end()) {
+            if (upperChunk != chunks.end()) {
                 upperAddress = upperChunk->address;
 
-                if (upperChunk == chunkList.begin()) {
+                if (upperChunk == chunks.begin()) {
                     lowerAddress = addressSpace.address;
                 } else {
                     upperChunk--;
@@ -194,7 +194,7 @@ namespace skyline::kernel {
                 }
             } else {
                 upperAddress = addressSpace.address + addressSpace.size;
-                lowerAddress = chunkList.back().address + chunkList.back().size;
+                lowerAddress = chunks.back().address + chunks.back().size;
             }
 
             u64 size{upperAddress - lowerAddress};
@@ -217,7 +217,7 @@ namespace skyline::kernel {
 
     size_t MemoryManager::GetProgramSize() {
         size_t size{};
-        for (const auto &chunk : chunkList)
+        for (const auto &chunk : chunks)
             size += chunk.size;
         return size;
     }

@@ -12,7 +12,8 @@ namespace skyline::service::settings {
     class ISystemSettingsServer : public BaseService {
       private:
         /**
-         * @brief Encapsulates the system version, this is sent to the application in GetFirmwareVersion (https://switchbrew.org/wiki/System_Version_Title)
+         * @brief Encapsulates the system version, this is sent to the application in GetFirmwareVersion
+         * @url https://switchbrew.org/wiki/System_Version_Title
          */
         struct SysVerTitle {
             u8 major; //!< The major version
@@ -23,7 +24,7 @@ namespace skyline::service::settings {
             u8 revMinor; //!< The major revision
             u16 _pad1_;
             u8 platform[0x20]; //!< "NX"
-            u8 verHash[0x40]; //!< This is the hash of the version string
+            u8 verHash[0x40]; //!< The hash of the version string
             u8 dispVer[0x18]; //!< The version number string
             u8 dispTitle[0x80]; //!< The version title string
         };
@@ -33,7 +34,8 @@ namespace skyline::service::settings {
         ISystemSettingsServer(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief Writes the Firmware version to a 0xA buffer (https://switchbrew.org/wiki/Settings_services#GetFirmwareVersion)
+         * @brief Writes the Firmware version to a 0xA buffer
+         * @url https://switchbrew.org/wiki/Settings_services#GetFirmwareVersion
          */
         Result GetFirmwareVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

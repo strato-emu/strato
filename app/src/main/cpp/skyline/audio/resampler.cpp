@@ -6,7 +6,7 @@
 
 namespace skyline::audio {
     /**
-     * @brief This holds the coefficients for each index of a single output frame
+     * @brief The coefficients for each index of a single output frame
      */
     struct LutEntry {
         i32 a;
@@ -16,7 +16,7 @@ namespace skyline::audio {
     };
 
     // @fmt:off
-    constexpr std::array<LutEntry, 128> CurveLut0 = {{
+    constexpr std::array<LutEntry, 128> CurveLut0{{
         {6600, 19426, 6722, 3},     {6479, 19424, 6845, 9},     {6359, 19419, 6968, 15},    {6239, 19412, 7093, 22},
         {6121, 19403, 7219, 28},    {6004, 19391, 7345, 34},    {5888, 19377, 7472, 41},    {5773, 19361, 7600, 48},
         {5659, 19342, 7728, 55},    {5546, 19321, 7857, 62},    {5434, 19298, 7987, 69},    {5323, 19273, 8118, 77},

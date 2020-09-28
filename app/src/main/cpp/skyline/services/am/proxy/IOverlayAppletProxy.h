@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief IOverlayAppletProxy returns handles to various services (https://switchbrew.org/wiki/Applet_Manager_services#IOverlayAppletProxy)
+     * @brief IOverlayAppletProxy returns handles to various services
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#IOverlayAppletProxy
      */
     class IOverlayAppletProxy : public BaseProxy {
       public:

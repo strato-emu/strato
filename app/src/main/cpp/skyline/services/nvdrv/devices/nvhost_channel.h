@@ -8,14 +8,15 @@
 
 namespace skyline::service::nvdrv::device {
     /**
-     * @brief NvHostChannel is used as a common interface for all Channel devices (https://switchbrew.org/wiki/NV_services#Channels)
+     * @brief NvHostChannel is used as a common interface for all Channel devices
+     * @url https://switchbrew.org/wiki/NV_services#Channels
      */
     class NvHostChannel : public NvDevice {
       private:
         enum class NvChannelPriority : u32 {
             Low = 0x32,
             Medium = 0x64,
-            High = 0x94
+            High = 0x94,
         };
 
         Fence channelFence{};
@@ -28,47 +29,56 @@ namespace skyline::service::nvdrv::device {
         NvHostChannel(const DeviceState &state);
 
         /**
-         * @brief This sets the nvmap file descriptor (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD)
+         * @brief Sets the nvmap file descriptor
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD
          */
         NvStatus SetNvmapFd(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This sets the timeout for the channel (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CHANNEL_SET_SUBMIT_TIMEOUT)
+         * @brief Sets the timeout for the channel
+         * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CHANNEL_SET_SUBMIT_TIMEOUT
          */
         NvStatus SetSubmitTimeout(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This submits a command to the GPFIFO (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO)
+         * @brief Submits a command to the GPFIFO
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO
          */
         NvStatus SubmitGpfifo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This allocates a graphic context object (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX)
+         * @brief Allocates a graphic context object
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX
          */
         NvStatus AllocObjCtx(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ZCULL_BIND)
+         * @brief Initializes the error notifier for this channel
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ZCULL_BIND
          */
         NvStatus ZcullBind(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This initializes the error notifier for this channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_ERROR_NOTIFIER)
+         * @brief Initializes the error notifier for this channel
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_ERROR_NOTIFIER
          */
         NvStatus SetErrorNotifier(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This sets the priority of the channel (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_PRIORITY)
+         * @brief Sets the priority of the channel
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_PRIORITY
          */
         NvStatus SetPriority(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This allocates a GPFIFO entry (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_GPFIFO_EX2)
+         * @brief Allocates a GPFIFO entry
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_GPFIFO_EX2
          */
         NvStatus AllocGpfifoEx2(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief This sets the user specific data (https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_USER_DATA)
+         * @brief Sets the user specific data
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_USER_DATA
          */
         NvStatus SetUserData(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 

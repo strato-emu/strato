@@ -16,15 +16,12 @@ namespace skyline {
          */
         class Syncpoint {
           private:
-            /**
-             * @brief This holds information about a single waiter on a syncpoint
-             */
             struct Waiter {
-                u32 threshold;
-                std::function<void()> callback;
+                u32 threshold;                  //!< The syncpoint value to wait on to be reached
+                std::function<void()> callback; //!< The callback to do after the wait has ended
             };
 
-            Mutex waiterLock; //!< Locks insertions and deletions of waiters
+            Mutex waiterLock; //!< Synchronizes insertions and deletions of waiters
             std::map<u64, Waiter> waiterMap;
             u64 nextWaiterId{1};
 

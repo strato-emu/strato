@@ -4,14 +4,13 @@
 #pragma once
 
 #include <queue>
-#include "engines/engine.h"
 #include "engines/gpfifo.h"
 #include "memory_manager.h"
 
 namespace skyline::gpu {
     namespace gpfifo {
         /**
-         * @brief This contains a single GPFIFO entry that is submitted through 'SubmitGpfifo'
+         * @brief A GPFIFO entry as submitted through 'SubmitGpfifo'
          * @url https://nvidia.github.io/open-gpu-doc/manuals/volta/gv100/dev_pbdma.ref.txt
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L155
          */
@@ -72,7 +71,7 @@ namespace skyline::gpu {
         static_assert(sizeof(GpEntry) == sizeof(u64));
 
         /**
-         * @brief This holds a single pushbuffer method header that describes a compressed method sequence
+         * @brief A single pushbuffer method header that describes a compressed method sequence
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_ram.ref.txt#L850
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L179
          */
@@ -84,7 +83,7 @@ namespace skyline::gpu {
                 Grp0SetSubDevMask = 1,
                 Grp0StoreSubDevMask = 2,
                 Grp0UseSubDevMask = 3,
-                Grp2NonIncMethod = 0
+                Grp2NonIncMethod = 0,
             };
 
             enum class SecOp : u8 {
@@ -95,7 +94,7 @@ namespace skyline::gpu {
                 ImmdDataMethod = 4,
                 OneInc = 5,
                 Reserved6 = 6,
-                EndPbSegment = 7
+                EndPbSegment = 7,
             };
 
             u16 methodAddress : 12;
@@ -128,7 +127,7 @@ namespace skyline::gpu {
         class GPFIFO {
           private:
             /**
-             * @brief This is used to hold a pushbuffer's GPFIFO entry and contents, pushbuffers are made up of several 32-bit words
+             * @brief A pushbuffer is a descriptor of tasks that need to be executed for a specific client
              */
             struct PushBuffer {
                 GpEntry gpEntry;
@@ -149,7 +148,7 @@ namespace skyline::gpu {
             engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
             std::array<std::shared_ptr<engine::Engine>, 8> subchannels;
             std::queue<PushBuffer> pushBufferQueue;
-            skyline::Mutex pushBufferQueueLock; //!< This is used to lock pushbuffer queue insertions as the GPU runs on a seperate thread
+            skyline::Mutex pushBufferQueueLock; //!< Synchronizes pushbuffer queue insertions as the GPU is multi-threaded
 
             /**
              * @brief Processes a pushbuffer segment, calling methods as needed
@@ -157,7 +156,7 @@ namespace skyline::gpu {
             void Process(const std::vector<u32> &segment);
 
             /**
-             * @brief This sends a method call to the GPU hardware
+             * @brief Sends a method call to the GPU hardware
              */
             void Send(MethodParams params);
 

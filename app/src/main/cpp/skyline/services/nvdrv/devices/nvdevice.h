@@ -19,7 +19,8 @@ namespace skyline::service::nvdrv::device {
     using namespace kernel;
 
     /**
-     * @brief This enumerates all the possible error codes returned by the Nvidia driver (https://switchbrew.org/wiki/NV_services#Errors)
+     * @brief All the possible error codes returned by the Nvidia driver
+     * @url https://switchbrew.org/wiki/NV_services#Errors
      */
     enum class NvStatus : u32 {
         Success = 0x0, //!< The operation has succeeded
@@ -64,7 +65,7 @@ namespace skyline::service::nvdrv::device {
         std::string name; //!< The name of the device
 
       protected:
-        const DeviceState &state; //!< The state of the device
+        const DeviceState &state;
 
       public:
         inline NvDevice(const DeviceState &state) : state(state) {}
@@ -80,7 +81,7 @@ namespace skyline::service::nvdrv::device {
         const std::string& GetName();
 
         /**
-         * @brief This handles IOCTL calls for devices
+         * @brief Handles IOCTL calls for devices
          * @param cmd The IOCTL command that was called
          */
         NvStatus HandleIoctl(u32 cmd, IoctlType type, span<u8> buffer, span<u8> inlineBuffer);

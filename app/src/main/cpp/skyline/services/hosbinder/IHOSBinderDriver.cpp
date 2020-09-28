@@ -19,6 +19,10 @@ namespace skyline::service::hosbinder {
         Parcel in(request.inputBuf.at(0), state, true);
         Parcel out(state);
 
+        // We opted for just supporting a single layer and display as it's what basically all games use and wasting cycles on it is pointless
+        // If this was not done then we would need to maintain an array of GraphicBufferProducer objects for each layer and send the request it specifically
+        // There would also need to be an external compositor which composites all the graphics buffers submitted to every GraphicBufferProducer
+
         state.logger->Debug("TransactParcel: Layer ID: {}, Code: {}", layerId, code);
         producer->OnTransact(code, in, out);
 

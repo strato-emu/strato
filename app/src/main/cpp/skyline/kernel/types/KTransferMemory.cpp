@@ -4,6 +4,7 @@
 #include <asm/unistd.h>
 #include <nce.h>
 #include <os.h>
+#include "KProcess.h"
 #include "KTransferMemory.h"
 
 namespace skyline::kernel::type {

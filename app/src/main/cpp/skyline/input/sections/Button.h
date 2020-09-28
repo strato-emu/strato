@@ -7,7 +7,9 @@
 
 namespace skyline::input {
     /**
-     * @brief The state structure for all Button sections (HomeButton, SleepButton, CaptureButton)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#HomeButtonState
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#SleepButtonState
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#CaptureButtonState
      */
     struct ButtonState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -16,7 +18,9 @@ namespace skyline::input {
     static_assert(sizeof(ButtonState) == 0x18);
 
     /**
-     * @brief The section structure for all Button sections (HomeButton, SleepButton, CaptureButton)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#HomeButton
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#SleepButton
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#CaptureButton
      */
     struct ButtonSection {
         CommonHeader header;

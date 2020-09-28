@@ -7,11 +7,11 @@
 
 namespace skyline::loader {
     /**
-     * @brief The Executable struct encapsulates the segments of an executable
+     * @brief The contents of an executable binary abstracted away from the derivatives of Loader
      */
     struct Executable {
         /**
-         * @brief This holds the contents and offset of an executable segment
+         * @brief The contents and offset of an executable segment
          */
         struct Segment {
             std::vector<u8> contents; //!< The raw contents of the segment

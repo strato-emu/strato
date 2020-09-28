@@ -65,11 +65,11 @@ namespace skyline {
         constexpr u16 DockedResolutionW{1920}; //!< The width component of the docked resolution
         constexpr u16 DockedResolutionH{1080}; //!< The height component of the docked resolution
         // Time
-        constexpr u64 NsInSecond{1000000000}; //!< This is the amount of nanoseconds in a second
+        constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
     }
 
     /**
-     * @brief This is a std::runtime_error with libfmt formatting
+     * @brief A wrapper over std::runtime_error with libfmt formatting
      */
     class exception : public std::runtime_error {
       public:
@@ -110,7 +110,7 @@ namespace skyline {
          * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
-        constexpr inline TypeVal AlignUp(TypeVal value, TypeMul multiple) {
+        constexpr TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             multiple--;
             return (value + multiple) & ~(multiple);
         }
@@ -120,7 +120,7 @@ namespace skyline {
          * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
-        constexpr inline TypeVal AlignDown(TypeVal value, TypeMul multiple) {
+        constexpr TypeVal AlignDown(TypeVal value, TypeMul multiple) {
             return value & ~(multiple - 1);
         }
 
@@ -128,7 +128,7 @@ namespace skyline {
          * @return If the address is aligned with the multiple
          */
         template<typename TypeVal, typename TypeMul>
-        constexpr inline bool IsAligned(TypeVal value, TypeMul multiple) {
+        constexpr bool IsAligned(TypeVal value, TypeMul multiple) {
             if ((multiple & (multiple - 1)) == 0)
                 return !(value & (multiple - 1U));
             else
@@ -138,14 +138,14 @@ namespace skyline {
         /**
          * @return If the value is page aligned
          */
-        constexpr inline bool PageAligned(u64 value) {
+        constexpr bool PageAligned(u64 value) {
             return IsAligned(value, PAGE_SIZE);
         }
 
         /**
          * @return If the value is word aligned
          */
-        constexpr inline bool WordAligned(u64 value) {
+        constexpr bool WordAligned(u64 value) {
             return IsAligned(value, WORD_BIT / 8);
         }
 
@@ -301,7 +301,7 @@ namespace skyline {
     span(const Container &) -> span<const typename Container::value_type>;
 
     /**
-     * @brief The Mutex class is a wrapper around an atomic bool used for synchronization
+     * @brief The Mutex class is a wrapper around an atomic bool used for low-contention synchronization
      */
     class Mutex {
         std::atomic_flag flag = ATOMIC_FLAG_INIT; //!< An atomic flag to hold the state of the mutex
@@ -334,12 +334,12 @@ namespace skyline {
     class GroupMutex {
       public:
         /**
-         * @brief This enumeration holds all the possible owners of the mutex
+         * @brief All the possible owners of the mutex
          */
         enum class Group : u8 {
-            None = 0, //!< No group owns this mutex
+            None = 0,   //!< No group owns this mutex
             Group1 = 1, //!< Group 1 owns this mutex
-            Group2 = 2 //!< Group 2 owns this mutex
+            Group2 = 2, //!< Group 2 owns this mutex
         };
 
         /**
@@ -366,13 +366,18 @@ namespace skyline {
     class Logger {
       private:
         std::ofstream logFile; //!< An output stream to the log file
-        const char *levelStr[4] = {"0", "1", "2", "3"}; //!< This is used to denote the LogLevel when written out to a file
-        static constexpr int levelSyslog[4] = {LOG_ERR, LOG_WARNING, LOG_INFO, LOG_DEBUG}; //!< This corresponds to LogLevel and provides it's equivalent for syslog
+        std::array<char, 4> levelCharacter{'0', '1', '2', '3'}; //!< The LogLevel as written out to a file
+        static constexpr std::array<int, 4> levelSyslog{LOG_ERR, LOG_WARNING, LOG_INFO, LOG_DEBUG}; //!< This corresponds to LogLevel and provides it's equivalent for syslog
         Mutex mtx; //!< A mutex to lock before logging anything
 
       public:
-        enum class LogLevel { Error, Warn, Info, Debug }; //!< The level of a particular log
-        LogLevel configLevel; //!< The level of logs to write
+        enum class LogLevel {
+            Error,
+            Warn,
+            Info,
+            Debug,
+        };
+        LogLevel configLevel; //!< The minimum level of logs to write
 
         /**
          * @param path The path of the log file
@@ -484,7 +489,7 @@ namespace skyline {
         int GetInt(const std::string &key);
 
         /**
-         * @brief Writes all settings keys and values to syslog. This function is for development purposes.
+         * @brief Writes all settings keys and values to syslog, this function is for development purposes
          */
         void List(const std::shared_ptr<Logger> &logger);
     };
@@ -512,22 +517,22 @@ namespace skyline {
     }
 
     /**
-     * @brief This struct is used to hold the state of a device
+     * @brief The state of the entire emulator is contained within this class, all objects related to emulation are tied into it
      */
     struct DeviceState {
         DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
-        kernel::OS *os; //!< This holds a reference to the OS class
-        std::shared_ptr<kernel::type::KProcess> &process; //!< This holds a reference to the process object
-        thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< This holds a reference to the current thread object
-        thread_local static ThreadContext *ctx; //!< This holds the context of the thread
-        std::shared_ptr<NCE> nce; //!< This holds a reference to the NCE class
-        std::shared_ptr<gpu::GPU> gpu; //!< This holds a reference to the GPU class
-        std::shared_ptr<audio::Audio> audio; //!< This holds a reference to the Audio class
-        std::shared_ptr<input::Input> input; //!< This holds a reference to the Input class
-        std::shared_ptr<loader::Loader> loader; //!< This holds a reference to the Loader class
-        std::shared_ptr<JvmManager> jvm; //!< This holds a reference to the JvmManager class
-        std::shared_ptr<Settings> settings; //!< This holds a reference to the Settings class
-        std::shared_ptr<Logger> logger; //!< This holds a reference to the Logger class
+        kernel::OS *os;
+        std::shared_ptr<kernel::type::KProcess> &process;
+        thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< The KThread of the thread which accesses this object
+        thread_local static ThreadContext *ctx; //!< The context of the guest thread for the corresponding host thread
+        std::shared_ptr<NCE> nce;
+        std::shared_ptr<gpu::GPU> gpu;
+        std::shared_ptr<audio::Audio> audio;
+        std::shared_ptr<input::Input> input;
+        std::shared_ptr<loader::Loader> loader;
+        std::shared_ptr<JvmManager> jvm;
+        std::shared_ptr<Settings> settings;
+        std::shared_ptr<Logger> logger;
     };
 }

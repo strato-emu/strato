@@ -15,7 +15,7 @@ namespace skyline {
 
     namespace input {
         /**
-         * @brief This is the common part of the header for all sections
+         * @brief A common part of the header for all sections
          */
         struct CommonHeader {
             u64 timestamp; //!< The timestamp of the latest entry in ticks

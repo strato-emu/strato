@@ -7,14 +7,16 @@
 
 namespace skyline::service::lm {
     /**
-     * @brief ILogService is used by applications to open an ILogger for printing log messages (https://switchbrew.org/wiki/Log_services#lm)
+     * @brief ILogService is used by applications to open an ILogger for printing log messages
+     * @url https://switchbrew.org/wiki/Log_services#lm
      */
     class ILogService : public BaseService {
       public:
         ILogService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This opens an ILogger that can be used by applications to print log messages (https://switchbrew.org/wiki/Log_services#OpenLogger)
+         * @brief Opens an ILogger that can be used by applications to print log messages
+         * @url https://switchbrew.org/wiki/Log_services#OpenLogger
          */
         Result OpenLogger(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

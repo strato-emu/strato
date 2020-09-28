@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of an entry for InputDetector (https://switchbrew.org/wiki/HID_Shared_Memory#InputDetectorState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#InputDetectorState
      */
     struct InputDetectorState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -16,7 +16,7 @@ namespace skyline::input {
     static_assert(sizeof(InputDetectorState) == 0x18);
 
     /**
-     * @brief The structure of the InputDetector section (https://switchbrew.org/wiki/HID_Shared_Memory#InputDetector)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#InputDetector
      */
     struct InputDetectorSection {
         CommonHeader header;

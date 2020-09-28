@@ -18,9 +18,8 @@ namespace skyline {
         class GPFIFO : public Engine {
           private:
             /**
-            * @brief This holds the GPFIFO engine's registers
-            * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L65
-            */
+             * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L65
+             */
 #pragma pack(push, 1)
             union Registers {
                 std::array<u32, constant::GpfifoRegisterCount> raw;
@@ -30,22 +29,22 @@ namespace skyline {
                     Release = 2,
                     AcqGeq = 4,
                     AcqAnd = 8,
-                    Reduction = 16
+                    Reduction = 16,
                 };
 
                 enum class SemaphoreAcquireSwitch : u8 {
                     Disabled = 0,
-                    Enabled = 1
+                    Enabled = 1,
                 };
 
                 enum class SemaphoreReleaseWfi : u8 {
                     En = 0,
-                    Dis = 1
+                    Dis = 1,
                 };
 
                 enum class SemaphoreReleaseSize : u8 {
                     SixteenBytes = 0,
-                    FourBytes = 1
+                    FourBytes = 1,
                 };
 
                 enum class SemaphoreReduction : u8 {
@@ -56,39 +55,39 @@ namespace skyline {
                     Or = 4,
                     Add = 5,
                     Inc = 6,
-                    Dec = 7
+                    Dec = 7,
                 };
 
                 enum class SemaphoreFormat : u8 {
                     Signed = 0,
-                    Unsigned = 1
+                    Unsigned = 1,
                 };
 
                 enum class MemOpTlbInvalidatePdb : u8 {
                     One = 0,
-                    All = 1
+                    All = 1,
                 };
 
                 enum class SyncpointOperation : u8 {
                     Wait = 0,
-                    Incr = 1
+                    Incr = 1,
                 };
 
                 enum class SyncpointWaitSwitch : u8 {
                     Dis = 0,
-                    En = 1
+                    En = 1,
                 };
 
                 enum class WfiScope : u8 {
                     CurrentScgType = 0,
-                    All = 1
+                    All = 1,
                 };
 
                 enum class YieldOp : u8 {
                     Nop = 0,
                     PbdmaTimeslice = 1,
                     RunlistTimeslice = 2,
-                    Tsg = 3
+                    Tsg = 3,
                 };
 
                 struct {

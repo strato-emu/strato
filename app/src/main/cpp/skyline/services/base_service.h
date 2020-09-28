@@ -22,20 +22,20 @@ namespace skyline::kernel::type {
 
 namespace skyline::service {
     using namespace kernel;
-    using ServiceName = u64; //!< Service names are a maximum of 8 bytes so we use a u64 to reference them
+    using ServiceName = u64; //!< Service names are a maximum of 8 bytes so we use a u64 to store them
 
     class ServiceManager;
 
     /**
-     * @brief The base class for all service interfaces hosted by sysmodules
+     * @brief The base class for the HOS service interfaces hosted by sysmodules
      */
     class BaseService {
       private:
-        std::string name; //!< The name of the service
+        std::string name; //!< The name of the service, it is only assigned after GetName is called and shouldn't be used directly
 
       protected:
-        const DeviceState &state; //!< The state of the device
-        ServiceManager &manager; //!< A reference to the service manager
+        const DeviceState &state;
+        ServiceManager &manager;
 
         template<typename Class, typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFunction>
         static constexpr Result CallBaseFunction(Class* clazz, type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -43,10 +43,6 @@ namespace skyline::service {
         }
 
       public:
-        /**
-         * @param state The state of the device
-         * @param vTable The functions of the service
-         */
         BaseService(const DeviceState &state, ServiceManager &manager) : state(state), manager(manager) {}
 
         /**
@@ -65,9 +61,7 @@ namespace skyline::service {
         const std::string &GetName();
 
         /**
-         * @brief This handles all IPC commands with type request to a service
-         * @param request The corresponding IpcRequest object
-         * @param response The corresponding IpcResponse object
+         * @brief Handles an IPC Request to a service
          */
         Result HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);;
     };

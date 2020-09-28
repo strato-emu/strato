@@ -20,7 +20,7 @@ namespace skyline {
     using i8 = __int8_t; //!< Signed 8-bit integer
 
     /**
-     * @brief This union holds the state of all the general purpose registers in the guest
+     * @brief The state of all the general purpose registers in the guest
      * @note Read about ARMv8 registers here: https://developer.arm.com/docs/100878/latest/registers
      * @note X30 or LR is not provided as it is reserved for other uses
      */
@@ -122,9 +122,6 @@ namespace skyline {
         };
     };
 
-    /**
-     * @brief This enumeration is used to convey the state of a thread to the kernel
-     */
     enum class ThreadState : u8 {
         NotReady = 0, //!< The thread hasn't yet entered the entry handler
         Running = 1, //!< The thread is currently executing code
@@ -136,7 +133,7 @@ namespace skyline {
     };
 
     /**
-     * @brief This enumeration holds the functions that can be run on the guest process
+     * @brief The functions that can be run on the guest process
      */
     enum class ThreadCall : u8 {
         Syscall = 1, //!< A linux syscall needs to be called from the guest
@@ -145,7 +142,7 @@ namespace skyline {
     };
 
     /**
-     * @brief This structure holds the context of a thread during kernel calls
+     * @brief The context of a thread during kernel calls, it is stored in TLS on each guest thread
      */
     struct ThreadContext {
         ThreadState state; //!< The state of the guest

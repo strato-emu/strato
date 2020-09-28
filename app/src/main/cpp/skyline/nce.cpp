@@ -4,10 +4,12 @@
 #include <sched.h>
 #include <unistd.h>
 #include "os.h"
+#include "gpu.h"
 #include "jvm.h"
+#include "kernel/types/KProcess.h"
+#include "kernel/svc.h"
 #include "nce/guest.h"
 #include "nce/instructions.h"
-#include "kernel/svc.h"
 #include "nce.h"
 
 extern bool Halt;
@@ -194,7 +196,6 @@ namespace skyline {
             regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);
 
         constexpr u8 numRegisters{31}; //!< The amount of general-purpose registers in ARMv8
-
         for (u8 index{}; index < numRegisters - 2; index += 2) {
             auto xStr{index < 10 ? " X" : "X"};
             regStr += fmt::format("\n{}{}: 0x{:<16X} {}{}: 0x{:X}", xStr, index, ctx->registers.regs[index], xStr, index + 1, ctx->registers.regs[index + 1]);

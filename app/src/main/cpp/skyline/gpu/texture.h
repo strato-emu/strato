@@ -12,13 +12,10 @@ namespace skyline {
     }
     namespace gpu {
         namespace texture {
-            /*
-             * @brief This is used to hold the dimensions of a surface
-             */
             struct Dimensions {
-                u32 width; //!< The width of the surface
-                u32 height; //!< The height of the surface
-                u32 depth; //!< The depth of the surface
+                u32 width;
+                u32 height;
+                u32 depth;
 
                 constexpr Dimensions() : width(0), height(0), depth(0) {}
 
@@ -26,34 +23,25 @@ namespace skyline {
 
                 constexpr Dimensions(u32 width, u32 height, u32 depth) : width(width), height(height), depth(depth) {}
 
-                /**
-                 * @return If the specified dimension is equal to this one
-                 */
-                constexpr inline bool operator==(const Dimensions &dimensions) {
+                constexpr bool operator==(const Dimensions &dimensions) {
                     return (width == dimensions.width) && (height == dimensions.height) && (depth == dimensions.depth);
                 }
 
-                /**
-                 * @return If the specified dimension is not equal to this one
-                 */
-                constexpr inline bool operator!=(const Dimensions &dimensions) {
+                constexpr bool operator!=(const Dimensions &dimensions) {
                     return (width != dimensions.width) || (height != dimensions.height) || (depth != dimensions.depth);
                 }
             };
 
             /**
-             * @brief This is used to hold the attributes of a texture format
+             * @note Blocks refers to the atomic unit of a compressed format (IE: The minimum amount of data that can be decompressed)
              */
             struct Format {
-                u8 bpb; //!< Bytes Per Block, this is to accommodate compressed formats
-                u16 blockHeight; //!< The height of a single block
-                u16 blockWidth; //!< The width of a single block
-                vk::Format vkFormat; //!< The underlying Vulkan type of the format
+                u8 bpb; //!< Bytes Per Block, this is used instead of bytes per pixel as that might not be a whole number for compressed formats
+                u16 blockHeight; //!< The height of a block in pixels
+                u16 blockWidth; //!< The width of a block in pixels
+                vk::Format vkFormat;
 
-                /**
-                 * @return If this is a compressed texture format or not
-                 */
-                inline constexpr bool IsCompressed() {
+                constexpr bool IsCompressed() {
                     return (blockHeight != 1) || (blockWidth != 1);
                 }
 
@@ -63,42 +51,32 @@ namespace skyline {
                  * @param depth The depth of the texture in layers
                  * @return The size of the texture in bytes
                  */
-                inline constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) {
+                constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) {
                     return (((width / blockWidth) * (height / blockHeight)) * bpb) * depth;
                 }
 
-                /**
-                 * @param dimensions The dimensions of a texture
-                 * @return The size of the texture in bytes
-                 */
-                inline constexpr size_t GetSize(Dimensions dimensions) {
+                constexpr size_t GetSize(Dimensions dimensions) {
                     return GetSize(dimensions.width, dimensions.height, dimensions.depth);
                 }
 
-                /**
-                 * @return If the specified format is equal to this one
-                 */
-                inline constexpr bool operator==(const Format &format) {
+                constexpr bool operator==(const Format &format) {
                     return vkFormat == format.vkFormat;
                 }
 
-                /**
-                 * @return If the specified format is not equal to this one
-                 */
-                inline constexpr bool operator!=(const Format &format) {
+                constexpr bool operator!=(const Format &format) {
                     return vkFormat != format.vkFormat;
                 }
 
                 /**
                  * @return If this format is actually valid or not
                  */
-                inline constexpr operator bool() {
+                constexpr operator bool() {
                     return bpb;
                 }
             };
 
             /**
-             * @brief This describes the linearity of a texture. Refer to Chapter 20.1 of the Tegra X1 TRM for information.
+             * @brief The linearity of a texture, refer to Chapter 20.1 of the Tegra X1 TRM for information
              */
             enum class TileMode {
                 Linear, //!< This is a purely linear texture
@@ -107,7 +85,7 @@ namespace skyline {
             };
 
             /**
-             * @brief This holds the parameters of the tiling mode, covered in Table 76 in the Tegra X1 TRM
+             * @brief The parameters of the tiling mode, covered in Table 76 in the Tegra X1 TRM
              */
             union TileConfig {
                 struct {
@@ -118,9 +96,6 @@ namespace skyline {
                 u32 pitch; //!< The pitch of the texture if it's pitch linear
             };
 
-            /**
-             * @brief This enumerates all of the channel swizzle options
-             */
             enum class SwizzleChannel {
                 Zero, //!< Write 0 to the channel
                 One, //!< Write 1 to the channel
@@ -130,9 +105,6 @@ namespace skyline {
                 Alpha, //!< Alpha channel
             };
 
-            /**
-             * @brief This holds all of the texture swizzles on each color channel
-             */
             struct Swizzle {
                 SwizzleChannel red{SwizzleChannel::Red}; //!< Swizzle for the red channel
                 SwizzleChannel green{SwizzleChannel::Green}; //!< Swizzle for the green channel
@@ -145,109 +117,95 @@ namespace skyline {
         class PresentationTexture;
 
         /**
-         * @brief This class is used to hold metadata about a guest texture and can be used to create a host Texture object
+         * @brief A texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
          */
         class GuestTexture : public std::enable_shared_from_this<GuestTexture> {
           private:
-            const DeviceState &state; //!< The state of the device
+            const DeviceState &state;
 
           public:
             u64 address; //!< The address of the texture in guest memory
-            std::shared_ptr<Texture> host; //!< The corresponding host texture object
-            texture::Dimensions dimensions; //!< The dimensions of the texture
-            texture::Format format; //!< The format of the texture
-            texture::TileMode tileMode; //!< The tiling mode of the texture
-            texture::TileConfig tileConfig; //!< The tiling configuration of the texture
+            std::weak_ptr<Texture> host; //!< A host texture (if any) that was created from this guest texture
+            texture::Dimensions dimensions;
+            texture::Format format;
+            texture::TileMode tileMode;
+            texture::TileConfig tileConfig;
 
             GuestTexture(const DeviceState &state, u64 address, texture::Dimensions dimensions, texture::Format format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
 
-            inline constexpr size_t Size() {
+            constexpr size_t Size() {
                 return format.GetSize(dimensions);
             }
 
             /**
-             * @brief This creates a corresponding host texture object for this guest texture
+             * @brief Creates a corresponding host texture object for this guest texture
              * @param format The format of the host texture (Defaults to the format of the guest texture)
              * @param dimensions The dimensions of the host texture (Defaults to the dimensions of the host texture)
              * @param swizzle The channel swizzle of the host texture (Defaults to no channel swizzling)
              * @return A shared pointer to the host texture object
              * @note There can only be one host texture for a corresponding guest texture
              */
-            std::shared_ptr<Texture> InitializeTexture(std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {}) {
-                if (host)
-                    throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-                host = std::make_shared<Texture>(state, shared_from_this(), dimensions ? *dimensions : this->dimensions, format ? *format : this->format, swizzle);
-                return host;
-            }
+            std::shared_ptr<Texture> InitializeTexture(std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
 
           protected:
-            std::shared_ptr<PresentationTexture> InitializePresentationTexture() {
-                if (host)
-                    throw exception("Trying to create multiple PresentationTexture objects from a single GuestTexture");
-                auto presentation{std::make_shared<PresentationTexture>(state, shared_from_this(), dimensions, format)};
-                host = std::static_pointer_cast<Texture>(presentation);
-                return presentation;
-            }
+            std::shared_ptr<PresentationTexture> InitializePresentationTexture();
 
             friend service::hosbinder::GraphicBufferProducer;
         };
 
         /**
-         * @brief This class is used to store a texture which is backed by host objects
+         * @brief A texture which is backed by host constructs while being synchronized with the underlying guest texture
          */
         class Texture {
           private:
-            const DeviceState &state; //!< The state of the device
+            const DeviceState &state;
 
           public:
             std::vector<u8> backing; //!< The object that holds a host copy of the guest texture (Will be replaced with a vk::Image)
-            std::shared_ptr<GuestTexture> guest; //!< The corresponding guest texture object
-            texture::Dimensions dimensions; //!< The dimensions of the texture
-            texture::Format format; //!< The format of the host texture
-            texture::Swizzle swizzle; //!< The swizzle of the host texture
+            std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it is required for syncing
+            texture::Dimensions dimensions;
+            texture::Format format;
+            texture::Swizzle swizzle;
 
           public:
             Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle);
 
           public:
             /**
-             * @brief This convert this texture to the specified tiling mode
+             * @brief Convert this texture to the specified tiling mode
              * @param tileMode The tiling mode to convert it to
              * @param tileConfig The configuration for the tiling mode (Can be default argument for Linear)
              */
             void ConvertTileMode(texture::TileMode tileMode, texture::TileConfig tileConfig = {});
 
             /**
-             * @brief This sets the texture dimensions to the specified ones (As long as they are within the GuestTexture's range)
-             * @param dimensions The dimensions to adjust the texture to
+             * @brief Converts the texture dimensions to the specified ones (As long as they are within the GuestTexture's range)
              */
             void SetDimensions(texture::Dimensions dimensions);
 
             /**
-             * @brief This sets the format to the specified one
-             * @param format The format to change the texture to
+             * @brief Converts the texture to have the specified format
              */
             void SetFormat(texture::Format format);
 
             /**
-             * @brief This sets the channel swizzle to the specified one
-             * @param swizzle The channel swizzle to the change the texture to
+             * @brief Change the texture channel swizzle to the specified one
              */
             void SetSwizzle(texture::Swizzle swizzle);
 
             /**
-             * @brief This synchronizes the host texture with the guest after it has been modified
+             * @brief Synchronizes the host texture with the guest after it has been modified
              */
             void SynchronizeHost();
 
             /**
-             * @brief This synchronizes the guest texture with the host texture after it has been modified
+             * @brief Synchronizes the guest texture with the host texture after it has been modified
              */
             void SynchronizeGuest();
         };
 
         /**
-         * @brief This class is used to hold a texture object alongside a release callback used for display presentation
+         * @brief A texture object alongside a release callback used for display presentation
          */
         class PresentationTexture : public Texture {
           public:

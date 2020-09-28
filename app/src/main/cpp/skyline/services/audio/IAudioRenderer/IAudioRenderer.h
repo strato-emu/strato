@@ -57,7 +57,8 @@ namespace skyline {
         static_assert(sizeof(UpdateDataHeader) == 0x40);
 
         /**
-        * @brief IAudioRenderer is used to control an audio renderer output (https://switchbrew.org/wiki/Audio_services#IAudioRenderer)
+        * @brief IAudioRenderer is used to control an audio renderer output
+        * @url https://switchbrew.org/wiki/Audio_services#IAudioRenderer
         */
         class IAudioRenderer : public BaseService {
           private:
@@ -94,43 +95,47 @@ namespace skyline {
             ~IAudioRenderer();
 
             /**
-             * @brief Returns the sample rate (https://switchbrew.org/wiki/Audio_services#GetSampleRate)
+             * @brief Returns the sample rate
+             * @url https://switchbrew.org/wiki/Audio_services#GetSampleRate
              */
             Result GetSampleRate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-             * @brief Returns the sample count (https://switchbrew.org/wiki/Audio_services#GetSampleCount)
+             * @brief Returns the sample count
+             * @url https://switchbrew.org/wiki/Audio_services#GetSampleCount
             */
             Result GetSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Returns the number of mix buffers (https://switchbrew.org/wiki/Audio_services#GetMixBufferCount)
+            * @brief Returns the number of mix buffers
+            * @url https://switchbrew.org/wiki/Audio_services#GetMixBufferCount
             */
             Result GetMixBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Returns the state of the renderer (https://switchbrew.org/wiki/Audio_services#GetAudioRendererState) (stubbed)?
+            * @brief Returns the state of the renderer
+            * @url https://switchbrew.org/wiki/Audio_services#GetAudioRendererState (stubbed)?
             */
             Result GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Updates the audio renderer state and appends new data to playback buffers
-            */
+             * @brief Updates the audio renderer state and appends new data to playback buffers
+             */
             Result RequestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Start the audio stream from the renderer
-            */
+             * @brief Start the audio stream from the renderer
+             */
             Result Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Stop the audio stream from the renderer
-            */
+             * @brief Stop the audio stream from the renderer
+             */
             Result Stop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief Returns a handle to the sample release KEvent
-            */
+             * @brief Returns a handle to the sample release KEvent
+             */
             Result QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             SERVICE_DECL(

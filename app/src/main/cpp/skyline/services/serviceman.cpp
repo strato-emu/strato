@@ -119,7 +119,7 @@ namespace skyline::service {
     void ServiceManager::CloseSession(KHandle handle) {
         std::lock_guard serviceGuard(mutex);
         auto session{state.process->GetHandle<type::KSession>(handle)};
-        if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
+        if (session->isOpen) {
             if (session->isDomain) {
                 for (const auto &domainEntry : session->domainTable)
                     std::erase_if(serviceMap, [domainEntry](const auto &entry) {
@@ -130,7 +130,7 @@ namespace skyline::service {
                     return entry.second == session->serviceObject;
                 });
             }
-            session->serviceStatus = type::KSession::ServiceStatus::Closed;
+            session->isOpen = false;
         }
     }
 
@@ -139,7 +139,7 @@ namespace skyline::service {
         state.logger->Debug("----Start----");
         state.logger->Debug("Handle is 0x{:X}", handle);
 
-        if (session->serviceStatus == type::KSession::ServiceStatus::Open) {
+        if (session->isOpen) {
             ipc::IpcRequest request(session->isDomain, state);
             ipc::IpcResponse response(state);
 
@@ -149,10 +149,11 @@ namespace skyline::service {
                     if (session->isDomain) {
                         try {
                             auto service{session->domainTable.at(request.domain->objectId)};
-                            switch (static_cast<ipc::DomainCommand>(request.domain->command)) {
+                            switch (request.domain->command) {
                                 case ipc::DomainCommand::SendMessage:
                                     response.errorCode = service->HandleRequest(*session, request, response);
                                     break;
+
                                 case ipc::DomainCommand::CloseVHandle:
                                     std::erase_if(serviceMap, [service](const auto &entry) {
                                         return entry.second == service;
@@ -168,6 +169,7 @@ namespace skyline::service {
                     }
                     response.WriteResponse(session->isDomain);
                     break;
+
                 case ipc::CommandType::Control:
                 case ipc::CommandType::ControlWithContext:
                     state.logger->Debug("Control IPC Message: 0x{:X}", request.payload->value);
@@ -175,18 +177,22 @@ namespace skyline::service {
                         case ipc::ControlCommand::ConvertCurrentObjectToDomain:
                             response.Push(session->ConvertDomain());
                             break;
+
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
                             response.moveHandles.push_back(state.process->InsertItem(session));
                             break;
+
                         case ipc::ControlCommand::QueryPointerBufferSize:
                             response.Push<u32>(0x1000);
                             break;
+
                         default:
                             throw exception("Unknown Control Command: {}", request.payload->value);
                     }
                     response.WriteResponse(false);
                     break;
+
                 case ipc::CommandType::Close:
                     state.logger->Debug("Closing Session");
                     CloseSession(handle);

@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of an entry for DebugPad (https://switchbrew.org/wiki/HID_Shared_Memory#DebugPadState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#DebugPadState
      */
     struct DebugPadState {
         u64 timestamp; //!< The total timestamp in ticks
@@ -16,7 +16,7 @@ namespace skyline::input {
     static_assert(sizeof(DebugPadState) == 0x28);
 
     /**
-     * @brief The structure of the DebugPad section (https://switchbrew.org/wiki/HID_Shared_Memory#DebugPad)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#DebugPad
      */
     struct DebugPadSection {
         CommonHeader header;

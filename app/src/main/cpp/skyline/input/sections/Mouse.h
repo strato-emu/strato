@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief The structure of an entry for Mouse (https://switchbrew.org/wiki/HID_Shared_Memory#MouseState)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#MouseState
      */
     struct MouseState {
         u64 globalTimestamp; //!< The global timestamp in samples
@@ -27,7 +27,7 @@ namespace skyline::input {
     static_assert(sizeof(MouseState) == 0x30);
 
     /**
-     * @brief The structure of the Mouse section (https://switchbrew.org/wiki/HID_Shared_Memory#Mouse)
+     * @url https://switchbrew.org/wiki/HID_Shared_Memory#Mouse
      */
     struct MouseSection {
         CommonHeader header;

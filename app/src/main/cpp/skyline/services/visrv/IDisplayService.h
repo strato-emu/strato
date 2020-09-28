@@ -12,7 +12,7 @@ namespace skyline::service::visrv {
     class IDisplayService : public BaseService {
       protected:
         /**
-         * @brief This is the format of the parcel used in OpenLayer/CreateStrayLayer
+         * @brief This is the parcel used in OpenLayer/CreateStrayLayer
          */
         struct LayerParcel {
             u32 type; //!< The type of the layer
@@ -28,12 +28,12 @@ namespace skyline::service::visrv {
         IDisplayService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This creates a stray layer using a display's ID and returns a layer ID and the corresponding buffer ID
+         * @brief Creates a stray layer using a display's ID and returns a layer ID and the corresponding buffer ID
          */
         Result CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This takes a layer ID and destroys the corresponding stray layer
+         * @brief Destroys a stray layer by it's ID
          */
         Result DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };

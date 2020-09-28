@@ -7,13 +7,10 @@
 
 namespace skyline::audio {
     /**
-     * @brief The AdpcmDecoder class handles decoding single channel adaptive differential PCM data
+     * @brief The AdpcmDecoder class handles decoding single channel ADPCM (Adaptive Differential Pulse-Code Modulation) data
      */
     class AdpcmDecoder {
       private:
-        /**
-         * @brief This struct holds a single ADPCM frame header
-         */
         union FrameHeader {
             u8 raw;
 
@@ -25,16 +22,14 @@ namespace skyline::audio {
         };
         static_assert(sizeof(FrameHeader) == 0x1);
 
-        std::array<i32, 2> history{}; //!< This contains the history for decoding the ADPCM stream
-        std::vector<std::array<i16, 2>> coefficients; //!< This contains the coefficients for decoding the ADPCM stream
+        std::array<i32, 2> history{}; //!< The previous samples for decoding the ADPCM stream
+        std::vector<std::array<i16, 2>> coefficients; //!< The coefficients for decoding the ADPCM stream
 
       public:
         AdpcmDecoder(const std::vector<std::array<i16, 2>> &coefficients);
 
         /**
-         * @brief This decodes a buffer of ADPCM data into I16 PCM
-         * @param adpcmData A buffer containing the raw ADPCM data
-         * @return A buffer containing decoded single channel I16 PCM data
+         * @brief Decodes a buffer of ADPCM data into I16 PCM
          */
         std::vector<i16> Decode(span<u8> adpcmData);
     };

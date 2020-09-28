@@ -13,14 +13,10 @@ namespace skyline::crypto {
     class AesCipher {
       private:
         mbedtls_cipher_context_t decryptContext;
+        std::vector<u8> buffer; //!< A buffer used to avoid constant memory allocation
 
         /**
-         * @brief Buffer declared as class variable to avoid constant memory allocation
-         */
-        std::vector<u8> buffer;
-
-        /**
-         * @brief Calculates IV for XTS, basically just big to little endian conversion.
+         * @brief Calculates IV for XTS, basically just big to little endian conversion
          */
         inline static std::array<u8, 0x10> GetTweak(size_t sector) {
             std::array<u8, 0x10> tweak{};
@@ -35,24 +31,25 @@ namespace skyline::crypto {
         ~AesCipher();
 
         /**
-         * @brief Sets initilization vector
+         * @brief Sets the Initialization Vector
          */
         void SetIV(const std::array<u8, 0x10> &iv);
 
         /**
-         * @note destination and source can be the same
+         * @brief Decrypts the supplied buffer and outputs the result into the destination buffer
+         * @note The destination and source buffers can be the same
          */
         void Decrypt(u8 *destination, u8 *source, size_t size);
 
         /**
-         * @brief Decrypts data and writes back to it
+         * @brief Decrypts the supplied data in-place
          */
         inline void Decrypt(span<u8> data) {
             Decrypt(data.data(), data.data(), data.size());
         }
 
         /**
-         * @brief Decrypts data with XTS. IV will get calculated with the given sector
+         * @brief Decrypts data with XTS, IV will get calculated with the given sector
          */
         void XtsDecrypt(u8 *destination, u8 *source, size_t size, size_t sector, size_t sectorSize);
 

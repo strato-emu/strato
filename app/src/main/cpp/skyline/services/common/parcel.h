@@ -7,13 +7,11 @@
 
 namespace skyline::service {
     /**
-     * @brief This class encapsulates a Parcel object (https://switchbrew.org/wiki/Display_services#Parcel)
+     * @brief This allows easy access and efficient serialization of an Android Parcel object
+     * @url https://switchbrew.org/wiki/Display_services#Parcel
      */
     class Parcel {
       private:
-        /**
-         * @brief The header of an Android Parcel structure
-         */
         struct ParcelHeader {
             u32 dataSize;
             u32 dataOffset;
@@ -22,24 +20,22 @@ namespace skyline::service {
         } header{};
         static_assert(sizeof(ParcelHeader) == 0x10);
 
-        const DeviceState &state; //!< The state of the device
+        const DeviceState &state;
 
       public:
-        std::vector<u8> data; //!< A vector filled with data in the parcel
-        std::vector<u8> objects; //!< A vector filled with objects in the parcel
-        size_t dataOffset{}; //!< This is the offset of the data read from the parcel
+        std::vector<u8> data;
+        std::vector<u8> objects;
+        size_t dataOffset{}; //!< The offset of the data read from the parcel
 
         /**
          * @brief This constructor fills in the Parcel object with data from a IPC buffer
          * @param buffer The buffer that contains the parcel
-         * @param state The state of the device
          * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
          */
         Parcel(span<u8> buffer, const DeviceState &state, bool hasToken = false);
 
         /**
          * @brief This constructor is used to create an empty parcel then write to a process
-         * @param state The state of the device
          */
         Parcel(const DeviceState &state);
 
@@ -54,9 +50,7 @@ namespace skyline::service {
         }
 
         /**
-         * @brief Writes some data to the Parcel
-         * @tparam ValueType The type of the object to write
-         * @param value The object to be written
+         * @brief Writes a value to the Parcel
          */
         template<typename ValueType>
         void Push(const ValueType &value) {
@@ -70,15 +64,13 @@ namespace skyline::service {
 
         /**
          * @brief Writes an object to the Parcel
-         * @tparam ValueType The type of the object to write
-         * @param value The object to be written
          */
-        template<typename ValueType>
-        void PushObject(const ValueType &value) {
-            objects.reserve(objects.size() + sizeof(ValueType));
-            auto item{reinterpret_cast<const u8 *>(&value)};
-            for (size_t index{}; sizeof(ValueType) > index; index++) {
-                objects.push_back(*item);
+        template<typename ObjectType>
+        void PushObject(const ObjectType &object) {
+            objects.reserve(objects.size() + sizeof(ObjectType));
+            auto item{reinterpret_cast<const u8 *>(&object)};
+            for (size_t index{}; sizeof(ObjectType) > index; index++) {
+                objects.push_back(*object);
                 item++;
             }
         }

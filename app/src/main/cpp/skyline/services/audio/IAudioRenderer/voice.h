@@ -8,9 +8,6 @@
 #include <audio.h>
 
 namespace skyline::service::audio::IAudioRenderer {
-    /**
-     * @brief This stores data for configuring a biquadratic filter
-     */
     struct BiquadFilter {
         u8 enable;
         u8 _pad0_;
@@ -22,9 +19,6 @@ namespace skyline::service::audio::IAudioRenderer {
     };
     static_assert(sizeof(BiquadFilter) == 0xC);
 
-    /**
-     * @brief This stores information of a wave buffer of samples
-     */
     struct WaveBuffer {
         u64 address;
         u64 size;
@@ -40,9 +34,6 @@ namespace skyline::service::audio::IAudioRenderer {
     };
     static_assert(sizeof(WaveBuffer) == 0x38);
 
-    /**
-     * @brief This is in input containing the configuration of a voice
-     */
     struct VoiceIn {
         u32 slot;
         u32 nodeId;
@@ -71,9 +62,6 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(VoiceIn) == 0x170);
 
 
-    /**
-     * @brief This is returned to inform the guest of the state of a voice
-     */
     struct VoiceOut {
         u64 playedSamplesCount;
         u32 playedWaveBuffersCount;
@@ -82,8 +70,8 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(VoiceOut) == 0x10);
 
     /**
-    * @brief The Voice class manages an audio voice
-    */
+     * @brief The Voice class manages an audio voice
+     */
     class Voice {
       private:
         const DeviceState &state;
@@ -102,7 +90,7 @@ namespace skyline::service::audio::IAudioRenderer {
         skyline::audio::AudioFormat format{skyline::audio::AudioFormat::Invalid};
 
         /**
-         * @brief This updates the sample buffer with data from the current wave buffer and processes it
+         * @brief Updates the sample buffer with data from the current wave buffer and processes it
          */
         void UpdateBuffers();
 
@@ -119,13 +107,13 @@ namespace skyline::service::audio::IAudioRenderer {
         Voice(const DeviceState &state);
 
         /**
-         * @brief This reads the input voice data from the guest and sets internal data based off it
+         * @brief Reads the input voice data from the guest and sets internal data based off it
          * @param input The input data struct from guest
          */
         void ProcessInput(const VoiceIn &input);
 
         /**
-         * @brief This obtains the voices audio sample data, updating it if required
+         * @brief Obtains the voices audio sample data, updating it if required
          * @param maxSamples The maximum amount of samples the output buffer should contain
          * @return A vector of I16 PCM sample data
          */

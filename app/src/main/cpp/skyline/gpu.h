@@ -4,22 +4,19 @@
 #pragma once
 
 #include <android/native_window.h>
-#include <kernel/types/KEvent.h>
-#include <services/nvdrv/devices/nvmap.h>
-#include "gpu/memory_manager.h"
+#include "services/nvdrv/devices/nvmap.h"
 #include "gpu/gpfifo.h"
 #include "gpu/syncpoint.h"
 #include "gpu/engines/maxwell_3d.h"
 
 namespace skyline::gpu {
     /**
-     * @brief This is used to converge all of the interfaces to the GPU and send the results to a GPU API
-     * @note We opted for just supporting a single layer and display as it's what basically all games use and wasting cycles on it is pointless
+     * @brief A common interfaces to the GPU where all objects relevant to it are present
      */
     class GPU {
       private:
-        ANativeWindow *window; //!< The ANativeWindow to render to
-        const DeviceState &state; //!< The state of the device
+        ANativeWindow *window; //!< The ANativeWindow that is presented to
+        const DeviceState &state;
         bool surfaceUpdate{}; //!< If the surface needs to be updated
         u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
 
@@ -38,19 +35,10 @@ namespace skyline::gpu {
         gpfifo::GPFIFO gpfifo;
         std::array<Syncpoint, constant::MaxHwSyncpointCount> syncpoints{};
 
-        /**
-         * @param window The ANativeWindow to render to
-         */
         GPU(const DeviceState &state);
 
-        /**
-         * @brief The destructor for the GPU class
-         */
         ~GPU();
 
-        /**
-         * @brief The loop that executes routine GPU functions
-         */
         void Loop();
     };
 }

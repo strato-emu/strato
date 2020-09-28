@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief ILibraryAppletProxy returns handles to various services (https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletProxy)
+     * @brief ILibraryAppletProxy returns handles to various services
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletProxy
      */
     class ILibraryAppletProxy : public BaseProxy {
       public:

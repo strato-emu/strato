@@ -11,28 +11,25 @@
 #include "IPlatformServiceManager.h"
 
 namespace skyline::service::pl {
-    /**
-     * @brief This holds an entry in the the font table
-     */
     struct FontEntry {
         u8 *data; //!< The font TTF data
         size_t length; //!< The length of the font TTF data
         size_t offset; //!< The offset of the font in shared memory
     };
 
-    std::array<FontEntry, 6> fontTable = {{
-                                              {FontChineseSimplified, FontExtendedChineseSimplifiedLength},
-                                              {FontChineseTraditional, FontChineseTraditionalLength},
-                                              {FontExtendedChineseSimplified, FontExtendedChineseSimplifiedLength},
-                                              {FontKorean, FontKoreanLength},
-                                              {FontNintendoExtended, FontNintendoExtendedLength},
-                                              {FontStandard, FontStandardLength}
-                                          }};
+    std::array<FontEntry, 6> fontTable{{
+                                           {FontChineseSimplified, FontExtendedChineseSimplifiedLength},
+                                           {FontChineseTraditional, FontChineseTraditionalLength},
+                                           {FontExtendedChineseSimplified, FontExtendedChineseSimplifiedLength},
+                                           {FontKorean, FontKoreanLength},
+                                           {FontNintendoExtended, FontNintendoExtendedLength},
+                                           {FontStandard, FontStandardLength}
+                                       }};
 
     IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager) {
-        constexpr u32 SharedFontResult{0x7F9A0218}; //!< This is the decrypted magic for a single font in the shared font data
-        constexpr u32 SharedFontMagic{0x36F81A1E}; //!< This is the encrypted magic for a single font in the shared font data
-        constexpr u32 SharedFontKey{SharedFontMagic ^SharedFontResult}; //!< This is the XOR key for encrypting the font size
+        constexpr u32 SharedFontResult{0x7F9A0218}; //!< The decrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontMagic{0x36F81A1E}; //!< The encrypted magic for a single font in the shared font data
+        constexpr u32 SharedFontKey{SharedFontMagic ^ SharedFontResult}; //!< The XOR key for encrypting the font size
 
         auto pointer{reinterpret_cast<u32 *>(fontSharedMem->kernel.address)};
         for (auto &font : fontTable) {
@@ -46,7 +43,7 @@ namespace skyline::service::pl {
     }
 
     Result IPlatformServiceManager::GetLoadState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 FontLoaded{1}; //!< This is returned to show that all fonts have been loaded into memory
+        constexpr u32 FontLoaded{1}; //!< "All fonts have been loaded into memory"
         response.Push(FontLoaded);
         return {};
     }

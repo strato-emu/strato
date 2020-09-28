@@ -13,7 +13,7 @@ namespace skyline {
 
     namespace service::nvdrv::device {
         /**
-         * @brief This represents a single registered event with an attached fence
+         * @brief Events are used to expose fences to the userspace, they can be waited on using an IOCTL or be converted into a native HOS KEvent object that can be waited on just like any other KEvent on the guest
          */
         class NvHostEvent {
           private:
@@ -22,9 +22,6 @@ namespace skyline {
             void Signal();
 
           public:
-            /**
-             * @brief This enumerates the possible states of an event
-             */
             enum class State {
                 Available = 0,
                 Waiting = 1,
@@ -52,12 +49,13 @@ namespace skyline {
         };
 
         /**
-         * @brief NvHostCtrl (/dev/nvhost-ctrl) is used for GPU synchronization (https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl)
+         * @brief NvHostCtrl (/dev/nvhost-ctrl) is used for GPU synchronization
+         * @url https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl
          */
         class NvHostCtrl : public NvDevice {
           private:
             /**
-             * @brief This holds metadata about an event, it is used by QueryEvent and EventWait
+             * @brief Metadata about an event, it is used by QueryEvent and EventWait
              */
             union EventValue {
                 u32 val;
@@ -93,27 +91,32 @@ namespace skyline {
             NvHostCtrl(const DeviceState &state);
 
             /**
-             * @brief This gets the value of an nvdrv setting, it returns an error code on production switches (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_GET_CONFIG)
+             * @brief Gets the value of an nvdrv setting, it returns an error code on production switches
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_GET_CONFIG
              */
             NvStatus GetConfig(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief This signals an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_SIGNAL)
+             * @brief Signals an NvHost event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_SIGNAL
              */
             NvStatus EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief This synchronously waits on an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT)
+             * @brief Synchronously waits on an NvHost event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT
              */
             NvStatus EventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief This asynchronously waits on an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT_ASYNC)
+             * @brief Asynchronously waits on an NvHost event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT_ASYNC
              */
             NvStatus EventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief This registers an NvHost event (https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_REGISTER)
+             * @brief Registers an NvHost event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_REGISTER
              */
             NvStatus EventRegister(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 

@@ -9,20 +9,14 @@
 
 namespace skyline::vfs {
     /**
-     * @brief This backing is used to decrypt AES-CTR data
+     * @brief A backing for decrypting AES-CTR data
      */
     class CtrEncryptedBacking : public Backing {
       private:
         crypto::KeyStore::Key128 ctr;
-
         crypto::AesCipher cipher;
-
         std::shared_ptr<Backing> backing;
-
-        /**
-         * @brief Offset of file is used to calculate the IV
-         */
-        size_t baseOffset;
+        size_t baseOffset; //!< The offset of the backing into the file is used to calculate the IV
 
         /**
          * @brief Calculates IV based on the offset

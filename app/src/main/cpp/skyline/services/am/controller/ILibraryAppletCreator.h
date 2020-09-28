@@ -14,12 +14,14 @@ namespace skyline::service::am {
         ILibraryAppletCreator(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This function returns a handle to a library applet accessor (https://switchbrew.org/wiki/Applet_Manager_services#CreateLibraryApplet)
+         * @brief Returns a handle to a library applet accessor
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#CreateLibraryApplet
          */
         Result CreateLibraryApplet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This function creates an IStorage that can be used by the application (https://switchbrew.org/wiki/Applet_Manager_services#CreateStorage)
+         * @brief Creates an IStorage that can be used by the application
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#CreateStorage
          */
         Result CreateStorage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

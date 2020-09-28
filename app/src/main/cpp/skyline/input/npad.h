@@ -16,7 +16,7 @@ namespace skyline::input {
     };
 
     /**
-     * @brief This class is used to manage all NPad devices and their allocations to Player objects
+     * @brief All NPad devices and their allocations to Player objects are managed by this class
      */
     class NpadManager {
       private:
@@ -26,11 +26,11 @@ namespace skyline::input {
         friend NpadDevice;
 
         /**
-         * @brief This translates an NPad's ID into it's index in the array
+         * @brief Translates an NPad's ID into it's index in the array
          * @param id The ID of the NPad to translate
          * @return The corresponding index of the NPad in the array
          */
-        static constexpr inline size_t Translate(NpadId id) {
+        static constexpr size_t Translate(NpadId id) {
             switch (id) {
                 case NpadId::Handheld:
                     return 8;
@@ -45,7 +45,7 @@ namespace skyline::input {
         std::recursive_mutex mutex; //!< This mutex must be locked before any modifications to class members
         std::array<NpadDevice, constant::NpadCount> npads;
         std::array<GuestController, constant::ControllerCount> controllers;
-        std::vector<NpadId> supportedIds; //!< The NpadId(s) that are supported by the application
+        std::vector<NpadId> supportedIds; //!< The NPadId(s) that are supported by the application
         NpadStyleSet styles; //!< The styles that are supported by the application
         NpadJoyOrientation orientation{}; //!< The orientation all of Joy-Cons are in (This affects stick transformation for them)
 
@@ -57,30 +57,30 @@ namespace skyline::input {
         /**
          * @return A reference to the NPad with the specified ID
          */
-        constexpr inline NpadDevice &at(NpadId id) {
+        constexpr NpadDevice &at(NpadId id) {
             return npads.at(Translate(id));
         }
 
         /**
          * @return A reference to the NPad with the specified ID
          */
-        constexpr inline NpadDevice &operator[](NpadId id) noexcept {
+        constexpr NpadDevice &operator[](NpadId id) noexcept {
             return npads.operator[](Translate(id));
         }
 
         /**
-         * @brief This deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
+         * @brief Deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
          * @note If any class members were edited, the mutex shouldn't be released till this is called
          */
         void Update();
 
         /**
-         * @brief This activates the mapping between guest controllers -> players, a call to this is required for function
+         * @brief Activates the mapping between guest controllers -> players, a call to this is required for function
          */
         void Activate();
 
         /**
-         * @brief This disables any activate mappings from guest controllers -> players till Activate has been called
+         * @brief Disables any activate mappings from guest controllers -> players till Activate has been called
          */
         void Deactivate();
     };

@@ -7,12 +7,13 @@
 
 namespace skyline::service::timesrv {
     /**
-     * @brief ITimeZoneService is used to retrieve and set time (https://switchbrew.org/wiki/PSC_services#ITimeZoneService)
+     * @brief ITimeZoneService is used to retrieve and set time
+     * @url https://switchbrew.org/wiki/PSC_services#ITimeZoneService
      */
     class ITimeZoneService : public BaseService {
       private:
         /**
-         * @brief This holds a particular time point in calendar format
+         * @brief A particular time point in calendar format
          */
         struct CalendarTime {
             u16 year; //!< The Year component of the date
@@ -26,7 +27,7 @@ namespace skyline::service::timesrv {
         static_assert(sizeof(CalendarTime) == 0x8);
 
         /**
-         * @brief This is passed in addition to CalendarTime
+         * @brief Information that is packaged along with CalendarTime
          */
         struct CalendarAdditionalInfo {
             u32 dayWeek; //!< The amount of days since Sunday
@@ -41,7 +42,8 @@ namespace skyline::service::timesrv {
         ITimeZoneService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This receives a u64 #PosixTime (https://switchbrew.org/wiki/PSC_services#PosixTime), and returns a #CalendarTime (https://switchbrew.org/wiki/PSC_services#CalendarTime), #CalendarAdditionalInfo (https://switchbrew.org/wiki/PSC_services#CalendarAdditionalInfo)
+         * @brief Receives a u64 #PosixTime (https://switchbrew.org/wiki/PSC_services#PosixTime), and returns a #CalendarTime (https://switchbrew.org/wiki/PSC_services#CalendarTime), #CalendarAdditionalInfo
+         * @url https://switchbrew.org/wiki/PSC_services#CalendarAdditionalInfo
          */
         Result ToCalendarTimeWithMyRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

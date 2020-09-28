@@ -16,21 +16,22 @@ namespace skyline::service::timesrv {
     };
 
     /**
-     * @brief ISystemClock is used to retrieve and set time (https://switchbrew.org/wiki/PSC_services#ISystemClock)
+     * @brief ISystemClock is used to retrieve and set time
+     * @url https://switchbrew.org/wiki/PSC_services#ISystemClock
      */
     class ISystemClock : public BaseService {
       public:
-        const SystemClockType type; //!< The type of the system clock
+        const SystemClockType type;
 
         ISystemClock(const SystemClockType clockType, const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns the amount of seconds since epoch
+         * @brief Returns the amount of seconds since epoch
          */
         Result GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns the system clock context
+         * @brief Returns the system clock context
          */
         Result GetSystemClockContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

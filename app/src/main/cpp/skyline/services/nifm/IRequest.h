@@ -8,7 +8,8 @@
 
 namespace skyline::service::nifm {
     /**
-     * @brief IRequest is used by applications to bring up a network (https://switchbrew.org/wiki/Network_Interface_services#IRequest)
+     * @brief IRequest is used by applications to bring up a network
+     * @url https://switchbrew.org/wiki/Network_Interface_services#IRequest
      */
     class IRequest : public BaseService {
       private:
@@ -19,22 +20,26 @@ namespace skyline::service::nifm {
         IRequest(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns the current state of the request (https://switchbrew.org/wiki/Network_Interface_services#GetRequestState)
+         * @brief Returns the current state of the request
+         * @url https://switchbrew.org/wiki/Network_Interface_services#GetRequestState
          */
         Result GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns the error code if a network bring up request fails (https://switchbrew.org/wiki/Network_Interface_services#GetResult)
+         * @brief Returns the error code if a network bring up request fails
+         * @url https://switchbrew.org/wiki/Network_Interface_services#GetResult
          */
         Result GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns two KEvent handles that signal request on request updates (https://switchbrew.org/wiki/Network_Interface_services#GetSystemEventReadableHandles)
+         * @brief Returns two KEvent handles that signal request on request updates
+         * @url https://switchbrew.org/wiki/Network_Interface_services#GetSystemEventReadableHandles
          */
         Result GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This submits a request to bring up a network (https://switchbrew.org/wiki/Network_Interface_services#Submit)
+         * @brief Submits a request to bring up a network
+         * @url https://switchbrew.org/wiki/Network_Interface_services#Submit
          */
         Result Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

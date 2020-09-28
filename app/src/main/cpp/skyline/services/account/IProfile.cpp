@@ -27,7 +27,7 @@ namespace skyline::service::account {
             u64 lastEditTimestamp;             //!< A POSIX UTC timestamp denoting the last account edit
             std::array<char, 0x20> nickname;   //!< UTF-8 Nickname
         } accountProfileBase = {
-            .uid = userId
+            .uid = userId,
         };
 
         auto username{state.settings->GetString("username_value")};

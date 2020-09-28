@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief This has functions that are used for debugging purposes (https://switchbrew.org/wiki/Applet_Manager_services#IDebugFunctions)
+     * @brief This is used for debugging purposes
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#IDebugFunctions
      */
     class IDebugFunctions : public BaseService {
       public:

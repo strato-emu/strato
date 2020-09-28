@@ -14,24 +14,23 @@ namespace skyline {
     namespace constant {
         constexpr u16 TlsSlotSize{0x200}; //!< The size of a single TLS slot
         constexpr u8 TlsSlots{PAGE_SIZE / TlsSlotSize}; //!< The amount of TLS slots in a single page
-        constexpr KHandle BaseHandleIndex{0xD000}; // The index of the base handle
+        constexpr KHandle BaseHandleIndex{0xD000}; //!< The index of the base handle
         constexpr u32 MtxOwnerMask{0xBFFFFFFF}; //!< The mask of values which contain the owner of a mutex
     }
 
     namespace kernel::type {
         /**
-        * @brief The KProcess class is responsible for holding the state of a process
-        */
+         * @brief The KProcess class is responsible for holding the state of a process
+         */
         class KProcess : public KSyncObject {
           private:
-            KHandle handleIndex{constant::BaseHandleIndex}; //!< This is used to keep track of what to map as an handle
+            KHandle handleIndex{constant::BaseHandleIndex}; //!< The index of the handle that will be allocated next
 
             /**
-            * @brief This class holds a single TLS page's status
-            * @details tls_page_t holds the status of a single TLS page (A page is 4096 bytes on ARMv8).
-            * Each TLS page has 8 slots, each 0x200 (512) bytes in size.
-            * The first slot of the first page is reserved for user-mode exception handling.
-            * Read more about TLS here: https://switchbrew.org/wiki/Thread_Local_Storage
+            * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)
+            * Each TLS page has 8 slots, each 0x200 (512) bytes in size
+            * The first slot of the first page is reserved for user-mode exception handling
+            * @url https://switchbrew.org/wiki/Thread_Local_Storage
             */
             struct TlsPage {
                 u64 address; //!< The address of the page allocated for TLS
@@ -39,8 +38,8 @@ namespace skyline {
                 bool slot[constant::TlsSlots]{}; //!< An array of booleans denoting which TLS slots are reserved
 
                 /**
-                * @param address The address of the allocated page
-                */
+                 * @param address The address of the allocated page
+                 */
                 TlsPage(u64 address);
 
                 /**
@@ -64,21 +63,20 @@ namespace skyline {
             };
 
             /**
-            * @brief Returns a TLS slot from an arbitrary TLS page
-            * @return The address of a free TLS slot
-            */
+             * @return The address of a free TLS slot
+             */
             u64 GetTlsSlot();
 
             /**
-            * @brief This initializes heap and the initial TLS page
-            */
+             * @brief Initializes heap and the initial TLS page
+             */
             void InitializeMemory();
 
           public:
             friend OS;
 
             /**
-            * @brief This is used as the output for functions that return created kernel objects
+            * @brief The output for functions that return created kernel objects
             * @tparam objectClass The class of the kernel object
             */
             template<typename objectClass>
@@ -87,18 +85,15 @@ namespace skyline {
                 KHandle handle; //!< The handle of the object in the process
             };
 
-            /**
-            * @brief This enum is used to describe the current status of the process
-            */
             enum class Status {
                 Created, //!< The process was created but the main thread has not started yet
                 Started, //!< The process has been started
-                Exiting //!< The process is exiting
-            } status = Status::Created; //!< The state of the process
+                Exiting, //!< The process is exiting
+            } status = Status::Created;
 
             /**
-            * @brief This is used to hold information about a single waiting thread for mutexes and conditional variables
-            */
+             * @brief Metadata on a thread waiting for mutexes or conditional variables
+             */
             struct WaitStatus {
                 std::atomic_bool flag{false}; //!< The underlying atomic flag of the thread
                 u8 priority; //!< The priority of the thread
@@ -119,12 +114,11 @@ namespace skyline {
             std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
             std::shared_ptr<type::KSharedMemory> stack; //!< The shared memory used to hold the stack of the main thread
             std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
-            Mutex mutexLock; //!< This mutex is to prevent concurrent mutex operations to happen at once
-            Mutex conditionalLock; //!< This mutex is to prevent concurrent conditional variable operations to happen at once
+            Mutex mutexLock; //!< Synchronizes all concurrent guest mutex operations
+            Mutex conditionalLock; //!< Synchronizes all concurrent guest conditional variable operations
 
             /**
             * @brief Creates a KThread object for the main thread and opens the process's memory file
-            * @param state The state of the device
             * @param pid The PID of the main thread
             * @param entryPoint The address to start execution at
             * @param stack The KSharedMemory object for Stack memory allocated by the guest process
@@ -133,8 +127,8 @@ namespace skyline {
             KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
             /**
-            * Close the file descriptor to the process's memory
-            */
+             * Close the file descriptor to the process's memory
+             */
             ~KProcess();
 
             /**
@@ -148,7 +142,7 @@ namespace skyline {
             std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority);
 
             /**
-            * @brief This returns the host address for a specific address in guest memory
+            * @brief Returns the host address for a specific address in guest memory
             * @param address The corresponding guest address
             * @return The corresponding host address
             */
@@ -158,7 +152,7 @@ namespace skyline {
             * @tparam Type The type of the pointer to return
             * @param address The address on the guest
             * @return A pointer corresponding to a certain address on the guest
-            * @note This can return a nullptr if the address is invalid
+            * @note If the address is invalid then nullptr will be returned
             */
             template<typename Type>
             inline Type *GetPointer(u64 address) {
@@ -166,11 +160,8 @@ namespace skyline {
             }
 
             /**
-            * @brief Returns a reference to an object from guest memory
-            * @tparam Type The type of the object to be read
-            * @param address The address of the object
-            * @return A reference to object with type T
-            */
+             * @brief Returns a reference to an object from guest memory
+             */
             template<typename Type>
             inline Type &GetReference(u64 address) {
                 auto source{GetPointer<Type>(address)};
@@ -250,7 +241,7 @@ namespace skyline {
             * @param destination The address to the location where the process memory is written
             * @param offset The address to read from in process memory
             * @param size The amount of memory to be read
-            * @param forceGuest This flag forces the write to be performed in guest address space
+            * @param forceGuest Forces the write to be performed in guest address space
             */
             void ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest = false);
 
@@ -259,7 +250,7 @@ namespace skyline {
             * @param source The address of where the data to be written is present
             * @param offset The address to write to in process memory
             * @param size The amount of memory to be written
-            * @param forceGuest This flag forces the write to be performed in guest address space
+            * @param forceGuest Forces the write to be performed in guest address space
             */
             void WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest = false);
 
@@ -345,15 +336,14 @@ namespace skyline {
             std::optional<HandleOut<KMemory>> GetMemoryObject(u64 address);
 
             /**
-            * @brief This deletes a certain handle from the handle table
-            * @param handle The handle to delete
-            */
-            inline void DeleteHandle(KHandle handle) {
+             * @brief Closes a handle in the handle table
+             */
+            inline void CloseHandle(KHandle handle) {
                 handles.at(handle - constant::BaseHandleIndex) = nullptr;
             }
 
             /**
-            * @brief This locks the Mutex at the specified address
+            * @brief Locks the Mutex at the specified address
             * @param address The address of the mutex
             * @param owner The handle of the current mutex owner
             * @return If the mutex was successfully locked
@@ -361,7 +351,7 @@ namespace skyline {
             bool MutexLock(u64 address, KHandle owner);
 
             /**
-            * @brief This unlocks the Mutex at the specified address
+            * @brief Unlocks the Mutex at the specified address
             * @param address The address of the mutex
             * @return If the mutex was successfully unlocked
             */
@@ -376,15 +366,15 @@ namespace skyline {
             bool ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout);
 
             /**
-            * @brief This signals a number of conditional variable waiters
+            * @brief Signals a number of conditional variable waiters
             * @param address The address of the conditional variable
             * @param amount The amount of waiters to signal
             */
             void ConditionalVariableSignal(u64 address, u64 amount);
 
             /**
-            * @brief This resets the object to an unsignalled state
-            */
+             * @brief Resets the object to an unsignalled state
+             */
             inline void ResetSignal() {
                 signalled = false;
             }

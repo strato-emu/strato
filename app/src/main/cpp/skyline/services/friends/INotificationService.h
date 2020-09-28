@@ -8,7 +8,8 @@
 
 namespace skyline::service::friends {
     /**
-     * @brief INotificationService is used by applications to receive notifications (https://switchbrew.org/wiki/Friend_services#INotificationService)
+     * @brief INotificationService is used by applications to receive notifications
+     * @url https://switchbrew.org/wiki/Friend_services#INotificationService
      */
     class INotificationService : public BaseService {
       private:
@@ -18,7 +19,7 @@ namespace skyline::service::friends {
         INotificationService(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns a handle to the notification event
+         * @brief Returns a handle to the notification event
          */
         Result GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

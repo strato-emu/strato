@@ -3,24 +3,20 @@
 
 #pragma once
 
-#include "common.h"
+#include "kernel/memory.h"
 #include "loader/loader.h"
-#include "kernel/ipc.h"
-#include "kernel/types/KProcess.h"
-#include "kernel/types/KThread.h"
 #include "services/serviceman.h"
-#include "gpu.h"
 
 namespace skyline::kernel {
     /**
-     * @brief The OS class manages the interaction between Skyline components and the underlying OS in NCE
+     * @brief The OS class manages the interaction between the various Skyline components
      */
     class OS {
       public:
-        DeviceState state; //!< The state of the device
-        std::shared_ptr<type::KProcess> process; //!< The KProcess object for the emulator, representing the guest process
-        service::ServiceManager serviceManager; //!< This manages all of the service functions
-        MemoryManager memory; //!< The MemoryManager object for this process
+        DeviceState state;
+        std::shared_ptr<type::KProcess> process;
+        service::ServiceManager serviceManager;
+        MemoryManager memory;
         std::string appFilesPath; //!< The full path to the app's files directory
 
         /**

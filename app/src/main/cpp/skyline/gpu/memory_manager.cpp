@@ -11,23 +11,23 @@ namespace skyline::gpu::vmm {
 
         // Create the initial chunk that will be split to create new chunks
         ChunkDescriptor baseChunk(GpuAddressSpaceBase, GpuAddressSpaceSize, 0, ChunkState::Unmapped);
-        chunkList.push_back(baseChunk);
+        chunks.push_back(baseChunk);
     }
 
     std::optional<ChunkDescriptor> MemoryManager::FindChunk(u64 size, ChunkState state) {
-        auto chunk{std::find_if(chunkList.begin(), chunkList.end(), [size, state](const ChunkDescriptor &chunk) -> bool {
+        auto chunk{std::find_if(chunks.begin(), chunks.end(), [size, state](const ChunkDescriptor &chunk) -> bool {
             return chunk.size > size && chunk.state == state;
         })};
 
-        if (chunk != chunkList.end())
+        if (chunk != chunks.end())
             return *chunk;
 
         return std::nullopt;
     }
 
     u64 MemoryManager::InsertChunk(const ChunkDescriptor &newChunk) {
-        auto chunkEnd{chunkList.end()};
-        for (auto chunk{chunkList.begin()}; chunk != chunkEnd; chunk++) {
+        auto chunkEnd{chunks.end()};
+        for (auto chunk{chunks.begin()}; chunk != chunkEnd; chunk++) {
             if (chunk->CanContain(newChunk)) {
                 auto oldChunk{*chunk};
                 u64 newSize{newChunk.address - chunk->address};
@@ -38,11 +38,11 @@ namespace skyline::gpu::vmm {
                 } else {
                     chunk->size = newSize;
 
-                    chunk = chunkList.insert(std::next(chunk), newChunk);
+                    chunk = chunks.insert(std::next(chunk), newChunk);
                 }
 
                 if (extension)
-                    chunkList.insert(std::next(chunk), ChunkDescriptor(newChunk.address + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuAddress + newSize + newChunk.size) : 0, oldChunk.state));
+                    chunks.insert(std::next(chunk), ChunkDescriptor(newChunk.address + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuAddress + newSize + newChunk.size) : 0, oldChunk.state));
 
                 return newChunk.address;
             } else if (chunk->address + chunk->size > newChunk.address) {
@@ -54,8 +54,8 @@ namespace skyline::gpu::vmm {
                     if (tailChunk->address + tailChunk->size >= newChunk.address + newChunk.size)
                         break;
 
-                    tailChunk = chunkList.erase(tailChunk);
-                    chunkEnd = chunkList.end();
+                    tailChunk = chunks.erase(tailChunk);
+                    chunkEnd = chunks.end();
                 }
 
                 // The given chunk is too large to fit into existing chunks
@@ -74,7 +74,7 @@ namespace skyline::gpu::vmm {
                 if (headChunk->size == 0)
                     *headChunk = newChunk;
                 else
-                    chunkList.insert(std::next(headChunk), newChunk);
+                    chunks.insert(std::next(headChunk), newChunk);
 
                 return newChunk.address;
             }
@@ -132,11 +132,11 @@ namespace skyline::gpu::vmm {
         if (!util::IsAligned(address, constant::GpuPageSize))
             return false;
 
-        auto chunk{std::find_if(chunkList.begin(), chunkList.end(), [address](const ChunkDescriptor &chunk) -> bool {
+        auto chunk{std::find_if(chunks.begin(), chunks.end(), [address](const ChunkDescriptor &chunk) -> bool {
             return chunk.address == address;
         })};
 
-        if (chunk == chunkList.end())
+        if (chunk == chunks.end())
             return false;
 
         chunk->state = ChunkState::Reserved;
@@ -146,11 +146,11 @@ namespace skyline::gpu::vmm {
     }
 
     void MemoryManager::Read(u8 *destination, u64 address, u64 size) const {
-        auto chunk{std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto chunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         })};
 
-        if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+        if (chunk == chunks.end() || chunk->state != ChunkState::Mapped)
             throw exception("Failed to read region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
         chunk--;
@@ -166,7 +166,7 @@ namespace skyline::gpu::vmm {
 
             size -= readSize;
             if (size) {
-                if (++chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+                if (++chunk == chunks.end() || chunk->state != ChunkState::Mapped)
                     throw exception("Failed to read region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
                 readAddress = chunk->cpuAddress;
@@ -176,11 +176,11 @@ namespace skyline::gpu::vmm {
     }
 
     void MemoryManager::Write(u8 *source, u64 address, u64 size) const {
-        auto chunk{std::upper_bound(chunkList.begin(), chunkList.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
+        auto chunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.address;
         })};
 
-        if (chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+        if (chunk == chunks.end() || chunk->state != ChunkState::Mapped)
             throw exception("Failed to write region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
         chunk--;
@@ -196,7 +196,7 @@ namespace skyline::gpu::vmm {
 
             size -= writeSize;
             if (size) {
-                if (++chunk == chunkList.end() || chunk->state != ChunkState::Mapped)
+                if (++chunk == chunks.end() || chunk->state != ChunkState::Mapped)
                     throw exception("Failed to write region in GPU address space: Address: 0x{:X}, Size: 0x{:X}", address, size);
 
                 writeAddress = chunk->cpuAddress;

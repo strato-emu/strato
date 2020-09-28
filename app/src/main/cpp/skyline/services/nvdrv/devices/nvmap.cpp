@@ -98,7 +98,16 @@ namespace skyline::service::nvdrv::device {
     }
 
     NvStatus NvMap::Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        enum class Parameter : u32 { Size = 1, Alignment = 2, Base = 3, HeapMask = 4, Kind = 5, Compr = 6 }; // https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h#102
+        // https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h#102
+        enum class Parameter : u32 {
+            Size = 1,
+            Alignment = 2,
+            Base = 3,
+            HeapMask = 4,
+            Kind = 5,
+            Compr = 6,
+        };
+
         struct Data {
             u32 handle;          // In
             Parameter parameter; // In

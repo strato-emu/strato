@@ -16,7 +16,7 @@ namespace skyline {
          */
         class RomFileSystem : public FileSystem {
           private:
-            std::shared_ptr<Backing> backing; //!< The backing file of the filesystem
+            std::shared_ptr<Backing> backing;
 
             /**
              * @brief Traverses the sibling files of the given file and adds them to the file map
@@ -33,9 +33,6 @@ namespace skyline {
             void TraverseDirectory(u32 offset, const std::string &path);
 
           public:
-            /**
-             * @brief This holds the header of a RomFS image
-             */
             struct RomFsHeader {
                 u64 headerSize; //!< The size of the header
                 u64 dirHashTableOffset; //!< The offset of the directory hash table
@@ -50,9 +47,6 @@ namespace skyline {
             } header{};
             static_assert(sizeof(RomFsHeader) == 0x50);
 
-            /**
-             * @brief This holds a directory entry in a RomFS image
-             */
             struct RomFsDirectoryEntry {
                 u32 parentOffset; //!< The offset from the directory metadata base of the parent directory
                 u32 siblingOffset; //!< The offset from the directory metadata base of a sibling directory
@@ -62,9 +56,6 @@ namespace skyline {
                 u32 nameSize; //!< The size of the directory's name in bytes
             };
 
-            /**
-             * @brief This holds a file entry in a RomFS image
-             */
             struct RomFsFileEntry {
                 u32 parentOffset; //!< The offset from the directory metadata base of the parent directory
                 u32 siblingOffset; //!< The offset from the file metadata base of a sibling file
@@ -93,7 +84,7 @@ namespace skyline {
           private:
             RomFileSystem::RomFsDirectoryEntry ownEntry; //!< This directory's entry in the RomFS header
             RomFileSystem::RomFsHeader header; //!< A header of this files parent RomFS image
-            std::shared_ptr<Backing> backing; //!< The backing of the RomFS image
+            std::shared_ptr<Backing> backing;
 
           public:
             RomFileSystemDirectory(const std::shared_ptr<Backing> &backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode);

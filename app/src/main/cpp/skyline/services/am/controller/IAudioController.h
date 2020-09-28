@@ -7,7 +7,8 @@
 
 namespace skyline::service::am {
     /**
-     * @brief This has functions relating to volume control (https://switchbrew.org/wiki/Applet_Manager_services#IAudioController)
+     * @brief This is used to control the audio's volume
+     * @url https://switchbrew.org/wiki/Applet_Manager_services#IAudioController
      */
     class IAudioController : public BaseService {
       private:
@@ -18,17 +19,20 @@ namespace skyline::service::am {
         IAudioController(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This sets the expected volumes for an application (https://switchbrew.org/wiki/Applet_Manager_services#SetExpectedMasterVolume)
+         * @brief Sets the expected volumes for an application
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetExpectedMasterVolume
          */
         Result SetExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns the main applet volume that is expected by the application (https://switchbrew.org/wiki/Applet_Manager_services#GetMainAppletExpectedMasterVolume)
+         * @brief Returns the main applet volume that is expected by the application
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetMainAppletExpectedMasterVolume
          */
         Result GetMainAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns the library applet volume that is expected by the application (https://switchbrew.org/wiki/Applet_Manager_services#GetLibraryAppletExpectedMasterVolume)
+         * @brief Returns the library applet volume that is expected by the application
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetLibraryAppletExpectedMasterVolume
          */
         Result GetLibraryAppletExpectedMasterVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

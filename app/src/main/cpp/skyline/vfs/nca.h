@@ -13,33 +13,28 @@ namespace skyline {
     }
 
     namespace vfs {
-        /**
-         * @brief This enumerates the various content types of an NCA
-         */
         enum class NcaContentType : u8 {
-            Program = 0x0, //!< This is a program NCA
-            Meta = 0x1, //!< This is a metadata NCA
-            Control = 0x2, //!< This is a control NCA
-            Manual = 0x3, //!< This is a manual NCA
-            Data = 0x4, //!< This is a data NCA
-            PublicData = 0x5, //!< This is a public data NCA
+            Program = 0x0,    //!< Program NCA
+            Meta = 0x1,       //!< Metadata NCA
+            Control = 0x2,    //!< Control NCA
+            Manual = 0x3,     //!< Manual NCA
+            Data = 0x4,       //!< Data NCA
+            PublicData = 0x5, //!< Public data NCA
         };
 
         /**
-         * @brief The NCA class provides an easy way to access the contents of an NCA file (https://switchbrew.org/wiki/NCA_Format)
+         * @brief The NCA class provides an easy way to access the contents of an Nintendo Content Archive
+         * @url https://switchbrew.org/wiki/NCA_Format
          */
         class NCA {
           private:
-            /**
-             * @brief This enumerates the distribution types of an NCA
-             */
             enum class NcaDistributionType : u8 {
                 System = 0x0, //!< This NCA was distributed on the EShop or is part of the system
                 GameCard = 0x1, //!< This NCA was distributed on a GameCard
             };
 
             /**
-             * @brief This enumerates the key generation version in NCAs before HOS 3.0.1
+             * @brief The key generation version in NCAs before HOS 3.0.1
              */
             enum class NcaLegacyKeyGenerationType : u8 {
                 Fw100 = 0x0, //!< 1.0.0
@@ -47,7 +42,7 @@ namespace skyline {
             };
 
             /**
-             * @brief This enumerates the key generation version in NCAs after HOS 3.0.0
+             * @brief The key generation version in NCAs after HOS 3.0.0, this is changed by Nintendo frequently
              */
             enum class NcaKeyGenerationType : u8 {
                 Fw301 = 0x3, //!< 3.0.1
@@ -62,43 +57,28 @@ namespace skyline {
                 Invalid = 0xFF, //!< An invalid key generation type
             };
 
-            /**
-             * @brief This enumerates the key area encryption key types
-             */
             enum class NcaKeyAreaEncryptionKeyType : u8 {
                 Application = 0x0, //!< This NCA uses the application key encryption area
                 Ocean = 0x1, //!< This NCA uses the ocean key encryption area
                 System = 0x2, //!< This NCA uses the system key encryption area
             };
 
-            /**
-             * @brief This hold the entry of a single filesystem in an NCA
-             */
             struct NcaFsEntry {
                 u32 startOffset; //!< The start offset of the filesystem in units of 0x200 bytes
                 u32 endOffset; //!< The start offset of the filesystem in units of 0x200 bytes
                 u64 _pad_;
             };
 
-            /**
-             * @brief This enumerates the possible filesystem types a section of an NCA can contain
-             */
             enum class NcaSectionFsType : u8 {
                 RomFs = 0x0, //!< This section contains a RomFs filesystem
                 PFS0 = 0x1, //!< This section contains a PFS0 filesystem
             };
 
-            /**
-             * @brief This enumerates the possible hash header types of an NCA section
-             */
             enum class NcaSectionHashType : u8 {
                 HierarchicalSha256 = 0x2, //!< The hash header for this section is that of a PFS0
                 HierarchicalIntegrity = 0x3, //!< The hash header for this section is that of a RomFS
             };
 
-            /**
-             * @brief This enumerates the possible encryption types of an NCA section
-             */
             enum class NcaSectionEncryptionType : u8 {
                 None = 0x1, //!< This NCA doesn't use any encryption
                 XTS = 0x2, //!< This NCA uses AES-XTS encryption
@@ -107,7 +87,7 @@ namespace skyline {
             };
 
             /**
-             * @brief This holds the data for a single level of the hierarchical integrity scheme
+             * @brief The data for a single level of the hierarchical integrity scheme
              */
             struct HierarchicalIntegrityLevel {
                 u64 offset; //!< The offset of the level data
@@ -118,7 +98,7 @@ namespace skyline {
             static_assert(sizeof(HierarchicalIntegrityLevel) == 0x18);
 
             /**
-             * @brief This holds the hash info header of the hierarchical integrity scheme
+             * @brief The hash info header of the hierarchical integrity scheme
              */
             struct HierarchicalIntegrityHashInfo {
                 u32 magic; //!< The hierarchical integrity magic, 'IVFC'
@@ -133,7 +113,7 @@ namespace skyline {
             static_assert(sizeof(HierarchicalIntegrityHashInfo) == 0xF8);
 
             /**
-             * @brief This holds the hash info header of the SHA256 hashing scheme for PFS0
+             * @brief The hash info header of the SHA256 hashing scheme for PFS0
              */
             struct HierarchicalSha256HashInfo {
                 std::array<u8, 0x20> hashTableHash; //!< A SHA256 hash over the hash table
@@ -147,9 +127,6 @@ namespace skyline {
             };
             static_assert(sizeof(HierarchicalSha256HashInfo) == 0xF8);
 
-            /**
-             * @brief This holds the header of each specific section in an NCA
-             */
             struct NcaSectionHeader {
                 u16 version; //!< The version, always 2
                 NcaSectionFsType fsType; //!< The type of the filesystem in the section
@@ -168,34 +145,31 @@ namespace skyline {
             };
             static_assert(sizeof(NcaSectionHeader) == 0x200);
 
-            /**
-             * @brief This struct holds the header of a Nintendo Content Archive
-             */
             struct NcaHeader {
                 std::array<u8, 0x100> fixed_key_sig; //!< An RSA-PSS signature over the header with fixed key
                 std::array<u8, 0x100> npdm_key_sig; //!< An RSA-PSS signature over header with key in NPDM
                 u32 magic; //!< The magic of the NCA: 'NCA3'
                 NcaDistributionType distributionType; //!< Whether this NCA is from a gamecard or the E-Shop
-                NcaContentType contentType; //!< The content type of the NCA
+                NcaContentType contentType;
                 NcaLegacyKeyGenerationType legacyKeyGenerationType; //!< The keyblob to use for decryption
                 NcaKeyAreaEncryptionKeyType keyAreaEncryptionKeyType; //!< The index of the key area encryption key that is needed
                 u64 size; //!< The total size of the NCA
-                u64 programId; //!< The program ID of the NCA
-                u32 contentIndex; //!< The index of the content
+                u64 programId;
+                u32 contentIndex;
                 u32 sdkVersion; //!< The version of the SDK the NCA was built with
                 NcaKeyGenerationType keyGenerationType; //!< The keyblob to use for decryption
                 u8 fixedKeyGeneration; //!< The fixed key index
                 u8 _pad0_[0xE];
-                std::array<u8, 0x10> rightsId; //!< The NCA's rights ID
+                std::array<u8, 0x10> rightsId;
                 std::array<NcaFsEntry, 4> fsEntries; //!< The filesystem entries for this NCA
-                std::array<std::array<u8, 0x20>, 4> sectionHashes; //!< This contains SHA-256 hashes for each filesystem header
+                std::array<std::array<u8, 0x20>, 4> sectionHashes; //!< SHA-256 hashes for each filesystem header
                 std::array<std::array<u8, 0x10>, 4> encryptedKeyArea; //!< The encrypted key area for each filesystem
                 u8 _pad1_[0xC0];
                 std::array<NcaSectionHeader, 4> sectionHeaders;
             } header{};
             static_assert(sizeof(NcaHeader) == 0xC00);
 
-            std::shared_ptr<Backing> backing; //!< The backing for the NCA
+            std::shared_ptr<Backing> backing;
             std::shared_ptr<crypto::KeyStore> keyStore;
             bool encrypted{false};
             bool rightsIdEmpty;

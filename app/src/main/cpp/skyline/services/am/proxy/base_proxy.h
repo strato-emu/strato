@@ -14,42 +14,50 @@ namespace skyline::service::am {
         BaseProxy(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief This returns #ICommonStateGetter (https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter)
+         * @brief Returns #ICommonStateGetter
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#ICommonStateGetter
          */
         Result GetCommonStateGetter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #ISelfController (https://switchbrew.org/wiki/Applet_Manager_services#ISelfController)
+         * @brief Returns #ISelfController
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#ISelfController
          */
         Result GetSelfController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #IWindowController (https://switchbrew.org/wiki/Applet_Manager_services#IWindowController)
+         * @brief Returns #IWindowController
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IWindowController
          */
         Result GetWindowController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #IAudioController (https://switchbrew.org/wiki/Applet_Manager_services#IAudioController)
+         * @brief Returns #IAudioController
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IAudioController
          */
         Result GetAudioController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #IDisplayController (https://switchbrew.org/wiki/Applet_Manager_services#IDisplayController)
+         * @brief Returns #IDisplayController
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IDisplayController
          */
         Result GetDisplayController(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #ILibraryAppletCreator (https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletCreator)
+         * @brief Returns #ILibraryAppletCreator
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#ILibraryAppletCreator
          */
         Result GetLibraryAppletCreator(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #IDebugFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IDebugFunctions)
+         * @brief Returns #IDebugFunctions
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IDebugFunctions
          */
         Result GetDebugFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns #IAppletCommonFunctions (https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions)
+         * @brief Returns #IAppletCommonFunctions
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IAppletCommonFunctions
          */
         Result GetAppletCommonFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };

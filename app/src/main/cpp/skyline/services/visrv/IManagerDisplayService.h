@@ -7,7 +7,8 @@
 
 namespace skyline::service::visrv {
     /**
-     * @brief This service retrieves information about a display in context of the entire system (https://switchbrew.org/wiki/Display_services#IManagerDisplayService)
+     * @brief This service retrieves information about a display in context of the entire system
+     * @url https://switchbrew.org/wiki/Display_services#IManagerDisplayService
      */
     class IManagerDisplayService : public IDisplayService {
       public:

@@ -8,7 +8,8 @@
 namespace skyline::service::account {
 
     /**
-    * @brief IProfile provides functions for reading user profile (https://switchbrew.org/wiki/Account_services#IProfile)
+    * @brief IProfile provides functions for reading user profile
+    * @url https://switchbrew.org/wiki/Account_services#IProfile
     */
     class IProfile : public BaseService {
       public:
@@ -18,12 +19,12 @@ namespace skyline::service::account {
         UserId userId;
 
         /**
-         * @brief This returns AccountUserData and AccountProfileBase objects that describe the user's information
+         * @brief Returns AccountUserData and AccountProfileBase objects that describe the user's information
          */
         Result Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief This returns an AccountProfileBase object that describe the user's information
+         * @brief Returns an AccountProfileBase object that describe the user's information
          */
         Result GetBase(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

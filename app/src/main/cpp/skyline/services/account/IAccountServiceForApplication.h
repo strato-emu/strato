@@ -21,17 +21,18 @@ namespace skyline {
             u64 upper; //!< The upper 64 bits of the user ID
             u64 lower; //!< The lower 64 bits of the user ID
 
-            inline constexpr bool operator==(const UserId &userId) {
+            constexpr bool operator==(const UserId &userId) {
                 return upper == userId.upper && lower == userId.lower;
             }
 
-            inline constexpr bool operator!=(const UserId &userId) {
+            constexpr bool operator!=(const UserId &userId) {
                 return !(*this == userId);
             }
         };
 
         /**
-        * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information (https://switchbrew.org/wiki/Account_services#acc:u0)
+        * @brief IAccountServiceForApplication or acc:u0 provides functions for reading user information
+        * @url https://switchbrew.org/wiki/Account_services#acc:u0
         */
         class IAccountServiceForApplication : public BaseService {
           private:
@@ -44,38 +45,39 @@ namespace skyline {
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
 
             /**
-            * @brief This checks if the given user ID exists
-            */
+             * @brief Checks if the given user ID exists
+             */
             Result GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief This returns a list of all user accounts on the console
-            */
+             * @brief Returns a list of all user accounts on the console
+             */
             Result ListAllUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief This returns a list of all open user accounts on the console
-            */
+             * @brief Returns a list of all open user accounts on the console
+             */
             Result ListOpenUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief This returns the user ID of the last active user on the console
-            */
+             * @brief Returns the user ID of the last active user on the console
+             */
             Result GetLastOpenedUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief This provides information about the running application for account services to use (https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0)
+            * @brief Provides information about the running application for account services to use
+            * @url https://switchbrew.org/wiki/Account_services#InitializeApplicationInfoV0
             */
             Result InitializeApplicationInfoV0(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-             * @brief This returns a handle to an IProfile which can be used for reading user information
+             * @brief Returns a handle to an IProfile which can be used for reading user information
              */
             Result GetProfile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-            * @brief This returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info
-            */
+             * @brief Returns a handle to an IManagerForApplication which can be used for reading Nintendo Online info
+             */
             Result GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             SERVICE_DECL(
