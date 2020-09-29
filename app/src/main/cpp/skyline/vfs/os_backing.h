@@ -22,9 +22,9 @@ namespace skyline::vfs {
 
         ~OsBacking();
 
-        size_t Read(u8 *output, size_t offset, size_t size);
+        size_t Read(span<u8> output, size_t offset = 0);
 
-        size_t Write(u8 *output, size_t offset, size_t size);
+        size_t Write(span<u8> input, size_t offset = 0);
 
         void Resize(size_t size);
     };

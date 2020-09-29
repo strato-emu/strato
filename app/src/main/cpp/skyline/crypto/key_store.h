@@ -28,14 +28,14 @@ namespace skyline::crypto {
         std::map<Key128, Key128> titleKeys;
 
         std::unordered_map<std::string_view, std::optional<Key256> &> key256Names{
-            {"header_key", headerKey}
+            {"header_key", headerKey},
         };
 
         std::unordered_map<std::string_view, IndexedKeys128 &> indexedKey128Names{
             {"titlekek_", titleKek},
             {"key_area_key_application_", areaKeyApplication},
             {"key_area_key_ocean_", areaKeyOcean},
-            {"key_area_key_system_", areaKeySystem}
+            {"key_area_key_system_", areaKeySystem},
         };
 
         using ReadPairsCallback = void (skyline::crypto::KeyStore::*)(std::string_view, std::string_view);

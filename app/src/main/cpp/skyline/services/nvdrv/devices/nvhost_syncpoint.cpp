@@ -10,7 +10,9 @@ namespace skyline::service::nvdrv {
         constexpr u32 VBlank0SyncpointId{26};
         constexpr u32 VBlank1SyncpointId{27};
 
-        // Reserve both vblank syncpoints as client managed since the userspace driver has direct access to them
+        // Reserve both vblank syncpoints as client managed as they use Continuous Mode
+        // Refer to section 14.3.5.3 of the TRM for more information on Continuous Mode
+        // https://github.com/Jetson-TX1-AndroidTV/android_kernel_jetson_tx1_hdmi_primary/blob/8f74a72394efb871cb3f886a3de2998cd7ff2990/drivers/gpu/host1x/drm/dc.c#L660
         ReserveSyncpoint(VBlank0SyncpointId, true);
         ReserveSyncpoint(VBlank1SyncpointId, true);
     }
@@ -20,7 +22,7 @@ namespace skyline::service::nvdrv {
             throw exception("Requested syncpoint is in use");
 
         syncpoints.at(id).reserved = true;
-        syncpoints.at(id).clientManaged = clientManaged;
+        syncpoints.at(id).interfaceManaged = clientManaged;
 
         return id;
     }
@@ -44,7 +46,8 @@ namespace skyline::service::nvdrv {
         if (!syncpoint.reserved)
             throw exception("Cannot check the expiry status of an unreserved syncpoint!");
 
-        if (syncpoint.clientManaged)
+        // If the interface manages counters then we don't keep track of the maximum value as it handles sanity checking the values then
+        if (syncpoint.interfaceManaged)
             return static_cast<i32>(syncpoint.counterMin - threshold) >= 0;
         else
             return (syncpoint.counterMax - threshold) >= (syncpoint.counterMin - threshold);

@@ -14,7 +14,7 @@ namespace skyline::vfs {
     using namespace loader;
 
     NCA::NCA(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : backing(backing), keyStore(keyStore) {
-        backing->Read(&header);
+        header = backing->Read<NcaHeader>();
 
         if (header.magic != util::MakeMagic<u32>("NCA3")) {
             if (!keyStore->headerKey)

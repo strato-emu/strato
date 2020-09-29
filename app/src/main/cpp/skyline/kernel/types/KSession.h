@@ -16,8 +16,8 @@ namespace skyline::kernel::type {
     class KSession : public KSyncObject {
       public:
         std::shared_ptr<service::BaseService> serviceObject;
-        std::unordered_map<KHandle, std::shared_ptr<service::BaseService>> domainTable; //!< A map from a virtual handle to it's service
-        KHandle handleIndex{0x1}; //!< The currently allocated handle index
+        std::vector<std::shared_ptr<service::BaseService>> domains; //!< A vector of services that correspond to virtual handles
+        KHandle handleIndex{}; //!< The currently allocated handle index
         bool isOpen{true}; //!< If the session is open or not
         bool isDomain{}; //!< If this is a domain session or not
 
@@ -33,7 +33,7 @@ namespace skyline::kernel::type {
          */
         KHandle ConvertDomain() {
             isDomain = true;
-            domainTable[handleIndex] = serviceObject;
+            domains.push_back(serviceObject);
             return handleIndex++;
         }
     };

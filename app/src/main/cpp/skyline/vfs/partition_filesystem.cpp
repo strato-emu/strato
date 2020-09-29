@@ -6,7 +6,7 @@
 
 namespace skyline::vfs {
     PartitionFileSystem::PartitionFileSystem(std::shared_ptr<Backing> backing) : FileSystem(), backing(backing) {
-        backing->Read(&header);
+        header = backing->Read<FsHeader>();
 
         if (header.magic == util::MakeMagic<u32>("PFS0"))
             hashed = false;
@@ -20,12 +20,11 @@ namespace skyline::vfs {
         fileDataOffset = stringTableOffset + header.stringTableSize;
 
         std::vector<char> stringTable(header.stringTableSize + 1);
-        backing->Read(stringTable.data(), stringTableOffset, header.stringTableSize);
+        backing->Read(span(stringTable).first(header.stringTableSize).cast<u8>(), stringTableOffset);
         stringTable[header.stringTableSize] = 0;
 
         for (u32 entryOffset{sizeof(FsHeader)}; entryOffset < header.numFiles * entrySize; entryOffset += entrySize) {
-            PartitionFileEntry entry;
-            backing->Read(&entry, entryOffset);
+            auto entry{backing->Read<PartitionFileEntry>(entryOffset)};
 
             std::string name(&stringTable[entry.stringTableOffset]);
             fileMap.emplace(name, std::move(entry));

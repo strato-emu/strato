@@ -17,7 +17,6 @@
 #include <string>
 #include <sstream>
 #include <memory>
-#include <syslog.h>
 #include <sys/mman.h>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -366,8 +365,6 @@ namespace skyline {
     class Logger {
       private:
         std::ofstream logFile; //!< An output stream to the log file
-        std::array<char, 4> levelCharacter{'0', '1', '2', '3'}; //!< The LogLevel as written out to a file
-        static constexpr std::array<int, 4> levelSyslog{LOG_ERR, LOG_WARNING, LOG_INFO, LOG_DEBUG}; //!< This corresponds to LogLevel and provides it's equivalent for syslog
         Mutex mtx; //!< A mutex to lock before logging anything
 
       public:
@@ -377,6 +374,7 @@ namespace skyline {
             Info,
             Debug,
         };
+
         LogLevel configLevel; //!< The minimum level of logs to write
 
         /**
@@ -457,9 +455,9 @@ namespace skyline {
      */
     class Settings {
       private:
-        std::map<std::string, std::string> stringMap; //!< A mapping from all keys to their corresponding string value
-        std::map<std::string, bool> boolMap; //!< A mapping from all keys to their corresponding boolean value
-        std::map<std::string, int> intMap; //!< A mapping from all keys to their corresponding integer value
+        std::unordered_map<std::string, std::string> stringMap; //!< A mapping from all keys to their corresponding string value
+        std::unordered_map<std::string, bool> boolMap; //!< A mapping from all keys to their corresponding boolean value
+        std::unordered_map<std::string, int> intMap; //!< A mapping from all keys to their corresponding integer value
 
       public:
         /**

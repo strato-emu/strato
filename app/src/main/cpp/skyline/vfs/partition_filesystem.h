@@ -16,7 +16,7 @@ namespace skyline::vfs {
             u32 numFiles; //!< The number of files in the filesystem
             u32 stringTableSize; //!< The size of the filesystem's string table
             u32 _pad_;
-        } header{};
+        } header;
         static_assert(sizeof(FsHeader) == 0x10);
 
         struct PartitionFileEntry {

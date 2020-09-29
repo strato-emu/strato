@@ -10,14 +10,14 @@
 
 namespace skyline::loader {
     NroLoader::NroLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
-        backing->Read(&header);
+        header = backing->Read<NroHeader>();
 
         if (header.magic != util::MakeMagic<u32>("NRO0"))
             throw exception("Invalid NRO magic! 0x{0:X}", header.magic);
 
         // The homebrew asset section is appended to the end of an NRO file
         if (backing->size > header.size) {
-            backing->Read(&assetHeader, header.size);
+            assetHeader = backing->Read<NroAssetHeader>(header.size);
 
             if (assetHeader.magic != util::MakeMagic<u32>("ASET"))
                 throw exception("Invalid ASET magic! 0x{0:X}", assetHeader.magic);
@@ -34,14 +34,14 @@ namespace skyline::loader {
         NroAssetSection &segmentHeader{assetHeader.icon};
         std::vector<u8> buffer(segmentHeader.size);
 
-        backing->Read(buffer.data(), header.size + segmentHeader.offset, segmentHeader.size);
+        backing->Read(buffer, header.size + segmentHeader.offset);
         return buffer;
     }
 
     std::vector<u8> NroLoader::GetSegment(const NroSegmentHeader &segment) {
         std::vector<u8> buffer(segment.size);
 
-        backing->Read(buffer.data(), segment.offset, segment.size);
+        backing->Read(buffer, segment.offset);
         return buffer;
     }
 

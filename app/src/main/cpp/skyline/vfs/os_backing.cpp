@@ -20,22 +20,22 @@ namespace skyline::vfs {
             close(fd);
     }
 
-    size_t OsBacking::Read(u8 *output, size_t offset, size_t size) {
+    size_t OsBacking::Read(span<u8> output, size_t offset) {
         if (!mode.read)
             throw exception("Attempting to read a backing that is not readable");
 
-        auto ret{pread64(fd, output, size, offset)};
+        auto ret{pread64(fd, output.data(), output.size(), offset)};
         if (ret < 0)
             throw exception("Failed to read from fd: {}", strerror(errno));
 
         return static_cast<size_t>(ret);
     }
 
-    size_t OsBacking::Write(u8 *output, size_t offset, size_t size) {
+    size_t OsBacking::Write(span<u8> input, size_t offset) {
         if (!mode.write)
             throw exception("Attempting to write to a backing that is not writable");
 
-        auto ret{pwrite64(fd, output, size, offset)};
+        auto ret{pwrite64(fd, input.data(), input.size(), offset)};
         if (ret < 0)
             throw exception("Failed to write to fd: {}", strerror(errno));
 

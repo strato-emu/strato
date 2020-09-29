@@ -57,8 +57,7 @@ namespace skyline::loader {
             return std::vector<u8>();
 
         std::vector<u8> buffer(icon->size);
-
-        icon->Read(buffer.data(), 0, icon->size);
+        icon->Read(buffer);
         return buffer;
     }
 }

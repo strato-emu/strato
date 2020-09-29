@@ -4,6 +4,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <android/log.h>
 #include "skyline/loader/loader.h"
 #include "skyline/common.h"
 #include "skyline/os.h"
@@ -12,24 +13,18 @@
 
 bool Halt;
 jobject Surface;
-uint FaultCount;
 skyline::GroupMutex JniMtx;
 skyline::u16 fps;
 skyline::u32 frametime;
 std::weak_ptr<skyline::input::Input> inputWeak;
 
 void signalHandler(int signal) {
-    syslog(LOG_ERR, "Halting program due to signal: %s", strsignal(signal));
-    if (FaultCount > 2)
-        exit(SIGKILL);
-    else
-        Halt = true;
-    FaultCount++;
+    __android_log_print(ANDROID_LOG_FATAL, "emu-cpp", "Halting program due to signal: %s", strsignal(signal));
+    exit(signal);
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
     Halt = false;
-    FaultCount = 0;
     fps = 0;
     frametime = 0;
 
@@ -44,6 +39,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
     auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
+    close(preferenceFd);
 
     auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
     auto logger{std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))))};
@@ -74,6 +70,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     auto end{std::chrono::steady_clock::now()};
     logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+
+    close(romFd);
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setHalt(JNIEnv *, jobject, jboolean halt) {

@@ -9,8 +9,7 @@
 
 namespace skyline::loader {
     NsoLoader::NsoLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
-        u32 magic{};
-        backing->Read(&magic);
+        u32 magic{backing->Read<u32>()};
 
         if (magic != util::MakeMagic<u32>("NSO0"))
             throw exception("Invalid NSO magic! 0x{0:X}", magic);
@@ -21,19 +20,18 @@ namespace skyline::loader {
 
         if (compressedSize) {
             std::vector<u8> compressedBuffer(compressedSize);
-            backing->Read(compressedBuffer.data(), segment.fileOffset, compressedSize);
+            backing->Read(compressedBuffer, segment.fileOffset);
 
             LZ4_decompress_safe(reinterpret_cast<char *>(compressedBuffer.data()), reinterpret_cast<char *>(outputBuffer.data()), compressedSize, segment.decompressedSize);
         } else {
-            backing->Read(outputBuffer.data(), segment.fileOffset, segment.decompressedSize);
+            backing->Read(outputBuffer, segment.fileOffset);
         }
 
         return outputBuffer;
     }
 
     Loader::ExecutableLoadInfo NsoLoader::LoadNso(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset) {
-        NsoHeader header{};
-        backing->Read(&header);
+        auto header{backing->Read<NsoHeader>()};
 
         if (header.magic != util::MakeMagic<u32>("NSO0"))
             throw exception("Invalid NSO magic! 0x{0:X}", header.magic);

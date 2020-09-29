@@ -15,34 +15,34 @@ namespace skyline::vfs {
         cipher.SetIV(ctr);
     }
 
-    size_t CtrEncryptedBacking::Read(u8 *output, size_t offset, size_t size) {
+    size_t CtrEncryptedBacking::Read(span<u8> output, size_t offset) {
         if (size == 0)
             return 0;
 
         size_t sectorOffset{offset % SectorSize};
         if (sectorOffset == 0) {
             UpdateCtr(baseOffset + offset);
-            size_t read{backing->Read(output, offset, size)};
+            size_t read{backing->Read(output, offset)};
             if (read != size)
                 return 0;
-            cipher.Decrypt({output, size});
+            cipher.Decrypt(output);
             return size;
         }
 
         size_t sectorStart{offset - sectorOffset};
         std::vector<u8> blockBuf(SectorSize);
-        size_t read{backing->Read(blockBuf.data(), sectorStart, SectorSize)};
+        size_t read{backing->Read(blockBuf, sectorStart)};
         if (read != SectorSize)
             return 0;
         UpdateCtr(baseOffset + sectorStart);
         cipher.Decrypt(blockBuf);
         if (size + sectorOffset < SectorSize) {
-            std::memcpy(output, blockBuf.data() + sectorOffset, size);
+            std::memcpy(output.data(), blockBuf.data() + sectorOffset, size);
             return size;
         }
 
         size_t readInBlock{SectorSize - sectorOffset};
-        std::memcpy(output, blockBuf.data() + sectorOffset, readInBlock);
-        return readInBlock + Read(output + readInBlock, offset + readInBlock, size - readInBlock);
+        std::memcpy(output.data(), blockBuf.data() + sectorOffset, readInBlock);
+        return readInBlock + Read(output.subspan(readInBlock), offset + readInBlock);
     }
 }

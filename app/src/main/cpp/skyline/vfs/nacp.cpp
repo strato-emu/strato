@@ -5,7 +5,7 @@
 
 namespace skyline::vfs {
     NACP::NACP(const std::shared_ptr<vfs::Backing> &backing) {
-        backing->Read(&nacpContents);
+        nacpContents = backing->Read<NacpData>();
 
         // TODO: Select based on language settings, complete struct, yada yada
 

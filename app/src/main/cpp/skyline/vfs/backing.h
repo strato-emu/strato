@@ -11,9 +11,6 @@ namespace skyline::vfs {
      */
     class Backing {
       public:
-        /**
-         * @brief The capabilities of the Backing
-         */
         union Mode {
             struct {
                 bool read : 1; //!< The backing is readable
@@ -41,47 +38,44 @@ namespace skyline::vfs {
 
         /**
          * @brief Read bytes from the backing at a particular offset to a buffer
-         * @param output The object to write to
+         * @param output The object to write the data read to
          * @param offset The offset to start reading from
-         * @param size The amount to read in bytes
          * @return The amount of bytes read
          */
-        virtual size_t Read(u8 *output, size_t offset, size_t size) = 0;
+        virtual size_t Read(span<u8> output, size_t offset = 0) = 0;
 
         /**
-         * @brief Read bytes from the backing at a particular offset to a buffer (template version)
-         * @param output The object to write to
+         * @brief Read bytes from the backing at a particular offset into an object
          * @param offset The offset to start reading from
-         * @param size The amount to read in bytes
-         * @return The amount of bytes read
+         * @return The object that was read
          */
         template<typename T>
-        inline size_t Read(T *output, size_t offset = 0, size_t size = 0) {
-            return Read(reinterpret_cast<u8 *>(output), offset, size ? size : sizeof(T));
+        inline T Read(size_t offset = 0) {
+            T object;
+            Read(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset);
+            return object;
         }
 
         /**
          * @brief Writes from a buffer to a particular offset in the backing
-         * @param input The object to write to the backing
+         * @param input The data to write to the backing
          * @param offset The offset where the input buffer should be written
-         * @param size The amount to write
          * @return The amount of bytes written
          */
-        virtual size_t Write(u8 *input, size_t offset, size_t size) {
+        virtual size_t Write(span<u8> input, size_t offset = 0) {
             throw exception("This backing does not support being written to");
         }
 
         /**
-         * @brief Writes from a buffer to a particular offset in the backing (template version)
-         * @tparam T The type of object to write
-         * @param input The object to write to the backing
-         * @param offset The offset where the input buffer should be written
-         * @param size The amount to write
-         * @return The amount of bytes written
+         * @brief Writes from an object into a particular offset in the backing
+         * @param object The object to write to the backing
+         * @param offset The offset where the input should be written
          */
         template<typename T>
-        inline size_t Write(T *output, size_t offset = 0, size_t size = 0) {
-            return Write(reinterpret_cast<u8 *>(output), offset, size ? size : sizeof(T));
+        inline void WriteObject(const T& object, size_t offset = 0) {
+            size_t size;
+            if((size = Write(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset)) != sizeof(T))
+                throw exception("Object wasn't written fully into output backing: {}/{}", size, sizeof(T));
         }
 
         /**

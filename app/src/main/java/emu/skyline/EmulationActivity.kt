@@ -30,16 +30,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
-     * The file descriptor of the ROM
-     */
-    private lateinit var romFd : ParcelFileDescriptor
-
-    /**
-     * The file descriptor of the application Preference XML
-     */
-    private lateinit var preferenceFd : ParcelFileDescriptor
-
-    /**
      * The [InputManager] class handles loading/saving the input data
      */
     private lateinit var input : InputManager
@@ -187,12 +177,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     private fun executeApplication(rom : Uri) {
         val romType = getRomFormat(rom, contentResolver).ordinal
-        romFd = contentResolver.openFileDescriptor(rom, "r")!!
+        val romFd = contentResolver.openFileDescriptor(rom, "r")!!
+        val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
             surfaceReady.block()
 
-            executeApplication(rom.toString(), romType, romFd.fd, preferenceFd.fd, applicationContext.filesDir.canonicalPath + "/")
+            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/")
 
             if (shouldFinish)
                 runOnUiThread { finish() }
@@ -224,9 +215,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
 
         input = InputManager(this)
-
-        val preference = File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml")
-        preferenceFd = ParcelFileDescriptor.open(preference, ParcelFileDescriptor.MODE_READ_WRITE)
 
         game_view.holder.addCallback(this)
 
@@ -262,8 +250,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         shouldFinish = true
 
-        romFd.close()
-
         executeApplication(intent?.data!!)
 
         super.onNewIntent(intent)
@@ -280,9 +266,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
-
-        romFd.close()
-        preferenceFd.close()
 
         super.onDestroy()
     }

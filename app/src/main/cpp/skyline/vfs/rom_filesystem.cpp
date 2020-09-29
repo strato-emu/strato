@@ -6,20 +6,18 @@
 
 namespace skyline::vfs {
     RomFileSystem::RomFileSystem(std::shared_ptr<Backing> backing) : FileSystem(), backing(backing) {
-        backing->Read(&header);
-
+        header = backing->Read<RomFsHeader>();
         TraverseDirectory(0, "");
     }
 
     void RomFileSystem::TraverseFiles(u32 offset, const std::string &path) {
-        RomFsFileEntry entry{};
-
+        RomFsFileEntry entry;
         do {
-            backing->Read(&entry, header.fileMetaTableOffset + offset);
+            entry = backing->Read<RomFsFileEntry>(header.fileMetaTableOffset + offset);
 
             if (entry.nameSize) {
                 std::vector<char> name(entry.nameSize);
-                backing->Read(name.data(), header.fileMetaTableOffset + offset + sizeof(RomFsFileEntry), entry.nameSize);
+                backing->Read(span(name).cast<u8>(), header.fileMetaTableOffset + offset + sizeof(RomFsFileEntry));
 
                 std::string fullPath{path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize)};
                 fileMap.emplace(fullPath, entry);
@@ -30,13 +28,12 @@ namespace skyline::vfs {
     }
 
     void RomFileSystem::TraverseDirectory(u32 offset, const std::string &path) {
-        RomFsDirectoryEntry entry{};
-        backing->Read(&entry, header.dirMetaTableOffset + offset);
+        auto entry{backing->Read<RomFsDirectoryEntry>(header.dirMetaTableOffset + offset)};
 
         std::string childPath{path};
         if (entry.nameSize) {
             std::vector<char> name(entry.nameSize);
-            backing->Read(name.data(), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry), entry.nameSize);
+            backing->Read(span(name).cast<u8>(), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
             childPath = path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize);
         }
 
@@ -89,11 +86,11 @@ namespace skyline::vfs {
             u32 offset{ownEntry.fileOffset};
 
             do {
-                backing->Read(&romFsFileEntry, header.fileMetaTableOffset + offset);
+                romFsFileEntry = backing->Read<RomFileSystem::RomFsFileEntry>(header.fileMetaTableOffset + offset);
 
                 if (romFsFileEntry.nameSize) {
                     std::vector<char> name(romFsFileEntry.nameSize);
-                    backing->Read(name.data(), header.fileMetaTableOffset + offset + sizeof(RomFileSystem::RomFsFileEntry), romFsFileEntry.nameSize);
+                    backing->Read(span(name).cast<u8>(), header.fileMetaTableOffset + offset + sizeof(RomFileSystem::RomFsFileEntry));
 
                     contents.emplace_back(Entry{std::string(name.data(), romFsFileEntry.nameSize), EntryType::File});
                 }
@@ -107,11 +104,11 @@ namespace skyline::vfs {
             u32 offset{ownEntry.childOffset};
 
             do {
-                backing->Read(&romFsDirectoryEntry, header.dirMetaTableOffset + offset);
+                romFsDirectoryEntry = backing->Read<RomFileSystem::RomFsDirectoryEntry>(header.dirMetaTableOffset + offset);
 
                 if (romFsDirectoryEntry.nameSize) {
                     std::vector<char> name(romFsDirectoryEntry.nameSize);
-                    backing->Read(name.data(), header.dirMetaTableOffset + offset + sizeof(RomFileSystem::RomFsDirectoryEntry), romFsDirectoryEntry.nameSize);
+                    backing->Read(span(name).cast<u8>(), header.dirMetaTableOffset + offset + sizeof(RomFileSystem::RomFsDirectoryEntry));
 
                     contents.emplace_back(Entry{std::string(name.data(), romFsDirectoryEntry.nameSize), EntryType::Directory});
                 }

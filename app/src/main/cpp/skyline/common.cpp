@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <tinyxml2.h>
+#include <android/log.h>
 #include "common.h"
 #include "nce.h"
 #include "gpu.h"
@@ -68,11 +69,12 @@ namespace skyline {
     Settings::Settings(int fd) {
         tinyxml2::XMLDocument pref;
 
-        if (pref.LoadFile(fdopen(fd, "r")))
+        auto fileDeleter = [](FILE *file) { fclose(file); };
+        std::unique_ptr<FILE, decltype(fileDeleter)> file{fdopen(fd, "r"), fileDeleter};
+        if (pref.LoadFile(file.get()))
             throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
 
         tinyxml2::XMLElement *elem{pref.LastChild()->FirstChild()->ToElement()};
-
         while (elem) {
             switch (elem->Value()[0]) {
                 case 's':
@@ -88,7 +90,7 @@ namespace skyline {
                     break;
 
                 default:
-                    syslog(LOG_ALERT, "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
+                    __android_log_print(ANDROID_LOG_WARN, "emu-cpp", "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
                     break;
             };
 
@@ -122,7 +124,7 @@ namespace skyline {
     }
 
     Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel) {
-        logFile.open(path, std::ios::app);
+        logFile.open(path, std::ios::trunc);
         WriteHeader("Logging started");
     }
 
@@ -132,14 +134,17 @@ namespace skyline {
     }
 
     void Logger::WriteHeader(const std::string &str) {
-        syslog(LOG_ALERT, "%s", str.c_str());
+        __android_log_write(ANDROID_LOG_INFO, "emu-cpp", str.c_str());
 
         std::lock_guard guard(mtx);
         logFile << "0|" << str << "\n";
     }
 
     void Logger::Write(LogLevel level, std::string str) {
-        syslog(levelSyslog[static_cast<u8>(level)], "%s", str.c_str());
+        constexpr std::array<char, 4> levelCharacter{'0', '1', '2', '3'}; // The LogLevel as written out to a file
+        constexpr std::array<int, 4> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG}; // This corresponds to LogLevel and provides it's equivalent for NDK Logging
+
+        __android_log_write(levelAlog[static_cast<u8>(level)], "emu-cpp", str.c_str());
 
         for (auto &character : str)
             if (character == '\n')
