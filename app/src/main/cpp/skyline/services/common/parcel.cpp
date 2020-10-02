@@ -13,10 +13,10 @@ namespace skyline::service {
         constexpr u8 tokenLength{0x50}; // The length of the token on BufferQueue parcels
 
         data.resize(header.dataSize - (hasToken ? tokenLength : 0));
-        memcpy(data.data(), buffer.data() + header.dataOffset + (hasToken ? tokenLength : 0), header.dataSize - (hasToken ? tokenLength : 0));
+        std::memcpy(data.data(), buffer.data() + header.dataOffset + (hasToken ? tokenLength : 0), header.dataSize - (hasToken ? tokenLength : 0));
 
         objects.resize(header.objectsSize);
-        memcpy(objects.data(), buffer.data() + header.objectsOffset, header.objectsSize);
+        std::memcpy(objects.data(), buffer.data() + header.objectsOffset, header.objectsSize);
     }
 
     Parcel::Parcel(const DeviceState &state) : state(state) {}
@@ -34,8 +34,8 @@ namespace skyline::service {
             throw exception("The size of the parcel exceeds maxSize");
 
         buffer.as<ParcelHeader>() = header;
-        memcpy(buffer.data() + header.dataOffset, data.data(), data.size());
-        memcpy(buffer.data() + header.objectsOffset, objects.data(), objects.size());
+        std::memcpy(buffer.data() + header.dataOffset, data.data(), data.size());
+        std::memcpy(buffer.data() + header.objectsOffset, objects.data(), objects.size());
 
         return totalSize;
     }

@@ -32,7 +32,8 @@ object KeyReader {
             return false
 
         val fileName = DocumentFile.fromSingleUri(context, uri)!!.name
-        if ("keys" != fileName?.substringAfterLast('.')) return false
+        if (fileName?.substringAfterLast('.')?.startsWith("keys")?.not() ?: false)
+            return false
 
         val tmpOutputFile = File("${context.filesDir.canonicalFile}/${keyType.fileName}.tmp")
 
@@ -76,11 +77,9 @@ object KeyReader {
     }
 
     private fun isHexString(str : String) : Boolean {
-        for (c in str) {
-            if (!(c in '0'..'9' || c in 'a'..'f' || c in 'A'..'F')) {
+        for (c in str)
+            if (!(c in '0'..'9' || c in 'a'..'f' || c in 'A'..'F'))
                 return false
-            }
-        }
         return true
     }
 }

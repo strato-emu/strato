@@ -21,9 +21,8 @@ namespace skyline::crypto {
         std::vector<char>::iterator lineEnd;
         while ((lineEnd = std::find(lineStart, fileContent.end(), '\n')) != fileContent.end()) {
             auto keyEnd{std::find(lineStart, lineEnd, '=')};
-            if (keyEnd == lineEnd) {
+            if (keyEnd == lineEnd)
                 throw exception("Invalid key file");
-            }
 
             std::string_view key(&*lineStart, keyEnd - lineStart);
             std::string_view value(&*(keyEnd + 1), lineEnd - keyEnd - 1);

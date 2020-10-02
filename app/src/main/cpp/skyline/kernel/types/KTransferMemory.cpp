@@ -59,7 +59,7 @@ namespace skyline::kernel::type {
 
         nSize = nSize ? nSize : size;
 
-        ChunkDescriptor chunk{host ? hostChunk : *state.os->memory.GetChunk(address)};
+        auto chunk{host ? hostChunk : *state.os->memory.GetChunk(address)};
         chunk.address = nAddress;
         chunk.size = nSize;
         MemoryManager::ResizeChunk(&chunk, nSize);

@@ -16,6 +16,7 @@ namespace skyline::vfs {
     }
 
     size_t CtrEncryptedBacking::Read(span<u8> output, size_t offset) {
+        size_t size{output.size()};
         if (size == 0)
             return 0;
 

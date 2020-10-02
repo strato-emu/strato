@@ -325,7 +325,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            memory::Permission permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
+            auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
                 state.logger->Warn("svcMapSharedMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
                 state.ctx->registers.w0 = result::InvalidNewMemoryPermission;
@@ -358,7 +358,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        memory::Permission permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
+        auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
             state.logger->Warn("svcCreateTransferMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
             state.ctx->registers.w0 = result::InvalidNewMemoryPermission;
@@ -584,7 +584,8 @@ namespace skyline::kernel::svc {
     }
 
     void ConnectToNamedPort(DeviceState &state) {
-        std::string_view port(state.process->GetPointer<char>(state.ctx->registers.x1), sizeof(service::ServiceName));
+        constexpr u8 portSize = 0x8; //!< The size of a port name string
+        std::string_view port(span(state.process->GetPointer<char>(state.ctx->registers.x1), portSize).as_string(true));
 
         KHandle handle{};
         if (port.compare("sm:") >= 0) {
