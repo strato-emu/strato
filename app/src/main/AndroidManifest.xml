@@ -61,7 +61,9 @@
         </activity>
         <activity
                 android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
-                android:exported="true">
+                android:exported="true"
+                android:screenOrientation="landscape"
+                tools:ignore="LockedOrientationActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="emu.skyline.input.ControllerActivity" />

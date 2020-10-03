@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import emu.skyline.R
@@ -46,6 +47,8 @@ class ControllerActivity : AppCompatActivity() {
      */
     val axisMap = mutableMapOf<AxisId, ControllerStickViewItem>()
 
+    private val sharedPrefs by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
+
     /**
      * This function updates the [adapter] based on information from [InputManager]
      */
@@ -62,8 +65,9 @@ class ControllerActivity : AppCompatActivity() {
         if (id == 0 && controller.type.firstController) {
             adapter.addItem(HeaderViewItem(getString(R.string.osc)))
 
-            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), getString(R.string.osc_not_shown), false) { item, position ->
+            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), getString(R.string.osc_not_shown), sharedPrefs.getBoolean("on_screen_control", false)) { item, position ->
                 item.summary = getString(if (item.checked) R.string.osc_shown else R.string.osc_not_shown)
+                sharedPrefs.edit().putBoolean("on_screen_control", item.checked).apply()
                 adapter.notifyItemChanged(position)
             })
 

@@ -5,6 +5,7 @@
 
 package emu.skyline.input
 
+import emu.skyline.R.string
 import java.io.Serializable
 import java.util.*
 import kotlin.math.abs
@@ -13,22 +14,22 @@ import kotlin.math.abs
  * This enumerates all of the buttons that the emulator recognizes
  */
 enum class ButtonId(val short : String? = null, val long : Int? = null) {
-    A("A", emu.skyline.R.string.a_button),
-    B("B", emu.skyline.R.string.b_button),
-    X("X", emu.skyline.R.string.x_button),
-    Y("Y", emu.skyline.R.string.y_button),
-    LeftStick("L"),
-    RightStick("R"),
-    L("L", emu.skyline.R.string.left_shoulder),
-    R("R", emu.skyline.R.string.right_shoulder),
-    ZL("ZL", emu.skyline.R.string.left_trigger),
-    ZR("ZR", emu.skyline.R.string.right_trigger),
-    Plus("+", emu.skyline.R.string.plus_button),
-    Minus("-", emu.skyline.R.string.minus_button),
-    DpadLeft("◀", emu.skyline.R.string.left),
-    DpadUp("▲", emu.skyline.R.string.up),
-    DpadRight("▶", emu.skyline.R.string.right),
-    DpadDown("▼", emu.skyline.R.string.down),
+    A("A", string.a_button),
+    B("B", string.b_button),
+    X("X", string.x_button),
+    Y("Y", string.y_button),
+    LeftStick("L", string.left_stick),
+    RightStick("R", string.right_stick),
+    L("L", string.left_shoulder),
+    R("R", string.right_shoulder),
+    ZL("ZL", string.left_trigger),
+    ZR("ZR", string.right_trigger),
+    Plus("+", string.plus_button),
+    Minus("-", string.minus_button),
+    DpadLeft("◀", string.left),
+    DpadUp("▲", string.up),
+    DpadRight("▶", string.right),
+    DpadDown("▼", string.down),
     LeftStickLeft,
     LeftStickUp,
     LeftStickRight,
@@ -37,11 +38,11 @@ enum class ButtonId(val short : String? = null, val long : Int? = null) {
     RightStickUp,
     RightStickRight,
     RightStickDown,
-    LeftSL("SL", emu.skyline.R.string.left_shoulder),
-    LeftSR("SR", emu.skyline.R.string.right_shoulder),
-    RightSL("SL", emu.skyline.R.string.left_shoulder),
-    RightSR("SR", emu.skyline.R.string.right_shoulder),
-    Menu("⌂", emu.skyline.R.string.emu_menu_button);
+    LeftSL("SL", string.left_shoulder),
+    LeftSR("SR", string.right_shoulder),
+    RightSL("SL", string.left_shoulder),
+    RightSR("SR", string.right_shoulder),
+    Menu("⌂", string.emu_menu_button);
 
     /**
      * This returns the value as setting the [ordinal]-th bit in a [Long]

@@ -86,6 +86,7 @@ class JoystickButton(
         val secondTapDiff = currentTime - fingerUpTime
         if (firstTapDiff in 0..500 && secondTapDiff in 0..500) {
             shortDoubleTapped = true
+            drawable.alpha = 50
         }
         fingerDownTime = currentTime
     }
@@ -97,6 +98,7 @@ class JoystickButton(
 
         fingerUpTime = SystemClock.elapsedRealtime()
         shortDoubleTapped = false
+        drawable.alpha = 255
     }
 
     fun onFingerMoved(x : Float, y : Float) : PointF {
@@ -152,8 +154,7 @@ open class RectangularButton(
         defaultRelativeHeight,
         drawableId
 ) {
-    override fun isTouched(x : Float, y : Float) =
-            currentBounds.contains(x.roundToInt(), y.roundToInt())
+    override fun isTouched(x : Float, y : Float) = currentBounds.contains(x.roundToInt(), y.roundToInt())
 
     override fun onFingerDown(x : Float, y : Float) {
         drawable.alpha = (255 * 0.5f).roundToInt()
@@ -216,6 +217,8 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
             TriggerButton(onScreenControllerView, ZL, 0.1f, 0.1f, 0.075f, 0.08f),
             TriggerButton(onScreenControllerView, ZR, 0.9f, 0.1f, 0.075f, 0.08f)
     )
+
+    val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons
 
     /**
      * We can take any of the global scale variables from the buttons

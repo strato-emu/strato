@@ -12,4 +12,4 @@ enum class ElementType {
     Item
 }
 
-abstract class BaseElement(elementType : ElementType) : Serializable
+abstract class BaseElement(val elementType : ElementType) : Serializable

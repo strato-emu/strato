@@ -36,10 +36,12 @@ class OnScreenControllerView @JvmOverloads constructor(
     override fun onDraw(canvas : Canvas) {
         super.onDraw(canvas)
 
-        (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons + controls.joysticks).forEach {
-            it.width = width
-            it.height = height
-            it.render(canvas)
+        controls.allButtons.forEach {
+            if (it.config.enabled) {
+                it.width = width
+                it.height = height
+                it.render(canvas)
+            }
         }
     }
 
@@ -63,7 +65,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (button.isTouched(x, y)) {
+                    if (button.config.enabled && button.isTouched(x, y)) {
                         button.touchPointerId = pointerId
                         button.onFingerDown(x, y)
                         performClick()
@@ -120,7 +122,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (joystick.isTouched(x, y)) {
+                    if (joystick.config.enabled && joystick.isTouched(x, y)) {
                         joystickAnimators[joystick]?.cancel()
                         joystickAnimators[joystick] = null
                         joystick.touchPointerId = pointerId
@@ -147,7 +149,7 @@ class OnScreenControllerView @JvmOverloads constructor(
     }
 
     private val editingTouchHandler = OnTouchListener { _, event ->
-        (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons + controls.joysticks).any { button ->
+        controls.allButtons.any { button ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_UP,
                 MotionEvent.ACTION_POINTER_UP,
@@ -159,7 +161,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (button.isTouched(event.x, event.y)) {
+                    if (button.config.enabled && button.isTouched(event.x, event.y)) {
                         button.startEdit()
                         performClick()
                         return@any true
@@ -183,7 +185,10 @@ class OnScreenControllerView @JvmOverloads constructor(
     fun setEditMode(editMode : Boolean) = setOnTouchListener(if (editMode) editingTouchHandler else playingTouchHandler)
 
     fun resetControls() {
-        (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons + controls.joysticks).forEach { it.resetRelativeValues() }
+        controls.allButtons.forEach {
+            it.resetRelativeValues()
+            it.config.enabled = true
+        }
         controls.globalScale = 1f
         invalidate()
     }
@@ -204,5 +209,12 @@ class OnScreenControllerView @JvmOverloads constructor(
 
     fun setOnStickStateChangedListener(listener : OnStickStateChangedListener) {
         onStickStateChangedListener = listener
+    }
+
+    fun getButtonProps() = controls.allButtons.map { Pair(it.buttonId, it.config.enabled) }
+
+    fun setButtonEnabled(buttonId : ButtonId, enabled : Boolean) {
+        controls.allButtons.first { it.buttonId == buttonId }.config.enabled = enabled
+        invalidate()
     }
 }

@@ -57,6 +57,9 @@
     <string name="osc_not_shown">On-Screen Controls won\'t be shown</string>
     <string name="osc_shown">On-Screen Controls will be shown</string>
     <string name="osc_edit">Edit On-Screen Controls layout</string>
+    <string name="joystick">Joystick</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
     <string name="controller">Controller</string>
     <string name="config_controller">Configure Controller</string>
     <string name="controller_type">Controller Type</string>
@@ -106,6 +109,8 @@
     <string name="left">Left</string>
     <string name="right">Right</string>
     <string name="dpad">D-pad</string>
+    <string name="left_stick">Left Stick</string>
+    <string name="right_stick">Right Stick</string>
     <string name="face_buttons">Face Buttons</string>
     <string name="shoulder_trigger"><![CDATA[Shoulder & Trigger Buttons]]></string>
     <string name="shoulder_rail">Shoulder Buttons on Joy-Con Rail</string>

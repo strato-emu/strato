@@ -33,6 +33,7 @@ import emu.skyline.adapter.LayoutType
 import emu.skyline.data.AppItem
 import emu.skyline.data.BaseElement
 import emu.skyline.data.BaseHeader
+import emu.skyline.data.ElementType
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
@@ -111,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         if (loadFromFile) {
             try {
                 loadSerializedList<BaseElement>(romsFile).forEach {
-                    if (it is BaseHeader)
+                    if (it.elementType == ElementType.Header && it is BaseHeader)
                         adapter.addItem(HeaderViewItem(it.title))
                     else if (it is AppItem)
                         adapter.addItem(it.toViewItem())
