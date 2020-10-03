@@ -7,7 +7,6 @@ package emu.skyline
 
 import android.animation.ObjectAnimator
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
@@ -45,14 +44,18 @@ class MainActivity : AppCompatActivity() {
     /**
      * This is used to get/set shared preferences
      */
-    private lateinit var sharedPreferences : SharedPreferences
+    private val sharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
 
     /**
      * The adapter used for adding elements to [app_list]
      */
-    private lateinit var adapter : AppAdapter
+    private val adapter by lazy {
+        AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
+    }
 
     private var reloading = AtomicBoolean()
+
+    private val layoutType get() = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
 
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [RomFile] to load metadata
@@ -160,7 +163,6 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         AppCompatDelegate.setDefaultNightMode(when ((sharedPreferences.getString("app_theme", "2")?.toInt())) {
             0 -> AppCompatDelegate.MODE_NIGHT_NO
@@ -221,12 +223,8 @@ class MainActivity : AppCompatActivity() {
         val metrics = resources.displayMetrics
         val gridSpan = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
 
-        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
-
-        adapter = AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
         app_list.adapter = adapter
-
-        app_list.layoutManager = when (layoutType) {
+        app_list.layoutManager = when (adapter.layoutType) {
             LayoutType.List -> LinearLayoutManager(this).also { app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL)) }
 
             LayoutType.Grid, LayoutType.GridCompact -> GridLayoutManager(this, gridSpan).apply {
@@ -340,7 +338,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        val layoutType = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
         if (layoutType != adapter.layoutType) {
             setupAppList()
         }

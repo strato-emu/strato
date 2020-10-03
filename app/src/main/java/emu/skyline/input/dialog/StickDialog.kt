@@ -28,7 +28,7 @@ import kotlin.math.max
  *
  * @param item This is used to hold the [ControllerStickItem] between instances
  */
-class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() {
+class StickDialog @JvmOverloads constructor(val item : ControllerStickItem? = null) : BottomSheetDialogFragment() {
     /**
      * This enumerates all of the stages this dialog can be in
      */
@@ -219,9 +219,9 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
     override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (context is ControllerActivity) {
+        if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
-            val controller = context.manager.controllers[context.id]!!
+            val controller = InputManager.controllers[context.id]!!
 
             // View focus handling so all input is always directed to this view
             view?.requestFocus()
@@ -236,13 +236,13 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                     for (polarity in booleanArrayOf(true, false)) {
                         val guestEvent = AxisGuestEvent(context.id, axis, polarity)
 
-                        context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                        InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
                     }
                 }
 
                 val guestEvent = ButtonGuestEvent(context.id, item.stick.button)
 
-                context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
                 item.update()
 
@@ -281,7 +281,7 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                     ((event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON) && event.keyCode != KeyEvent.KEYCODE_BACK) || event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) && event.repeatCount == 0 -> {
                         if (stage == DialogStage.Stick) {
                             // When the stick is being previewed after everything is mapped we do a lookup into [InputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
-                            when (val guestEvent = context.manager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
+                            when (val guestEvent = InputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
                                 is ButtonGuestEvent -> {
                                     if (guestEvent.button == item.stick.button) {
                                         if (event.action == KeyEvent.ACTION_DOWN) {
@@ -346,10 +346,10 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                                 // We serialize the current [deviceId] and [inputId] into a [KeyHostEvent] and map it to a corresponding [GuestEvent] and add it to [ignoredEvents] on [KeyEvent.ACTION_UP]
                                 val hostEvent = KeyHostEvent(event.device.descriptor, event.keyCode)
 
-                                var guestEvent = context.manager.eventMap[hostEvent]
+                                var guestEvent = InputManager.eventMap[hostEvent]
 
                                 if (guestEvent is GuestEvent) {
-                                    context.manager.eventMap.remove(hostEvent)
+                                    InputManager.eventMap.remove(hostEvent)
 
                                     if (guestEvent is ButtonGuestEvent)
                                         context.buttonMap[guestEvent.button]?.update()
@@ -364,9 +364,9 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                                     else -> null
                                 }
 
-                                context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                                InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
-                                context.manager.eventMap[hostEvent] = guestEvent
+                                InputManager.eventMap[hostEvent] = guestEvent
 
                                 ignoredEvents.add(Objects.hash(deviceId!!, inputId!!))
 
@@ -420,11 +420,13 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                             axesHistory[axisItem.index] = value
 
                             var polarity = value >= 0
-                            val guestEvent = context.manager.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)] ?: if (value == 0f) {
-                                polarity = false
-                                context.manager.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)]
-                            } else {
-                                null
+                            val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
+                                InputManager.eventMap[hostEvent] ?: if (value == 0f) {
+                                    polarity = false
+                                    InputManager.eventMap[hostEvent.copy(polarity = false)]
+                                } else {
+                                    null
+                                }
                             }
 
                             when (guestEvent) {
@@ -528,10 +530,10 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                                     axisRunnable = Runnable {
                                         val hostEvent = MotionHostEvent(event.device.descriptor, inputId!!, axisPolarity)
 
-                                        var guestEvent = context.manager.eventMap[hostEvent]
+                                        var guestEvent = InputManager.eventMap[hostEvent]
 
                                         if (guestEvent is GuestEvent) {
-                                            context.manager.eventMap.remove(hostEvent)
+                                            InputManager.eventMap.remove(hostEvent)
 
                                             if (guestEvent is ButtonGuestEvent)
                                                 context.buttonMap[(guestEvent as ButtonGuestEvent).button]?.update()
@@ -548,9 +550,9 @@ class StickDialog(val item : ControllerStickItem) : BottomSheetDialogFragment() 
                                             else -> null
                                         }
 
-                                        context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                                        InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
-                                        context.manager.eventMap[hostEvent] = guestEvent
+                                        InputManager.eventMap[hostEvent] = guestEvent
 
                                         ignoredEvents.add(Objects.hash(deviceId!!, inputId!!, axisPolarity))
 

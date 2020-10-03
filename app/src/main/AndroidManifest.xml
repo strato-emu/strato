@@ -10,6 +10,7 @@
             android:required="true" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <application
+            android:name=".SkylineApplication"
             android:allowBackup="true"
             android:extractNativeLibs="true"
             android:fullBackupContent="@xml/backup_descriptor"

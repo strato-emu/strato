@@ -8,11 +8,13 @@ package emu.skyline
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.graphics.PointF
 import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isInvisible
 import androidx.preference.PreferenceManager
 import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
@@ -22,17 +24,12 @@ import kotlin.math.abs
 
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener {
     companion object {
-        private val Tag = EmulationActivity::class.java.name
+        private val Tag = EmulationActivity::class.java.simpleName
     }
 
     init {
         System.loadLibrary("skyline") // libskyline.so
     }
-
-    /**
-     * The [InputManager] class handles loading/saving the input data
-     */
-    private lateinit var input : InputManager
 
     /**
      * A map of [Vibrator]s that correspond to [InputManager.controllers]
@@ -144,12 +141,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun setTouchState(points : IntArray)
 
     /**
-     * This initializes all of the controllers from [input] on the guest
+     * This initializes all of the controllers from [InputManager] on the guest
      */
+    @Suppress("unused")
     private fun initializeControllers() {
-        for (entry in input.controllers) {
-            val controller = entry.value
-
+        for (controller in InputManager.controllers.values) {
             if (controller.type != ControllerType.None) {
                 val type = when (controller.type) {
                     ControllerType.None -> throw IllegalArgumentException()
@@ -163,7 +159,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     else -> null
                 }
 
-                setController(entry.key, type, partnerIndex ?: -1)
+                setController(controller.id, type, partnerIndex ?: -1)
             }
         }
 
@@ -214,8 +210,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
 
-        input = InputManager(this)
-
         game_view.holder.addCallback(this)
 
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -235,6 +229,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         display?.supportedModes?.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
 
         game_view.setOnTouchListener(this)
+
+        // Hide on screen controls when first controller is not set
+        on_screen_controller_view.isInvisible = InputManager.controllers[0]!!.type == ControllerType.None
+        on_screen_controller_view.setOnButtonStateChangedListener(::onButtonStateChanged)
+        on_screen_controller_view.setOnStickStateChangedListener(::onStickStateChanged)
 
         executeApplication(intent.data!!)
     }
@@ -310,7 +309,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             else -> return super.dispatchKeyEvent(event)
         }
 
-        return when (val guestEvent = input.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
+        return when (val guestEvent = InputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
             is ButtonGuestEvent -> {
                 if (guestEvent.button != ButtonId.Menu)
                     setButtonState(guestEvent.id, guestEvent.button.value(), action.state)
@@ -334,14 +333,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     /**
      * The last value of the HAT axes so it can be ignored in [onGenericMotionEvent] so they are handled by [dispatchKeyEvent] instead
      */
-    private var oldHat = Pair(0.0f, 0.0f)
+    private var oldHat = PointF()
 
     /**
      * This handles translating any [MotionHostEvent]s to a [GuestEvent] that is passed into libskyline
      */
     override fun onGenericMotionEvent(event : MotionEvent) : Boolean {
         if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
-            val hat = Pair(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
+            val hat = PointF(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
 
             if (hat == oldHat) {
                 for (axisItem in MotionHostEvent.axes.withIndex()) {
@@ -351,11 +350,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
                         var polarity = value >= 0
 
-                        val guestEvent = input.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)] ?: if (value == 0f) {
-                            polarity = false
-                            input.eventMap[MotionHostEvent(event.device.descriptor, axis, polarity)]
-                        } else {
-                            null
+                        val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
+                            InputManager.eventMap[hostEvent] ?: if (value == 0f) {
+                                polarity = false
+                                InputManager.eventMap[hostEvent.copy(polarity = false)]
+                            } else {
+                                null
+                            }
                         }
 
                         when (guestEvent) {
@@ -388,7 +389,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view : View, event : MotionEvent) : Boolean {
-        val count = if(event.action != MotionEvent.ACTION_UP && event.action != MotionEvent.ACTION_CANCEL) event.pointerCount else 0
+        val count = if (event.action != MotionEvent.ACTION_UP && event.action != MotionEvent.ACTION_CANCEL) event.pointerCount else 0
         val points = IntArray(count * 5) // This is an array of skyline::input::TouchScreenPoint in C++ as that allows for efficient transfer of values to it
         var offset = 0
         for (index in 0 until count) {
@@ -410,12 +411,30 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         return true
     }
 
+    private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) {
+        setButtonState(0, buttonId.value(), state.state)
+    }
+
+    private fun onStickStateChanged(buttonId : ButtonId, position : PointF) {
+        val stickId = when (buttonId) {
+            ButtonId.LeftStick -> StickId.Left
+
+            ButtonId.RightStick -> StickId.Right
+
+            else -> error("Invalid button id")
+        }
+        Log.i("blaa", "$position")
+        setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
+        setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted
+    }
+
     @SuppressLint("WrongConstant")
+    @Suppress("unused")
     fun vibrateDevice(index : Int, timing : LongArray, amplitude : IntArray) {
         val vibrator = if (vibrators[index] != null) {
             vibrators[index]!!
         } else {
-            input.controllers[index]?.rumbleDeviceDescriptor?.let {
+            InputManager.controllers[index]!!.rumbleDeviceDescriptor?.let {
                 if (it == "builtin") {
                     val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
                     vibrators[index] = vibrator
@@ -423,7 +442,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 } else {
                     for (id in InputDevice.getDeviceIds()) {
                         val device = InputDevice.getDevice(id)
-                        if (device.descriptor == input.controllers[index]?.rumbleDeviceDescriptor) {
+                        if (device.descriptor == InputManager.controllers[index]!!.rumbleDeviceDescriptor) {
                             vibrators[index] = device.vibrator
                             device.vibrator
                         }
@@ -437,6 +456,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         vibrator.vibrate(effect)
     }
 
+    @Suppress("unused")
     fun clearVibrationDevice(index : Int) {
         vibrators[index]?.cancel()
     }

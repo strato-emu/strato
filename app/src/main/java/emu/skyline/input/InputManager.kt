@@ -10,13 +10,13 @@ import android.util.Log
 import java.io.*
 
 /**
- * This class is used to manage all transactions with storing/retrieving data in relation to input
+ * This object is used to manage all transactions with storing/retrieving data in relation to input
  */
-class InputManager constructor(val context : Context) {
+object InputManager {
     /**
      * The underlying [File] object with the input data
      */
-    private val file = File("${context.applicationInfo.dataDir}/input.bin")
+    private lateinit var file : File
 
     /**
      * A [HashMap] of all the controllers that contains their metadata
@@ -28,33 +28,31 @@ class InputManager constructor(val context : Context) {
      */
     lateinit var eventMap : HashMap<HostEvent?, GuestEvent?>
 
-    init {
-        var readFile = false
+    fun init(context : Context) {
+        file = File("${context.applicationInfo.dataDir}/input.bin")
 
         try {
             if (file.exists() && file.length() != 0L) {
                 syncObjects()
-                readFile = true
+                return
             }
         } catch (e : Exception) {
             Log.e(this.toString(), e.localizedMessage ?: "InputManager cannot read \"${file.absolutePath}\"")
         }
 
-        if (!readFile) {
-            controllers = hashMapOf(
-                    0 to Controller(0, ControllerType.None),
-                    1 to Controller(1, ControllerType.None),
-                    2 to Controller(2, ControllerType.None),
-                    3 to Controller(3, ControllerType.None),
-                    4 to Controller(4, ControllerType.None),
-                    5 to Controller(5, ControllerType.None),
-                    6 to Controller(6, ControllerType.None),
-                    7 to Controller(7, ControllerType.None))
+        controllers = hashMapOf(
+                0 to Controller(0, ControllerType.None),
+                1 to Controller(1, ControllerType.None),
+                2 to Controller(2, ControllerType.None),
+                3 to Controller(3, ControllerType.None),
+                4 to Controller(4, ControllerType.None),
+                5 to Controller(5, ControllerType.None),
+                6 to Controller(6, ControllerType.None),
+                7 to Controller(7, ControllerType.None))
 
-            eventMap = hashMapOf()
+        eventMap = hashMapOf()
 
-            syncFile()
-        }
+        syncFile()
     }
 
     /**

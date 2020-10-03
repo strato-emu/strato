@@ -17,6 +17,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.R
 import emu.skyline.adapter.ControllerGeneralItem
 import emu.skyline.input.ControllerActivity
+import emu.skyline.input.InputManager
 import kotlinx.android.synthetic.main.rumble_dialog.*
 
 /**
@@ -24,7 +25,7 @@ import kotlinx.android.synthetic.main.rumble_dialog.*
  *
  * @param item This is used to hold the [ControllerGeneralItem] between instances
  */
-class RumbleDialog(val item : ControllerGeneralItem) : BottomSheetDialogFragment() {
+class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralItem? = null) : BottomSheetDialogFragment() {
     /**
      * This inflates the layout of the dialog after initial view creation
      */
@@ -46,9 +47,9 @@ class RumbleDialog(val item : ControllerGeneralItem) : BottomSheetDialogFragment
     override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (context is ControllerActivity) {
+        if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
-            val controller = context.manager.controllers[context.id]!!
+            val controller = InputManager.controllers[context.id]!!
 
             // Set up the reset button to clear out [Controller.rumbleDevice] when pressed
             rumble_reset.setOnClickListener {

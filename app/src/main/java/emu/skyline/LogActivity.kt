@@ -137,7 +137,7 @@ class LogActivity : AppCompatActivity() {
     private fun uploadAndShareLog() {
         Snackbar.make(findViewById(android.R.id.content), getString(R.string.upload_logs), Snackbar.LENGTH_SHORT).show()
 
-        val shareThread = Thread(Runnable {
+        val shareThread = Thread {
             var urlConnection : HttpsURLConnection? = null
 
             try {
@@ -173,7 +173,7 @@ class LogActivity : AppCompatActivity() {
             } finally {
                 urlConnection!!.disconnect()
             }
-        })
+        }
 
         shareThread.start()
     }

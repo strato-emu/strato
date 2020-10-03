@@ -12,20 +12,17 @@ import android.util.AttributeSet
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import emu.skyline.R
-import emu.skyline.SettingsActivity
 import emu.skyline.input.ControllerActivity
 import emu.skyline.input.InputManager
 
 /**
  * This preference is used to launch [ControllerActivity] using a preference
  */
-class ControllerPreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
+class ControllerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
     /**
      * The index of the controller this preference manages
      */
     private var index = -1
-
-    private var inputManager : InputManager? = null
 
     override var requestCode = 0
 
@@ -45,12 +42,8 @@ class ControllerPreference @JvmOverloads constructor(context : Context?, attrs :
         if (key == null)
             key = "controller_$index"
 
-        title = "${context?.getString(R.string.config_controller)} #${index + 1}"
-
-        if (context is SettingsActivity) {
-            inputManager = context.inputManager
-            summaryProvider = SummaryProvider<ControllerPreference> { context.inputManager.controllers[index]?.type?.stringRes?.let { context.getString(it) } }
-        }
+        title = "${context.getString(R.string.config_controller)} #${index + 1}"
+        summaryProvider = SummaryProvider<ControllerPreference> { InputManager.controllers[index]!!.type.stringRes.let { context.getString(it) } }
     }
 
     /**
@@ -62,7 +55,7 @@ class ControllerPreference @JvmOverloads constructor(context : Context?, attrs :
 
     override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
         if (this.requestCode == requestCode) {
-            inputManager?.syncObjects()
+            InputManager.syncObjects()
             notifyChanged()
         }
     }

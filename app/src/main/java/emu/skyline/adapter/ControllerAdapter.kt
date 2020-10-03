@@ -72,7 +72,7 @@ class ControllerGeneralItem(val context : ControllerActivity, val type : General
          * This returns the summary for [type] by using data encapsulated within [Controller]
          */
         fun getSummary(context : ControllerActivity, type : GeneralType) : String {
-            val controller = context.manager.controllers[context.id]!!
+            val controller = InputManager.controllers[context.id]!!
 
             return when (type) {
                 GeneralType.PartnerJoyCon -> {
@@ -105,7 +105,7 @@ class ControllerButtonItem(val context : ControllerActivity, val button : Button
          */
         fun getSummary(context : ControllerActivity, button : ButtonId) : String {
             val guestEvent = ButtonGuestEvent(context.id, button)
-            return context.manager.eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            return InputManager.eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
         }
     }
 
@@ -125,19 +125,19 @@ class ControllerStickItem(val context : ControllerActivity, val stick : StickId)
          */
         fun getSummary(context : ControllerActivity, stick : StickId) : String {
             val buttonGuestEvent = ButtonGuestEvent(context.id, stick.button)
-            val button = context.manager.eventMap.filter { it.value is ButtonGuestEvent && it.value == buttonGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            val button = InputManager.eventMap.filter { it.value is ButtonGuestEvent && it.value == buttonGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
 
             var axisGuestEvent = AxisGuestEvent(context.id, stick.yAxis, true)
-            val yAxisPlus = context.manager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            val yAxisPlus = InputManager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
 
             axisGuestEvent = AxisGuestEvent(context.id, stick.yAxis, false)
-            val yAxisMinus = context.manager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            val yAxisMinus = InputManager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
 
             axisGuestEvent = AxisGuestEvent(context.id, stick.xAxis, true)
-            val xAxisPlus = context.manager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            val xAxisPlus = InputManager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
 
             axisGuestEvent = AxisGuestEvent(context.id, stick.xAxis, false)
-            val xAxisMinus = context.manager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
+            val xAxisMinus = InputManager.eventMap.filter { it.value is AxisGuestEvent && it.value == axisGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)
 
             return "${context.getString(R.string.button)}: $button\n${context.getString(R.string.up)}: $yAxisPlus\n${context.getString(R.string.down)}: $yAxisMinus\n${context.getString(R.string.left)}: $xAxisMinus\n${context.getString(R.string.right)}: $xAxisPlus"
         }
@@ -152,7 +152,7 @@ class ControllerStickItem(val context : ControllerActivity, val stick : StickId)
 /**
  * This adapter is used to create a list which handles having a simple view
  */
-class ControllerAdapter(val context : Context) : HeaderAdapter<ControllerItem?, BaseHeader, RecyclerView.ViewHolder>() {
+class ControllerAdapter(private val onItemClickCallback : (item : ControllerItem) -> Unit) : HeaderAdapter<ControllerItem?, BaseHeader, RecyclerView.ViewHolder>() {
     /**
      * This adds a header to the view with the contents of [string]
      */
@@ -189,24 +189,14 @@ class ControllerAdapter(val context : Context) : HeaderAdapter<ControllerItem?, 
     /**
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
      */
-    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder {
-        val inflater = LayoutInflater.from(context)
-        var holder : RecyclerView.ViewHolder? = null
-
-        if (viewType == ElementType.Item.ordinal) {
-            val view = inflater.inflate(R.layout.controller_item, parent, false)
-            holder = ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle), view.findViewById(R.id.controller_item))
-
-            if (context is View.OnClickListener)
-                holder.item.setOnClickListener(context as View.OnClickListener)
-        } else if (viewType == ElementType.Header.ordinal) {
-            val view = inflater.inflate(R.layout.section_item, parent, false)
-            holder = HeaderViewHolder(view)
-
-            holder.header = view.findViewById(R.id.text_title)
+    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) = when (ElementType.values()[viewType]) {
+        ElementType.Header -> LayoutInflater.from(parent.context).inflate(R.layout.section_item, parent, false).let { view ->
+            HeaderViewHolder(view).apply { header = view.findViewById(R.id.text_title) }
         }
 
-        return holder!!
+        ElementType.Item -> LayoutInflater.from(parent.context).inflate(R.layout.controller_item, parent, false).let { view ->
+            ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle), view.findViewById(R.id.controller_item))
+        }
     }
 
     /**
@@ -221,7 +211,7 @@ class ControllerAdapter(val context : Context) : HeaderAdapter<ControllerItem?, 
             holder.title.text = item.content
             holder.subtitle.text = item.subContent
 
-            holder.parent.tag = item
+            holder.parent.setOnClickListener { onItemClickCallback.invoke(item) }
         } else if (item is BaseHeader && holder is HeaderViewHolder) {
             holder.header?.text = item.title
         }

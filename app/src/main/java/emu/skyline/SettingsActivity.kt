@@ -11,9 +11,7 @@ import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceGroup
-import emu.skyline.input.InputManager
 import emu.skyline.preference.ActivityResultDelegate
-import emu.skyline.preference.ControllerPreference
 import emu.skyline.preference.DocumentActivity
 import kotlinx.android.synthetic.main.settings_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
@@ -25,17 +23,10 @@ class SettingsActivity : AppCompatActivity() {
     private val preferenceFragment = PreferenceFragment()
 
     /**
-     * This is an instance of [InputManager] used by [ControllerPreference]
-     */
-    lateinit var inputManager : InputManager
-
-    /**
      * This initializes all of the elements in the activity and displays the settings fragment
      */
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
-
-        inputManager = InputManager(this)
 
         setContentView(R.layout.settings_activity)
 

@@ -24,7 +24,7 @@ import kotlin.math.abs
  *
  * @param item This is used to hold the [ControllerButtonItem] between instances
  */
-class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment() {
+class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonItem? = null) : BottomSheetDialogFragment() {
     /**
      * This inflates the layout of the dialog after initial view creation
      */
@@ -46,9 +46,9 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
     override fun onActivityCreated(savedInstanceState : Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (context is ControllerActivity) {
+        if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
-            val controller = context.manager.controllers[context.id]!!
+            val controller = InputManager.controllers[context.id]!!
 
             // View focus handling so all input is always directed to this view
             view?.requestFocus()
@@ -61,7 +61,7 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
             button_reset.setOnClickListener {
                 val guestEvent = ButtonGuestEvent(context.id, item.button)
 
-                context.manager.eventMap.filterValues { it is ButtonGuestEvent && it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                InputManager.eventMap.filterValues { it is ButtonGuestEvent && it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
                 item.update()
 
@@ -108,10 +108,10 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
                         // We serialize the current [deviceId] and [inputId] into a [KeyHostEvent] and map it to a corresponding [GuestEvent] on [KeyEvent.ACTION_UP]
                         val hostEvent = KeyHostEvent(event.device.descriptor, event.keyCode)
 
-                        var guestEvent = context.manager.eventMap[hostEvent]
+                        var guestEvent = InputManager.eventMap[hostEvent]
 
                         if (guestEvent is GuestEvent) {
-                            context.manager.eventMap.remove(hostEvent)
+                            InputManager.eventMap.remove(hostEvent)
 
                             if (guestEvent is ButtonGuestEvent)
                                 context.buttonMap[guestEvent.button]?.update()
@@ -121,9 +121,9 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
 
                         guestEvent = ButtonGuestEvent(context.id, item.button)
 
-                        context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                        InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
-                        context.manager.eventMap[hostEvent] = guestEvent
+                        InputManager.eventMap[hostEvent] = guestEvent
 
                         item.update()
 
@@ -186,10 +186,10 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
                                 axisRunnable = Runnable {
                                     val hostEvent = MotionHostEvent(event.device.descriptor, inputId!!, axisPolarity)
 
-                                    var guestEvent = context.manager.eventMap[hostEvent]
+                                    var guestEvent = InputManager.eventMap[hostEvent]
 
                                     if (guestEvent is GuestEvent) {
-                                        context.manager.eventMap.remove(hostEvent)
+                                        InputManager.eventMap.remove(hostEvent)
 
                                         if (guestEvent is ButtonGuestEvent)
                                             context.buttonMap[(guestEvent as ButtonGuestEvent).button]?.update()
@@ -199,9 +199,9 @@ class ButtonDialog(val item : ControllerButtonItem) : BottomSheetDialogFragment(
 
                                     guestEvent = ButtonGuestEvent(controller.id, item.button, threshold)
 
-                                    context.manager.eventMap.filterValues { it == guestEvent }.keys.forEach { context.manager.eventMap.remove(it) }
+                                    InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
 
-                                    context.manager.eventMap[hostEvent] = guestEvent
+                                    InputManager.eventMap[hostEvent] = guestEvent
 
                                     item.update()
 
