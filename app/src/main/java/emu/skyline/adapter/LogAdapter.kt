@@ -11,11 +11,12 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.R
 import emu.skyline.data.BaseItem
+import kotlinx.android.extensions.LayoutContainer
+import kotlinx.android.synthetic.main.log_item.*
 
 /**
  * This class is used to hold all data about a log entry
@@ -55,22 +56,9 @@ internal class LogAdapter internal constructor(val context : Context, val compac
         }
     }
 
-    /**
-     * The ViewHolder used by items is used to hold the views associated with an item
-     *
-     * @param parent The parent view that contains all the others
-     * @param title The TextView associated with the title
-     * @param subtitle The TextView associated with the subtitle
-     */
-    private class ItemViewHolder(val parent : View, var title : TextView, var subtitle : TextView? = null) : RecyclerView.ViewHolder(parent)
+    private class ItemViewHolder(override val containerView : View) : RecyclerView.ViewHolder(containerView), LayoutContainer
 
-    /**
-     * The ViewHolder used by headers is used to hold the views associated with an headers
-     *
-     * @param parent The parent view that contains all the others
-     * @param header The TextView associated with the header
-     */
-    private class HeaderViewHolder(val parent : View, var header : TextView) : RecyclerView.ViewHolder(parent)
+    private class HeaderViewHolder(override val containerView : View) : RecyclerView.ViewHolder(containerView), LayoutContainer
 
     /**
      * This function creates the view-holder of type [viewType] with the layout parent as [parent]
@@ -87,14 +75,14 @@ internal class LogAdapter internal constructor(val context : Context, val compac
         return when (ElementType.values()[viewType]) {
             ElementType.Item -> {
                 if (compact) {
-                    ItemViewHolder(view, view.findViewById(R.id.text_title))
+                    ItemViewHolder(view)
                 } else {
-                    ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle))
+                    ItemViewHolder(view)
                 }
             }
 
             ElementType.Header -> {
-                HeaderViewHolder(view, view.findViewById(R.id.text_title))
+                HeaderViewHolder(view)
             }
         }
     }
@@ -106,15 +94,15 @@ internal class LogAdapter internal constructor(val context : Context, val compac
         val item = getItem(position)
 
         if (item is LogItem && holder is ItemViewHolder) {
-            holder.title.text = item.message
-            holder.subtitle?.text = item.level
+            holder.text_title.text = item.message
+            holder.text_subtitle?.text = item.level
 
-            holder.parent.setOnClickListener {
+            holder.itemView.setOnClickListener {
                 clipboard.setPrimaryClip(ClipData.newPlainText("Log Message", item.message + " (" + item.level + ")"))
                 Toast.makeText(holder.itemView.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
             }
         } else if (item is BaseHeader && holder is HeaderViewHolder) {
-            holder.header.text = item.title
+            holder.text_title.text = item.title
         }
     }
 }

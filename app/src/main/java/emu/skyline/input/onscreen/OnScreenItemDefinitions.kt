@@ -7,6 +7,7 @@ package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
 import android.graphics.PointF
+import android.os.SystemClock
 import androidx.core.graphics.minus
 import emu.skyline.R
 import emu.skyline.input.ButtonId
@@ -59,6 +60,11 @@ class JoystickButton(
 
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
+    private var fingerDownTime = 0L
+    private var fingerUpTime = 0L
+    var shortDoubleTapped = false
+        private set
+
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float) = Unit
 
     override fun render(canvas : Canvas) {
@@ -74,12 +80,23 @@ class JoystickButton(
         relativeY = (y - heightDiff) / adjustedHeight
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
+
+        val currentTime = SystemClock.elapsedRealtime()
+        val firstTapDiff = fingerUpTime - fingerDownTime
+        val secondTapDiff = currentTime - fingerUpTime
+        if (firstTapDiff in 0..500 && secondTapDiff in 0..500) {
+            shortDoubleTapped = true
+        }
+        fingerDownTime = currentTime
     }
 
     override fun onFingerUp(x : Float, y : Float) {
         loadConfigValues()
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
+
+        fingerUpTime = SystemClock.elapsedRealtime()
+        shortDoubleTapped = false
     }
 
     fun onFingerMoved(x : Float, y : Float) : PointF {
@@ -91,6 +108,11 @@ class JoystickButton(
             finger = position.add(outerToInner.multiply(1f / distance * radius))
         }
 
+        if (distance > radius * 0.075f) {
+            fingerDownTime = 0
+            fingerUpTime = 0
+        }
+
         innerButton.relativeX = finger.x / width
         innerButton.relativeY = (finger.y - heightDiff) / adjustedHeight
         return finger.minus(position).multiply(1f / radius)
@@ -100,6 +122,7 @@ class JoystickButton(
 
     override fun edit(x : Float, y : Float) {
         super.edit(x, y)
+
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
     }

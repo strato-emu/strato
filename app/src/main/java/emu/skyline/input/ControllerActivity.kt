@@ -25,7 +25,7 @@ class ControllerActivity : AppCompatActivity() {
     /**
      * The index of the controller this activity manages
      */
-    var id : Int = -1
+    val id by lazy { intent.getIntExtra("index", 0) }
 
     /**
      * The adapter used by [controller_list] to hold all the items
@@ -54,6 +54,8 @@ class ControllerActivity : AppCompatActivity() {
 
         if (controller.type == ControllerType.None)
             return
+
+
 
         var wroteTitle = false
 
@@ -128,8 +130,6 @@ class ControllerActivity : AppCompatActivity() {
     override fun onCreate(state : Bundle?) {
         super.onCreate(state)
 
-        id = intent.getIntExtra("index", 0)
-
         if (id < 0 || id > 7)
             throw IllegalArgumentException()
 
@@ -159,7 +159,7 @@ class ControllerActivity : AppCompatActivity() {
             is ControllerTypeItem -> {
                 val controller = InputManager.controllers[id]!!
 
-                val types = ControllerType.values().filter { !it.firstController || id == 0 }
+                val types = ControllerType.values().apply { if (id != 0) filter { !it.firstController } }
                 val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
 
                 MaterialAlertDialogBuilder(this)

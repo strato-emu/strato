@@ -9,11 +9,13 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.R
 import emu.skyline.data.BaseItem
 import emu.skyline.input.*
+import kotlinx.android.extensions.LayoutContainer
+import kotlinx.android.synthetic.main.controller_item.*
+import kotlinx.android.synthetic.main.section_item.text_title
 
 /**
  * This is a class that holds everything relevant to a single item in the controller configuration list
@@ -22,14 +24,8 @@ import emu.skyline.input.*
  * @param subContent The secondary line of text to show data more specific data about the item
  */
 abstract class ControllerItem(var content : String, var subContent : String) : BaseItem() {
-    /**
-     * The underlying adapter this item is contained within
-     */
-    var adapter : ControllerAdapter? = null
+    lateinit var adapter : ControllerAdapter
 
-    /**
-     * The position of this item in the adapter
-     */
     var position : Int? = null
 
     /**
@@ -42,7 +38,7 @@ abstract class ControllerItem(var content : String, var subContent : String) : B
         if (subContent != null)
             this.subContent = subContent
 
-        position?.let { adapter?.notifyItemChanged(it) }
+        position?.let { adapter.notifyItemChanged(it) }
     }
 
     /**
@@ -149,71 +145,45 @@ class ControllerStickItem(val context : ControllerActivity, val stick : StickId)
     override fun update() = update(null, getSummary(context, stick))
 }
 
+class ControllerCheckBox()
+
 /**
  * This adapter is used to create a list which handles having a simple view
  */
 class ControllerAdapter(private val onItemClickCallback : (item : ControllerItem) -> Unit) : HeaderAdapter<ControllerItem?, BaseHeader, RecyclerView.ViewHolder>() {
-    /**
-     * This adds a header to the view with the contents of [string]
-     */
     fun addHeader(string : String) {
         super.addHeader(BaseHeader(string))
     }
 
-    /**
-     * This functions sets [ControllerItem.adapter] and delegates the call to [HeaderAdapter.addItem]
-     */
     fun addItem(item : ControllerItem) {
         item.adapter = this
         super.addItem(item)
     }
 
-    /**
-     * The ViewHolder used by items is used to hold the views associated with an item
-     *
-     * @param parent The parent view that contains all the others
-     * @param title The TextView associated with the title
-     * @param subtitle The TextView associated with the subtitle
-     * @param item The View containing the two other views
-     */
-    class ItemViewHolder(val parent : View, var title : TextView, var subtitle : TextView, var item : View) : RecyclerView.ViewHolder(parent)
+    private class ItemViewHolder(override val containerView : View) : RecyclerView.ViewHolder(containerView), LayoutContainer
 
-    /**
-     * The ViewHolder used by headers is used to hold the views associated with an headers
-     *
-     * @param parent The parent view that contains all the others
-     * @param header The TextView associated with the header
-     */
-    private class HeaderViewHolder(val parent : View, var header : TextView? = null) : RecyclerView.ViewHolder(parent)
+    private class HeaderViewHolder(override val containerView : View) : RecyclerView.ViewHolder(containerView), LayoutContainer
 
-    /**
-     * This function creates the view-holder of type [viewType] with the layout parent as [parent]
-     */
-    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) = when (ElementType.values()[viewType]) {
-        ElementType.Header -> LayoutInflater.from(parent.context).inflate(R.layout.section_item, parent, false).let { view ->
-            HeaderViewHolder(view).apply { header = view.findViewById(R.id.text_title) }
-        }
+    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : RecyclerView.ViewHolder = LayoutInflater.from(parent.context).let { layoutInflater ->
+        when (ElementType.values()[viewType]) {
+            ElementType.Header -> HeaderViewHolder(layoutInflater.inflate(R.layout.section_item, parent, false))
 
-        ElementType.Item -> LayoutInflater.from(parent.context).inflate(R.layout.controller_item, parent, false).let { view ->
-            ItemViewHolder(view, view.findViewById(R.id.text_title), view.findViewById(R.id.text_subtitle), view.findViewById(R.id.controller_item))
+            ElementType.Item -> ItemViewHolder(layoutInflater.inflate(R.layout.controller_item, parent, false))
         }
     }
 
-    /**
-     * This function binds the item at [position] to the supplied [holder]
-     */
     override fun onBindViewHolder(holder : RecyclerView.ViewHolder, position : Int) {
         val item = getItem(position)
 
         if (item is ControllerItem && holder is ItemViewHolder) {
             item.position = position
 
-            holder.title.text = item.content
-            holder.subtitle.text = item.subContent
+            holder.text_title.text = item.content
+            holder.text_subtitle.text = item.subContent
 
-            holder.parent.setOnClickListener { onItemClickCallback.invoke(item) }
+            holder.itemView.setOnClickListener { onItemClickCallback.invoke(item) }
         } else if (item is BaseHeader && holder is HeaderViewHolder) {
-            holder.header?.text = item.title
+            holder.text_title.text = item.title
         }
     }
 }

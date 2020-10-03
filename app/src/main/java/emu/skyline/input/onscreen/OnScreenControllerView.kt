@@ -87,7 +87,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                         val outerToInner = joystick.outerToInner()
                         val outerToInnerLength = outerToInner.length()
                         val direction = outerToInner.normalize()
-                        val duration = (150f * outerToInnerLength / radius).roundToLong()
+                        val duration = (50f * outerToInnerLength / radius).roundToLong()
                         joystickAnimators[joystick] = ValueAnimator.ofFloat(outerToInnerLength, 0f).apply {
                             addUpdateListener { animation ->
                                 val value = animation.animatedValue as Float
@@ -106,6 +106,8 @@ class OnScreenControllerView @JvmOverloads constructor(
 
                                 override fun onAnimationEnd(animation : Animator?) {
                                     super.onAnimationEnd(animation)
+                                    if (joystick.shortDoubleTapped)
+                                        onButtonStateChangedListener?.invoke(joystick.buttonId, ButtonState.Released)
                                     joystick.onFingerUp(event.x, event.y)
                                     invalidate()
                                 }
@@ -123,6 +125,8 @@ class OnScreenControllerView @JvmOverloads constructor(
                         joystickAnimators[joystick] = null
                         joystick.touchPointerId = pointerId
                         joystick.onFingerDown(x, y)
+                        if (joystick.shortDoubleTapped)
+                            onButtonStateChangedListener?.invoke(joystick.buttonId, ButtonState.Pressed)
                         performClick()
                         handled = true
                     }
@@ -139,7 +143,7 @@ class OnScreenControllerView @JvmOverloads constructor(
             }
         }
 
-        handled.also { if (it) invalidate() }
+        handled.also { if (it) invalidate() else super.onTouchEvent(event) }
     }
 
     private val editingTouchHandler = OnTouchListener { _, event ->
@@ -169,7 +173,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
             }
             false
-        }.also { handled -> if (handled) invalidate() }
+        }.also { handled -> if (handled) invalidate() else super.onTouchEvent(event) }
     }
 
     init {

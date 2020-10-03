@@ -411,9 +411,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         return true
     }
 
-    private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) {
-        setButtonState(0, buttonId.value(), state.state)
-    }
+    private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) = setButtonState(0, buttonId.value(), state.state)
 
     private fun onStickStateChanged(buttonId : ButtonId, position : PointF) {
         val stickId = when (buttonId) {
@@ -423,7 +421,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
             else -> error("Invalid button id")
         }
-        Log.i("blaa", "$position")
         setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
         setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted
     }

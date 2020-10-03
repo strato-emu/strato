@@ -49,9 +49,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * The adapter used for adding elements to [app_list]
      */
-    private val adapter by lazy {
-        AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
-    }
+    private lateinit var adapter : AppAdapter
 
     private var reloading = AtomicBoolean()
 
@@ -223,6 +221,7 @@ class MainActivity : AppCompatActivity() {
         val metrics = resources.displayMetrics
         val gridSpan = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
 
+        adapter = AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
         app_list.adapter = adapter
         app_list.layoutManager = when (adapter.layoutType) {
             LayoutType.List -> LinearLayoutManager(this).also { app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL)) }
