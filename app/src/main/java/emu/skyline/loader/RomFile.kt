@@ -10,7 +10,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.util.*
 
@@ -60,12 +63,40 @@ enum class LoaderResult(val value : Int) {
 /**
  * This class is used to hold an application's metadata in a serializable way
  */
-class AppEntry(val name : String, val author : String?, val icon : Bitmap?, val format : RomFormat, val uri : Uri, val loaderResult : LoaderResult) : Serializable {
+class AppEntry(var name : String, var author : String?, var icon : Bitmap?, var format : RomFormat, var uri : Uri, var loaderResult : LoaderResult) : Serializable {
     constructor(context : Context, format : RomFormat, uri : Uri, loaderResult : LoaderResult) : this(context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
         val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         cursor.moveToFirst()
         cursor.getString(nameIndex)
     }!!.dropLast(format.name.length + 1), null, null, format, uri, loaderResult)
+
+    private fun writeObject(output : ObjectOutputStream) {
+        output.writeUTF(name)
+        output.writeObject(format)
+        output.writeUTF(uri.toString())
+        output.writeBoolean(author != null)
+        if (author != null)
+            output.writeUTF(author)
+        output.writeInt(loaderResult.value)
+        output.writeBoolean(icon != null)
+        icon?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                it.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, output)
+            else
+                it.compress(Bitmap.CompressFormat.WEBP, 100, output)
+        }
+    }
+
+    private fun readObject(input : ObjectInputStream) {
+        name = input.readUTF()
+        format = input.readObject() as RomFormat
+        uri = Uri.parse(input.readUTF())
+        if (input.readBoolean())
+            author = input.readUTF()
+        loaderResult = LoaderResult.get(input.readInt())
+        if (input.readBoolean())
+            icon = BitmapFactory.decodeStream(input)
+    }
 }
 
 /**

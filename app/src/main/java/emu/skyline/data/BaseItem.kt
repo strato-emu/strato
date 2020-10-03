@@ -5,9 +5,6 @@
 
 package emu.skyline.data
 
-import emu.skyline.adapter.BaseElement
-import emu.skyline.adapter.ElementType
-
 /**
  * This is an abstract class that all adapter item classes inherit from
  */
@@ -15,5 +12,5 @@ abstract class BaseItem : BaseElement(ElementType.Item) {
     /**
      * This function returns a string used for searching
      */
-    open fun key() : String? = null
+    open fun key() : String = ""
 }

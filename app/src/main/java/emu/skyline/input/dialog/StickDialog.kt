@@ -15,7 +15,7 @@ import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.R
-import emu.skyline.adapter.ControllerStickItem
+import emu.skyline.adapter.controller.ControllerStickViewItem
 import emu.skyline.input.*
 import emu.skyline.input.MotionHostEvent.Companion.axes
 import kotlinx.android.synthetic.main.stick_dialog.*
@@ -26,9 +26,9 @@ import kotlin.math.max
 /**
  * This dialog is used to set a device to map any sticks
  *
- * @param item This is used to hold the [ControllerStickItem] between instances
+ * @param item This is used to hold the [ControllerStickViewItem] between instances
  */
-class StickDialog @JvmOverloads constructor(val item : ControllerStickItem? = null) : BottomSheetDialogFragment() {
+class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? = null) : BottomSheetDialogFragment() {
     /**
      * This enumerates all of the stages this dialog can be in
      */

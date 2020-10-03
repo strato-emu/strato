@@ -18,17 +18,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
 import androidx.core.animation.doOnEnd
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import emu.skyline.adapter.AppAdapter
-import emu.skyline.adapter.GridLayoutSpan
+import emu.skyline.adapter.AppViewItem
+import emu.skyline.adapter.GenericAdapter
+import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.LayoutType
 import emu.skyline.data.AppItem
+import emu.skyline.data.BaseElement
+import emu.skyline.data.BaseHeader
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
@@ -41,6 +45,10 @@ import kotlin.concurrent.thread
 import kotlin.math.ceil
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        private val TAG = MainActivity::class.java.simpleName
+    }
+
     /**
      * This is used to get/set shared preferences
      */
@@ -49,29 +57,38 @@ class MainActivity : AppCompatActivity() {
     /**
      * The adapter used for adding elements to [app_list]
      */
-    private lateinit var adapter : AppAdapter
+    private val adapter = GenericAdapter()
 
     private var reloading = AtomicBoolean()
 
     private val layoutType get() = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
 
+    private val missingIcon by lazy { ContextCompat.getDrawable(this, R.drawable.default_icon)!!.toBitmap(256, 256) }
+
+    private fun AppItem.toViewItem() = AppViewItem(layoutType, this, missingIcon, ::selectStartGame, ::selectShowGameDialog)
+
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [RomFile] to load metadata
      */
-    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, found : Boolean = false) : Boolean {
+    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, romElements : ArrayList<BaseElement>, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                foundCurrent = addEntries(extension, romFormat, file, foundCurrent)
+                foundCurrent = addEntries(extension, romFormat, file, romElements, foundCurrent)
             } else {
                 if (extension.equals(file.name?.substringAfterLast("."), ignoreCase = true)) {
                     RomFile(this, romFormat, file.uri).let { romFile ->
                         val finalFoundCurrent = foundCurrent
                         runOnUiThread {
-                            if (!finalFoundCurrent) adapter.addHeader(romFormat.name)
+                            if (!finalFoundCurrent) {
+                                romElements.add(BaseHeader(romFormat.name))
+                                adapter.addItem(HeaderViewItem(romFormat.name))
+                            }
 
-                            adapter.addItem(AppItem(romFile.appEntry))
+                            romElements.add(AppItem(romFile.appEntry).also {
+                                adapter.addItem(it.toViewItem())
+                            })
                         }
 
                         foundCurrent = true
@@ -86,15 +103,22 @@ class MainActivity : AppCompatActivity() {
     /**
      * This refreshes the contents of the adapter by either trying to load cached adapter data or searches for them to recreate a list
      *
-     * @param tryLoad If this is false then trying to load cached adapter data is skipped entirely
+     * @param loadFromFile If this is false then trying to load cached adapter data is skipped entirely
      */
-    private fun refreshAdapter(tryLoad : Boolean) {
-        if (tryLoad) {
+    private fun refreshAdapter(loadFromFile : Boolean) {
+        val romsFile = File(applicationContext.filesDir.canonicalPath + "/roms.bin")
+
+        if (loadFromFile) {
             try {
-                adapter.load(File(applicationContext.filesDir.canonicalPath + "/roms.bin"))
+                loadSerializedList<BaseElement>(romsFile).forEach {
+                    if (it is BaseHeader)
+                        adapter.addItem(HeaderViewItem(it.title))
+                    else if (it is AppItem)
+                        adapter.addItem(it.toViewItem())
+                }
                 return
             } catch (e : Exception) {
-                Log.w("refreshFiles", "Ran into exception while loading: ${e.message}")
+                Log.w(TAG, "Ran into exception while loading: ${e.message}")
             }
         }
 
@@ -107,22 +131,26 @@ class MainActivity : AppCompatActivity() {
             }
 
             try {
-                runOnUiThread { adapter.clear() }
+                runOnUiThread { adapter.removeAllItems() }
 
                 val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!
 
-                var foundRoms = addEntries("nro", RomFormat.NRO, searchLocation)
-                foundRoms = foundRoms or addEntries("nso", RomFormat.NSO, searchLocation)
-                foundRoms = foundRoms or addEntries("nca", RomFormat.NCA, searchLocation)
-                foundRoms = foundRoms or addEntries("nsp", RomFormat.NSP, searchLocation)
+                val romElements = ArrayList<BaseElement>()
+                addEntries("nro", RomFormat.NRO, searchLocation, romElements)
+                addEntries("nso", RomFormat.NSO, searchLocation, romElements)
+                addEntries("nca", RomFormat.NCA, searchLocation, romElements)
+                addEntries("nsp", RomFormat.NSP, searchLocation, romElements)
 
                 runOnUiThread {
-                    if (!foundRoms) adapter.addHeader(getString(R.string.no_rom))
+                    if (romElements.isEmpty()) {
+                        romElements.add(BaseHeader(getString(R.string.no_rom)))
+                        adapter.addItem(HeaderViewItem(getString(R.string.no_rom)))
+                    }
 
                     try {
-                        adapter.save(File(applicationContext.filesDir.canonicalPath + "/roms.bin"))
+                        romElements.serialize(romsFile)
                     } catch (e : IOException) {
-                        Log.w("refreshFiles", "Ran into exception while saving: ${e.message}")
+                        Log.w(TAG, "Ran into exception while saving: ${e.message}")
                     }
                 }
 
@@ -216,22 +244,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setAppListDecoration() {
+        when (layoutType) {
+            LayoutType.List -> app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
+
+            LayoutType.Grid, LayoutType.GridCompact -> if (app_list.itemDecorationCount > 0) app_list.removeItemDecorationAt(0)
+        }
+    }
+
     private fun setupAppList() {
+        app_list.adapter = adapter
+
         val itemWidth = 225
         val metrics = resources.displayMetrics
         val gridSpan = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
 
-        adapter = AppAdapter(layoutType = layoutType, onClick = ::selectStartGame, onLongClick = ::selectShowGameDialog)
-        app_list.adapter = adapter
-        app_list.layoutManager = when (adapter.layoutType) {
-            LayoutType.List -> LinearLayoutManager(this).also { app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL)) }
-
-            LayoutType.Grid, LayoutType.GridCompact -> GridLayoutManager(this, gridSpan).apply {
-                spanSizeLookup = GridLayoutSpan(adapter, gridSpan).also {
-                    if (app_list.itemDecorationCount > 0) app_list.removeItemDecorationAt(0)
-                }
+        app_list.layoutManager = GridLayoutManager(this, gridSpan).apply {
+            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position : Int) = if (layoutType == LayoutType.List || adapter.currentItems[position] is HeaderViewItem) gridSpan else 1
             }
         }
+        setAppListDecoration()
 
         if (sharedPreferences.getString("search_location", "") == "") {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
@@ -337,8 +370,19 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (layoutType != adapter.layoutType) {
-            setupAppList()
+        var layoutTypeChanged = false
+        for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {
+            if (layoutType != appViewItem.layoutType) {
+                appViewItem.layoutType = layoutType
+                layoutTypeChanged = true
+            } else {
+                break
+            }
+        }
+
+        if (layoutTypeChanged) {
+            adapter.notifyAllItemsChanged()
+            setAppListDecoration()
         }
 
         val gridCardMagin = resources.getDimensionPixelSize(R.dimen.app_card_margin_half)

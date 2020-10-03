@@ -5,16 +5,20 @@
 
 package emu.skyline.input
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import emu.skyline.R
-import emu.skyline.adapter.*
+import emu.skyline.adapter.GenericAdapter
+import emu.skyline.adapter.HeaderViewItem
+import emu.skyline.adapter.controller.*
 import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
+import emu.skyline.input.onscreen.OnScreenEditActivity
 import kotlinx.android.synthetic.main.controller_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 
@@ -30,43 +34,54 @@ class ControllerActivity : AppCompatActivity() {
     /**
      * The adapter used by [controller_list] to hold all the items
      */
-    private val adapter = ControllerAdapter(::onControllerItemClick)
+    private val adapter = GenericAdapter()
 
     /**
      * This is a map between a button and it's corresponding [ControllerItem] in [adapter]
      */
-    val buttonMap = mutableMapOf<ButtonId, ControllerItem>()
+    val buttonMap = mutableMapOf<ButtonId, ControllerViewItem>()
 
     /**
-     * This is a map between an axis and it's corresponding [ControllerStickItem] in [adapter]
+     * This is a map between an axis and it's corresponding [ControllerStickViewItem] in [adapter]
      */
-    val axisMap = mutableMapOf<AxisId, ControllerStickItem>()
+    val axisMap = mutableMapOf<AxisId, ControllerStickViewItem>()
 
     /**
      * This function updates the [adapter] based on information from [InputManager]
      */
     private fun update() {
-        adapter.clear()
+        adapter.removeAllItems()
 
         val controller = InputManager.controllers[id]!!
 
-        adapter.addItem(ControllerTypeItem(this, controller.type))
+        adapter.addItem(ControllerTypeViewItem(controller.type, onControllerTypeClick))
 
         if (controller.type == ControllerType.None)
             return
 
+        if (id == 0 && controller.type.firstController) {
+            adapter.addItem(HeaderViewItem(getString(R.string.osc)))
 
+            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), getString(R.string.osc_not_shown), false) { item, position ->
+                item.summary = getString(if (item.checked) R.string.osc_shown else R.string.osc_not_shown)
+                adapter.notifyItemChanged(position)
+            })
+
+            adapter.addItem(ControllerViewItem(content = getString(R.string.osc_edit), onClick = {
+                startActivity(Intent(this, OnScreenEditActivity::class.java))
+            }))
+        }
 
         var wroteTitle = false
 
         for (item in GeneralType.values()) {
             if (item.compatibleControllers == null || item.compatibleControllers.contains(controller.type)) {
                 if (!wroteTitle) {
-                    adapter.addHeader(getString(R.string.general))
+                    adapter.addItem(HeaderViewItem(getString(R.string.general)))
                     wroteTitle = true
                 }
 
-                adapter.addItem(ControllerGeneralItem(this, item))
+                adapter.addItem(ControllerGeneralViewItem(id, item, onControllerGeneralClick))
             }
         }
 
@@ -74,11 +89,11 @@ class ControllerActivity : AppCompatActivity() {
 
         for (stick in controller.type.sticks) {
             if (!wroteTitle) {
-                adapter.addHeader(getString(R.string.sticks))
+                adapter.addItem(HeaderViewItem(getString(R.string.sticks)))
                 wroteTitle = true
             }
 
-            val stickItem = ControllerStickItem(this, stick)
+            val stickItem = ControllerStickViewItem(id, stick, onControllerStickClick)
 
             adapter.addItem(stickItem)
             buttonMap[stick.button] = stickItem
@@ -98,11 +113,11 @@ class ControllerActivity : AppCompatActivity() {
 
             for (button in controller.type.buttons.filter { it in buttonArray.second }) {
                 if (!wroteTitle) {
-                    adapter.addHeader(getString(buttonArray.first))
+                    adapter.addItem(HeaderViewItem(getString(buttonArray.first)))
                     wroteTitle = true
                 }
 
-                val buttonItem = ControllerButtonItem(this, button)
+                val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
 
                 adapter.addItem(buttonItem)
                 buttonMap[button] = buttonItem
@@ -113,11 +128,11 @@ class ControllerActivity : AppCompatActivity() {
 
         for (button in controller.type.buttons.filterNot { item -> buttonArrays.any { item in it.second } }.plus(ButtonId.Menu)) {
             if (!wroteTitle) {
-                adapter.addHeader(getString(R.string.misc_buttons))
+                adapter.addItem(HeaderViewItem(getString(R.string.misc_buttons)))
                 wroteTitle = true
             }
 
-            val buttonItem = ControllerButtonItem(this, button)
+            val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
 
             adapter.addItem(buttonItem)
             buttonMap[button] = buttonItem
@@ -154,83 +169,81 @@ class ControllerActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    private fun onControllerItemClick(item : ControllerItem) {
-        when (item) {
-            is ControllerTypeItem -> {
-                val controller = InputManager.controllers[id]!!
+    private val onControllerTypeClick = { item : ControllerTypeViewItem, _ : Int ->
+        val controller = InputManager.controllers[id]!!
 
-                val types = ControllerType.values().apply { if (id != 0) filter { !it.firstController } }
-                val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
+        val types = ControllerType.values().apply { if (id != 0) filter { !it.firstController } }
+        val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+                .setTitle(item.content)
+                .setSingleChoiceItems(typeNames, types.indexOf(controller.type)) { dialog, typeIndex ->
+                    val selectedType = types[typeIndex]
+                    if (controller.type != selectedType) {
+                        if (controller is JoyConLeftController)
+                            controller.partnerId?.let { (InputManager.controllers[it] as JoyConRightController).partnerId = null }
+                        else if (controller is JoyConRightController)
+                            controller.partnerId?.let { (InputManager.controllers[it] as JoyConLeftController).partnerId = null }
+
+                        InputManager.controllers[id] = when (selectedType) {
+                            ControllerType.None -> Controller(id, ControllerType.None)
+                            ControllerType.HandheldProController -> HandheldController(id)
+                            ControllerType.ProController -> ProController(id)
+                            ControllerType.JoyConLeft -> JoyConLeftController(id)
+                            ControllerType.JoyConRight -> JoyConRightController(id)
+                        }
+
+                        update()
+                    }
+
+                    dialog.dismiss()
+                }
+                .show()
+        Unit
+    }
+
+    private val onControllerGeneralClick = { item : ControllerGeneralViewItem, _ : Int ->
+        when (item.type) {
+            GeneralType.PartnerJoyCon -> {
+                val controller = InputManager.controllers[id] as JoyConLeftController
+
+                val rJoyCons = InputManager.controllers.values.filter { it.type == ControllerType.JoyConRight }
+                val rJoyConNames = (listOf(getString(R.string.none)) + rJoyCons.map { "${getString(R.string.controller)} #${it.id + 1}" }).toTypedArray()
+
+                val partnerNameIndex = controller.partnerId?.let { partnerId ->
+                    rJoyCons.withIndex().single { it.value.id == partnerId }.index + 1
+                } ?: 0
 
                 MaterialAlertDialogBuilder(this)
                         .setTitle(item.content)
-                        .setSingleChoiceItems(typeNames, types.indexOf(controller.type)) { dialog, typeIndex ->
-                            val selectedType = types[typeIndex]
-                            if (controller.type != selectedType) {
-                                if (controller is JoyConLeftController)
-                                    controller.partnerId?.let { (InputManager.controllers[it] as JoyConRightController).partnerId = null }
-                                else if (controller is JoyConRightController)
-                                    controller.partnerId?.let { (InputManager.controllers[it] as JoyConLeftController).partnerId = null }
+                        .setSingleChoiceItems(rJoyConNames, partnerNameIndex) { dialog, index ->
+                            (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
 
-                                InputManager.controllers[id] = when (selectedType) {
-                                    ControllerType.None -> Controller(id, ControllerType.None)
-                                    ControllerType.HandheldProController -> HandheldController(id)
-                                    ControllerType.ProController -> ProController(id)
-                                    ControllerType.JoyConLeft -> JoyConLeftController(id)
-                                    ControllerType.JoyConRight -> JoyConRightController(id)
-                                }
+                            controller.partnerId = if (index == 0) null else rJoyCons[index - 1].id
 
-                                update()
-                            }
+                            if (controller.partnerId != null)
+                                (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
+
+                            item.update()
 
                             dialog.dismiss()
                         }
                         .show()
             }
 
-            is ControllerGeneralItem -> {
-                when (item.type) {
-                    GeneralType.PartnerJoyCon -> {
-                        val controller = InputManager.controllers[id] as JoyConLeftController
-
-                        val rJoyCons = InputManager.controllers.values.filter { it.type == ControllerType.JoyConRight }
-                        val rJoyConNames = (listOf(getString(R.string.none)) + rJoyCons.map { "${getString(R.string.controller)} #${it.id + 1}" }).toTypedArray()
-
-                        val partnerNameIndex = controller.partnerId?.let { partnerId ->
-                            rJoyCons.withIndex().single { it.value.id == partnerId }.index + 1
-                        } ?: 0
-
-                        MaterialAlertDialogBuilder(this)
-                                .setTitle(item.content)
-                                .setSingleChoiceItems(rJoyConNames, partnerNameIndex) { dialog, index ->
-                                    (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
-
-                                    controller.partnerId = if (index == 0) null else rJoyCons[index - 1].id
-
-                                    if (controller.partnerId != null)
-                                        (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
-
-                                    item.update()
-
-                                    dialog.dismiss()
-                                }
-                                .show()
-                    }
-
-                    GeneralType.RumbleDevice -> {
-                        RumbleDialog(item).show(supportFragmentManager, null)
-                    }
-                }
-            }
-
-            is ControllerButtonItem -> {
-                ButtonDialog(item).show(supportFragmentManager, null)
-            }
-
-            is ControllerStickItem -> {
-                StickDialog(item).show(supportFragmentManager, null)
+            GeneralType.RumbleDevice -> {
+                RumbleDialog(item).show(supportFragmentManager, null)
             }
         }
+        Unit
+    }
+
+    private val onControllerButtonClick = { item : ControllerButtonViewItem, _ : Int ->
+        ButtonDialog(item).show(supportFragmentManager, null)
+    }
+
+    private val onControllerStickClick = { item : ControllerStickViewItem, _ : Int ->
+        StickDialog(item).show(supportFragmentManager, null)
     }
 
     /**

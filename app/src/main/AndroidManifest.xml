@@ -60,6 +60,13 @@
                     android:value="emu.skyline.SettingsActivity" />
         </activity>
         <activity
+                android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
+                android:exported="true">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="emu.skyline.input.ControllerActivity" />
+        </activity>
+        <activity
                 android:name="emu.skyline.EmulationActivity"
                 android:configChanges="orientation|screenSize"
                 android:launchMode="singleInstance"

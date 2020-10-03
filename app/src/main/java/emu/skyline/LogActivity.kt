@@ -16,10 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import emu.skyline.adapter.LogAdapter
+import emu.skyline.adapter.GenericAdapter
+import emu.skyline.adapter.HeaderViewItem
+import emu.skyline.adapter.LogViewItem
 import kotlinx.android.synthetic.main.log_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 import org.json.JSONObject
@@ -38,7 +39,7 @@ class LogActivity : AppCompatActivity() {
     /**
      * The adapter used for adding elements from the log to [log_list]
      */
-    private lateinit var adapter : LogAdapter
+    private val adapter = GenericAdapter()
 
     /**
      * This initializes [toolbar] and fills [log_list] with data from the logs
@@ -54,11 +55,9 @@ class LogActivity : AppCompatActivity() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val compact = prefs.getBoolean("log_compact", false)
         val logLevel = prefs.getString("log_level", "3")!!.toInt()
-
-        adapter = LogAdapter(this, compact, logLevel, resources.getStringArray(R.array.log_level))
+        val logLevels = resources.getStringArray(R.array.log_level)
 
         log_list.adapter = adapter
-        log_list.layoutManager = LinearLayoutManager(this)
 
         if (!compact)
             log_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
@@ -66,8 +65,21 @@ class LogActivity : AppCompatActivity() {
         try {
             logFile = File(applicationContext.filesDir.canonicalPath + "/skyline.log")
 
-            logFile.forEachLine {
-                adapter.add(it)
+            logFile.forEachLine { logLine ->
+                try {
+                    val logMeta = logLine.split("|", limit = 3)
+
+                    if (logMeta[0].startsWith("1")) {
+                        val level = logMeta[1].toInt()
+                        if (level > logLevel) return@forEachLine
+
+                        adapter.addItem(LogViewItem(compact, logMeta[2].replace('\\', '\n'), logLevels[level]))
+                    } else {
+                        adapter.addItem(HeaderViewItem(logMeta[1]))
+                    }
+                } catch (ignored : IndexOutOfBoundsException) {
+                } catch (ignored : NumberFormatException) {
+                }
             }
         } catch (e : FileNotFoundException) {
             Log.w("Logger", "IO Error during access of log file: " + e.message)
@@ -149,10 +161,10 @@ class LogActivity : AppCompatActivity() {
                 urlConnection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 urlConnection.setRequestProperty("Referer", "https://hastebin.com/")
 
-                val bufferedWriter = urlConnection.outputStream.bufferedWriter()
-                bufferedWriter.write(logFile.readText())
-                bufferedWriter.flush()
-                bufferedWriter.close()
+                urlConnection.outputStream.bufferedWriter().use {
+                    it.write(logFile.readText())
+                    it.flush()
+                }
 
                 if (urlConnection.responseCode != 200) {
                     Log.e("LogUpload", "HTTPS Status Code: " + urlConnection.responseCode)

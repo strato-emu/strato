@@ -14,7 +14,7 @@ import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.R
-import emu.skyline.adapter.ControllerButtonItem
+import emu.skyline.adapter.controller.ControllerButtonViewItem
 import emu.skyline.input.*
 import kotlinx.android.synthetic.main.button_dialog.*
 import kotlin.math.abs
@@ -22,9 +22,9 @@ import kotlin.math.abs
 /**
  * This dialog is used to set a device to map any buttons
  *
- * @param item This is used to hold the [ControllerButtonItem] between instances
+ * @param item This is used to hold the [ControllerButtonViewItem] between instances
  */
-class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonItem? = null) : BottomSheetDialogFragment() {
+class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null, private val position : Int? = null) : BottomSheetDialogFragment() {
     /**
      * This inflates the layout of the dialog after initial view creation
      */
