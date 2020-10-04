@@ -52,7 +52,7 @@ namespace skyline::kernel::type {
         KHandle handle; // The handle of the object in the handle table
         pid_t tid; //!< The Linux Thread ID of the current thread
         u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
-        u64 tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
+        u8* tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
         i8 priority; //!< The priority of a thread in Nintendo format
 
         Priority androidPriority{19, -8}; //!< The range of priorities for Android
@@ -69,7 +69,7 @@ namespace skyline::kernel::type {
          * @param parent The parent process of this thread
          * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
          */
-        KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u64 tls, i8 priority, KProcess *parent, const std::shared_ptr<type::KSharedMemory> &tlsMemory);
+        KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u8* tls, i8 priority, KProcess *parent, const std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
         /**
          * @brief Kills the thread and deallocates the memory allocated for stack.

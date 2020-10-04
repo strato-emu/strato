@@ -40,21 +40,21 @@ namespace skyline::kernel {
     }
 
     std::shared_ptr<type::KProcess> OS::CreateProcess(u64 entry, u64 argument, size_t stackSize) {
-        auto stack{std::make_shared<type::KSharedMemory>(state, memory.stack.address, stackSize, memory::Permission{true, true, false}, memory::states::Stack, MAP_NORESERVE | MAP_STACK, true)};
+        auto stack{std::make_shared<type::KSharedMemory>(state, stackSize, memory::states::Stack)};
         stack->guest = stack->kernel;
 
-        if (mprotect(reinterpret_cast<void *>(stack->guest.address), PAGE_SIZE, PROT_NONE))
+        if (mprotect(stack->guest.ptr, PAGE_SIZE, PROT_NONE))
             throw exception("Failed to create guard pages");
 
-        auto tlsMem{std::make_shared<type::KSharedMemory>(state, 0, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::Permission{true, true, false}, memory::states::Reserved)};
+        auto tlsMem{std::make_shared<type::KSharedMemory>(state, (sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1), memory::states::Reserved)};
         tlsMem->guest = tlsMem->kernel;
 
-        auto pid{clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), reinterpret_cast<void *>(stack->guest.address + stackSize), CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, reinterpret_cast<void *>(tlsMem->guest.address))};
+        auto pid{clone(reinterpret_cast<int (*)(void *)>(&guest::GuestEntry), stack->guest.ptr + stackSize, CLONE_FILES | CLONE_FS | CLONE_SETTLS | SIGCHLD, reinterpret_cast<void *>(entry), nullptr, tlsMem->guest.ptr)};
         if (pid == -1)
             throw exception("Call to clone() has failed: {}", strerror(errno));
 
         state.logger->Debug("Successfully created process with PID: {}", pid);
-        return std::make_shared<kernel::type::KProcess>(state, pid, argument, stack, tlsMem);
+        return std::make_shared<kernel::type::KProcess>(state, pid, entry, stack, tlsMem);
     }
 
     void OS::KillThread(pid_t pid) {

@@ -33,27 +33,24 @@ namespace skyline {
             * @url https://switchbrew.org/wiki/Thread_Local_Storage
             */
             struct TlsPage {
-                u64 address; //!< The address of the page allocated for TLS
+                u8* ptr;
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
                 bool slot[constant::TlsSlots]{}; //!< An array of booleans denoting which TLS slots are reserved
 
-                /**
-                 * @param address The address of the allocated page
-                 */
-                TlsPage(u64 address);
+                TlsPage(u8* ptr);
 
                 /**
                 * @brief Reserves a single 0x200 byte TLS slot
                 * @return The address of the reserved slot
                 */
-                u64 ReserveSlot();
+                u8* ReserveSlot();
 
                 /**
                 * @brief Returns the address of a particular slot
                 * @param slotNo The number of the slot to be returned
                 * @return The address of the specified slot
                 */
-                u64 Get(u8 slotNo);
+                u8* Get(u8 slotNo);
 
                 /**
                 * @brief Returns boolean on if the TLS page has free slots or not
@@ -65,7 +62,7 @@ namespace skyline {
             /**
              * @return The address of a free TLS slot
              */
-            u64 GetTlsSlot();
+            u8* GetTlsSlot();
 
             /**
              * @brief Initializes heap and the initial TLS page
@@ -118,12 +115,10 @@ namespace skyline {
             Mutex conditionalLock; //!< Synchronizes all concurrent guest conditional variable operations
 
             /**
-            * @brief Creates a KThread object for the main thread and opens the process's memory file
-            * @param pid The PID of the main thread
-            * @param entryPoint The address to start execution at
-            * @param stack The KSharedMemory object for Stack memory allocated by the guest process
-            * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
-            */
+             * @param pid The PID of the main thread
+             * @param entryPoint The entry point of execution for the guest
+             * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
+             */
             KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory);
 
             /**
@@ -142,13 +137,6 @@ namespace skyline {
             std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority);
 
             /**
-            * @brief Returns the host address for a specific address in guest memory
-            * @param address The corresponding guest address
-            * @return The corresponding host address
-            */
-            u64 GetHostAddress(u64 address);
-
-            /**
             * @tparam Type The type of the pointer to return
             * @param address The address on the guest
             * @return A pointer corresponding to a certain address on the guest
@@ -156,52 +144,7 @@ namespace skyline {
             */
             template<typename Type>
             inline Type *GetPointer(u64 address) {
-                return reinterpret_cast<Type *>(GetHostAddress(address));
-            }
-
-            /**
-             * @brief Returns a reference to an object from guest memory
-             */
-            template<typename Type>
-            inline Type &GetReference(u64 address) {
-                auto source{GetPointer<Type>(address)};
-                if (source)
-                    return *source;
-                else
-                    throw exception("Cannot retrieve reference to object not in shared guest memory");
-            }
-
-            /**
-            * @brief Returns a copy of an object from guest memory
-            * @tparam Type The type of the object to be read
-            * @param address The address of the object
-            * @return A copy of the object from guest memory
-            */
-            template<typename Type>
-            inline Type GetObject(u64 address) {
-                auto source{GetPointer<Type>(address)};
-                if (source) {
-                    return *source;
-                } else {
-                    Type item{};
-                    ReadMemory(&item, address, sizeof(Type));
-                    return item;
-                }
-            }
-
-            /**
-            * @brief Returns a string from guest memory
-            * @param address The address of the object
-            * @param maxSize The maximum size of the string
-            * @return A copy of a string in guest memory
-            */
-            inline std::string GetString(u64 address, size_t maxSize) {
-                auto source{GetPointer<char>(address)};
-                if (source)
-                    return std::string(source, maxSize);
-                std::string debug(maxSize, '\0');
-                ReadMemory(debug.data(), address, maxSize);
-                return debug;
+                return reinterpret_cast<Type *>(address);
             }
 
             /**
@@ -253,14 +196,6 @@ namespace skyline {
             * @param forceGuest Forces the write to be performed in guest address space
             */
             void WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest = false);
-
-            /**
-            * @brief Copy one chunk to another in the guest's memory
-            * @param source The address of where the data to read is present
-            * @param destination The address to write the read data to
-            * @param size The amount of memory to be copied
-            */
-            void CopyMemory(u64 source, u64 destination, size_t size);
 
             /**
             * @brief Creates a new handle to a KObject and adds it to the process handle_table
@@ -333,7 +268,7 @@ namespace skyline {
             * @param address The address to look for
             * @return A shared pointer to the corresponding KMemory object
             */
-            std::optional<HandleOut<KMemory>> GetMemoryObject(u64 address);
+            std::optional<HandleOut<KMemory>> GetMemoryObject(u8* ptr);
 
             /**
              * @brief Closes a handle in the handle table

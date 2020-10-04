@@ -7,83 +7,36 @@
 
 namespace skyline::kernel::type {
     /**
-     * @brief KSharedMemory is used to hold a particular amount of shared memory
+     * @brief KSharedMemory is used to retain two mappings of the same underlying memory, allowing persistence of the memory
      */
     class KSharedMemory : public KMemory {
       private:
         int fd; //!< A file descriptor to the underlying shared memory
-        memory::MemoryState initialState; //!< The initial state is stored for the Map call
+        memory::MemoryState initialState;
 
       public:
         struct MapInfo {
-            u64 address;
+            u8 *ptr;
             size_t size;
-            memory::Permission permission;
 
             constexpr bool Valid() {
-                return address && size && permission.Get();
+                return ptr && size;
             }
         } kernel, guest;
 
-        /**
-         * @param address The address of the allocation on the kernel (If NULL then an arbitrary address is picked)
-         * @param size The size of the allocation on the kernel
-         * @param permission The permission of the kernel process
-         * @param memState The MemoryState of the chunk of memory
-         * @param mmapFlags Additional flags to pass to mmap
-         */
-        KSharedMemory(const DeviceState &state, u64 address, size_t size, memory::Permission permission, memory::MemoryState memState = memory::states::SharedMemory, int mmapFlags = 0, bool shared = false);
+        KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 
         /**
-         * @brief Maps the shared memory in the guest
-         * @param address The address to map to (If NULL an arbitrary address is picked)
-         * @param size The amount of shared memory to map
-         * @param permission The permission of the kernel process
+         * @param ptr The address to map to (If NULL an arbitrary address is picked, it may be outside of the HOS address space)
          * @return The address of the allocation
          */
-        u64 Map(u64 address, u64 size, memory::Permission permission);
+        u8 *Map(u8 *ptr, u64 size, memory::Permission permission);
 
-        /**
-         * @brief Resize a chunk of memory as to change the size occupied by it
-         * @param size The new size of the memory
-         */
-        virtual void Resize(size_t size);
-
-        /**
-         * @brief Updates the permissions of a block of mapped memory
-         * @param address The starting address to change the permissions at
-         * @param size The size of the partition to change the permissions of
-         * @param permission The new permissions to be set for the memory
-         * @param host Set the permissions for the kernel rather than the guest
-         */
-        void UpdatePermission(u64 address, u64 size, memory::Permission permission, bool host = false);
-
-        /**
-         * @brief Updates the permissions of a block of mapped memory
-         * @param address The starting address to change the permissions at
-         * @param size The size of the partition to change the permissions of
-         * @param permission The new permissions to be set for the memory
-         */
-        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission) {
-            UpdatePermission(address, size, permission, false);
+        inline span<u8> Get() override {
+            return span(guest.ptr, guest.size);
         }
 
-        /**
-         * @brief Updates the permissions of a chunk of mapped memory
-         * @param permission The new permissions to be set for the memory
-         */
-        inline virtual void UpdatePermission(memory::Permission permission) {
-            UpdatePermission(guest.address, guest.size, permission, false);
-        }
-
-        /**
-         * @brief Checks if the specified address is within the guest memory object
-         * @param address The address to check
-         * @return If the address is inside the guest memory object
-         */
-        inline virtual bool IsInside(u64 address) {
-            return (guest.address <= address) && ((guest.address + guest.size) > address);
-        }
+        void UpdatePermission(u8* ptr, size_t size, memory::Permission permission) override;
 
         /**
          * @brief The destructor of shared memory, it deallocates the memory from all processes

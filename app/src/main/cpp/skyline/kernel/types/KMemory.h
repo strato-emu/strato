@@ -15,34 +15,23 @@ namespace skyline::kernel::type {
         KMemory(const DeviceState &state, KType objectType) : KObject(state, objectType) {}
 
         /**
-         * @brief Remap a chunk of memory as to change the size occupied by it
-         * @param size The new size of the memory
-         * @return The address the memory was remapped to
+         * @return A span representing the memory object on the guest
          */
-        virtual void Resize(size_t size) = 0;
+        virtual span<u8> Get() = 0;
 
         /**
          * @brief Updates the permissions of a block of mapped memory
-         * @param address The starting address to change the permissions at
+         * @param ptr The starting address to change the permissions at
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(u64 address, u64 size, memory::Permission permission) = 0;
+        virtual void UpdatePermission(u8* ptr, size_t size, memory::Permission permission) = 0;
 
-        /**
-         * @brief Updates the permissions of a chunk of mapped memory
-         * @param permission The new permissions to be set for the memory
-         */
-        inline virtual void UpdatePermission(memory::Permission permission) = 0;
-
-        /**
-         * @brief Checks if the specified address is within the memory object
-         * @param address The address to check
-         * @return If the address is inside the memory object
-         */
-        inline virtual bool IsInside(u64 address) = 0;
+        bool IsInside(u8* ptr) {
+            auto spn{Get()};
+            return (spn.data() <= ptr) && ((spn.data() + spn.size()) > ptr);
+        }
 
         virtual ~KMemory() = default;
-
     };
 }

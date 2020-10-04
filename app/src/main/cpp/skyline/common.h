@@ -9,6 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <mutex>
+#include <shared_mutex>
 #include <functional>
 #include <thread>
 #include <string>
@@ -105,13 +106,26 @@ namespace skyline {
         }
 
         /**
+         * @brief A way to implicitly convert a pointer to size_t and leave it unaffected if it isn't a pointer
+         */
+        template<class T>
+        T PointerValue(T item) {
+            return item;
+        };
+
+        template<class T>
+        size_t PointerValue(T *item) {
+            return reinterpret_cast<size_t>(item);
+        };
+
+        /**
          * @return The value aligned up to the next multiple
          * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
         constexpr TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             multiple--;
-            return (value + multiple) & ~(multiple);
+            return (PointerValue(value) + multiple) & ~(multiple);
         }
 
         /**
@@ -120,7 +134,7 @@ namespace skyline {
          */
         template<typename TypeVal, typename TypeMul>
         constexpr TypeVal AlignDown(TypeVal value, TypeMul multiple) {
-            return value & ~(multiple - 1);
+            return PointerValue(value) & ~(multiple - 1);
         }
 
         /**
@@ -129,22 +143,24 @@ namespace skyline {
         template<typename TypeVal, typename TypeMul>
         constexpr bool IsAligned(TypeVal value, TypeMul multiple) {
             if ((multiple & (multiple - 1)) == 0)
-                return !(value & (multiple - 1U));
+                return !(PointerValue(value) & (multiple - 1U));
             else
-                return (value % multiple) == 0;
+                return (PointerValue(value) % multiple) == 0;
         }
 
         /**
          * @return If the value is page aligned
          */
-        constexpr bool PageAligned(u64 value) {
+        template<typename TypeVal>
+        constexpr bool PageAligned(TypeVal value) {
             return IsAligned(value, PAGE_SIZE);
         }
 
         /**
          * @return If the value is word aligned
          */
-        constexpr bool WordAligned(u64 value) {
+        template<typename TypeVal>
+        constexpr bool WordAligned(TypeVal value) {
             return IsAligned(value, WORD_BIT / 8);
         }
 

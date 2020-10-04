@@ -27,7 +27,7 @@ namespace skyline::kernel {
         OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath);
 
         /**
-         * @brief Execute a particular ROM file. This launches the main process and calls the NCE class to handle execution.
+         * @brief Execute a particular ROM file
          * @param romFd A FD to the ROM file to execute
          * @param romType The type of the ROM file
          */

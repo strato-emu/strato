@@ -22,16 +22,16 @@ namespace skyline::kernel::svc {
         heap->Resize(size);
 
         state.ctx->registers.w0 = Result{};
-        state.ctx->registers.x1 = heap->address;
+        state.ctx->registers.x1 = reinterpret_cast<u64>(heap->ptr);
 
-        state.logger->Debug("svcSetHeapSize: Allocated at 0x{:X} for 0x{:X} bytes", heap->address, heap->size);
+        state.logger->Debug("svcSetHeapSize: Allocated at 0x{:X} for 0x{:X} bytes", fmt::ptr(heap->ptr), heap->size);
     }
 
     void SetMemoryAttribute(DeviceState &state) {
-        auto address{state.ctx->registers.x0};
-        if (!util::PageAligned(address)) {
+        auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x0)};
+        if (!util::PageAligned(ptr)) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", address);
+            state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", fmt::ptr(ptr));
             return;
         }
 
@@ -52,35 +52,37 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto chunk{state.os->memory.GetChunk(address)};
-        auto block{state.os->memory.GetBlock(address)};
-        if (!chunk || !block) {
+        auto chunk{state.os->memory.Get(ptr)};
+        if (!chunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", address);
+            state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", fmt::ptr(ptr));
             return;
         }
 
         if (!chunk->state.attributeChangeAllowed) {
             state.ctx->registers.w0 = result::InvalidState;
-            state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", address);
+            state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", fmt::ptr(ptr));
             return;
         }
 
-        block->attributes.isUncached = value.isUncached;
-        MemoryManager::InsertBlock(chunk, *block);
+        auto newChunk{*chunk};
+        newChunk.ptr = ptr;
+        newChunk.size = size;
+        newChunk.attributes.isUncached = value.isUncached;
+        state.os->memory.InsertChunk(newChunk);
 
-        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", !block->attributes.isUncached, address, size);
+        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", bool(value.isUncached), fmt::ptr(ptr), size);
         state.ctx->registers.w0 = Result{};
     }
 
     void MapMemory(DeviceState &state) {
-        auto destination{state.ctx->registers.x0};
-        auto source{state.ctx->registers.x1};
+        auto destination{reinterpret_cast<u8*>(state.ctx->registers.x0)};
+        auto source{reinterpret_cast<u8*>(state.ctx->registers.x1)};
         auto size{state.ctx->registers.x2};
 
         if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            state.logger->Warn("svcMapMemory: Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", fmt::ptr(source), fmt::ptr(destination), size);
             return;
         }
 
@@ -93,37 +95,37 @@ namespace skyline::kernel::svc {
         auto stack{state.os->memory.stack};
         if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = result::InvalidMemoryRegion;
-            state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", fmt::ptr(source), fmt::ptr(destination), size);
             return;
         }
 
-        auto descriptor{state.os->memory.Get(source)};
-        if (!descriptor) {
+        auto chunk{state.os->memory.Get(source)};
+        if (!chunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcMapMemory: Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            state.logger->Warn("svcMapMemory: Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", fmt::ptr(source), fmt::ptr(destination), size);
             return;
         }
-        if (!descriptor->chunk.state.mapAllowed) {
+        if (!chunk->state.mapAllowed) {
             state.ctx->registers.w0 = result::InvalidState;
-            state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, descriptor->chunk.state.value);
+            state.logger->Warn("svcMapMemory: Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X}, Size: 0x{:X}, MemoryState: 0x{:X}", fmt::ptr(source), fmt::ptr(destination), size, chunk->state.value);
             return;
         }
 
-        state.process->NewHandle<type::KPrivateMemory>(destination, size, descriptor->block.permission, memory::states::Stack);
-        state.process->CopyMemory(source, destination, size);
+        state.process->NewHandle<type::KPrivateMemory>(destination, size, chunk->permission, memory::states::Stack);
+        memcpy(destination, source, size);
 
         auto object{state.process->GetMemoryObject(source)};
         if (!object)
-            throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
+            throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", fmt::ptr(source));
         object->item->UpdatePermission(source, size, {false, false, false});
 
-        state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
+        state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", fmt::ptr(source), fmt::ptr(source + size), fmt::ptr(destination), fmt::ptr(destination + size), size);
         state.ctx->registers.w0 = Result{};
     }
 
     void UnmapMemory(DeviceState &state) {
-        auto source{state.ctx->registers.x0};
-        auto destination{state.ctx->registers.x1};
+        auto source{reinterpret_cast<u8*>(state.ctx->registers.x0)};
+        auto destination{reinterpret_cast<u8*>(state.ctx->registers.x1)};
         auto size{state.ctx->registers.x2};
 
         if (!util::PageAligned(destination) || !util::PageAligned(source)) {
@@ -145,17 +147,17 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto sourceDesc{state.os->memory.Get(source)};
-        auto destDesc{state.os->memory.Get(destination)};
-        if (!sourceDesc || !destDesc) {
+        auto sourceChunk{state.os->memory.Get(source)};
+        auto destChunk{state.os->memory.Get(destination)};
+        if (!sourceChunk || !destChunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
             state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        if (!destDesc->chunk.state.mapAllowed) {
+        if (!destChunk->state.mapAllowed) {
             state.ctx->registers.w0 = result::InvalidState;
-            state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destDesc->chunk.state.value);
+            state.logger->Warn("svcUnmapMemory: Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destChunk->state.value);
             return;
         }
 
@@ -163,9 +165,9 @@ namespace skyline::kernel::svc {
         if (!destObject)
             throw exception("svcUnmapMemory: Cannot find destination memory object in handle table for address 0x{:X}", destination);
 
-        destObject->item->UpdatePermission(destination, size, sourceDesc->block.permission);
+        destObject->item->UpdatePermission(destination, size, sourceChunk->permission);
 
-        state.process->CopyMemory(destination, source, size);
+        std::memcpy(source, destination, size);
 
         auto sourceObject{state.process->GetMemoryObject(destination)};
         if (!sourceObject)
@@ -180,23 +182,23 @@ namespace skyline::kernel::svc {
     void QueryMemory(DeviceState &state) {
         memory::MemoryInfo memInfo{};
 
-        auto address{state.ctx->registers.x2};
-        auto descriptor{state.os->memory.Get(address, false)};
+        auto ptr{reinterpret_cast<u8*>(state.ctx->registers.x2)};
+        auto chunk{state.os->memory.Get(ptr)};
 
-        if (descriptor) {
+        if (chunk) {
             memInfo = {
-                .address = descriptor->block.address,
-                .size = descriptor->block.size,
-                .type = static_cast<u32>(descriptor->chunk.state.type),
-                .attributes = descriptor->block.attributes.value,
-                .permissions = static_cast<u32>(descriptor->block.permission.Get()),
+                .address = reinterpret_cast<u64>(chunk->ptr),
+                .size = chunk->size,
+                .type = static_cast<u32>(chunk->state.type),
+                .attributes = chunk->attributes.value,
+                .permissions = static_cast<u32>(chunk->permission.Get()),
                 .deviceRefCount = 0,
                 .ipcRefCount = 0,
             };
 
-            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(descriptor->block.attributes.isUncached), descriptor->block.permission.r ? "R" : "-", descriptor->block.permission.w ? "W" : "-", descriptor->block.permission.x ? "X" : "-");
+            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, bool(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
         } else {
-            auto addressSpaceEnd{state.os->memory.addressSpace.address + state.os->memory.addressSpace.size};
+            auto addressSpaceEnd{reinterpret_cast<u64>(state.os->memory.addressSpace.address + state.os->memory.addressSpace.size)};
 
             memInfo = {
                 .address = addressSpaceEnd,
@@ -204,7 +206,7 @@ namespace skyline::kernel::svc {
                 .type = static_cast<u32>(memory::MemoryType::Reserved),
             };
 
-            state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", address);
+            state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", fmt::ptr(ptr));
         }
 
         state.process->WriteMemory(memInfo, state.ctx->registers.x0);
@@ -310,11 +312,11 @@ namespace skyline::kernel::svc {
     void MapSharedMemory(DeviceState &state) {
         try {
             auto object{state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0)};
-            auto address{state.ctx->registers.x1};
+            auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
 
-            if (!util::PageAligned(address)) {
+            if (!util::PageAligned(ptr)) {
                 state.ctx->registers.w0 = result::InvalidAddress;
-                state.logger->Warn("svcMapSharedMemory: 'address' not page aligned: 0x{:X}", address);
+                state.logger->Warn("svcMapSharedMemory: 'ptr' not page aligned: 0x{:X}", ptr);
                 return;
             }
 
@@ -327,14 +329,14 @@ namespace skyline::kernel::svc {
 
             auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
-                state.logger->Warn("svcMapSharedMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
+                state.logger->Warn("svcMapSharedMemory: 'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
                 state.ctx->registers.w0 = result::InvalidNewMemoryPermission;
                 return;
             }
 
-            state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", address, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
+            state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", ptr, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
-            object->Map(address, size, permission);
+            object->Map(ptr, size, permission);
 
             state.ctx->registers.w0 = Result{};
         } catch (const std::exception &) {
@@ -344,10 +346,10 @@ namespace skyline::kernel::svc {
     }
 
     void CreateTransferMemory(DeviceState &state) {
-        auto address{state.ctx->registers.x1};
-        if (!util::PageAligned(address)) {
+        auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
+        if (!util::PageAligned(ptr)) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcCreateTransferMemory: 'address' not page aligned: 0x{:X}", address);
+            state.logger->Warn("svcCreateTransferMemory: 'ptr' not page aligned: 0x{:X}", ptr);
             return;
         }
 
@@ -360,17 +362,16 @@ namespace skyline::kernel::svc {
 
         auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->registers.w3)};
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
-            state.logger->Warn("svcCreateTransferMemory: 'permission' invalid: {}{}{}", permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
+            state.logger->Warn("svcCreateTransferMemory: 'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
             state.ctx->registers.w0 = result::InvalidNewMemoryPermission;
             return;
         }
 
-        state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", address, size, permission.r ? "R" : "-", permission.w ? "W" : "-", permission.x ? "X" : "-");
-
-        auto shmem{state.process->NewHandle<type::KTransferMemory>(state.process->pid, address, size, permission)};
+        auto tmem{state.process->NewHandle<type::KTransferMemory>(ptr, size, permission)};
+        state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", fmt::ptr(ptr), size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
         state.ctx->registers.w0 = Result{};
-        state.ctx->registers.w1 = shmem.handle;
+        state.ctx->registers.w1 = tmem.handle;
     }
 
     void CloseHandle(DeviceState &state) {
@@ -624,10 +625,10 @@ namespace skyline::kernel::svc {
     }
 
     void OutputDebugString(DeviceState &state) {
-        auto debug{state.process->GetString(state.ctx->registers.x0, state.ctx->registers.x1)};
+        auto debug{span(reinterpret_cast<u8*>(state.ctx->registers.x0), state.ctx->registers.x1).as_string()};
 
         if (debug.back() == '\n')
-            debug.pop_back();
+            debug.remove_suffix(1);
 
         state.logger->Info("Debug Output: {}", debug);
         state.ctx->registers.w0 = Result{};
@@ -695,7 +696,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::PersonalMmHeapUsage:
-                out = state.process->heap->address + constant::DefStackSize;
+                out = state.process->heap->size + constant::DefStackSize;
                 break;
 
             case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
@@ -707,7 +708,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::UserExceptionContextAddr:
-                out = state.process->tlsPages[0]->Get(0);
+                out = reinterpret_cast<u64>(state.process->tlsPages[0]->Get(0));
                 break;
 
             default:

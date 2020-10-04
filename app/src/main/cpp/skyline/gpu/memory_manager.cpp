@@ -37,7 +37,6 @@ namespace skyline::gpu::vmm {
                     *chunk = newChunk;
                 } else {
                     chunk->size = newSize;
-
                     chunk = chunks.insert(std::next(chunk), newChunk);
                 }
 
@@ -67,7 +66,6 @@ namespace skyline::gpu::vmm {
                 tailChunk->size -= chunkSliceOffset;
                 if (tailChunk->state == ChunkState::Mapped)
                     tailChunk->cpuAddress += chunkSliceOffset;
-
 
                 // If the size of the head chunk is zero then we can directly replace it with our new one rather than inserting it
                 auto headChunk{std::prev(tailChunk)};

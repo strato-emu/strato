@@ -5,118 +5,7 @@
 #include "types/KProcess.h"
 
 namespace skyline::kernel {
-    ChunkDescriptor *MemoryManager::GetChunk(u64 address) {
-        auto chunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
-            return address < chunk.address;
-        })};
-
-        if (chunk-- != chunks.begin()) {
-            if ((chunk->address + chunk->size) > address)
-                return chunk.base();
-        }
-
-        return nullptr;
-    }
-
-    BlockDescriptor *MemoryManager::GetBlock(u64 address, ChunkDescriptor *chunk) {
-        if (!chunk)
-            chunk = GetChunk(address);
-
-        if (chunk) {
-            auto block{std::upper_bound(chunk->blockList.begin(), chunk->blockList.end(), address, [](const u64 address, const BlockDescriptor &block) -> bool {
-                return address < block.address;
-            })};
-
-            if (block-- != chunk->blockList.begin()) {
-                if ((block->address + block->size) > address)
-                    return block.base();
-            }
-        }
-
-        return nullptr;
-    }
-
-    void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {
-        auto upperChunk{std::upper_bound(chunks.begin(), chunks.end(), chunk.address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
-            return address < chunk.address;
-        })};
-
-        if (upperChunk != chunks.begin()) {
-            auto lowerChunk{std::prev(upperChunk)};
-
-            if (lowerChunk->address + lowerChunk->size > chunk.address)
-                throw exception("InsertChunk: Descriptors are colliding: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", lowerChunk->address, lowerChunk->address + lowerChunk->size, chunk.address, chunk.address + chunk.size);
-        }
-
-        chunks.insert(upperChunk, chunk);
-    }
-
-    void MemoryManager::DeleteChunk(u64 address) {
-        for (auto chunk{chunks.begin()}, end{chunks.end()}; chunk != end;) {
-            if (chunk->address <= address && (chunk->address + chunk->size) > address)
-                chunk = chunks.erase(chunk);
-            else
-                chunk++;
-        }
-    }
-
-    void MemoryManager::ResizeChunk(ChunkDescriptor *chunk, size_t size) {
-        if (chunk->blockList.size() == 1) {
-            chunk->blockList.begin()->size = size;
-        } else if (size > chunk->size) {
-            auto begin{chunk->blockList.begin()};
-            auto end{std::prev(chunk->blockList.end())};
-
-            BlockDescriptor block{
-                .address = (end->address + end->size),
-                .size = (chunk->address + size) - (end->address + end->size),
-                .permission = begin->permission,
-                .attributes = begin->attributes,
-            };
-
-            chunk->blockList.push_back(block);
-        } else if (size < chunk->size) {
-            auto endAddress{chunk->address + size};
-
-            for (auto block{chunk->blockList.begin()}, end{chunk->blockList.end()}; block != end;) {
-                if (block->address > endAddress)
-                    block = chunk->blockList.erase(block);
-                else
-                    block++;
-            }
-
-            auto end{std::prev(chunk->blockList.end())};
-            end->size = endAddress - end->address;
-        }
-
-        chunk->size = size;
-    }
-
-    void MemoryManager::InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block) {
-        if (chunk->address + chunk->size < block.address + block.size)
-            throw exception("InsertBlock: Inserting block past chunk end is not allowed");
-
-        for (auto iter{chunk->blockList.begin()}; iter != chunk->blockList.end(); iter++) {
-            if (iter->address <= block.address) {
-                if ((iter->address + iter->size) > block.address) {
-                    if (iter->address == block.address && iter->size == block.size) {
-                        iter->attributes = block.attributes;
-                        iter->permission = block.permission;
-                    } else {
-                        auto endBlock{*iter};
-                        endBlock.address = (block.address + block.size);
-                        endBlock.size = (iter->address + iter->size) - endBlock.address;
-
-                        iter->size = block.address - iter->address;
-                        chunk->blockList.insert(std::next(iter), {block, endBlock});
-                    }
-                    return;
-                }
-            }
-        }
-
-        throw exception("InsertBlock: Block offset not present within current block list");
-    }
+    MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
     void MemoryManager::InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type) {
         switch (type) {
@@ -162,55 +51,56 @@ namespace skyline::kernel {
             }
         }
 
+        chunks = {ChunkDescriptor{
+            .ptr = reinterpret_cast<u8*>(base.address),
+            .size = base.size,
+            .state = memory::states::Unmapped,
+        }};
+
         state.logger->Debug("Region Map:\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
             .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
     }
 
-    MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
+    void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {
+        std::unique_lock lock(mutex);
 
-    std::optional<DescriptorPack> MemoryManager::Get(u64 address, bool requireMapped) {
-        auto chunk{GetChunk(address)};
+        auto upper{std::upper_bound(chunks.begin(), chunks.end(), chunk.ptr, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; })};
+        if (upper == chunks.begin())
+            throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", fmt::ptr(upper->ptr), fmt::ptr(upper->ptr + upper->size), chunk.ptr, fmt::ptr(chunk.ptr + chunk.size));
 
-        if (chunk)
-            return DescriptorPack{*GetBlock(address, chunk), *chunk};
-
-        // If the requested address is in the address space but no chunks are present then we return a new unmapped region
-        if (addressSpace.IsInside(address) && !requireMapped) {
-            auto upperChunk{std::upper_bound(chunks.begin(), chunks.end(), address, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
-                return address < chunk.address;
-            })};
-
-            u64 upperAddress{};
-            u64 lowerAddress{};
-
-            if (upperChunk != chunks.end()) {
-                upperAddress = upperChunk->address;
-
-                if (upperChunk == chunks.begin()) {
-                    lowerAddress = addressSpace.address;
-                } else {
-                    upperChunk--;
-                    lowerAddress = upperChunk->address + upperChunk->size;
-                }
-            } else {
-                upperAddress = addressSpace.address + addressSpace.size;
-                lowerAddress = chunks.back().address + chunks.back().size;
-            }
-
-            u64 size{upperAddress - lowerAddress};
-
-            return DescriptorPack{
-                .chunk = {
-                    .address = lowerAddress,
-                    .size = size,
-                    .state = memory::states::Unmapped
-                },
-                .block = {
-                    .address = lowerAddress,
-                    .size = size,
-                }
-            };
+        upper = chunks.erase(upper, std::upper_bound(upper, chunks.end(), chunk.ptr + chunk.size, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; }));
+        if (upper != chunks.end() && upper->ptr < chunk.ptr + chunk.size) {
+            auto end{upper->ptr + upper->size};
+            upper->ptr = chunk.ptr + chunk.size;
+            upper->size = end - upper->ptr;
         }
+
+        auto lower{std::prev(upper)};
+        if (lower->ptr == chunk.ptr && lower->size == chunk.size) {
+            lower->state = chunk.state;
+            lower->permission = chunk.permission;
+            lower->attributes = chunk.attributes;
+        } else if (chunk.IsCompatible(*lower)) {
+            lower->size = lower->size + chunk.size;
+        } else {
+            if (lower->ptr + lower->size > chunk.ptr)
+                lower->size = chunk.ptr - lower->ptr;
+            if (upper != chunks.end() && chunk.IsCompatible(*upper)) {
+                upper->ptr = chunk.ptr;
+                upper->size = chunk.size + upper->size;
+            } else {
+                chunks.insert(upper, chunk);
+            }
+        }
+    }
+
+    std::optional<ChunkDescriptor> MemoryManager::Get(void* ptr) {
+        std::shared_lock lock(mutex);
+
+        auto chunk{std::upper_bound(chunks.begin(), chunks.end(), reinterpret_cast<u8 *>(ptr), [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; })};
+        if (chunk-- != chunks.begin())
+            if ((chunk->ptr + chunk->size) > ptr)
+                return std::make_optional(*chunk);
 
         return std::nullopt;
     }

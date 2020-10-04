@@ -7,12 +7,9 @@
 
 namespace skyline {
     namespace memory {
-        /**
-         * @brief The Permission struct holds the permission of a particular chunk of memory
-         */
         struct Permission {
             /**
-             * @brief This constructor initializes all permissions to false
+             * @brief Initializes all permissions to false
              */
             constexpr Permission() : r(), w(), x() {}
 
@@ -23,14 +20,8 @@ namespace skyline {
              */
             constexpr Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {}
 
-            /**
-             * @brief Equality operator between two Permission objects
-             */
             inline bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); }
 
-            /**
-             * @brief Inequality operator between two Permission objects
-             */
             inline bool operator!=(const Permission &rhs) const { return !operator==(rhs); }
 
             /**
@@ -110,7 +101,6 @@ namespace skyline {
         };
 
         /**
-         * @brief The state of a certain block of memory
          * @url https://switchbrew.org/wiki/SVC#MemoryState
          */
         union MemoryState {
@@ -119,7 +109,7 @@ namespace skyline {
             constexpr MemoryState() : value(0) {}
 
             struct {
-                MemoryType type; //!< The MemoryType of this memory block
+                MemoryType type;
                 bool permissionChangeAllowed : 1; //!< If the application can use svcSetMemoryPermission on this block
                 bool forceReadWritableByDebugSyscalls : 1; //!< If the application can use svcWriteDebugProcessMemory on this block
                 bool ipcSendAllowed : 1; //!< If this block is allowed to be sent as an IPC buffer with flags=0
@@ -172,22 +162,14 @@ namespace skyline {
         };
 
         struct Region {
-            u64 address; //!< The base address of the region
-            u64 size; //!< The size of the region in bytes
+            u64 address;
+            size_t size;
 
-            /**
-             * @brief Checks if the specified address is within the region
-             * @param address The address to check
-             * @return If the address is inside the region
-             */
-            inline bool IsInside(u64 address) {
-                return (this->address <= address) && ((this->address + this->size) > address);
+            bool IsInside(void* ptr) {
+                return (address <= reinterpret_cast<u64>(ptr)) && ((address + size) > reinterpret_cast<u64>(ptr));
             }
         };
 
-        /**
-         * @brief The type of the address space used by an application
-         */
         enum class AddressSpaceType {
             AddressSpace32Bit, //!< 32-bit address space used by 32-bit applications
             AddressSpace36Bit, //!< 36-bit address space used by 64-bit applications before 2.0.0
@@ -202,130 +184,49 @@ namespace skyline {
     }
 
     namespace kernel {
-        namespace type {
-            class KPrivateMemory;
-            class KSharedMemory;
-            class KTransferMemory;
-        }
-
-        namespace svc {
-            void SetMemoryAttribute(DeviceState &state);
-
-            void MapMemory(DeviceState &state);
-        }
-
-        /**
-         * @brief A single block of memory and all of it's individual attributes
-         */
-        struct BlockDescriptor {
-            u64 address; //!< The address of the current block
-            u64 size; //!< The size of the current block in bytes
-            memory::Permission permission; //!< The permissions applied to the current block
-            memory::MemoryAttribute attributes; //!< The MemoryAttribute for the current block
-        };
-
-        /**
-         * @brief A single chunk of memory, this is owned by a memory backing
-         */
         struct ChunkDescriptor {
-            u64 address; //!< The address of the current chunk
-            u64 size; //!< The size of the current chunk in bytes
-            u64 host; //!< The address of the chunk in the host
-            memory::MemoryState state; //!< The MemoryState for the current block
-            std::vector<BlockDescriptor> blockList; //!< The block descriptors for all the children blocks of this Chunk
+            u8* ptr;
+            size_t size;
+            memory::Permission permission;
+            memory::MemoryState state;
+            memory::MemoryAttribute attributes;
+
+            constexpr bool IsCompatible(const ChunkDescriptor& chunk) const {
+                return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value;
+            }
         };
 
         /**
-         * @brief A pack of both the descriptors for a specific address
-         */
-        struct DescriptorPack {
-            const BlockDescriptor block; //!< The block descriptor at the address
-            const ChunkDescriptor chunk; //!< The chunk descriptor at the address
-        };
-
-        /**
-         * @brief The MemoryManager class handles the memory map and the memory regions of the process
+         * @brief MemoryManager keeps track of guest virtual memory and it's related attributes
          */
         class MemoryManager {
           private:
             const DeviceState &state;
             std::vector<ChunkDescriptor> chunks;
 
-            /**
-             * @param address The address to find a chunk at
-             * @return A pointer to the ChunkDescriptor or nullptr in case chunk was not found
-             */
-            ChunkDescriptor *GetChunk(u64 address);
+          public:
+            memory::Region addressSpace{}; //!< The entire address space
+            memory::Region base{}; //!< The application-accessible address space
+            memory::Region code{};
+            memory::Region alias{};
+            memory::Region heap{};
+            memory::Region stack{};
+            memory::Region tlsIo{}; //!< TLS/IO
 
-            /**
-             * @param address The address to find a block at
-             * @return A pointer to the BlockDescriptor or nullptr in case chunk was not found
-             */
-            BlockDescriptor *GetBlock(u64 address, ChunkDescriptor *chunk = nullptr);
+            std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it is locked in shared mode by readers and exclusive mode by writers
 
-            /**
-             * @brief Inserts a chunk into the memory map
-             * @param chunk The chunk to insert
-             */
-            void InsertChunk(const ChunkDescriptor &chunk);
-
-            /**
-             * @brief Deletes a chunk located at the address from the memory map
-             * @param address The address of the chunk to delete
-             */
-            void DeleteChunk(u64 address);
-
-            /**
-             * @brief Resize the specified chunk to the specified size
-             * @param chunk The chunk to resize
-             * @param size The new size of the chunk
-             */
-            static void ResizeChunk(ChunkDescriptor *chunk, size_t size);
-
-            /**
-             * @brief Insert a block into a chunk
-             * @param chunk The chunk to insert the block into
-             * @param block The block to insert into the chunk
-             */
-            static void InsertBlock(ChunkDescriptor *chunk, BlockDescriptor block);
+            MemoryManager(const DeviceState &state);
 
             /**
              * @brief Initializes all of the regions in the address space
              * @param address The starting address of the code region
              * @param size The size of the code region
-             * @param type The type of the address space
              */
             void InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type);
 
-          public:
-            friend class type::KPrivateMemory;
-            friend class type::KSharedMemory;
-            friend class type::KTransferMemory;
-            friend class type::KProcess;
-            friend class loader::NroLoader;
-            friend class loader::NsoLoader;
-            friend class loader::NcaLoader;
+            void InsertChunk(const ChunkDescriptor &chunk);
 
-            friend void svc::SetMemoryAttribute(DeviceState &state);
-
-            friend void svc::MapMemory(skyline::DeviceState &state);
-
-            memory::Region addressSpace{}; //!< The Region object for the entire address space
-            memory::Region base{}; //!< The Region object for the entire address space accessible to the application
-            memory::Region code{}; //!< The Region object for the code memory region
-            memory::Region alias{}; //!< The Region object for the alias memory region
-            memory::Region heap{}; //!< The Region object for the heap memory region
-            memory::Region stack{}; //!< The Region object for the stack memory region
-            memory::Region tlsIo{}; //!< The Region object for the TLS/IO memory region
-
-            MemoryManager(const DeviceState &state);
-
-            /**
-             * @param address The address to query in the memory map
-             * @param requireMapped If only mapped regions should be returned otherwise unmapped but valid regions will also be returned
-             * @return A DescriptorPack retrieved from the memory map
-             */
-            std::optional<DescriptorPack> Get(u64 address, bool requireMapped = true);
+            std::optional<ChunkDescriptor> Get(void* ptr);
 
             /**
              * @brief The total amount of space in bytes occupied by all memory mappings

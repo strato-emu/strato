@@ -17,28 +17,30 @@ namespace skyline::service::pl {
         size_t offset; //!< The offset of the font in shared memory
     };
 
-    std::array<FontEntry, 6> fontTable{{
-                                           {FontChineseSimplified, FontExtendedChineseSimplifiedLength},
-                                           {FontChineseTraditional, FontChineseTraditionalLength},
-                                           {FontExtendedChineseSimplified, FontExtendedChineseSimplifiedLength},
-                                           {FontKorean, FontKoreanLength},
-                                           {FontNintendoExtended, FontNintendoExtendedLength},
-                                           {FontStandard, FontStandardLength}
-                                       }};
+    std::array<FontEntry, 6> fontTable{
+        {
+            {FontChineseSimplified, FontExtendedChineseSimplifiedLength},
+            {FontChineseTraditional, FontChineseTraditionalLength},
+            {FontExtendedChineseSimplified, FontExtendedChineseSimplifiedLength},
+            {FontKorean, FontKoreanLength},
+            {FontNintendoExtended, FontNintendoExtendedLength},
+            {FontStandard, FontStandardLength}
+        }
+    };
 
-    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, NULL, constant::FontSharedMemSize, memory::Permission{true, false, false})), BaseService(state, manager) {
+    IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager) : fontSharedMem(std::make_shared<kernel::type::KSharedMemory>(state, constant::FontSharedMemSize)), BaseService(state, manager) {
         constexpr u32 SharedFontResult{0x7F9A0218}; //!< The decrypted magic for a single font in the shared font data
         constexpr u32 SharedFontMagic{0x36F81A1E}; //!< The encrypted magic for a single font in the shared font data
         constexpr u32 SharedFontKey{SharedFontMagic ^ SharedFontResult}; //!< The XOR key for encrypting the font size
 
-        auto pointer{reinterpret_cast<u32 *>(fontSharedMem->kernel.address)};
+        auto ptr{reinterpret_cast<u32 *>(fontSharedMem->kernel.ptr)};
         for (auto &font : fontTable) {
-            *pointer++ = SharedFontResult;
-            *pointer++ = font.length ^ SharedFontKey;
-            font.offset = reinterpret_cast<u64>(pointer) - fontSharedMem->kernel.address;
+            *ptr++ = SharedFontResult;
+            *ptr++ = font.length ^ SharedFontKey;
+            font.offset = reinterpret_cast<u64>(ptr) - reinterpret_cast<u64>(fontSharedMem->kernel.ptr);
 
-            std::memcpy(pointer, font.data, font.length);
-            pointer = reinterpret_cast<u32 *>(reinterpret_cast<u64>(pointer) + font.length);
+            std::memcpy(ptr, font.data, font.length);
+            ptr = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(ptr) + font.length);
         }
     }
 

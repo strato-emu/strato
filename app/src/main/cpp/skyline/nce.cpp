@@ -21,7 +21,7 @@ namespace skyline {
         state.jvm->AttachThread();
         try {
             state.thread = state.process->threads.at(thread);
-            state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.address);
+            state.ctx = reinterpret_cast<ThreadContext *>(state.thread->ctxMemory->kernel.ptr);
 
             while (true) {
                 asm("yield");
@@ -133,7 +133,7 @@ namespace skyline {
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread> &thread) {
-        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
+        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr));
     }
 
     void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs) {
@@ -141,19 +141,19 @@ namespace skyline {
             throw exception("Executing function on Exiting process");
 
         auto thread{state.thread ? state.thread : state.process->threads.at(state.process->pid)};
-        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address));
+        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr));
     }
 
     void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) __attribute__ ((optnone)) {
-        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address)};
+        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr)};
         while (ctx->state == ThreadState::NotReady);
     }
 
     void NCE::StartThread(u64 entryArg, u32 handle, std::shared_ptr<kernel::type::KThread> &thread) {
-        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.address)};
+        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr)};
         while (ctx->state != ThreadState::WaitInit);
 
-        ctx->tpidrroEl0 = thread->tls;
+        ctx->tpidrroEl0 = reinterpret_cast<u64>(thread->tls);
         ctx->registers.x0 = entryArg;
         ctx->registers.x1 = handle;
         ctx->state = ThreadState::WaitRun;

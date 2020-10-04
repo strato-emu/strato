@@ -4,5 +4,5 @@
 #include "input.h"
 
 namespace skyline::input {
-    Input::Input(const DeviceState &state) : state(state), kHid(std::make_shared<kernel::type::KSharedMemory>(state, NULL, sizeof(HidSharedMemory), memory::Permission(true, false, false))), hid(reinterpret_cast<HidSharedMemory *>(kHid->kernel.address)), npad(state, hid), touch(state, hid) {}
+    Input::Input(const DeviceState &state) : state(state), kHid(std::make_shared<kernel::type::KSharedMemory>(state, sizeof(HidSharedMemory))), hid(reinterpret_cast<HidSharedMemory *>(kHid->kernel.ptr)), npad(state, hid), touch(state, hid) {}
 }

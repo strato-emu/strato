@@ -11,9 +11,9 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KProcess::TlsPage::TlsPage(u64 address) : address(address) {}
+    KProcess::TlsPage::TlsPage(u8* ptr) : ptr(ptr) {}
 
-    u64 KProcess::TlsPage::ReserveSlot() {
+    u8* KProcess::TlsPage::ReserveSlot() {
         if (Full())
             throw exception("Trying to get TLS slot from full page");
 
@@ -21,32 +21,32 @@ namespace skyline::kernel::type {
         return Get(index++); // ++ on right will cause increment after evaluation of expression
     }
 
-    u64 KProcess::TlsPage::Get(u8 slotNo) {
+    u8* KProcess::TlsPage::Get(u8 slotNo) {
         if (slotNo >= constant::TlsSlots)
             throw exception("TLS slot is out of range");
 
-        return address + (constant::TlsSlotSize * slotNo);
+        return ptr + (constant::TlsSlotSize * slotNo);
     }
 
     bool KProcess::TlsPage::Full() {
         return slot[constant::TlsSlots - 1];
     }
 
-    u64 KProcess::GetTlsSlot() {
+    u8* KProcess::GetTlsSlot() {
         for (auto &tlsPage: tlsPages)
             if (!tlsPage->Full())
                 return tlsPage->ReserveSlot();
 
-        u64 address;
+        u8* ptr;
         if (tlsPages.empty()) {
             auto region{state.os->memory.tlsIo};
-            address = region.size ? region.address : 0;
+            ptr = reinterpret_cast<u8*>(region.size ? region.address : 0);
         } else {
-            address = (*(tlsPages.end() - 1))->address + PAGE_SIZE;
+            ptr = (*(tlsPages.end() - 1))->ptr + PAGE_SIZE;
         }
 
-        auto tlsMem{NewHandle<KPrivateMemory>(address, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item};
-        tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->address));
+        auto tlsMem{NewHandle<KPrivateMemory>(ptr, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item};
+        tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->ptr));
 
         auto &tlsPage{tlsPages.back()};
         if (tlsPages.empty())
@@ -57,14 +57,14 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeMemory() {
         constexpr size_t DefHeapSize{0x200000}; // The default amount of heap
-        heap = NewHandle<KPrivateMemory>(state.os->memory.heap.address, DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
+        heap = NewHandle<KPrivateMemory>(reinterpret_cast<u8*>(state.os->memory.heap.address), DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
         threads[pid]->tls = GetTlsSlot();
     }
 
     KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), stack(stack), KSyncObject(state, KType::KProcess) {
         constexpr u8 DefaultPriority{44}; // The default priority of a process
 
-        auto thread{NewHandle<KThread>(pid, entryPoint, 0x0, stack->guest.address + stack->guest.size, 0, DefaultPriority, this, tlsMemory).item};
+        auto thread{NewHandle<KThread>(pid, entryPoint, 0, reinterpret_cast<u64>(stack->guest.ptr + stack->guest.size), nullptr, DefaultPriority, this, tlsMemory).item};
         threads[pid] = thread;
         state.nce->WaitThreadInit(thread);
 
@@ -80,12 +80,12 @@ namespace skyline::kernel::type {
 
     std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority) {
         auto size{(sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1)};
-        auto tlsMem{std::make_shared<type::KSharedMemory>(state, 0, size, memory::Permission{true, true, false}, memory::states::Reserved)};
+        auto tlsMem{std::make_shared<type::KSharedMemory>(state, size, memory::states::Reserved)};
 
         Registers fregs{
             .x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO,
             .x1 = stackTop,
-            .x3 = tlsMem->Map(0, size, memory::Permission{true, true, false}),
+            .x3 = reinterpret_cast<u64>(tlsMem->Map(nullptr, size, memory::Permission{true, true, false})),
             .x8 = __NR_clone,
             .x5 = reinterpret_cast<u64>(&guest::GuestEntry),
             .x6 = entryPoint,
@@ -96,20 +96,15 @@ namespace skyline::kernel::type {
             throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
 
         auto pid{static_cast<pid_t>(fregs.x0)};
-        auto process{NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item};
-        threads[pid] = process;
+        auto thread{NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item};
+        threads[pid] = thread;
 
-        return process;
-    }
-
-    u64 KProcess::GetHostAddress(u64 address) {
-        auto chunk{state.os->memory.GetChunk(address)};
-        return (chunk && chunk->host) ? chunk->host + (address - chunk->address) : 0;
+        return thread;
     }
 
     void KProcess::ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
-            auto source{GetHostAddress(offset)};
+            auto source{reinterpret_cast<u8*>(offset)};
 
             if (source) {
                 std::memcpy(destination, reinterpret_cast<void *>(source), size);
@@ -133,7 +128,7 @@ namespace skyline::kernel::type {
 
     void KProcess::WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest) {
         if (!forceGuest) {
-            auto destination{GetHostAddress(offset)};
+            auto destination{reinterpret_cast<u8*>(offset)};
 
             if (destination) {
                 std::memcpy(reinterpret_cast<void *>(destination), source, size);
@@ -155,31 +150,7 @@ namespace skyline::kernel::type {
             pwrite64(memFd, source, size, offset);
     }
 
-    void KProcess::CopyMemory(u64 source, u64 destination, size_t size) {
-        auto sourceHost{GetHostAddress(source)};
-        auto destinationHost{GetHostAddress(destination)};
-
-        if (sourceHost && destinationHost) {
-            std::memcpy(reinterpret_cast<void *>(destinationHost), reinterpret_cast<const void *>(sourceHost), size);
-        } else {
-            if (size <= PAGE_SIZE) {
-                std::vector<u8> buffer(size);
-
-                ReadMemory(buffer.data(), source, size);
-                WriteMemory(buffer.data(), destination, size);
-            } else {
-                Registers fregs{
-                    .x0 = source,
-                    .x1 = destination,
-                    .x2 = size,
-                };
-
-                state.nce->ExecuteFunction(ThreadCall::Memcopy, fregs);
-            }
-        }
-    }
-
-    std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u64 address) {
+    std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u8* ptr) {
         for (KHandle index{}; index < handles.size(); index++) {
             auto& object{handles[index]};
             switch (object->objectType) {
@@ -187,7 +158,7 @@ namespace skyline::kernel::type {
                 case type::KType::KSharedMemory:
                 case type::KType::KTransferMemory: {
                     auto mem{std::static_pointer_cast<type::KMemory>(object)};
-                    if (mem->IsInside(address))
+                    if (mem->IsInside(ptr))
                         return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
                 }
 

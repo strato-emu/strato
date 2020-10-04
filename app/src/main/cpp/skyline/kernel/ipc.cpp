@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::ipc {
     IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain) {
-        u8 *tls{state.process->GetPointer<u8>(state.thread->tls)};
+        auto tls{state.thread->tls};
         u8 *pointer{tls};
 
         header = reinterpret_cast<CommandHeader *>(pointer);
@@ -129,7 +129,7 @@ namespace skyline::kernel::ipc {
     IpcResponse::IpcResponse(const DeviceState &state) : state(state) {}
 
     void IpcResponse::WriteResponse(bool isDomain) {
-        auto tls{state.process->GetPointer<u8>(state.thread->tls)};
+        auto tls{state.thread->tls};
         u8 *pointer{tls};
 
         memset(tls, 0, constant::TlsIpcSize);
