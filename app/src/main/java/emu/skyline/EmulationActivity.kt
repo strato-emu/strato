@@ -15,9 +15,9 @@ import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isInvisible
-import androidx.preference.PreferenceManager
 import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
+import emu.skyline.utils.Settings
 import kotlinx.android.synthetic.main.emu_activity.*
 import java.io.File
 import kotlin.math.abs
@@ -35,11 +35,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * A map of [Vibrator]s that correspond to [InputManager.controllers]
      */
     private var vibrators = HashMap<Int, Vibrator>()
-
-    /**
-     * A boolean flag denoting the current operation mode of the emulator (Docked = true/Handheld = false)
-     */
-    private var operationMode = true
 
     /**
      * The surface object used for displaying frames
@@ -62,6 +57,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * The Kotlin thread on which emulation code executes
      */
     private lateinit var emulationThread : Thread
+
+    private val settings by lazy { Settings(this) }
 
     /**
      * This is the entry point into the emulation code for libskyline
@@ -149,7 +146,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             if (controller.type != ControllerType.None) {
                 val type = when (controller.type) {
                     ControllerType.None -> throw IllegalArgumentException()
-                    ControllerType.HandheldProController -> if (operationMode) ControllerType.ProController.id else ControllerType.HandheldProController.id
+                    ControllerType.HandheldProController -> if (settings.operationMode) ControllerType.ProController.id else ControllerType.HandheldProController.id
                     ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
                 }
 
@@ -212,9 +209,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         game_view.holder.addCallback(this)
 
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-
-        if (sharedPreferences.getBoolean("perf_stats", false)) {
+        if (settings.perfStats) {
             perf_stats.postDelayed(object : Runnable {
                 override fun run() {
                     perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
@@ -223,15 +218,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             }, 250)
         }
 
-        operationMode = sharedPreferences.getBoolean("operation_mode", operationMode)
-
         @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
         display?.supportedModes?.maxBy { it.refreshRate + (it.physicalHeight * it.physicalWidth) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
 
         game_view.setOnTouchListener(this)
 
         // Hide on screen controls when first controller is not set
-        on_screen_controller_view.isInvisible = !InputManager.controllers[0]!!.type.firstController || !sharedPreferences.getBoolean("on_screen_control", false)
+        on_screen_controller_view.isInvisible = !InputManager.controllers[0]!!.type.firstController || !settings.onScreenControl
         on_screen_controller_view.setOnButtonStateChangedListener(::onButtonStateChanged)
         on_screen_controller_view.setOnStickStateChangedListener(::onStickStateChanged)
 

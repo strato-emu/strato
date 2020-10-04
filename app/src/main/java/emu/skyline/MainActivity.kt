@@ -37,6 +37,9 @@ import emu.skyline.data.ElementType
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
+import emu.skyline.utils.Settings
+import emu.skyline.utils.loadSerializedList
+import emu.skyline.utils.serialize
 import kotlinx.android.synthetic.main.main_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 import java.io.File
@@ -50,10 +53,7 @@ class MainActivity : AppCompatActivity() {
         private val TAG = MainActivity::class.java.simpleName
     }
 
-    /**
-     * This is used to get/set shared preferences
-     */
-    private val sharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
+    private val settings by lazy { Settings(this) }
 
     /**
      * The adapter used for adding elements to [app_list]
@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
     private var reloading = AtomicBoolean()
 
-    private val layoutType get() = LayoutType.values()[sharedPreferences.getString("layout_type", "1")!!.toInt()]
+    private val layoutType get() = LayoutType.values()[settings.layoutType.toInt()]
 
     private val missingIcon by lazy { ContextCompat.getDrawable(this, R.drawable.default_icon)!!.toBitmap(256, 256) }
 
@@ -134,7 +134,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 runOnUiThread { adapter.removeAllItems() }
 
-                val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(sharedPreferences.getString("search_location", "")))!!
+                val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(settings.searchLocation))!!
 
                 val romElements = ArrayList<BaseElement>()
                 addEntries("nro", RomFormat.NRO, searchLocation, romElements)
@@ -155,10 +155,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                sharedPreferences.edit().putBoolean("refresh_required", false).apply()
+                settings.refreshRequired = false
             } catch (e : IllegalArgumentException) {
                 runOnUiThread {
-                    sharedPreferences.edit().remove("search_location").apply()
+                    settings.searchLocation = ""
 
                     val intent = intent
                     finish()
@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity() {
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
-        AppCompatDelegate.setDefaultNightMode(when ((sharedPreferences.getString("app_theme", "2")?.toInt())) {
+        AppCompatDelegate.setDefaultNightMode(when ((settings.appTheme.toInt())) {
             0 -> AppCompatDelegate.MODE_NIGHT_NO
             1 -> AppCompatDelegate.MODE_NIGHT_YES
             2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
@@ -267,13 +267,13 @@ class MainActivity : AppCompatActivity() {
         }
         setAppListDecoration()
 
-        if (sharedPreferences.getString("search_location", "") == "") {
+        if (settings.searchLocation.isEmpty()) {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
 
             startActivityForResult(intent, 1)
         } else {
-            refreshAdapter(!sharedPreferences.getBoolean("refresh_required", false))
+            refreshAdapter(!settings.refreshRequired)
         }
     }
 
@@ -301,7 +301,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectStartGame(appItem : AppItem) {
-        if (sharedPreferences.getBoolean("select_action", false))
+        if (settings.selectAction)
             AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
         else if (appItem.loaderResult == LoaderResult.Success)
             startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri })
@@ -341,9 +341,9 @@ class MainActivity : AppCompatActivity() {
                 1 -> {
                     val uri = intent!!.data!!
                     contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    sharedPreferences.edit().putString("search_location", uri.toString()).apply()
+                    settings.searchLocation = uri.toString()
 
-                    refreshAdapter(!sharedPreferences.getBoolean("refresh_required", false))
+                    refreshAdapter(!settings.refreshRequired)
                 }
 
                 2 -> {
@@ -361,8 +361,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 3 -> {
-                    if (sharedPreferences.getBoolean("refresh_required", false))
-                        refreshAdapter(false)
+                    if (settings.refreshRequired) refreshAdapter(false)
                 }
             }
         }

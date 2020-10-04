@@ -17,6 +17,9 @@ import android.view.View
 import android.view.View.OnTouchListener
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonState
+import emu.skyline.utils.add
+import emu.skyline.utils.multiply
+import emu.skyline.utils.normalize
 import kotlin.math.roundToLong
 
 typealias OnButtonStateChangedListener = (buttonId : ButtonId, state : ButtonState) -> Unit
@@ -32,6 +35,11 @@ class OnScreenControllerView @JvmOverloads constructor(
     private var onButtonStateChangedListener : OnButtonStateChangedListener? = null
     private var onStickStateChangedListener : OnStickStateChangedListener? = null
     private val joystickAnimators = mutableMapOf<JoystickButton, Animator?>()
+    var recenterSticks = false
+        set(value) {
+            field = value
+            controls.joysticks.forEach { it.recenterSticks = recenterSticks }
+        }
 
     override fun onDraw(canvas : Canvas) {
         super.onDraw(canvas)
@@ -95,7 +103,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                                 val value = animation.animatedValue as Float
                                 val vector = direction.multiply(value)
                                 val newPosition = position.add(vector)
-                                joystick.onFingerMoved(newPosition.x, newPosition.y)
+                                joystick.onFingerMoved(newPosition.x, newPosition.y, false)
                                 onStickStateChangedListener?.invoke(joystick.buttonId, vector.multiply(1f / radius))
                                 invalidate()
                             }
@@ -129,6 +137,8 @@ class OnScreenControllerView @JvmOverloads constructor(
                         joystick.onFingerDown(x, y)
                         if (joystick.shortDoubleTapped)
                             onButtonStateChangedListener?.invoke(joystick.buttonId, ButtonState.Pressed)
+                        if (recenterSticks)
+                            onStickStateChangedListener?.invoke(joystick.buttonId, joystick.outerToInnerRelative())
                         performClick()
                         handled = true
                     }
@@ -144,8 +154,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
             }
         }
-
-        handled.also { if (it) invalidate() else super.onTouchEvent(event) }
+        handled.also { if (it) invalidate() }
     }
 
     private val editingTouchHandler = OnTouchListener { _, event ->
@@ -175,7 +184,7 @@ class OnScreenControllerView @JvmOverloads constructor(
                 }
             }
             false
-        }.also { handled -> if (handled) invalidate() else super.onTouchEvent(event) }
+        }.also { handled -> if (handled) invalidate() }
     }
 
     init {
@@ -194,12 +203,12 @@ class OnScreenControllerView @JvmOverloads constructor(
     }
 
     fun increaseScale() {
-        controls.globalScale *= 1.1f
+        controls.globalScale += 0.05f
         invalidate()
     }
 
     fun decreaseScale() {
-        controls.globalScale *= 0.9f
+        controls.globalScale -= 0.05f
         invalidate()
     }
 

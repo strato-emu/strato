@@ -24,7 +24,7 @@ import kotlin.math.abs
  *
  * @param item This is used to hold the [ControllerButtonViewItem] between instances
  */
-class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null, private val position : Int? = null) : BottomSheetDialogFragment() {
+class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null) : BottomSheetDialogFragment() {
     /**
      * This inflates the layout of the dialog after initial view creation
      */

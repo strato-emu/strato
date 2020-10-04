@@ -8,6 +8,7 @@ package emu.skyline.adapter.controller
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import emu.skyline.R
 import emu.skyline.adapter.GenericLayoutFactory
 import emu.skyline.adapter.GenericViewHolder
@@ -22,7 +23,9 @@ class ControllerCheckBoxViewItem(var title : String, var summary : String, var c
     override fun getLayoutFactory() : GenericLayoutFactory = ControllerCheckBoxLayoutFactory
 
     override fun bind(holder : GenericViewHolder, position : Int) {
+        holder.text_title.isGone = title.isEmpty()
         holder.text_title.text = title
+        holder.text_subtitle.isGone = summary.isEmpty()
         holder.text_subtitle.text = summary
         holder.checkbox.isChecked = checked
         holder.itemView.setOnClickListener {

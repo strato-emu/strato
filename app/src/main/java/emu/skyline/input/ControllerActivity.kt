@@ -9,7 +9,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import emu.skyline.R
@@ -20,6 +19,7 @@ import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
+import emu.skyline.utils.Settings
 import kotlinx.android.synthetic.main.controller_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 
@@ -47,7 +47,7 @@ class ControllerActivity : AppCompatActivity() {
      */
     val axisMap = mutableMapOf<AxisId, ControllerStickViewItem>()
 
-    private val sharedPrefs by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
+    private val settings by lazy { Settings(this) }
 
     /**
      * This function updates the [adapter] based on information from [InputManager]
@@ -65,9 +65,15 @@ class ControllerActivity : AppCompatActivity() {
         if (id == 0 && controller.type.firstController) {
             adapter.addItem(HeaderViewItem(getString(R.string.osc)))
 
-            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), getString(R.string.osc_not_shown), sharedPrefs.getBoolean("on_screen_control", false)) { item, position ->
-                item.summary = getString(if (item.checked) R.string.osc_shown else R.string.osc_not_shown)
-                sharedPrefs.edit().putBoolean("on_screen_control", item.checked).apply()
+            val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
+            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(settings.onScreenControl), settings.onScreenControl) { item, position ->
+                item.summary = oscSummary.invoke(item.checked)
+                settings.onScreenControl = item.checked
+                adapter.notifyItemChanged(position)
+            })
+
+            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", settings.onScreenControlRecenterSticks) { item, position ->
+                settings.onScreenControlRecenterSticks = item.checked
                 adapter.notifyItemChanged(position)
             })
 

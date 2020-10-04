@@ -50,7 +50,8 @@
                 android:alpha="0.4"
                 android:contentDescription="@string/buttons"
                 android:outlineProvider="bounds"
-                android:src="@drawable/ic_stick_circle" />
+                android:src="@drawable/ic_button"
+                android:tint="?android:attr/textColorPrimary" />
 
 
         <RelativeLayout
@@ -70,7 +71,8 @@
                     android:alpha="0.4"
                     android:contentDescription="@string/buttons"
                     android:outlineProvider="bounds"
-                    android:src="@drawable/ic_stick" />
+                    android:src="@drawable/ic_stick"
+                    android:tint="?android:attr/textColorPrimary" />
 
             <TextView
                     android:id="@+id/stick_name"

@@ -3,7 +3,7 @@
  * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline
+package emu.skyline.utils
 
 import java.io.File
 import java.io.ObjectInputStream

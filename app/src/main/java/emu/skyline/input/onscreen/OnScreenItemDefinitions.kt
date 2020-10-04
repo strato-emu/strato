@@ -12,6 +12,8 @@ import androidx.core.graphics.minus
 import emu.skyline.R
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonId.*
+import emu.skyline.utils.add
+import emu.skyline.utils.multiply
 import kotlin.math.roundToInt
 
 open class CircularButton(
@@ -55,11 +57,12 @@ class JoystickButton(
         defaultRelativeX,
         defaultRelativeY,
         defaultRelativeRadiusToX,
-        R.drawable.ic_stick_circle
+        R.drawable.ic_button
 ) {
-
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
+    var recenterSticks = false
+    private lateinit var initialTapPosition : PointF
     private var fingerDownTime = 0L
     private var fingerUpTime = 0L
     var shortDoubleTapped = false
@@ -76,12 +79,17 @@ class JoystickButton(
     }
 
     override fun onFingerDown(x : Float, y : Float) {
-        relativeX = x / width
-        relativeY = (y - heightDiff) / adjustedHeight
+        val relativeX = x / width
+        val relativeY = (y - heightDiff) / adjustedHeight
+        if (!recenterSticks) {
+            this.relativeX = relativeX
+            this.relativeY = relativeY
+        }
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
 
         val currentTime = SystemClock.elapsedRealtime()
+        initialTapPosition = PointF(x, y)
         val firstTapDiff = fingerUpTime - fingerDownTime
         val secondTapDiff = currentTime - fingerUpTime
         if (firstTapDiff in 0..500 && secondTapDiff in 0..500) {
@@ -101,16 +109,17 @@ class JoystickButton(
         drawable.alpha = 255
     }
 
-    fun onFingerMoved(x : Float, y : Float) : PointF {
+    fun onFingerMoved(x : Float, y : Float, manualMove : Boolean = true) : PointF {
         val position = PointF(currentX, currentY)
         var finger = PointF(x, y)
         val outerToInner = finger.minus(position)
         val distance = outerToInner.length()
-        if (distance >= radius) {
+        if (distance > radius) {
             finger = position.add(outerToInner.multiply(1f / distance * radius))
         }
 
-        if (distance > radius * 0.075f) {
+        // If finger get moved to much, then don't trigger as joystick being pressed
+        if (manualMove && initialTapPosition.minus(finger).length() > radius * 0.075f) {
             fingerDownTime = 0
             fingerUpTime = 0
         }
@@ -121,6 +130,8 @@ class JoystickButton(
     }
 
     fun outerToInner() = PointF(innerButton.currentX, innerButton.currentY).minus(PointF(currentX, currentY))
+
+    fun outerToInnerRelative() = outerToInner().multiply(1f / radius)
 
     override fun edit(x : Float, y : Float) {
         super.edit(x, y)
@@ -209,13 +220,13 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     )
 
     val rectangularButtons = listOf(
-            RectangularButton(onScreenControllerView, L, 0.1f, 0.25f, 0.075f, 0.08f),
-            RectangularButton(onScreenControllerView, R, 0.9f, 0.25f, 0.075f, 0.08f)
+            RectangularButton(onScreenControllerView, L, 0.1f, 0.25f, 0.09f, 0.1f),
+            RectangularButton(onScreenControllerView, R, 0.9f, 0.25f, 0.09f, 0.1f)
     )
 
     val triggerButtons = listOf(
-            TriggerButton(onScreenControllerView, ZL, 0.1f, 0.1f, 0.075f, 0.08f),
-            TriggerButton(onScreenControllerView, ZR, 0.9f, 0.1f, 0.075f, 0.08f)
+            TriggerButton(onScreenControllerView, ZL, 0.1f, 0.1f, 0.09f, 0.1f),
+            TriggerButton(onScreenControllerView, ZR, 0.9f, 0.1f, 0.09f, 0.1f)
     )
 
     val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons

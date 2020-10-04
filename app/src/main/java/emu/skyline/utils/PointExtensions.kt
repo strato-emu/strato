@@ -3,7 +3,7 @@
  * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline.input.onscreen
+package emu.skyline.utils
 
 import android.graphics.PointF
 

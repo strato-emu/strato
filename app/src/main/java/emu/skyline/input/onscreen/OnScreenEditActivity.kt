@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import emu.skyline.R
+import emu.skyline.utils.Settings
 import kotlinx.android.synthetic.main.main_activity.fab_parent
 import kotlinx.android.synthetic.main.on_screen_edit_activity.*
 
@@ -31,7 +32,7 @@ class OnScreenEditActivity : AppCompatActivity() {
         } else {
             fullEditVisible = !fullEditVisible
             toggleFabVisibility(fullEditVisible)
-            fabMapping[R.drawable.ic_close]!!.animate().rotationBy(if (fullEditVisible) -45f else 45f)
+            fabMapping[R.drawable.ic_close]!!.animate().rotation(if (fullEditVisible) 0f else 45f)
         }
     }
 
@@ -70,7 +71,7 @@ class OnScreenEditActivity : AppCompatActivity() {
     }
 
     private val actions : List<Pair<Int, () -> Unit>> = listOf(
-            Pair(R.drawable.ic_refresh, { on_screen_controller_view.resetControls() }),
+            Pair(R.drawable.ic_restore, { on_screen_controller_view.resetControls() }),
             Pair(R.drawable.ic_toggle, toggleAction),
             Pair(R.drawable.ic_edit, editAction),
             Pair(R.drawable.ic_zoom_out, { on_screen_controller_view.decreaseScale() }),
@@ -83,6 +84,7 @@ class OnScreenEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.on_screen_edit_activity)
+        on_screen_controller_view.recenterSticks = Settings(this).onScreenControlRecenterSticks
 
         actions.forEach { pair ->
             fab_parent.addView(FloatingActionButton(this).apply {

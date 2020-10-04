@@ -36,10 +36,10 @@
                 android:id="@+id/button_icon"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:alpha="0.15"
                 android:contentDescription="@string/buttons"
                 android:outlineProvider="bounds"
-                android:src="@drawable/ic_button" />
+                android:src="@drawable/ic_button"
+                android:tint="?android:attr/textColorPrimary" />
 
         <TextView
                 android:id="@+id/button_text"

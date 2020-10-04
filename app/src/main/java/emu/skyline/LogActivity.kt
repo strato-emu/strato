@@ -14,13 +14,13 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.LogViewItem
+import emu.skyline.utils.Settings
 import kotlinx.android.synthetic.main.log_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 import org.json.JSONObject
@@ -52,9 +52,10 @@ class LogActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val compact = prefs.getBoolean("log_compact", false)
-        val logLevel = prefs.getString("log_level", "3")!!.toInt()
+        val settings = Settings(this)
+
+        val compact = settings.logCompact
+        val logLevel = settings.logLevel.toInt()
         val logLevels = resources.getStringArray(R.array.log_level)
 
         log_list.adapter = adapter
