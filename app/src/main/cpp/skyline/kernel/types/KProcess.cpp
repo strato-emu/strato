@@ -102,54 +102,6 @@ namespace skyline::kernel::type {
         return thread;
     }
 
-    void KProcess::ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest) {
-        if (!forceGuest) {
-            auto source{reinterpret_cast<u8*>(offset)};
-
-            if (source) {
-                std::memcpy(destination, reinterpret_cast<void *>(source), size);
-                return;
-            }
-        }
-
-        struct iovec local{
-            .iov_base = destination,
-            .iov_len = size,
-        };
-
-        struct iovec remote{
-            .iov_base = reinterpret_cast<void *>(offset),
-            .iov_len = size,
-        };
-
-        if (process_vm_readv(pid, &local, 1, &remote, 1, 0) < 0)
-            pread64(memFd, destination, size, offset);
-    }
-
-    void KProcess::WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest) {
-        if (!forceGuest) {
-            auto destination{reinterpret_cast<u8*>(offset)};
-
-            if (destination) {
-                std::memcpy(reinterpret_cast<void *>(destination), source, size);
-                return;
-            }
-        }
-
-        struct iovec local{
-            .iov_base = const_cast<void *>(source),
-            .iov_len = size,
-        };
-
-        struct iovec remote{
-            .iov_base = reinterpret_cast<void *>(offset),
-            .iov_len = size,
-        };
-
-        if (process_vm_writev(pid, &local, 1, &remote, 1, 0) < 0)
-            pwrite64(memFd, source, size, offset);
-    }
-
     std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u8* ptr) {
         for (KHandle index{}; index < handles.size(); index++) {
             auto& object{handles[index]};
@@ -169,19 +121,17 @@ namespace skyline::kernel::type {
         return std::nullopt;
     }
 
-    bool KProcess::MutexLock(u64 address, KHandle owner) {
+    bool KProcess::MutexLock(u32* mutex, KHandle owner) {
         std::unique_lock lock(mutexLock);
 
-        auto mtx{GetPointer<u32>(address)};
-        auto &mtxWaiters{mutexes[address]};
-
+        auto &mtxWaiters{mutexes[reinterpret_cast<u64>(mutex)]};
         if (mtxWaiters.empty()) {
             u32 mtxExpected{};
-            if (__atomic_compare_exchange_n(mtx, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+            if (__atomic_compare_exchange_n(mutex, &mtxExpected, (constant::MtxOwnerMask & state.thread->handle), false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
                 return true;
         }
 
-        if (__atomic_load_n(mtx, __ATOMIC_SEQ_CST) != (owner | ~constant::MtxOwnerMask))
+        if (__atomic_load_n(mutex, __ATOMIC_SEQ_CST) != (owner | ~constant::MtxOwnerMask))
             return false;
 
         std::shared_ptr<WaitStatus> status;
@@ -209,20 +159,19 @@ namespace skyline::kernel::type {
         return true;
     }
 
-    bool KProcess::MutexUnlock(u64 address) {
+    bool KProcess::MutexUnlock(u32* mutex) {
         std::unique_lock lock(mutexLock);
 
-        auto mtx{GetPointer<u32>(address)};
-        auto &mtxWaiters{mutexes[address]};
+        auto &mtxWaiters{mutexes[reinterpret_cast<u64>(mutex)]};
         u32 mtxDesired{};
         if (!mtxWaiters.empty())
             mtxDesired = (*mtxWaiters.begin())->handle | ((mtxWaiters.size() > 1) ? ~constant::MtxOwnerMask : 0);
 
         u32 mtxExpected{(constant::MtxOwnerMask & state.thread->handle) | ~constant::MtxOwnerMask};
-        if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        if (!__atomic_compare_exchange_n(mutex, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
             mtxExpected &= constant::MtxOwnerMask;
 
-            if (!__atomic_compare_exchange_n(mtx, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+            if (!__atomic_compare_exchange_n(mutex, &mtxExpected, mtxDesired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
                 return false;
         }
 
@@ -237,16 +186,16 @@ namespace skyline::kernel::type {
         return true;
     }
 
-    bool KProcess::ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout) {
+    bool KProcess::ConditionalVariableWait(void* conditional, u32* mutex, u64 timeout) {
         std::unique_lock lock(conditionalLock);
-        auto &condWaiters{conditionals[conditionalAddress]};
 
+        auto &condWaiters{conditionals[reinterpret_cast<u64>(conditional)]};
         std::shared_ptr<WaitStatus> status;
         for (auto it{condWaiters.begin()};; it++) {
             if (it != condWaiters.end() && (*it)->priority >= state.thread->priority)
                 continue;
 
-            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->handle, mutexAddress);
+            status = std::make_shared<WaitStatus>(state.thread->priority, state.thread->handle, mutex);
             condWaiters.insert(it, status);
             break;
         }
@@ -278,16 +227,16 @@ namespace skyline::kernel::type {
         return !timedOut;
     }
 
-    void KProcess::ConditionalVariableSignal(u64 address, u64 amount) {
+    void KProcess::ConditionalVariableSignal(void* conditional, u64 amount) {
         std::unique_lock condLock(conditionalLock);
 
-        auto &condWaiters{conditionals[address]};
+        auto &condWaiters{conditionals[reinterpret_cast<u64>(conditional)]};
         u64 count{};
 
         auto iter{condWaiters.begin()};
         while (iter != condWaiters.end() && count < amount) {
             auto &thread{*iter};
-            auto mtx{GetPointer<u32>(thread->mutexAddress)};
+            auto mtx{thread->mutex};
             u32 mtxValue{__atomic_load_n(mtx, __ATOMIC_SEQ_CST)};
 
             while (true) {
@@ -308,7 +257,7 @@ namespace skyline::kernel::type {
             if (mtxValue && ((mtxValue & constant::MtxOwnerMask) != state.thread->handle)) {
                 std::unique_lock mtxLock(mutexLock);
 
-                auto &mtxWaiters{mutexes[thread->mutexAddress]};
+                auto &mtxWaiters{mutexes[reinterpret_cast<u64>(thread->mutex)]};
                 std::shared_ptr<WaitStatus> status;
 
                 for (auto it{mtxWaiters.begin()};; it++) {

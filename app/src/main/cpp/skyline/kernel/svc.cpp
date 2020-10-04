@@ -28,10 +28,10 @@ namespace skyline::kernel::svc {
     }
 
     void SetMemoryAttribute(DeviceState &state) {
-        auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x0)};
-        if (!util::PageAligned(ptr)) {
+        auto pointer{reinterpret_cast<u8 *>(state.ctx->registers.x0)};
+        if (!util::PageAligned(pointer)) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcSetMemoryAttribute: 'address' not page aligned: 0x{:X}", fmt::ptr(ptr));
+            state.logger->Warn("svcSetMemoryAttribute: 'pointer' not page aligned: 0x{:X}", fmt::ptr(pointer));
             return;
         }
 
@@ -52,26 +52,26 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto chunk{state.os->memory.Get(ptr)};
+        auto chunk{state.os->memory.Get(pointer)};
         if (!chunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", fmt::ptr(ptr));
+            state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", fmt::ptr(pointer));
             return;
         }
 
         if (!chunk->state.attributeChangeAllowed) {
             state.ctx->registers.w0 = result::InvalidState;
-            state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", fmt::ptr(ptr));
+            state.logger->Warn("svcSetMemoryAttribute: Attribute change not allowed for chunk: 0x{:X}", fmt::ptr(pointer));
             return;
         }
 
         auto newChunk{*chunk};
-        newChunk.ptr = ptr;
+        newChunk.ptr = pointer;
         newChunk.size = size;
         newChunk.attributes.isUncached = value.isUncached;
         state.os->memory.InsertChunk(newChunk);
 
-        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", bool(value.isUncached), fmt::ptr(ptr), size);
+        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", bool(value.isUncached), fmt::ptr(pointer), size);
         state.ctx->registers.w0 = Result{};
     }
 
@@ -182,8 +182,8 @@ namespace skyline::kernel::svc {
     void QueryMemory(DeviceState &state) {
         memory::MemoryInfo memInfo{};
 
-        auto ptr{reinterpret_cast<u8*>(state.ctx->registers.x2)};
-        auto chunk{state.os->memory.Get(ptr)};
+        auto pointer{reinterpret_cast<u8*>(state.ctx->registers.x2)};
+        auto chunk{state.os->memory.Get(pointer)};
 
         if (chunk) {
             memInfo = {
@@ -206,10 +206,10 @@ namespace skyline::kernel::svc {
                 .type = static_cast<u32>(memory::MemoryType::Reserved),
             };
 
-            state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", fmt::ptr(ptr));
+            state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", fmt::ptr(pointer));
         }
 
-        state.process->WriteMemory(memInfo, state.ctx->registers.x0);
+        *reinterpret_cast<memory::MemoryInfo*>(state.ctx->registers.x0) = memInfo;
 
         state.ctx->registers.w0 = Result{};
     }
@@ -312,11 +312,11 @@ namespace skyline::kernel::svc {
     void MapSharedMemory(DeviceState &state) {
         try {
             auto object{state.process->GetHandle<type::KSharedMemory>(state.ctx->registers.w0)};
-            auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
+            auto pointer{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
 
-            if (!util::PageAligned(ptr)) {
+            if (!util::PageAligned(pointer)) {
                 state.ctx->registers.w0 = result::InvalidAddress;
-                state.logger->Warn("svcMapSharedMemory: 'ptr' not page aligned: 0x{:X}", ptr);
+                state.logger->Warn("svcMapSharedMemory: 'pointer' not page aligned: 0x{:X}", pointer);
                 return;
             }
 
@@ -334,9 +334,9 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", ptr, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+            state.logger->Debug("svcMapSharedMemory: Mapping shared memory at 0x{:X} for {} bytes ({}{}{})", pointer, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
-            object->Map(ptr, size, permission);
+            object->Map(pointer, size, permission);
 
             state.ctx->registers.w0 = Result{};
         } catch (const std::exception &) {
@@ -346,10 +346,10 @@ namespace skyline::kernel::svc {
     }
 
     void CreateTransferMemory(DeviceState &state) {
-        auto ptr{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
-        if (!util::PageAligned(ptr)) {
+        auto pointer{reinterpret_cast<u8 *>(state.ctx->registers.x1)};
+        if (!util::PageAligned(pointer)) {
             state.ctx->registers.w0 = result::InvalidAddress;
-            state.logger->Warn("svcCreateTransferMemory: 'ptr' not page aligned: 0x{:X}", ptr);
+            state.logger->Warn("svcCreateTransferMemory: 'pointer' not page aligned: 0x{:X}", pointer);
             return;
         }
 
@@ -367,8 +367,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto tmem{state.process->NewHandle<type::KTransferMemory>(ptr, size, permission)};
-        state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", fmt::ptr(ptr), size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+        auto tmem{state.process->NewHandle<type::KTransferMemory>(pointer, size, permission)};
+        state.logger->Debug("svcCreateTransferMemory: Creating transfer memory at 0x{:X} for {} bytes ({}{}{})", fmt::ptr(pointer), size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
         state.ctx->registers.w0 = Result{};
         state.ctx->registers.w1 = tmem.handle;
@@ -426,9 +426,7 @@ namespace skyline::kernel::svc {
 
         std::string handleStr;
         std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
-        std::vector<KHandle> waitHandles(numHandles);
-
-        state.process->ReadMemory(waitHandles.data(), state.ctx->registers.x1, numHandles * sizeof(KHandle));
+        span waitHandles(reinterpret_cast<KHandle*>(state.ctx->registers.x1), numHandles);
 
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
@@ -464,7 +462,7 @@ namespace skyline::kernel::svc {
             uint index{};
             for (const auto &object : objectTable) {
                 if (object->signalled) {
-                    state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles.at(index));
+                    state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);
                     state.ctx->registers.w0 = Result{};
                     state.ctx->registers.w1 = index;
                     return;
@@ -490,9 +488,9 @@ namespace skyline::kernel::svc {
     }
 
     void ArbitrateLock(DeviceState &state) {
-        auto address{state.ctx->registers.x1};
-        if (!util::WordAligned(address)) {
-            state.logger->Warn("svcArbitrateLock: 'address' not word aligned: 0x{:X}", address);
+        auto pointer{reinterpret_cast<u32*>(state.ctx->registers.x1)};
+        if (!util::WordAligned(pointer)) {
+            state.logger->Warn("svcArbitrateLock: 'pointer' not word aligned: 0x{:X}", fmt::ptr(pointer));
             state.ctx->registers.w0 = result::InvalidAddress;
             return;
         }
@@ -502,58 +500,58 @@ namespace skyline::kernel::svc {
         if (requesterHandle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", requesterHandle, state.thread->handle);
 
-        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", address);
+        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", fmt::ptr(pointer));
 
-        if (state.process->MutexLock(address, ownerHandle))
-            state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", address);
+        if (state.process->MutexLock(pointer, ownerHandle))
+            state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", fmt::ptr(pointer));
         else
-            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex or didn't have waiter flag at 0x{:X}", address);
+            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex or didn't have waiter flag at 0x{:X}", fmt::ptr(pointer));
 
         state.ctx->registers.w0 = Result{};
     }
 
     void ArbitrateUnlock(DeviceState &state) {
-        auto address{state.ctx->registers.x0};
-        if (!util::WordAligned(address)) {
-            state.logger->Warn("svcArbitrateUnlock: 'address' not word aligned: 0x{:X}", address);
+        auto mutex{reinterpret_cast<u32*>(state.ctx->registers.x0)};
+        if (!util::WordAligned(mutex)) {
+            state.logger->Warn("svcArbitrateUnlock: mutex pointer not word aligned: 0x{:X}", fmt::ptr(mutex));
             state.ctx->registers.w0 = result::InvalidAddress;
             return;
         }
 
-        state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", address);
+        state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", fmt::ptr(mutex));
 
-        if (state.process->MutexUnlock(address)) {
-            state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", address);
+        if (state.process->MutexUnlock(mutex)) {
+            state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", fmt::ptr(mutex));
             state.ctx->registers.w0 = Result{};
         } else {
-            state.logger->Debug("svcArbitrateUnlock: A non-owner thread tried to release a mutex at 0x{:X}", address);
+            state.logger->Debug("svcArbitrateUnlock: A non-owner thread tried to release a mutex at 0x{:X}", fmt::ptr(mutex));
             state.ctx->registers.w0 = result::InvalidAddress;
         }
     }
 
     void WaitProcessWideKeyAtomic(DeviceState &state) {
-        auto mtxAddress{state.ctx->registers.x0};
-        if (!util::WordAligned(mtxAddress)) {
-            state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex address not word aligned: 0x{:X}", mtxAddress);
+        auto mutex{reinterpret_cast<u32*>(state.ctx->registers.x0)};
+        if (!util::WordAligned(mutex)) {
+            state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex pointer not word aligned: 0x{:X}", fmt::ptr(mutex));
             state.ctx->registers.w0 = result::InvalidAddress;
             return;
         }
 
-        auto condAddress{state.ctx->registers.x1};
+        auto conditional{reinterpret_cast<void*>(state.ctx->registers.x1)};
         auto handle{state.ctx->registers.w2};
         if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
 
-        if (!state.process->MutexUnlock(mtxAddress)) {
-            state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", mtxAddress);
+        if (!state.process->MutexUnlock(mutex)) {
+            state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", fmt::ptr(mutex));
             state.ctx->registers.w0 = result::InvalidAddress;
             return;
         }
 
         auto timeout{state.ctx->registers.x3};
-        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mtxAddress, condAddress, timeout);
+        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", fmt::ptr(mutex), conditional, timeout);
 
-        if (state.process->ConditionalVariableWait(condAddress, mtxAddress, timeout)) {
+        if (state.process->ConditionalVariableWait(conditional, mutex, timeout)) {
             state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable and relocked mutex");
             state.ctx->registers.w0 = Result{};
         } else {
@@ -563,11 +561,11 @@ namespace skyline::kernel::svc {
     }
 
     void SignalProcessWideKey(DeviceState &state) {
-        auto address{state.ctx->registers.x0};
+        auto conditional{reinterpret_cast<void*>(state.ctx->registers.x0)};
         auto count{state.ctx->registers.w1};
 
-        state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", address, count);
-        state.process->ConditionalVariableSignal(address, count);
+        state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", conditional, count);
+        state.process->ConditionalVariableSignal(conditional, count);
         state.ctx->registers.w0 = Result{};
     }
 
@@ -586,7 +584,7 @@ namespace skyline::kernel::svc {
 
     void ConnectToNamedPort(DeviceState &state) {
         constexpr u8 portSize = 0x8; //!< The size of a port name string
-        std::string_view port(span(state.process->GetPointer<char>(state.ctx->registers.x1), portSize).as_string(true));
+        std::string_view port(span(reinterpret_cast<char*>(state.ctx->registers.x1), portSize).as_string(true));
 
         KHandle handle{};
         if (port.compare("sm:") >= 0) {

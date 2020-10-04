@@ -20,7 +20,7 @@ namespace skyline::service::audio::IAudioRenderer {
     static_assert(sizeof(BiquadFilter) == 0xC);
 
     struct WaveBuffer {
-        u64 address;
+        u8* pointer;
         u64 size;
         u32 firstSampleOffset;
         u32 lastSampleOffset;
@@ -51,7 +51,7 @@ namespace skyline::service::audio::IAudioRenderer {
         u32 appendedWaveBuffersCount;
         u32 baseWaveBufferIndex;
         u32 _unk1_;
-        u64 adpcmCoeffsPosition;
+        u32* adpcmCoeffs;
         u64 adpcmCoeffsSize;
         u32 destination;
         u32 _pad0_;

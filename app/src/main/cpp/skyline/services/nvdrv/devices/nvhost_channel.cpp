@@ -26,8 +26,8 @@ namespace skyline::service::nvdrv::device {
 
     NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
-            u64 address;    // In
-            u32 numEntries; // In
+            gpu::gpfifo::GpEntry* entries; // In
+            u32 numEntries;                // In
             union {
                 struct __attribute__((__packed__)) {
                     bool fenceWait : 1;
@@ -39,8 +39,8 @@ namespace skyline::service::nvdrv::device {
                     bool incrementWithValue : 1;
                 };
                 u32 raw;
-            } flags;        // In
-            Fence fence;    // InOut
+            } flags;                       // In
+            Fence fence;                   // InOut
         } &data = buffer.as<Data>();
 
         auto driver{nvdrv::driver.lock()};
@@ -58,7 +58,7 @@ namespace skyline::service::nvdrv::device {
             if (type == IoctlType::Ioctl2)
                 return inlineBuffer.cast<gpu::gpfifo::GpEntry>();
             else
-                return span(state.process->GetPointer<gpu::gpfifo::GpEntry>(data.address), data.numEntries);
+                return span(data.entries, data.numEntries);
         }());
 
         data.fence.id = channelFence.id;

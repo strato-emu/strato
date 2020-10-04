@@ -66,10 +66,10 @@ namespace skyline {
 
         /**
          * @brief Prints out a trace and the CPU context
-         * @param numHist The amount of previous instructions to print (Can be 0)
+         * @param instructionCount The amount of previous instructions to print (Can be 0)
          * @param ctx The ThreadContext of the thread to log
          */
-        void ThreadTrace(u16 numHist = 10, ThreadContext *ctx = nullptr);
+        void ThreadTrace(u16 instructionCount = 10, ThreadContext *ctx = nullptr);
 
         /**
          * @brief Patches specific parts of the code

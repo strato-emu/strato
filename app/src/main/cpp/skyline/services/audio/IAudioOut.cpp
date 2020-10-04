@@ -32,21 +32,22 @@ namespace skyline::service::audio {
 
     Result IAudioOut::AppendAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct Data {
-            u64 nextBufferPtr;
-            u64 sampleBufferPtr;
+            i16* nextBuffer;
+            i16* sampleBuffer;
             u64 sampleCapacity;
             u64 sampleSize;
             u64 sampleOffset;
         } &data{request.inputBuf.at(0).as<Data>()};
         auto tag{request.Pop<u64>()};
 
-        state.logger->Debug("Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBufferPtr, data.sampleSize);
+        state.logger->Debug("Appending buffer with address: 0x{:X}, size: 0x{:X}", fmt::ptr(data.sampleBuffer), data.sampleSize);
 
+        span samples(data.sampleBuffer, data.sampleSize / sizeof(i16));
         if (sampleRate != constant::SampleRate) {
-            auto resampledBuffer{resampler.ResampleBuffer(span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)), static_cast<double>(sampleRate) / constant::SampleRate, channelCount)};
+            auto resampledBuffer{resampler.ResampleBuffer(samples, static_cast<double>(sampleRate) / constant::SampleRate, channelCount)};
             track->AppendBuffer(tag, resampledBuffer);
         } else {
-            track->AppendBuffer(tag, span(state.process->GetPointer<i16>(data.sampleBufferPtr), data.sampleSize / sizeof(i16)));
+            track->AppendBuffer(tag, samples);
         }
 
         return {};

@@ -20,10 +20,10 @@ namespace skyline {
         struct ChunkDescriptor {
             u64 address; //!< The address of the chunk in the GPU address space
             u64 size; //!< The size of the chunk in bytes
-            u64 cpuAddress; //!< The address of the chunk in the CPU address space (if mapped)
+            u8* pointer; //!< A pointer to the chunk in the CPU address space (if mapped)
             ChunkState state;
 
-            ChunkDescriptor(u64 address, u64 size, u64 cpuAddress, ChunkState state) : address(address), size(size), cpuAddress(cpuAddress), state(state) {}
+            ChunkDescriptor(u64 address, u64 size, u8* pointer, ChunkState state) : address(address), size(size), pointer(pointer), state(state) {}
 
             /**
              * @return If the given chunk can be contained wholly within this chunk
@@ -78,20 +78,20 @@ namespace skyline {
 
             /**
              * @brief Maps a physical CPU memory region to an automatically chosen virtual memory region
-             * @param address The physical CPU address of the region to be mapped into the GPU's address space
+             * @param pointer A pointer to the region to be mapped into the GPU's address space
              * @param size The size of the region to map
              * @return The virtual address of the region base
              */
-            u64 MapAllocate(u64 address, u64 size);
+            u64 MapAllocate(u8* pointer, u64 size);
 
             /**
              * @brief Maps a physical CPU memory region to a fixed virtual memory region
              * @param address The target virtual address of the region
-             * @param cpuAddress The physical CPU address of the region to be mapped into the GPU's address space
+             * @param pointer A pointer to the region to be mapped into the GPU's address space
              * @param size The size of the region to map
              * @return The virtual address of the region base
              */
-            u64 MapFixed(u64 address, u64 cpuAddress, u64 size);
+            u64 MapFixed(u64 address, u8* pointer, u64 size);
 
             /**
              * @brief Unmaps all chunks in the given region from the GPU address space

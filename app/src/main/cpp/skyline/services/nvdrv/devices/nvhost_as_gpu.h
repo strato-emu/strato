@@ -13,7 +13,7 @@ namespace skyline::service::nvdrv::device {
     class NvHostAsGpu : public NvDevice {
       private:
         struct AddressSpaceRegion {
-            u64 cpuAddress;
+            u8 *cpuPtr;
             u64 size;
             bool fixed;
         };

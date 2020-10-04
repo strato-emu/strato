@@ -7,7 +7,7 @@
 #include "texture.h"
 
 namespace skyline::gpu {
-    GuestTexture::GuestTexture(const DeviceState &state, u64 address, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), address(address), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
+    GuestTexture::GuestTexture(const DeviceState &state, u8* pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
     std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> format, std::optional<texture::Dimensions> dimensions, texture::Swizzle swizzle) {
         if (!host.expired())
@@ -30,7 +30,7 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost() {
-        auto texture{state.process->GetPointer<u8>(guest->address)};
+        auto pointer{guest->pointer};
         auto size{format.GetSize(dimensions)};
         backing.resize(size);
         auto output{reinterpret_cast<u8 *>(backing.data())};
@@ -51,7 +51,7 @@ namespace skyline::gpu {
             auto robBytes{robWidthBytes * robHeight}; // The size of a ROB in bytes
             auto gobYOffset{robWidthBytes * gobHeight}; // The offset of the next Y-axis GOB from the current one in linear space
 
-            auto inputSector{texture}; // The address of the input sector
+            auto inputSector{pointer}; // The address of the input sector
             auto outputRob{output}; // The address of the output block
 
             for (u32 rob{}, y{}, paddingY{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
@@ -80,7 +80,7 @@ namespace skyline::gpu {
             auto sizeLine{guest->format.GetSize(dimensions.width, 1)}; // The size of a single line of pixel data
             auto sizeStride{guest->format.GetSize(guest->tileConfig.pitch, 1)}; // The size of a single stride of pixel data
 
-            auto inputLine{texture}; // The address of the input line
+            auto inputLine{pointer}; // The address of the input line
             auto outputLine{output}; // The address of the output line
 
             for (u32 line{}; line < dimensions.height; line++) {
@@ -89,7 +89,7 @@ namespace skyline::gpu {
                 outputLine += sizeLine;
             }
         } else if (guest->tileMode == texture::TileMode::Linear) {
-            std::memcpy(output, texture, size);
+            std::memcpy(output, pointer, size);
         }
     }
 

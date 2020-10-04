@@ -7,7 +7,8 @@
 namespace skyline::kernel {
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
-    void MemoryManager::InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type) {
+    void MemoryManager::InitializeRegions(u8* codeStart, u64 size, memory::AddressSpaceType type) {
+        u64 address{reinterpret_cast<u64>(codeStart)};
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");

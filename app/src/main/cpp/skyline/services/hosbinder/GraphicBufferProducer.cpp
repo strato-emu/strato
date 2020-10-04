@@ -149,7 +149,7 @@ namespace skyline::service::hosbinder {
                 throw exception("Unknown pixel format used for FB");
         }
 
-        auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->address + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1})};
+        auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->pointer + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1})};
 
         queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializePresentationTexture());
         state.gpu->bufferEvent->Signal();

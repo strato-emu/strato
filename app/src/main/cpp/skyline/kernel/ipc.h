@@ -137,8 +137,8 @@ namespace skyline {
                 counter9_11 = static_cast<u16>(address & 0x38);
             }
 
-            inline u64 Address() {
-                return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
+            inline u8* Pointer() {
+                return reinterpret_cast<u8*>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
             }
 
             inline u16 Counter() {
@@ -167,8 +167,8 @@ namespace skyline {
                 size32_35 = static_cast<u8>(size & 0x78000000);
             }
 
-            inline u64 Address() {
-                return static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36;
+            inline u8* Pointer() {
+                return reinterpret_cast<u8*>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
             }
 
             inline u64 Size() {
@@ -183,6 +183,10 @@ namespace skyline {
         struct BufferDescriptorC {
             u64 address : 48; //!< The 48-bit address of the buffer
             u32 size    : 16; //!< The 16-bit size of the buffer
+
+            inline u8* Pointer() {
+                return reinterpret_cast<u8*>(address);
+            }
 
             BufferDescriptorC(u64 address, u16 size) : address(address), size(size) {}
         };

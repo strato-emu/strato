@@ -95,11 +95,11 @@ namespace skyline {
                 std::atomic_bool flag{false}; //!< The underlying atomic flag of the thread
                 u8 priority; //!< The priority of the thread
                 KHandle handle; //!< The handle of the thread
-                u64 mutexAddress{}; //!< The address of the mutex
+                u32* mutex{};
 
                 WaitStatus(u8 priority, KHandle handle) : priority(priority), handle(handle) {}
 
-                WaitStatus(u8 priority, KHandle handle, u64 mutexAddress) : priority(priority), handle(handle), mutexAddress(mutexAddress) {}
+                WaitStatus(u8 priority, KHandle handle, u32* mutex) : priority(priority), handle(handle), mutex(mutex) {}
             };
 
             pid_t pid; //!< The PID of the process or TGID of the threads
@@ -135,67 +135,6 @@ namespace skyline {
             * @return An instance of KThread class for the corresponding thread
             */
             std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority);
-
-            /**
-            * @tparam Type The type of the pointer to return
-            * @param address The address on the guest
-            * @return A pointer corresponding to a certain address on the guest
-            * @note If the address is invalid then nullptr will be returned
-            */
-            template<typename Type>
-            inline Type *GetPointer(u64 address) {
-                return reinterpret_cast<Type *>(address);
-            }
-
-            /**
-            * @brief Writes an object to guest memory
-            * @tparam Type The type of the object to be written
-            * @param item The object to write
-            * @param address The address of the object
-            */
-            template<typename Type>
-            inline void WriteMemory(Type &item, u64 address) {
-                auto destination{GetPointer<Type>(address)};
-                if (destination) {
-                    *destination = item;
-                } else {
-                    WriteMemory(&item, address, sizeof(Type));
-                }
-            }
-
-            /**
-            * @brief Writes an object to guest memory
-            * @tparam Type The type of the object to be written
-            * @param item The object to write
-            * @param address The address of the object
-            */
-            template<typename Type>
-            inline void WriteMemory(const Type &item, u64 address) {
-                auto destination{GetPointer<Type>(address)};
-                if (destination) {
-                    *destination = item;
-                } else {
-                    WriteMemory(&item, address, sizeof(Type));
-                }
-            }
-
-            /**
-            * @brief Read data from the guest's memory
-            * @param destination The address to the location where the process memory is written
-            * @param offset The address to read from in process memory
-            * @param size The amount of memory to be read
-            * @param forceGuest Forces the write to be performed in guest address space
-            */
-            void ReadMemory(void *destination, u64 offset, size_t size, bool forceGuest = false);
-
-            /**
-            * @brief Write to the guest's memory
-            * @param source The address of where the data to be written is present
-            * @param offset The address to write to in process memory
-            * @param size The amount of memory to be written
-            * @param forceGuest Forces the write to be performed in guest address space
-            */
-            void WriteMemory(const void *source, u64 offset, size_t size, bool forceGuest = false);
 
             /**
             * @brief Creates a new handle to a KObject and adds it to the process handle_table
@@ -279,33 +218,28 @@ namespace skyline {
 
             /**
             * @brief Locks the Mutex at the specified address
-            * @param address The address of the mutex
             * @param owner The handle of the current mutex owner
             * @return If the mutex was successfully locked
             */
-            bool MutexLock(u64 address, KHandle owner);
+            bool MutexLock(u32* mutex, KHandle owner);
 
             /**
             * @brief Unlocks the Mutex at the specified address
-            * @param address The address of the mutex
             * @return If the mutex was successfully unlocked
             */
-            bool MutexUnlock(u64 address);
+            bool MutexUnlock(u32* mutex);
 
             /**
-            * @param conditionalAddress The address of the conditional variable
-            * @param mutexAddress The address of the mutex
             * @param timeout The amount of time to wait for the conditional variable
             * @return If the conditional variable was successfully waited for or timed out
             */
-            bool ConditionalVariableWait(u64 conditionalAddress, u64 mutexAddress, u64 timeout);
+            bool ConditionalVariableWait(void* conditional, u32* mutex, u64 timeout);
 
             /**
             * @brief Signals a number of conditional variable waiters
-            * @param address The address of the conditional variable
             * @param amount The amount of waiters to signal
             */
-            void ConditionalVariableSignal(u64 address, u64 amount);
+            void ConditionalVariableSignal(void* conditional, u64 amount);
 
             /**
              * @brief Resets the object to an unsignalled state

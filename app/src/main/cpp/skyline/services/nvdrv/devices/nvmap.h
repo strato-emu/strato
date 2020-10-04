@@ -16,11 +16,11 @@ namespace skyline::service::nvdrv::device {
          * @brief NvMapObject is used to hold the state of held objects
          */
         struct NvMapObject {
-            u32 id; //!< The ID of this object
-            u32 size; //!< The size of this object
-            u64 address{}; //!< The address of the allocation
+            u32 id;
+            u32 size;
+            u8* pointer{};
             u32 flags{}; //!< The flag of the memory (0 = Read Only, 1 = Read-Write)
-            u32 align{}; //!< The alignment of the allocation
+            u32 align{};
             u32 heapMask{}; //!< This is set during Alloc and returned during Param
             u8 kind{}; //!< This is same as heapMask
 

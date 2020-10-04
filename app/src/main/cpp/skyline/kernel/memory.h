@@ -219,10 +219,8 @@ namespace skyline {
 
             /**
              * @brief Initializes all of the regions in the address space
-             * @param address The starting address of the code region
-             * @param size The size of the code region
              */
-            void InitializeRegions(u64 address, u64 size, memory::AddressSpaceType type);
+            void InitializeRegions(u8* codeStart, u64 size, memory::AddressSpaceType type);
 
             void InsertChunk(const ChunkDescriptor &chunk);
 

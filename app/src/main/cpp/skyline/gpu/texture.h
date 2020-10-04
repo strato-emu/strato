@@ -124,14 +124,14 @@ namespace skyline {
             const DeviceState &state;
 
           public:
-            u64 address; //!< The address of the texture in guest memory
+            u8* pointer; //!< The address of the texture in guest memory
             std::weak_ptr<Texture> host; //!< A host texture (if any) that was created from this guest texture
             texture::Dimensions dimensions;
             texture::Format format;
             texture::TileMode tileMode;
             texture::TileConfig tileConfig;
 
-            GuestTexture(const DeviceState &state, u64 address, texture::Dimensions dimensions, texture::Format format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
+            GuestTexture(const DeviceState &state, u8* pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
 
             constexpr size_t Size() {
                 return format.GetSize(dimensions);

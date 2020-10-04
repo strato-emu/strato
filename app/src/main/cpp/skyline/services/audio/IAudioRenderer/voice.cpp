@@ -43,7 +43,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
             if (input.format == skyline::audio::AudioFormat::ADPCM) {
                 std::vector<std::array<i16, 2>> adpcmCoefficients(input.adpcmCoeffsSize / (sizeof(u16) * 2));
-                state.process->ReadMemory(adpcmCoefficients.data(), input.adpcmCoeffsPosition, input.adpcmCoeffsSize);
+                span(adpcmCoefficients).copy_from(span(input.adpcmCoeffs, input.adpcmCoeffsSize));
 
                 adpcmDecoder = skyline::audio::AdpcmDecoder(adpcmCoefficients);
             }
@@ -58,6 +58,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
     void Voice::UpdateBuffers() {
         const auto &currentBuffer{waveBuffers.at(bufferIndex)};
+        span buffer(currentBuffer.pointer, currentBuffer.size);
 
         if (currentBuffer.size == 0)
             return;
@@ -65,10 +66,10 @@ namespace skyline::service::audio::IAudioRenderer {
         switch (format) {
             case skyline::audio::AudioFormat::Int16:
                 samples.resize(currentBuffer.size / sizeof(i16));
-                state.process->ReadMemory(samples.data(), currentBuffer.address, currentBuffer.size);
+                buffer.copy_from(samples);
                 break;
             case skyline::audio::AudioFormat::ADPCM: {
-                samples = adpcmDecoder->Decode(span(state.process->GetPointer<u8>(currentBuffer.address), currentBuffer.size));
+                samples = adpcmDecoder->Decode(buffer);
                 break;
             }
             default:

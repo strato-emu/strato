@@ -162,29 +162,26 @@ namespace skyline {
         threadMap[thread->tid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->tid);
     }
 
-    void NCE::ThreadTrace(u16 numHist, ThreadContext *ctx) {
+    void NCE::ThreadTrace(u16 instructionCount, ThreadContext *ctx) {
         std::string raw;
         std::string trace;
         std::string regStr;
 
         ctx = ctx ? ctx : state.ctx;
 
-        if (numHist) {
-            std::vector<u32> instrs(numHist);
-            u64 size{sizeof(u32) * numHist};
-            u64 offset{ctx->pc - size + (2 * sizeof(u32))};
+        if (instructionCount) {
+            auto offset{ctx->pc - ((instructionCount - 2) * sizeof(u32))};
+            span instructions(reinterpret_cast<u32*>(offset), instructionCount);
 
-            state.process->ReadMemory(instrs.data(), offset, size);
-
-            for (auto &instr : instrs) {
-                instr = __builtin_bswap32(instr);
+            for (auto &instruction : instructions) {
+                instruction = __builtin_bswap32(instruction);
 
                 if (offset == ctx->pc)
-                    trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instr);
+                    trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
                 else
-                    trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instr);
+                    trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
 
-                raw += fmt::format("{:08X}", instr);
+                raw += fmt::format("{:08X}", instruction);
                 offset += sizeof(u32);
             }
         }
@@ -201,7 +198,7 @@ namespace skyline {
             regStr += fmt::format("\n{}{}: 0x{:<16X} {}{}: 0x{:X}", xStr, index, ctx->registers.regs[index], xStr, index + 1, ctx->registers.regs[index + 1]);
         }
 
-        if (numHist) {
+        if (instructionCount) {
             state.logger->Debug("Process Trace:{}", trace);
             state.logger->Debug("Raw Instructions: 0x{}", raw);
             state.logger->Debug("CPU Context:{}", regStr);
