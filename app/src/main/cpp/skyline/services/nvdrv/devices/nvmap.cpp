@@ -59,7 +59,7 @@ namespace skyline::service::nvdrv::device {
             object->pointer = data.pointer;
             object->status = NvMapObject::Status::Allocated;
 
-            state.logger->Debug("Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}", data.handle, data.heapMask, data.flags, data.align, data.kind, fmt::ptr(data.pointer));
+            state.logger->Debug("Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Address: 0x{:X}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.pointer);
             return NvStatus::Success;
         } catch (const std::out_of_range &) {
             state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
@@ -89,7 +89,7 @@ namespace skyline::service::nvdrv::device {
             data.size = object->size;
             handleTable.erase(data.handle);
 
-            state.logger->Debug("Handle: 0x{:X} -> Address: 0x{:X}, Size: 0x{:X}, Flags: 0x{:X}", data.handle, fmt::ptr(data.pointer), data.size, data.flags);
+            state.logger->Debug("Handle: 0x{:X} -> Address: 0x{:X}, Size: 0x{:X}, Flags: 0x{:X}", data.handle, data.pointer, data.size, data.flags);
             return NvStatus::Success;
         } catch (const std::out_of_range &) {
             state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);

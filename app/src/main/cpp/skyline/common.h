@@ -68,6 +68,22 @@ namespace skyline {
         constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
     }
 
+    namespace util {
+        /**
+         * @brief A way to implicitly cast all typed pointers to void pointers, this is used for libfmt as it requires wrapping non-void pointers with fmt::ptr
+         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly passed through fmt::ptr
+         */
+        template <class T>
+        constexpr T VoidCast(T item) {
+            return item;
+        }
+
+        template <class T>
+        constexpr const void* VoidCast(T* ptr) {
+            return ptr;
+        }
+    }
+
     /**
      * @brief A wrapper over std::runtime_error with libfmt formatting
      */
@@ -78,7 +94,7 @@ namespace skyline {
          * @param args The arguments based on format_str
          */
         template<typename S, typename... Args>
-        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, args...)) {}
+        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::VoidCast(args)...)) {}
     };
 
     namespace util {
@@ -188,7 +204,7 @@ namespace skyline {
                 return digit - 'a' + 10;
             else if (digit >= 'A' && digit <= 'F')
                 return digit - 'A' + 10;
-            throw exception(fmt::format("Invalid hex char {}", digit));
+            throw exception("Invalid hex character: '{}'", digit);
         }
 
         template<size_t Size>
@@ -428,7 +444,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Error(const S &formatStr, Args &&... args) {
             if (LogLevel::Error <= configLevel) {
-                Write(LogLevel::Error, fmt::format(formatStr, args...));
+                Write(LogLevel::Error, fmt::format(formatStr, util::VoidCast(args)...));
             }
         }
 
@@ -440,7 +456,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Warn(const S &formatStr, Args &&... args) {
             if (LogLevel::Warn <= configLevel) {
-                Write(LogLevel::Warn, fmt::format(formatStr, args...));
+                Write(LogLevel::Warn, fmt::format(formatStr, util::VoidCast(args)...));
             }
         }
 
@@ -452,7 +468,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Info(const S &formatStr, Args &&... args) {
             if (LogLevel::Info <= configLevel) {
-                Write(LogLevel::Info, fmt::format(formatStr, args...));
+                Write(LogLevel::Info, fmt::format(formatStr, util::VoidCast(args)...));
             }
         }
 
@@ -464,7 +480,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Debug(const S &formatStr, Args &&... args) {
             if (LogLevel::Debug <= configLevel) {
-                Write(LogLevel::Debug, fmt::format(formatStr, args...));
+                Write(LogLevel::Debug, fmt::format(formatStr, util::VoidCast(args)...));
             }
         }
     };

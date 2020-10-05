@@ -12,7 +12,7 @@
 namespace skyline::kernel::type {
     KPrivateMemory::KPrivateMemory(const DeviceState &state, u8* ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : size(size), permission(permission), memState(memState), KMemory(state, KType::KPrivateMemory) {
         if (ptr && !util::PageAligned(ptr))
-            throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", fmt::ptr(ptr));
+            throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", ptr);
 
         ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, ptr ? MAP_FIXED : 0, 0, 0));
         if (ptr == MAP_FAILED)
@@ -53,7 +53,7 @@ namespace skyline::kernel::type {
 
     void KPrivateMemory::UpdatePermission(u8* ptr, size_t size, memory::Permission permission) {
         if (ptr && !util::PageAligned(ptr))
-            throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", fmt::ptr(ptr));
+            throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
 
         // If a static code region has been mapped as writable it needs to be changed to mutable
         if (memState.value == memory::states::CodeStatic.value && permission.w)

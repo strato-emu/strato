@@ -67,7 +67,7 @@ namespace skyline::kernel {
 
         auto upper{std::upper_bound(chunks.begin(), chunks.end(), chunk.ptr, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; })};
         if (upper == chunks.begin())
-            throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", fmt::ptr(upper->ptr), fmt::ptr(upper->ptr + upper->size), chunk.ptr, fmt::ptr(chunk.ptr + chunk.size));
+            throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", upper->ptr, fmt::ptr(upper->ptr + upper->size), chunk.ptr, fmt::ptr(chunk.ptr + chunk.size));
 
         upper = chunks.erase(upper, std::upper_bound(upper, chunks.end(), chunk.ptr + chunk.size, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; }));
         if (upper != chunks.end() && upper->ptr < chunk.ptr + chunk.size) {

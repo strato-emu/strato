@@ -25,7 +25,7 @@ namespace skyline::loader {
         u64 offset{loadInfo.size};
         u8* base{loadInfo.base};
 
-        state.logger->Info("Loaded nso 'rtld' at 0x{:X}", fmt::ptr(base));
+        state.logger->Info("Loaded nso 'rtld' at 0x{:X}", base);
 
         for (const auto &nso : {"main", "subsdk0", "subsdk1", "subsdk2", "subsdk3", "subsdk4", "subsdk5", "subsdk6", "subsdk7", "sdk"}) {
             nsoFile = exeFs->OpenFile(nso);

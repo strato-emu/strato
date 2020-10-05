@@ -24,7 +24,7 @@ namespace skyline::kernel::type {
 
     u8 *KSharedMemory::Map(u8 *ptr, u64 size, memory::Permission permission) {
         if (ptr && !util::PageAligned(ptr))
-            throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", fmt::ptr(ptr));
+            throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", ptr);
 
         guest.ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)
@@ -43,7 +43,7 @@ namespace skyline::kernel::type {
 
     void KSharedMemory::UpdatePermission(u8* ptr, size_t size, memory::Permission permission) {
         if (ptr && !util::PageAligned(ptr))
-            throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", fmt::ptr(ptr));
+            throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
 
         if (guest.Valid()) {
             mprotect(ptr, size, permission.Get());

@@ -103,14 +103,14 @@ namespace skyline::kernel::ipc {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
             if (bufC->address) {
                 outputBuf.emplace_back(bufC->Pointer(), u16(bufC->size));
-                state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", fmt::ptr(bufC->Pointer()), u16(bufC->size));
+                state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", bufC->Pointer(), u16(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index{}; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
                 if (bufC->address) {
                     outputBuf.emplace_back(bufC->Pointer(), u16(bufC->size));
-                    state.logger->Debug("Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, fmt::ptr(bufC->Pointer()), u16(bufC->size));
+                    state.logger->Debug("Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, bufC->Pointer(), u16(bufC->size));
                 }
                 pointer += sizeof(BufferDescriptorC);
             }

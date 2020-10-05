@@ -44,7 +44,7 @@ namespace skyline::service::nvdrv {
             else
                 buffer = request.outputBuf[0];
         } else {
-            throw exception("IOCTL Input Buffer (0x{:X}) != Output Buffer (0x{:X})", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()));
+            throw exception("IOCTL Input Buffer (0x{:X}) != Output Buffer (0x{:X})", request.inputBuf[0].data(), request.outputBuf[0].data());
         }
 
         response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl, buffer, {}));
@@ -104,7 +104,7 @@ namespace skyline::service::nvdrv {
         if (request.inputBuf.size() < 2 || request.outputBuf.empty())
             throw exception("Inadequate amount of buffers for IOCTL2: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
         else if (request.inputBuf[0].data() != request.outputBuf[0].data())
-            throw exception("IOCTL2 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Input Buffer #2: 0x{:X}]", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()), fmt::ptr(request.inputBuf[1].data()));
+            throw exception("IOCTL2 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Input Buffer #2: 0x{:X}]", request.inputBuf[0].data(), request.outputBuf[0].data(), request.inputBuf[1].data());
 
         span<u8> buffer{};
         if (request.inputBuf[0].size() >= request.outputBuf[0].size())
@@ -128,7 +128,7 @@ namespace skyline::service::nvdrv {
         if (request.inputBuf.empty() || request.outputBuf.size() < 2)
             throw exception("Inadequate amount of buffers for IOCTL3: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
         else if (request.inputBuf[0].data() != request.outputBuf[0].data())
-            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", fmt::ptr(request.inputBuf[0].data()), fmt::ptr(request.outputBuf[0].data()), fmt::ptr(request.outputBuf[1].data()));
+            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", request.inputBuf[0].data(), request.outputBuf[0].data(), request.outputBuf[1].data());
 
         span<u8> buffer{};
         if (request.inputBuf[0].size() >= request.outputBuf[0].size())
