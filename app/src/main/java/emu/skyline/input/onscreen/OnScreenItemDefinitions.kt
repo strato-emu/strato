@@ -34,10 +34,13 @@ open class CircularButton(
 ) {
     val radius get() = itemWidth / 2f
 
+    /**
+     * Checks if [x] and [y] are within circle
+     */
     override fun isTouched(x : Float, y : Float) : Boolean = PointF(currentX, currentY).minus(PointF(x, y)).length() <= radius
 
     override fun onFingerDown(x : Float, y : Float) {
-        drawable.alpha = (255 * 0.5f).roundToInt()
+        drawable.alpha = 125
     }
 
     override fun onFingerUp(x : Float, y : Float) {
@@ -81,19 +84,21 @@ class JoystickButton(
     override fun onFingerDown(x : Float, y : Float) {
         val relativeX = x / width
         val relativeY = (y - heightDiff) / adjustedHeight
-        if (!recenterSticks) {
+        if (recenterSticks) {
             this.relativeX = relativeX
             this.relativeY = relativeY
         }
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
 
+        // If first and second tap occur within 500 mills, then trigger stick press
         val currentTime = SystemClock.elapsedRealtime()
         initialTapPosition = PointF(x, y)
         val firstTapDiff = fingerUpTime - fingerDownTime
         val secondTapDiff = currentTime - fingerUpTime
         if (firstTapDiff in 0..500 && secondTapDiff in 0..500) {
             shortDoubleTapped = true
+            // Indicate stick being pressed with lower alpha value
             drawable.alpha = 50
         }
         fingerDownTime = currentTime
@@ -115,6 +120,7 @@ class JoystickButton(
         val outerToInner = finger.minus(position)
         val distance = outerToInner.length()
         if (distance > radius) {
+            // Limit distance to radius
             finger = position.add(outerToInner.multiply(1f / distance * radius))
         }
 
@@ -168,7 +174,7 @@ open class RectangularButton(
     override fun isTouched(x : Float, y : Float) = currentBounds.contains(x.roundToInt(), y.roundToInt())
 
     override fun onFingerDown(x : Float, y : Float) {
-        drawable.alpha = (255 * 0.5f).roundToInt()
+        drawable.alpha = 125
     }
 
     override fun onFingerUp(x : Float, y : Float) {

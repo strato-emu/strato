@@ -25,12 +25,10 @@ import kotlin.math.roundToLong
 typealias OnButtonStateChangedListener = (buttonId : ButtonId, state : ButtonState) -> Unit
 typealias OnStickStateChangedListener = (buttonId : ButtonId, position : PointF) -> Unit
 
-class OnScreenControllerView @JvmOverloads constructor(
-        context : Context,
-        attrs : AttributeSet? = null,
-        defStyleAttr : Int = 0,
-        defStyleRes : Int = 0
-) : View(context, attrs, defStyleAttr, defStyleRes) {
+/**
+ * Renders On-Screen Controls as a single view, handles touch inputs and button toggling
+ */
+class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = 0, defStyleRes : Int = 0) : View(context, attrs, defStyleAttr, defStyleRes) {
     private val controls = Controls(this)
     private var onButtonStateChangedListener : OnButtonStateChangedListener? = null
     private var onStickStateChangedListener : OnStickStateChangedListener? = null

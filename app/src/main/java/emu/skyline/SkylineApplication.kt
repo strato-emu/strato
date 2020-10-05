@@ -8,6 +8,9 @@ package emu.skyline
 import android.app.Application
 import emu.skyline.input.InputManager
 
+/**
+ * Custom application class to initialize [InputManager]
+ */
 class SkylineApplication : Application() {
     override fun onCreate() {
         super.onCreate()

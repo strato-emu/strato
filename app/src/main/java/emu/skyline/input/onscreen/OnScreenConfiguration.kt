@@ -16,6 +16,9 @@ interface ControllerConfiguration {
     var relativeY : Float
 }
 
+/**
+ * Dummy implementation so layout editor is able to render [OnScreenControllerView] when [android.view.View.isInEditMode] is true
+ */
 class ControllerConfigurationDummy(defaultRelativeX : Float, defaultRelativeY : Float) : ControllerConfiguration {
     override var enabled = true
     override var globalScale = 1f

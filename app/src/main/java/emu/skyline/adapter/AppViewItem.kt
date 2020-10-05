@@ -69,5 +69,5 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         builder.show()
     }
 
-    override fun toString() = item.key()
+    override fun key() = item.key()
 }

@@ -5,4 +5,4 @@
 
 package emu.skyline.data
 
-class BaseHeader(val title : String) : BaseElement(ElementType.Header)
+class HeaderItem(val title : String) : DataItem

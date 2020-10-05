@@ -24,7 +24,7 @@ class Settings(context : Context) {
 
     var onScreenControl by sharedPreferences(context, false)
 
-    var onScreenControlRecenterSticks by sharedPreferences(context, false)
+    var onScreenControlRecenterSticks by sharedPreferences(context, true)
 
     var logCompact by sharedPreferences(context, false)
 

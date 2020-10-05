@@ -31,9 +31,8 @@ import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.LayoutType
 import emu.skyline.data.AppItem
-import emu.skyline.data.BaseElement
-import emu.skyline.data.BaseHeader
-import emu.skyline.data.ElementType
+import emu.skyline.data.DataItem
+import emu.skyline.data.HeaderItem
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.RomFormat
@@ -71,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * This adds all files in [directory] with [extension] as an entry in [adapter] using [RomFile] to load metadata
      */
-    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, romElements : ArrayList<BaseElement>, found : Boolean = false) : Boolean {
+    private fun addEntries(extension : String, romFormat : RomFormat, directory : DocumentFile, romElements : ArrayList<DataItem>, found : Boolean = false) : Boolean {
         var foundCurrent = found
 
         directory.listFiles().forEach { file ->
@@ -83,7 +82,7 @@ class MainActivity : AppCompatActivity() {
                         val finalFoundCurrent = foundCurrent
                         runOnUiThread {
                             if (!finalFoundCurrent) {
-                                romElements.add(BaseHeader(romFormat.name))
+                                romElements.add(HeaderItem(romFormat.name))
                                 adapter.addItem(HeaderViewItem(romFormat.name))
                             }
 
@@ -111,8 +110,8 @@ class MainActivity : AppCompatActivity() {
 
         if (loadFromFile) {
             try {
-                loadSerializedList<BaseElement>(romsFile).forEach {
-                    if (it.elementType == ElementType.Header && it is BaseHeader)
+                loadSerializedList<DataItem>(romsFile).forEach {
+                    if (it is HeaderItem)
                         adapter.addItem(HeaderViewItem(it.title))
                     else if (it is AppItem)
                         adapter.addItem(it.toViewItem())
@@ -136,7 +135,7 @@ class MainActivity : AppCompatActivity() {
 
                 val searchLocation = DocumentFile.fromTreeUri(this, Uri.parse(settings.searchLocation))!!
 
-                val romElements = ArrayList<BaseElement>()
+                val romElements = ArrayList<DataItem>()
                 addEntries("nro", RomFormat.NRO, searchLocation, romElements)
                 addEntries("nso", RomFormat.NSO, searchLocation, romElements)
                 addEntries("nca", RomFormat.NCA, searchLocation, romElements)
@@ -144,7 +143,7 @@ class MainActivity : AppCompatActivity() {
 
                 runOnUiThread {
                     if (romElements.isEmpty()) {
-                        romElements.add(BaseHeader(getString(R.string.no_rom)))
+                        romElements.add(HeaderItem(getString(R.string.no_rom)))
                         adapter.addItem(HeaderViewItem(getString(R.string.no_rom)))
                     }
 

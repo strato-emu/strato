@@ -10,7 +10,7 @@ import android.view.MotionEvent
 import java.io.Serializable
 
 /**
- * This an abstract class for all host events that is inherited by all other event classes
+ * This a sealed class for all host events that is inherited by all other event classes
  *
  * @param descriptor The device descriptor of the device this event originates from
  */

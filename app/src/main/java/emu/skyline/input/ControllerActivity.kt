@@ -38,7 +38,7 @@ class ControllerActivity : AppCompatActivity() {
     private val adapter = GenericAdapter()
 
     /**
-     * This is a map between a button and it's corresponding [ControllerItem] in [adapter]
+     * This is a map between a button and it's corresponding [ControllerViewItem] in [adapter]
      */
     val buttonMap = mutableMapOf<ButtonId, ControllerViewItem>()
 

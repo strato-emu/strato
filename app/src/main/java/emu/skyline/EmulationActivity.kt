@@ -164,7 +164,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
-     * This executes the specified ROM, [preferenceFd] is assumed to be valid beforehand
+     * This executes the specified ROM
      *
      * @param rom The URI of the ROM to execute
      */
@@ -186,7 +186,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
-     * This makes the window fullscreen then sets up [preferenceFd], sets up the performance statistics and finally calls [executeApplication] for executing the application
+     * This makes the window fullscreen, sets up the performance statistics and finally calls [executeApplication] for executing the application
      */
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState : Bundle?) {
@@ -415,7 +415,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             else -> error("Invalid button id")
         }
         setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
-        setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted
+        setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted, since drawing starts from top left
     }
 
     @SuppressLint("WrongConstant")

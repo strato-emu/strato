@@ -96,7 +96,7 @@ class AppDialog : BottomSheetDialogFragment() {
 
         game_pin.setOnClickListener {
             val info = ShortcutInfo.Builder(context, item.title)
-            info.setShortLabel(item.meta.name)
+            info.setShortLabel(item.title)
             info.setActivity(ComponentName(requireContext(), EmulationActivity::class.java))
             info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
 

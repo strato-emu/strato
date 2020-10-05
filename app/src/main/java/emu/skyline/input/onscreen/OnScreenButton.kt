@@ -11,9 +11,11 @@ import android.graphics.Paint
 import android.graphics.Rect
 import androidx.core.content.ContextCompat
 import emu.skyline.input.ButtonId
-import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
+/**
+ * Converts relative values, such as coordinates and boundaries, to their absolute counterparts, also handles layout modifications like scaling and custom positioning
+ */
 abstract class OnScreenButton(
         onScreenControllerView : OnScreenControllerView,
         val buttonId : ButtonId,
@@ -47,7 +49,11 @@ abstract class OnScreenButton(
     var height = 0
 
     protected val adjustedHeight get() = width / CONFIGURED_ASPECT_RATIO
-    protected val heightDiff get() = (height - adjustedHeight).absoluteValue
+
+    /**
+     * Buttons should be at bottom when device have large height than [adjustedHeight]
+     */
+    protected val heightDiff get() = (height - adjustedHeight).coerceAtLeast(0f)
 
     protected val itemWidth get() = width * relativeWidth
     private val itemHeight get() = adjustedHeight * relativeHeight
@@ -58,37 +64,23 @@ abstract class OnScreenButton(
     private val left get() = currentX - itemWidth / 2f
     private val top get() = currentY - itemHeight / 2f
 
-    protected val currentBounds
-        get() = Rect(
-                left.roundToInt(),
-                top.roundToInt(),
-                (left + itemWidth).roundToInt(),
-                (top + itemHeight).roundToInt()
-        )
+    protected val currentBounds get() = Rect(left.roundToInt(), top.roundToInt(), (left + itemWidth).roundToInt(), (top + itemHeight).roundToInt())
 
+    /**
+     * Keeps track of finger when there are multiple touches
+     */
     var touchPointerId = -1
 
     var isEditing = false
         private set
 
-    protected open fun renderCenteredText(
-            canvas : Canvas,
-            text : String,
-            size : Float,
-            x : Float,
-            y : Float
-    ) {
+    protected open fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float) {
         buttonSymbolPaint.apply {
             textSize = size
             textAlign = Paint.Align.LEFT
             getTextBounds(text, 0, text.length, textBoundsRect)
         }
-        canvas.drawText(
-                text,
-                x - textBoundsRect.width() / 2f - textBoundsRect.left,
-                y + textBoundsRect.height() / 2f - textBoundsRect.bottom,
-                buttonSymbolPaint
-        )
+        canvas.drawText(text, x - textBoundsRect.width() / 2f - textBoundsRect.left, y + textBoundsRect.height() / 2f - textBoundsRect.bottom, buttonSymbolPaint)
     }
 
     open fun render(canvas : Canvas) {

@@ -13,6 +13,9 @@ import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.JaroWinkler
 import java.util.*
 
+/**
+ * Can handle any view types with [GenericViewHolderBinder] implemented, [GenericViewHolderBinder] are differentiated by the return value of [GenericViewHolderBinder.getLayoutFactory]
+ */
 class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
     var currentSearchTerm = ""
 
@@ -70,7 +73,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
          * This sorts the items in [allItems] in relation to how similar they are to [currentSearchTerm]
          */
         fun extractSorted() = allItems.mapNotNull { item ->
-            item.toString().toLowerCase(Locale.getDefault()).let {
+            item.key().toLowerCase(Locale.getDefault()).let {
                 val similarity = (jw.similarity(currentSearchTerm, it)) + cos.similarity(currentSearchTerm, it) / 2
                 if (similarity != 0.0) ScoredItem(similarity, item) else null
             }

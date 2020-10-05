@@ -7,9 +7,4 @@ package emu.skyline.data
 
 import java.io.Serializable
 
-enum class ElementType {
-    Header,
-    Item
-}
-
-abstract class BaseElement(val elementType : ElementType) : Serializable
+interface DataItem : Serializable

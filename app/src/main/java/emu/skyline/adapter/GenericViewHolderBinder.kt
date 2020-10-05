@@ -22,4 +22,9 @@ abstract class GenericViewHolderBinder {
     abstract fun getLayoutFactory() : GenericLayoutFactory
 
     abstract fun bind(holder : GenericViewHolder, position : Int)
+
+    /**
+     * Used for filtering
+     */
+    open fun key() : String = ""
 }

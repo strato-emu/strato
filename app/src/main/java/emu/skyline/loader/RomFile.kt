@@ -80,6 +80,7 @@ class AppEntry(var name : String, var author : String?, var icon : Bitmap?, var 
         output.writeInt(loaderResult.value)
         output.writeBoolean(icon != null)
         icon?.let {
+            @Suppress("DEPRECATION")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                 it.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, output)
             else

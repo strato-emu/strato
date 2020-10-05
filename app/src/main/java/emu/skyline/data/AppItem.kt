@@ -13,7 +13,7 @@ import emu.skyline.loader.LoaderResult
 /**
  * This class is a wrapper around [AppEntry], it is used for passing around game metadata
  */
-class AppItem(val meta : AppEntry) : BaseItem() {
+class AppItem(private val meta : AppEntry) : DataItem {
     /**
      * The icon of the application
      */
@@ -56,5 +56,5 @@ class AppItem(val meta : AppEntry) : BaseItem() {
     /**
      * The name and author is used as the key
      */
-    override fun key() = meta.name + if (meta.author != null) " ${meta.author}" else ""
+    fun key() = meta.name + if (meta.author != null) " ${meta.author}" else ""
 }
