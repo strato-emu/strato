@@ -14,6 +14,7 @@ import android.os.*
 import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
@@ -224,9 +225,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         game_view.setOnTouchListener(this)
 
         // Hide on screen controls when first controller is not set
-        on_screen_controller_view.isInvisible = !InputManager.controllers[0]!!.type.firstController || !settings.onScreenControl
+        on_screen_controller_view.isGone = !InputManager.controllers[0]!!.type.firstController || !settings.onScreenControl
         on_screen_controller_view.setOnButtonStateChangedListener(::onButtonStateChanged)
         on_screen_controller_view.setOnStickStateChangedListener(::onStickStateChanged)
+
+        on_screen_controller_toggle.isGone = on_screen_controller_toggle.isGone
+        on_screen_controller_toggle.setOnClickListener {
+            on_screen_controller_view.isInvisible = !on_screen_controller_view.isInvisible
+        }
 
         executeApplication(intent.data!!)
     }

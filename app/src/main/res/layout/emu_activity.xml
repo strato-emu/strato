@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:keepScreenOn="true"
+        tools:background="@android:color/black"
         tools:context=".EmulationActivity">
 
     <SurfaceView
             android:id="@+id/game_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            tools:visibility="invisible" />
 
     <emu.skyline.input.onscreen.OnScreenControllerView
             android:id="@+id/on_screen_controller_view"
@@ -23,4 +26,14 @@
             android:layout_marginStart="5dp"
             android:layout_marginTop="5dp"
             android:textColor="#9fffff00" />
+
+    <ImageButton
+            android:id="@+id/on_screen_controller_toggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_show"
+            app:tint="#40FFFFFF"
+            tools:ignore="ContentDescription" />
 </FrameLayout>
