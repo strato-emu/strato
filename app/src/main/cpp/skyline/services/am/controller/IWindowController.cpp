@@ -8,7 +8,7 @@ namespace skyline::service::am {
     IWindowController::IWindowController(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IWindowController::GetAppletResourceUserId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push(static_cast<u64>(state.process->pid));
+        response.Push(static_cast<u64>(0));
         return {};
     }
 

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "kernel/memory.h"
 #include "loader/loader.h"
 #include "services/serviceman.h"
 
@@ -16,7 +15,6 @@ namespace skyline::kernel {
         DeviceState state;
         std::shared_ptr<type::KProcess> process;
         service::ServiceManager serviceManager;
-        MemoryManager memory;
         std::string appFilesPath; //!< The full path to the app's files directory
 
         /**

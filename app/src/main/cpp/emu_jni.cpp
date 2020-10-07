@@ -28,12 +28,14 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     fps = 0;
     frametime = 0;
 
+    /*
     std::signal(SIGTERM, signalHandler);
     std::signal(SIGSEGV, signalHandler);
     std::signal(SIGINT, signalHandler);
     std::signal(SIGILL, signalHandler);
     std::signal(SIGABRT, signalHandler);
     std::signal(SIGFPE, signalHandler);
+     */
 
     setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), -8); // Set the priority of this process to the highest value
 

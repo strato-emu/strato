@@ -70,17 +70,10 @@ namespace skyline::loader {
 
         virtual ~Loader() = default;
 
-        /**
-         * @return The icon of the loaded application
-         */
         virtual std::vector<u8> GetIcon() {
             return std::vector<u8>();
         }
 
-        /**
-         * @brief Loads in the data of the main process
-         * @param process The process to load in the data
-         */
         virtual void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
     };
 }

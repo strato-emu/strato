@@ -14,18 +14,16 @@ namespace skyline::kernel::type {
         if (ptr && !util::PageAligned(ptr))
             throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", ptr);
 
-        ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, ptr ? MAP_FIXED : 0, 0, 0));
-        if (ptr == MAP_FAILED)
-            throw exception("An occurred while mapping private memory: {}", strerror(errno));
+        this->ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, (ptr ? MAP_FIXED : 0) | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+        if (this->ptr == MAP_FAILED)
+            throw exception("An occurred while mapping private memory: {} with {} @ 0x{:X}", strerror(errno), ptr, size);
 
-        state.os->memory.InsertChunk(ChunkDescriptor{
-            .ptr = ptr,
+        state.process->memory.InsertChunk(ChunkDescriptor{
+            .ptr = this->ptr,
             .size = size,
             .permission = permission,
             .state = memState,
         });
-
-        this->ptr = ptr;
     }
 
     void KPrivateMemory::Resize(size_t nSize) {
@@ -34,13 +32,13 @@ namespace skyline::kernel::type {
             throw exception("An occurred while resizing private memory: {}", strerror(errno));
 
         if (nSize < size) {
-            state.os->memory.InsertChunk(ChunkDescriptor{
+            state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = ptr + nSize,
                 .size = size - nSize,
                 .state = memory::states::Unmapped,
             });
         } else if (size < nSize) {
-            state.os->memory.InsertChunk(ChunkDescriptor{
+            state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = ptr + size,
                 .size = nSize - size,
                 .permission = permission,
@@ -59,7 +57,7 @@ namespace skyline::kernel::type {
         if (memState.value == memory::states::CodeStatic.value && permission.w)
             memState = memory::states::CodeMutable;
 
-        state.os->memory.InsertChunk(ChunkDescriptor{
+        state.process->memory.InsertChunk(ChunkDescriptor{
             .ptr = ptr,
             .size = size,
             .permission = permission,
@@ -69,7 +67,7 @@ namespace skyline::kernel::type {
 
     KPrivateMemory::~KPrivateMemory() {
         munmap(ptr, size);
-        state.os->memory.InsertChunk(ChunkDescriptor{
+        state.process->memory.InsertChunk(ChunkDescriptor{
             .ptr = ptr,
             .size = size,
             .state = memory::states::Unmapped,

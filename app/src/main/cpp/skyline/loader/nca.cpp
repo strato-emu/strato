@@ -2,8 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <nce.h>
-#include <os.h>
-#include <kernel/memory.h>
+#include <kernel/types/KProcess.h>
 #include "nso.h"
 #include "nca.h"
 
@@ -20,6 +19,8 @@ namespace skyline::loader {
         auto nsoFile{exeFs->OpenFile("rtld")};
         if (nsoFile == nullptr)
             throw exception("Cannot load an ExeFS that doesn't contain rtld");
+
+        state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
 
         auto loadInfo{NsoLoader::LoadNso(nsoFile, process, state)};
         u64 offset{loadInfo.size};
@@ -38,7 +39,7 @@ namespace skyline::loader {
             offset += loadInfo.size;
         }
 
-        state.os->memory.InitializeRegions(base, offset, memory::AddressSpaceType::AddressSpace39Bit);
+        state.process->memory.InitializeRegions(base, offset);
     }
 
     void NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {

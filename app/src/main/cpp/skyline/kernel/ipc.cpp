@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::ipc {
     IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain) {
-        auto tls{state.thread->tls};
+        auto tls{state.ctx->tpidrroEl0};
         u8 *pointer{tls};
 
         header = reinterpret_cast<CommandHeader *>(pointer);
@@ -64,7 +64,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorABW);
         }
 
-        auto offset{reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls)}; // We calculate the relative offset as the absolute one might differ
+        auto offset{pointer - tls}; // We calculate the relative offset as the absolute one might differ
         auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
         pointer += padding;
 
@@ -129,7 +129,7 @@ namespace skyline::kernel::ipc {
     IpcResponse::IpcResponse(const DeviceState &state) : state(state) {}
 
     void IpcResponse::WriteResponse(bool isDomain) {
-        auto tls{state.thread->tls};
+        auto tls{state.ctx->tpidrroEl0};
         u8 *pointer{tls};
 
         memset(tls, 0, constant::TlsIpcSize);
@@ -156,7 +156,7 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        auto offset{reinterpret_cast<u64>(pointer) - reinterpret_cast<u64>(tls)}; // We calculate the relative offset as the absolute one might differ
+        auto offset{pointer - tls}; // We calculate the relative offset as the absolute one might differ
         auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
         pointer += padding;
 

@@ -1,110 +1,64 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/uio.h>
-#include <asm/unistd.h>
-#include <nce/guest.h>
 #include <nce.h>
 #include <os.h>
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KProcess::TlsPage::TlsPage(u8* ptr) : ptr(ptr) {}
+    KProcess::WaitStatus::WaitStatus(i8 priority, KHandle handle) : priority(priority), handle(handle) {}
 
-    u8* KProcess::TlsPage::ReserveSlot() {
+    KProcess::WaitStatus::WaitStatus(i8 priority, KHandle handle, u32 *mutex) : priority(priority), handle(handle), mutex(mutex) {}
+
+    KProcess::TlsPage::TlsPage(const std::shared_ptr<KPrivateMemory> &memory) : memory(memory) {}
+
+    u8 *KProcess::TlsPage::ReserveSlot() {
         if (Full())
-            throw exception("Trying to get TLS slot from full page");
-
-        slot[index] = true;
-        return Get(index++); // ++ on right will cause increment after evaluation of expression
+            throw exception("Trying to reserve TLS slot in full page");
+        return Get(index++);
     }
 
-    u8* KProcess::TlsPage::Get(u8 slotNo) {
-        if (slotNo >= constant::TlsSlots)
+    u8 *KProcess::TlsPage::Get(u8 index) {
+        if (index >= constant::TlsSlots)
             throw exception("TLS slot is out of range");
-
-        return ptr + (constant::TlsSlotSize * slotNo);
+        return memory->ptr + (constant::TlsSlotSize * index);
     }
 
     bool KProcess::TlsPage::Full() {
-        return slot[constant::TlsSlots - 1];
+        return index == constant::TlsSlots;
     }
 
-    u8* KProcess::GetTlsSlot() {
+    KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
+
+    void KProcess::InitializeHeap() {
+        constexpr size_t DefaultHeapSize{0x200000};
+        heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
+    }
+
+    u8 *KProcess::AllocateTlsSlot() {
         for (auto &tlsPage: tlsPages)
             if (!tlsPage->Full())
                 return tlsPage->ReserveSlot();
 
-        u8* ptr;
-        if (tlsPages.empty()) {
-            auto region{state.os->memory.tlsIo};
-            ptr = reinterpret_cast<u8*>(region.size ? region.address : 0);
-        } else {
-            ptr = (*(tlsPages.end() - 1))->ptr + PAGE_SIZE;
-        }
+        u8 *ptr = tlsPages.empty() ? reinterpret_cast<u8 *>(state.process->memory.tlsIo.address) : ((*(tlsPages.end() - 1))->memory->ptr + PAGE_SIZE);
+        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, ptr, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal))};
+        tlsPages.push_back(tlsPage);
 
-        auto tlsMem{NewHandle<KPrivateMemory>(ptr, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal).item};
-        tlsPages.push_back(std::make_shared<TlsPage>(tlsMem->ptr));
-
-        auto &tlsPage{tlsPages.back()};
-        if (tlsPages.empty())
-            tlsPage->ReserveSlot(); // User-mode exception handling
-
+        tlsPage->ReserveSlot(); // User-mode exception handling
         return tlsPage->ReserveSlot();
     }
 
-    void KProcess::InitializeMemory() {
-        constexpr size_t DefHeapSize{0x200000}; // The default amount of heap
-        heap = NewHandle<KPrivateMemory>(reinterpret_cast<u8*>(state.os->memory.heap.address), DefHeapSize, memory::Permission{true, true, false}, memory::states::Heap).item;
-        threads[pid]->tls = GetTlsSlot();
-    }
-
-    KProcess::KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory) : pid(pid), stack(stack), KSyncObject(state, KType::KProcess) {
-        constexpr u8 DefaultPriority{44}; // The default priority of a process
-
-        auto thread{NewHandle<KThread>(pid, entryPoint, 0, reinterpret_cast<u64>(stack->guest.ptr + stack->guest.size), nullptr, DefaultPriority, this, tlsMemory).item};
-        threads[pid] = thread;
-        state.nce->WaitThreadInit(thread);
-
-        memFd = open(fmt::format("/proc/{}/mem", pid).c_str(), O_RDWR | O_CLOEXEC);
-        if (memFd == -1)
-            throw exception("Cannot open file descriptor to /proc/{}/mem, \"{}\"", pid, strerror(errno));
-    }
-
-    KProcess::~KProcess() {
-        close(memFd);
-        status = Status::Exiting;
-    }
-
-    std::shared_ptr<KThread> KProcess::CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority) {
-        auto size{(sizeof(ThreadContext) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1)};
-        auto tlsMem{std::make_shared<type::KSharedMemory>(state, size, memory::states::Reserved)};
-
-        Registers fregs{
-            .x0 = CLONE_THREAD | CLONE_SIGHAND | CLONE_PTRACE | CLONE_FS | CLONE_VM | CLONE_FILES | CLONE_IO,
-            .x1 = stackTop,
-            .x3 = reinterpret_cast<u64>(tlsMem->Map(nullptr, size, memory::Permission{true, true, false})),
-            .x8 = __NR_clone,
-            .x5 = reinterpret_cast<u64>(&guest::GuestEntry),
-            .x6 = entryPoint,
-        };
-
-        state.nce->ExecuteFunction(ThreadCall::Clone, fregs);
-        if (static_cast<int>(fregs.x0) < 0)
-            throw exception("Cannot create thread: Address: 0x{:X}, Stack Top: 0x{:X}", entryPoint, stackTop);
-
-        auto pid{static_cast<pid_t>(fregs.x0)};
-        auto thread{NewHandle<KThread>(pid, entryPoint, entryArg, stackTop, GetTlsSlot(), priority, this, tlsMem).item};
-        threads[pid] = thread;
-
+    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, i8 priority, const std::shared_ptr<KPrivateMemory> &stack) {
+        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, priority, stack).item};
+        threads.push_back(thread);
         return thread;
     }
 
-    std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u8* ptr) {
+    std::optional<KProcess::HandleOut<KMemory>> KProcess::GetMemoryObject(u8 *ptr) {
+        std::shared_lock lock(handleMutex);
+
         for (KHandle index{}; index < handles.size(); index++) {
-            auto& object{handles[index]};
+            auto &object{handles[index]};
             switch (object->objectType) {
                 case type::KType::KPrivateMemory:
                 case type::KType::KSharedMemory:
@@ -121,7 +75,7 @@ namespace skyline::kernel::type {
         return std::nullopt;
     }
 
-    bool KProcess::MutexLock(u32* mutex, KHandle owner) {
+    bool KProcess::MutexLock(u32 *mutex, KHandle owner) {
         std::unique_lock lock(mutexLock);
 
         auto &mtxWaiters{mutexes[reinterpret_cast<u64>(mutex)]};
@@ -159,7 +113,7 @@ namespace skyline::kernel::type {
         return true;
     }
 
-    bool KProcess::MutexUnlock(u32* mutex) {
+    bool KProcess::MutexUnlock(u32 *mutex) {
         std::unique_lock lock(mutexLock);
 
         auto &mtxWaiters{mutexes[reinterpret_cast<u64>(mutex)]};
@@ -186,7 +140,7 @@ namespace skyline::kernel::type {
         return true;
     }
 
-    bool KProcess::ConditionalVariableWait(void* conditional, u32* mutex, u64 timeout) {
+    bool KProcess::ConditionalVariableWait(void *conditional, u32 *mutex, u64 timeout) {
         std::unique_lock lock(conditionalLock);
 
         auto &condWaiters{conditionals[reinterpret_cast<u64>(conditional)]};
@@ -227,7 +181,7 @@ namespace skyline::kernel::type {
         return !timedOut;
     }
 
-    void KProcess::ConditionalVariableSignal(void* conditional, u64 amount) {
+    void KProcess::ConditionalVariableSignal(void *conditional, u64 amount) {
         std::unique_lock condLock(conditionalLock);
 
         auto &condWaiters{conditionals[reinterpret_cast<u64>(conditional)]};

@@ -29,21 +29,21 @@ namespace skyline::loader {
         u64 padding{util::AlignUp(patchSize, PAGE_SIZE) - patchSize};
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + executable.text.offset, textSize, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
-        state.logger->Debug("Successfully mapped section .text @ 0x{0:X}, Size = 0x{1:X}", base + executable.text.offset, textSize);
+        state.logger->Debug("Successfully mapped section .text @ {}, Size = 0x{:X}", base + executable.text.offset, textSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + executable.ro.offset, roSize, memory::Permission{true, false, false}, memory::states::CodeReadOnly); // R--
-        state.logger->Debug("Successfully mapped section .rodata @ 0x{0:X}, Size = 0x{1:X}", base + executable.ro.offset, roSize);
+        state.logger->Debug("Successfully mapped section .rodata @ {}, Size = 0x{:X}", base + executable.ro.offset, roSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
-        state.logger->Debug("Successfully mapped section .data @ 0x{0:X}, Size = 0x{1:X}", base + executable.data.offset, dataSize);
+        state.logger->Debug("Successfully mapped section .data @ {}, Size = 0x{:X}", base + executable.data.offset, dataSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + patchOffset, patchSize + padding, memory::Permission{true, true, true}, memory::states::CodeMutable); // RWX
-        state.logger->Debug("Successfully mapped section .patch @ 0x{0:X}, Size = 0x{1:X}", base + patchOffset, patchSize + padding);
+        state.logger->Debug("Successfully mapped section .patch @ {}, Size = 0x{:X}", base + patchOffset, patchSize + padding);
 
-        std::memcpy(executable.text.contents.data(), base + executable.text.offset, textSize);
-        std::memcpy(executable.ro.contents.data(), base + executable.ro.offset, roSize);
-        std::memcpy(executable.data.contents.data(), base + executable.data.offset, dataSize - executable.bssSize);
-        std::memcpy(patch.data(), base + patchOffset, patchSize);
+        std::memcpy(base + executable.text.offset, executable.text.contents.data(), textSize);
+        std::memcpy(base + executable.ro.offset, executable.ro.contents.data(), roSize);
+        std::memcpy(base + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
+        std::memcpy(base + patchOffset, patch.data(), patchSize);
 
         return {base, patchOffset + patchSize + padding};
     }

@@ -4,8 +4,8 @@
 #pragma once
 
 #include <list>
+#include <kernel/memory.h>
 #include "KThread.h"
-#include "KPrivateMemory.h"
 #include "KTransferMemory.h"
 #include "KSession.h"
 #include "KEvent.h"
@@ -20,11 +20,28 @@ namespace skyline {
 
     namespace kernel::type {
         /**
-         * @brief The KProcess class is responsible for holding the state of a process
+         * @brief KProcess manages process-global state such as memory, kernel handles allocated to the process and synchronization primitives
          */
         class KProcess : public KSyncObject {
           private:
-            KHandle handleIndex{constant::BaseHandleIndex}; //!< The index of the handle that will be allocated next
+            std::vector<std::shared_ptr<KObject>> handles;
+            std::shared_mutex handleMutex;
+
+            struct WaitStatus {
+                std::atomic_bool flag{false};
+                i8 priority;
+                KHandle handle;
+                u32* mutex{};
+
+                WaitStatus(i8 priority, KHandle handle);
+
+                WaitStatus(i8 priority, KHandle handle, u32* mutex);
+            };
+
+            std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
+            std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
+            Mutex mutexLock;
+            Mutex conditionalLock;
 
             /**
             * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)
@@ -33,44 +50,37 @@ namespace skyline {
             * @url https://switchbrew.org/wiki/Thread_Local_Storage
             */
             struct TlsPage {
-                u8* ptr;
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
-                bool slot[constant::TlsSlots]{}; //!< An array of booleans denoting which TLS slots are reserved
+                std::shared_ptr<KPrivateMemory> memory;
 
-                TlsPage(u8* ptr);
+                TlsPage(const std::shared_ptr<KPrivateMemory>& memory);
 
-                /**
-                * @brief Reserves a single 0x200 byte TLS slot
-                * @return The address of the reserved slot
-                */
                 u8* ReserveSlot();
 
-                /**
-                * @brief Returns the address of a particular slot
-                * @param slotNo The number of the slot to be returned
-                * @return The address of the specified slot
-                */
-                u8* Get(u8 slotNo);
+                u8* Get(u8 index);
 
-                /**
-                * @brief Returns boolean on if the TLS page has free slots or not
-                * @return If the whole page is full or not
-                */
                 bool Full();
             };
 
-            /**
-             * @return The address of a free TLS slot
-             */
-            u8* GetTlsSlot();
-
-            /**
-             * @brief Initializes heap and the initial TLS page
-             */
-            void InitializeMemory();
-
           public:
-            friend OS;
+            MemoryManager memory;
+            std::shared_ptr<KPrivateMemory> heap;
+            std::vector<std::shared_ptr<KThread>> threads;
+            std::vector<std::shared_ptr<TlsPage>> tlsPages;
+
+            KProcess(const DeviceState &state);
+
+            /**
+             * @note This requires VMM regions to be initialized, it will map heap at an arbitrary location otherwise
+             */
+            void InitializeHeap();
+
+            /**
+             * @return A 0x200 TLS slot allocated inside the TLS/IO region
+             */
+            u8* AllocateTlsSlot();
+
+            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, i8 priority = 44, const std::shared_ptr<KPrivateMemory> &stack = nullptr);
 
             /**
             * @brief The output for functions that return created kernel objects
@@ -82,96 +92,40 @@ namespace skyline {
                 KHandle handle; //!< The handle of the object in the process
             };
 
-            enum class Status {
-                Created, //!< The process was created but the main thread has not started yet
-                Started, //!< The process has been started
-                Exiting, //!< The process is exiting
-            } status = Status::Created;
-
-            /**
-             * @brief Metadata on a thread waiting for mutexes or conditional variables
-             */
-            struct WaitStatus {
-                std::atomic_bool flag{false}; //!< The underlying atomic flag of the thread
-                u8 priority; //!< The priority of the thread
-                KHandle handle; //!< The handle of the thread
-                u32* mutex{};
-
-                WaitStatus(u8 priority, KHandle handle) : priority(priority), handle(handle) {}
-
-                WaitStatus(u8 priority, KHandle handle, u32* mutex) : priority(priority), handle(handle), mutex(mutex) {}
-            };
-
-            pid_t pid; //!< The PID of the process or TGID of the threads
-            int memFd; //!< The file descriptor to the memory of the process
-            std::vector<std::shared_ptr<KObject>> handles; //!< A vector of KObject which corresponds to the handle
-            std::unordered_map<pid_t, std::shared_ptr<KThread>> threads; //!< A mapping from a PID to it's corresponding KThread object
-            std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
-            std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
-            std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< A vector of all allocated TLS pages
-            std::shared_ptr<type::KSharedMemory> stack; //!< The shared memory used to hold the stack of the main thread
-            std::shared_ptr<KPrivateMemory> heap; //!< The kernel memory object backing the allocated heap
-            Mutex mutexLock; //!< Synchronizes all concurrent guest mutex operations
-            Mutex conditionalLock; //!< Synchronizes all concurrent guest conditional variable operations
-
-            /**
-             * @param pid The PID of the main thread
-             * @param entryPoint The entry point of execution for the guest
-             * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
-             */
-            KProcess(const DeviceState &state, pid_t pid, u64 entryPoint, std::shared_ptr<type::KSharedMemory> &stack, std::shared_ptr<type::KSharedMemory> &tlsMemory);
-
-            /**
-             * Close the file descriptor to the process's memory
-             */
-            ~KProcess();
-
-            /**
-            * @brief Create a thread in this process
-            * @param entryPoint The address of the initial function
-            * @param entryArg An argument to the function
-            * @param stackTop The top of the stack
-            * @param priority The priority of the thread
-            * @return An instance of KThread class for the corresponding thread
-            */
-            std::shared_ptr<KThread> CreateThread(u64 entryPoint, u64 entryArg, u64 stackTop, i8 priority);
-
             /**
             * @brief Creates a new handle to a KObject and adds it to the process handle_table
             * @tparam objectClass The class of the kernel object to create
             * @param args The arguments for the kernel object except handle, pid and state
-            * @return A shared pointer to the corresponding object
             */
             template<typename objectClass, typename ...objectArgs>
             HandleOut<objectClass> NewHandle(objectArgs... args) {
+                std::unique_lock lock(handleMutex);
+
                 std::shared_ptr<objectClass> item;
                 if constexpr (std::is_same<objectClass, KThread>())
-                    item = std::make_shared<objectClass>(state, handleIndex, args...);
+                    item = std::make_shared<objectClass>(state, constant::BaseHandleIndex + handles.size(), args...);
                 else
                     item = std::make_shared<objectClass>(state, args...);
                 handles.push_back(std::static_pointer_cast<KObject>(item));
-                return {item, handleIndex++};
+                return {item, static_cast<KHandle>((constant::BaseHandleIndex + handles.size()) - 1)};
             }
 
             /**
             * @brief Inserts an item into the process handle table
-            * @param item The item to insert
             * @return The handle of the corresponding item in the handle table
             */
             template<typename objectClass>
             KHandle InsertItem(std::shared_ptr<objectClass> &item) {
+                std::unique_lock lock(handleMutex);
+
                 handles.push_back(std::static_pointer_cast<KObject>(item));
-                return handleIndex++;
+                return static_cast<KHandle>((constant::BaseHandleIndex + handles.size()) - 1);
             }
 
-            /**
-            * @brief Returns the underlying kernel object for a handle
-            * @tparam objectClass The class of the kernel object present in the handle
-            * @param handle The handle of the object
-            * @return A shared pointer to the object
-            */
-            template<typename objectClass>
+            template<typename objectClass = KObject>
             std::shared_ptr<objectClass> GetHandle(KHandle handle) {
+                std::shared_lock lock(handleMutex);
+
                 KType objectType;
                 if constexpr(std::is_same<objectClass, KThread>())
                     objectType = KType::KThread;
@@ -200,6 +154,11 @@ namespace skyline {
                 } catch (std::out_of_range) {
                     throw exception("GetHandle was called with an invalid handle: 0x{:X}", handle);
                 }
+            }
+
+            template<>
+            std::shared_ptr<KObject> GetHandle<KObject>(KHandle handle) {
+                return handles.at(handle - constant::BaseHandleIndex);
             }
 
             /**

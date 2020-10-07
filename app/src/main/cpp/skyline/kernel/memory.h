@@ -170,7 +170,7 @@ namespace skyline {
             }
         };
 
-        enum class AddressSpaceType {
+        enum class AddressSpaceType : u8 {
             AddressSpace32Bit, //!< 32-bit address space used by 32-bit applications
             AddressSpace36Bit, //!< 36-bit address space used by 64-bit applications before 2.0.0
             AddressSpace39Bit, //!< 39-bit address space used by 64-bit applications after 2.0.0
@@ -218,16 +218,17 @@ namespace skyline {
             MemoryManager(const DeviceState &state);
 
             /**
-             * @brief Initializes all of the regions in the address space
+             * @note This should be called before any mappings in the VMM or calls to InitalizeRegions are done
              */
-            void InitializeRegions(u8* codeStart, u64 size, memory::AddressSpaceType type);
+            void InitializeVmm(memory::AddressSpaceType type);
+
+            void InitializeRegions(u8* codeStart, u64 size);
 
             void InsertChunk(const ChunkDescriptor &chunk);
 
             std::optional<ChunkDescriptor> Get(void* ptr);
 
             /**
-             * @brief The total amount of space in bytes occupied by all memory mappings
              * @return The cumulative size of all memory mappings in bytes
              */
             size_t GetProgramSize();

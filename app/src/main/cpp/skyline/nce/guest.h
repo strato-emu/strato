@@ -17,12 +17,6 @@ namespace skyline {
         #endif
 
         /**
-         * @brief The entry point for all guest threads
-         * @param address The address of the actual thread entry point
-         */
-        void GuestEntry(u64 address);
-
-        /**
          * @brief Saves the context from CPU registers into TLS
          */
         extern "C" void SaveCtx(void);

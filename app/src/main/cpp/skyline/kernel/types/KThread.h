@@ -4,21 +4,11 @@
 #pragma once
 
 #include "KSyncObject.h"
+#include "KPrivateMemory.h"
 #include "KSharedMemory.h"
 
-namespace skyline::kernel::type {
-    /**
-     * @brief KThread class is responsible for holding the state of a thread
-     */
-    class KThread : public KSyncObject {
-      private:
-        KProcess *parent; //!< The parent process of this thread
-        u64 entryPoint; //!< The address to start execution at
-        u64 entryArg; //!< An argument to pass to the process on entry
-
-        /**
-         * @brief A range of priorities for a corresponding system
-         */
+namespace skyline {
+    namespace kernel::type {
         struct Priority {
             i8 low; //!< The low range of priority
             i8 high; //!< The high range of priority
@@ -28,7 +18,7 @@ namespace skyline::kernel::type {
              * @param value The priority value to rescale
              * @return The rescaled priority value according to this range
              */
-            constexpr i8 Rescale(const Priority &priority, i8 value) {
+            constexpr i8 Rescale(const Priority &priority, i8 value) const {
                 return static_cast<i8>(priority.low + ((static_cast<float>(priority.high - priority.low) / static_cast<float>(priority.low - priority.high)) * (static_cast<float>(value) - priority.low)));
             }
 
@@ -36,61 +26,61 @@ namespace skyline::kernel::type {
              * @param value The priority value to check for validity
              * @return If the supplied priority value is valid
              */
-            constexpr bool Valid(i8 value) {
+            constexpr bool Valid(i8 value) const {
                 return (value >= low) && (value <= high);
             }
         };
+    }
 
-      public:
-        enum class Status {
-            Created, //!< The thread has been created but has not been started yet
-            Running, //!< The thread is running currently
-            Dead,    //!< The thread is dead and not running
-        } status = Status::Created;
-        std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
-        std::shared_ptr<type::KSharedMemory> ctxMemory; //!< The KSharedMemory of the shared memory allocated by the guest process TLS
-        KHandle handle; // The handle of the object in the handle table
-        pid_t tid; //!< The Linux Thread ID of the current thread
-        u64 stackTop; //!< The top of the stack (Where it starts growing downwards from)
-        u8* tls; //!< The address of TLS (Thread Local Storage) slot assigned to the current thread
-        i8 priority; //!< The priority of a thread in Nintendo format
+    namespace constant {
+        constexpr i8 DefaultPriority{44}; // The default priority of an HOS process
+        constexpr kernel::type::Priority AndroidPriority{19, -8}; //!< The range of priorities for Android
+        constexpr kernel::type::Priority HosPriority{0, 63}; //!< The range of priorities for Horizon OS
+    }
 
-        Priority androidPriority{19, -8}; //!< The range of priorities for Android
-        Priority switchPriority{0, 63}; //!< The range of priorities for the Nintendo Switch
-
+    namespace kernel::type {
         /**
-         * @param handle The handle of the current thread
-         * @param selfTid The TID of this thread
-         * @param entryPoint The address to start execution at
-         * @param entryArg An argument to pass to the process on entry
-         * @param stackTop The top of the stack
-         * @param tls The address of the TLS slot assigned
-         * @param priority The priority of the thread in Nintendo format
-         * @param parent The parent process of this thread
-         * @param tlsMemory The KSharedMemory object for TLS memory allocated by the guest process
+         * @brief KThread manages a single thread of execution which is responsible for running guest code and kernel code which is invoked by the guest
          */
-        KThread(const DeviceState &state, KHandle handle, pid_t selfTid, u64 entryPoint, u64 entryArg, u64 stackTop, u8* tls, i8 priority, KProcess *parent, const std::shared_ptr<type::KSharedMemory> &tlsMemory);
+        class KThread : public KSyncObject {
+          private:
+            KProcess *parent;
+            std::optional<std::thread> thread; //!< If this KThread is backed by a host thread then this'll hold it
 
-        /**
-         * @brief Kills the thread and deallocates the memory allocated for stack.
-         */
-        ~KThread();
+            void StartThread();
 
-        /**
-         * @brief Starts this thread process
-         */
-        void Start();
+          public:
+            std::atomic<bool> running{false};
+            std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
 
-        /**
-         * @brief Kills the thread process
-         */
-        void Kill();
+            KHandle handle;
+            size_t id; //!< Index of thread in parent process's KThread vector
 
-        /**
-         * @brief Update the priority level for the process.
-         * @details Set the priority of the current thread to `priority` using setpriority [https://linux.die.net/man/3/setpriority]. We rescale the priority from Nintendo scale to that of Android.
-         * @param priority The priority of the thread in Nintendo format
-         */
-        void UpdatePriority(i8 priority);
-    };
+            std::shared_ptr<KPrivateMemory> stack;
+            ThreadContext ctx{};
+
+            void* entry;
+            u64 entryArgument;
+            i8 priority;
+
+            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument = 0, i8 priority = constant::DefaultPriority, const std::shared_ptr<KPrivateMemory>& stack = nullptr);
+
+            ~KThread();
+
+            /**
+             * @param self If the calling thread should jump directly into guest code or if a new thread should be created for it
+             * @note If the thread is already running then this does nothing
+             * @note 'stack' will be created if it wasn't set prior to calling this
+             */
+            void Start(bool self = false);
+
+            void Kill();
+
+            /**
+             * @brief Sets the host priority using setpriority with a rescaled the priority from HOS to Android
+             * @note It also affects guest scheduler behavior, this isn't purely for host
+             */
+            void UpdatePriority(i8 priority);
+        };
+    }
 }

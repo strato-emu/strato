@@ -3,8 +3,7 @@
 
 #include <lz4.h>
 #include <nce.h>
-#include <os.h>
-#include <kernel/memory.h>
+#include <kernel/types/KProcess.h>
 #include "nso.h"
 
 namespace skyline::loader {
@@ -56,8 +55,8 @@ namespace skyline::loader {
     }
 
     void NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+        state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
         auto loadInfo{LoadNso(backing, process, state)};
-
-        state.os->memory.InitializeRegions(loadInfo.base, loadInfo.size, memory::AddressSpaceType::AddressSpace39Bit);
+        state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
     }
 }

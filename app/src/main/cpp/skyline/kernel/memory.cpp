@@ -7,8 +7,7 @@
 namespace skyline::kernel {
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
-    void MemoryManager::InitializeRegions(u8* codeStart, u64 size, memory::AddressSpaceType type) {
-        u64 address{reinterpret_cast<u64>(codeStart)};
+    void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
                 throw exception("32-bit address spaces are not supported");
@@ -18,6 +17,32 @@ namespace skyline::kernel {
                 addressSpace.size = 1UL << 36;
                 base.address = constant::BaseAddress;
                 base.size = 0xFF8000000;
+                break;
+            }
+
+            case memory::AddressSpaceType::AddressSpace39Bit: {
+                addressSpace.address = 0;
+                addressSpace.size = 1UL << 39;
+                base.address = constant::BaseAddress;
+                base.size = 0x7FF8000000;
+                break;
+            }
+
+            default:
+                throw exception("VMM initialization with unknown address space");
+        }
+
+        chunks = {ChunkDescriptor{
+            .ptr = reinterpret_cast<u8 *>(base.address),
+            .size = base.size,
+            .state = memory::states::Unmapped,
+        }};
+    }
+
+    void MemoryManager::InitializeRegions(u8 *codeStart, u64 size) {
+        u64 address{reinterpret_cast<u64>(codeStart)};
+        switch (addressSpace.size) {
+            case 1UL << 36: {
                 code.address = base.address;
                 code.size = 0x78000000;
                 if (code.address > address || (code.size - (address - code.address)) < size)
@@ -33,11 +58,7 @@ namespace skyline::kernel {
                 break;
             }
 
-            case memory::AddressSpaceType::AddressSpace39Bit: {
-                addressSpace.address = 0;
-                addressSpace.size = 1UL << 39;
-                base.address = constant::BaseAddress;
-                base.size = 0x7FF8000000;
+            case 1UL << 39: {
                 code.address = util::AlignDown(address, 0x200000);
                 code.size = util::AlignUp(address + size, 0x200000) - code.address;
                 alias.address = code.address + code.size;
@@ -50,13 +71,10 @@ namespace skyline::kernel {
                 tlsIo.size = 0x1000000000;
                 break;
             }
-        }
 
-        chunks = {ChunkDescriptor{
-            .ptr = reinterpret_cast<u8*>(base.address),
-            .size = base.size,
-            .state = memory::states::Unmapped,
-        }};
+            default:
+                throw exception("Regions initialized without VMM initialization");
+        }
 
         state.logger->Debug("Region Map:\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
             .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
@@ -95,7 +113,7 @@ namespace skyline::kernel {
         }
     }
 
-    std::optional<ChunkDescriptor> MemoryManager::Get(void* ptr) {
+    std::optional<ChunkDescriptor> MemoryManager::Get(void *ptr) {
         std::shared_lock lock(mutex);
 
         auto chunk{std::upper_bound(chunks.begin(), chunks.end(), reinterpret_cast<u8 *>(ptr), [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; })};

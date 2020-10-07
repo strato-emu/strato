@@ -2,8 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <nce.h>
-#include <os.h>
-#include <kernel/memory.h>
+#include <kernel/types/KProcess.h>
 #include <vfs/nacp.h>
 #include <vfs/region_backing.h>
 #include "nro.h"
@@ -59,7 +58,8 @@ namespace skyline::loader {
 
         nroExecutable.bssSize = header.bssSize;
 
+        state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
         auto loadInfo{LoadExecutable(process, state, nroExecutable)};
-        state.os->memory.InitializeRegions(loadInfo.base, loadInfo.size, memory::AddressSpaceType::AddressSpace39Bit);
+        state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
     }
 }

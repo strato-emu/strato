@@ -26,12 +26,12 @@ namespace skyline::kernel::type {
         if (ptr && !util::PageAligned(ptr))
             throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", ptr);
 
-        guest.ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
+        guest.ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | (ptr ? MAP_FIXED_NOREPLACE : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)
             throw exception("An error occurred while mapping shared memory in guest");
         guest.size = size;
 
-        state.os->memory.InsertChunk(ChunkDescriptor{
+        state.process->memory.InsertChunk(ChunkDescriptor{
             .ptr = guest.ptr,
             .size = size,
             .permission = permission,
@@ -51,7 +51,7 @@ namespace skyline::kernel::type {
             if (guest.ptr == MAP_FAILED)
                 throw exception("An error occurred while updating shared memory's permissions in guest");
 
-            state.os->memory.InsertChunk(ChunkDescriptor{
+            state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = ptr,
                 .size = size,
                 .permission = permission,
@@ -66,7 +66,7 @@ namespace skyline::kernel::type {
 
         if (guest.Valid()) {
             munmap(guest.ptr, guest.size);
-            state.os->memory.InsertChunk(ChunkDescriptor{
+            state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = guest.ptr,
                 .size = guest.size,
                 .state = memory::states::Unmapped,

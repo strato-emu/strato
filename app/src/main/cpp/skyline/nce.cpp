@@ -18,6 +18,7 @@ extern skyline::GroupMutex JniMtx;
 
 namespace skyline {
     void NCE::KernelThread(pid_t thread) {
+        /*
         state.jvm->AttachThread();
         try {
             state.thread = state.process->threads.at(thread);
@@ -81,6 +82,7 @@ namespace skyline {
         }
 
         state.jvm->DetachThread();
+         */
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}
@@ -111,55 +113,18 @@ namespace skyline {
         }
     }
 
-    /**
-     * This function will not work if optimizations are enabled as ThreadContext isn't volatile
-     * and due to that is not read on every iteration of the while loop.
-     * However, making ThreadContext or parts of it volatile slows down the applications as a whole.
-     * So, we opted to use the hacky solution and disable optimizations for this single function.
-     */
-    void ExecuteFunctionCtx(ThreadCall call, Registers &funcRegs, ThreadContext *ctx) __attribute__ ((optnone)) {
-        ctx->threadCall = call;
-        Registers registers{ctx->registers};
-
-        while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
-
-        ctx->registers = funcRegs;
-        ctx->state = ThreadState::WaitFunc;
-
-        while (ctx->state != ThreadState::WaitInit && ctx->state != ThreadState::WaitKernel);
-
-        funcRegs = ctx->registers;
-        ctx->registers = registers;
+    inline ThreadContext *GetContext() {
+        ThreadContext *ctx;
+        asm("MRS %0, TPIDR_EL0":"=r"(ctx));
+        return ctx;
     }
 
-    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs, std::shared_ptr<kernel::type::KThread> &thread) {
-        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr));
+    void NCE::SignalHandler(int signal, const siginfo &info, const ucontext &context) {
+
     }
 
-    void NCE::ExecuteFunction(ThreadCall call, Registers &funcRegs) {
-        if (state.process->status == kernel::type::KProcess::Status::Exiting)
-            throw exception("Executing function on Exiting process");
-
-        auto thread{state.thread ? state.thread : state.process->threads.at(state.process->pid)};
-        ExecuteFunctionCtx(call, funcRegs, reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr));
-    }
-
-    void NCE::WaitThreadInit(std::shared_ptr<kernel::type::KThread> &thread) __attribute__ ((optnone)) {
-        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr)};
-        while (ctx->state == ThreadState::NotReady);
-    }
-
-    void NCE::StartThread(u64 entryArg, u32 handle, std::shared_ptr<kernel::type::KThread> &thread) {
-        auto ctx{reinterpret_cast<ThreadContext *>(thread->ctxMemory->kernel.ptr)};
-        while (ctx->state != ThreadState::WaitInit);
-
-        ctx->tpidrroEl0 = reinterpret_cast<u64>(thread->tls);
-        ctx->registers.x0 = entryArg;
-        ctx->registers.x1 = handle;
-        ctx->state = ThreadState::WaitRun;
-
-        state.logger->Debug("Starting kernel thread for guest thread: {}", thread->tid);
-        threadMap[thread->tid] = std::make_shared<std::thread>(&NCE::KernelThread, this, thread->tid);
+    void NCE::SignalHandler(int signal, siginfo *info, void *context) {
+        (GetContext()->nce)->SignalHandler(signal, *info, *reinterpret_cast<ucontext*>(context));
     }
 
     void NCE::ThreadTrace(u16 instructionCount, ThreadContext *ctx) {
@@ -170,8 +135,8 @@ namespace skyline {
         ctx = ctx ? ctx : state.ctx;
 
         if (instructionCount) {
-            auto offset{ctx->pc - ((instructionCount - 2) * sizeof(u32))};
-            span instructions(reinterpret_cast<u32*>(offset), instructionCount);
+            auto offset{ctx->pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
+            span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
 
             for (auto &instruction : instructions) {
                 instruction = __builtin_bswap32(instruction);
@@ -186,8 +151,8 @@ namespace skyline {
             }
         }
 
-        if (ctx->faultAddress)
-            regStr += fmt::format("\nFault Address: 0x{:X}", ctx->faultAddress);
+        //if (ctx->faultAddress)
+        //    regStr += fmt::format("\nFault Address: 0x{:X}", ctx->faultAddress);
 
         if (ctx->sp)
             regStr += fmt::format("\nStack Pointer: 0x{:X}", ctx->sp);

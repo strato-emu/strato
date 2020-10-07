@@ -52,7 +52,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto chunk{state.os->memory.Get(pointer)};
+        auto chunk{state.process->memory.Get(pointer)};
         if (!chunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
             state.logger->Warn("svcSetMemoryAttribute: Cannot find memory region: 0x{:X}", pointer);
@@ -69,7 +69,7 @@ namespace skyline::kernel::svc {
         newChunk.ptr = pointer;
         newChunk.size = size;
         newChunk.attributes.isUncached = value.isUncached;
-        state.os->memory.InsertChunk(newChunk);
+        state.process->memory.InsertChunk(newChunk);
 
         state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", bool(value.isUncached), pointer, size);
         state.ctx->registers.w0 = Result{};
@@ -92,14 +92,14 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto stack{state.os->memory.stack};
+        auto stack{state.process->memory.stack};
         if (!stack.IsInside(destination)) {
             state.ctx->registers.w0 = result::InvalidMemoryRegion;
             state.logger->Warn("svcMapMemory: Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        auto chunk{state.os->memory.Get(source)};
+        auto chunk{state.process->memory.Get(source)};
         if (!chunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
             state.logger->Warn("svcMapMemory: Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
@@ -140,15 +140,15 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto stack{state.os->memory.stack};
+        auto stack{state.process->memory.stack};
         if (!stack.IsInside(source)) {
             state.ctx->registers.w0 = result::InvalidMemoryRegion;
             state.logger->Warn("svcUnmapMemory: Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        auto sourceChunk{state.os->memory.Get(source)};
-        auto destChunk{state.os->memory.Get(destination)};
+        auto sourceChunk{state.process->memory.Get(source)};
+        auto destChunk{state.process->memory.Get(destination)};
         if (!sourceChunk || !destChunk) {
             state.ctx->registers.w0 = result::InvalidAddress;
             state.logger->Warn("svcUnmapMemory: Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
@@ -183,7 +183,7 @@ namespace skyline::kernel::svc {
         memory::MemoryInfo memInfo{};
 
         auto pointer{reinterpret_cast<u8*>(state.ctx->registers.x2)};
-        auto chunk{state.os->memory.Get(pointer)};
+        auto chunk{state.process->memory.Get(pointer)};
 
         if (chunk) {
             memInfo = {
@@ -198,7 +198,7 @@ namespace skyline::kernel::svc {
 
             state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, bool(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
         } else {
-            auto addressSpaceEnd{reinterpret_cast<u64>(state.os->memory.addressSpace.address + state.os->memory.addressSpace.size)};
+            auto addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.address + state.process->memory.addressSpace.size)};
 
             memInfo = {
                 .address = addressSpaceEnd,
@@ -215,24 +215,28 @@ namespace skyline::kernel::svc {
     }
 
     void ExitProcess(DeviceState &state) {
-        state.logger->Debug("svcExitProcess: Exiting current process: {}", state.process->pid);
-        state.os->KillThread(state.process->pid);
+        state.logger->Debug("svcExitProcess: Exiting process");
+        //state.os->KillThread(state.process->pid);
     }
 
     void CreateThread(DeviceState &state) {
-        auto entryAddress{state.ctx->registers.x1};
+        auto entry{reinterpret_cast<void*>(state.ctx->registers.x1)};
         auto entryArgument{state.ctx->registers.x2};
-        auto stackTop{state.ctx->registers.x3};
+        auto stackTop{reinterpret_cast<u8*>(state.ctx->registers.x3)};
         auto priority{static_cast<i8>(state.ctx->registers.w4)};
 
-        if (!state.thread->switchPriority.Valid(priority)) {
+        if (!constant::HosPriority.Valid(priority)) {
             state.ctx->registers.w0 = result::InvalidAddress;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
 
-        auto thread{state.process->CreateThread(entryAddress, entryArgument, stackTop, priority)};
-        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, TID: {})", thread->handle, entryAddress, entryArgument, stackTop, priority, thread->tid);
+        auto stack{state.process->GetMemoryObject(stackTop)};
+        if (!stack)
+            throw exception("svcCreateThread: Cannot find memory object in handle table for thread stack: 0x{:X}", stackTop);
+
+        auto thread{state.process->CreateThread(entry, entryArgument, priority, static_pointer_cast<type::KPrivateMemory>(stack->item))};
+        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, ID: {})", thread->handle, entry, entryArgument, stackTop, priority, thread->id);
 
         state.ctx->registers.w1 = thread->handle;
         state.ctx->registers.w0 = Result{};
@@ -242,7 +246,7 @@ namespace skyline::kernel::svc {
         auto handle{state.ctx->registers.w0};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->tid);
+            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->id);
             thread->Start();
             state.ctx->registers.w0 = Result{};
         } catch (const std::exception &) {
@@ -252,8 +256,8 @@ namespace skyline::kernel::svc {
     }
 
     void ExitThread(DeviceState &state) {
-        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->tid);
-        state.os->KillThread(state.thread->tid);
+        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->id);
+        state.os->KillThread(state.thread->id);
     }
 
     void SleepThread(DeviceState &state) {
@@ -389,7 +393,7 @@ namespace skyline::kernel::svc {
     void ResetSignal(DeviceState &state) {
         auto handle{state.ctx->registers.w0};
         try {
-            auto &object{state.process->handles.at(handle)};
+            auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {
                 case type::KType::KEvent:
                     std::static_pointer_cast<type::KEvent>(object)->ResetSignal();
@@ -431,7 +435,7 @@ namespace skyline::kernel::svc {
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
 
-            auto object{state.process->handles.at(handle)};
+            auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {
                 case type::KType::KProcess:
                 case type::KType::KThread:
@@ -612,9 +616,9 @@ namespace skyline::kernel::svc {
         pid_t pid{};
 
         if (handle != threadSelf)
-            pid = state.process->GetHandle<type::KThread>(handle)->tid;
+            pid = state.process->GetHandle<type::KThread>(handle)->id;
         else
-            pid = state.thread->tid;
+            pid = state.thread->id;
 
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
 
@@ -650,19 +654,19 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::AliasRegionBaseAddr:
-                out = state.os->memory.alias.address;
+                out = state.process->memory.alias.address;
                 break;
 
             case constant::infoState::AliasRegionSize:
-                out = state.os->memory.alias.size;
+                out = state.process->memory.alias.size;
                 break;
 
             case constant::infoState::HeapRegionBaseAddr:
-                out = state.os->memory.heap.address;
+                out = state.process->memory.heap.address;
                 break;
 
             case constant::infoState::HeapRegionSize:
-                out = state.os->memory.heap.size;
+                out = state.process->memory.heap.size;
                 break;
 
             case constant::infoState::TotalMemoryAvailable:
@@ -670,23 +674,23 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::TotalMemoryUsage:
-                out = state.process->heap->size + constant::DefStackSize + state.os->memory.GetProgramSize();
+                out = state.process->heap->size + constant::DefaultStackSize + state.process->memory.GetProgramSize();
                 break;
 
             case constant::infoState::AddressSpaceBaseAddr:
-                out = state.os->memory.base.address;
+                out = state.process->memory.base.address;
                 break;
 
             case constant::infoState::AddressSpaceSize:
-                out = state.os->memory.base.size;
+                out = state.process->memory.base.size;
                 break;
 
             case constant::infoState::StackRegionBaseAddr:
-                out = state.os->memory.stack.address;
+                out = state.process->memory.stack.address;
                 break;
 
             case constant::infoState::StackRegionSize:
-                out = state.os->memory.stack.size;
+                out = state.process->memory.stack.size;
                 break;
 
             case constant::infoState::PersonalMmHeapSize:
@@ -694,7 +698,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::PersonalMmHeapUsage:
-                out = state.process->heap->size + constant::DefStackSize;
+                out = state.process->heap->size + constant::DefaultStackSize;
                 break;
 
             case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
@@ -702,7 +706,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::TotalMemoryUsedWithoutMmHeap:
-                out = state.process->heap->size + constant::DefStackSize; // TODO: Same as above
+                out = state.process->heap->size + constant::DefaultStackSize; // TODO: Same as above
                 break;
 
             case constant::infoState::UserExceptionContextAddr:

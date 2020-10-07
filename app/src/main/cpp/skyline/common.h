@@ -58,7 +58,7 @@ namespace skyline {
     namespace constant {
         // Memory
         constexpr u64 BaseAddress{0x8000000}; //!< The address space base
-        constexpr u64 DefStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
+        constexpr u64 DefaultStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
         // Display
         constexpr u16 HandheldResolutionW{1280}; //!< The width component of the handheld resolution
         constexpr u16 HandheldResolutionH{720}; //!< The height component of the handheld resolution
@@ -71,16 +71,18 @@ namespace skyline {
     namespace util {
         /**
          * @brief A way to implicitly cast all typed pointers to void pointers, this is used for libfmt as it requires wrapping non-void pointers with fmt::ptr
+         * @note There's the exception of signed char pointers as they represent C Strings
          * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly passed through fmt::ptr
          */
-        template <class T>
-        constexpr T VoidCast(T item) {
-            return item;
-        }
-
-        template <class T>
-        constexpr const void* VoidCast(T* ptr) {
-            return ptr;
+        template<class T>
+        constexpr auto FmtCast(T object) {
+            if constexpr (std::is_pointer<T>::value)
+                if constexpr (std::is_same<char, typename std::remove_cv<typename std::remove_pointer<T>::type>::type>::value)
+                    return reinterpret_cast<typename std::common_type<char *, T>::type>(object);
+                else
+                    return reinterpret_cast<const void *>(object);
+            else
+                return object;
         }
     }
 
@@ -94,7 +96,7 @@ namespace skyline {
          * @param args The arguments based on format_str
          */
         template<typename S, typename... Args>
-        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::VoidCast(args)...)) {}
+        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::FmtCast(args)...)) {}
     };
 
     namespace util {
@@ -444,7 +446,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Error(const S &formatStr, Args &&... args) {
             if (LogLevel::Error <= configLevel) {
-                Write(LogLevel::Error, fmt::format(formatStr, util::VoidCast(args)...));
+                Write(LogLevel::Error, fmt::format(formatStr, util::FmtCast(args)...));
             }
         }
 
@@ -456,7 +458,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Warn(const S &formatStr, Args &&... args) {
             if (LogLevel::Warn <= configLevel) {
-                Write(LogLevel::Warn, fmt::format(formatStr, util::VoidCast(args)...));
+                Write(LogLevel::Warn, fmt::format(formatStr, util::FmtCast(args)...));
             }
         }
 
@@ -468,7 +470,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Info(const S &formatStr, Args &&... args) {
             if (LogLevel::Info <= configLevel) {
-                Write(LogLevel::Info, fmt::format(formatStr, util::VoidCast(args)...));
+                Write(LogLevel::Info, fmt::format(formatStr, util::FmtCast(args)...));
             }
         }
 
@@ -480,7 +482,7 @@ namespace skyline {
         template<typename S, typename... Args>
         inline void Debug(const S &formatStr, Args &&... args) {
             if (LogLevel::Debug <= configLevel) {
-                Write(LogLevel::Debug, fmt::format(formatStr, util::VoidCast(args)...));
+                Write(LogLevel::Debug, fmt::format(formatStr, util::FmtCast(args)...));
             }
         }
     };
@@ -527,7 +529,6 @@ namespace skyline {
         void List(const std::shared_ptr<Logger> &logger);
     };
 
-    class NCE;
     class JvmManager;
     namespace gpu {
         class GPU;

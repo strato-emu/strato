@@ -99,6 +99,7 @@ namespace skyline::guest {
      * @note Do not use any functions that cannot be inlined from this, as this function is placed at an arbitrary address in the guest. In addition, do not use any static variables or globals as the .bss section is not copied into the guest.
      */
     void SvcHandler(u64 pc, u16 svc) {
+        /*
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
@@ -206,6 +207,7 @@ namespace skyline::guest {
         }
 
         ctx->state = ThreadState::Running;
+         */
     }
 
     [[noreturn]] void Exit(int) {
@@ -217,6 +219,7 @@ namespace skyline::guest {
     }
 
     [[noreturn]] void SignalHandler(int signal, siginfo_t *info, ucontext_t *ucontext) {
+        /*
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
@@ -234,9 +237,11 @@ namespace skyline::guest {
             if (ctx->state == ThreadState::WaitRun)
                 Exit(0);
         }
+         */
     }
 
     void GuestEntry(u64 address) {
+        /*
         volatile ThreadContext *ctx;
         asm("MRS %0, TPIDR_EL0":"=r"(ctx));
 
@@ -270,90 +275,6 @@ namespace skyline::guest {
                     *(src++) = *(dest++);
             }
         }
-
-        struct sigaction sigact{
-            .sa_sigaction = reinterpret_cast<void (*)(int, struct siginfo *, void *)>(reinterpret_cast<void *>(SignalHandler)),
-            .sa_flags = SA_SIGINFO,
-        };
-
-        for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
-            sigaction(signal, &sigact, nullptr);
-
-        sigact = {
-            .sa_handler = Exit,
-        };
-
-        sigaction(SIGTERM, &sigact, nullptr);
-
-        ctx->state = ThreadState::Running;
-
-        asm("MOV LR, %0\n\t"
-            "MOV X0, %1\n\t"
-            "MOV X1, %2\n\t"
-            "MOV X2, XZR\n\t"
-            "MOV X3, XZR\n\t"
-            "MOV X4, XZR\n\t"
-            "MOV X5, XZR\n\t"
-            "MOV X6, XZR\n\t"
-            "MOV X7, XZR\n\t"
-            "MOV X8, XZR\n\t"
-            "MOV X9, XZR\n\t"
-            "MOV X10, XZR\n\t"
-            "MOV X11, XZR\n\t"
-            "MOV X12, XZR\n\t"
-            "MOV X13, XZR\n\t"
-            "MOV X14, XZR\n\t"
-            "MOV X15, XZR\n\t"
-            "MOV X16, XZR\n\t"
-            "MOV X17, XZR\n\t"
-            "MOV X18, XZR\n\t"
-            "MOV X19, XZR\n\t"
-            "MOV X20, XZR\n\t"
-            "MOV X21, XZR\n\t"
-            "MOV X22, XZR\n\t"
-            "MOV X23, XZR\n\t"
-            "MOV X24, XZR\n\t"
-            "MOV X25, XZR\n\t"
-            "MOV X26, XZR\n\t"
-            "MOV X27, XZR\n\t"
-            "MOV X28, XZR\n\t"
-            "MOV X29, XZR\n\t"
-            "MSR FPSR, XZR\n\t"
-            "MSR FPCR, XZR\n\t"
-            "DUP V0.16B, WZR\n\t"
-            "DUP V1.16B, WZR\n\t"
-            "DUP V2.16B, WZR\n\t"
-            "DUP V3.16B, WZR\n\t"
-            "DUP V4.16B, WZR\n\t"
-            "DUP V5.16B, WZR\n\t"
-            "DUP V6.16B, WZR\n\t"
-            "DUP V7.16B, WZR\n\t"
-            "DUP V8.16B, WZR\n\t"
-            "DUP V9.16B, WZR\n\t"
-            "DUP V10.16B, WZR\n\t"
-            "DUP V11.16B, WZR\n\t"
-            "DUP V12.16B, WZR\n\t"
-            "DUP V13.16B, WZR\n\t"
-            "DUP V14.16B, WZR\n\t"
-            "DUP V15.16B, WZR\n\t"
-            "DUP V16.16B, WZR\n\t"
-            "DUP V17.16B, WZR\n\t"
-            "DUP V18.16B, WZR\n\t"
-            "DUP V19.16B, WZR\n\t"
-            "DUP V20.16B, WZR\n\t"
-            "DUP V21.16B, WZR\n\t"
-            "DUP V22.16B, WZR\n\t"
-            "DUP V23.16B, WZR\n\t"
-            "DUP V24.16B, WZR\n\t"
-            "DUP V25.16B, WZR\n\t"
-            "DUP V26.16B, WZR\n\t"
-            "DUP V27.16B, WZR\n\t"
-            "DUP V28.16B, WZR\n\t"
-            "DUP V29.16B, WZR\n\t"
-            "DUP V30.16B, WZR\n\t"
-            "DUP V31.16B, WZR\n\t"
-            "RET"::"r"(address), "r"(ctx->registers.x0), "r"(ctx->registers.x1) : "x0", "x1", "lr");
-
-        __builtin_unreachable();
+         */
     }
 }
