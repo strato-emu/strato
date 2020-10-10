@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-namespace skyline {
+namespace skyline::nce {
     namespace regs {
         enum X { X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30 };
         enum W { W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18, W19, W20, W21, W22, W23, W24, W25, W26, W27, W28, W29, W30 };
@@ -112,10 +112,10 @@ namespace skyline {
         struct B {
           public:
             /**
-             * @param offset The relative offset to branch to (Should be 32-bit aligned)
+             * @param offset The relative offset to branch to (In 32-bit units)
              */
-            constexpr B(i64 offset) {
-                this->offset = static_cast<i32>(offset / sizeof(u32));
+            constexpr B(i32 offset) {
+                this->offset = offset;
                 sig = 0x5;
             }
 
@@ -146,10 +146,10 @@ namespace skyline {
         struct BL {
           public:
             /**
-             * @param offset The relative offset to branch to (Should be 32-bit aligned)
+             * @param offset The relative offset to branch to (In 32-bit units)
              */
-            constexpr BL(i64 offset) {
-                this->offset = static_cast<i32>(offset / sizeof(u32));
+            constexpr BL(i32 offset) {
+                this->offset = offset;
                 sig = 0x25;
             }
 
@@ -288,20 +288,26 @@ namespace skyline {
          * @param destination The destination register of the operation
          * @param value The value to insert into the register
          * @return A array with the instructions to insert the value
+         * @note 0 is returned for any instruction that isn't required
          */
         template<typename Type>
         constexpr std::array<u32, sizeof(Type) / sizeof(u16)> MoveRegister(regs::X destination, Type value) {
             std::array<u32, sizeof(Type) / sizeof(u16)> instructions;
 
             auto valuePointer{reinterpret_cast<u16 *>(&value)};
+            bool zeroed{};
             u8 offset{};
 
             for (auto &instruction : instructions) {
-                if (offset)
-                    instruction = instr::Movk(destination, *(valuePointer + offset), offset).raw;
-                else
-                    instruction = instr::Movz(destination, *(valuePointer + offset), offset).raw;
-
+                auto offsetValue{*(valuePointer + offset)};
+                if (offsetValue) {
+                    if (zeroed) {
+                        instruction = instr::Movk(destination, offsetValue, offset).raw;
+                    } else {
+                        instruction = instr::Movz(destination, offsetValue, offset).raw;
+                        zeroed = true;
+                    }
+                }
                 offset++;
             }
 

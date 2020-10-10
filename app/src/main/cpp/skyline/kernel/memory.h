@@ -108,6 +108,14 @@ namespace skyline {
 
             constexpr MemoryState() : value(0) {}
 
+            constexpr bool operator==(const MemoryState& other) const {
+                return value == other.value;
+            }
+
+            constexpr bool operator!=(const MemoryState& other) const {
+                return value != other.value;
+            }
+
             struct {
                 MemoryType type;
                 bool permissionChangeAllowed : 1; //!< If the application can use svcSetMemoryPermission on this block

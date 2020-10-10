@@ -54,7 +54,7 @@ namespace skyline::kernel::type {
             throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
 
         // If a static code region has been mapped as writable it needs to be changed to mutable
-        if (memState.value == memory::states::CodeStatic.value && permission.w)
+        if (memState == memory::states::CodeStatic && permission.w)
             memState = memory::states::CodeMutable;
 
         state.process->memory.InsertChunk(ChunkDescriptor{

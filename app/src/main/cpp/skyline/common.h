@@ -23,11 +23,23 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 #include <jni.h>
-#include "nce/guest_common.h"
+
+#define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
 
 namespace skyline {
-    namespace frz = frozen;
+    using u128 = __uint128_t; //!< Unsigned 128-bit integer
+    using u64 = __uint64_t; //!< Unsigned 64-bit integer
+    using u32 = __uint32_t; //!< Unsigned 32-bit integer
+    using u16 = __uint16_t; //!< Unsigned 16-bit integer
+    using u8 = __uint8_t; //!< Unsigned 8-bit integer
+    using i128 = __int128_t; //!< Signed 128-bit integer
+    using i64 = __int64_t; //!< Signed 64-bit integer
+    using i32 = __int32_t; //!< Signed 32-bit integer
+    using i16 = __int16_t; //!< Signed 16-bit integer
+    using i8 = __int8_t; //!< Signed 8-bit integer
+
     using KHandle = u32; //!< The type of a kernel handle
+    namespace frz = frozen;
 
     /**
      * @brief The result of an operation in HOS
@@ -105,9 +117,8 @@ namespace skyline {
          * @return The current time in nanoseconds
          */
         inline u64 GetTimeNs() {
-            static u64 frequency{};
-            if (!frequency)
-                asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
+            u64 frequency;
+            asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
             u64 ticks;
             asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
             return ((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency);
@@ -529,6 +540,10 @@ namespace skyline {
         void List(const std::shared_ptr<Logger> &logger);
     };
 
+    namespace nce {
+        class NCE;
+        struct ThreadContext;
+    }
     class JvmManager;
     namespace gpu {
         class GPU;
@@ -559,8 +574,8 @@ namespace skyline {
         kernel::OS *os;
         std::shared_ptr<kernel::type::KProcess> &process;
         thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< The KThread of the thread which accesses this object
-        thread_local static ThreadContext *ctx; //!< The context of the guest thread for the corresponding host thread
-        std::shared_ptr<NCE> nce;
+        thread_local static nce::ThreadContext *ctx; //!< The context of the guest thread for the corresponding host thread
+        std::shared_ptr<nce::NCE> nce;
         std::shared_ptr<gpu::GPU> gpu;
         std::shared_ptr<audio::Audio> audio;
         std::shared_ptr<input::Input> input;

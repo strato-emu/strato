@@ -32,7 +32,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeap() {
         constexpr size_t DefaultHeapSize{0x200000};
-        heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
+        heap = heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
     }
 
     u8 *KProcess::AllocateTlsSlot() {

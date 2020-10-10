@@ -34,7 +34,6 @@ add_library(skyline SHARED
         ${source_DIR}/loader_jni.cpp
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/nce/guest.S
-        ${source_DIR}/skyline/nce/guest.cpp
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/audio.cpp

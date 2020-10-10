@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <nce/guest.h>
 #include "KSyncObject.h"
 #include "KPrivateMemory.h"
 #include "KSharedMemory.h"
@@ -42,7 +43,7 @@ namespace skyline {
         /**
          * @brief KThread manages a single thread of execution which is responsible for running guest code and kernel code which is invoked by the guest
          */
-        class KThread : public KSyncObject {
+      class KThread : public KSyncObject, public std::enable_shared_from_this<KThread> {
           private:
             KProcess *parent;
             std::optional<std::thread> thread; //!< If this KThread is backed by a host thread then this'll hold it
@@ -57,7 +58,7 @@ namespace skyline {
             size_t id; //!< Index of thread in parent process's KThread vector
 
             std::shared_ptr<KPrivateMemory> stack;
-            ThreadContext ctx{};
+            nce::ThreadContext ctx{};
 
             void* entry;
             u64 entryArgument;

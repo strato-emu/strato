@@ -43,180 +43,180 @@ namespace skyline {
          * @brief Sets the process heap to a given size, it can both extend and shrink the heap
          * @url https://switchbrew.org/wiki/SVC#SetHeapSize
          */
-        void SetHeapSize(DeviceState &state);
+        void SetHeapSize(const DeviceState &state);
 
         /**
          * @brief Change attribute of page-aligned memory region, this is used to turn on/off caching for a given memory area
          * @url https://switchbrew.org/wiki/SVC#SetMemoryAttribute
          */
-        void SetMemoryAttribute(DeviceState &state);
+        void SetMemoryAttribute(const DeviceState &state);
 
         /**
          * @brief Maps a memory range into a different range, mainly used for adding guard pages around stack
          * @url https://switchbrew.org/wiki/SVC#SetMemoryAttribute
          */
-        void MapMemory(DeviceState &state);
+        void MapMemory(const DeviceState &state);
 
         /**
          * @brief Unmaps a region that was previously mapped with #MapMemory
          * @url https://switchbrew.org/wiki/SVC#UnmapMemory
          */
-        void UnmapMemory(DeviceState &state);
+        void UnmapMemory(const DeviceState &state);
 
         /**
          * @brief Query information about an address
          * @url https://switchbrew.org/wiki/SVC#QueryMemory
          */
-        void QueryMemory(DeviceState &state);
+        void QueryMemory(const DeviceState &state);
 
         /**
          * @brief Exits the current process
          * @url https://switchbrew.org/wiki/SVC#ExitProcess
          */
-        void ExitProcess(DeviceState &state);
+        void ExitProcess(const DeviceState &state);
 
         /**
          * @brief Create a thread in the current process
          * @url https://switchbrew.org/wiki/SVC#CreateThread
          */
-        void CreateThread(DeviceState &state);
+        void CreateThread(const DeviceState &state);
 
         /**
          * @brief Starts the thread for the provided handle
          * @url https://switchbrew.org/wiki/SVC#StartThread
          */
-        void StartThread(DeviceState &state);
+        void StartThread(const DeviceState &state);
 
         /**
          * @brief Exits the current thread
          * @url https://switchbrew.org/wiki/SVC#ExitThread
          */
-        void ExitThread(DeviceState &state);
+        void ExitThread(const DeviceState &state);
 
         /**
          * @brief Sleep for a specified amount of time, or yield thread
          * @url https://switchbrew.org/wiki/SVC#SleepThread
          */
-        void SleepThread(DeviceState &state);
+        void SleepThread(const DeviceState &state);
 
         /**
          * @brief Get priority of provided thread handle
          * @url https://switchbrew.org/wiki/SVC#GetThreadPriority
          */
-        void GetThreadPriority(DeviceState &state);
+        void GetThreadPriority(const DeviceState &state);
 
         /**
          * @brief Set priority of provided thread handle
          * @url https://switchbrew.org/wiki/SVC#SetThreadPriority
          */
-        void SetThreadPriority(DeviceState &state);
+        void SetThreadPriority(const DeviceState &state);
 
         /**
          * @brief Clears a KEvent of it's signal
          * @url https://switchbrew.org/wiki/SVC#ClearEvent
          */
-        void ClearEvent(DeviceState &state);
+        void ClearEvent(const DeviceState &state);
 
         /**
          * @brief Maps the block supplied by the handle
          * @url https://switchbrew.org/wiki/SVC#MapSharedMemory
          */
-        void MapSharedMemory(DeviceState &state);
+        void MapSharedMemory(const DeviceState &state);
 
         /**
          * @brief Returns a handle to a KSharedMemory object
          * @url https://switchbrew.org/wiki/SVC#CreateTransferMemory
          */
-        void CreateTransferMemory(DeviceState &state);
+        void CreateTransferMemory(const DeviceState &state);
 
         /**
          * @brief Closes the specified handle
          * @url https://switchbrew.org/wiki/SVC#CloseHandle
          */
-        void CloseHandle(DeviceState &state);
+        void CloseHandle(const DeviceState &state);
 
         /**
          * @brief Resets a particular KEvent or KProcess which is signalled
          * @url https://switchbrew.org/wiki/SVC#ResetSignal
          */
-        void ResetSignal(DeviceState &state);
+        void ResetSignal(const DeviceState &state);
 
         /**
          * @brief Stalls a thread till a KSyncObject signals or the timeout has ended
          * @url https://switchbrew.org/wiki/SVC#WaitSynchronization
          */
-        void WaitSynchronization(DeviceState &state);
+        void WaitSynchronization(const DeviceState &state);
 
         /**
          * @brief If the referenced thread is currently in a synchronization call, that call will be interrupted
          * @url https://switchbrew.org/wiki/SVC#CancelSynchronization
          */
-        void CancelSynchronization(DeviceState &state);
+        void CancelSynchronization(const DeviceState &state);
 
         /**
          * @brief Locks a specified mutex
          * @url https://switchbrew.org/wiki/SVC#ArbitrateLock
          */
-        void ArbitrateLock(DeviceState &state);
+        void ArbitrateLock(const DeviceState &state);
 
         /**
          * @brief Unlocks a specified mutex
          * @url https://switchbrew.org/wiki/SVC#ArbitrateUnlock
          */
-        void ArbitrateUnlock(DeviceState &state);
+        void ArbitrateUnlock(const DeviceState &state);
 
         /**
          * @brief Waits on a process-wide key (Conditional-Variable)
          * @url https://switchbrew.org/wiki/SVC#WaitProcessWideKeyAtomic
          */
-        void WaitProcessWideKeyAtomic(DeviceState &state);
+        void WaitProcessWideKeyAtomic(const DeviceState &state);
 
         /**
          * @brief Signals a process-wide key (Conditional-Variable)
          * @url https://switchbrew.org/wiki/SVC#SignalProcessWideKey
          */
-        void SignalProcessWideKey(DeviceState &state);
+        void SignalProcessWideKey(const DeviceState &state);
 
         /**
          * @brief Returns the value of CNTPCT_EL0 on the Switch
          * @url https://switchbrew.org/wiki/SVC#GetSystemTick
          */
-        void GetSystemTick(DeviceState &state);
+        void GetSystemTick(const DeviceState &state);
 
         /**
          * @brief Connects to a named IPC port
          * @url https://switchbrew.org/wiki/SVC#ConnectToNamedPort
          */
-        void ConnectToNamedPort(DeviceState &state);
+        void ConnectToNamedPort(const DeviceState &state);
 
         /**
          * @brief Send a synchronous IPC request to a service
          * @url https://switchbrew.org/wiki/SVC#SendSyncRequest
          */
-        void SendSyncRequest(DeviceState &state);
+        void SendSyncRequest(const DeviceState &state);
 
         /**
          * @brief Retrieves the PID of a specific thread
          * @url https://switchbrew.org/wiki/SVC#GetThreadId
          */
-        void GetThreadId(DeviceState &state);
+        void GetThreadId(const DeviceState &state);
 
         /**
          * @brief Outputs a debug string
          * @url https://switchbrew.org/wiki/SVC#OutputDebugString
          */
-        void OutputDebugString(DeviceState &state);
+        void OutputDebugString(const DeviceState &state);
 
         /**
          * @brief Retrieves a piece of information
          * @url https://switchbrew.org/wiki/SVC#GetInfo
          */
-        void GetInfo(DeviceState &state);
+        void GetInfo(const DeviceState &state);
 
         /**
          * @brief The SVC Table maps all SVCs to their corresponding functions
          */
-        void static (*SvcTable[0x80])(DeviceState &) = {
+        static std::array<void (*)(const DeviceState &), 0x80> SvcTable{
             nullptr, // 0x00 (Does not exist)
             SetHeapSize, // 0x01
             nullptr, // 0x02

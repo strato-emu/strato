@@ -20,27 +20,31 @@ namespace skyline::kernel::type {
     void KThread::StartThread() {
         pthread_setname_np(pthread_self(), fmt::format("HOS-{}", id).c_str());
 
-        ctx.sp = stack->ptr + stack->size;
         if (!ctx.tpidrroEl0)
             ctx.tpidrroEl0 = parent->AllocateTlsSlot();
-        ctx.nce = state.nce.get();
+
+        ctx.state = &state;
         state.ctx = &ctx;
+        state.thread = shared_from_this();
 
         struct sigaction sigact{
-            .sa_sigaction = &NCE::SignalHandler,
+            .sa_sigaction = &nce::NCE::SignalHandler,
             .sa_flags = SA_SIGINFO,
         };
 
         //for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
-        //    sigaction(signal, &sigact, nullptr);
+         //   sigaction(signal, &sigact, nullptr);
 
         asm volatile(
+        "MRS X0, TPIDR_EL0\n\t"
         "MSR TPIDR_EL0, %x0\n\t" // Set TLS to ThreadContext
+        "STR X0, [%x0, #0x2F0]\n\t" // Write ThreadContext::hostTpidrEl0
         "MOV X0, SP\n\t"
-        "STR X0, [%x0, #16]\n\t" // Store SP in ThreadContext
-        "MOV LR, %x1\n\t" // Store entry in Link Register so it is jumped to on return
-        "MOV X0, %x2\n\t" // Store the argument in X0
-        "MOV X1, %x3\n\t" // Store the thread handle in X1, NCA applications require this
+        "STR X0, [%x0, #0x2F8]\n\t" // Write ThreadContext::hostSp
+        "MOV SP, %x1\n\t" // Replace SP with guest stack
+        "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
+        "MOV X0, %x3\n\t" // Store the argument in X0
+        "MOV X1, %x4\n\t" // Store the thread handle in X1, NCA applications require this
         "MOV X2, XZR\n\t"
         "MOV X3, XZR\n\t"
         "MOV X4, XZR\n\t"
@@ -105,7 +109,7 @@ namespace skyline::kernel::type {
         "DUP V31.16B, WZR\n\t"
         "RET"
         :
-        : "r"(&ctx), "r"(entry), "r"(entryArgument), "r"(handle)
+        : "r"(&ctx), "r"(stack->ptr + stack->size), "r"(entry), "r"(entryArgument), "r"(handle)
         : "x0", "x1", "lr"
         );
 

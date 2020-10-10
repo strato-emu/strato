@@ -127,7 +127,8 @@ namespace skyline::kernel {
     size_t MemoryManager::GetProgramSize() {
         size_t size{};
         for (const auto &chunk : chunks)
-            size += chunk.size;
+            if (chunk.state != memory::states::Unmapped)
+                size += chunk.size;
         return size;
     }
 }
