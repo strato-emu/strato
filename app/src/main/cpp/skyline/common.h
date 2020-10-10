@@ -82,9 +82,9 @@ namespace skyline {
 
     namespace util {
         /**
-         * @brief A way to implicitly cast all typed pointers to void pointers, this is used for libfmt as it requires wrapping non-void pointers with fmt::ptr
+         * @brief A way to implicitly cast all pointers to u64s, this is used for libfmt as we use 0x{:X} to print pointers
          * @note There's the exception of signed char pointers as they represent C Strings
-         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly passed through fmt::ptr
+         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to u64 or passed through fmt::ptr
          */
         template<class T>
         constexpr auto FmtCast(T object) {
@@ -92,7 +92,7 @@ namespace skyline {
                 if constexpr (std::is_same<char, typename std::remove_cv<typename std::remove_pointer<T>::type>::type>::value)
                     return reinterpret_cast<typename std::common_type<char *, T>::type>(object);
                 else
-                    return reinterpret_cast<const void *>(object);
+                    return reinterpret_cast<const u64>(object);
             else
                 return object;
         }

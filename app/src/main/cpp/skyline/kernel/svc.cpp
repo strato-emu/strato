@@ -71,7 +71,7 @@ namespace skyline::kernel::svc {
         newChunk.attributes.isUncached = value.isUncached;
         state.process->memory.InsertChunk(newChunk);
 
-        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", bool(value.isUncached), pointer, size);
+        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} for 0x{:X} bytes", static_cast<bool>(value.isUncached), pointer, size);
         state.ctx->gpr.w0 = Result{};
     }
 
@@ -119,7 +119,7 @@ namespace skyline::kernel::svc {
             throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
         object->item->UpdatePermission(source, size, {false, false, false});
 
-        state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, fmt::ptr(source + size), destination, fmt::ptr(destination + size), size);
+        state.logger->Debug("svcMapMemory: Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
@@ -196,7 +196,7 @@ namespace skyline::kernel::svc {
                 .ipcRefCount = 0,
             };
 
-            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, bool(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
+            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
         } else {
             auto addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.address + state.process->memory.addressSpace.size)};
 
@@ -517,7 +517,7 @@ namespace skyline::kernel::svc {
     void ArbitrateUnlock(const DeviceState &state) {
         auto mutex{reinterpret_cast<u32*>(state.ctx->gpr.x0)};
         if (!util::WordAligned(mutex)) {
-            state.logger->Warn("svcArbitrateUnlock: mutex pointer not word aligned: 0x{:X}", mutex);
+            state.logger->Warn("svcArbitrateUnlock: 'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
@@ -536,7 +536,7 @@ namespace skyline::kernel::svc {
     void WaitProcessWideKeyAtomic(const DeviceState &state) {
         auto mutex{reinterpret_cast<u32*>(state.ctx->gpr.x0)};
         if (!util::WordAligned(mutex)) {
-            state.logger->Warn("svcWaitProcessWideKeyAtomic: mutex pointer not word aligned: 0x{:X}", mutex);
+            state.logger->Warn("svcWaitProcessWideKeyAtomic: 'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }

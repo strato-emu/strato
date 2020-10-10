@@ -85,7 +85,7 @@ namespace skyline::kernel {
 
         auto upper{std::upper_bound(chunks.begin(), chunks.end(), chunk.ptr, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; })};
         if (upper == chunks.begin())
-            throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", upper->ptr, fmt::ptr(upper->ptr + upper->size), chunk.ptr, fmt::ptr(chunk.ptr + chunk.size));
+            throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", upper->ptr, upper->ptr + upper->size, chunk.ptr, chunk.ptr + chunk.size);
 
         upper = chunks.erase(upper, std::upper_bound(upper, chunks.end(), chunk.ptr + chunk.size, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; }));
         if (upper != chunks.end() && upper->ptr < chunk.ptr + chunk.size) {
@@ -99,8 +99,21 @@ namespace skyline::kernel {
             lower->state = chunk.state;
             lower->permission = chunk.permission;
             lower->attributes = chunk.attributes;
+        } else if (lower->ptr + lower->size > chunk.ptr + chunk.size) {
+            auto lowerExtension{*lower};
+            lowerExtension.ptr = chunk.ptr + chunk.size;
+            lowerExtension.size = (lower->ptr + lower->size) - lowerExtension.ptr;
+
+            lower->size = chunk.ptr - lower->ptr;
+            if (lower->size) {
+                upper = chunks.insert(upper, lowerExtension);
+                chunks.insert(upper, chunk);
+            } else {
+                *lower = chunk;
+                chunks.insert(upper, lowerExtension);
+            }
         } else if (chunk.IsCompatible(*lower)) {
-            lower->size = lower->size + chunk.size;
+            lower->size = std::max(lower->ptr + lower->size, chunk.ptr + chunk.size) - lower->ptr;
         } else {
             if (lower->ptr + lower->size > chunk.ptr)
                 lower->size = chunk.ptr - lower->ptr;

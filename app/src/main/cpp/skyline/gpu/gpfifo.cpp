@@ -63,7 +63,7 @@ namespace skyline::gpu::gpfifo {
                     break;
                 case PushBufferMethodHeader::SecOp::OneInc:
                     for (u16 i{}; i < methodHeader->methodCount; i++)
-                        Send(MethodParams{static_cast<u16>(methodHeader->methodAddress + bool(i)), *++entry, methodHeader->methodSubChannel, i == methodHeader->methodCount - 1});
+                        Send(MethodParams{static_cast<u16>(methodHeader->methodAddress + static_cast<bool>(i)), *++entry, methodHeader->methodSubChannel, i == methodHeader->methodCount - 1});
 
                     break;
                 case PushBufferMethodHeader::SecOp::ImmdDataMethod:

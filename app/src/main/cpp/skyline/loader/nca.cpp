@@ -35,7 +35,7 @@ namespace skyline::loader {
                 continue;
 
             loadInfo = NsoLoader::LoadNso(nsoFile, process, state, offset);
-            state.logger->Info("Loaded nso '{}' at 0x{:X}", nso, fmt::ptr(base + offset));
+            state.logger->Info("Loaded nso '{}' at 0x{:X}", nso, base + offset);
             offset += loadInfo.size;
         }
 

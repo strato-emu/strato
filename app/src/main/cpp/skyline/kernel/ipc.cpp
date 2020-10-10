@@ -30,8 +30,8 @@ namespace skyline::kernel::ipc {
         for (u8 index{}; header->xNo > index; index++) {
             auto bufX{reinterpret_cast<BufferDescriptorX *>(pointer)};
             if (bufX->Pointer()) {
-                inputBuf.emplace_back(bufX->Pointer(), u16(bufX->size));
-                state.logger->Debug("Buf X #{} AD: 0x{:X} SZ: 0x{:X} CTR: {}", index, u64(bufX->Pointer()), u16(bufX->size), u16(bufX->Counter()));
+                inputBuf.emplace_back(bufX->Pointer(), static_cast<u16>(bufX->size));
+                state.logger->Debug("Buf X #{}: 0x{:X}, 0x{:X}, #{}", index, bufX->Pointer(), static_cast<u16>(bufX->size), static_cast<u16>(bufX->Counter()));
             }
             pointer += sizeof(BufferDescriptorX);
         }
@@ -40,7 +40,7 @@ namespace skyline::kernel::ipc {
             auto bufA{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufA->Pointer()) {
                 inputBuf.emplace_back(bufA->Pointer(), bufA->Size());
-                state.logger->Debug("Buf A #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufA->Pointer()), u64(bufA->Size()));
+                state.logger->Debug("Buf A #{}: 0x{:X}, 0x{:X}", index, bufA->Pointer(), static_cast<u64>(bufA->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -49,7 +49,7 @@ namespace skyline::kernel::ipc {
             auto bufB{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufB->Pointer()) {
                 outputBuf.emplace_back(bufB->Pointer(), bufB->Size());
-                state.logger->Debug("Buf B #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufB->Pointer()), u64(bufB->Size()));
+                state.logger->Debug("Buf B #{}: 0x{:X}, 0x{:X}", index, bufB->Pointer(), static_cast<u64>(bufB->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -59,7 +59,7 @@ namespace skyline::kernel::ipc {
             if (bufW->Pointer()) {
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
-                state.logger->Debug("Buf W #{} AD: 0x{:X} SZ: 0x{:X}", index, u64(bufW->Pointer()), u16(bufW->Size()));
+                state.logger->Debug("Buf W #{}: 0x{:X}, 0x{:X}", index, bufW->Pointer(), static_cast<u16>(bufW->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -95,34 +95,34 @@ namespace skyline::kernel::ipc {
         payloadOffset = cmdArg;
 
         if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext)) // SFCI is the magic in received IPC messages
-            state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", u32(payload->magic));
+            state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
 
         pointer += constant::IpcPaddingSum - padding + cBufferLengthSize;
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
             if (bufC->address) {
-                outputBuf.emplace_back(bufC->Pointer(), u16(bufC->size));
-                state.logger->Debug("Buf C: AD: 0x{:X} SZ: 0x{:X}", bufC->Pointer(), u16(bufC->size));
+                outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
+                state.logger->Debug("Buf C: 0x{:X}, 0x{:X}", bufC->Pointer(), static_cast<u16>(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index{}; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
                 if (bufC->address) {
-                    outputBuf.emplace_back(bufC->Pointer(), u16(bufC->size));
-                    state.logger->Debug("Buf C #{} AD: 0x{:X} SZ: 0x{:X}", index, bufC->Pointer(), u16(bufC->size));
+                    outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
+                    state.logger->Debug("Buf C #{}: 0x{:X}, 0x{:X}", index, bufC->Pointer(), static_cast<u16>(bufC->size));
                 }
                 pointer += sizeof(BufferDescriptorC);
             }
         }
 
         if (header->type == CommandType::Request || header->type == CommandType::RequestWithContext) {
-            state.logger->Debug("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), u64(cmdArgSz));
+            state.logger->Debug("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), static_cast<u64>(cmdArgSz));
             if (header->handleDesc)
-                state.logger->Debug("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", bool(handleDesc->sendPid), u32(handleDesc->copyCount), u32(handleDesc->moveCount));
+                state.logger->Debug("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
             if (isDomain)
                 state.logger->Debug("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
-            state.logger->Debug("Command ID: 0x{:X}", u32(payload->value));
+            state.logger->Debug("Command ID: 0x{:X}", static_cast<u32>(payload->value));
         }
     }
 
@@ -183,6 +183,6 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", u32(header->rawSize), u32(payloadHeader->value), copyHandles.size(), moveHandles.size());
+        state.logger->Debug("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
     }
 }

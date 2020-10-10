@@ -40,7 +40,7 @@ namespace skyline::service::audio {
         } &data{request.inputBuf.at(0).as<Data>()};
         auto tag{request.Pop<u64>()};
 
-        state.logger->Debug("Appending buffer with address: 0x{:X}, size: 0x{:X}", data.sampleBuffer, data.sampleSize);
+        state.logger->Debug("Appending buffer at 0x{:X}, Size: 0x{:X}", data.sampleBuffer, data.sampleSize);
 
         span samples(data.sampleBuffer, data.sampleSize / sizeof(i16));
         if (sampleRate != constant::SampleRate) {

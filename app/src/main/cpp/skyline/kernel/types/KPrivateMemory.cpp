@@ -16,7 +16,7 @@ namespace skyline::kernel::type {
 
         this->ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, (ptr ? MAP_FIXED : 0) | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
         if (this->ptr == MAP_FAILED)
-            throw exception("An occurred while mapping private memory: {} with {} @ 0x{:X}", strerror(errno), ptr, size);
+            throw exception("An occurred while mapping private memory: {} with 0x{:X} @ 0x{:X}", strerror(errno), ptr, size);
 
         state.process->memory.InsertChunk(ChunkDescriptor{
             .ptr = this->ptr,
