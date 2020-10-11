@@ -66,7 +66,7 @@ namespace skyline::service::audio::IAudioRenderer {
         switch (format) {
             case skyline::audio::AudioFormat::Int16:
                 samples.resize(currentBuffer.size / sizeof(i16));
-                buffer.copy_from(samples);
+                span(samples).copy_from(buffer);
                 break;
             case skyline::audio::AudioFormat::ADPCM: {
                 samples = adpcmDecoder->Decode(buffer);
