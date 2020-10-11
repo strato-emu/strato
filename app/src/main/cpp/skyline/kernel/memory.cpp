@@ -33,8 +33,8 @@ namespace skyline::kernel {
         }
 
         chunks = {ChunkDescriptor{
-            .ptr = reinterpret_cast<u8 *>(base.address),
-            .size = base.size,
+            .ptr = reinterpret_cast<u8 *>(addressSpace.address),
+            .size = addressSpace.size,
             .state = memory::states::Unmapped,
         }};
     }

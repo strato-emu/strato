@@ -41,11 +41,11 @@ namespace skyline::loader {
         nsoExecutable.text.contents.resize(util::AlignUp(nsoExecutable.text.contents.size(), PAGE_SIZE));
         nsoExecutable.text.offset = header.text.memoryOffset;
 
-        nsoExecutable.ro.contents = GetSegment(backing, header.ro, header.flags.textCompressed ? header.textCompressedSize : 0);
+        nsoExecutable.ro.contents = GetSegment(backing, header.ro, header.flags.roCompressed ? header.roCompressedSize : 0);
         nsoExecutable.ro.contents.resize(util::AlignUp(nsoExecutable.ro.contents.size(), PAGE_SIZE));
         nsoExecutable.ro.offset = header.ro.memoryOffset;
 
-        nsoExecutable.data.contents = GetSegment(backing, header.data, header.flags.textCompressed ? header.textCompressedSize : 0);
+        nsoExecutable.data.contents = GetSegment(backing, header.data, header.flags.dataCompressed ? header.dataCompressedSize : 0);
         nsoExecutable.data.contents.resize(util::AlignUp(nsoExecutable.data.contents.size(), PAGE_SIZE));
         nsoExecutable.data.offset = header.data.memoryOffset;
 
