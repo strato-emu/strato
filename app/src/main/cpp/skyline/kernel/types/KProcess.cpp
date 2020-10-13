@@ -33,6 +33,7 @@ namespace skyline::kernel::type {
     void KProcess::InitializeHeap() {
         constexpr size_t DefaultHeapSize{0x200000};
         heap = heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
+        InsertItem(heap); // Insert it into the handle table so GetMemoryObject will contain it
     }
 
     u8 *KProcess::AllocateTlsSlot() {
@@ -59,17 +60,19 @@ namespace skyline::kernel::type {
 
         for (KHandle index{}; index < handles.size(); index++) {
             auto &object{handles[index]};
-            switch (object->objectType) {
-                case type::KType::KPrivateMemory:
-                case type::KType::KSharedMemory:
-                case type::KType::KTransferMemory: {
-                    auto mem{std::static_pointer_cast<type::KMemory>(object)};
-                    if (mem->IsInside(ptr))
-                        return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
-                }
+            if (object) {
+                switch (object->objectType) {
+                    case type::KType::KPrivateMemory:
+                    case type::KType::KSharedMemory:
+                    case type::KType::KTransferMemory: {
+                        auto mem{std::static_pointer_cast<type::KMemory>(object)};
+                        if (mem->IsInside(ptr))
+                            return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
+                    }
 
-                default:
-                    break;
+                    default:
+                        break;
+                }
             }
         }
         return std::nullopt;

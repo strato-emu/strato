@@ -38,9 +38,9 @@ namespace skyline::kernel::type {
         asm volatile(
         "MRS X0, TPIDR_EL0\n\t"
         "MSR TPIDR_EL0, %x0\n\t" // Set TLS to ThreadContext
-        "STR X0, [%x0, #0x2F0]\n\t" // Write ThreadContext::hostTpidrEl0
+        "STR X0, [%x0, #0x2A0]\n\t" // Write ThreadContext::hostTpidrEl0
         "MOV X0, SP\n\t"
-        "STR X0, [%x0, #0x2F8]\n\t" // Write ThreadContext::hostSp
+        "STR X0, [%x0, #0x2A8]\n\t" // Write ThreadContext::hostSp
         "MOV SP, %x1\n\t" // Replace SP with guest stack
         "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
         "MOV X0, %x3\n\t" // Store the argument in X0

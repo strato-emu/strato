@@ -24,16 +24,16 @@ namespace skyline::service::hosbinder {
     }
 
     void GraphicBufferProducer::DequeueBuffer(Parcel &in, Parcel &out) {
-        u32 format{in.Pop<u32>()};
+        in.Pop<u32>(); //!< async boolean flag
         u32 width{in.Pop<u32>()};
         u32 height{in.Pop<u32>()};
-        u32 timestamp{in.Pop<u32>()};
+        u32 format{in.Pop<u32>()};
         u32 usage{in.Pop<u32>()};
 
         std::optional<u32> slot{std::nullopt};
         while (!slot) {
             for (auto &buffer : queue) {
-                if (buffer.second->status == BufferStatus::Free && buffer.second->gbpBuffer.format == format && buffer.second->gbpBuffer.width == width && buffer.second->gbpBuffer.height == height && (buffer.second->gbpBuffer.usage & usage) == usage) {
+                if (buffer.second->status == BufferStatus::Free && (format ? buffer.second->gbpBuffer.format == format : true) && buffer.second->gbpBuffer.width == width && buffer.second->gbpBuffer.height == height && (buffer.second->gbpBuffer.usage & usage) == usage) {
                     slot = buffer.first;
                     buffer.second->status = BufferStatus::Dequeued;
                     break;
@@ -44,7 +44,7 @@ namespace skyline::service::hosbinder {
         out.Push(*slot);
         out.Push(std::array<u32, 13>{1, 0x24}); // Unknown
 
-        state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Timestamp: {}, Slot: {}", width, height, format, usage, timestamp, *slot);
+        state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Slot: {}", width, height, format, usage, *slot);
     }
 
     void GraphicBufferProducer::QueueBuffer(Parcel &in, Parcel &out) {

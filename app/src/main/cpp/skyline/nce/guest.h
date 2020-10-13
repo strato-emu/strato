@@ -9,12 +9,12 @@ namespace skyline {
     struct DeviceState;
     namespace nce {
         /**
-         * @brief The state of all the general purpose registers in the guest
+         * @brief The state of callee-saved general purpose registers in the guest
          * @note Read about ARMv8 registers here: https://developer.arm.com/architectures/learn-the-architecture/armv8-a-instruction-set-architecture/registers-in-aarch64-general-purpose-registers
-         * @note X30 or LR is not provided as it is reserved for other uses
+         * @note Read about ARMv8 ABI here: https://github.com/ARM-software/abi-aa/blob/2f1ac56a7d79f3e753e6ca88d4d3e083c31d6f64/aapcs64/aapcs64.rst#machine-registers
          */
         union GpRegisters {
-            std::array<u64, 30> regs;
+            std::array<u64, 19> regs;
             struct {
                 u64 x0;
                 u64 x1;
@@ -35,17 +35,6 @@ namespace skyline {
                 u64 x16;
                 u64 x17;
                 u64 x18;
-                u64 x19;
-                u64 x20;
-                u64 x21;
-                u64 x22;
-                u64 x23;
-                u64 x24;
-                u64 x25;
-                u64 x26;
-                u64 x27;
-                u64 x28;
-                u64 x29;
             };
             struct {
                 u32 w0;
@@ -86,36 +75,15 @@ namespace skyline {
                 u32 __w17__;
                 u32 w18;
                 u32 __w18__;
-                u32 w19;
-                u32 __w19__;
-                u32 w20;
-                u32 __w20__;
-                u32 w21;
-                u32 __w21__;
-                u32 w22;
-                u32 __w22__;
-                u32 w23;
-                u32 __w23__;
-                u32 w24;
-                u32 __w24__;
-                u32 w25;
-                u32 __w25__;
-                u32 w26;
-                u32 __w26__;
-                u32 w27;
-                u32 __w27__;
-                u32 w28;
-                u32 __w28__;
-                u32 w29;
-                u32 __w29__;
             };
         };
 
         /**
-         * @brief The state of all the floating point (and SIMD) registers in the guest
+         * @brief The state of all floating point (and SIMD) registers in the guest
          * @note FPSR/FPCR are 64-bit system registers but only the lower 32-bits are used
+         * @note Read about ARMv8 ABI here: https://github.com/ARM-software/abi-aa/blob/2f1ac56a7d79f3e753e6ca88d4d3e083c31d6f64/aapcs64/aapcs64.rst#612simd-and-floating-point-registers
          */
-        union FpRegisters {
+        union alignas(16) FpRegisters {
             std::array<u128, 32> regs;
             u32 fpsr;
             u32 fpcr;

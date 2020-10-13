@@ -28,9 +28,8 @@ namespace skyline::nce {
                 throw exception("Unimplemented SVC 0x{:X}", svc);
             }
         } catch (const std::exception &e) {
-            throw exception("{} (SVC: 0x{:X})", e.what(), svc);
-            // Jumps off the edge?
-            // Look into this
+            state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
+            exit(0);
         }
     }
 
@@ -120,12 +119,12 @@ namespace skyline::nce {
 
             /* Replace Skyline TLS with host TLS */
             patch[index++] = 0xD53BD041; // MRS X1, TPIDR_EL0
-            patch[index++] = 0xF9417822; // LDR X2, [X1, #0x2F0] (ThreadContext::hostTpidrEl0)
+            patch[index++] = 0xF9415022; // LDR X2, [X1, #0x2A0] (ThreadContext::hostTpidrEl0)
 
             /* Replace guest stack with host stack */
             patch[index++] = 0xD51BD042; // MSR TPIDR_EL0, X2
             patch[index++] = 0x910003E2; // MOV X2, SP
-            patch[index++] = 0xF9417C23; // LDR X3, [X1, #0x2F8] (ThreadContext::hostSp)
+            patch[index++] = 0xF9415423; // LDR X3, [X1, #0x2A8] (ThreadContext::hostSp)
             patch[index++] = 0x9100007F; // MOV SP, X3
 
             /* Store Skyline TLS + guest SP on stack */
@@ -199,9 +198,9 @@ namespace skyline::nce {
                     /* Retrieve emulated TLS register from ThreadContext */
                     patch[index++] = 0xD53BD040; // MRS X0, TPIDR_EL0
                     if (mrs.srcReg == TpidrroEl0)
-                        patch[index++] = 0xF9418000; // LDR X0, [X0, #0x300] (ThreadContext::tpidrroEl0)
+                        patch[index++] = 0xF9415800; // LDR X0, [X0, #0x2B0] (ThreadContext::tpidrroEl0)
                     else
-                        patch[index++] = 0xF9418400; // LDR X0, [X0, #0x308] (ThreadContext::tpidrEl0)
+                        patch[index++] = 0xF9415C00; // LDR X0, [X0, #0x2B8] (ThreadContext::tpidrEl0)
 
                     /* Restore Scratch Register and Return */
                     if (mrs.destReg != regs::X0) {
@@ -266,7 +265,7 @@ namespace skyline::nce {
                     /* Store new TLS value into ThreadContext */
                     patch[index++] = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
                     patch[index++] = instr::Mov(x0x1 ? regs::X1 : regs::X3, regs::X(msr.srcReg)).raw;
-                    patch[index++] = x0x1 ? 0xF9018401 : 0xF9018403; // STR X(1/3), [X0, #0x308] (ThreadContext::tpidrEl0)
+                    patch[index++] = x0x1 ? 0xF9015C01 : 0xF9015C03; // STR X(1/3), [X0, #0x4B8] (ThreadContext::tpidrEl0)
 
                     /* Restore Scratch Registers and Return */
                     patch[index++] = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
