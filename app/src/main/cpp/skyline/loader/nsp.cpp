@@ -34,8 +34,8 @@ namespace skyline::loader {
         nacp = std::make_shared<vfs::NACP>(controlRomFs->OpenFile("control.nacp"));
     }
 
-    void NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
-        NcaLoader::LoadExeFs(programNca->exeFs, process, state);
+    void* NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+        return NcaLoader::LoadExeFs(programNca->exeFs, process, state);
     }
 
     std::vector<u8> NspLoader::GetIcon() {

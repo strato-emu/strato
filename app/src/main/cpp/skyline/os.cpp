@@ -30,9 +30,9 @@ namespace skyline::kernel {
             throw exception("Unsupported ROM extension.");
 
         process = std::make_shared<kernel::type::KProcess>(state);
-        state.loader->LoadProcessData(process, state);
+        auto entry{state.loader->LoadProcessData(process, state)};
         process->InitializeHeap();
-        process->CreateThread(reinterpret_cast<void*>(constant::BaseAddress))->Start();
+        process->CreateThread(entry)->Start();
 
         state.nce->Execute();
     }

@@ -17,8 +17,8 @@ namespace skyline::kernel::type {
         memory::MemoryState memState;
 
         /**
-         * @param ptr The address to map to (If NULL then an arbitrary address is picked)
          * @param permission The permissions for the allocated memory (As reported to the application, host memory permissions aren't reflected by this)
+         * @note 'ptr' needs to be in guest-reserved address space
          */
         KPrivateMemory(const DeviceState &state, u8* ptr, size_t size, memory::Permission permission, memory::MemoryState memState);
 

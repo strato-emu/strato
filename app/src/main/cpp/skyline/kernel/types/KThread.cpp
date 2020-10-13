@@ -123,7 +123,8 @@ namespace skyline::kernel::type {
             state.logger->Debug("Starting thread #{}", id);
 
             if (!stack) {
-                stack = stack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), constant::DefaultStackSize, memory::Permission{true, true, false}, memory::states::Stack);
+                constexpr u64 DefaultStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
+                stack = stack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), DefaultStackSize, memory::Permission{true, true, false}, memory::states::Stack);
                 if (mprotect(stack->ptr, PAGE_SIZE, PROT_NONE))
                     throw exception("Failed to create guard page for thread stack at 0x{:X}", stack->ptr);
             }

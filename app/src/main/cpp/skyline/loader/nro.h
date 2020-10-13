@@ -72,6 +72,6 @@ namespace skyline::loader {
 
         std::vector<u8> GetIcon();
 
-        void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void* LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
     };
 }

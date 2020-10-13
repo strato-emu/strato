@@ -68,9 +68,6 @@ namespace skyline {
     };
 
     namespace constant {
-        // Memory
-        constexpr u64 BaseAddress{0x8000000}; //!< The address space base
-        constexpr u64 DefaultStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
         // Display
         constexpr u16 HandheldResolutionW{1280}; //!< The width component of the handheld resolution
         constexpr u16 HandheldResolutionH{720}; //!< The height component of the handheld resolution
@@ -140,12 +137,12 @@ namespace skyline {
         template<class T>
         T PointerValue(T item) {
             return item;
-        };
+        }
 
         template<class T>
         size_t PointerValue(T *item) {
             return reinterpret_cast<size_t>(item);
-        };
+        }
 
         /**
          * @return The value aligned up to the next multiple
@@ -210,7 +207,7 @@ namespace skyline {
             return object;
         }
 
-        constexpr u8 HexDigitToByte(char digit) {
+        constexpr u8 HexDigitToNibble(char digit) {
             if (digit >= '0' && digit <= '9')
                 return digit - '0';
             else if (digit >= 'a' && digit <= 'f')
@@ -221,15 +218,33 @@ namespace skyline {
         }
 
         template<size_t Size>
-        constexpr std::array<u8, Size> HexStringToArray(std::string_view hexString) {
-            if (hexString.size() != Size * 2)
+        constexpr std::array<u8, Size> HexStringToArray(std::string_view string) {
+            if (string.size() != Size * 2)
                 throw exception("Invalid size");
             std::array<u8, Size> result;
             for (size_t i{}; i < Size; i++) {
-                size_t hexStrIndex{i * 2};
-                result[i] = (HexDigitToByte(hexString[hexStrIndex]) << 4) | HexDigitToByte(hexString[hexStrIndex + 1]);
+                size_t index{i * 2};
+                result[i] = (HexDigitToNibble(string[index]) << 4) | HexDigitToNibble(string[index + 1]);
             }
             return result;
+        }
+
+        template<class Type>
+        constexpr Type HexStringToInt(std::string_view string) {
+            Type result{};
+            size_t offset{(sizeof(Type) * 8) - 4};
+            for (size_t index{}; index < std::min(sizeof(Type) * 2, string.size()); index++, offset -= 4) {
+                char digit{string[index]};
+                if (digit >= '0' && digit <= '9')
+                    result |= static_cast<Type>(digit - '0') << offset;
+                else if (digit >= 'a' && digit <= 'f')
+                    result |= static_cast<Type>(digit - 'a' + 10) << offset;
+                else if (digit >= 'A' && digit <= 'F')
+                    result |= static_cast<Type>(digit - 'A' + 10) << offset;
+                else
+                    break;
+            }
+            return result >> (offset + 4);
         }
 
         /**

@@ -23,8 +23,8 @@ namespace skyline::loader {
          * @param exefs A filesystem object containing the ExeFS filesystem to load into memory
          * @param process The process to load the ExeFS into
          */
-        static void LoadExeFs(const std::shared_ptr<vfs::FileSystem> &exefs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        static void* LoadExeFs(const std::shared_ptr<vfs::FileSystem> &exefs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
 
-        void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void* LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
     };
 }

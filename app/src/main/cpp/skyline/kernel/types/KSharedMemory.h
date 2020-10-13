@@ -27,8 +27,7 @@ namespace skyline::kernel::type {
         KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 
         /**
-         * @param ptr The address to map to (If NULL an arbitrary address is picked, it may be outside of the HOS address space)
-         * @return The address of the allocation
+         * @note 'ptr' needs to be in guest-reserved address space
          */
         u8 *Map(u8 *ptr, u64 size, memory::Permission permission);
 

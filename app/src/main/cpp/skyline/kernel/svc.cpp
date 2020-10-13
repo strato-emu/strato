@@ -674,15 +674,15 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::TotalMemoryUsage:
-                out = state.process->heap->size + constant::DefaultStackSize + state.process->memory.GetProgramSize();
+                out = state.process->heap->size + state.thread->stack->size + state.process->memory.GetProgramSize();
                 break;
 
             case constant::infoState::AddressSpaceBaseAddr:
-                out = state.process->memory.base.address;
+                out = state.process->memory.addressSpace.address;
                 break;
 
             case constant::infoState::AddressSpaceSize:
-                out = state.process->memory.base.size;
+                out = state.process->memory.addressSpace.size;
                 break;
 
             case constant::infoState::StackRegionBaseAddr:
@@ -698,7 +698,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::PersonalMmHeapUsage:
-                out = state.process->heap->size + constant::DefaultStackSize;
+                out = state.process->heap->size + state.thread->stack->size;
                 break;
 
             case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
@@ -706,7 +706,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::TotalMemoryUsedWithoutMmHeap:
-                out = state.process->heap->size + constant::DefaultStackSize; // TODO: Same as above
+                out = state.process->heap->size + state.thread->stack->size; // TODO: Same as above
                 break;
 
             case constant::infoState::UserExceptionContextAddr:

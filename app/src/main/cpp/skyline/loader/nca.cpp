@@ -12,7 +12,7 @@ namespace skyline::loader {
             throw exception("Only NCAs with an ExeFS can be loaded directly");
     }
 
-    void NcaLoader::LoadExeFs(const std::shared_ptr<vfs::FileSystem> &exeFs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void* NcaLoader::LoadExeFs(const std::shared_ptr<vfs::FileSystem> &exeFs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
         if (exeFs == nullptr)
             throw exception("Cannot load a null ExeFS");
 
@@ -25,6 +25,7 @@ namespace skyline::loader {
         auto loadInfo{NsoLoader::LoadNso(nsoFile, process, state)};
         u64 offset{loadInfo.size};
         u8* base{loadInfo.base};
+        void* entry{loadInfo.entry};
 
         state.logger->Info("Loaded nso 'rtld' at 0x{:X}", base);
 
@@ -40,9 +41,11 @@ namespace skyline::loader {
         }
 
         state.process->memory.InitializeRegions(base, offset);
+
+        return entry;
     }
 
-    void NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
-        LoadExeFs(nca.exeFs, process, state);
+    void* NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+        return LoadExeFs(nca.exeFs, process, state);
     }
 }

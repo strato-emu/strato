@@ -15,22 +15,41 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 addressSpace.address = 0;
                 addressSpace.size = 1UL << 36;
-                base.address = constant::BaseAddress;
-                base.size = 0xFF8000000;
+                base.size = 0x78000000 + 0x180000000 + 0x180000000 + 0x180000000;
                 break;
             }
 
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 addressSpace.address = 0;
                 addressSpace.size = 1UL << 39;
-                base.address = constant::BaseAddress;
-                base.size = 0x7FF8000000;
+                base.size = 0x78000000 + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000;
                 break;
             }
 
             default:
                 throw exception("VMM initialization with unknown address space");
         }
+
+        std::ifstream mapsFile("/proc/self/maps");
+        std::string maps((std::istreambuf_iterator<char>(mapsFile)), std::istreambuf_iterator<char>());
+        size_t line{}, start{}, alignedStart{};
+        do {
+            auto end{util::HexStringToInt<u64>(std::string_view(maps.data() + line, sizeof(u64) * 2))};
+            if (end - start > base.size + (alignedStart - start)) { // We don't want to overflow if alignedStart > start
+                base.address = alignedStart;
+                break;
+            }
+
+            start = util::HexStringToInt<u64>(std::string_view(maps.data() + maps.find_first_of('-', line) + 1, sizeof(u64) * 2));
+            alignedStart = util::AlignUp(start, 1ULL << 21);
+            if (alignedStart + base.size > addressSpace.size)
+                break;
+        } while ((line = maps.find_first_of('\n', line)) != std::string::npos && line++);
+
+        if (!base.address)
+            throw exception("Cannot find a suitable carveout for the guest address space");
+
+        mmap(reinterpret_cast<void*>(base.address), base.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
         chunks = {ChunkDescriptor{
             .ptr = reinterpret_cast<u8 *>(addressSpace.address),
@@ -50,7 +69,7 @@ namespace skyline::kernel {
                 alias.address = code.address + code.size;
                 alias.size = 0x180000000;
                 stack.address = alias.address;
-                stack.size = alias.size;
+                stack.size = 0x180000000;
                 heap.address = alias.address + alias.size;
                 heap.size = 0x180000000;
                 tlsIo.address = code.address;
@@ -59,8 +78,8 @@ namespace skyline::kernel {
             }
 
             case 1UL << 39: {
-                code.address = util::AlignDown(address, 0x200000);
-                code.size = util::AlignUp(address + size, 0x200000) - code.address;
+                code.address = base.address;
+                code.size = 0x78000000;
                 alias.address = code.address + code.size;
                 alias.size = 0x1000000000;
                 heap.address = alias.address + alias.size;
@@ -76,7 +95,10 @@ namespace skyline::kernel {
                 throw exception("Regions initialized without VMM initialization");
         }
 
-        state.logger->Debug("Region Map:\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
+        if (size > code.size)
+            throw exception("Code region ({}) is smaller than mapped code size ({})", code.size, size);
+
+        state.logger->Debug("Region Map:\nVMM Base: 0x{:X}\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", base.address, code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
             .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
     }
 

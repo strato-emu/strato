@@ -54,9 +54,10 @@ namespace skyline::loader {
         return LoadExecutable(process, state, nsoExecutable, offset);
     }
 
-    void NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void* NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
         auto loadInfo{LoadNso(backing, process, state)};
         state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
+        return loadInfo.entry;
     }
 }

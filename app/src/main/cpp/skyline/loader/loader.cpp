@@ -9,7 +9,7 @@
 
 namespace skyline::loader {
     Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset) {
-        u8 *base{reinterpret_cast<u8 *>(constant::BaseAddress + offset)};
+        u8 *base{reinterpret_cast<u8 *>(process->memory.base.address + offset)};
 
         u64 textSize{executable.text.contents.size()};
         u64 roSize{executable.ro.contents.size()};
@@ -45,6 +45,6 @@ namespace skyline::loader {
         std::memcpy(base + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
         std::memcpy(base + patchOffset, patch.data(), patchSize);
 
-        return {base, patchOffset + patchSize + padding};
+        return {base, patchOffset + patchSize + padding, base};
     }
 }

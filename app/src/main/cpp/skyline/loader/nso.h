@@ -83,6 +83,6 @@ namespace skyline::loader {
          */
         static ExecutableLoadInfo LoadNso(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset = 0);
 
-        void LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void* LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
     };
 }

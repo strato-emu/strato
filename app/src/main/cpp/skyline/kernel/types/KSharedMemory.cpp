@@ -13,7 +13,7 @@ namespace skyline::kernel::type {
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
-        kernel.ptr = reinterpret_cast<u8*>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
+        kernel.ptr = reinterpret_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
         if (kernel.ptr == MAP_FAILED)
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -21,10 +21,12 @@ namespace skyline::kernel::type {
     }
 
     u8 *KSharedMemory::Map(u8 *ptr, u64 size, memory::Permission permission) {
+        if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
+            throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
         if (ptr && !util::PageAligned(ptr))
             throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", ptr);
 
-        guest.ptr = reinterpret_cast<u8*>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | (ptr ? MAP_FIXED_NOREPLACE : 0), fd, 0));
+        guest.ptr = reinterpret_cast<u8 *>(mmap(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | (ptr ? MAP_FIXED_NOREPLACE : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)
             throw exception("An error occurred while mapping shared memory in guest");
         guest.size = size;
@@ -39,7 +41,7 @@ namespace skyline::kernel::type {
         return guest.ptr;
     }
 
-    void KSharedMemory::UpdatePermission(u8* ptr, size_t size, memory::Permission permission) {
+    void KSharedMemory::UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) {
         if (ptr && !util::PageAligned(ptr))
             throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
 
@@ -63,7 +65,7 @@ namespace skyline::kernel::type {
             munmap(kernel.ptr, kernel.size);
 
         if (guest.Valid()) {
-            munmap(guest.ptr, guest.size);
+            mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
             state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = guest.ptr,
                 .size = guest.size,

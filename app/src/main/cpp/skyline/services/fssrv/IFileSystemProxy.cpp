@@ -59,7 +59,6 @@ namespace skyline::service::fssrv {
 
         manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch" + saveDataPath), state, manager), session, response);
         return {};
-
     }
 
     Result IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
