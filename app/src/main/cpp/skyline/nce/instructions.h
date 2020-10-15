@@ -114,8 +114,8 @@ namespace skyline::nce {
             /**
              * @param offset The relative offset to branch to (In 32-bit units)
              */
-            constexpr B(i32 offset) {
-                this->offset = offset;
+            constexpr B(i64 offset, bool negate = false) {
+                this->offset = negate ? -offset : offset;
                 sig = 0x5;
             }
 
@@ -307,6 +307,8 @@ namespace skyline::nce {
                         instruction = instr::Movz(destination, offsetValue, offset).raw;
                         zeroed = true;
                     }
+                } else {
+                    instruction = 0;
                 }
                 offset++;
             }

@@ -7,6 +7,8 @@
 namespace skyline::kernel {
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
+    constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
+
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
@@ -22,7 +24,7 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 addressSpace.address = 0;
                 addressSpace.size = 1UL << 39;
-                base.size = 0x78000000 + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000;
+                base.size = 0x78000000 + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000; // Code region size is an assumed maximum here
                 break;
             }
 
@@ -41,7 +43,7 @@ namespace skyline::kernel {
             }
 
             start = util::HexStringToInt<u64>(std::string_view(maps.data() + maps.find_first_of('-', line) + 1, sizeof(u64) * 2));
-            alignedStart = util::AlignUp(start, 1ULL << 21);
+            alignedStart = util::AlignUp(start, RegionAlignment);
             if (alignedStart + base.size > addressSpace.size)
                 break;
         } while ((line = maps.find_first_of('\n', line)) != std::string::npos && line++);
@@ -49,7 +51,7 @@ namespace skyline::kernel {
         if (!base.address)
             throw exception("Cannot find a suitable carveout for the guest address space");
 
-        mmap(reinterpret_cast<void*>(base.address), base.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
         chunks = {ChunkDescriptor{
             .ptr = reinterpret_cast<u8 *>(addressSpace.address),
@@ -60,6 +62,9 @@ namespace skyline::kernel {
 
     void MemoryManager::InitializeRegions(u8 *codeStart, u64 size) {
         u64 address{reinterpret_cast<u64>(codeStart)};
+        if (!util::IsAligned(address, RegionAlignment))
+            throw exception("Non-aligned code region was used to initialize regions: 0x{:X} - 0x{:X}", codeStart, codeStart + size);
+
         switch (addressSpace.size) {
             case 1UL << 36: {
                 code.address = base.address;
@@ -79,7 +84,7 @@ namespace skyline::kernel {
 
             case 1UL << 39: {
                 code.address = base.address;
-                code.size = 0x78000000;
+                code.size = util::AlignUp(size, RegionAlignment);
                 alias.address = code.address + code.size;
                 alias.size = 0x1000000000;
                 heap.address = alias.address + alias.size;
@@ -94,6 +99,12 @@ namespace skyline::kernel {
             default:
                 throw exception("Regions initialized without VMM initialization");
         }
+
+        auto newSize{code.size + alias.size + stack.size + heap.size + tlsIo.size};
+        if (newSize > base.size)
+            throw exception("Region size has exceeded pre-allocated area: 0x{:X}/0x{:X}", newSize, base.size);
+        if (newSize != base.size)
+            munmap(reinterpret_cast<u8 *>(base.address) + base.size, newSize - base.size);
 
         if (size > code.size)
             throw exception("Code region ({}) is smaller than mapped code size ({})", code.size, size);

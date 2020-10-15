@@ -23,11 +23,17 @@ namespace skyline::nce {
 
         void Execute();
 
+        struct PatchData {
+            size_t size; //!< Size of the .patch section
+            std::vector<size_t> offsets; //!< Offsets in .text of instructions that need to be patched
+        };
+
+        static PatchData GetPatchData(const std::vector<u8> &text);
+
         /**
-         * @brief Generates a patch section for the supplied code
-         * @param baseAddress The address at which the code is mapped
-         * @param patchBase The offset of the patch section from the base address
+         * @brief Writes the .patch section and mutates the code accordingly
+         * @param patch A pointer to the .patch section which should be exactly patchSize in size and located before the .text section
          */
-        std::vector<u32> PatchCode(std::vector<u8> &code, u64 baseAddress, i64 patchBase);
+        static void PatchCode(std::vector<u8> &text, u32* patch, size_t patchSize, const std::vector<size_t>& offsets);
     };
 }

@@ -678,11 +678,11 @@ namespace skyline::kernel::svc {
                 break;
 
             case constant::infoState::AddressSpaceBaseAddr:
-                out = state.process->memory.addressSpace.address;
+                out = state.process->memory.base.address;
                 break;
 
             case constant::infoState::AddressSpaceSize:
-                out = state.process->memory.addressSpace.size;
+                out = state.process->memory.base.size;
                 break;
 
             case constant::infoState::StackRegionBaseAddr:

@@ -96,153 +96,185 @@ namespace skyline::nce {
         }
     }
 
-    std::vector<u32> NCE::PatchCode(std::vector<u8> &code, u64 baseAddress, i64 patchBase) {
-        constexpr u32 TpidrEl0{0x5E82};      // ID of TPIDR_EL0 in MRS
-        constexpr u32 TpidrroEl0{0x5E83};    // ID of TPIDRRO_EL0 in MRS
-        constexpr u32 CntfrqEl0{0x5F00};     // ID of CNTFRQ_EL0 in MRS
-        constexpr u32 CntpctEl0{0x5F01};     // ID of CNTPCT_EL0 in MRS
-        constexpr u32 CntvctEl0{0x5F02};     // ID of CNTVCT_EL0 in MRS
-        constexpr u32 TegraX1Freq{19200000}; // The clock frequency of the Tegra X1 (19.2 MHz)
-        constexpr size_t MainSvcTrampolineSize{17};
+    constexpr u8 MainSvcTrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
+    constexpr u32 TpidrEl0{0x5E82};         // ID of TPIDR_EL0 in MRS
+    constexpr u32 TpidrroEl0{0x5E83};       // ID of TPIDRRO_EL0 in MRS
+    constexpr u32 CntfrqEl0{0x5F00};        // ID of CNTFRQ_EL0 in MRS
+    constexpr u32 CntpctEl0{0x5F01};        // ID of CNTPCT_EL0 in MRS
+    constexpr u32 CntvctEl0{0x5F02};        // ID of CNTVCT_EL0 in MRS
+    constexpr u32 TegraX1Freq{19200000};    // The clock frequency of the Tegra X1 (19.2 MHz)
 
-        size_t index{};
-        std::vector<u32> patch(guest::SaveCtxSize + guest::LoadCtxSize + MainSvcTrampolineSize);
+    NCE::PatchData NCE::GetPatchData(const std::vector<u8> &text) {
+        size_t size{guest::SaveCtxSize + guest::LoadCtxSize + MainSvcTrampolineSize};
+        std::vector<size_t> offsets;
 
-        std::memcpy(patch.data(), reinterpret_cast<void *>(&guest::SaveCtx), guest::SaveCtxSize * sizeof(u32));
-        index += guest::SaveCtxSize;
+        u64 frequency;
+        asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
+        bool rescaleClock{frequency != TegraX1Freq};
+
+        auto start{reinterpret_cast<const u32 *>(text.data())}, end{reinterpret_cast<const u32 *>(text.data() + text.size())};
+        for (const u32 *instruction{start}; instruction < end; instruction++) {
+            auto svc{*reinterpret_cast<const instr::Svc *>(instruction)};
+            auto mrs{*reinterpret_cast<const instr::Mrs *>(instruction)};
+            auto msr{*reinterpret_cast<const instr::Msr *>(instruction)};
+
+            if (svc.Verify()) {
+                size += 7;
+                offsets.push_back(instruction - start);
+            } else if (mrs.Verify()) {
+                if (mrs.srcReg == TpidrroEl0 || mrs.srcReg == TpidrEl0) {
+                    size += ((mrs.destReg != regs::X0) ? 6 : 3);
+                    offsets.push_back(instruction - start);
+                } else {
+                    if (rescaleClock) {
+                        if (mrs.srcReg == CntpctEl0) {
+                            size += guest::RescaleClockSize + 3;
+                            offsets.push_back(instruction - start);
+                        } else if (mrs.srcReg == CntfrqEl0) {
+                            size += 3;
+                            offsets.push_back(instruction - start);
+                        }
+                    } else if (mrs.srcReg == CntpctEl0) {
+                        offsets.push_back(instruction - start);
+                    }
+                }
+            } else if (msr.Verify() && msr.destReg == TpidrEl0) {
+                size += 6;
+                offsets.push_back(instruction - start);
+            }
+        }
+        return {util::AlignUp(size * sizeof(u32), PAGE_SIZE), offsets};
+    }
+
+    void NCE::PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets) {
+        u32 *start{patch};
+        u32 *end{patch + (patchSize / sizeof(u32))};
+
+        std::memcpy(patch, reinterpret_cast<void *>(&guest::SaveCtx), guest::SaveCtxSize * sizeof(u32));
+        patch += guest::SaveCtxSize;
 
         {
             /* Main SVC Trampoline */
-
             /* Store LR in 16B of pre-allocated stack */
-            patch[index++] = 0xF90007FE; // STR LR, [SP, #8]
+            *patch++ = 0xF90007FE; // STR LR, [SP, #8]
 
             /* Replace Skyline TLS with host TLS */
-            patch[index++] = 0xD53BD041; // MRS X1, TPIDR_EL0
-            patch[index++] = 0xF9415022; // LDR X2, [X1, #0x2A0] (ThreadContext::hostTpidrEl0)
+            *patch++ = 0xD53BD041; // MRS X1, TPIDR_EL0
+            *patch++ = 0xF9415022; // LDR X2, [X1, #0x2A0] (ThreadContext::hostTpidrEl0)
 
             /* Replace guest stack with host stack */
-            patch[index++] = 0xD51BD042; // MSR TPIDR_EL0, X2
-            patch[index++] = 0x910003E2; // MOV X2, SP
-            patch[index++] = 0xF9415423; // LDR X3, [X1, #0x2A8] (ThreadContext::hostSp)
-            patch[index++] = 0x9100007F; // MOV SP, X3
+            *patch++ = 0xD51BD042; // MSR TPIDR_EL0, X2
+            *patch++ = 0x910003E2; // MOV X2, SP
+            *patch++ = 0xF9415423; // LDR X3, [X1, #0x2A8] (ThreadContext::hostSp)
+            *patch++ = 0x9100007F; // MOV SP, X3
 
             /* Store Skyline TLS + guest SP on stack */
-            patch[index++] = 0xA9BF0BE1; // STP X1, X2, [SP, #-16]!
+            *patch++ = 0xA9BF0BE1; // STP X1, X2, [SP, #-16]!
 
             /* Jump to SvcHandler */
             for (const auto &mov : instr::MoveRegister(regs::X2, reinterpret_cast<u64>(&NCE::SvcHandler)))
                 if (mov)
-                    patch[index++] = mov;
-            patch[index++] = 0xD63F0040; // BLR X2
+                    *patch++ = mov;
+            *patch++ = 0xD63F0040; // BLR X2
 
             /* Restore Skyline TLS + guest SP */
-            patch[index++] = 0xA8C10BE1; // LDP X1, X2, [SP], #16
-            patch[index++] = 0xD51BD041; // MSR TPIDR_EL0, X1
-            patch[index++] = 0x9100005F; // MOV SP, X2
+            *patch++ = 0xA8C10BE1; // LDP X1, X2, [SP], #16
+            *patch++ = 0xD51BD041; // MSR TPIDR_EL0, X1
+            *patch++ = 0x9100005F; // MOV SP, X2
 
             /* Restore LR and Return */
-            patch[index++] = 0xF94007FE; // LDR LR, [SP, #8]
-            patch[index++] = 0xD65F03C0; // RET
+            *patch++ = 0xF94007FE; // LDR LR, [SP, #8]
+            *patch++ = 0xD65F03C0; // RET
         }
 
-        std::memcpy(patch.data() + index, reinterpret_cast<void *>(&guest::LoadCtx), guest::LoadCtxSize * sizeof(u32));
-        index += guest::LoadCtxSize;
+        std::memcpy(patch, reinterpret_cast<void *>(&guest::LoadCtx), guest::LoadCtxSize * sizeof(u32));
+        patch += guest::LoadCtxSize;
 
         u64 frequency;
         asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
+        bool rescaleClock{frequency != TegraX1Freq};
 
-        i64 patchOffset{patchBase / i64(sizeof(u32))};
-        u32 *start{reinterpret_cast<u32 *>(code.data())};
-        u32 *end{start + (code.size() / sizeof(u32))};
-        for (u32 *instruction{start}; instruction < end; instruction++) {
+        for (auto offset : offsets) {
+            u32 *instruction{reinterpret_cast<u32 *>(text.data()) + offset};
             auto svc{*reinterpret_cast<instr::Svc *>(instruction)};
             auto mrs{*reinterpret_cast<instr::Mrs *>(instruction)};
             auto msr{*reinterpret_cast<instr::Msr *>(instruction)};
 
             if (svc.Verify()) {
                 /* Per-SVC Trampoline */
-                patch.resize(patch.size() + 7);
-
                 /* Rewrite SVC with B to trampoline */
-                *instruction = instr::B(patchOffset + index).raw;
+                *instruction = instr::B((end - patch) + offset, true).raw;
 
                 /* Save Context */
-                patch[index++] = 0xF81F0FFE; // STR LR, [SP, #-16]!
-                patch[index] = instr::BL(-index).raw;
-                index++;
+                *patch++ = 0xF81F0FFE; // STR LR, [SP, #-16]!
+                *patch = instr::BL(start - patch).raw;
+                patch++;
 
                 /* Jump to main SVC trampoline */
-                patch[index++] = instr::Movz(regs::W0, static_cast<u16>(svc.value)).raw;
-                patch[index] = instr::BL(guest::SaveCtxSize - index).raw;
-                index++;
+                *patch++ = instr::Movz(regs::W0, static_cast<u16>(svc.value)).raw;
+                *patch = instr::BL((start - patch) + guest::SaveCtxSize).raw;
+                patch++;
 
                 /* Restore Context and Return */
-                patch[index] = instr::BL(guest::SaveCtxSize + MainSvcTrampolineSize - index).raw;
-                index++;
-                patch[index++] = 0xF84107FE; // LDR LR, [SP], #16
-                patch[index] = instr::B(-(patchOffset + index - 1)).raw;
-                index++;
+                *patch = instr::BL((start - patch) + guest::SaveCtxSize + MainSvcTrampolineSize).raw;
+                patch++;
+                *patch++ = 0xF84107FE; // LDR LR, [SP], #16
+                *patch = instr::B((end - patch) + offset + 1).raw;
+                patch++;
             } else if (mrs.Verify()) {
                 if (mrs.srcReg == TpidrroEl0 || mrs.srcReg == TpidrEl0) {
                     /* Emulated TLS Register Load */
-                    patch.resize(patch.size() + ((mrs.destReg != regs::X0) ? 6 : 3));
-
                     /* Rewrite MRS with B to trampoline */
-                    *instruction = instr::B(patchOffset + index).raw;
+                    *instruction = instr::B((end - patch) + offset, true).raw;
 
                     /* Allocate Scratch Register */
                     if (mrs.destReg != regs::X0)
-                        patch[index++] = 0xF81F0FE0; // STR X0, [SP, #-16]!
+                        *patch++ = 0xF81F0FE0; // STR X0, [SP, #-16]!
 
                     /* Retrieve emulated TLS register from ThreadContext */
-                    patch[index++] = 0xD53BD040; // MRS X0, TPIDR_EL0
+                    *patch++ = 0xD53BD040; // MRS X0, TPIDR_EL0
                     if (mrs.srcReg == TpidrroEl0)
-                        patch[index++] = 0xF9415800; // LDR X0, [X0, #0x2B0] (ThreadContext::tpidrroEl0)
+                        *patch++ = 0xF9415800; // LDR X0, [X0, #0x2B0] (ThreadContext::tpidrroEl0)
                     else
-                        patch[index++] = 0xF9415C00; // LDR X0, [X0, #0x2B8] (ThreadContext::tpidrEl0)
+                        *patch++ = 0xF9415C00; // LDR X0, [X0, #0x2B8] (ThreadContext::tpidrEl0)
 
                     /* Restore Scratch Register and Return */
                     if (mrs.destReg != regs::X0) {
-                        patch[index++] = instr::Mov(regs::X(mrs.destReg), regs::X0).raw;
-                        patch[index++] = 0xF84107E0; // LDR X0, [SP], #16
+                        *patch++ = instr::Mov(regs::X(mrs.destReg), regs::X0).raw;
+                        *patch++ = 0xF84107E0; // LDR X0, [SP], #16
                     }
-                    patch[index] = instr::B(-(patchOffset + index - 1)).raw;
-                    index++;
+                    *patch = instr::B((end - patch) + offset + 1).raw;
+                    patch++;
                 } else {
-                    if (frequency != TegraX1Freq) {
+                    if (rescaleClock) {
                         if (mrs.srcReg == CntpctEl0) {
                             /* Physical Counter Load Emulation (With Rescaling) */
-                            patch.resize(patch.size() + guest::RescaleClockSize + 3);
-
                             /* Rewrite MRS with B to trampoline */
-                            *instruction = instr::B(patchOffset + index).raw;
+                            *instruction = instr::B((end - patch) + offset, true).raw;
 
                             /* Rescale host clock */
-                            std::memcpy(patch.data() + index, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize);
-                            index += guest::RescaleClockSize;
+                            std::memcpy(patch, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize);
+                            patch += guest::RescaleClockSize;
 
                             /* Load result from stack into destination register */
                             instr::Ldr ldr(0xF94003E0); // LDR XOUT, [SP]
                             ldr.destReg = mrs.destReg;
-                            patch[index++] = ldr.raw;
+                            *patch++ = ldr.raw;
 
                             /* Free 32B stack allocation by RescaleClock and Return */
-                            patch[index++] = {0x910083FF}; // ADD SP, SP, #32
-                            patch[index] = instr::B(-(patchOffset + index - 1)).raw;
-                            index++;
+                            *patch++ = {0x910083FF}; // ADD SP, SP, #32
+                            *patch = instr::B((end - patch) + offset + 1).raw;
+                            patch++;
                         } else if (mrs.srcReg == CntfrqEl0) {
                             /* Physical Counter Frequency Load Emulation */
-                            patch.resize(patch.size() + 3);
-
                             /* Rewrite MRS with B to trampoline */
-                            *instruction = instr::B(patchOffset + index).raw;
+                            *instruction = instr::B((end - patch) + offset, true).raw;
 
                             /* Write back Tegra X1 Counter Frequency and Return */
                             for (const auto &mov : instr::MoveRegister(regs::X(mrs.destReg), TegraX1Freq))
-                                patch[index++] = mov;
-                            patch[index] = instr::B(-(patchOffset + index - 1)).raw;
-                            index++;
+                                *patch++ = mov;
+                            *patch = instr::B((end - patch) + offset + 1).raw;
+                            patch++;
                         }
                     } else if (mrs.srcReg == CntpctEl0) {
                         /* Physical Counter Load Emulation (Without Rescaling) */
@@ -250,31 +282,25 @@ namespace skyline::nce {
                         *instruction = instr::Mrs(CntvctEl0, regs::X(mrs.destReg)).raw;
                     }
                 }
-            } else if (msr.Verify()) {
-                if (msr.destReg == TpidrEl0) {
-                    /* Emulated TLS Register Store */
-                    patch.resize(patch.size() + 6);
+            } else if (msr.Verify() && msr.destReg == TpidrEl0) {
+                /* Emulated TLS Register Store */
+                /* Rewrite MSR with B to trampoline */
+                *instruction = instr::B((end - patch) + offset, true).raw;
 
-                    /* Rewrite MSR with B to trampoline */
-                    *instruction = instr::B(patchOffset + index).raw;
+                /* Allocate Scratch Registers */
+                bool x0x1{mrs.srcReg != regs::X0 && mrs.srcReg != regs::X1};
+                *patch++ = x0x1 ? 0xA9BF07E0 : 0xA9BF0FE2; // STP X(0/2), X(1/3), [SP, #-16]!
 
-                    /* Allocate Scratch Registers */
-                    bool x0x1{mrs.srcReg != regs::X0 && mrs.srcReg != regs::X1};
-                    patch[index++] = x0x1 ? 0xA9BF07E0 : 0xA9BF0FE2; // STP X(0/2), X(1/3), [SP, #-16]!
+                /* Store new TLS value into ThreadContext */
+                *patch++ = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
+                *patch++ = instr::Mov(x0x1 ? regs::X1 : regs::X3, regs::X(msr.srcReg)).raw;
+                *patch++ = x0x1 ? 0xF9015C01 : 0xF9015C03; // STR X(1/3), [X0, #0x4B8] (ThreadContext::tpidrEl0)
 
-                    /* Store new TLS value into ThreadContext */
-                    patch[index++] = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
-                    patch[index++] = instr::Mov(x0x1 ? regs::X1 : regs::X3, regs::X(msr.srcReg)).raw;
-                    patch[index++] = x0x1 ? 0xF9015C01 : 0xF9015C03; // STR X(1/3), [X0, #0x4B8] (ThreadContext::tpidrEl0)
-
-                    /* Restore Scratch Registers and Return */
-                    patch[index++] = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
-                    patch[index] = instr::B(-(patchOffset + index - 1)).raw;
-                    index++;
-                }
+                /* Restore Scratch Registers and Return */
+                *patch++ = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
+                *patch = instr::B((end - patch) + offset + 1).raw;
+                patch++;
             }
-            patchOffset--;
         }
-        return patch;
     }
 }
