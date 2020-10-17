@@ -11,8 +11,8 @@ namespace skyline::kernel::type {
     KPrivateMemory::KPrivateMemory(const DeviceState &state, u8* ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memState(memState), KMemory(state, KType::KPrivateMemory) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::PageAligned(ptr))
-            throw exception("KPrivateMemory was created with non-page-aligned address: 0x{:X}", ptr);
+        if (!util::PageAligned(ptr) || !util::PageAligned(size))
+            throw exception("KPrivateMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
 
         if (mprotect(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC) < 0) // We only need to reprotect as the allocation has already been reserved by the MemoryManager
             throw exception("An occurred while mapping private memory: {} with 0x{:X} @ 0x{:X}", strerror(errno), ptr, size);

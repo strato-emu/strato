@@ -20,7 +20,7 @@ namespace skyline::service::am {
             return result::OutOfBounds;
 
         if (size)
-            request.outputBuf.at(0).copy_from(span(parent->content.data() + offset, size));
+            span(parent->content).copy_from(request.outputBuf.at(0), size);
 
         return {};
     }

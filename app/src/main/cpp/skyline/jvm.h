@@ -12,7 +12,6 @@ namespace skyline {
      */
     class JvmManager {
       public:
-        JavaVM *vm{}; //!< A pointer to the Java VM
         jobject instance; //!< A reference to the activity
         jclass instanceClass; //!< The class of the activity
 
@@ -23,16 +22,6 @@ namespace skyline {
         JvmManager(JNIEnv *env, jobject instance);
 
         ~JvmManager();
-
-        /**
-         * @brief Attach the current thread to the Java VM
-         */
-        void AttachThread();
-
-        /**
-         * @brief Detach the current thread to the Java VM
-         */
-        void DetachThread();
 
         /**
          * @brief Returns a pointer to the JNI environment for the current thread

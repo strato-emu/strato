@@ -142,15 +142,21 @@ namespace skyline::kernel {
                 upper = chunks.insert(upper, lowerExtension);
                 chunks.insert(upper, chunk);
             } else {
-                *lower = chunk;
-                chunks.insert(upper, lowerExtension);
+                auto lower2{std::prev(lower)};
+                if (chunk.IsCompatible(*lower2) && lower2->ptr + lower2->size >= chunk.ptr) {
+                    lower2->size = chunk.ptr + chunk.size - lower2->ptr;
+                    upper = chunks.erase(lower);
+                } else {
+                    *lower = chunk;
+                }
+                upper = chunks.insert(upper, lowerExtension);
             }
-        } else if (chunk.IsCompatible(*lower)) {
-            lower->size = std::max(lower->ptr + lower->size, chunk.ptr + chunk.size) - lower->ptr;
+        } else if (chunk.IsCompatible(*lower) && lower->ptr + lower->size >= chunk.ptr) {
+            lower->size = chunk.ptr + chunk.size - lower->ptr;
         } else {
             if (lower->ptr + lower->size > chunk.ptr)
                 lower->size = chunk.ptr - lower->ptr;
-            if (upper != chunks.end() && chunk.IsCompatible(*upper)) {
+            if (upper != chunks.end() && chunk.IsCompatible(*upper) && chunk.ptr + chunk.size >= upper->ptr) {
                 upper->ptr = chunk.ptr;
                 upper->size = chunk.size + upper->size;
             } else {
@@ -170,7 +176,7 @@ namespace skyline::kernel {
         return std::nullopt;
     }
 
-    size_t MemoryManager::GetProgramSize() {
+    size_t MemoryManager::GetMemoryUsage() {
         size_t size{};
         for (const auto &chunk : chunks)
             if (chunk.state != memory::states::Unmapped)

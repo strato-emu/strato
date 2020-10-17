@@ -23,8 +23,8 @@ namespace skyline::kernel::type {
     u8 *KSharedMemory::Map(u8 *ptr, u64 size, memory::Permission permission) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (ptr && !util::PageAligned(ptr))
-            throw exception("KSharedMemory was mapped to a non-page-aligned address: 0x{:X}", ptr);
+        if (!util::PageAligned(ptr) || !util::PageAligned(size))
+            throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
 
         guest.ptr = reinterpret_cast<u8 *>(mmap(ptr, size, permission.Get(), MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)

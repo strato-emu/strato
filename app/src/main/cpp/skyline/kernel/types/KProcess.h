@@ -64,6 +64,7 @@ namespace skyline {
 
           public:
             MemoryManager memory;
+            std::shared_ptr<KPrivateMemory> mainThreadStack;
             std::shared_ptr<KPrivateMemory> heap;
             std::vector<std::shared_ptr<KThread>> threads;
             std::vector<std::shared_ptr<TlsPage>> tlsPages;
@@ -80,7 +81,7 @@ namespace skyline {
              */
             u8* AllocateTlsSlot();
 
-            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, i8 priority = 44, const std::shared_ptr<KPrivateMemory> &stack = nullptr);
+            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, i8 priority = constant::DefaultPriority);
 
             /**
             * @brief The output for functions that return created kernel objects

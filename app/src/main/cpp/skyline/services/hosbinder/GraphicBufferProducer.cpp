@@ -124,16 +124,18 @@ namespace skyline::service::hosbinder {
         auto nvmap{driver->nvMap.lock()};
 
         if (gbpBuffer.nvmapHandle) {
-            nvBuffer = nvmap->handleTable.at(gbpBuffer.nvmapHandle);
+            nvBuffer = nvmap->GetObject(gbpBuffer.nvmapHandle);
         } else {
-            for (const auto &object : nvmap->handleTable) {
-                if (object.second->id == gbpBuffer.nvmapId) {
-                    nvBuffer = object.second;
+            std::shared_lock nvmapLock(nvmap->mapMutex);
+            for (const auto &object : nvmap->maps) {
+                if (object->id == gbpBuffer.nvmapId) {
+                    nvBuffer = object;
                     break;
                 }
             }
             if (!nvBuffer)
                 throw exception("A QueueBuffer request has an invalid NVMap Handle ({}) and ID ({})", gbpBuffer.nvmapHandle, gbpBuffer.nvmapId);
+            nvmapLock.unlock();
         }
 
         gpu::texture::Format format;
@@ -187,9 +189,6 @@ namespace skyline::service::hosbinder {
         }
     }
 
-    /**
-     * @brief A mapping from a display's name to it's displayType entry
-     */
     static frz::unordered_map<frz::string, DisplayId, 5> DisplayTypeMap{
         {"Default", DisplayId::Default},
         {"External", DisplayId::External},

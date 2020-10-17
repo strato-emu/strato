@@ -51,20 +51,20 @@ namespace skyline {
             void StartThread();
 
           public:
-            std::atomic<bool> running{false};
+            bool running{false};
             std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
 
             KHandle handle;
             size_t id; //!< Index of thread in parent process's KThread vector
 
-            std::shared_ptr<KPrivateMemory> stack;
             nce::ThreadContext ctx{};
 
             void* entry;
             u64 entryArgument;
+            void* stackTop;
             i8 priority;
 
-            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument = 0, i8 priority = constant::DefaultPriority, const std::shared_ptr<KPrivateMemory>& stack = nullptr);
+            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority = constant::DefaultPriority);
 
             ~KThread();
 
@@ -75,6 +75,10 @@ namespace skyline {
              */
             void Start(bool self = false);
 
+            /**
+             * @brief Updates the internal state of the thread to signal it being dead
+             * @note This should only be called by the host thread running this guest thread
+             */
             void Kill();
 
             /**

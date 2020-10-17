@@ -49,8 +49,15 @@ namespace skyline::kernel::type {
         return tlsPage->ReserveSlot();
     }
 
-    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, i8 priority, const std::shared_ptr<KPrivateMemory> &stack) {
-        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, priority, stack).item};
+    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, i8 priority) {
+        if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
+            constexpr u64 DefaultStackSize{0x200000}; //!< The default amount of stack: 2 MB
+            mainThreadStack = mainThreadStack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), DefaultStackSize, memory::Permission{true, true, false}, memory::states::Stack);
+            if (mprotect(mainThreadStack->ptr, PAGE_SIZE, PROT_NONE))
+                throw exception("Failed to create guard page for thread stack at 0x{:X}", mainThreadStack->ptr);
+            stackTop = mainThreadStack->ptr + mainThreadStack->size;
+        }
+        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority).item};
         threads.push_back(thread);
         return thread;
     }

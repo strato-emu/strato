@@ -39,11 +39,5 @@ namespace skyline::kernel {
          * @return An instance of the KProcess of the created process
          */
         std::shared_ptr<type::KProcess> CreateProcess(u64 entry, u64 argument, size_t stackSize);
-
-        /**
-         * @brief Kill a particular thread
-         * @param pid The PID of the thread
-         */
-        void KillThread(pid_t pid);
     };
 }

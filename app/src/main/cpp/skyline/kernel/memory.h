@@ -53,7 +53,7 @@ namespace skyline {
                 bool isDeviceShared : 1; //!< True when DeviceRefCount > 0
                 bool isUncached     : 1; //!< This is used to disable memory caching to share memory with the GPU
             };
-            u32 value;
+            u32 value{};
         };
 
         /**
@@ -137,7 +137,7 @@ namespace skyline {
                 bool attributeChangeAllowed : 1; //!< If the application can use svcSetMemoryAttribute on this block
                 bool codeMemoryAllowed : 1; //!< If the application can use svcCreateCodeMemory on this block
             };
-            u32 value;
+            u32 value{};
         };
         static_assert(sizeof(MemoryState) == sizeof(u32));
 
@@ -239,7 +239,7 @@ namespace skyline {
             /**
              * @return The cumulative size of all memory mappings in bytes
              */
-            size_t GetProgramSize();
+            size_t GetMemoryUsage();
         };
     }
 }

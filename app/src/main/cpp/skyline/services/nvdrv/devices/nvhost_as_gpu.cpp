@@ -81,7 +81,7 @@ namespace skyline::service::nvdrv::device {
         try {
             auto driver{nvdrv::driver.lock()};
             auto nvmap{driver->nvMap.lock()};
-            auto mapping{nvmap->handleTable.at(data.nvmapHandle)};
+            auto mapping{nvmap->GetObject(data.nvmapHandle)};
 
             if (data.flags.remap) {
                 auto region{regionMap.upper_bound(data.offset)};
@@ -180,7 +180,7 @@ namespace skyline::service::nvdrv::device {
             try {
                 auto driver{nvdrv::driver.lock()};
                 auto nvmap{driver->nvMap.lock()};
-                auto mapping{nvmap->handleTable.at(entry.nvmapHandle)};
+                auto mapping{nvmap->GetObject(entry.nvmapHandle)};
 
                 u64 mapAddress{static_cast<u64>(entry.gpuOffset) << MinAlignmentShift};
                 u8* mapPointer{mapping->pointer + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};

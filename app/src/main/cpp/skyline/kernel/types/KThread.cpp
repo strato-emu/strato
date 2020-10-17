@@ -4,17 +4,38 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <asm/unistd.h>
 #include <nce.h>
 #include <os.h>
+#include <android/log.h>
+#include <dlfcn.h>
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, i8 priority, const std::shared_ptr<KPrivateMemory> &stack) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stack(stack), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), KSyncObject(state, KType::KThread) {
         UpdatePriority(priority);
     }
 
     KThread::~KThread() {
         Kill();
+    }
+
+    /**
+     * @brief Our delegator for sigaction, we need to do this due to sigchain hooking bionic's sigaction and it intercepting signals before they're passed onto userspace
+     * This not only leads to performance degradation but also requires host TLS to be in the TLS register which we cannot ensure for in-guest signals
+     */
+    inline void Sigaction(int signal, const struct sigaction &action, struct sigaction *oldAction = nullptr) {
+        static decltype(&sigaction) realSigaction{};
+        if (!realSigaction) {
+            void *libc{dlopen("libc.so", RTLD_LOCAL | RTLD_LAZY)};
+            if (!libc)
+                throw exception("dlopen-ing libc has failed with: {}", dlerror());
+            realSigaction = reinterpret_cast<decltype(&sigaction)>(dlsym(libc, "sigaction"));
+            if (!realSigaction)
+                throw exception("Cannot find 'sigaction' in libc: {}", dlerror());
+        }
+        if (realSigaction(signal, &action, oldAction) < 0)
+            throw exception("sigaction has failed with {}", strerror(errno));
     }
 
     void KThread::StartThread() {
@@ -31,9 +52,8 @@ namespace skyline::kernel::type {
             .sa_sigaction = &nce::NCE::SignalHandler,
             .sa_flags = SA_SIGINFO,
         };
-
-        //for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
-         //   sigaction(signal, &sigact, nullptr);
+        for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
+            Sigaction(signal, sigact);
 
         asm volatile(
         "MRS X0, TPIDR_EL0\n\t"
@@ -109,7 +129,7 @@ namespace skyline::kernel::type {
         "DUP V31.16B, WZR\n\t"
         "RET"
         :
-        : "r"(&ctx), "r"(stack->ptr + stack->size), "r"(entry), "r"(entryArgument), "r"(handle)
+        : "r"(&ctx), "r"(stackTop), "r"(entry), "r"(entryArgument), "r"(handle)
         : "x0", "x1", "lr"
         );
 
@@ -119,16 +139,7 @@ namespace skyline::kernel::type {
     void KThread::Start(bool self) {
         if (!running) {
             running = true;
-
             state.logger->Debug("Starting thread #{}", id);
-
-            if (!stack) {
-                constexpr u64 DefaultStackSize{0x1E8480}; //!< The default amount of stack: 2 MB
-                stack = stack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), DefaultStackSize, memory::Permission{true, true, false}, memory::states::Stack);
-                if (mprotect(stack->ptr, PAGE_SIZE, PROT_NONE))
-                    throw exception("Failed to create guard page for thread stack at 0x{:X}", stack->ptr);
-            }
-
             if (self)
                 StartThread();
             else
@@ -139,10 +150,7 @@ namespace skyline::kernel::type {
     void KThread::Kill() {
         if (running) {
             running = false;
-
             Signal();
-            exit(0);
-            //tgkill(gettgid(), tid, SIGTERM);
         }
     }
 

@@ -18,7 +18,7 @@ namespace skyline::service::nvdrv::device {
         struct NvMapObject {
             u32 id;
             u32 size;
-            u8* pointer{};
+            u8 *pointer{};
             u32 flags{}; //!< The flag of the memory (0 = Read Only, 1 = Read-Write)
             u32 align{};
             u32 heapMask{}; //!< This is set during Alloc and returned during Param
@@ -32,11 +32,22 @@ namespace skyline::service::nvdrv::device {
             NvMapObject(u32 id, u32 size);
         };
 
-        std::unordered_map<KHandle, std::shared_ptr<NvMapObject>> handleTable; //!< A mapping from a handle to it's corresponding NvMapObject
-        KHandle handleIndex{1}; //!< This is used to keep track of the next handle to allocate
+        std::shared_mutex mapMutex; //!< Synchronizes mutations and accesses of the mappings
+        std::vector<std::shared_ptr<NvMapObject>> maps;
+
         u32 idIndex{1}; //!< This is used to keep track of the next ID to allocate
 
         NvMap(const DeviceState &state);
+
+        inline std::shared_ptr<NvMapObject> GetObject(u32 handle) {
+            if (handle-- == 0)
+                throw std::out_of_range("0 is an invalid nvmap handle");
+            std::shared_lock lock(mapMutex);
+            auto& object{maps.at(handle)};
+            if (!object)
+                throw std::out_of_range("A freed nvmap handle was requested");
+            return object;
+        }
 
         /**
          * @brief Creates an NvMapObject and returns an handle to it

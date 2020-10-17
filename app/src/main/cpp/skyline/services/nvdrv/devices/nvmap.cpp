@@ -14,8 +14,9 @@ namespace skyline::service::nvdrv::device {
             u32 handle; // Out
         } &data = buffer.as<Data>();
 
-        handleTable[handleIndex] = std::make_shared<NvMapObject>(idIndex++, data.size);
-        data.handle = handleIndex++;
+        std::unique_lock lock(mapMutex);
+        maps.push_back(std::make_shared<NvMapObject>(idIndex++, data.size));
+        data.handle = maps.size();
 
         state.logger->Debug("Size: 0x{:X} -> Handle: 0x{:X}", data.size, data.handle);
         return NvStatus::Success;
@@ -27,9 +28,10 @@ namespace skyline::service::nvdrv::device {
             u32 handle; // Out
         } &data = buffer.as<Data>();
 
-        for (const auto &object : handleTable) {
-            if (object.second->id == data.id) {
-                data.handle = object.first;
+        std::shared_lock lock(mapMutex);
+        for (auto it{maps.begin()}; it < maps.end(); it++) {
+            if ((*it)->id == data.id) {
+                data.handle = (it - maps.begin()) + 1;
                 state.logger->Debug("ID: 0x{:X} -> Handle: 0x{:X}", data.id, data.handle);
                 return NvStatus::Success;
             }
@@ -47,11 +49,11 @@ namespace skyline::service::nvdrv::device {
             u32 align;    // In
             u8 kind;      // In
             u8 _pad0_[7];
-            u8* pointer;  // InOut
+            u8 *pointer;  // InOut
         } &data = buffer.as<Data>();
 
         try {
-            auto &object{handleTable.at(data.handle)};
+            auto object{GetObject(data.handle)};
             object->heapMask = data.heapMask;
             object->flags = data.flags;
             object->align = data.align;
@@ -71,13 +73,14 @@ namespace skyline::service::nvdrv::device {
         struct Data {
             u32 handle;   // In
             u32 _pad0_;
-            u8* pointer;  // Out
+            u8 *pointer;  // Out
             u32 size;     // Out
             u32 flags;    // Out
         } &data = buffer.as<Data>();
 
+        std::unique_lock lock(mapMutex);
         try {
-            const auto &object{handleTable.at(data.handle)};
+            auto &object{maps.at(data.handle)};
             if (object.use_count() > 1) {
                 data.pointer = object->pointer;
                 data.flags = 0x0;
@@ -87,7 +90,7 @@ namespace skyline::service::nvdrv::device {
             }
 
             data.size = object->size;
-            handleTable.erase(data.handle);
+            object = nullptr;
 
             state.logger->Debug("Handle: 0x{:X} -> Pointer: 0x{:X}, Size: 0x{:X}, Flags: 0x{:X}", data.handle, data.pointer, data.size, data.flags);
             return NvStatus::Success;
@@ -115,7 +118,7 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            auto &object{handleTable.at(data.handle)};
+            auto object{GetObject(data.handle)};
 
             switch (data.parameter) {
                 case Parameter::Size:
@@ -158,7 +161,7 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            data.id = handleTable.at(data.handle)->id;
+            data.id = GetObject(data.handle)->id;
             state.logger->Debug("Handle: 0x{:X} -> ID: 0x{:X}", data.handle, data.id);
             return NvStatus::Success;
         } catch (const std::out_of_range &) {

@@ -36,17 +36,4 @@ namespace skyline::kernel {
 
         state.nce->Execute();
     }
-
-    void OS::KillThread(pid_t pid) {
-        /*
-        if (process->pid == pid) {
-            state.logger->Debug("Killing process with PID: {}", pid);
-            for (auto &thread: process->threads)
-                thread.second->Kill();
-        } else {
-            state.logger->Debug("Killing thread with TID: {}", pid);
-            process->threads.at(pid)->Kill();
-        }
-         */
-    }
 }
