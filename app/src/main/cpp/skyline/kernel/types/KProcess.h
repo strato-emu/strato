@@ -23,6 +23,9 @@ namespace skyline {
          * @brief KProcess manages process-global state such as memory, kernel handles allocated to the process and synchronization primitives
          */
         class KProcess : public KSyncObject {
+          public:
+            MemoryManager memory; // This is here to ensure it is present during the destruction of dependent objects
+
           private:
             std::vector<std::shared_ptr<KObject>> handles;
             std::shared_mutex handleMutex;
@@ -63,7 +66,6 @@ namespace skyline {
             };
 
           public:
-            MemoryManager memory;
             std::shared_ptr<KPrivateMemory> mainThreadStack;
             std::shared_ptr<KPrivateMemory> heap;
             std::vector<std::shared_ptr<KThread>> threads;

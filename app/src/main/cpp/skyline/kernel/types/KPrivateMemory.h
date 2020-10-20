@@ -24,6 +24,11 @@ namespace skyline::kernel::type {
 
         void Resize(size_t size);
 
+        /**
+         * @note Only contents of any overlapping regions will be retained
+         */
+        void Remap(u8* ptr, size_t size);
+
         inline span<u8> Get() override {
             return span(ptr, size);
         }

@@ -8,6 +8,20 @@
 namespace skyline {
     struct DeviceState;
     namespace nce {
+        struct WRegister {
+            u32 lower;
+            u32 upper;
+
+            constexpr operator u32() {
+                return lower;
+            }
+
+            void operator=(u32 value) {
+                lower = value;
+                upper = 0;
+            }
+        };
+
         /**
          * @brief The state of callee-saved general purpose registers in the guest
          * @note Read about ARMv8 registers here: https://developer.arm.com/architectures/learn-the-architecture/armv8-a-instruction-set-architecture/registers-in-aarch64-general-purpose-registers
@@ -37,44 +51,25 @@ namespace skyline {
                 u64 x18;
             };
             struct {
-                u32 w0;
-                u32 __w0__;
-                u32 w1;
-                u32 __w1__;
-                u32 w2;
-                u32 __w2__;
-                u32 w3;
-                u32 __w3__;
-                u32 w4;
-                u32 __w4__;
-                u32 w5;
-                u32 __w5__;
-                u32 w6;
-                u32 __w6__;
-                u32 w7;
-                u32 __w7__;
-                u32 w8;
-                u32 __w8__;
-                u32 w9;
-                u32 __w9__;
-                u32 w10;
-                u32 __w10__;
-                u32 w11;
-                u32 __w11__;
-                u32 w12;
-                u32 __w12__;
-                u32 w13;
-                u32 __w13__;
-                u32 w14;
-                u32 __w14__;
-                u32 w15;
-                u32 __w15__;
-                u32 w16;
-                u32 __w16__;
-                u32 w17;
-                u32 __w17__;
-                u32 w18;
-                u32 __w18__;
+                WRegister w0;
+                WRegister w1;
+                WRegister w2;
+                WRegister w3;
+                WRegister w4;
+                WRegister w5;
+                WRegister w6;
+                WRegister w7;
+                WRegister w8;
+                WRegister w9;
+                WRegister w10;
+                WRegister w11;
+                WRegister w12;
+                WRegister w13;
+                WRegister w14;
+                WRegister w15;
+                WRegister w16;
+                WRegister w17;
+                WRegister w18;
             };
         };
 

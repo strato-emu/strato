@@ -17,8 +17,8 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 addressSpace.address = 0;
                 addressSpace.size = 1UL << 36;
-                base.size = 0x78000000 + 0x180000000 + 0x180000000 + 0x180000000;
-                break;
+                base.size = 0x78000000 + 0x180000000 + 0x78000000 + 0x180000000;
+                throw exception("36-bit address spaces are not supported"); // Due to VMM base being forced at 0x800000 and it being used by ART
             }
 
             case memory::AddressSpaceType::AddressSpace39Bit: {
@@ -67,18 +67,17 @@ namespace skyline::kernel {
 
         switch (addressSpace.size) {
             case 1UL << 36: {
-                code.address = base.address;
+                code.address = 0x800000;
                 code.size = 0x78000000;
                 if (code.address > address || (code.size - (address - code.address)) < size)
                     throw exception("Code mapping larger than 36-bit code region");
                 alias.address = code.address + code.size;
                 alias.size = 0x180000000;
-                stack.address = alias.address;
-                stack.size = 0x180000000;
-                heap.address = alias.address + alias.size;
+                stack.address = alias.address + alias.size;
+                stack.size = 0x78000000;
+                tlsIo = stack; //!< TLS/IO is shared with Stack on 36-bit
+                heap.address = stack.address + stack.size;
                 heap.size = 0x180000000;
-                tlsIo.address = code.address;
-                tlsIo.size = 0;
                 break;
             }
 
@@ -100,7 +99,7 @@ namespace skyline::kernel {
                 throw exception("Regions initialized without VMM initialization");
         }
 
-        auto newSize{code.size + alias.size + stack.size + heap.size + tlsIo.size};
+        auto newSize{code.size + alias.size + stack.size + heap.size + ((addressSpace.size == 1UL << 39) ? tlsIo.size : 0)};
         if (newSize > base.size)
             throw exception("Region size has exceeded pre-allocated area: 0x{:X}/0x{:X}", newSize, base.size);
         if (newSize != base.size)
@@ -177,10 +176,17 @@ namespace skyline::kernel {
     }
 
     size_t MemoryManager::GetMemoryUsage() {
+        std::shared_lock lock(mutex);
         size_t size{};
         for (const auto &chunk : chunks)
             if (chunk.state != memory::states::Unmapped)
                 size += chunk.size;
         return size;
+    }
+
+    size_t MemoryManager::GetKMemoryBlockSize() {
+        std::shared_lock lock(mutex);
+        constexpr size_t KMemoryBlockSize{0x40};
+        return util::AlignUp(chunks.size() * KMemoryBlockSize, PAGE_SIZE);
     }
 }

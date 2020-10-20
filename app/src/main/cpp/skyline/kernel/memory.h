@@ -240,6 +240,11 @@ namespace skyline {
              * @return The cumulative size of all memory mappings in bytes
              */
             size_t GetMemoryUsage();
+
+            /**
+             * @return The total page-aligned size used to store memory block metadata, if they were KMemoryBlocks rather than ChunkDescriptor
+             */
+            size_t GetKMemoryBlockSize();
         };
     }
 }

@@ -8,7 +8,7 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8* ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memState(memState), KMemory(state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memState(memState), KMemory(state, KType::KPrivateMemory) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
         if (!util::PageAligned(ptr) || !util::PageAligned(size))
@@ -47,7 +47,20 @@ namespace skyline::kernel::type {
         size = nSize;
     }
 
-    void KPrivateMemory::UpdatePermission(u8* ptr, size_t size, memory::Permission permission) {
+    void KPrivateMemory::Remap(u8 *nPtr, size_t nSize) {
+        if (!state.process->memory.base.IsInside(nPtr) || !state.process->memory.base.IsInside(nPtr + nSize))
+            throw exception("KPrivateMemory remapping isn't inside guest address space: 0x{:X} - 0x{:X}", nPtr, nPtr + nSize);
+        if (!util::PageAligned(nPtr) || !util::PageAligned(nSize))
+            throw exception("KPrivateMemory remapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", nPtr, nPtr + nSize, nSize);
+
+        if (mprotect(ptr, size, PROT_NONE) < 0)
+            throw exception("An occurred while remapping private memory: {}", strerror(errno));
+
+        if (mprotect(nPtr, nSize, PROT_NONE) < 0)
+            throw exception("An occurred while remapping private memory: {}", strerror(errno));
+    }
+
+    void KPrivateMemory::UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) {
         ptr = std::clamp(ptr, this->ptr, this->ptr + this->size);
         size = std::min(size, static_cast<size_t>((this->ptr + this->size) - ptr));
 

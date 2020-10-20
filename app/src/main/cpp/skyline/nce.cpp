@@ -35,7 +35,9 @@ namespace skyline::nce {
 
     void NCE::SignalHandler(int signal, siginfo *, void *context) {
         ThreadContext *threadCtx;
-        asm("MRS %0, TPIDR_EL0":"=r"(threadCtx));
+        asm volatile("MRS %x0, TPIDR_EL0":"=r"(threadCtx));
+        asm volatile("MSR TPIDR_EL0, %x0"::"r"(threadCtx->hostTpidrEl0));
+
         const auto &state{*threadCtx->state};
         state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
 
@@ -68,9 +70,11 @@ namespace skyline::nce {
         for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
             cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
 
-        state.logger->Debug("Process Trace:{}", trace);
-        state.logger->Debug("Raw Instructions: 0x{}", raw);
-        state.logger->Debug("CPU Context:{}", cpuContext);
+        state.logger->Warn("Process Trace:{}", trace);
+        state.logger->Warn("Raw Instructions: 0x{}", raw);
+        state.logger->Warn("CPU Context:{}", cpuContext);
+
+        asm volatile("MSR TPIDR_EL0, %x0"::"r"(threadCtx));
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}

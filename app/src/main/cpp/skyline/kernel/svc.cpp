@@ -8,7 +8,7 @@
 
 namespace skyline::kernel::svc {
     void SetHeapSize(const DeviceState &state) {
-        auto size{state.ctx->gpr.w1};
+        u32 size{state.ctx->gpr.w1};
 
         if (!util::IsAligned(size, 0x200000)) {
             state.ctx->gpr.w0 = result::InvalidSize;
@@ -35,7 +35,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto size{state.ctx->gpr.x1};
+        size_t size{state.ctx->gpr.x1};
         if (!util::PageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("svcSetMemoryAttribute: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
@@ -76,9 +76,9 @@ namespace skyline::kernel::svc {
     }
 
     void MapMemory(const DeviceState &state) {
-        auto destination{reinterpret_cast<u8*>(state.ctx->gpr.x0)};
-        auto source{reinterpret_cast<u8*>(state.ctx->gpr.x1)};
-        auto size{state.ctx->gpr.x2};
+        auto destination{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        auto source{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+        size_t size{state.ctx->gpr.x2};
 
         if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
@@ -124,9 +124,9 @@ namespace skyline::kernel::svc {
     }
 
     void UnmapMemory(const DeviceState &state) {
-        auto source{reinterpret_cast<u8*>(state.ctx->gpr.x0)};
-        auto destination{reinterpret_cast<u8*>(state.ctx->gpr.x1)};
-        auto size{state.ctx->gpr.x2};
+        auto source{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        auto destination{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+        size_t size{state.ctx->gpr.x2};
 
         if (!util::PageAligned(destination) || !util::PageAligned(source)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
@@ -182,7 +182,7 @@ namespace skyline::kernel::svc {
     void QueryMemory(const DeviceState &state) {
         memory::MemoryInfo memInfo{};
 
-        auto pointer{reinterpret_cast<u8*>(state.ctx->gpr.x2)};
+        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x2)};
         auto chunk{state.process->memory.Get(pointer)};
 
         if (chunk) {
@@ -196,7 +196,7 @@ namespace skyline::kernel::svc {
                 .ipcRefCount = 0,
             };
 
-            state.logger->Debug("svcQueryMemory: Address: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
+            state.logger->Debug("svcQueryMemory: Pointer: 0x{:X}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", pointer, memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
         } else {
             auto addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.address + state.process->memory.addressSpace.size)};
 
@@ -209,7 +209,7 @@ namespace skyline::kernel::svc {
             state.logger->Debug("svcQueryMemory: Trying to query memory outside of the application's address space: 0x{:X}", pointer);
         }
 
-        *reinterpret_cast<memory::MemoryInfo*>(state.ctx->gpr.x0) = memInfo;
+        *reinterpret_cast<memory::MemoryInfo *>(state.ctx->gpr.x0) = memInfo;
 
         state.ctx->gpr.w0 = Result{};
     }
@@ -220,10 +220,10 @@ namespace skyline::kernel::svc {
     }
 
     void CreateThread(const DeviceState &state) {
-        auto entry{reinterpret_cast<void*>(state.ctx->gpr.x1)};
+        auto entry{reinterpret_cast<void *>(state.ctx->gpr.x1)};
         auto entryArgument{state.ctx->gpr.x2};
-        auto stackTop{reinterpret_cast<u8*>(state.ctx->gpr.x3)};
-        auto priority{static_cast<i8>(state.ctx->gpr.w4)};
+        auto stackTop{reinterpret_cast<u8 *>(state.ctx->gpr.x3)};
+        auto priority{static_cast<i8>(static_cast<u32>(state.ctx->gpr.w4))};
 
         if (!constant::HosPriority.Valid(priority)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
@@ -243,7 +243,7 @@ namespace skyline::kernel::svc {
     }
 
     void StartThread(const DeviceState &state) {
-        auto handle{state.ctx->gpr.w0};
+        KHandle handle{state.ctx->gpr.w0};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->id);
@@ -262,7 +262,7 @@ namespace skyline::kernel::svc {
     }
 
     void SleepThread(const DeviceState &state) {
-        auto in{state.ctx->gpr.x0};
+        u64 in{state.ctx->gpr.x0};
 
         switch (in) {
             case 0:
@@ -281,7 +281,7 @@ namespace skyline::kernel::svc {
     }
 
     void GetThreadPriority(const DeviceState &state) {
-        auto handle{state.ctx->gpr.w1};
+        KHandle handle{state.ctx->gpr.w1};
         try {
             auto priority{state.process->GetHandle<type::KThread>(handle)->priority};
             state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
@@ -295,8 +295,8 @@ namespace skyline::kernel::svc {
     }
 
     void SetThreadPriority(const DeviceState &state) {
-        auto handle{state.ctx->gpr.w0};
-        auto priority{state.ctx->gpr.w1};
+        KHandle handle{state.ctx->gpr.w0};
+        u32 priority{state.ctx->gpr.w1};
 
         try {
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
@@ -325,7 +325,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            auto size{state.ctx->gpr.x2};
+            size_t size{state.ctx->gpr.x2};
             if (!util::PageAligned(size)) {
                 state.ctx->gpr.w0 = result::InvalidSize;
                 state.logger->Warn("svcMapSharedMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
@@ -345,7 +345,7 @@ namespace skyline::kernel::svc {
 
             state.ctx->gpr.w0 = Result{};
         } catch (const std::exception &) {
-            state.logger->Warn("svcMapSharedMemory: 'handle' invalid: 0x{:X}", state.ctx->gpr.w0);
+            state.logger->Warn("svcMapSharedMemory: 'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
     }
@@ -358,7 +358,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto size{state.ctx->gpr.x2};
+        size_t size{state.ctx->gpr.x2};
         if (!util::PageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("svcCreateTransferMemory: 'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
@@ -380,7 +380,7 @@ namespace skyline::kernel::svc {
     }
 
     void CloseHandle(const DeviceState &state) {
-        auto handle{static_cast<KHandle>(state.ctx->gpr.w0)};
+        KHandle handle{static_cast<KHandle>(state.ctx->gpr.w0)};
         try {
             state.process->CloseHandle(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
@@ -392,7 +392,7 @@ namespace skyline::kernel::svc {
     }
 
     void ResetSignal(const DeviceState &state) {
-        auto handle{state.ctx->gpr.w0};
+        KHandle handle{state.ctx->gpr.w0};
         try {
             auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {
@@ -423,7 +423,7 @@ namespace skyline::kernel::svc {
     void WaitSynchronization(const DeviceState &state) {
         constexpr u8 maxSyncHandles{0x40}; // The total amount of handles that can be passed to WaitSynchronization
 
-        auto numHandles{state.ctx->gpr.w2};
+        u32 numHandles{state.ctx->gpr.w2};
         if (numHandles > maxSyncHandles) {
             state.ctx->gpr.w0 = result::OutOfHandles;
             return;
@@ -431,7 +431,7 @@ namespace skyline::kernel::svc {
 
         std::string handleStr;
         std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
-        span waitHandles(reinterpret_cast<KHandle*>(state.ctx->gpr.x1), numHandles);
+        span waitHandles(reinterpret_cast<KHandle *>(state.ctx->gpr.x1), numHandles);
 
         for (const auto &handle : waitHandles) {
             handleStr += fmt::format("* 0x{:X}\n", handle);
@@ -453,7 +453,7 @@ namespace skyline::kernel::svc {
             objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
         }
 
-        auto timeout{state.ctx->gpr.x3};
+        u64 timeout{state.ctx->gpr.x3};
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
 
         auto start{util::GetTimeNs()};
@@ -487,21 +487,21 @@ namespace skyline::kernel::svc {
         try {
             state.process->GetHandle<type::KThread>(state.ctx->gpr.w0)->cancelSync = true;
         } catch (const std::exception &) {
-            state.logger->Warn("svcCancelSynchronization: 'handle' invalid: 0x{:X}", state.ctx->gpr.w0);
+            state.logger->Warn("svcCancelSynchronization: 'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
     }
 
     void ArbitrateLock(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u32*>(state.ctx->gpr.x1)};
+        auto pointer{reinterpret_cast<u32 *>(state.ctx->gpr.x1)};
         if (!util::WordAligned(pointer)) {
             state.logger->Warn("svcArbitrateLock: 'pointer' not word aligned: 0x{:X}", pointer);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
-        auto ownerHandle{state.ctx->gpr.w0};
-        auto requesterHandle{state.ctx->gpr.w2};
+        KHandle ownerHandle{state.ctx->gpr.w0};
+        KHandle requesterHandle{state.ctx->gpr.w2};
         if (requesterHandle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", requesterHandle, state.thread->handle);
 
@@ -516,7 +516,7 @@ namespace skyline::kernel::svc {
     }
 
     void ArbitrateUnlock(const DeviceState &state) {
-        auto mutex{reinterpret_cast<u32*>(state.ctx->gpr.x0)};
+        auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
         if (!util::WordAligned(mutex)) {
             state.logger->Warn("svcArbitrateUnlock: 'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
@@ -535,15 +535,15 @@ namespace skyline::kernel::svc {
     }
 
     void WaitProcessWideKeyAtomic(const DeviceState &state) {
-        auto mutex{reinterpret_cast<u32*>(state.ctx->gpr.x0)};
+        auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
         if (!util::WordAligned(mutex)) {
             state.logger->Warn("svcWaitProcessWideKeyAtomic: 'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
-        auto conditional{reinterpret_cast<void*>(state.ctx->gpr.x1)};
-        auto handle{state.ctx->gpr.w2};
+        auto conditional{reinterpret_cast<void *>(state.ctx->gpr.x1)};
+        KHandle handle{state.ctx->gpr.w2};
         if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
 
@@ -553,7 +553,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto timeout{state.ctx->gpr.x3};
+        u64 timeout{state.ctx->gpr.x3};
         state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mutex, conditional, timeout);
 
         if (state.process->ConditionalVariableWait(conditional, mutex, timeout)) {
@@ -566,8 +566,8 @@ namespace skyline::kernel::svc {
     }
 
     void SignalProcessWideKey(const DeviceState &state) {
-        auto conditional{reinterpret_cast<void*>(state.ctx->gpr.x0)};
-        auto count{state.ctx->gpr.w1};
+        auto conditional{reinterpret_cast<void *>(state.ctx->gpr.x0)};
+        KHandle count{state.ctx->gpr.w1};
 
         state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", conditional, count);
         state.process->ConditionalVariableSignal(conditional, count);
@@ -589,7 +589,7 @@ namespace skyline::kernel::svc {
 
     void ConnectToNamedPort(const DeviceState &state) {
         constexpr u8 portSize = 0x8; //!< The size of a port name string
-        std::string_view port(span(reinterpret_cast<char*>(state.ctx->gpr.x1), portSize).as_string(true));
+        std::string_view port(span(reinterpret_cast<char *>(state.ctx->gpr.x1), portSize).as_string(true));
 
         KHandle handle{};
         if (port.compare("sm:") >= 0) {
@@ -613,7 +613,7 @@ namespace skyline::kernel::svc {
 
     void GetThreadId(const DeviceState &state) {
         constexpr KHandle threadSelf{0xFFFF8000}; // The handle used by threads to refer to themselves
-        auto handle{state.ctx->gpr.w1};
+        KHandle handle{state.ctx->gpr.w1};
         pid_t pid{};
 
         if (handle != threadSelf)
@@ -628,7 +628,7 @@ namespace skyline::kernel::svc {
     }
 
     void OutputDebugString(const DeviceState &state) {
-        auto debug{span(reinterpret_cast<u8*>(state.ctx->gpr.x0), state.ctx->gpr.x1).as_string()};
+        auto debug{span(reinterpret_cast<u8 *>(state.ctx->gpr.x0), state.ctx->gpr.x1).as_string()};
 
         if (debug.back() == '\n')
             debug.remove_suffix(1);
@@ -638,91 +638,196 @@ namespace skyline::kernel::svc {
     }
 
     void GetInfo(const DeviceState &state) {
-        auto id0{state.ctx->gpr.w1};
-        auto handle{state.ctx->gpr.w2};
-        auto id1{state.ctx->gpr.x3};
+        enum class InfoState : u32 {
+            // 1.0.0+
+            AllowedCpuIdBitmask = 0x0,
+            AllowedThreadPriorityMask = 0x1,
+            AliasRegionBaseAddr = 0x2,
+            AliasRegionSize = 0x3,
+            HeapRegionBaseAddr = 0x4,
+            HeapRegionSize = 0x5,
+            TotalMemoryAvailable = 0x6,
+            TotalMemoryUsage = 0x7,
+            IsCurrentProcessBeingDebugged = 0x8,
+            ResourceLimit = 0x9,
+            IdleTickCount = 0xA,
+            RandomEntropy = 0xB,
+            // 2.0.0+
+            AddressSpaceBaseAddr = 0xC,
+            AddressSpaceSize = 0xD,
+            StackRegionBaseAddr = 0xE,
+            StackRegionSize = 0xF,
+            // 3.0.0+
+            TotalSystemResourceAvailable = 0x10,
+            TotalSystemResourceUsage = 0x11,
+            TitleId = 0x12,
+            // 4.0.0+
+            PrivilegedProcessId = 0x13,
+            // 5.0.0+
+            UserExceptionContextAddr = 0x14,
+            // 6.0.0+
+            TotalMemoryAvailableWithoutSystemResource = 0x15,
+            TotalMemoryUsageWithoutSystemResource = 0x16,
+        };
 
-        u64 out{};
+        InfoState info{static_cast<u32>(state.ctx->gpr.w1)};
+        KHandle handle{state.ctx->gpr.w2};
+        u64 id1{state.ctx->gpr.x3};
 
         constexpr u64 totalPhysicalMemory{0xF8000000}; // ~4 GB of RAM
 
-        switch (id0) {
-            case constant::infoState::AllowedCpuIdBitmask:
-            case constant::infoState::AllowedThreadPriorityMask:
-            case constant::infoState::IsCurrentProcessBeingDebugged:
-            case constant::infoState::TitleId:
-            case constant::infoState::PrivilegedProcessId:
+        u64 out{};
+        switch (info) {
+            case InfoState::AllowedCpuIdBitmask:
+            case InfoState::AllowedThreadPriorityMask:
+            case InfoState::IsCurrentProcessBeingDebugged:
+            case InfoState::TitleId:
+            case InfoState::PrivilegedProcessId:
                 break;
 
-            case constant::infoState::AliasRegionBaseAddr:
+            case InfoState::AliasRegionBaseAddr:
                 out = state.process->memory.alias.address;
                 break;
 
-            case constant::infoState::AliasRegionSize:
+            case InfoState::AliasRegionSize:
                 out = state.process->memory.alias.size;
                 break;
 
-            case constant::infoState::HeapRegionBaseAddr:
+            case InfoState::HeapRegionBaseAddr:
                 out = state.process->memory.heap.address;
                 break;
 
-            case constant::infoState::HeapRegionSize:
+            case InfoState::HeapRegionSize:
                 out = state.process->memory.heap.size;
                 break;
 
-            case constant::infoState::TotalMemoryAvailable:
+            case InfoState::TotalMemoryAvailable:
                 out = totalPhysicalMemory;
                 break;
 
-            case constant::infoState::TotalMemoryUsage:
+            case InfoState::TotalMemoryUsage:
                 out = state.process->memory.GetMemoryUsage();
                 break;
 
-            case constant::infoState::AddressSpaceBaseAddr:
+            case InfoState::AddressSpaceBaseAddr:
                 out = state.process->memory.base.address;
                 break;
 
-            case constant::infoState::AddressSpaceSize:
+            case InfoState::AddressSpaceSize:
                 out = state.process->memory.base.size;
                 break;
 
-            case constant::infoState::StackRegionBaseAddr:
+            case InfoState::StackRegionBaseAddr:
                 out = state.process->memory.stack.address;
                 break;
 
-            case constant::infoState::StackRegionSize:
+            case InfoState::StackRegionSize:
                 out = state.process->memory.stack.size;
                 break;
 
-            case constant::infoState::PersonalMmHeapSize:
-                out = totalPhysicalMemory;
+            case InfoState::TotalSystemResourceAvailable:
+                out = totalPhysicalMemory; // TODO: NPDM specifies this in it's PersonalMmHeapSize field
                 break;
 
-            case constant::infoState::PersonalMmHeapUsage:
-                out = state.process->heap->size + state.process->mainThreadStack->size;
+            case InfoState::TotalSystemResourceUsage:
+                // A very rough approximation of what this should be on the Switch, the amount of memory allocated for storing the memory blocks (https://switchbrew.org/wiki/Kernel_objects#KMemoryBlockManager)
+                out = state.process->memory.GetKMemoryBlockSize();
                 break;
 
-            case constant::infoState::TotalMemoryAvailableWithoutMmHeap:
-                out = totalPhysicalMemory; // TODO: NPDM specifies SystemResourceSize, subtract that from this
+            case InfoState::TotalMemoryAvailableWithoutSystemResource:
+                out = totalPhysicalMemory; // TODO: Subtract TotalSystemResourceAvailable from this
                 break;
 
-            case constant::infoState::TotalMemoryUsedWithoutMmHeap:
-                out = state.process->heap->size + state.process->mainThreadStack->size; // TODO: Same as above
+            case InfoState::TotalMemoryUsageWithoutSystemResource:
+                out = state.process->memory.GetMemoryUsage();
                 break;
 
-            case constant::infoState::UserExceptionContextAddr:
+            case InfoState::UserExceptionContextAddr:
                 out = reinterpret_cast<u64>(state.process->tlsPages[0]->Get(0));
                 break;
 
             default:
-                state.logger->Warn("svcGetInfo: Unimplemented case ID0: {}, ID1: {}", id0, id1);
+                state.logger->Warn("svcGetInfo: Unimplemented case ID0: {}, ID1: {}", static_cast<u32>(info), id1);
                 state.ctx->gpr.w0 = result::InvalidEnumValue;
                 return;
         }
 
-        state.logger->Debug("svcGetInfo: ID0: {}, ID1: {}, Out: 0x{:X}", id0, id1, out);
+        state.logger->Debug("svcGetInfo: ID0: {}, ID1: {}, Out: 0x{:X}", static_cast<u32>(info), id1, out);
 
         state.ctx->gpr.x1 = out;
+        state.ctx->gpr.w0 = Result{};
+    }
+
+    void MapPhysicalMemory(const DeviceState &state) {
+        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        size_t size{state.ctx->gpr.x1};
+
+        if (!util::PageAligned(pointer)) {
+            state.ctx->gpr.w0 = result::InvalidAddress;
+            return;
+        }
+
+        if (!size || !util::PageAligned(size)) {
+            state.ctx->gpr.w0 = result::InvalidSize;
+            return;
+        }
+
+        if (!state.process->memory.alias.IsInside(pointer) || !state.process->memory.alias.IsInside(pointer + size)) {
+            state.ctx->gpr.w0 = result::InvalidMemoryRegion;
+            return;
+        }
+
+        state.process->NewHandle<type::KPrivateMemory>(pointer, size, memory::Permission{true, true, false}, memory::states::Heap);
+
+        state.ctx->gpr.w0 = Result{};
+    }
+
+    void UnmapPhysicalMemory(const DeviceState &state) {
+        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        size_t size{state.ctx->gpr.x1};
+
+        if (!util::PageAligned(pointer)) {
+            state.ctx->gpr.w0 = result::InvalidAddress;
+            return;
+        }
+
+        if (!size || !util::PageAligned(size)) {
+            state.ctx->gpr.w0 = result::InvalidSize;
+            return;
+        }
+
+        if (!state.process->memory.alias.IsInside(pointer) || !state.process->memory.alias.IsInside(pointer + size)) {
+            state.ctx->gpr.w0 = result::InvalidMemoryRegion;
+            return;
+        }
+
+        auto end{pointer + size};
+        while (pointer < end) {
+            auto memory{state.process->GetMemoryObject(pointer)};
+            if (memory) {
+                auto item{static_pointer_cast<type::KPrivateMemory>(memory->item)};
+                auto initialSize{item->size};
+                if (item->memState == memory::states::Heap) {
+                    if (item->ptr >= pointer) {
+                        if (item->size <= size) {
+                            item->Resize(0);
+                            state.process->CloseHandle(memory->handle);
+                        } else {
+                            item->Remap(pointer + size, item->size - (size + (item->ptr - pointer)));
+                        }
+                    } else if (item->ptr < pointer) {
+                        item->Resize(pointer - item->ptr);
+                    }
+                }
+                pointer += initialSize;
+                size -= initialSize;
+            } else {
+                auto block{*state.process->memory.Get(pointer)};
+                pointer += block.size;
+                size -= block.size;
+            }
+        }
+
         state.ctx->gpr.w0 = Result{};
     }
 }
