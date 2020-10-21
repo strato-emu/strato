@@ -219,14 +219,26 @@ namespace skyline::kernel::svc {
         exit(0);
     }
 
+    constexpr i32 IdealCoreDontCare{-1};
+    constexpr i32 IdealCoreUseProcessValue{-2};
+    constexpr i32 IdealCoreNoUpdate{-3};
+
     void CreateThread(const DeviceState &state) {
         auto entry{reinterpret_cast<void *>(state.ctx->gpr.x1)};
         auto entryArgument{state.ctx->gpr.x2};
         auto stackTop{reinterpret_cast<u8 *>(state.ctx->gpr.x3)};
         auto priority{static_cast<i8>(static_cast<u32>(state.ctx->gpr.w4))};
+        auto idealCore{static_cast<i8>(static_cast<u32>(state.ctx->gpr.w5))};
+
+        idealCore = (idealCore == IdealCoreUseProcessValue) ? state.process->npdm.meta.idealCore : idealCore;
+        if (idealCore < 0 || idealCore >= constant::CoreCount) {
+            state.ctx->gpr.w0 = result::InvalidCoreId;
+            state.logger->Warn("svcCreateThread: 'idealCore' invalid: {}", idealCore);
+            return;
+        }
 
         if (!constant::HosPriority.Valid(priority)) {
-            state.ctx->gpr.w0 = result::InvalidAddress;
+            state.ctx->gpr.w0 = result::InvalidPriority;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
         }
@@ -235,7 +247,7 @@ namespace skyline::kernel::svc {
         if (!stack)
             throw exception("svcCreateThread: Cannot find memory object in handle table for thread stack: 0x{:X}", stackTop);
 
-        auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority)};
+        auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, idealCore)};
         state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, ID: {})", thread->handle, entry, entryArgument, stackTop, priority, thread->id);
 
         state.ctx->gpr.w1 = thread->handle;
@@ -283,8 +295,9 @@ namespace skyline::kernel::svc {
     void GetThreadPriority(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w1};
         try {
-            auto priority{state.process->GetHandle<type::KThread>(handle)->priority};
-            state.logger->Debug("svcGetThreadPriority: Writing thread priority {}", priority);
+            auto thread{state.process->GetHandle<type::KThread>(handle)};
+            auto priority{thread->priority};
+            state.logger->Debug("svcGetThreadPriority: Retrieving thread #{}'s priority: {}", thread->id, priority);
 
             state.ctx->gpr.w1 = priority;
             state.ctx->gpr.w0 = Result{};
@@ -297,15 +310,76 @@ namespace skyline::kernel::svc {
     void SetThreadPriority(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
         u32 priority{state.ctx->gpr.w1};
-
+        if (!constant::HosPriority.Valid(priority)) {
+            state.logger->Warn("svcSetThreadPriority: 'priority' invalid: 0x{:X}", priority);
+            state.ctx->gpr.w0 = result::InvalidPriority;
+            return;
+        }
         try {
-            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
-            state.process->GetHandle<type::KThread>(handle)->UpdatePriority(static_cast<u8>(priority));
+            auto thread{state.process->GetHandle<type::KThread>(handle)};
+            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", thread->id, priority);
+            thread->UpdatePriority(static_cast<u8>(priority));
             state.ctx->gpr.w0 = Result{};
         } catch (const std::exception &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
+    }
+
+    void GetThreadCoreMask(const DeviceState &state) {
+        KHandle handle{state.ctx->gpr.w2};
+        try {
+            auto thread{state.process->GetHandle<type::KThread>(handle)};
+            auto idealCore{thread->idealCore};
+            auto affinityMask{thread->affinityMask};
+            state.logger->Debug("svcGetThreadCoreMask: Writing thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask.to_string());
+
+            state.ctx->gpr.x2 = affinityMask.to_ullong();
+            state.ctx->gpr.w1 = idealCore;
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::exception &) {
+            state.logger->Warn("svcGetThreadCoreMask: 'handle' invalid: 0x{:X}", handle);
+            state.ctx->gpr.w0 = result::InvalidHandle;
+        }
+    }
+
+    void SetThreadCoreMask(const DeviceState &state) {
+        KHandle handle{state.ctx->gpr.w0};
+        i32 idealCore{static_cast<i32>(state.ctx->gpr.w1)};
+        std::bitset<constant::CoreCount> affinityMask{state.ctx->gpr.x2};
+        try {
+            auto thread{state.process->GetHandle<type::KThread>(handle)};
+
+            if (idealCore == IdealCoreUseProcessValue) {
+                idealCore = state.process->npdm.meta.idealCore;
+                affinityMask.reset().set(idealCore);
+            } else if (idealCore == IdealCoreNoUpdate) {
+                idealCore = thread->idealCore;
+            } else if (idealCore == IdealCoreDontCare) {
+                idealCore = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
+            }
+
+            if (affinityMask.none() || !affinityMask.test(idealCore)) {
+                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Ideal Core: {})", affinityMask.to_string(), idealCore);
+                state.ctx->gpr.w0 = result::InvalidCombination;
+                return;
+            }
+
+            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask.to_string());
+
+            thread->idealCore = idealCore;
+            thread->affinityMask = affinityMask;
+
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::exception &) {
+            state.logger->Warn("svcSetThreadCoreMask: 'handle' invalid: 0x{:X}", handle);
+            state.ctx->gpr.w0 = result::InvalidHandle;
+        }
+    }
+
+    void GetCurrentProcessorNumber(const DeviceState &state) {
+        state.logger->Debug("svcGetCurrentProcessorNumber: Writing current core for thread #{}: {}", state.thread->id, state.thread->coreId);
+        state.ctx->gpr.w0 = state.thread->coreId;
     }
 
     void ClearEvent(const DeviceState &state) {
@@ -612,18 +686,12 @@ namespace skyline::kernel::svc {
     }
 
     void GetThreadId(const DeviceState &state) {
-        constexpr KHandle threadSelf{0xFFFF8000}; // The handle used by threads to refer to themselves
         KHandle handle{state.ctx->gpr.w1};
-        pid_t pid{};
-
-        if (handle != threadSelf)
-            pid = state.process->GetHandle<type::KThread>(handle)->id;
-        else
-            pid = state.thread->id;
+        size_t pid{state.process->GetHandle<type::KThread>(handle)->id};
 
         state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
 
-        state.ctx->gpr.x1 = static_cast<u64>(pid);
+        state.ctx->gpr.x1 = pid;
         state.ctx->gpr.w0 = Result{};
     }
 
@@ -706,7 +774,11 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::TotalMemoryUsage:
-                out = state.process->memory.GetMemoryUsage();
+                out = state.process->memory.GetMemoryUsage() + state.process->memory.GetKMemoryBlockSize();
+                break;
+
+            case InfoState::RandomEntropy:
+                out = util::GetTimeTicks();
                 break;
 
             case InfoState::AddressSpaceBaseAddr:
@@ -726,20 +798,20 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::TotalSystemResourceAvailable:
-                out = totalPhysicalMemory; // TODO: NPDM specifies this in it's PersonalMmHeapSize field
+                out = state.process->npdm.meta.systemResourceSize;
                 break;
 
             case InfoState::TotalSystemResourceUsage:
                 // A very rough approximation of what this should be on the Switch, the amount of memory allocated for storing the memory blocks (https://switchbrew.org/wiki/Kernel_objects#KMemoryBlockManager)
-                out = state.process->memory.GetKMemoryBlockSize();
+                out = std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), state.process->memory.GetKMemoryBlockSize());
                 break;
 
             case InfoState::TotalMemoryAvailableWithoutSystemResource:
-                out = totalPhysicalMemory; // TODO: Subtract TotalSystemResourceAvailable from this
+                out = totalPhysicalMemory - state.process->npdm.meta.systemResourceSize;
                 break;
 
             case InfoState::TotalMemoryUsageWithoutSystemResource:
-                out = state.process->memory.GetMemoryUsage();
+                out = state.process->memory.GetMemoryUsage(); // Our regular estimates don't contain the system resources
                 break;
 
             case InfoState::UserExceptionContextAddr:

@@ -5,6 +5,7 @@
 
 #include <list>
 #include <kernel/memory.h>
+#include <vfs/npdm.h>
 #include "KThread.h"
 #include "KTransferMemory.h"
 #include "KSession.h"
@@ -70,6 +71,7 @@ namespace skyline {
             std::shared_ptr<KPrivateMemory> heap;
             std::vector<std::shared_ptr<KThread>> threads;
             std::vector<std::shared_ptr<TlsPage>> tlsPages;
+            vfs::NPDM npdm;
 
             KProcess(const DeviceState &state);
 
@@ -83,7 +85,10 @@ namespace skyline {
              */
             u8* AllocateTlsSlot();
 
-            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, i8 priority = constant::DefaultPriority);
+            /**
+             * @note The default values are for the main thread and will use values from the NPDM
+             */
+            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, i8 priority = -1, i8 idealCore = -1);
 
             /**
             * @brief The output for functions that return created kernel objects
@@ -130,9 +135,12 @@ namespace skyline {
                 std::shared_lock lock(handleMutex);
 
                 KType objectType;
-                if constexpr(std::is_same<objectClass, KThread>())
+                if constexpr(std::is_same<objectClass, KThread>()) {
+                    constexpr KHandle threadSelf{0xFFFF8000}; // The handle used by threads to refer to themselves
+                    if (handle == threadSelf)
+                        return state.thread;
                     objectType = KType::KThread;
-                else if constexpr(std::is_same<objectClass, KProcess>())
+                } else if constexpr(std::is_same<objectClass, KProcess>())
                     objectType = KType::KProcess;
                 else if constexpr(std::is_same<objectClass, KSharedMemory>())
                     objectType = KType::KSharedMemory;

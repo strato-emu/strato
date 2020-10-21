@@ -36,12 +36,18 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/nce/guest.S
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
+        ${source_DIR}/skyline/os.cpp
+        ${source_DIR}/skyline/kernel/memory.cpp
+        ${source_DIR}/skyline/kernel/ipc.cpp
+        ${source_DIR}/skyline/kernel/svc.cpp
+        ${source_DIR}/skyline/kernel/types/KProcess.cpp
+        ${source_DIR}/skyline/kernel/types/KThread.cpp
+        ${source_DIR}/skyline/kernel/types/KSharedMemory.cpp
+        ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
         ${source_DIR}/skyline/audio.cpp
         ${source_DIR}/skyline/audio/track.cpp
         ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
-        ${source_DIR}/skyline/crypto/aes_cipher.cpp
-        ${source_DIR}/skyline/crypto/key_store.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/macro_interpreter.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
@@ -52,19 +58,21 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/input/npad.cpp
         ${source_DIR}/skyline/input/npad_device.cpp
         ${source_DIR}/skyline/input/touch.cpp
-        ${source_DIR}/skyline/os.cpp
+        ${source_DIR}/skyline/crypto/aes_cipher.cpp
+        ${source_DIR}/skyline/crypto/key_store.cpp
         ${source_DIR}/skyline/loader/loader.cpp
         ${source_DIR}/skyline/loader/nro.cpp
         ${source_DIR}/skyline/loader/nso.cpp
         ${source_DIR}/skyline/loader/nca.cpp
         ${source_DIR}/skyline/loader/nsp.cpp
-        ${source_DIR}/skyline/kernel/memory.cpp
-        ${source_DIR}/skyline/kernel/ipc.cpp
-        ${source_DIR}/skyline/kernel/svc.cpp
-        ${source_DIR}/skyline/kernel/types/KProcess.cpp
-        ${source_DIR}/skyline/kernel/types/KThread.cpp
-        ${source_DIR}/skyline/kernel/types/KSharedMemory.cpp
-        ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
+        ${source_DIR}/skyline/vfs/os_filesystem.cpp
+        ${source_DIR}/skyline/vfs/partition_filesystem.cpp
+        ${source_DIR}/skyline/vfs/ctr_encrypted_backing.cpp
+        ${source_DIR}/skyline/vfs/rom_filesystem.cpp
+        ${source_DIR}/skyline/vfs/os_backing.cpp
+        ${source_DIR}/skyline/vfs/nacp.cpp
+        ${source_DIR}/skyline/vfs/npdm.cpp
+        ${source_DIR}/skyline/vfs/nca.cpp
         ${source_DIR}/skyline/services/serviceman.cpp
         ${source_DIR}/skyline/services/base_service.cpp
         ${source_DIR}/skyline/services/common/parcel.cpp
@@ -149,13 +157,6 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/ssl/ISslService.cpp
         ${source_DIR}/skyline/services/ssl/ISslContext.cpp
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
-        ${source_DIR}/skyline/vfs/os_filesystem.cpp
-        ${source_DIR}/skyline/vfs/partition_filesystem.cpp
-        ${source_DIR}/skyline/vfs/ctr_encrypted_backing.cpp
-        ${source_DIR}/skyline/vfs/rom_filesystem.cpp
-        ${source_DIR}/skyline/vfs/os_backing.cpp
-        ${source_DIR}/skyline/vfs/nacp.cpp
-        ${source_DIR}/skyline/vfs/nca.cpp
         )
 
 target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static mbedtls::mbedcrypto)

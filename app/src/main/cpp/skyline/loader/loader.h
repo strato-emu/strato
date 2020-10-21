@@ -66,8 +66,8 @@ namespace skyline::loader {
         static ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset = 0);
 
       public:
-        std::shared_ptr<vfs::NACP> nacp; //!< The NACP of the current application
-        std::shared_ptr<vfs::Backing> romFs; //!< The RomFS of the current application
+        std::optional<vfs::NACP> nacp;
+        std::shared_ptr<vfs::Backing> romFs;
 
         virtual ~Loader() = default;
 

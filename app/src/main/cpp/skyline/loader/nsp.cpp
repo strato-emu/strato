@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <kernel/types/KProcess.h>
 #include "nca.h"
 #include "nsp.h"
 
@@ -31,10 +32,11 @@ namespace skyline::loader {
 
         romFs = programNca->romFs;
         controlRomFs = std::make_shared<vfs::RomFileSystem>(controlNca->romFs);
-        nacp = std::make_shared<vfs::NACP>(controlRomFs->OpenFile("control.nacp"));
+        nacp.emplace(controlRomFs->OpenFile("control.nacp"));
     }
 
     void* NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+        process->npdm = vfs::NPDM(programNca->exeFs->OpenFile("main.npdm"));
         return NcaLoader::LoadExeFs(programNca->exeFs, process, state);
     }
 

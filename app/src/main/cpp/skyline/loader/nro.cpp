@@ -22,7 +22,7 @@ namespace skyline::loader {
                 throw exception("Invalid ASET magic! 0x{0:X}", assetHeader.magic);
 
             NroAssetSection &nacpHeader{assetHeader.nacp};
-            nacp = std::make_shared<vfs::NACP>(std::make_shared<vfs::RegionBacking>(backing, header.size + nacpHeader.offset, nacpHeader.size));
+            nacp.emplace(std::make_shared<vfs::RegionBacking>(backing, header.size + nacpHeader.offset, nacpHeader.size));
 
             NroAssetSection &romFsHeader{assetHeader.romFs};
             romFs = std::make_shared<vfs::RegionBacking>(backing, header.size + romFsHeader.offset, romFsHeader.size);

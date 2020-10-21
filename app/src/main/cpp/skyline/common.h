@@ -436,6 +436,7 @@ namespace skyline {
             Warn,
             Info,
             Debug,
+            Verbose,
         };
 
         LogLevel configLevel; //!< The minimum level of logs to write
@@ -453,22 +454,11 @@ namespace skyline {
 
         /**
          * @brief Writes a header, should only be used for emulation starting and ending
-         * @param str The value to be written
          */
         void WriteHeader(const std::string &str);
 
-        /**
-         * @brief Write a log to the log file
-         * @param level The level of the log
-         * @param str The value to be written
-         */
         void Write(LogLevel level, std::string str);
 
-        /**
-         * @brief Write an error log with libfmt formatting
-         * @param formatStr The value to be written, with libfmt formatting
-         * @param args The arguments based on format_str
-         */
         template<typename S, typename... Args>
         inline void Error(const S &formatStr, Args &&... args) {
             if (LogLevel::Error <= configLevel) {
@@ -476,11 +466,6 @@ namespace skyline {
             }
         }
 
-        /**
-         * @brief Write a debug log with libfmt formatting
-         * @param formatStr The value to be written, with libfmt formatting
-         * @param args The arguments based on format_str
-         */
         template<typename S, typename... Args>
         inline void Warn(const S &formatStr, Args &&... args) {
             if (LogLevel::Warn <= configLevel) {
@@ -488,11 +473,6 @@ namespace skyline {
             }
         }
 
-        /**
-         * @brief Write a debug log with libfmt formatting
-         * @param formatStr The value to be written, with libfmt formatting
-         * @param args The arguments based on format_str
-         */
         template<typename S, typename... Args>
         inline void Info(const S &formatStr, Args &&... args) {
             if (LogLevel::Info <= configLevel) {
@@ -500,15 +480,17 @@ namespace skyline {
             }
         }
 
-        /**
-         * @brief Write a debug log with libfmt formatting
-         * @param formatStr The value to be written, with libfmt formatting
-         * @param args The arguments based on format_str
-         */
         template<typename S, typename... Args>
         inline void Debug(const S &formatStr, Args &&... args) {
             if (LogLevel::Debug <= configLevel) {
                 Write(LogLevel::Debug, fmt::format(formatStr, util::FmtCast(args)...));
+            }
+        }
+
+        template<typename S, typename... Args>
+        inline void Verbose(const S &formatStr, Args &&... args) {
+            if (LogLevel::Verbose <= configLevel) {
+                Write(LogLevel::Verbose, fmt::format(formatStr, util::FmtCast(args)...));
             }
         }
     };

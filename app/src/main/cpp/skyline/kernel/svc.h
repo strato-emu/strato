@@ -79,6 +79,24 @@ namespace skyline::kernel::svc {
     void SetThreadPriority(const DeviceState &state);
 
     /**
+     * @brief Get core mask of provided thread handle
+     * @url https://switchbrew.org/wiki/SVC#GetThreadCoreMask
+     */
+    void GetThreadCoreMask(const DeviceState &state);
+
+    /**
+     * @brief Set core mask of provided thread handle
+     * @url https://switchbrew.org/wiki/SVC#SetThreadCoreMask
+     */
+    void SetThreadCoreMask(const DeviceState &state);
+
+    /**
+     * @brief Returns the core on which the current thread is running
+     * @url https://switchbrew.org/wiki/SVC#GetCurrentProcessorNumber
+     */
+    void GetCurrentProcessorNumber(const DeviceState &state);
+
+    /**
      * @brief Clears a KEvent of it's signal
      * @url https://switchbrew.org/wiki/SVC#ClearEvent
      */
@@ -210,9 +228,9 @@ namespace skyline::kernel::svc {
         SleepThread, // 0x0B
         GetThreadPriority, // 0x0C
         SetThreadPriority, // 0x0D
-        nullptr, // 0x0E
-        nullptr, // 0x0F
-        nullptr, // 0x10
+        GetThreadCoreMask, // 0x0E
+        SetThreadCoreMask, // 0x0F
+        GetCurrentProcessorNumber, // 0x10
         nullptr, // 0x11
         ClearEvent, // 0x12
         MapSharedMemory, // 0x13

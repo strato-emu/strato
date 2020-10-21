@@ -141,8 +141,8 @@ namespace skyline {
     }
 
     void Logger::Write(LogLevel level, std::string str) {
-        constexpr std::array<char, 4> levelCharacter{'0', '1', '2', '3'}; // The LogLevel as written out to a file
-        constexpr std::array<int, 4> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG}; // This corresponds to LogLevel and provides it's equivalent for NDK Logging
+        constexpr std::array<char, 5> levelCharacter{'0', '1', '2', '3', '4'}; // The LogLevel as written out to a file
+        constexpr std::array<int, 5> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG, ANDROID_LOG_VERBOSE}; // This corresponds to LogLevel and provides it's equivalent for NDK Logging
 
         __android_log_write(levelAlog[static_cast<u8>(level)], "emu-cpp", str.c_str());
 

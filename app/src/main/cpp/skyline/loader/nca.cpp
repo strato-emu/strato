@@ -26,7 +26,7 @@ namespace skyline::loader {
         u8* base{loadInfo.base};
         void* entry{loadInfo.entry};
 
-        state.logger->Info("Loaded nso 'rtld' at 0x{:X}", base);
+        state.logger->Info("Loaded nso 'rtld' at 0x{:X} (.text @ 0x{:X})", base, entry);
 
         for (const auto &nso : {"main", "subsdk0", "subsdk1", "subsdk2", "subsdk3", "subsdk4", "subsdk5", "subsdk6", "subsdk7", "sdk"}) {
             nsoFile = exeFs->OpenFile(nso);
@@ -35,7 +35,7 @@ namespace skyline::loader {
                 continue;
 
             loadInfo = NsoLoader::LoadNso(nsoFile, process, state, offset);
-            state.logger->Info("Loaded nso '{}' at 0x{:X}", nso, base + offset);
+            state.logger->Info("Loaded '{}.nso' at 0x{:X} (.text @ 0x{:X})", nso, base + offset, loadInfo.entry);
             offset += loadInfo.size;
         }
 
@@ -45,6 +45,7 @@ namespace skyline::loader {
     }
 
     void* NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+        process->npdm = vfs::NPDM(nca.exeFs->OpenFile("main.npdm"));
         return LoadExeFs(nca.exeFs, process, state);
     }
 }

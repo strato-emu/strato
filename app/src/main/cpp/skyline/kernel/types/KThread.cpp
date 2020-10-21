@@ -12,7 +12,8 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
+        affinityMask.set(coreId);
         UpdatePriority(priority);
     }
 

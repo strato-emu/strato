@@ -179,8 +179,9 @@ namespace skyline {
         };
 
         enum class AddressSpaceType : u8 {
-            AddressSpace32Bit, //!< 32-bit address space used by 32-bit applications
-            AddressSpace36Bit, //!< 36-bit address space used by 64-bit applications before 2.0.0
+            AddressSpace32Bit = 0, //!< 32-bit address space used by 32-bit applications
+            AddressSpace36Bit = 1, //!< 36-bit address space used by 64-bit applications before 2.0.0
+            AddressSpace32BitNoReserved = 2, //!< 32-bit address space without the map region
             AddressSpace39Bit, //!< 39-bit address space used by 64-bit applications after 2.0.0
         };
     }

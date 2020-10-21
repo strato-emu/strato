@@ -34,7 +34,7 @@ namespace skyline {
     }
 
     namespace constant {
-        constexpr i8 DefaultPriority{44}; // The default priority of an HOS process
+        constexpr u8 CoreCount{4}; // The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
         constexpr kernel::type::Priority AndroidPriority{19, -8}; //!< The range of priorities for Android
         constexpr kernel::type::Priority HosPriority{0, 63}; //!< The range of priorities for Horizon OS
     }
@@ -62,9 +62,13 @@ namespace skyline {
             void* entry;
             u64 entryArgument;
             void* stackTop;
-            i8 priority;
 
-            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority = constant::DefaultPriority);
+            i8 priority;
+            i8 idealCore;
+            i8 coreId; //!< The CPU core on which this thread is running
+            std::bitset<constant::CoreCount> affinityMask{}; //!< The CPU core on which this thread is running
+
+            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore);
 
             ~KThread();
 

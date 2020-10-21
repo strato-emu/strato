@@ -12,6 +12,7 @@ namespace skyline::kernel {
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
+            case memory::AddressSpaceType::AddressSpace32BitNoReserved:
                 throw exception("32-bit address spaces are not supported");
 
             case memory::AddressSpaceType::AddressSpace36Bit: {
@@ -119,7 +120,7 @@ namespace skyline::kernel {
         if (upper == chunks.begin())
             throw exception("InsertChunk: Chunk inserted outside address space: 0x{:X} - 0x{:X} and 0x{:X} - 0x{:X}", upper->ptr, upper->ptr + upper->size, chunk.ptr, chunk.ptr + chunk.size);
 
-        upper = chunks.erase(upper, std::upper_bound(upper, chunks.end(), chunk.ptr + chunk.size, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr; }));
+        upper = chunks.erase(upper, std::upper_bound(upper, chunks.end(), chunk.ptr + chunk.size, [](const u8 *ptr, const ChunkDescriptor &chunk) -> bool { return ptr < chunk.ptr + chunk.size; }));
         if (upper != chunks.end() && upper->ptr < chunk.ptr + chunk.size) {
             auto end{upper->ptr + upper->size};
             upper->ptr = chunk.ptr + chunk.size;
