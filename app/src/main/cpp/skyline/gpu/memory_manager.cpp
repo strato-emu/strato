@@ -118,7 +118,7 @@ namespace skyline::gpu::vmm {
     }
 
     u64 MemoryManager::MapFixed(u64 address, u8 *pointer, u64 size) {
-        if (!util::IsAligned(pointer, constant::GpuPageSize))
+        if (!util::IsAligned(address, constant::GpuPageSize))
             return false;
 
         size = util::AlignUp(size, constant::GpuPageSize);

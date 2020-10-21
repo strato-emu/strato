@@ -80,7 +80,7 @@ namespace skyline::service::nvdrv::device {
 
         std::unique_lock lock(mapMutex);
         try {
-            auto &object{maps.at(data.handle)};
+            auto &object{maps.at(data.handle - 1)};
             if (object.use_count() > 1) {
                 data.pointer = object->pointer;
                 data.flags = 0x0;
