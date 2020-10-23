@@ -261,7 +261,7 @@ namespace skyline::kernel::svc {
             state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->id);
             thread->Start();
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcStartThread: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -301,7 +301,7 @@ namespace skyline::kernel::svc {
 
             state.ctx->gpr.w1 = priority;
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcGetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -320,7 +320,7 @@ namespace skyline::kernel::svc {
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", thread->id, priority);
             thread->UpdatePriority(static_cast<u8>(priority));
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -337,7 +337,7 @@ namespace skyline::kernel::svc {
             state.ctx->gpr.x2 = affinityMask.to_ullong();
             state.ctx->gpr.w1 = idealCore;
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcGetThreadCoreMask: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -371,7 +371,7 @@ namespace skyline::kernel::svc {
             thread->affinityMask = affinityMask;
 
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcSetThreadCoreMask: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -418,7 +418,7 @@ namespace skyline::kernel::svc {
             object->Map(pointer, size, permission);
 
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcMapSharedMemory: 'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -459,7 +459,7 @@ namespace skyline::kernel::svc {
             state.process->CloseHandle(handle);
             state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
             state.ctx->gpr.w0 = Result{};
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcCloseHandle: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -560,7 +560,7 @@ namespace skyline::kernel::svc {
     void CancelSynchronization(const DeviceState &state) {
         try {
             state.process->GetHandle<type::KThread>(state.ctx->gpr.w0)->cancelSync = true;
-        } catch (const std::exception &) {
+        } catch (const std::out_of_range &) {
             state.logger->Warn("svcCancelSynchronization: 'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
             state.ctx->gpr.w0 = result::InvalidHandle;
         }
@@ -708,34 +708,34 @@ namespace skyline::kernel::svc {
     void GetInfo(const DeviceState &state) {
         enum class InfoState : u32 {
             // 1.0.0+
-            AllowedCpuIdBitmask = 0x0,
-            AllowedThreadPriorityMask = 0x1,
-            AliasRegionBaseAddr = 0x2,
-            AliasRegionSize = 0x3,
-            HeapRegionBaseAddr = 0x4,
-            HeapRegionSize = 0x5,
-            TotalMemoryAvailable = 0x6,
-            TotalMemoryUsage = 0x7,
-            IsCurrentProcessBeingDebugged = 0x8,
-            ResourceLimit = 0x9,
-            IdleTickCount = 0xA,
-            RandomEntropy = 0xB,
+            AllowedCpuIdBitmask                       = 0,
+            AllowedThreadPriorityMask                 = 1,
+            AliasRegionBaseAddr                       = 2,
+            AliasRegionSize                           = 3,
+            HeapRegionBaseAddr                        = 4,
+            HeapRegionSize                            = 5,
+            TotalMemoryAvailable                      = 6,
+            TotalMemoryUsage                          = 7,
+            IsCurrentProcessBeingDebugged             = 8,
+            ResourceLimit                             = 9,
+            IdleTickCount                             = 10,
+            RandomEntropy                             = 11,
             // 2.0.0+
-            AddressSpaceBaseAddr = 0xC,
-            AddressSpaceSize = 0xD,
-            StackRegionBaseAddr = 0xE,
-            StackRegionSize = 0xF,
+            AddressSpaceBaseAddr                      = 12,
+            AddressSpaceSize                          = 13,
+            StackRegionBaseAddr                       = 14,
+            StackRegionSize                           = 15,
             // 3.0.0+
-            TotalSystemResourceAvailable = 0x10,
-            TotalSystemResourceUsage = 0x11,
-            TitleId = 0x12,
+            TotalSystemResourceAvailable              = 16,
+            TotalSystemResourceUsage                  = 17,
+            TitleId                                   = 18,
             // 4.0.0+
-            PrivilegedProcessId = 0x13,
+            PrivilegedProcessId                       = 19,
             // 5.0.0+
-            UserExceptionContextAddr = 0x14,
+            UserExceptionContextAddr                  = 20,
             // 6.0.0+
-            TotalMemoryAvailableWithoutSystemResource = 0x15,
-            TotalMemoryUsageWithoutSystemResource = 0x16,
+            TotalMemoryAvailableWithoutSystemResource = 21,
+            TotalMemoryUsageWithoutSystemResource     = 22,
         };
 
         InfoState info{static_cast<u32>(state.ctx->gpr.w1)};

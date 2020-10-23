@@ -22,7 +22,7 @@ namespace skyline::kernel::type {
             constexpr bool Valid() {
                 return ptr && size;
             }
-        } kernel, guest;
+        } kernel, guest{};
 
         KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 

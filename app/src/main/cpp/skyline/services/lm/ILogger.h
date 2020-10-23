@@ -34,13 +34,6 @@ namespace skyline::service::lm {
             Critical,
         };
 
-        /**
-         * @brief Obtains a string containing the name of the given field type
-         * @param type The field type to return the name of
-         * @return The name of the given field type
-         */
-        std::string GetFieldName(LogFieldType type);
-
       public:
         ILogger(const DeviceState &state, ServiceManager &manager);
 

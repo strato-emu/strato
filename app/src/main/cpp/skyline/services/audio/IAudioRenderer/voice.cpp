@@ -43,7 +43,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
             if (input.format == skyline::audio::AudioFormat::ADPCM) {
                 std::vector<std::array<i16, 2>> adpcmCoefficients(input.adpcmCoeffsSize / (sizeof(u16) * 2));
-                span(adpcmCoefficients).copy_from(span(input.adpcmCoeffs, input.adpcmCoeffsSize));
+                span(adpcmCoefficients).copy_from(span(input.adpcmCoeffs, input.adpcmCoeffsSize / sizeof(u32)));
 
                 adpcmDecoder = skyline::audio::AdpcmDecoder(adpcmCoefficients);
             }

@@ -151,7 +151,7 @@ namespace skyline {
                 character = '\\';
 
         std::lock_guard guard(mtx);
-        logFile << "1|" << levelCharacter[static_cast<u8>(level)] << "|" << str << "\n";
+        logFile << "1|" << levelCharacter[static_cast<u8>(level)] << '|' << std::dec << pthread_self() << '|' << str << '\n';
     }
 
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)

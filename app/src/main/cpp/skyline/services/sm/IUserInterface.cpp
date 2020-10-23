@@ -18,11 +18,11 @@ namespace skyline::service::sm {
 
         try {
             manager.NewService(name, session, response);
+            return {};
         } catch (std::out_of_range &) {
             std::string_view stringName(reinterpret_cast<char *>(&name), sizeof(u64));
             state.logger->Warn("Service has not been implemented: \"{}\"", stringName);
+            return result::InvalidServiceName;
         }
-
-        return {};
     }
 }

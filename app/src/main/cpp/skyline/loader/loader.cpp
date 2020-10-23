@@ -29,7 +29,7 @@ namespace skyline::loader {
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.text.offset, textSize, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
         state.logger->Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.text.offset, textSize);
 
-        process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.ro.offset, roSize, memory::Permission{true, false, false}, memory::states::CodeReadOnly); // R--
+        process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.ro.offset, roSize, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
         state.logger->Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.ro.offset, roSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-

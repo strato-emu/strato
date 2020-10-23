@@ -163,7 +163,7 @@ namespace skyline {
                     else
                         throw exception("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType);
                 } catch (std::out_of_range) {
-                    throw exception("GetHandle was called with an invalid handle: 0x{:X}", handle);
+                    throw std::out_of_range(fmt::format("GetHandle was called with an invalid handle: 0x{:X}", handle));
                 }
             }
 

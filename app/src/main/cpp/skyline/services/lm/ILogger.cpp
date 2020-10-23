@@ -6,31 +6,6 @@
 namespace skyline::service::lm {
     ILogger::ILogger(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
-    std::string ILogger::GetFieldName(LogFieldType type) {
-        switch (type) {
-            case LogFieldType::Message:
-                return "Message";
-            case LogFieldType::Line:
-                return "Line";
-            case LogFieldType::Filename:
-                return "Filename";
-            case LogFieldType::Function:
-                return "Function";
-            case LogFieldType::Module:
-                return "Module";
-            case LogFieldType::Thread:
-                return "Thread";
-            case LogFieldType::DropCount:
-                return "DropCount";
-            case LogFieldType::Time:
-                return "Time";
-            case LogFieldType::ProgramName:
-                return "ProgramName";
-            default:
-                return "";
-        }
-    }
-
     Result ILogger::Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct Data {
             u64 pid;
@@ -41,8 +16,17 @@ namespace skyline::service::lm {
             u32 payloadLength;
         } &data = request.inputBuf.at(0).as<Data>();
 
-        std::ostringstream logMessage;
-        logMessage << "Guest log:";
+        struct LogMessage {
+            std::string_view message;
+            u32 line;
+            std::string_view filename;
+            std::string_view function;
+            std::string_view module;
+            std::string_view thread;
+            u64 dropCount;
+            u64 time;
+            std::string_view program;
+        } logMessage{};
 
         u64 offset{sizeof(Data)};
         while (offset < request.inputBuf[0].size()) {
@@ -50,50 +34,90 @@ namespace skyline::service::lm {
             auto length{request.inputBuf[0].subspan(offset++).as<u8>()};
             auto object{request.inputBuf[0].subspan(offset, length)};
 
-            logMessage << " ";
-
             switch (fieldType) {
                 case LogFieldType::Start:
                     offset += length;
                     continue;
+                case LogFieldType::Stop:
+                    break;
+                case LogFieldType::Message:
+                    logMessage.message = object.as_string();
+                    offset += length;
+                    continue;
                 case LogFieldType::Line:
-                    logMessage << GetFieldName(fieldType) << ": " << object.as<u32>();
+                    logMessage.line = object.as<u32>();
                     offset += sizeof(u32);
                     continue;
+                case LogFieldType::Filename: {
+                    logMessage.filename = object.as_string();
+                    auto position{logMessage.filename.find_last_of('/')};
+                    logMessage.filename.remove_prefix(position != std::string::npos ? position + 1 : 0);
+                    offset += length;
+                    continue;
+                }
+                case LogFieldType::Function:
+                    logMessage.function = object.as_string();
+                    offset += length;
+                    continue;
+                case LogFieldType::Module:
+                    logMessage.module = object.as_string();
+                    offset += length;
+                    continue;
+                case LogFieldType::Thread:
+                    logMessage.thread = object.as_string();
+                    offset += length;
+                    continue;
                 case LogFieldType::DropCount:
-                    logMessage << GetFieldName(fieldType) << ": " << object.as<u64>();
+                    logMessage.dropCount = object.as<u64>();
                     offset += sizeof(u64);
                     continue;
                 case LogFieldType::Time:
-                    logMessage << GetFieldName(fieldType) << ": " << object.as<u64>() << "s";
+                    logMessage.time = object.as<u64>();
                     offset += sizeof(u64);
                     continue;
-                case LogFieldType::Stop:
-                    break;
-                default:
-                    logMessage << GetFieldName(fieldType) << ": " << object.as_string();
+                case LogFieldType::ProgramName:
+                    logMessage.program = object.as_string();
                     offset += length;
                     continue;
             }
-
             break;
         }
 
-        switch (data.level) {
-            case LogLevel::Trace:
-                state.logger->Debug("{}", logMessage.str());
-                break;
-            case LogLevel::Info:
-                state.logger->Info("{}", logMessage.str());
-                break;
-            case LogLevel::Warning:
-                state.logger->Warn("{}", logMessage.str());
-                break;
-            case LogLevel::Error:
-            case LogLevel::Critical:
-                state.logger->Error("{}", logMessage.str());
-                break;
-        }
+        Logger::LogLevel hostLevel{[&data]() {
+            switch (data.level) {
+                case LogLevel::Trace:
+                    return Logger::LogLevel::Debug;
+                case LogLevel::Info:
+                    return Logger::LogLevel::Info;
+                case LogLevel::Warning:
+                    return Logger::LogLevel::Warn;
+                case LogLevel::Error:
+                case LogLevel::Critical:
+                    return Logger::LogLevel::Error;
+            }
+        }()};
+
+        std::ostringstream message;
+        if (!logMessage.filename.empty())
+            message << logMessage.filename << ':';
+        if (logMessage.line)
+            message << 'L' << std::dec << logMessage.line << ':';
+        if (!logMessage.program.empty())
+            message << logMessage.program << ':';
+        if (!logMessage.module.empty())
+            message << logMessage.module << ':';
+        if (!logMessage.function.empty())
+            message << logMessage.function << "():";
+        if (!logMessage.thread.empty())
+            message << logMessage.thread << ':';
+        if (logMessage.time)
+            message << logMessage.time << "s:";
+        if (!logMessage.message.empty())
+            message << ' ' << logMessage.message;
+        if (logMessage.dropCount)
+            message << " (Dropped Messages: " << logMessage.time << ')';
+
+        state.logger->Write(hostLevel, message.str());
 
         return {};
     }

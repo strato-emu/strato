@@ -74,7 +74,7 @@ class LogActivity : AppCompatActivity() {
                         val level = logMeta[1].toInt()
                         if (level > logLevel) return@forEachLine
 
-                        adapter.addItem(LogViewItem(compact, logMeta[2].replace('\\', '\n'), logLevels[level]))
+                        adapter.addItem(LogViewItem(compact, "(" + logMeta[2] + ") " + logMeta[3].replace('\\', '\n'), logLevels[level]))
                     } else {
                         adapter.addItem(HeaderViewItem(logMeta[1]))
                     }
