@@ -21,7 +21,7 @@ namespace skyline {
                 std::function<void()> callback; //!< The callback to do after the wait has ended
             };
 
-            Mutex waiterLock; //!< Synchronizes insertions and deletions of waiters
+            std::mutex waiterLock; //!< Synchronizes insertions and deletions of waiters
             std::map<u64, Waiter> waiterMap;
             u64 nextWaiterId{1};
 

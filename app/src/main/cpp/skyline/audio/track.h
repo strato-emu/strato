@@ -20,7 +20,7 @@ namespace skyline::audio {
 
       public:
         CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A circular buffer with all appended audio samples
-        Mutex bufferLock; //!< Synchronizes appending to audio buffers
+        std::mutex bufferLock; //!< Synchronizes appending to audio buffers
 
         AudioOutState playbackState{AudioOutState::Stopped}; //!< The current state of playback
         u64 sampleCounter{}; //!< A counter used for tracking when buffers have been played and can be released

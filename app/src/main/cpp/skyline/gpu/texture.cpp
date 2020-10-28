@@ -17,14 +17,6 @@ namespace skyline::gpu {
         return sharedHost;
     }
 
-    std::shared_ptr<PresentationTexture> GuestTexture::InitializePresentationTexture() {
-        if (!host.expired())
-            throw exception("Trying to create multiple PresentationTexture objects from a single GuestTexture");
-        auto presentation{std::make_shared<PresentationTexture>(state, shared_from_this(), dimensions, format)};
-        host = std::static_pointer_cast<Texture>(presentation);
-        return presentation;
-    }
-
     Texture::Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : state(state), guest(guest), dimensions(dimensions), format(format), swizzle(swizzle) {
         SynchronizeHost();
     }
@@ -90,19 +82,6 @@ namespace skyline::gpu {
             }
         } else if (guest->tileMode == texture::TileMode::Linear) {
             std::memcpy(output, pointer, size);
-        }
-    }
-
-    PresentationTexture::PresentationTexture(const DeviceState &state, const std::shared_ptr<GuestTexture> &guest, const texture::Dimensions &dimensions, const texture::Format &format, const std::function<void()> &releaseCallback) : releaseCallback(releaseCallback), Texture(state, guest, dimensions, format, {}) {}
-
-    i32 PresentationTexture::GetAndroidFormat() {
-        switch (format.vkFormat) {
-            case vk::Format::eR8G8B8A8Unorm:
-                return WINDOW_FORMAT_RGBA_8888;
-            case vk::Format::eR5G6B5UnormPack16:
-                return WINDOW_FORMAT_RGB_565;
-            default:
-                throw exception("GetAndroidFormat: Cannot find corresponding Android surface format");
         }
     }
 }

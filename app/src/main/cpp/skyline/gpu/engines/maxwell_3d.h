@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <gpu/texture.h>
 #include <gpu/macro_interpreter.h>
 #include "engine.h"
 

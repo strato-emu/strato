@@ -3,11 +3,10 @@
 
 #pragma once
 
-#include <android/native_window.h>
-#include "services/nvdrv/devices/nvmap.h"
 #include "gpu/gpfifo.h"
 #include "gpu/syncpoint.h"
 #include "gpu/engines/maxwell_3d.h"
+#include "gpu/presentation_engine.h"
 
 namespace skyline::gpu {
     /**
@@ -15,18 +14,11 @@ namespace skyline::gpu {
      */
     class GPU {
       private:
-        ANativeWindow *window; //!< The ANativeWindow that is presented to
         const DeviceState &state;
-        bool surfaceUpdate{}; //!< If the surface needs to be updated
-        u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
 
       public:
-        std::queue<std::shared_ptr<PresentationTexture>> presentationQueue; //!< A queue of all the PresentationTextures to be posted to the display
-        texture::Dimensions resolution{}; //!< The resolution of the surface
-        i32 format{}; //!< The format of the display window
-        std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< This KEvent is triggered every time a frame is drawn
-        std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< This KEvent is triggered every time a buffer is freed
-        vmm::MemoryManager memoryManager; //!< The GPU Virtual Memory Manager
+        PresentationEngine presentation;
+        vmm::MemoryManager memoryManager;
         std::shared_ptr<engine::Engine> fermi2D;
         std::shared_ptr<engine::Maxwell3D> maxwell3D;
         std::shared_ptr<engine::Engine> maxwellCompute;
@@ -35,10 +27,6 @@ namespace skyline::gpu {
         gpfifo::GPFIFO gpfifo;
         std::array<Syncpoint, constant::MaxHwSyncpointCount> syncpoints{};
 
-        GPU(const DeviceState &state);
-
-        ~GPU();
-
-        void Loop();
+        inline GPU(const DeviceState &state) : state(state), presentation(state), memoryManager(state), gpfifo(state), fermi2D(std::make_shared<engine::Engine>(state)), keplerMemory(std::make_shared<engine::Engine>(state)), maxwell3D(std::make_shared<engine::Maxwell3D>(state)), maxwellCompute(std::make_shared<engine::Engine>(state)), maxwellDma(std::make_shared<engine::Engine>(state)) {}
     };
 }

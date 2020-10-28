@@ -21,8 +21,6 @@ namespace skyline::nce {
 
         NCE(DeviceState &state);
 
-        void Execute();
-
         struct PatchData {
             size_t size; //!< Size of the .patch section
             std::vector<size_t> offsets; //!< Offsets in .text of instructions that need to be patched

@@ -23,7 +23,7 @@ namespace skyline::service::nvdrv {
 
         const DeviceState &state;
         std::array<SyncpointInfo, skyline::constant::MaxHwSyncpointCount> syncpoints{};
-        Mutex reservationLock;
+        std::mutex reservationLock;
 
         /**
          * @note reservationLock should be locked when calling this

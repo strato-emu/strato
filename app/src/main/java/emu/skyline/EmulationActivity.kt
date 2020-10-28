@@ -44,11 +44,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var surface : Surface? = null
 
     /**
-     * A condition variable keeping track of if the surface is ready or not
-     */
-    private var surfaceReady = ConditionVariable()
-
-    /**
      * A boolean flag denoting if the emulation thread should call finish() or not
      */
     @Volatile
@@ -77,7 +72,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      *
      * @param halt The value to set halt to
      */
-    private external fun setHalt(halt : Boolean)
+    private external fun exitGuest(halt : Boolean)
 
     /**
      * This sets the surface object in libskyline to the provided value, emulation is halted if set to null
@@ -175,10 +170,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
-            surfaceReady.block()
-
             executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/")
-
             if (shouldFinish)
                 runOnUiThread { finish() }
         }
@@ -243,7 +235,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onNewIntent(intent : Intent?) {
         shouldFinish = false
 
-        setHalt(true)
+        exitGuest(true)
         emulationThread.join()
 
         shouldFinish = true
@@ -259,7 +251,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onDestroy() {
         shouldFinish = false
 
-        setHalt(true)
+        exitGuest(true)
         emulationThread.join(1000)
 
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
@@ -275,7 +267,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         Log.d(Tag, "surfaceCreated Holder: $holder")
         surface = holder.surface
         setSurface(surface)
-        surfaceReady.open()
     }
 
     /**
@@ -290,7 +281,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceDestroyed Holder: $holder")
-        surfaceReady.close()
         surface = null
         setSurface(surface)
     }

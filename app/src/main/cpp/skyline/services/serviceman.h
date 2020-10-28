@@ -14,7 +14,7 @@ namespace skyline::service {
       private:
         const DeviceState &state;
         std::unordered_map<ServiceName, std::shared_ptr<BaseService>> serviceMap; //!< A mapping from a Service to the underlying object
-        Mutex mutex; //!< Synchronizes concurrent access to services to prevent crashes
+        std::mutex mutex; //!< Synchronizes concurrent access to services to prevent crashes
 
         /**
          * @brief Creates an instance of the service if it doesn't already exist, otherwise returns an existing instance

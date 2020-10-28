@@ -9,34 +9,19 @@
 #include "skyline/common.h"
 #include "skyline/os.h"
 #include "skyline/jvm.h"
+#include "skyline/gpu.h"
 #include "skyline/input.h"
 
-bool Halt;
-jobject Surface;
-skyline::GroupMutex JniMtx;
 skyline::u16 fps;
 skyline::u32 frametime;
+std::weak_ptr<skyline::gpu::GPU> gpuWeak;
 std::weak_ptr<skyline::input::Input> inputWeak;
 
-void signalHandler(int signal) {
-    __android_log_print(ANDROID_LOG_FATAL, "emu-cpp", "Halting program due to signal: %s", strsignal(signal));
-    exit(signal);
-}
-
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
-    Halt = false;
     fps = 0;
     frametime = 0;
 
-    /*
-    std::signal(SIGTERM, signalHandler);
-    std::signal(SIGSEGV, signalHandler);
-    std::signal(SIGINT, signalHandler);
-    std::signal(SIGILL, signalHandler);
-    std::signal(SIGABRT, signalHandler);
-    std::signal(SIGFPE, signalHandler);
-     */
-
+    pthread_setname_np(pthread_self(), "EmuMain");
     setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), -8); // Set the priority of this process to the highest value
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
@@ -51,6 +36,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         skyline::kernel::OS os(jvmManager, logger, settings, std::string(appFilesPath));
+        gpuWeak = os.state.gpu;
         inputWeak = os.state.input;
         jvmManager->InitializeControllers();
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
@@ -76,21 +62,16 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(romFd);
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setHalt(JNIEnv *, jobject, jboolean halt) {
-    JniMtx.lock(skyline::GroupMutex::Group::Group2);
-    Halt = halt;
-    JniMtx.unlock();
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_exitGuest(JNIEnv *, jobject, jboolean halt) {
+    // TODO
+    exit(0);
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *env, jobject, jobject surface) {
-    JniMtx.lock(skyline::GroupMutex::Group::Group2);
-    if (!env->IsSameObject(Surface, nullptr))
-        env->DeleteGlobalRef(Surface);
-    if (!env->IsSameObject(surface, nullptr))
-        Surface = env->NewGlobalRef(surface);
-    else
-        Surface = surface;
-    JniMtx.unlock();
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {
+    auto gpu{gpuWeak.lock()};
+    while (!gpu)
+        gpu = gpuWeak.lock();
+    gpu->presentation.UpdateSurface(surface);
 }
 
 extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *, jobject) {
@@ -112,38 +93,32 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateContr
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
-    try {
-        auto input{inputWeak.lock()};
-        auto device{input->npad.controllers[index].device};
-        if (device)
-            device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
-    } catch (const std::bad_weak_ptr &) {
-        // We don't mind if we miss button updates while input hasn't been initialized
-    }
+    auto input{inputWeak.lock()};
+    if (!input)
+        return; // We don't mind if we miss button updates while input hasn't been initialized
+    auto device{input->npad.controllers[index].device};
+    if (device)
+        device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
-    try {
-        auto input{inputWeak.lock()};
-        auto device{input->npad.controllers[index].device};
-        if (device)
-            device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
-    } catch (const std::bad_weak_ptr &) {
-        // We don't mind if we miss axis updates while input hasn't been initialized
-    }
+    auto input{inputWeak.lock()};
+    if (!input)
+        return; // We don't mind if we miss axis updates while input hasn't been initialized
+    auto device{input->npad.controllers[index].device};
+    if (device)
+        device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
-    try {
-        using Point = skyline::input::TouchScreenPoint;
+    using Point = skyline::input::TouchScreenPoint;
 
-        auto input{inputWeak.lock()};
-        jboolean isCopy{false};
+    auto input{inputWeak.lock()};
+    if (!input)
+        return; // We don't mind if we miss touch updates while input hasn't been initialized
+    jboolean isCopy{false};
 
-        skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));
-        input->touch.SetState(points);
-        env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
-    } catch (const std::bad_weak_ptr &) {
-        // We don't mind if we miss axis updates while input hasn't been initialized
-    }
+    skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));
+    input->touch.SetState(points);
+    env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
 }

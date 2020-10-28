@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <queue>
+#include "circular_queue.h"
 #include "engines/gpfifo.h"
 #include "memory_manager.h"
 
@@ -147,8 +147,8 @@ namespace skyline::gpu {
             const DeviceState &state;
             engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
             std::array<std::shared_ptr<engine::Engine>, 8> subchannels;
-            std::queue<PushBuffer> pushBufferQueue;
-            skyline::Mutex pushBufferQueueLock; //!< Synchronizes pushbuffer queue insertions as the GPU is multi-threaded
+            std::optional<CircularQueue<PushBuffer>> pushBuffers;
+            std::thread thread; //!< The thread that manages processing of push-buffers
 
             /**
              * @brief Processes a pushbuffer segment, calling methods as needed
@@ -162,6 +162,11 @@ namespace skyline::gpu {
 
           public:
             GPFIFO(const DeviceState &state) : state(state), gpfifoEngine(state) {}
+
+            /**
+             * @param numBuffers The amount of push-buffers to allocate in the circular buffer
+             */
+            void Initialize(size_t numBuffers);
 
             /**
              * @brief Executes all pending entries in the FIFO

@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <sys/types.h>
-#include <sys/resource.h>
 #include <unistd.h>
-#include <asm/unistd.h>
+#include <dlfcn.h>
+#include <android/log.h>
 #include <nce.h>
 #include <os.h>
-#include <android/log.h>
-#include <dlfcn.h>
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
@@ -41,6 +38,7 @@ namespace skyline::kernel::type {
 
     void KThread::StartThread() {
         pthread_setname_np(pthread_self(), fmt::format("HOS-{}", id).c_str());
+        state.logger->UpdateTag();
 
         if (!ctx.tpidrroEl0)
             ctx.tpidrroEl0 = parent->AllocateTlsSlot();

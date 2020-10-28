@@ -32,8 +32,6 @@ namespace skyline::kernel {
         process = std::make_shared<kernel::type::KProcess>(state);
         auto entry{state.loader->LoadProcessData(process, state)};
         process->InitializeHeap();
-        process->CreateThread(entry)->Start();
-
-        state.nce->Execute();
+        process->CreateThread(entry)->Start(true);
     }
 }

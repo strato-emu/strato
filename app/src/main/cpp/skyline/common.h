@@ -363,72 +363,12 @@ namespace skyline {
     span(const Container &) -> span<const typename Container::value_type>;
 
     /**
-     * @brief The Mutex class is a wrapper around an atomic bool used for low-contention synchronization
-     */
-    class Mutex {
-        std::atomic_flag flag = ATOMIC_FLAG_INIT; //!< An atomic flag to hold the state of the mutex
-
-      public:
-        /**
-         * @brief Wait on and lock the mutex
-         */
-        void lock();
-
-        /**
-         * @brief Try to lock the mutex if it is unlocked else return
-         * @return If the mutex was successfully locked or not
-         */
-        inline bool try_lock() {
-            return !flag.test_and_set(std::memory_order_acquire);
-        }
-
-        /**
-         * @brief Unlock the mutex if it is held by this thread
-         */
-        inline void unlock() {
-            flag.clear(std::memory_order_release);
-        }
-    };
-
-    /**
-     * @brief The GroupMutex class is a special type of mutex that allows two groups of users and only allows one group to run in parallel
-     */
-    class GroupMutex {
-      public:
-        /**
-         * @brief All the possible owners of the mutex
-         */
-        enum class Group : u8 {
-            None = 0,   //!< No group owns this mutex
-            Group1 = 1, //!< Group 1 owns this mutex
-            Group2 = 2, //!< Group 2 owns this mutex
-        };
-
-        /**
-         * @brief Wait on and lock the mutex
-         */
-        void lock(Group group = Group::Group1);
-
-        /**
-         * @brief Unlock the mutex
-         * @note Undefined behavior in case unlocked by thread in non-owner group
-         */
-        void unlock();
-
-      private:
-        std::atomic<Group> flag{Group::None}; //!< An atomic flag to hold which group holds the mutex
-        std::atomic<Group> next{Group::None}; //!< An atomic flag to hold which group will hold the mutex next
-        std::atomic<u8> num{}; //!< An atomic u8 keeping track of how many users are holding the mutex
-        Mutex mtx; //!< A mutex to lock before changing of num and flag
-    };
-
-    /**
      * @brief The Logger class is to write log output to file and logcat
      */
     class Logger {
       private:
         std::ofstream logFile; //!< An output stream to the log file
-        Mutex mtx; //!< A mutex to lock before logging anything
+        std::mutex mtx; //!< A mutex to lock before logging anything
 
       public:
         enum class LogLevel {
@@ -451,6 +391,11 @@ namespace skyline {
          * @brief Writes the termination message to the log file
          */
         ~Logger();
+
+        /**
+         * @brief Update the tag in log messages with a new thread name
+         */
+        static void UpdateTag();
 
         /**
          * @brief Writes a header, should only be used for emulation starting and ending

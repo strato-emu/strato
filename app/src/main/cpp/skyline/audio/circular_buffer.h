@@ -19,14 +19,13 @@ namespace skyline::audio {
         Type *start{array.begin()}; //!< The start/oldest element of the internal array
         Type *end{array.begin()}; //!< The end/newest element of the internal array
         bool empty{true}; //!< If the buffer is full or empty, as start == end can mean either
-        Mutex mtx; //!< Synchronizes buffer operations so they don't overlap
+        std::mutex mtx; //!< Synchronizes buffer operations so they don't overlap
 
       public:
         /**
          * @brief Reads data from this buffer into the specified buffer
-         * @param address The address to write buffer data into
-         * @param maxSize The maximum amount of data to write in units of Type
          * @param copyFunction If this is specified, then this is called rather than memcpy
+         * @param copyOffset The offset into the buffer after which to use memcpy rather than copyFunction, -1 will use it for the entire buffer
          * @return The amount of data written into the input buffer in units of Type
          */
         inline size_t Read(span<Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
@@ -35,7 +34,7 @@ namespace skyline::audio {
             if (empty)
                 return 0;
 
-            Type* pointer{buffer.data()};
+            Type *pointer{buffer.data()};
             ssize_t maxSize{static_cast<ssize_t>(buffer.size())}, size{}, sizeBegin{}, sizeEnd{};
 
             if (start < end) {
@@ -95,7 +94,7 @@ namespace skyline::audio {
         inline void Append(span<Type> buffer) {
             std::lock_guard guard(mtx);
 
-            Type* pointer{buffer.data()};
+            Type *pointer{buffer.data()};
             ssize_t size{static_cast<ssize_t>(buffer.size())};
             while (size) {
                 if (start <= end && end != array.end()) {

@@ -77,27 +77,28 @@ namespace skyline::gpu::gpfifo {
         }
     }
 
+    void GPFIFO::Initialize(size_t numBuffers) {
+        if (pushBuffers)
+            throw exception("GPFIFO Initialization cannot be done multiple times");
+        pushBuffers.emplace(numBuffers);
+        thread = std::thread(&GPFIFO::Run, this);
+    }
+
     void GPFIFO::Run() {
-        std::lock_guard lock(pushBufferQueueLock);
-        while (!pushBufferQueue.empty()) {
-            auto pushBuffer{pushBufferQueue.front()};
+        pthread_setname_np(pthread_self(), "GPFIFO");
+        pushBuffers->Process([this](PushBuffer& pushBuffer){
             if (pushBuffer.segment.empty())
                 pushBuffer.Fetch(state.gpu->memoryManager);
-
             Process(pushBuffer.segment);
-            pushBufferQueue.pop();
-        }
+        });
     }
 
     void GPFIFO::Push(span<GpEntry> entries) {
-        std::lock_guard lock(pushBufferQueueLock);
-        bool beforeBarrier{false};
-
-        for (const auto &entry : entries) {
+        bool beforeBarrier{true};
+        pushBuffers->AppendTranform(entries, [&beforeBarrier, this](const GpEntry& entry){
             if (entry.sync == GpEntry::Sync::Wait)
                 beforeBarrier = false;
-
-            pushBufferQueue.emplace(PushBuffer(entry, state.gpu->memoryManager, beforeBarrier));
-        }
+            return PushBuffer(entry, state.gpu->memoryManager, beforeBarrier);
+        });
     }
 }

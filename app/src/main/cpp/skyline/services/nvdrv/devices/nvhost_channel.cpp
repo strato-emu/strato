@@ -110,6 +110,8 @@ namespace skyline::service::nvdrv::device {
             u32 reserved[3]; // In
         } &data = buffer.as<Data>();
 
+        state.gpu->gpfifo.Initialize(data.numEntries);
+
         auto driver{nvdrv::driver.lock()};
         channelFence.UpdateValue(driver->hostSyncpoint);
         data.fence = channelFence;

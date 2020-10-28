@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <android/hardware_buffer.h>
 #include <gpu.h>
-#include <services/nvdrv/driver.h>
-#include <services/common/fence.h>
 #include <gpu/format.h>
+#include <services/nvdrv/driver.h>
+#include <services/nvdrv/devices/nvmap.h>
+#include <services/common/fence.h>
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    Buffer::Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::PresentationTexture> &texture) : gbpBuffer(gbpBuffer), texture(texture) {}
+    Buffer::Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::Texture> &texture) : gbpBuffer(gbpBuffer), texture(texture) {}
 
     GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state) {}
 
@@ -64,15 +66,10 @@ namespace skyline::service::hosbinder {
         auto buffer{queue.at(data.slot)};
         buffer->status = BufferStatus::Queued;
 
-        auto slot{data.slot};
-        auto bufferEvent{state.gpu->bufferEvent};
-        buffer->texture->releaseCallback = [this, slot, bufferEvent]() {
-            queue.at(slot)->status = BufferStatus::Free;
-            bufferEvent->Signal();
-        };
-
         buffer->texture->SynchronizeHost();
-        state.gpu->presentationQueue.push(buffer->texture);
+        state.gpu->presentation.Present(buffer->texture);
+        queue.at(data.slot)->status = BufferStatus::Free;
+        state.gpu->presentation.bufferEvent->Signal();
 
         struct {
             u32 width;
@@ -140,11 +137,11 @@ namespace skyline::service::hosbinder {
 
         gpu::texture::Format format;
         switch (gbpBuffer.format) {
-            case WINDOW_FORMAT_RGBA_8888:
-            case WINDOW_FORMAT_RGBX_8888:
+            case AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM:
+            case AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM:
                 format = gpu::format::RGBA8888Unorm;
                 break;
-            case WINDOW_FORMAT_RGB_565:
+            case AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM:
                 format = gpu::format::RGB565Unorm;
                 break;
             default:
@@ -153,8 +150,8 @@ namespace skyline::service::hosbinder {
 
         auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->pointer + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1})};
 
-        queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializePresentationTexture());
-        state.gpu->bufferEvent->Signal();
+        queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializeTexture());
+        state.gpu->presentation.bufferEvent->Signal();
 
         state.logger->Debug("SetPreallocatedBuffer: Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}", data.slot, gbpBuffer.magic, gbpBuffer.width, gbpBuffer.height, gbpBuffer.stride, gbpBuffer.format, gbpBuffer.usage, gbpBuffer.index, gbpBuffer.nvmapId, gbpBuffer.nvmapHandle, gbpBuffer.offset, (1U << gbpBuffer.blockHeightLog2), gbpBuffer.size);
     }

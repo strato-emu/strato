@@ -11,61 +11,6 @@
 #include "kernel/types/KThread.h"
 
 namespace skyline {
-    void Mutex::lock() {
-        while (true) {
-            for (int i{}; i < 1000; ++i) {
-                if (!flag.test_and_set(std::memory_order_acquire))
-                    return;
-
-                asm volatile("yield");
-            }
-            sched_yield();
-        }
-    }
-
-    void GroupMutex::lock(Group group) {
-        auto none{Group::None};
-        constexpr u64 timeout{100}; // The timeout in ns
-        auto end{util::GetTimeNs() + timeout};
-
-        while (true) {
-            if (next == group) {
-                if (flag == group) {
-                    std::lock_guard lock(mtx);
-
-                    if (flag == group) {
-                        auto groupT{group};
-                        next.compare_exchange_strong(groupT, Group::None);
-                        num++;
-
-                        return;
-                    }
-                } else {
-                    flag.compare_exchange_weak(none, group);
-                }
-            } else if (flag == group && (next == Group::None || util::GetTimeNs() >= end)) {
-                std::lock_guard lock(mtx);
-
-                if (flag == group) {
-                    num++;
-                    return;
-                }
-            } else {
-                next.compare_exchange_weak(none, group);
-            }
-
-            none = Group::None;
-            asm volatile("yield");
-        }
-    }
-
-    void GroupMutex::unlock() {
-        std::lock_guard lock(mtx);
-
-        if (!--num)
-            flag.exchange(next);
-    }
-
     Settings::Settings(int fd) {
         tinyxml2::XMLDocument pref;
 
@@ -125,12 +70,24 @@ namespace skyline {
 
     Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel) {
         logFile.open(path, std::ios::trunc);
+        UpdateTag();
         WriteHeader("Logging started");
     }
 
     Logger::~Logger() {
         WriteHeader("Logging ended");
         logFile.flush();
+    }
+
+    thread_local static std::string logTag, threadName;
+
+    void Logger::UpdateTag() {
+        std::array<char, 16> name;
+        if (!pthread_getname_np(pthread_self(), name.data(), name.size()))
+             threadName = name.data();
+        else
+            threadName = "unk";
+        logTag = std::string("emu-cpp-") + threadName;
     }
 
     void Logger::WriteHeader(const std::string &str) {
@@ -144,14 +101,17 @@ namespace skyline {
         constexpr std::array<char, 5> levelCharacter{'0', '1', '2', '3', '4'}; // The LogLevel as written out to a file
         constexpr std::array<int, 5> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG, ANDROID_LOG_VERBOSE}; // This corresponds to LogLevel and provides it's equivalent for NDK Logging
 
-        __android_log_write(levelAlog[static_cast<u8>(level)], "emu-cpp", str.c_str());
+        if (logTag.empty())
+            UpdateTag();
+
+        __android_log_write(levelAlog[static_cast<u8>(level)], logTag.c_str(), str.c_str());
 
         for (auto &character : str)
             if (character == '\n')
                 character = '\\';
 
         std::lock_guard guard(mtx);
-        logFile << "1|" << levelCharacter[static_cast<u8>(level)] << '|' << std::dec << pthread_self() << '|' << str << '\n';
+        logFile << "1|" << levelCharacter[static_cast<u8>(level)] << '|' << threadName << '|' << str << '\n';
     }
 
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)

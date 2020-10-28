@@ -114,7 +114,6 @@ namespace skyline {
         }
 
         class Texture;
-        class PresentationTexture;
 
         /**
          * @brief A texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
@@ -146,11 +145,6 @@ namespace skyline {
              * @note There can only be one host texture for a corresponding guest texture
              */
             std::shared_ptr<Texture> InitializeTexture(std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
-
-          protected:
-            std::shared_ptr<PresentationTexture> InitializePresentationTexture();
-
-            friend service::hosbinder::GraphicBufferProducer;
         };
 
         /**
@@ -202,21 +196,6 @@ namespace skyline {
              * @brief Synchronizes the guest texture with the host texture after it has been modified
              */
             void SynchronizeGuest();
-        };
-
-        /**
-         * @brief A texture object alongside a release callback used for display presentation
-         */
-        class PresentationTexture : public Texture {
-          public:
-            std::function<void()> releaseCallback; //!< The release callback after this texture has been displayed
-
-            PresentationTexture(const DeviceState &state, const std::shared_ptr<GuestTexture> &guest, const texture::Dimensions &dimensions, const texture::Format &format, const std::function<void()> &releaseCallback = {});
-
-            /**
-             * @return The corresponding Android surface format for the current texture format
-             */
-            i32 GetAndroidFormat();
         };
     }
 }

@@ -6,7 +6,7 @@
 #include <services/common/parcel.h>
 
 namespace skyline::gpu {
-    class PresentationTexture;
+    class Texture;
 }
 
 namespace skyline::service::hosbinder {
@@ -47,10 +47,10 @@ namespace skyline::service::hosbinder {
     class Buffer {
       public:
         BufferStatus status{BufferStatus::Free};
-        std::shared_ptr<gpu::PresentationTexture> texture;
+        std::shared_ptr<gpu::Texture> texture;
         GbpBuffer gbpBuffer;
 
-        Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::PresentationTexture> &texture);
+        Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::Texture> &texture);
     };
 
     /**

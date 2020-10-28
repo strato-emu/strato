@@ -12,10 +12,6 @@
 #include "nce/instructions.h"
 #include "nce.h"
 
-extern bool Halt;
-extern jobject Surface;
-extern skyline::GroupMutex JniMtx;
-
 namespace skyline::nce {
     void NCE::SvcHandler(u16 svc, ThreadContext *ctx) {
         const auto &state{*ctx->state};
@@ -78,27 +74,6 @@ namespace skyline::nce {
     }
 
     NCE::NCE(DeviceState &state) : state(state) {}
-
-    void NCE::Execute() {
-        try {
-            while (true) {
-                std::lock_guard guard(JniMtx);
-                if (Halt)
-                    break;
-                state.gpu->Loop();
-            }
-        } catch (const std::exception &e) {
-            state.logger->Error(e.what());
-        } catch (...) {
-            state.logger->Error("An unknown exception has occurred");
-        }
-
-        if (!Halt) {
-            JniMtx.lock(GroupMutex::Group::Group2);
-            Halt = true;
-            JniMtx.unlock();
-        }
-    }
 
     constexpr u8 MainSvcTrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
     constexpr u32 TpidrEl0{0x5E82};         // ID of TPIDR_EL0 in MRS

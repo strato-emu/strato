@@ -44,8 +44,8 @@ namespace skyline {
 
             std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
             std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
-            Mutex mutexLock;
-            Mutex conditionalLock;
+            std::mutex mutexLock;
+            std::mutex conditionalLock;
 
             /**
             * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)

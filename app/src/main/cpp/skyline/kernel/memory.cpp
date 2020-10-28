@@ -33,11 +33,14 @@ namespace skyline::kernel {
                 throw exception("VMM initialization with unknown address space");
         }
 
+        // Search for a suitable carveout in host AS to fit the guest AS inside of
         std::ifstream mapsFile("/proc/self/maps");
         std::string maps((std::istreambuf_iterator<char>(mapsFile)), std::istreambuf_iterator<char>());
-        size_t line{}, start{}, alignedStart{};
+        size_t line{}, start{1ULL << 35}, alignedStart{1ULL << 35}; // 1 << 35 is where QC KGSL (Kernel Graphic Support Layer) maps down from, we skip over this or KGSL goes OOM
         do {
             auto end{util::HexStringToInt<u64>(std::string_view(maps.data() + line, sizeof(u64) * 2))};
+            if (end < start)
+                continue;
             if (end - start > base.size + (alignedStart - start)) { // We don't want to overflow if alignedStart > start
                 base.address = alignedStart;
                 break;
@@ -54,11 +57,22 @@ namespace skyline::kernel {
 
         mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
-        chunks = {ChunkDescriptor{
-            .ptr = reinterpret_cast<u8 *>(addressSpace.address),
-            .size = addressSpace.size,
-            .state = memory::states::Unmapped,
-        }};
+        chunks = {
+            ChunkDescriptor{
+                .ptr = reinterpret_cast<u8 *>(addressSpace.address),
+                .size = base.address - addressSpace.address,
+                .state = memory::states::Reserved,
+            },
+            ChunkDescriptor{
+                .ptr = reinterpret_cast<u8 *>(base.address),
+                .size = base.size,
+                .state = memory::states::Unmapped,
+            },
+            ChunkDescriptor{
+                .ptr = reinterpret_cast<u8 *>(base.address + base.size),
+                .size = addressSpace.size - (base.address + base.size),
+                .state = memory::states::Reserved,
+            }};
     }
 
     void MemoryManager::InitializeRegions(u8 *codeStart, u64 size) {
