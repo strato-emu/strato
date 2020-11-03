@@ -43,11 +43,12 @@ namespace skyline {
 
             /**
              * @brief Finds a chunk of the specified type in the GPU address space that is larger than the given size
+             * @param state The state of the chunk to find
              * @param size The minimum size of the chunk to find
-             * @param state The state desired state of the chunk to find
-             * @return The first unmapped chunk in the GPU address space that fits the requested size
+             * @param alignment The alignment of the chunk to find
+             * @return The first unmapped chunk in the GPU address space that fulfils the requested conditions
              */
-            std::optional<ChunkDescriptor> FindChunk(u64 size, ChunkState state);
+            std::optional<ChunkDescriptor> FindChunk(ChunkState state, u64 size, u64 alignment = 0);
 
             /**
              * @brief Inserts a chunk into the chunk list, resizing and splitting as necessary
@@ -62,9 +63,10 @@ namespace skyline {
             /**
              * @brief Reserves a region of the GPU address space so it will not be chosen automatically when mapping
              * @param size The size of the region to reserve
+             * @param alignment The alignment of the region to reserve
              * @return The virtual GPU base address of the region base
              */
-            u64 ReserveSpace(u64 size);
+            u64 ReserveSpace(u64 size, u64 alignment);
 
             /**
              * @brief Reserves a fixed region of the GPU address space so it will not be chosen automatically when mapping
@@ -92,10 +94,10 @@ namespace skyline {
             u64 MapFixed(u64 address, u64 cpuAddress, u64 size);
 
             /**
-             * @brief Unmaps the chunk that starts at 'offset' from the GPU address space
+             * @brief Unmaps all chunks in the given region from the GPU address space
              * @return Whether the operation succeeded
              */
-            bool Unmap(u64 address);
+            bool Unmap(u64 address, u64 size);
 
             void Read(u8 *destination, u64 address, u64 size) const;
 

@@ -13,5 +13,14 @@ namespace skyline::service::account {
     class IManagerForApplication : public BaseService {
       public:
         IManagerForApplication(const DeviceState &state, ServiceManager &manager);
+
+        /**
+        * @brief This checks if the given user has access to online services
+        */
+        Result CheckAvailability(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IManagerForApplication, CheckAvailability)
+        )
     };
 }

@@ -77,7 +77,13 @@ namespace skyline::service::nvdrv::device {
         if (data.gpuCharacteristicsBufSize < sizeof(GpuCharacteristics))
             return NvStatus::InvalidSize;
 
-        data.gpuCharacteristics = GpuCharacteristics{};
+        // The IOCTL3 version of GetCharacteristics additionally outputs to the inline output buffer
+        if (type == IoctlType::Ioctl3) {
+            auto &inlineCharacteristics{inlineBuffer.as<GpuCharacteristics>()};
+            data.gpuCharacteristics = inlineCharacteristics = GpuCharacteristics{};
+        } else {
+            data.gpuCharacteristics = GpuCharacteristics{};
+        }
         data.gpuCharacteristicsBufSize = sizeof(GpuCharacteristics);
 
         return NvStatus::Success;
@@ -90,8 +96,14 @@ namespace skyline::service::nvdrv::device {
             u64 maskBuf;     // Out
         } &data = buffer.as<Data>();
 
-        if (data.maskBufSize)
-            data.maskBuf = 0x3;
+        if (data.maskBufSize) {
+            if (type == IoctlType::Ioctl3) {
+                auto &inlineMask{inlineBuffer.as<u32>()};
+                data.maskBuf = inlineMask = 0x3;
+            } else {
+                data.maskBuf = 0x3;
+            }
+        }
 
         return NvStatus::Success;
     }

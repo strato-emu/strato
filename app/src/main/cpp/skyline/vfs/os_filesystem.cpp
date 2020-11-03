@@ -3,7 +3,6 @@
 
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #include <dirent.h>
 #include <unistd.h>
 #include "os_backing.h"
@@ -83,5 +82,46 @@ namespace skyline::vfs {
             return Directory::EntryType::File;
 
         return std::nullopt;
+    }
+
+    std::shared_ptr<Directory> OsFileSystem::OpenDirectory(const std::string &path, Directory::ListMode listMode) {
+        return std::make_shared<OsFileSystemDirectory>(basePath + path, listMode);
+    }
+
+    OsFileSystemDirectory::OsFileSystemDirectory(const std::string &path, Directory::ListMode listMode) : Directory(listMode), path(path) {}
+
+    std::vector<Directory::Entry> OsFileSystemDirectory::Read() {
+        if (!listMode.file && !listMode.directory)
+            return {};
+
+        std::vector<Directory::Entry> outputEntries;
+
+        struct dirent *entry;
+        auto directory{opendir(path.c_str())};
+        if (!directory)
+            throw exception("Failed to open directory: {}, error: {}", path, strerror(errno));
+
+        while ((entry = readdir(directory))) {
+            struct stat entryInfo;
+            if (stat((path + std::string(entry->d_name)).c_str(), &entryInfo))
+                throw exception("Failed to stat directory entry: {}, error: {}", entry->d_name, strerror(errno));
+
+            std::string name(entry->d_name);
+            if (S_ISDIR(entryInfo.st_mode) && listMode.directory && (name != ".") && (name != "..")) {
+                outputEntries.push_back(Directory::Entry{
+                    .type = Directory::EntryType::Directory,
+                    .name = std::string(entry->d_name),
+                    .size = 0,
+                });
+            } else if (S_ISREG(entryInfo.st_mode) && listMode.file) {
+                outputEntries.push_back(Directory::Entry{
+                    .type = Directory::EntryType::File,
+                    .name = std::string(entry->d_name),
+                    .size = static_cast<size_t>(entryInfo.st_size),
+                });
+            }
+        }
+
+        return outputEntries;
     }
 }

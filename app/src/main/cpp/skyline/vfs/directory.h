@@ -19,6 +19,7 @@ namespace skyline::vfs {
         struct Entry {
             std::string name;
             EntryType type;
+            size_t size; //!< 0 if a directory
         };
 
         /**
@@ -29,7 +30,7 @@ namespace skyline::vfs {
                 bool directory : 1; //!< The directory listing will contain subdirectories
                 bool file : 1; //!< The directory listing will contain files
             };
-            u32 raw;
+            u32 raw{};
         };
         static_assert(sizeof(ListMode) == 0x4);
 

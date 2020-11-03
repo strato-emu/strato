@@ -112,7 +112,7 @@ namespace skyline::service::nvdrv::device {
             userEventId = FindFreeEvent(data.fence.id);
         }
 
-        auto& event{*events.at(userEventId)};
+        auto &event{*events.at(userEventId)};
         if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
             state.logger->Debug("Now waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
             event.Wait(state.gpu, data.fence);

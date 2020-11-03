@@ -36,6 +36,11 @@ namespace skyline::service::fssrv {
         Result OpenFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief This returns an IDirectory handle for the requested path and mask (https://switchbrew.org/wiki/Filesystem_services#OpenDirectory)
+         */
+        Result OpenDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Commits all changes to the filesystem
          * @url https://switchbrew.org/wiki/Filesystem_services#Commit
          */
@@ -45,6 +50,7 @@ namespace skyline::service::fssrv {
             SFUNC(0x0, IFileSystem, CreateFile),
             SFUNC(0x7, IFileSystem, GetEntryType),
             SFUNC(0x8, IFileSystem, OpenFile),
+            SFUNC(0x9, IFileSystem, OpenDirectory),
             SFUNC(0xA, IFileSystem, Commit)
         )
     };

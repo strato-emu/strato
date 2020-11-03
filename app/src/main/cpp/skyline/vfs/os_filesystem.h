@@ -23,5 +23,19 @@ namespace skyline::vfs {
         std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
 
         std::optional<Directory::EntryType> GetEntryType(const std::string &path);
+
+        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
     };
-}
+
+    /**
+     * @brief OsFileSystemDirectory abstracts access to a native linux directory through the VFS APIs
+     */
+    class OsFileSystemDirectory : public Directory {
+      private:
+        std::string path;
+
+      public:
+        OsFileSystemDirectory(const std::string &path, ListMode listMode);
+
+        std::vector<Entry> Read();
+    };}

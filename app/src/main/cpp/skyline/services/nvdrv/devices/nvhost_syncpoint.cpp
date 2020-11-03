@@ -28,7 +28,7 @@ namespace skyline::service::nvdrv {
     }
 
     u32 NvHostSyncpoint::FindFreeSyncpoint() {
-        for (u32 i{}; i < constant::MaxHwSyncpointCount; i++)
+        for (u32 i{1}; i < constant::MaxHwSyncpointCount; i++)
             if (!syncpoints[i].reserved)
                 return i;
 

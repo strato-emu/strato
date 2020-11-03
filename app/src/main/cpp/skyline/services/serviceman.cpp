@@ -73,7 +73,7 @@ namespace skyline::service {
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:r")
             SERVICE_CASE(lm::ILogService, "lm")
             SERVICE_CASE(account::IAccountServiceForApplication, "acc:u0")
-            SERVICE_CASE(friends::IServiceCreator, "friend")
+            SERVICE_CASE(friends::IServiceCreator, "friend:u")
             SERVICE_CASE(nfp::IUserManager, "nfp:user")
             SERVICE_CASE(nifm::IStaticService, "nifm:u")
             SERVICE_CASE(socket::IClient, "bsd:u")

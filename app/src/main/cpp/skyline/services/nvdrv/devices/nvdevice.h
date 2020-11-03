@@ -78,7 +78,7 @@ namespace skyline::service::nvdrv::device {
          * @return The name of the class
          * @note The lifetime of the returned string is tied to that of the class
          */
-        const std::string& GetName();
+        const std::string &GetName();
 
         /**
          * @brief Handles IOCTL calls for devices

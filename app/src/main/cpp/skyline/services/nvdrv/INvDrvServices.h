@@ -80,6 +80,8 @@ namespace skyline::service::nvdrv {
             SFUNC(0x3, INvDrvServices, Initialize),
             SFUNC(0x4, INvDrvServices, QueryEvent),
             SFUNC(0x8, INvDrvServices, SetAruid),
+            SFUNC(0xB, INvDrvServices, Ioctl2),
+            SFUNC(0xC, INvDrvServices, Ioctl3),
             SFUNC(0xD, INvDrvServices, SetGraphicsFirmwareMemoryMarginEnabled)
         )
     };

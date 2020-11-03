@@ -92,7 +92,7 @@ namespace skyline::vfs {
                     std::vector<char> name(romFsFileEntry.nameSize);
                     backing->Read(span(name).cast<u8>(), header.fileMetaTableOffset + offset + sizeof(RomFileSystem::RomFsFileEntry));
 
-                    contents.emplace_back(Entry{std::string(name.data(), romFsFileEntry.nameSize), EntryType::File});
+                    contents.emplace_back(Entry{std::string(name.data(), romFsFileEntry.nameSize), EntryType::File, romFsFileEntry.size});
                 }
 
                 offset = romFsFileEntry.siblingOffset;

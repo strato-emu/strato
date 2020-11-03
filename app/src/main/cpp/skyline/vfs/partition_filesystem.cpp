@@ -54,7 +54,7 @@ namespace skyline::vfs {
 
         std::vector<Directory::Entry> fileList;
         for (const auto &file : fileMap)
-            fileList.emplace_back(Directory::Entry{file.first, Directory::EntryType::File});
+            fileList.emplace_back(Directory::Entry{file.first, Directory::EntryType::File, file.second.size});
 
         return std::make_shared<PartitionFileSystemDirectory>(fileList, listMode);
     }

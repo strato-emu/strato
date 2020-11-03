@@ -11,6 +11,15 @@ namespace skyline::service::nvdrv::device {
      * @url https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-as-gpu
      */
     class NvHostAsGpu : public NvDevice {
+      private:
+        struct AddressSpaceRegion {
+            u64 cpuAddress;
+            u64 size;
+            bool fixed;
+        };
+
+        std::map<u64, AddressSpaceRegion> regionMap; //!< This maps the base addresses of mapped buffers to their total sizes and mapping type, this is needed as what was originally a single buffer may have been split into multiple GPU side buffers with the remap flag.
+
       public:
         NvHostAsGpu(const DeviceState &state);
 
