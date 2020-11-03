@@ -19,6 +19,8 @@ namespace skyline::audio {
       public:
         Audio(const DeviceState &state);
 
+        ~Audio();
+
         /**
          * @brief Opens a new track that can be used to play sound
          * @param channelCount The amount channels that are present in the track

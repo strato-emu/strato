@@ -5,7 +5,7 @@
 
 #include <common.h>
 
-namespace skyline::audio {
+namespace skyline {
     /**
      * @brief An abstraction of an array into a circular buffer
      * @tparam Type The type of elements stored in the buffer

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <tinyxml2.h>
 #include <android/log.h>
 #include "common.h"
 #include "nce.h"
@@ -11,63 +10,6 @@
 #include "kernel/types/KThread.h"
 
 namespace skyline {
-    Settings::Settings(int fd) {
-        tinyxml2::XMLDocument pref;
-
-        auto fileDeleter = [](FILE *file) { fclose(file); };
-        std::unique_ptr<FILE, decltype(fileDeleter)> file{fdopen(fd, "r"), fileDeleter};
-        if (pref.LoadFile(file.get()))
-            throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
-
-        tinyxml2::XMLElement *elem{pref.LastChild()->FirstChild()->ToElement()};
-        while (elem) {
-            switch (elem->Value()[0]) {
-                case 's':
-                    stringMap[elem->FindAttribute("name")->Value()] = elem->GetText();
-                    break;
-
-                case 'b':
-                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->BoolValue();
-                    break;
-
-                case 'i':
-                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->IntValue();
-                    break;
-
-                default:
-                    __android_log_print(ANDROID_LOG_WARN, "emu-cpp", "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
-                    break;
-            };
-
-            if (elem->NextSibling())
-                elem = elem->NextSibling()->ToElement();
-            else
-                break;
-        }
-
-        pref.Clear();
-    }
-
-    std::string Settings::GetString(const std::string &key) {
-        return stringMap.at(key);
-    }
-
-    bool Settings::GetBool(const std::string &key) {
-        return boolMap.at(key);
-    }
-
-    int Settings::GetInt(const std::string &key) {
-        return intMap.at(key);
-    }
-
-    void Settings::List(const std::shared_ptr<Logger> &logger) {
-        for (auto &iter : stringMap)
-            logger->Info("Key: {}, Value: {}, Type: String", iter.first, GetString(iter.first));
-
-        for (auto &iter : boolMap)
-            logger->Info("Key: {}, Value: {}, Type: Bool", iter.first, GetBool(iter.first));
-    }
-
     Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel) {
         logFile.open(path, std::ios::trunc);
         UpdateTag();
@@ -95,6 +37,7 @@ namespace skyline {
 
         std::lock_guard guard(mtx);
         logFile << "0|" << str << "\n";
+        logFile.flush();
     }
 
     void Logger::Write(LogLevel level, std::string str) {
@@ -112,10 +55,11 @@ namespace skyline {
 
         std::lock_guard guard(mtx);
         logFile << "1|" << levelCharacter[static_cast<u8>(level)] << '|' << threadName << '|' << str << '\n';
+        logFile.flush();
     }
 
-    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
-        : os(os), jvm(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)), process(process) {
+    DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)
+        : os(os), jvm(std::move(jvmManager)), settings(std::move(settings)), logger(std::move(logger)) {
         // We assign these later as they use the state in their constructor and we don't want null pointers
         nce = std::make_shared<nce::NCE>(*this);
         gpu = std::make_shared<gpu::GPU>(*this);

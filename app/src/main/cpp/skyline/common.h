@@ -141,7 +141,7 @@ namespace skyline {
 
         template<class T>
         size_t PointerValue(T *item) {
-            return reinterpret_cast<size_t>(item);
+            return reinterpret_cast<uintptr_t>(item);
         }
 
         /**
@@ -440,48 +440,7 @@ namespace skyline {
         }
     };
 
-    /**
-     * @brief The Settings class is used to access the parameters set in the Java component of the application
-     */
-    class Settings {
-      private:
-        std::unordered_map<std::string, std::string> stringMap; //!< A mapping from all keys to their corresponding string value
-        std::unordered_map<std::string, bool> boolMap; //!< A mapping from all keys to their corresponding boolean value
-        std::unordered_map<std::string, int> intMap; //!< A mapping from all keys to their corresponding integer value
-
-      public:
-        /**
-         * @param fd An FD to the preference XML file
-         */
-        Settings(int fd);
-
-        /**
-         * @brief Retrieves a particular setting as a string
-         * @param key The key of the setting
-         * @return The string value of the setting
-         */
-        std::string GetString(const std::string &key);
-
-        /**
-         * @brief Retrieves a particular setting as a boolean
-         * @param key The key of the setting
-         * @return The boolean value of the setting
-         */
-        bool GetBool(const std::string &key);
-
-        /**
-         * @brief Retrieves a particular setting as a integer
-         * @param key The key of the setting
-         * @return The integer value of the setting
-         */
-        int GetInt(const std::string &key);
-
-        /**
-         * @brief Writes all settings keys and values to syslog, this function is for development purposes
-         */
-        void List(const std::shared_ptr<Logger> &logger);
-    };
-
+    class Settings;
     namespace nce {
         class NCE;
         struct ThreadContext;
@@ -511,19 +470,19 @@ namespace skyline {
      * @brief The state of the entire emulator is contained within this class, all objects related to emulation are tied into it
      */
     struct DeviceState {
-        DeviceState(kernel::OS *os, std::shared_ptr<kernel::type::KProcess> &process, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
+        DeviceState(kernel::OS *os, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
         kernel::OS *os;
-        std::shared_ptr<kernel::type::KProcess> &process;
-        thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< The KThread of the thread which accesses this object
-        thread_local static nce::ThreadContext *ctx; //!< The context of the guest thread for the corresponding host thread
-        std::shared_ptr<nce::NCE> nce;
-        std::shared_ptr<gpu::GPU> gpu;
-        std::shared_ptr<audio::Audio> audio;
-        std::shared_ptr<input::Input> input;
-        std::shared_ptr<loader::Loader> loader;
         std::shared_ptr<JvmManager> jvm;
         std::shared_ptr<Settings> settings;
         std::shared_ptr<Logger> logger;
+        std::shared_ptr<loader::Loader> loader;
+        std::shared_ptr<gpu::GPU> gpu;
+        std::shared_ptr<audio::Audio> audio;
+        std::shared_ptr<input::Input> input;
+        std::shared_ptr<nce::NCE> nce;
+        std::shared_ptr<kernel::type::KProcess> process;
+        thread_local static std::shared_ptr<kernel::type::KThread> thread; //!< The KThread of the thread which accesses this object
+        thread_local static nce::ThreadContext *ctx; //!< The context of the guest thread for the corresponding host thread
     };
 }

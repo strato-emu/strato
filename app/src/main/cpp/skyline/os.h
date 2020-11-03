@@ -13,7 +13,6 @@ namespace skyline::kernel {
     class OS {
       public:
         DeviceState state;
-        std::shared_ptr<type::KProcess> process;
         service::ServiceManager serviceManager;
         std::string appFilesPath; //!< The full path to the app's files directory
 

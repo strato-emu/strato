@@ -16,6 +16,10 @@ namespace skyline::audio {
         outputStream->requestStart();
     }
 
+    Audio::~Audio() {
+        outputStream->requestStop();
+    }
+
     std::shared_ptr<AudioTrack> Audio::OpenTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback) {
         std::lock_guard trackGuard(trackLock);
 

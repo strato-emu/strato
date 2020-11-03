@@ -64,7 +64,7 @@ namespace skyline::kernel::type {
         if (kernel.Valid())
             munmap(kernel.ptr, kernel.size);
 
-        if (guest.Valid()) {
+        if (state.process && guest.Valid()) {
             mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
             state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = guest.ptr,

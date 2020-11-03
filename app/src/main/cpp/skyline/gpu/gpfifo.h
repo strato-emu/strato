@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "circular_queue.h"
+#include <common/circular_queue.h>
 #include "engines/gpfifo.h"
 #include "memory_manager.h"
 
@@ -162,6 +162,8 @@ namespace skyline::gpu {
 
           public:
             GPFIFO(const DeviceState &state) : state(state), gpfifoEngine(state) {}
+
+            ~GPFIFO();
 
             /**
              * @param numBuffers The amount of push-buffers to allocate in the circular buffer

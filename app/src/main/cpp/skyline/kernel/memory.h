@@ -226,6 +226,8 @@ namespace skyline {
 
             MemoryManager(const DeviceState &state);
 
+            ~MemoryManager();
+
             /**
              * @note This should be called before any mappings in the VMM or calls to InitalizeRegions are done
              */

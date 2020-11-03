@@ -8,18 +8,19 @@ namespace skyline {
      * @brief A thread-local wrapper over JNIEnv and JavaVM which automatically handles attaching and detaching threads
      */
     struct JniEnvironment {
-        static inline JNIEnv *env{};
+        JNIEnv *env{};
         static inline JavaVM *vm{};
         bool attached{};
 
-        JniEnvironment(JNIEnv *environment) {
+        void Initialize(JNIEnv *environment) {
             env = environment;
             if (env->GetJavaVM(&vm) < 0)
                 throw exception("Cannot get JavaVM from environment");
+            attached = true;
         }
 
         JniEnvironment() {
-            if (vm) {
+            if (vm && !attached) {
                 vm->AttachCurrentThread(&env, nullptr);
                 attached = true;
             }
@@ -31,10 +32,14 @@ namespace skyline {
         }
 
         operator JNIEnv *() {
+            if (!attached)
+                throw exception("Not attached");
             return env;
         }
 
-        JNIEnv* operator->() {
+        JNIEnv *operator->() {
+            if (!attached)
+                throw exception("Not attached");
             return env;
         }
     };
@@ -42,7 +47,7 @@ namespace skyline {
     thread_local inline JniEnvironment env;
 
     JvmManager::JvmManager(JNIEnv *environ, jobject instance) : instance(environ->NewGlobalRef(instance)), instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))), initializeControllersId(environ->GetMethodID(instanceClass, "initializeControllers", "()V")), vibrateDeviceId(environ->GetMethodID(instanceClass, "vibrateDevice", "(I[J[I)V")), clearVibrationDeviceId(environ->GetMethodID(instanceClass, "clearVibrationDevice", "(I)V")) {
-        env = JniEnvironment(environ);
+        env.Initialize(environ);
     }
 
     JvmManager::~JvmManager() {

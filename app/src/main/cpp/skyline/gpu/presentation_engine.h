@@ -14,7 +14,7 @@ namespace skyline::gpu {
         const DeviceState &state;
         std::mutex windowMutex;
         std::condition_variable windowConditional;
-        jobject surface; //!< The Surface object backing the ANativeWindow
+        jobject surface{}; //!< The Surface object backing the ANativeWindow
         u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
 
       public:

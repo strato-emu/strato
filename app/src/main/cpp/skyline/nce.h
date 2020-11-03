@@ -8,18 +8,18 @@
 
 namespace skyline::nce {
     /**
-     * @brief The NCE (Native Code Execution) class is responsible for managing the state of catching instructions and directly controlling processes/threads
+     * @brief The NCE (Native Code Execution) class is responsible for managing state relevant to the layer between the host and guest
      */
     class NCE {
       private:
-        DeviceState &state;
+        const DeviceState &state;
 
         static void SvcHandler(u16 svc, ThreadContext* ctx);
 
       public:
-        static void SignalHandler(int signal, siginfo *info, void *context);
+        static void SignalHandler(int signal, siginfo *info, ucontext *context, void *oldTls);
 
-        NCE(DeviceState &state);
+        NCE(const DeviceState &state);
 
         struct PatchData {
             size_t size; //!< Size of the .patch section

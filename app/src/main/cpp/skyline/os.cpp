@@ -12,7 +12,7 @@
 #include "os.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath) : state(this, process, jvmManager, settings, logger), serviceManager(state), appFilesPath(appFilesPath) {}
+    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath) : state(this, jvmManager, settings, logger), serviceManager(state), appFilesPath(appFilesPath) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
@@ -29,6 +29,7 @@ namespace skyline::kernel {
         else
             throw exception("Unsupported ROM extension.");
 
+        auto& process{state.process};
         process = std::make_shared<kernel::type::KProcess>(state);
         auto entry{state.loader->LoadProcessData(process, state)};
         process->InitializeHeap();

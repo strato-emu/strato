@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <csetjmp>
 #include <nce/guest.h>
 #include "KSyncObject.h"
 #include "KPrivateMemory.h"
@@ -35,7 +36,6 @@ namespace skyline {
 
     namespace constant {
         constexpr u8 CoreCount{4}; // The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
-        constexpr kernel::type::Priority AndroidPriority{19, -8}; //!< The range of priorities for Android
         constexpr kernel::type::Priority HosPriority{0, 63}; //!< The range of priorities for Horizon OS
     }
 
@@ -43,25 +43,28 @@ namespace skyline {
         /**
          * @brief KThread manages a single thread of execution which is responsible for running guest code and kernel code which is invoked by the guest
          */
-      class KThread : public KSyncObject, public std::enable_shared_from_this<KThread> {
+        class KThread : public KSyncObject, public std::enable_shared_from_this<KThread> {
           private:
             KProcess *parent;
             std::optional<std::thread> thread; //!< If this KThread is backed by a host thread then this'll hold it
+            pthread_t pthread{}; //!< The pthread_t for the host thread running this guest thread
 
             void StartThread();
 
           public:
+            std::mutex mutex; //!< Synchronizes all thread state changes
             bool running{false};
             std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
 
             KHandle handle;
             size_t id; //!< Index of thread in parent process's KThread vector
 
-            nce::ThreadContext ctx{};
+            nce::ThreadContext ctx{}; //!< The context of the guest thread during the last SVC
+            jmp_buf originalCtx; //!< The context of the host thread prior to jumping into guest code
 
-            void* entry;
+            void *entry;
             u64 entryArgument;
-            void* stackTop;
+            void *stackTop;
 
             i8 priority;
             i8 idealCore;
@@ -80,15 +83,10 @@ namespace skyline {
             void Start(bool self = false);
 
             /**
-             * @brief Updates the internal state of the thread to signal it being dead
-             * @note This should only be called by the host thread running this guest thread
+             * @param join Returns after the guest thread has joined rather than instantly
              */
-            void Kill();
+            void Kill(bool join);
 
-            /**
-             * @brief Sets the host priority using setpriority with a rescaled the priority from HOS to Android
-             * @note It also affects guest scheduler behavior, this isn't purely for host
-             */
             void UpdatePriority(i8 priority);
         };
     }

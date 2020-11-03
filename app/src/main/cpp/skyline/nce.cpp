@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <sched.h>
 #include <unistd.h>
+#include "common/signal.h"
 #include "os.h"
 #include "gpu.h"
 #include "jvm.h"
@@ -23,57 +23,84 @@ namespace skyline::nce {
             } else {
                 throw exception("Unimplemented SVC 0x{:X}", svc);
             }
+        } catch (const signal::SignalException &e) {
+            if (e.signal != SIGINT) {
+                state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
+                if (state.thread->id) {
+                    signal::BlockSignal({SIGINT});
+                    state.process->mainThread->Kill(false);
+                }
+            }
+            std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
-            exit(0);
+            if (state.thread->id) {
+                signal::BlockSignal({SIGINT});
+                state.process->mainThread->Kill(false);
+            }
+            std::longjmp(state.thread->originalCtx, true);
         }
     }
 
-    void NCE::SignalHandler(int signal, siginfo *, void *context) {
+    void NCE::SignalHandler(int signal, siginfo *info, ucontext *context, void *oldTls) {
+        if (oldTls) {
+            const auto &state{*reinterpret_cast<ThreadContext *>(oldTls)->state};
+
+            state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
+
+            std::string raw;
+            std::string trace;
+            std::string cpuContext;
+
+            const auto &ctx{reinterpret_cast<ucontext *>(context)->uc_mcontext};
+            constexpr u16 instructionCount{20}; // The amount of previous instructions to print
+            auto offset{ctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
+            span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
+            for (auto &instruction : instructions) {
+                instruction = __builtin_bswap32(instruction);
+
+                if (offset == ctx.pc)
+                    trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
+                else
+                    trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
+
+                raw += fmt::format("{:08X}", instruction);
+                offset += sizeof(u32);
+            }
+
+            if (ctx.fault_address)
+                cpuContext += fmt::format("\nFault Address: 0x{:X}", ctx.fault_address);
+
+            if (ctx.sp)
+                cpuContext += fmt::format("\nStack Pointer: 0x{:X}", ctx.sp);
+
+            for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
+                cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
+
+            state.logger->Debug("Process Trace:{}", trace);
+            state.logger->Debug("Raw Instructions: 0x{}", raw);
+            state.logger->Debug("CPU Context:{}", cpuContext);
+
+            context->uc_mcontext.pc = reinterpret_cast<skyline::u64>(&std::longjmp);
+            context->uc_mcontext.regs[0] = reinterpret_cast<u64>(state.thread->originalCtx);
+            context->uc_mcontext.regs[1] = true;
+        } else {
+            signal::ExceptionalSignalHandler(signal, info, context); //!< Delegate throwing a host exception to the exceptional signal handler
+        }
+    }
+
+    void *NceTlsRestorer() {
         ThreadContext *threadCtx;
         asm volatile("MRS %x0, TPIDR_EL0":"=r"(threadCtx));
+        if (threadCtx->magic != constant::SkyTlsMagic)
+            return nullptr;
         asm volatile("MSR TPIDR_EL0, %x0"::"r"(threadCtx->hostTpidrEl0));
-
-        const auto &state{*threadCtx->state};
-        state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
-
-        std::string raw;
-        std::string trace;
-        std::string cpuContext;
-
-        const auto &ctx{reinterpret_cast<ucontext *>(context)->uc_mcontext};
-        constexpr u16 instructionCount{20}; // The amount of previous instructions to print
-        auto offset{ctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
-        span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
-        for (auto &instruction : instructions) {
-            instruction = __builtin_bswap32(instruction);
-
-            if (offset == ctx.pc)
-                trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
-            else
-                trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
-
-            raw += fmt::format("{:08X}", instruction);
-            offset += sizeof(u32);
-        }
-
-        if (ctx.fault_address)
-            cpuContext += fmt::format("\nFault Address: 0x{:X}", ctx.fault_address);
-
-        if (ctx.sp)
-            cpuContext += fmt::format("\nStack Pointer: 0x{:X}", ctx.sp);
-
-        for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
-            cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
-
-        state.logger->Warn("Process Trace:{}", trace);
-        state.logger->Warn("Raw Instructions: 0x{}", raw);
-        state.logger->Warn("CPU Context:{}", cpuContext);
-
-        asm volatile("MSR TPIDR_EL0, %x0"::"r"(threadCtx));
+        return threadCtx;
     }
 
-    NCE::NCE(DeviceState &state) : state(state) {}
+    NCE::NCE(const DeviceState &state) : state(state) {
+        signal::SetTlsRestorer(&NceTlsRestorer);
+    }
 
     constexpr u8 MainSvcTrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
     constexpr u32 TpidrEl0{0x5E82};         // ID of TPIDR_EL0 in MRS

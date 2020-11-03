@@ -4,7 +4,7 @@
 #pragma once
 
 #include <oboe/Oboe.h>
-#include "circular_buffer.h"
+#include <common.h>
 
 namespace skyline {
     namespace constant {

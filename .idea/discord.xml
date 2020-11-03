@@ -2,6 +2,6 @@
 <project version="4">
   <component name="DiscordIntegrationProjectSettings" description="Lightswitch is an experimental Nintendo Switch emulator for Android phones." />
   <component name="DiscordProjectSettings">
-    <option name="show" value="true" />
+    <option name="show" value="PROJECT_FILES" />
   </component>
 </project>

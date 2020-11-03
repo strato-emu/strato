@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/signal.h>
+#include <kernel/types/KProcess.h>
 #include <gpu.h>
 #include <gpu/engines/maxwell_3d.h>
 #include "gpfifo.h"
@@ -86,19 +88,38 @@ namespace skyline::gpu::gpfifo {
 
     void GPFIFO::Run() {
         pthread_setname_np(pthread_self(), "GPFIFO");
-        pushBuffers->Process([this](PushBuffer& pushBuffer){
-            if (pushBuffer.segment.empty())
-                pushBuffer.Fetch(state.gpu->memoryManager);
-            Process(pushBuffer.segment);
-        });
+        try {
+            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
+            pushBuffers->Process([this](PushBuffer &pushBuffer) {
+                if (pushBuffer.segment.empty())
+                    pushBuffer.Fetch(state.gpu->memoryManager);
+                Process(pushBuffer.segment);
+            });
+        } catch (const signal::SignalException &e) {
+            if (e.signal != SIGINT) {
+                state.logger->Write(Logger::LogLevel::Error, e.what());
+                signal::BlockSignal({SIGINT});
+                state.process->mainThread->Kill(false);
+            }
+        } catch (const std::exception &e) {
+            state.logger->Write(Logger::LogLevel::Error, e.what());
+            state.process->mainThread->Kill(false);
+        }
     }
 
     void GPFIFO::Push(span<GpEntry> entries) {
         bool beforeBarrier{true};
-        pushBuffers->AppendTranform(entries, [&beforeBarrier, this](const GpEntry& entry){
+        pushBuffers->AppendTranform(entries, [&beforeBarrier, this](const GpEntry &entry) {
             if (entry.sync == GpEntry::Sync::Wait)
                 beforeBarrier = false;
             return PushBuffer(entry, state.gpu->memoryManager, beforeBarrier);
         });
+    }
+
+    GPFIFO::~GPFIFO() {
+        if (thread.joinable()) {
+            pthread_kill(thread.native_handle(), SIGINT);
+            thread.join();
+        }
     }
 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <kernel/types/KEvent.h>
+#include <common/circular_buffer.h>
 #include "common.h"
 
 namespace skyline::audio {

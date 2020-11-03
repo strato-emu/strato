@@ -24,8 +24,8 @@ namespace skyline::gpu {
         std::shared_ptr<engine::Engine> maxwellCompute;
         std::shared_ptr<engine::Engine> maxwellDma;
         std::shared_ptr<engine::Engine> keplerMemory;
-        gpfifo::GPFIFO gpfifo;
         std::array<Syncpoint, constant::MaxHwSyncpointCount> syncpoints{};
+        gpfifo::GPFIFO gpfifo;
 
         inline GPU(const DeviceState &state) : state(state), presentation(state), memoryManager(state), gpfifo(state), fermi2D(std::make_shared<engine::Engine>(state)), keplerMemory(std::make_shared<engine::Engine>(state)), maxwell3D(std::make_shared<engine::Maxwell3D>(state)), maxwellCompute(std::make_shared<engine::Engine>(state)), maxwellDma(std::make_shared<engine::Engine>(state)) {}
     };

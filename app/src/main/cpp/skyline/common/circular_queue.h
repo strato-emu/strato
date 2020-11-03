@@ -5,9 +5,9 @@
 
 #include <common.h>
 
-namespace skyline::gpu {
+namespace skyline {
     /**
-     * @brief An efficient consumer-producer structure with internal synchronization
+     * @brief An efficient consumer-producer oriented queue with internal synchronization
      */
     template<typename Type>
     class CircularQueue {

@@ -169,7 +169,7 @@ namespace skyline::kernel::svc {
 
         std::memcpy(source, destination, size);
 
-        auto sourceObject{state.process->GetMemoryObject(destination)};
+        auto sourceObject{state.process->GetMemoryObject(source)};
         if (!sourceObject)
             throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
 
@@ -216,7 +216,9 @@ namespace skyline::kernel::svc {
 
     void ExitProcess(const DeviceState &state) {
         state.logger->Debug("svcExitProcess: Exiting process");
-        exit(0);
+        if (state.thread->id)
+            state.process->mainThread->Kill(false);
+        std::longjmp(state.thread->originalCtx, true);
     }
 
     constexpr i32 IdealCoreDontCare{-1};
@@ -269,8 +271,7 @@ namespace skyline::kernel::svc {
 
     void ExitThread(const DeviceState &state) {
         state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->id);
-        state.thread->Kill();
-        pthread_exit(nullptr);
+        std::longjmp(state.thread->originalCtx, true);
     }
 
     void SleepThread(const DeviceState &state) {
@@ -708,34 +709,34 @@ namespace skyline::kernel::svc {
     void GetInfo(const DeviceState &state) {
         enum class InfoState : u32 {
             // 1.0.0+
-            AllowedCpuIdBitmask                       = 0,
-            AllowedThreadPriorityMask                 = 1,
-            AliasRegionBaseAddr                       = 2,
-            AliasRegionSize                           = 3,
-            HeapRegionBaseAddr                        = 4,
-            HeapRegionSize                            = 5,
-            TotalMemoryAvailable                      = 6,
-            TotalMemoryUsage                          = 7,
-            IsCurrentProcessBeingDebugged             = 8,
-            ResourceLimit                             = 9,
-            IdleTickCount                             = 10,
-            RandomEntropy                             = 11,
+            AllowedCpuIdBitmask = 0,
+            AllowedThreadPriorityMask = 1,
+            AliasRegionBaseAddr = 2,
+            AliasRegionSize = 3,
+            HeapRegionBaseAddr = 4,
+            HeapRegionSize = 5,
+            TotalMemoryAvailable = 6,
+            TotalMemoryUsage = 7,
+            IsCurrentProcessBeingDebugged = 8,
+            ResourceLimit = 9,
+            IdleTickCount = 10,
+            RandomEntropy = 11,
             // 2.0.0+
-            AddressSpaceBaseAddr                      = 12,
-            AddressSpaceSize                          = 13,
-            StackRegionBaseAddr                       = 14,
-            StackRegionSize                           = 15,
+            AddressSpaceBaseAddr = 12,
+            AddressSpaceSize = 13,
+            StackRegionBaseAddr = 14,
+            StackRegionSize = 15,
             // 3.0.0+
-            TotalSystemResourceAvailable              = 16,
-            TotalSystemResourceUsage                  = 17,
-            TitleId                                   = 18,
+            TotalSystemResourceAvailable = 16,
+            TotalSystemResourceUsage = 17,
+            TitleId = 18,
             // 4.0.0+
-            PrivilegedProcessId                       = 19,
+            PrivilegedProcessId = 19,
             // 5.0.0+
-            UserExceptionContextAddr                  = 20,
+            UserExceptionContextAddr = 20,
             // 6.0.0+
             TotalMemoryAvailableWithoutSystemResource = 21,
-            TotalMemoryUsageWithoutSystemResource     = 22,
+            TotalMemoryUsageWithoutSystemResource = 22,
         };
 
         InfoState info{static_cast<u32>(state.ctx->gpr.w1)};

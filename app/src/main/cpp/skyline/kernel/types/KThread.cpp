@@ -2,8 +2,8 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <unistd.h>
-#include <dlfcn.h>
 #include <android/log.h>
+#include <common/signal.h>
 #include <nce.h>
 #include <os.h>
 #include "KProcess.h"
@@ -15,29 +15,19 @@ namespace skyline::kernel::type {
     }
 
     KThread::~KThread() {
-        Kill();
-    }
-
-    /**
-     * @brief Our delegator for sigaction, we need to do this due to sigchain hooking bionic's sigaction and it intercepting signals before they're passed onto userspace
-     * This not only leads to performance degradation but also requires host TLS to be in the TLS register which we cannot ensure for in-guest signals
-     */
-    inline void Sigaction(int signal, const struct sigaction &action, struct sigaction *oldAction = nullptr) {
-        static decltype(&sigaction) realSigaction{};
-        if (!realSigaction) {
-            void *libc{dlopen("libc.so", RTLD_LOCAL | RTLD_LAZY)};
-            if (!libc)
-                throw exception("dlopen-ing libc has failed with: {}", dlerror());
-            realSigaction = reinterpret_cast<decltype(&sigaction)>(dlsym(libc, "sigaction"));
-            if (!realSigaction)
-                throw exception("Cannot find 'sigaction' in libc: {}", dlerror());
+        if (running && pthread != pthread_self()) {
+            pthread_kill(pthread, SIGINT);
+            if (thread)
+                thread->join();
+            else
+                pthread_join(pthread, nullptr);
         }
-        if (realSigaction(signal, &action, oldAction) < 0)
-            throw exception("sigaction has failed with {}", strerror(errno));
     }
 
     void KThread::StartThread() {
-        pthread_setname_np(pthread_self(), fmt::format("HOS-{}", id).c_str());
+        std::array<char, 16> threadName;
+        pthread_getname_np(pthread, threadName.data(), threadName.size());
+        pthread_setname_np(pthread, fmt::format("HOS-{}", id).c_str());
         state.logger->UpdateTag();
 
         if (!ctx.tpidrroEl0)
@@ -47,12 +37,17 @@ namespace skyline::kernel::type {
         state.ctx = &ctx;
         state.thread = shared_from_this();
 
-        struct sigaction sigact{
-            .sa_sigaction = &nce::NCE::SignalHandler,
-            .sa_flags = SA_SIGINFO,
-        };
-        for (int signal : {SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV})
-            Sigaction(signal, sigact);
+        if (setjmp(originalCtx)) { // Returns 1 if it's returning from guest, 0 otherwise
+            running = false;
+            Signal();
+
+            pthread_setname_np(pthread, threadName.data());
+            state.logger->UpdateTag();
+
+            return;
+        }
+
+        signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
 
         asm volatile(
         "MRS X0, TPIDR_EL0\n\t"
@@ -136,28 +131,32 @@ namespace skyline::kernel::type {
     }
 
     void KThread::Start(bool self) {
+        std::unique_lock lock(mutex);
         if (!running) {
             running = true;
             state.logger->Debug("Starting thread #{}", id);
-            if (self)
+            if (self) {
+                pthread = pthread_self();
+                lock.unlock();
                 StartThread();
-            else
+            } else {
                 thread.emplace(&KThread::StartThread, this);
+                pthread = thread->native_handle();
+            }
         }
     }
 
-    void KThread::Kill() {
+    void KThread::Kill(bool join) {
+        std::lock_guard lock(mutex);
         if (running) {
+            pthread_kill(pthread, SIGINT);
+            if (join)
+                pthread_join(pthread, nullptr);
             running = false;
-            Signal();
         }
     }
 
     void KThread::UpdatePriority(i8 priority) {
         this->priority = priority;
-        auto priorityValue{constant::AndroidPriority.Rescale(constant::HosPriority, priority)};
-
-        if (setpriority(PRIO_PROCESS, getpid(), priorityValue) == -1)
-            throw exception("Couldn't set thread priority to {} for #{}", priorityValue, id);
     }
 }

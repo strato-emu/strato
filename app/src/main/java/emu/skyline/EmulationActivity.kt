@@ -68,11 +68,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String)
 
     /**
-     * This sets the halt flag in libskyline to the provided value, if set to true it causes libskyline to halt emulation
-     *
-     * @param halt The value to set halt to
+     * Terminate of all emulator threads and cause [emulationThread] to return
      */
-    private external fun exitGuest(halt : Boolean)
+    private external fun stopEmulation()
 
     /**
      * This sets the surface object in libskyline to the provided value, emulation is halted if set to null
@@ -233,31 +231,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * This is used to stop the currently executing ROM and replace it with the one specified in the new intent
      */
     override fun onNewIntent(intent : Intent?) {
+        super.onNewIntent(intent)
         shouldFinish = false
 
-        exitGuest(true)
+        stopEmulation()
         emulationThread.join()
 
         shouldFinish = true
 
         executeApplication(intent?.data!!)
-
-        super.onNewIntent(intent)
     }
 
-    /**
-     * This is used to halt emulation entirely
-     */
     override fun onDestroy() {
+        super.onDestroy()
         shouldFinish = false
 
-        exitGuest(true)
-        emulationThread.join(1000)
+        stopEmulation()
+        emulationThread.join()
 
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
-
-        super.onDestroy()
     }
 
     /**

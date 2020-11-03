@@ -24,13 +24,10 @@ namespace skyline {
          * @brief KProcess manages process-global state such as memory, kernel handles allocated to the process and synchronization primitives
          */
         class KProcess : public KSyncObject {
-          public:
-            MemoryManager memory; // This is here to ensure it is present during the destruction of dependent objects
+          public: // We have intermittent public/private members to ensure proper construction/destruction order
+            MemoryManager memory;
 
           private:
-            std::vector<std::shared_ptr<KObject>> handles;
-            std::shared_mutex handleMutex;
-
             struct WaitStatus {
                 std::atomic_bool flag{false};
                 i8 priority;
@@ -46,6 +43,8 @@ namespace skyline {
             std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
             std::mutex mutexLock;
             std::mutex conditionalLock;
+
+            size_t threadIndex{}; //!< The ID assigned to the next created thread
 
             /**
             * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)
@@ -69,10 +68,15 @@ namespace skyline {
           public:
             std::shared_ptr<KPrivateMemory> mainThreadStack;
             std::shared_ptr<KPrivateMemory> heap;
-            std::vector<std::shared_ptr<KThread>> threads;
             std::vector<std::shared_ptr<TlsPage>> tlsPages;
+            std::shared_ptr<KThread> mainThread;
             vfs::NPDM npdm;
 
+          private:
+            std::shared_mutex handleMutex;
+            std::vector<std::shared_ptr<KObject>> handles;
+
+          public:
             KProcess(const DeviceState &state);
 
             /**

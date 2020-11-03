@@ -7,6 +7,11 @@
 namespace skyline::kernel {
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {}
 
+    MemoryManager::~MemoryManager() {
+        if (base.address && base.size)
+            munmap(reinterpret_cast<void *>(base.address), base.size);
+    }
+
     constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
 
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {

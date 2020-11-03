@@ -1,3 +1,3 @@
 <component name="DependencyValidationManager">
-  <scope name="SkylineNative" pattern="file[app]:src/main/cpp//*.cpp||file[app]:src/main/cpp//*.h||file[app]:src/main/cpp//*.S" />
+  <scope name="SkylineNative" pattern="file[Skyline.app]:src/main/cpp//*.cpp||file[Skyline.app]:src/main/cpp//*.h||file[Skyline.app]:src/main/cpp//*.S" />
 </component>

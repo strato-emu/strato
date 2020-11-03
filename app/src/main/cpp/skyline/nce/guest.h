@@ -7,6 +7,9 @@
 
 namespace skyline {
     struct DeviceState;
+    namespace constant {
+        constexpr u64 SkyTlsMagic{util::MakeMagic<u64>("SKYTLS")};
+    }
     namespace nce {
         struct WRegister {
             u32 lower;
@@ -96,6 +99,7 @@ namespace skyline {
             u8 *tpidrroEl0; //!< Emulated HOS TPIDRRO_EL0
             u8 *tpidrEl0; //!< Emulated HOS TPIDR_EL0
             const DeviceState *state;
+            u64 magic{constant::SkyTlsMagic};
         };
 
         namespace guest {
