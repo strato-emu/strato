@@ -26,7 +26,7 @@ namespace skyline {
     void Logger::UpdateTag() {
         std::array<char, 16> name;
         if (!pthread_getname_np(pthread_self(), name.data(), name.size()))
-             threadName = name.data();
+            threadName = name.data();
         else
             threadName = "unk";
         logTag = std::string("emu-cpp-") + threadName;

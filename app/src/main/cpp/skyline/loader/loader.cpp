@@ -35,7 +35,7 @@ namespace skyline::loader {
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
         state.logger->Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.data.offset, dataSize);
 
-        state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32*>(base), patch.size, patch.offsets);
+        state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets);
         std::memcpy(base + patch.size + executable.text.offset, executable.text.contents.data(), textSize);
         std::memcpy(base + patch.size + executable.ro.offset, executable.ro.contents.data(), roSize);
         std::memcpy(base + patch.size + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);

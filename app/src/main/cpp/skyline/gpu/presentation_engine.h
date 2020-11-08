@@ -29,7 +29,7 @@ namespace skyline::gpu {
 
         void UpdateSurface(jobject newSurface);
 
-        void Present(const std::shared_ptr<Texture>& texture);
+        void Present(const std::shared_ptr<Texture> &texture);
 
         ANativeWindow *window{};
     };

@@ -40,15 +40,15 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#IPC_Command_Structure
          */
         struct CommandHeader {
-            CommandType type  : 16;
-            u8 xNo            : 4;
-            u8 aNo            : 4;
-            u8 bNo            : 4;
-            u8 wNo            : 4;
-            u32 rawSize       : 10;
+            CommandType type : 16;
+            u8 xNo : 4;
+            u8 aNo : 4;
+            u8 bNo : 4;
+            u8 wNo : 4;
+            u32 rawSize : 10;
             BufferCFlag cFlag : 4;
             u32               : 17;
-            bool handleDesc   : 1;
+            bool handleDesc : 1;
         };
         static_assert(sizeof(CommandHeader) == 8);
 
@@ -56,7 +56,7 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#Handle_descriptor
          */
         struct HandleDescriptor {
-            bool sendPid  : 1;
+            bool sendPid : 1;
             u32 copyCount : 4;
             u32 moveCount : 4;
             u32           : 23;
@@ -122,12 +122,12 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#Buffer_descriptor_X_.22Pointer.22
          */
         struct BufferDescriptorX {
-            u16 counter0_5   : 6; //!< The first 5 bits of the counter
+            u16 counter0_5 : 6; //!< The first 5 bits of the counter
             u16 address36_38 : 3; //!< Bit 36-38 of the address
-            u16 counter9_11  : 3; //!< Bit 9-11 of the counter
+            u16 counter9_11 : 3; //!< Bit 9-11 of the counter
             u16 address32_35 : 4; //!< Bit 32-35 of the address
-            u16 size         : 16; //!< The 16 bit size of the buffer
-            u32 address0_31  : 32; //!< The first 32-bits of the address
+            u16 size : 16; //!< The 16 bit size of the buffer
+            u32 address0_31 : 32; //!< The first 32-bits of the address
 
             BufferDescriptorX(u64 address, u16 counter, u16 size) : size(size) {
                 address0_31 = static_cast<u32>(address & 0x7FFFFFFF80000000);
@@ -137,8 +137,8 @@ namespace skyline {
                 counter9_11 = static_cast<u16>(address & 0x38);
             }
 
-            inline u8* Pointer() {
-                return reinterpret_cast<u8*>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
+            inline u8 *Pointer() {
+                return reinterpret_cast<u8 *>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
             }
 
             inline u16 Counter() {
@@ -151,12 +151,12 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#Buffer_descriptor_A.2FB.2FW_.22Send.22.2F.22Receive.22.2F.22Exchange.22
          */
         struct BufferDescriptorABW {
-            u32 size0_31    : 32; //!< The first 32 bits of the size
+            u32 size0_31 : 32; //!< The first 32 bits of the size
             u32 address0_31 : 32; //!< The first 32 bits of the address
-            u8 flags        : 2; //!< The buffer flags
+            u8 flags : 2; //!< The buffer flags
             u8 address36_38 : 3; //!< Bit 36-38 of the address
             u32             : 19;
-            u8 size32_35    : 4; //!< Bit 32-35 of the size
+            u8 size32_35 : 4; //!< Bit 32-35 of the size
             u8 address32_35 : 4; //!< Bit 32-35 of the address
 
             BufferDescriptorABW(u64 address, u64 size) {
@@ -167,8 +167,8 @@ namespace skyline {
                 size32_35 = static_cast<u8>(size & 0x78000000);
             }
 
-            inline u8* Pointer() {
-                return reinterpret_cast<u8*>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
+            inline u8 *Pointer() {
+                return reinterpret_cast<u8 *>(static_cast<u64>(address0_31) | static_cast<u64>(address32_35) << 32 | static_cast<u64>(address36_38) << 36);
             }
 
             inline u64 Size() {
@@ -182,10 +182,10 @@ namespace skyline {
          */
         struct BufferDescriptorC {
             u64 address : 48; //!< The 48-bit address of the buffer
-            u32 size    : 16; //!< The 16-bit size of the buffer
+            u32 size : 16; //!< The 16-bit size of the buffer
 
-            inline u8* Pointer() {
-                return reinterpret_cast<u8*>(address);
+            inline u8 *Pointer() {
+                return reinterpret_cast<u8 *>(address);
             }
 
             BufferDescriptorC(u64 address, u16 size) : address(address), size(size) {}

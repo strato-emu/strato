@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv::device {
 
     NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
-            gpu::gpfifo::GpEntry* entries; // In
+            gpu::gpfifo::GpEntry *entries; // In
             u32 numEntries;                // In
             union {
                 struct __attribute__((__packed__)) {

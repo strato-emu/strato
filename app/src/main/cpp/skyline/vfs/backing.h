@@ -72,9 +72,9 @@ namespace skyline::vfs {
          * @param offset The offset where the input should be written
          */
         template<typename T>
-        inline void WriteObject(const T& object, size_t offset = 0) {
+        inline void WriteObject(const T &object, size_t offset = 0) {
             size_t size;
-            if((size = Write(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset)) != sizeof(T))
+            if ((size = Write(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset)) != sizeof(T))
                 throw exception("Object wasn't written fully into output backing: {}/{}", size, sizeof(T));
         }
 

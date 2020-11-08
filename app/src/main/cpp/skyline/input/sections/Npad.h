@@ -56,34 +56,34 @@ namespace skyline::input {
     union NpadButton {
         u64 raw;
         struct {
-            bool a               : 1; //!< The A button
-            bool b               : 1; //!< The B button
-            bool x               : 1; //!< The X button
-            bool y               : 1; //!< The Y button
-            bool leftStick       : 1; //!< The Left-Stick button
-            bool rightStick      : 1; //!< The Right-Stick button
-            bool l               : 1; //!< The L trigger
-            bool r               : 1; //!< The R button
-            bool zl              : 1; //!< The ZL trigger
-            bool zr              : 1; //!< The ZR trigger
-            bool plus            : 1; //!< The + button
-            bool minus           : 1; //!< The - button
-            bool dpadLeft        : 1; //!< D-Pad left
-            bool dpadUp          : 1; //!< D-Pad up
-            bool dpadRight       : 1; //!< D-Pad right
-            bool dpadDown        : 1; //!< D-Pad down
-            bool leftStickLeft   : 1; //!< Left stick left
-            bool leftStickUp     : 1; //!< Left stick up
-            bool leftStickRight  : 1; //!< Left stick right
-            bool leftStickDown   : 1; //!< Left stick down
-            bool rightStickLeft  : 1; //!< Right stick left
-            bool rightStickUp    : 1; //!< Right stick up
+            bool a : 1; //!< The A button
+            bool b : 1; //!< The B button
+            bool x : 1; //!< The X button
+            bool y : 1; //!< The Y button
+            bool leftStick : 1; //!< The Left-Stick button
+            bool rightStick : 1; //!< The Right-Stick button
+            bool l : 1; //!< The L trigger
+            bool r : 1; //!< The R button
+            bool zl : 1; //!< The ZL trigger
+            bool zr : 1; //!< The ZR trigger
+            bool plus : 1; //!< The + button
+            bool minus : 1; //!< The - button
+            bool dpadLeft : 1; //!< D-Pad left
+            bool dpadUp : 1; //!< D-Pad up
+            bool dpadRight : 1; //!< D-Pad right
+            bool dpadDown : 1; //!< D-Pad down
+            bool leftStickLeft : 1; //!< Left stick left
+            bool leftStickUp : 1; //!< Left stick up
+            bool leftStickRight : 1; //!< Left stick right
+            bool leftStickDown : 1; //!< Left stick down
+            bool rightStickLeft : 1; //!< Right stick left
+            bool rightStickUp : 1; //!< Right stick up
             bool rightStickRight : 1; //!< Right stick right
-            bool rightStickDown  : 1; //!< Right stick down
-            bool leftSl          : 1; //!< Left Joy-Con SL button
-            bool leftSr          : 1; //!< Left Joy-Con SR button
-            bool rightSl         : 1; //!< Right Joy-Con SL button
-            bool rightSr         : 1; //!< Right Joy-Con SR button
+            bool rightStickDown : 1; //!< Right stick down
+            bool leftSl : 1; //!< Left Joy-Con SL button
+            bool leftSr : 1; //!< Left Joy-Con SR button
+            bool rightSl : 1; //!< Right Joy-Con SL button
+            bool rightSr : 1; //!< Right Joy-Con SR button
         };
     };
     static_assert(sizeof(NpadButton) == 0x8);

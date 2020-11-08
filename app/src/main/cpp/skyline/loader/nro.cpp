@@ -44,7 +44,7 @@ namespace skyline::loader {
         return buffer;
     }
 
-    void* NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
         Executable nroExecutable{};
 
         nroExecutable.text.contents = GetSegment(header.text);

@@ -17,16 +17,16 @@ namespace skyline::input {
         if (!activated)
             return;
 
-        const auto& lastEntry{section.entries[section.header.currentEntry]};
+        const auto &lastEntry{section.entries[section.header.currentEntry]};
         auto entryIndex{(section.header.currentEntry != constant::HidEntryCount - 1) ? section.header.currentEntry + 1 : 0};
-        auto& entry{section.entries[entryIndex]};
+        auto &entry{section.entries[entryIndex]};
         entry.globalTimestamp = lastEntry.globalTimestamp + 1;
         entry.localTimestamp = lastEntry.localTimestamp + 1;
         entry.touchCount = points.size();
 
         for (size_t i{}; i < points.size(); i++) {
-            const auto& host{points[i]};
-            auto& guest{entry.data[i]};
+            const auto &host{points[i]};
+            auto &guest{entry.data[i]};
             guest.index = i;
             guest.positionX = host.x;
             guest.positionY = host.y;

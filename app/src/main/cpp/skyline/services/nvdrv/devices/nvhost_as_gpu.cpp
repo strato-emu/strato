@@ -108,7 +108,7 @@ namespace skyline::service::nvdrv::device {
                 return NvStatus::Success;
             }
 
-            u8* mapPointer{data.bufferOffset + mapping->pointer};
+            u8 *mapPointer{data.bufferOffset + mapping->pointer};
             u64 mapSize{data.mappingSize ? data.mappingSize : mapping->size};
 
             if (data.flags.fixed)
@@ -183,7 +183,7 @@ namespace skyline::service::nvdrv::device {
                 auto mapping{nvmap->GetObject(entry.nvmapHandle)};
 
                 u64 mapAddress{static_cast<u64>(entry.gpuOffset) << MinAlignmentShift};
-                u8* mapPointer{mapping->pointer + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
+                u8 *mapPointer{mapping->pointer + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
                 u64 mapSize{static_cast<u64>(entry.pages) << MinAlignmentShift};
 
                 state.gpu->memoryManager.MapFixed(mapAddress, mapPointer, mapSize);

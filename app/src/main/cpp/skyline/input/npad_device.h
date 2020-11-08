@@ -27,16 +27,16 @@ namespace skyline::input {
     union NpadStyleSet {
         u32 raw;
         struct {
-            bool proController  : 1; //!< Pro Controller
+            bool proController : 1; //!< Pro Controller
             bool joyconHandheld : 1; //!< Joy-Cons in handheld mode
-            bool joyconDual     : 1; //!< Joy-Cons in a pair
-            bool joyconLeft     : 1; //!< Left Joy-Con only
-            bool joyconRight    : 1; //!< Right Joy-Con only
-            bool gamecube       : 1; //!< GameCube controller
-            bool palma          : 1; //!< Poké Ball Plus controller
-            bool nes            : 1; //!< NES controller
-            bool nesHandheld    : 1; //!< NES controller in handheld mode
-            bool snes           : 1; //!< SNES controller
+            bool joyconDual : 1; //!< Joy-Cons in a pair
+            bool joyconLeft : 1; //!< Left Joy-Con only
+            bool joyconRight : 1; //!< Right Joy-Con only
+            bool gamecube : 1; //!< GameCube controller
+            bool palma : 1; //!< Poké Ball Plus controller
+            bool nes : 1; //!< NES controller
+            bool nesHandheld : 1; //!< NES controller in handheld mode
+            bool snes : 1; //!< SNES controller
         };
     };
     static_assert(sizeof(NpadStyleSet) == 0x4);
@@ -72,9 +72,9 @@ namespace skyline::input {
         u32 raw;
         struct {
             u8 type;
-            NpadId id               : 8;
-            bool isRight            : 1; //!< If this is a right Joy-Con (Both) or right LRA in the Pro-Controller (Vibration)
-            bool isSixAxisSingle    : 1; //!< If the Six-Axis device is a single unit, either Handheld or Pro-Controller
+            NpadId id : 8;
+            bool isRight : 1; //!< If this is a right Joy-Con (Both) or right LRA in the Pro-Controller (Vibration)
+            bool isSixAxisSingle : 1; //!< If the Six-Axis device is a single unit, either Handheld or Pro-Controller
         };
 
         constexpr NpadControllerType GetType() const {

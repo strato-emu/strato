@@ -10,16 +10,16 @@ namespace skyline::input {
         u64 raw;
         struct {
             bool lControl : 1; //!< Left Control Key
-            bool lShift   : 1; //!< Left Shift Key
-            bool lAlt     : 1; //!< Left Alt Key
+            bool lShift : 1; //!< Left Shift Key
+            bool lAlt : 1; //!< Left Alt Key
             bool lWindows : 1; //!< Left Windows Key
             bool rControl : 1; //!< Right Control Key
-            bool rShift   : 1; //!< Right Shift Key
-            bool rAlt     : 1; //!< Right Alt Key
+            bool rShift : 1; //!< Right Shift Key
+            bool rAlt : 1; //!< Right Alt Key
             bool rWindows : 1; //!< Right Windows Key
             bool capsLock : 1; //!< Caps-Lock Key
-            bool scrLock  : 1; //!< Scroll-Lock Key
-            bool numLock  : 1; //!< Num-Lock Key
+            bool scrLock : 1; //!< Scroll-Lock Key
+            bool numLock : 1; //!< Num-Lock Key
         };
     };
 

@@ -43,7 +43,7 @@ namespace skyline::service::nvdrv::device {
             if (handle-- == 0)
                 throw std::out_of_range("0 is an invalid nvmap handle");
             std::shared_lock lock(mapMutex);
-            auto& object{maps.at(handle)};
+            auto &object{maps.at(handle)};
             if (!object)
                 throw std::out_of_range("A freed nvmap handle was requested");
             return object;

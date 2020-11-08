@@ -51,9 +51,9 @@ namespace skyline::loader {
          * @brief Information about the placement of an executable in memory
          */
         struct ExecutableLoadInfo {
-            u8* base; //!< The base of the loaded executable
+            u8 *base; //!< The base of the loaded executable
             size_t size; //!< The total size of the loaded executable
-            void* entry; //!< The entry point of the loaded executable
+            void *entry; //!< The entry point of the loaded executable
         };
 
         /**
@@ -78,6 +78,6 @@ namespace skyline::loader {
         /**
          * @return Entry point to the start of the main executable in the ROM
          */
-        virtual void* LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
+        virtual void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
     };
 }

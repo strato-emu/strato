@@ -31,7 +31,7 @@ namespace skyline::vfs {
 
     NPDM::NPDM(const std::shared_ptr<vfs::Backing> &backing) {
         meta = backing->Read<NpdmMeta>();
-        if(meta.magic != MetaMagic)
+        if (meta.magic != MetaMagic)
             throw exception("NPDM Meta Magic isn't correct: 0x{:X} (\"META\" = 0x{:X})", meta.magic, MetaMagic);
         if (!constant::HosPriority.Valid(meta.mainThreadPriority))
             throw exception("NPDM Main Thread Priority isn't valid: {}", meta.mainThreadStackSize);

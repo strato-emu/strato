@@ -17,7 +17,7 @@ namespace skyline::audio {
             struct {
                 u8 scale : 4; //!< The scale factor for this frame
                 u8 coefficientIndex : 3;
-                u8 _pad_ :1;
+                u8 _pad_ : 1;
             };
         };
         static_assert(sizeof(FrameHeader) == 0x1);

@@ -32,8 +32,8 @@ namespace skyline::service::audio {
 
     Result IAudioOut::AppendAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         struct Data {
-            i16* nextBuffer;
-            i16* sampleBuffer;
+            i16 *nextBuffer;
+            i16 *sampleBuffer;
             u64 sampleCapacity;
             u64 sampleSize;
             u64 sampleOffset;

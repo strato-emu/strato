@@ -32,11 +32,11 @@ namespace skyline {
                 std::atomic_bool flag{false};
                 i8 priority;
                 KHandle handle;
-                u32* mutex{};
+                u32 *mutex{};
 
                 WaitStatus(i8 priority, KHandle handle);
 
-                WaitStatus(i8 priority, KHandle handle, u32* mutex);
+                WaitStatus(i8 priority, KHandle handle, u32 *mutex);
             };
 
             std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
@@ -56,11 +56,11 @@ namespace skyline {
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
                 std::shared_ptr<KPrivateMemory> memory;
 
-                TlsPage(const std::shared_ptr<KPrivateMemory>& memory);
+                TlsPage(const std::shared_ptr<KPrivateMemory> &memory);
 
-                u8* ReserveSlot();
+                u8 *ReserveSlot();
 
-                u8* Get(u8 index);
+                u8 *Get(u8 index);
 
                 bool Full();
             };
@@ -87,7 +87,7 @@ namespace skyline {
             /**
              * @return A 0x200 TLS slot allocated inside the TLS/IO region
              */
-            u8* AllocateTlsSlot();
+            u8 *AllocateTlsSlot();
 
             /**
              * @note The default values are for the main thread and will use values from the NPDM
@@ -159,7 +159,7 @@ namespace skyline {
                 else
                     throw exception("KProcess::GetHandle couldn't determine object type");
                 try {
-                    auto& item{handles.at(handle - constant::BaseHandleIndex)};
+                    auto &item{handles.at(handle - constant::BaseHandleIndex)};
                     if (item != nullptr && item->objectType == objectType)
                         return std::static_pointer_cast<objectClass>(item);
                     else if (item == nullptr)
@@ -181,7 +181,7 @@ namespace skyline {
             * @param address The address to look for
             * @return A shared pointer to the corresponding KMemory object
             */
-            std::optional<HandleOut<KMemory>> GetMemoryObject(u8* ptr);
+            std::optional<HandleOut<KMemory>> GetMemoryObject(u8 *ptr);
 
             /**
              * @brief Closes a handle in the handle table
@@ -195,25 +195,25 @@ namespace skyline {
             * @param owner The handle of the current mutex owner
             * @return If the mutex was successfully locked
             */
-            bool MutexLock(u32* mutex, KHandle owner);
+            bool MutexLock(u32 *mutex, KHandle owner);
 
             /**
             * @brief Unlocks the Mutex at the specified address
             * @return If the mutex was successfully unlocked
             */
-            bool MutexUnlock(u32* mutex);
+            bool MutexUnlock(u32 *mutex);
 
             /**
             * @param timeout The amount of time to wait for the conditional variable
             * @return If the conditional variable was successfully waited for or timed out
             */
-            bool ConditionalVariableWait(void* conditional, u32* mutex, u64 timeout);
+            bool ConditionalVariableWait(void *conditional, u32 *mutex, u64 timeout);
 
             /**
             * @brief Signals a number of conditional variable waiters
             * @param amount The amount of waiters to signal
             */
-            void ConditionalVariableSignal(void* conditional, u64 amount);
+            void ConditionalVariableSignal(void *conditional, u64 amount);
 
             /**
              * @brief Resets the object to an unsignalled state

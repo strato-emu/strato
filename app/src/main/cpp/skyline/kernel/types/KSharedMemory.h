@@ -35,7 +35,7 @@ namespace skyline::kernel::type {
             return span(guest.ptr, guest.size);
         }
 
-        void UpdatePermission(u8* ptr, size_t size, memory::Permission permission) override;
+        void UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) override;
 
         /**
          * @brief The destructor of shared memory, it deallocates the memory from all processes

@@ -14,7 +14,7 @@ namespace skyline::nce {
       private:
         const DeviceState &state;
 
-        static void SvcHandler(u16 svc, ThreadContext* ctx);
+        static void SvcHandler(u16 svc, ThreadContext *ctx);
 
       public:
         static void SignalHandler(int signal, siginfo *info, ucontext *context, void *oldTls);
@@ -32,6 +32,6 @@ namespace skyline::nce {
          * @brief Writes the .patch section and mutates the code accordingly
          * @param patch A pointer to the .patch section which should be exactly patchSize in size and located before the .text section
          */
-        static void PatchCode(std::vector<u8> &text, u32* patch, size_t patchSize, const std::vector<size_t>& offsets);
+        static void PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets);
     };
 }

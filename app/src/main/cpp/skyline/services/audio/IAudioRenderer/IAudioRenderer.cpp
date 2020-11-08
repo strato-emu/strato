@@ -52,19 +52,19 @@ namespace skyline::service::audio::IAudioRenderer {
         input += sizeof(UpdateDataHeader);
         input += inputHeader.behaviorSize; // Unused
 
-        span memoryPoolsIn(reinterpret_cast<MemoryPoolIn*>(input), memoryPools.size());
+        span memoryPoolsIn(reinterpret_cast<MemoryPoolIn *>(input), memoryPools.size());
         input += inputHeader.memoryPoolSize;
         for (size_t i{}; i < memoryPools.size(); i++)
             memoryPools[i].ProcessInput(memoryPoolsIn[i]);
 
         input += inputHeader.voiceResourceSize;
 
-        span voicesIn(reinterpret_cast<VoiceIn*>(input), parameters.voiceCount);
+        span voicesIn(reinterpret_cast<VoiceIn *>(input), parameters.voiceCount);
         input += inputHeader.voiceSize;
         for (u32 i{}; i < voicesIn.size(); i++)
             voices[i].ProcessInput(voicesIn[i]);
 
-        span effectsIn(reinterpret_cast<EffectIn*>(input), parameters.effectCount);
+        span effectsIn(reinterpret_cast<EffectIn *>(input), parameters.effectCount);
         for (u32 i{}; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
 
@@ -96,21 +96,21 @@ namespace skyline::service::audio::IAudioRenderer {
 
         auto output{request.outputBuf.at(0).data()};
 
-        *reinterpret_cast<UpdateDataHeader*>(output) = outputHeader;
+        *reinterpret_cast<UpdateDataHeader *>(output) = outputHeader;
         output += sizeof(UpdateDataHeader);
 
         for (const auto &memoryPool : memoryPools) {
-            *reinterpret_cast<MemoryPoolOut*>(output) = memoryPool.output;
+            *reinterpret_cast<MemoryPoolOut *>(output) = memoryPool.output;
             output += sizeof(MemoryPoolOut);
         }
 
         for (const auto &voice : voices) {
-            *reinterpret_cast<VoiceOut*>(output) = voice.output;
+            *reinterpret_cast<VoiceOut *>(output) = voice.output;
             output += sizeof(VoiceOut);
         }
 
         for (const auto &effect : effects) {
-            *reinterpret_cast<EffectOut*>(output) = effect.output;
+            *reinterpret_cast<EffectOut *>(output) = effect.output;
             output += sizeof(EffectOut);
         }
 

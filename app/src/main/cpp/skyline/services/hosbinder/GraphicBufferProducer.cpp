@@ -113,7 +113,7 @@ namespace skyline::service::hosbinder {
             u32 _pad0_;
         } &data = in.Pop<Data>();
 
-        auto& gbpBuffer{in.Pop<GbpBuffer>()};
+        auto &gbpBuffer{in.Pop<GbpBuffer>()};
 
         std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
 

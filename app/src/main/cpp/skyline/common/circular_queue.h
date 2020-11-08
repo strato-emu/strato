@@ -80,7 +80,7 @@ namespace skyline {
             produceCondition.notify_one();
         }
 
-        inline void Append(span <Type> buffer) {
+        inline void Append(span<Type> buffer) {
             std::unique_lock lock(productionMutex);
             for (auto &item : buffer) {
                 auto next{end + 1};
@@ -100,7 +100,7 @@ namespace skyline {
          * @param tranformation A function that takes in an item of TransformedType as input and returns an item of Type
          */
         template<typename TransformedType, typename Transformation>
-        inline void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
+        inline void AppendTranform(span<TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
             auto next{end};
             for (auto &item : buffer) {

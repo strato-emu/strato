@@ -25,9 +25,9 @@ namespace skyline::kernel::type {
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(u8* ptr, size_t size, memory::Permission permission) = 0;
+        virtual void UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) = 0;
 
-        bool IsInside(u8* ptr) {
+        bool IsInside(u8 *ptr) {
             auto spn{Get()};
             return (spn.data() <= ptr) && ((spn.data() + spn.size()) > ptr);
         }

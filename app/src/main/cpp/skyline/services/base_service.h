@@ -38,8 +38,8 @@ namespace skyline::service {
         ServiceManager &manager;
 
         template<typename Class, typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFunction>
-        static constexpr Result CallBaseFunction(Class* clazz, type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-            return (static_cast<BaseClass*>(clazz)->*BaseFunction)(session, request, response);
+        static constexpr Result CallBaseFunction(Class *clazz, type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+            return (static_cast<BaseClass *>(clazz)->*BaseFunction)(session, request, response);
         }
 
       public:

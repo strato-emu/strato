@@ -7,7 +7,7 @@
 #include "texture.h"
 
 namespace skyline::gpu {
-    GuestTexture::GuestTexture(const DeviceState &state, u8* pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
+    GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
     std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> format, std::optional<texture::Dimensions> dimensions, texture::Swizzle swizzle) {
         if (!host.expired())

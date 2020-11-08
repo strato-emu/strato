@@ -48,10 +48,10 @@ namespace skyline {
          */
         union MemoryAttribute {
             struct {
-                bool isBorrowed     : 1; //!< This is required for async IPC user buffers
-                bool isIpcLocked    : 1; //!< True when IpcRefCount > 0
+                bool isBorrowed : 1; //!< This is required for async IPC user buffers
+                bool isIpcLocked : 1; //!< True when IpcRefCount > 0
                 bool isDeviceShared : 1; //!< True when DeviceRefCount > 0
-                bool isUncached     : 1; //!< This is used to disable memory caching to share memory with the GPU
+                bool isUncached : 1; //!< This is used to disable memory caching to share memory with the GPU
             };
             u32 value{};
         };
@@ -108,11 +108,11 @@ namespace skyline {
 
             constexpr MemoryState() : value(0) {}
 
-            constexpr bool operator==(const MemoryState& other) const {
+            constexpr bool operator==(const MemoryState &other) const {
                 return value == other.value;
             }
 
-            constexpr bool operator!=(const MemoryState& other) const {
+            constexpr bool operator!=(const MemoryState &other) const {
                 return value != other.value;
             }
 
@@ -173,7 +173,7 @@ namespace skyline {
             u64 address;
             size_t size;
 
-            bool IsInside(void* ptr) {
+            bool IsInside(void *ptr) {
                 return (address <= reinterpret_cast<u64>(ptr)) && ((address + size) > reinterpret_cast<u64>(ptr));
             }
         };
@@ -194,13 +194,13 @@ namespace skyline {
 
     namespace kernel {
         struct ChunkDescriptor {
-            u8* ptr;
+            u8 *ptr;
             size_t size;
             memory::Permission permission;
             memory::MemoryState state;
             memory::MemoryAttribute attributes;
 
-            constexpr bool IsCompatible(const ChunkDescriptor& chunk) const {
+            constexpr bool IsCompatible(const ChunkDescriptor &chunk) const {
                 return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value;
             }
         };
@@ -233,11 +233,11 @@ namespace skyline {
              */
             void InitializeVmm(memory::AddressSpaceType type);
 
-            void InitializeRegions(u8* codeStart, u64 size);
+            void InitializeRegions(u8 *codeStart, u64 size);
 
             void InsertChunk(const ChunkDescriptor &chunk);
 
-            std::optional<ChunkDescriptor> Get(void* ptr);
+            std::optional<ChunkDescriptor> Get(void *ptr);
 
             /**
              * @return The cumulative size of all memory mappings in bytes
