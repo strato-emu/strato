@@ -98,7 +98,7 @@ namespace skyline::service::nvdrv::device {
                 }
 
                 u64 gpuAddress{data.offset + data.bufferOffset};
-                u8 *cpuPtr{region->second.cpuPtr + data.bufferOffset};
+                u8 *cpuPtr{region->second.ptr + data.bufferOffset};
 
                 if (state.gpu->memoryManager.MapFixed(gpuAddress, cpuPtr, data.mappingSize)) {
                     state.logger->Warn("Failed to remap GPU address space region: 0x{:X}", gpuAddress);
@@ -108,20 +108,20 @@ namespace skyline::service::nvdrv::device {
                 return NvStatus::Success;
             }
 
-            u8 *mapPointer{data.bufferOffset + mapping->pointer};
-            u64 mapSize{data.mappingSize ? data.mappingSize : mapping->size};
+            u8 *cpuPtr{data.bufferOffset + mapping->ptr};
+            u64 size{data.mappingSize ? data.mappingSize : mapping->size};
 
             if (data.flags.fixed)
-                data.offset = state.gpu->memoryManager.MapFixed(data.offset, mapPointer, mapSize);
+                data.offset = state.gpu->memoryManager.MapFixed(data.offset, cpuPtr, size);
             else
-                data.offset = state.gpu->memoryManager.MapAllocate(mapPointer, mapSize);
+                data.offset = state.gpu->memoryManager.MapAllocate(cpuPtr, size);
 
             if (data.offset == 0) {
                 state.logger->Warn("Failed to map GPU address space region!");
                 return NvStatus::BadParameter;
             }
 
-            regionMap[data.offset] = {mapPointer, mapSize, data.flags.fixed};
+            regionMap[data.offset] = {cpuPtr, size, data.flags.fixed};
 
             return NvStatus::Success;
         } catch (const std::out_of_range &) {
@@ -176,17 +176,17 @@ namespace skyline::service::nvdrv::device {
         constexpr u32 MinAlignmentShift{0x10}; // This shift is applied to all addresses passed to Remap
 
         auto entries{buffer.cast<Entry>()};
-        for (auto entry : entries) {
+        for (const auto &entry : entries) {
             try {
                 auto driver{nvdrv::driver.lock()};
                 auto nvmap{driver->nvMap.lock()};
                 auto mapping{nvmap->GetObject(entry.nvmapHandle)};
 
-                u64 mapAddress{static_cast<u64>(entry.gpuOffset) << MinAlignmentShift};
-                u8 *mapPointer{mapping->pointer + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
-                u64 mapSize{static_cast<u64>(entry.pages) << MinAlignmentShift};
+                u64 virtAddr{static_cast<u64>(entry.gpuOffset) << MinAlignmentShift};
+                u8 *cpuPtr{mapping->ptr + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
+                u64 size{static_cast<u64>(entry.pages) << MinAlignmentShift};
 
-                state.gpu->memoryManager.MapFixed(mapAddress, mapPointer, mapSize);
+                state.gpu->memoryManager.MapFixed(virtAddr, cpuPtr, size);
             } catch (const std::out_of_range &) {
                 state.logger->Warn("Invalid NvMap handle: 0x{:X}", entry.nvmapHandle);
                 return NvStatus::BadParameter;

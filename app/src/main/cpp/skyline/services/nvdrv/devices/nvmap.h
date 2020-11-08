@@ -18,7 +18,7 @@ namespace skyline::service::nvdrv::device {
         struct NvMapObject {
             u32 id;
             u32 size;
-            u8 *pointer{};
+            u8 *ptr{};
             u32 flags{}; //!< The flag of the memory (0 = Read Only, 1 = Read-Write)
             u32 align{};
             u32 heapMask{}; //!< This is set during Alloc and returned during Param
