@@ -199,7 +199,7 @@ namespace skyline::kernel {
         std::shared_lock lock(mutex);
         size_t size{};
         for (const auto &chunk : chunks)
-            if (chunk.state != memory::states::Unmapped)
+            if (chunk.state != memory::states::Unmapped && chunk.state != memory::states::Reserved)
                 size += chunk.size;
         return size;
     }

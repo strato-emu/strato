@@ -61,7 +61,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::AcquireNpadStyleSetUpdateEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<NpadId>()};
-        request.copyHandles.push_back(state.process->InsertItem(state.input->npad.at(id).updateEvent));
+        response.copyHandles.push_back(state.process->InsertItem(state.input->npad.at(id).updateEvent));
         return {};
     }
 

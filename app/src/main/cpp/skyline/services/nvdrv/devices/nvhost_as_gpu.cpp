@@ -79,18 +79,12 @@ namespace skyline::service::nvdrv::device {
         } &data = buffer.as<Data>();
 
         try {
-            auto driver{nvdrv::driver.lock()};
-            auto nvmap{driver->nvMap.lock()};
-            auto mapping{nvmap->GetObject(data.nvmapHandle)};
-
             if (data.flags.remap) {
-                auto region{regionMap.upper_bound(data.offset)};
-                if ((region == regionMap.begin()) || (region == regionMap.end())) {
+                auto region{regionMap.lower_bound(data.offset)};
+                if (region == regionMap.end()) {
                     state.logger->Warn("Cannot remap an unmapped GPU address space region: 0x{:X}", data.offset);
                     return NvStatus::BadParameter;
                 }
-
-                region--; // Upper bound gives us the region after the one we want
 
                 if (region->second.size < data.mappingSize) {
                     state.logger->Warn("Cannot remap an partially mapped GPU address space region: 0x{:X}", data.offset);
@@ -100,13 +94,17 @@ namespace skyline::service::nvdrv::device {
                 u64 gpuAddress{data.offset + data.bufferOffset};
                 u8 *cpuPtr{region->second.ptr + data.bufferOffset};
 
-                if (state.gpu->memoryManager.MapFixed(gpuAddress, cpuPtr, data.mappingSize)) {
+                if (!state.gpu->memoryManager.MapFixed(gpuAddress, cpuPtr, data.mappingSize)) {
                     state.logger->Warn("Failed to remap GPU address space region: 0x{:X}", gpuAddress);
                     return NvStatus::BadParameter;
                 }
 
                 return NvStatus::Success;
             }
+
+            auto driver{nvdrv::driver.lock()};
+            auto nvmap{driver->nvMap.lock()};
+            auto mapping{nvmap->GetObject(data.nvmapHandle)};
 
             u8 *cpuPtr{data.bufferOffset + mapping->ptr};
             u64 size{data.mappingSize ? data.mappingSize : mapping->size};
