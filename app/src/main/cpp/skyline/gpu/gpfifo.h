@@ -67,6 +67,10 @@ namespace skyline::gpu {
                     Sync sync : 1;
                 };
             };
+
+            constexpr u64 Address() {
+                return (static_cast<u64>(getHi) << 32) | (static_cast<u64>(get) << 2);
+            }
         };
         static_assert(sizeof(GpEntry) == sizeof(u64));
 
@@ -140,7 +144,7 @@ namespace skyline::gpu {
 
                 inline void Fetch(const vmm::MemoryManager &memoryManager) {
                     segment.resize(gpEntry.size);
-                    memoryManager.Read<u32>(segment, (static_cast<u64>(gpEntry.getHi) << 32) | (static_cast<u64>(gpEntry.get) << 2));
+                    memoryManager.Read<u32>(segment, gpEntry.Address());
                 }
             };
 

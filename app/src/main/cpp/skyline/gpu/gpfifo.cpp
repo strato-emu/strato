@@ -93,6 +93,8 @@ namespace skyline::gpu::gpfifo {
             pushBuffers->Process([this](PushBuffer &pushBuffer) {
                 if (pushBuffer.segment.empty())
                     pushBuffer.Fetch(state.gpu->memoryManager);
+
+                state.logger->Debug("Processing pushbuffer: 0x{:X}", pushBuffer.gpEntry.Address());
                 Process(pushBuffer.segment);
             });
         } catch (const signal::SignalException &e) {

@@ -117,6 +117,7 @@ namespace skyline::gpu::engine {
                 shadowRegisters.mme.shadowRamControl = static_cast<Registers::MmeShadowRamControl>(params.argument);
                 break;
             case MAXWELL3D_OFFSET(syncpointAction):
+                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(registers.syncpointAction.id));
                 state.gpu->syncpoints.at(registers.syncpointAction.id).Increment();
                 break;
             case MAXWELL3D_OFFSET(semaphore.info):

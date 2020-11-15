@@ -69,28 +69,24 @@ namespace skyline {
 
         inline void Push(const Type &item) {
             std::unique_lock lock(productionMutex);
-            auto next{end + 1};
-            next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
-            if (next == start) {
+            end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
+            if (start == end + 1) {
                 std::unique_lock consumeLock(consumptionMutex);
-                consumeCondition.wait(consumeLock, [=]() { return next != start; });
+                consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
             }
-            *next = item;
-            end = next;
+            *end = item;
             produceCondition.notify_one();
         }
 
         inline void Append(span<Type> buffer) {
             std::unique_lock lock(productionMutex);
             for (auto &item : buffer) {
-                auto next{end + 1};
-                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
-                if (next == start) {
+                end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
+                if (start == end + 1) {
                     std::unique_lock consumeLock(consumptionMutex);
-                    consumeCondition.wait(consumeLock, [=]() { return next != start; });
+                    consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
                 }
-                *next = item;
-                end = next;
+                *(end++) = item;
             }
             produceCondition.notify_one();
         }
@@ -102,9 +98,8 @@ namespace skyline {
         template<typename TransformedType, typename Transformation>
         inline void AppendTranform(span<TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
-            auto next{end};
             for (auto &item : buffer) {
-                end = (end == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
+                end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
                 if (start == end + 1) {
                     std::unique_lock consumeLock(consumptionMutex);
                     consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
