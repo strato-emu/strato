@@ -114,7 +114,7 @@ namespace skyline::service::nvdrv::device {
 
         auto &event{*events.at(userEventId)};
         if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
-            state.logger->Debug("Now waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
+            state.logger->Debug("Waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
             event.Wait(state.gpu, data.fence);
 
             data.value.val = 0;
@@ -139,7 +139,7 @@ namespace skyline::service::nvdrv::device {
     }
 
     NvStatus NvHostCtrl::EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        auto userEventId{buffer.as<u32>()};
+        auto userEventId{buffer.as<u16>()};
         state.logger->Debug("Signalling nvhost event: {}", userEventId);
 
         if (userEventId >= constant::NvHostEventCount || !events.at(userEventId))

@@ -46,7 +46,7 @@ namespace skyline {
         class KThread : public KSyncObject, public std::enable_shared_from_this<KThread> {
           private:
             KProcess *parent;
-            std::optional<std::thread> thread; //!< If this KThread is backed by a host thread then this'll hold it
+            std::thread thread; //!< If this KThread is backed by a host thread then this'll hold it
             pthread_t pthread{}; //!< The pthread_t for the host thread running this guest thread
 
             void StartThread();
@@ -83,7 +83,7 @@ namespace skyline {
             void Start(bool self = false);
 
             /**
-             * @param join Returns after the guest thread has joined rather than instantly
+             * @param join Return after the thread has joined rather than instantly
              */
             void Kill(bool join);
 

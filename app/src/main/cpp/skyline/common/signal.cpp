@@ -4,22 +4,59 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <unwind.h>
-#include <android/log.h>
 #include "signal.h"
 
 namespace skyline::signal {
-    thread_local SignalException signalException;
+    thread_local std::exception_ptr SignalExceptionPtr;
 
     void ExceptionThrow() {
-        throw signalException;
+        std::rethrow_exception(SignalExceptionPtr);
+    }
+
+    std::terminate_handler terminateHandler{};
+
+    void TerminateHandler() {
+        auto exception{std::current_exception()};
+        if (terminateHandler && exception && exception == SignalExceptionPtr) {
+            struct StackFrame {
+                StackFrame *next;
+                void *lr;
+            } *frame;
+
+            asm("MOV %0, FP" : "=r"(frame));
+            frame = frame->next->next;
+
+            if (_Unwind_FindEnclosingFunction(frame->lr) == &ExceptionThrow) // We're in a loop, skip past a frame
+                frame = frame->next->next;
+            else if (_Unwind_FindEnclosingFunction(frame->next->next->next->next->next->lr) == &ExceptionThrow) // We're in a deeper loop, just terminate
+                frame = frame->next->next->next->next->next->next->next;
+
+            asm("MOV SP, %x0\n\t" // Stack frame is the first item on a function's stack, it's used to calculate calling function's stack pointer
+                "MOV LR, %x1\n\t"
+                "MOV FP, %x2\n\t" // The stack frame of the calling function should be set
+                "BR %x3"
+            : : "r"(frame + 1), "r"(frame->lr), "r"(frame->next), "r"(&ExceptionThrow));
+
+            __builtin_unreachable();
+        } else {
+            terminateHandler();
+        }
     }
 
     void ExceptionalSignalHandler(int signal, siginfo *info, ucontext *context) {
+        SignalException signalException;
         signalException.signal = signal;
         signalException.pc = context->uc_mcontext.pc;
         if (signal == SIGSEGV)
             signalException.faultAddress = info->si_addr;
+        SignalExceptionPtr = std::make_exception_ptr(signalException);
         context->uc_mcontext.pc = reinterpret_cast<u64>(&ExceptionThrow);
+
+        auto handler{std::get_terminate()};
+        if (handler != TerminateHandler) {
+            terminateHandler = handler;
+            std::set_terminate(TerminateHandler);
+        }
     }
 
     template<typename Signature>
@@ -47,48 +84,42 @@ namespace skyline::signal {
         TlsRestorer = function;
     }
 
-    std::array<void (*)(int, struct siginfo *, void *), NSIG> DefaultSignalHandlers;
+    struct DefaultSignalHandler {
+        void (*function)(int, struct siginfo *, void *){};
 
-    struct ThreadSignalHandler {
-        pthread_key_t key;
-        std::atomic<u32> count;
-
-        void Decrement();
-
-        static void DecrementStatic(ThreadSignalHandler *thiz) {
-            thiz->Decrement();
-        }
+        ~DefaultSignalHandler();
     };
 
-    std::array<ThreadSignalHandler, NSIG> ThreadSignalHandlers;
+    std::array<DefaultSignalHandler, NSIG> DefaultSignalHandlers;
 
-    void ThreadSignalHandler::Decrement() {
-        u32 current;
-        while ((current = count.load()) && !count.compare_exchange_strong(current, --current));
-        if (current == 0) {
-            int signal{static_cast<int>(this - ThreadSignalHandlers.data())};
+    DefaultSignalHandler::~DefaultSignalHandler() {
+        if (function) {
+            int signal{static_cast<int>(this - DefaultSignalHandlers.data())};
 
             struct sigaction oldAction;
             Sigaction(signal, nullptr, &oldAction);
 
             struct sigaction action{
-                .sa_sigaction = DefaultSignalHandlers.at(signal),
+                .sa_sigaction = function,
                 .sa_flags = oldAction.sa_flags,
             };
             Sigaction(signal, &action);
         }
     }
 
+    thread_local std::array<SignalHandler, NSIG> ThreadSignalHandlers{};
+
+    __attribute__((no_stack_protector)) // Stack protector stores data in TLS at the function epilog and verifies it at the prolog, we cannot allow writes to guest TLS and may switch to an alternative TLS during the signal handler and have disabled the stack protector as a result
     void ThreadSignalHandler(int signal, siginfo *info, ucontext *context) {
         void *tls{}; // The TLS value prior to being restored if it is
         if (TlsRestorer)
             tls = TlsRestorer();
 
-        auto handler{reinterpret_cast<void (*)(int, struct siginfo *, ucontext *, void *)>(pthread_getspecific(ThreadSignalHandlers.at(signal).key))};
+        auto handler{ThreadSignalHandlers.at(signal)};
         if (handler) {
-            handler(signal, info, context, tls);
+            handler(signal, info, context, &tls);
         } else {
-            auto defaultHandler{DefaultSignalHandlers.at(signal)};
+            auto defaultHandler{DefaultSignalHandlers.at(signal).function};
             if (defaultHandler)
                 defaultHandler(signal, info, context);
         }
@@ -97,7 +128,7 @@ namespace skyline::signal {
             asm volatile("MSR TPIDR_EL0, %x0"::"r"(tls));
     }
 
-    void SetSignalHandler(std::initializer_list<int> signals, void (*function)(int, struct siginfo *, ucontext *, void *)) {
+    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function) {
         static std::array<std::once_flag, NSIG> signalHandlerOnce{};
 
         stack_t stack;
@@ -108,21 +139,15 @@ namespace skyline::signal {
         };
 
         for (int signal : signals) {
-            auto &threadHandler{ThreadSignalHandlers.at(signal)};
-            std::call_once(signalHandlerOnce[signal], [signal, action, &threadHandler]() {
-                if (int result = pthread_key_create(&threadHandler.key, reinterpret_cast<void (*)(void *)>(&ThreadSignalHandler::DecrementStatic)))
-                    throw exception("Failed to create per-thread signal handler pthread key: {}", strerror(result));
-
+            std::call_once(signalHandlerOnce[signal], [signal, action]() {
                 struct sigaction oldAction;
                 Sigaction(signal, &action, &oldAction);
                 if (oldAction.sa_flags && oldAction.sa_flags != action.sa_flags)
                     throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
 
-                DefaultSignalHandlers.at(signal) = oldAction.sa_sigaction;
+                DefaultSignalHandlers.at(signal).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
             });
-            if (!pthread_getspecific(ThreadSignalHandlers.at(signal).key))
-                threadHandler.count++;
-            pthread_setspecific(ThreadSignalHandlers.at(signal).key, reinterpret_cast<void *>(function));
+            ThreadSignalHandlers.at(signal) = function;
         }
     }
 

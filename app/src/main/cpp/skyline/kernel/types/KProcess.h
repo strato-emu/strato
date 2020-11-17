@@ -44,7 +44,9 @@ namespace skyline {
             std::mutex mutexLock;
             std::mutex conditionalLock;
 
-            size_t threadIndex{}; //!< The ID assigned to the next created thread
+            std::mutex threadMutex; //!< Synchronizes thread creation to prevent a race between thread creation and thread killing
+            bool disableThreadCreation{}; //!< If to disable thread creation, we use this to prevent thread creation after all threads have been killed
+            std::vector<std::shared_ptr<KThread>> threads;
 
             /**
             * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)
@@ -69,7 +71,6 @@ namespace skyline {
             std::shared_ptr<KPrivateMemory> mainThreadStack;
             std::shared_ptr<KPrivateMemory> heap;
             std::vector<std::shared_ptr<TlsPage>> tlsPages;
-            std::shared_ptr<KThread> mainThread;
             vfs::NPDM npdm;
 
           private:
@@ -78,6 +79,18 @@ namespace skyline {
 
           public:
             KProcess(const DeviceState &state);
+
+            ~KProcess();
+
+            /**
+             * @brief Kill the main thread/all running threads in the process in a graceful manner
+             * @param join Return after the main thread has joined rather than instantly
+             * @param all If to kill all running threads or just the main thread
+             * @param disableCreation If to disable further thread creation
+             * @note If there are no threads then this will silently return
+             * @note The main thread should eventually kill the rest of the threads itself
+             */
+            void Kill(bool join, bool all = false, bool disableCreation = false);
 
             /**
              * @note This requires VMM regions to be initialized, it will map heap at an arbitrary location otherwise
@@ -90,6 +103,7 @@ namespace skyline {
             u8 *AllocateTlsSlot();
 
             /**
+             * @return A shared pointer to a KThread initialized with the specified values or nullptr, if thread creation has been disabled
              * @note The default values are for the main thread and will use values from the NPDM
              */
             std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, i8 priority = -1, i8 idealCore = -1);
@@ -144,20 +158,24 @@ namespace skyline {
                     if (handle == threadSelf)
                         return state.thread;
                     objectType = KType::KThread;
-                } else if constexpr(std::is_same<objectClass, KProcess>())
+                } else if constexpr(std::is_same<objectClass, KProcess>()) {
+                    constexpr KHandle processSelf{0xFFFF8001}; // The handle used by threads in a process to refer to the process
+                    if (handle == processSelf)
+                        return state.process;
                     objectType = KType::KProcess;
-                else if constexpr(std::is_same<objectClass, KSharedMemory>())
+                } else if constexpr(std::is_same<objectClass, KSharedMemory>()) {
                     objectType = KType::KSharedMemory;
-                else if constexpr(std::is_same<objectClass, KTransferMemory>())
+                } else if constexpr(std::is_same<objectClass, KTransferMemory>()) {
                     objectType = KType::KTransferMemory;
-                else if constexpr(std::is_same<objectClass, KPrivateMemory>())
+                } else if constexpr(std::is_same<objectClass, KPrivateMemory>()) {
                     objectType = KType::KPrivateMemory;
-                else if constexpr(std::is_same<objectClass, KSession>())
+                } else if constexpr(std::is_same<objectClass, KSession>()) {
                     objectType = KType::KSession;
-                else if constexpr(std::is_same<objectClass, KEvent>())
+                } else if constexpr(std::is_same<objectClass, KEvent>()) {
                     objectType = KType::KEvent;
-                else
+                } else {
                     throw exception("KProcess::GetHandle couldn't determine object type");
+                }
                 try {
                     auto &item{handles.at(handle - constant::BaseHandleIndex)};
                     if (item != nullptr && item->objectType == objectType)
@@ -166,7 +184,7 @@ namespace skyline {
                         throw exception("GetHandle was called with a deleted handle: 0x{:X}", handle);
                     else
                         throw exception("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType);
-                } catch (std::out_of_range) {
+                } catch (const std::out_of_range&) {
                     throw std::out_of_range(fmt::format("GetHandle was called with an invalid handle: 0x{:X}", handle));
                 }
             }

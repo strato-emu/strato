@@ -62,7 +62,7 @@ namespace skyline::service::audio {
 
     Result IAudioOut::GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto maxCount{static_cast<u32>(request.outputBuf.at(0).size() >> 3)};
-        std::vector<u64> releasedBuffers{track->GetReleasedBuffers(maxCount)};
+        auto releasedBuffers{track->GetReleasedBuffers(maxCount)};
         auto count{static_cast<u32>(releasedBuffers.size())};
 
         // Fill rest of output buffer with zeros

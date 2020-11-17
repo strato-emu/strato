@@ -30,6 +30,31 @@ namespace skyline::kernel::type {
 
     KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
 
+    KProcess::~KProcess() {
+        std::lock_guard guard(threadMutex);
+        disableThreadCreation = true;
+        for (const auto &thread : threads)
+            thread->Kill(true);
+    }
+
+    void KProcess::Kill(bool join, bool all, bool disableCreation) {
+        std::lock_guard guard(threadMutex);
+        if (disableCreation)
+            disableThreadCreation = true;
+        if (all) {
+            for (const auto &thread : threads)
+                thread->Kill(join);
+        } else {
+            std::shared_ptr<KThread> thread;
+            try {
+                thread = threads.at(0);
+            } catch (const std::out_of_range &) {
+                return;
+            }
+            thread->Kill(join);
+        }
+    }
+
     void KProcess::InitializeHeap() {
         constexpr size_t DefaultHeapSize{0x200000};
         heap = heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
@@ -50,15 +75,17 @@ namespace skyline::kernel::type {
     }
 
     std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore) {
-        if (!stackTop && !mainThread) { //!< Main thread stack is created by the kernel and owned by the process
+        std::lock_guard guard(threadMutex);
+        if (disableThreadCreation)
+            return nullptr;
+        if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
             mainThreadStack = mainThreadStack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), state.process->npdm.meta.mainThreadStackSize, memory::Permission{true, true, false}, memory::states::Stack);
             if (mprotect(mainThreadStack->ptr, PAGE_SIZE, PROT_NONE))
                 throw exception("Failed to create guard page for thread stack at 0x{:X}", mainThreadStack->ptr);
             stackTop = mainThreadStack->ptr + mainThreadStack->size;
         }
-        auto thread{NewHandle<KThread>(this, threadIndex++, entry, argument, stackTop, (priority == -1) ? state.process->npdm.meta.mainThreadPriority : priority, (idealCore == -1) ? state.process->npdm.meta.idealCore : idealCore).item};
-        if (!mainThread)
-            mainThread = thread;
+        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, (priority == -1) ? state.process->npdm.meta.mainThreadPriority : priority, (idealCore == -1) ? state.process->npdm.meta.idealCore : idealCore).item};
+        threads.push_back(thread);
         return thread;
     }
 

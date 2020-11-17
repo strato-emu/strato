@@ -27,6 +27,7 @@ namespace skyline::signal {
 
     /**
      * @brief A signal handler which automatically throws an exception with the corresponding signal metadata in a SignalException
+     * @note A termination handler is set in this which prevents any termination from going through as to break out of 'noexcept', do not use std::terminate in a catch clause for this exception
      */
     void ExceptionalSignalHandler(int signal, siginfo *, ucontext *context);
 
@@ -42,14 +43,17 @@ namespace skyline::signal {
      */
     void SetTlsRestorer(void *(*function)());
 
+    using SignalHandler = void (*)(int, struct siginfo *, ucontext *, void **);
+
     /**
      * @brief A wrapper around Sigaction to make it easy to set a sigaction signal handler for multiple signals and also allow for thread-local signal handlers
-     * @param function A sa_action callback with the old TLS (If present) as the 4th argument
+     * @param function A sa_action callback with a pointer to the old TLS (If present) as the 4th argument
+     * @note If 'nullptr' is written into the 4th argument then the old TLS won't be restored or it'll be set to any non-null value written into it
      */
-    void SetSignalHandler(std::initializer_list<int> signals, void (*function)(int, struct siginfo *, ucontext *, void *));
+    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function);
 
     inline void SetSignalHandler(std::initializer_list<int> signals, void (*function)(int, struct siginfo *, ucontext *)) {
-        SetSignalHandler(signals, reinterpret_cast<void (*)(int, struct siginfo *, ucontext *, void *)>(function));
+        SetSignalHandler(signals, reinterpret_cast<SignalHandler>(function));
     }
 
     /**

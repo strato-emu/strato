@@ -67,6 +67,7 @@ namespace skyline::service::fssrv {
         /**
          * @brief Returns a handle to an instance of #IFileSystem
          * @url https://switchbrew.org/wiki/Filesystem_services#IFileSystem for the requested save data area
+         * @url https://switchbrew.org/wiki/Filesystem_services#OpenSaveDataFileSystem
          */
         Result OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

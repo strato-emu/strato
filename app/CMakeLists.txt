@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -Wno-unused-command-line-argument")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -Wno-unused-command-line-argument")
 if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_definitions(NDEBUG)
 endif ()

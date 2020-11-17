@@ -25,7 +25,6 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     FrameTime = 0;
 
     pthread_setname_np(pthread_self(), "EmuMain");
-    setpriority(PRIO_PGRP, static_cast<id_t>(gettid()), -8); // Set the priority of this process to the highest value
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
     auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
@@ -72,15 +71,10 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_stopEmulation(JNIEn
         os = OsWeak.lock();
     auto process{os->state.process};
     while (!process) {
+        __sync_synchronize();
         process = os->state.process;
-        __sync_synchronize();
     }
-    while (!process->mainThread)
-        __sync_synchronize();
-    auto thread{process->mainThread}; // We just need to kill the main thread, it'll kill the rest itself
-    while (!thread->running)
-        __sync_synchronize();
-    thread->Kill(true);
+    process->Kill(true, false, true);
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {

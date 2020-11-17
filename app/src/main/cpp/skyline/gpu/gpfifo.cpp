@@ -101,11 +101,11 @@ namespace skyline::gpu::gpfifo {
             if (e.signal != SIGINT) {
                 state.logger->Write(Logger::LogLevel::Error, e.what());
                 signal::BlockSignal({SIGINT});
-                state.process->mainThread->Kill(false);
+                state.process->Kill(false);
             }
         } catch (const std::exception &e) {
             state.logger->Write(Logger::LogLevel::Error, e.what());
-            state.process->mainThread->Kill(false);
+            state.process->Kill(false);
         }
     }
 

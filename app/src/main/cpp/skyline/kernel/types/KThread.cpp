@@ -15,13 +15,14 @@ namespace skyline::kernel::type {
     }
 
     KThread::~KThread() {
+        std::unique_lock lock(mutex);
         if (running && pthread != pthread_self()) {
             pthread_kill(pthread, SIGINT);
-            if (thread)
-                thread->join();
-            else
+            if (!thread.joinable())
                 pthread_join(pthread, nullptr);
         }
+        if (thread.joinable())
+            thread.join();
     }
 
     void KThread::StartThread() {
@@ -41,8 +42,10 @@ namespace skyline::kernel::type {
             running = false;
             Signal();
 
-            pthread_setname_np(pthread, threadName.data());
-            state.logger->UpdateTag();
+            if (threadName[0] != 'H' || threadName[1] != 'O' || threadName[2] != 'S' || threadName[3] != '-') {
+                pthread_setname_np(pthread, threadName.data());
+                state.logger->UpdateTag();
+            }
 
             return;
         }
@@ -140,8 +143,8 @@ namespace skyline::kernel::type {
                 lock.unlock();
                 StartThread();
             } else {
-                thread.emplace(&KThread::StartThread, this);
-                pthread = thread->native_handle();
+                thread = std::thread(&KThread::StartThread, this);
+                pthread = thread.native_handle();
             }
         }
     }
@@ -150,8 +153,12 @@ namespace skyline::kernel::type {
         std::lock_guard lock(mutex);
         if (running) {
             pthread_kill(pthread, SIGINT);
-            if (join)
-                pthread_join(pthread, nullptr);
+            if (join) {
+                if (thread.joinable())
+                    thread.join();
+                else
+                    pthread_join(pthread, nullptr);
+            }
             running = false;
         }
     }

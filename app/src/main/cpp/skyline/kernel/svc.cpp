@@ -217,7 +217,7 @@ namespace skyline::kernel::svc {
     void ExitProcess(const DeviceState &state) {
         state.logger->Debug("svcExitProcess: Exiting process");
         if (state.thread->id)
-            state.process->mainThread->Kill(false);
+            state.process->Kill(false);
         std::longjmp(state.thread->originalCtx, true);
     }
 
@@ -250,10 +250,15 @@ namespace skyline::kernel::svc {
             throw exception("svcCreateThread: Cannot find memory object in handle table for thread stack: 0x{:X}", stackTop);
 
         auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, idealCore)};
-        state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, ID: {})", thread->handle, entry, entryArgument, stackTop, priority, thread->id);
+        if (thread) {
+            state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, ID: {})", thread->handle, entry, entryArgument, stackTop, priority, thread->id);
 
-        state.ctx->gpr.w1 = thread->handle;
-        state.ctx->gpr.w0 = Result{};
+            state.ctx->gpr.w1 = thread->handle;
+            state.ctx->gpr.w0 = Result{};
+        } else {
+            state.ctx->gpr.w1 = 0;
+            state.ctx->gpr.w0 = result::OutOfResource;
+        }
     }
 
     void StartThread(const DeviceState &state) {
@@ -509,7 +514,8 @@ namespace skyline::kernel::svc {
         span waitHandles(reinterpret_cast<KHandle *>(state.ctx->gpr.x1), numHandles);
 
         for (const auto &handle : waitHandles) {
-            handleStr += fmt::format("* 0x{:X}\n", handle);
+            if (Logger::LogLevel::Debug <= state.logger->configLevel)
+                handleStr += fmt::format("* 0x{:X}\n", handle);
 
             auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {

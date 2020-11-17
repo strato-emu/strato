@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <cxxabi.h>
 #include <unistd.h>
 #include "common/signal.h"
 #include "os.h"
@@ -28,62 +29,72 @@ namespace skyline::nce {
                 state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
-                    state.process->mainThread->Kill(false);
+                    state.process->Kill(false);
                 }
             }
+            abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
-                state.process->mainThread->Kill(false);
+                state.process->Kill(false);
             }
+            abi::__cxa_end_catch();
             std::longjmp(state.thread->originalCtx, true);
         }
     }
 
-    void NCE::SignalHandler(int signal, siginfo *info, ucontext *context, void *oldTls) {
-        if (oldTls) {
-            const auto &state{*reinterpret_cast<ThreadContext *>(oldTls)->state};
+    void NCE::SignalHandler(int signal, siginfo *info, ucontext *context, void **tls) {
+        if (*tls) {
+            const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
+            if (signal != SIGINT) {
+                state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
 
-            state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
+                std::string raw;
+                std::string trace;
+                std::string cpuContext;
 
-            std::string raw;
-            std::string trace;
-            std::string cpuContext;
+                const auto &ctx{reinterpret_cast<ucontext *>(context)->uc_mcontext};
+                constexpr u16 instructionCount{20}; // The amount of previous instructions to print
+                auto offset{ctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
+                span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
+                if (mprotect(instructions.data(), instructions.size_bytes(), PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+                    for (auto &instruction : instructions) {
+                        instruction = __builtin_bswap32(instruction);
 
-            const auto &ctx{reinterpret_cast<ucontext *>(context)->uc_mcontext};
-            constexpr u16 instructionCount{20}; // The amount of previous instructions to print
-            auto offset{ctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
-            span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
-            for (auto &instruction : instructions) {
-                instruction = __builtin_bswap32(instruction);
+                        if (offset == ctx.pc)
+                            trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
+                        else
+                            trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
 
-                if (offset == ctx.pc)
-                    trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
-                else
-                    trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
+                        raw += fmt::format("{:08X}", instruction);
+                        offset += sizeof(u32);
+                    }
 
-                raw += fmt::format("{:08X}", instruction);
-                offset += sizeof(u32);
+                    state.logger->Debug("Process Trace:{}", trace);
+                    state.logger->Debug("Raw Instructions: 0x{}", raw);
+                } else {
+                    cpuContext += fmt::format("\nPC: 0x{:X}", ctx.pc);
+                }
+
+                if (ctx.fault_address)
+                    cpuContext += fmt::format("\nFault Address: 0x{:X}", ctx.fault_address);
+
+                if (ctx.sp)
+                    cpuContext += fmt::format("\nStack Pointer: 0x{:X}", ctx.sp);
+
+                for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
+                    cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
+
+                state.logger->Debug("CPU Context:{}", cpuContext);
             }
-
-            if (ctx.fault_address)
-                cpuContext += fmt::format("\nFault Address: 0x{:X}", ctx.fault_address);
-
-            if (ctx.sp)
-                cpuContext += fmt::format("\nStack Pointer: 0x{:X}", ctx.sp);
-
-            for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
-                cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
-
-            state.logger->Debug("Process Trace:{}", trace);
-            state.logger->Debug("Raw Instructions: 0x{}", raw);
-            state.logger->Debug("CPU Context:{}", cpuContext);
 
             context->uc_mcontext.pc = reinterpret_cast<skyline::u64>(&std::longjmp);
             context->uc_mcontext.regs[0] = reinterpret_cast<u64>(state.thread->originalCtx);
             context->uc_mcontext.regs[1] = true;
+
+            *tls = nullptr;
         } else {
             signal::ExceptionalSignalHandler(signal, info, context); //!< Delegate throwing a host exception to the exceptional signal handler
         }

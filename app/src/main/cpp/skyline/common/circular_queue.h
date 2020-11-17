@@ -21,9 +21,9 @@ namespace skyline {
         std::condition_variable produceCondition;
 
       public:
-        CircularQueue(size_t size) : vector(size * sizeof(Type)) {}
+        inline CircularQueue(size_t size) : vector(size * sizeof(Type)) {}
 
-        ~CircularQueue() {
+        inline ~CircularQueue() {
             ssize_t size{};
             if (start < end)
                 size = end - start;
