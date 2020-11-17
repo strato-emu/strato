@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2019-2020 Ryujinx Team and Contributors
 
 #include <gpu.h>
 #include <kernel/types/KProcess.h>
@@ -7,75 +8,102 @@
 #include "nvhost_ctrl.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostEvent::NvHostEvent(const DeviceState &state) : event(std::make_shared<type::KEvent>(state, false)) {}
+    SyncpointEvent::SyncpointEvent(const DeviceState &state) : event(std::make_shared<type::KEvent>(state, false)) {}
 
-    void NvHostEvent::Signal() {
+    /**
+     * @brief Metadata about a syncpoint event, used by QueryEvent and SyncpointEventWait
+     */
+    union SyncpointEventValue {
+        u32 val;
+
+        struct {
+            u8 _pad0_ : 4;
+            u32 syncpointIdAsync : 28;
+        };
+
+        struct {
+            union {
+                u8 eventSlotAsync;
+                u16 eventSlotNonAsync;
+            };
+            u16 syncpointIdNonAsync : 12;
+            bool nonAsync : 1;
+            u8 _pad12_ : 3;
+        };
+    };
+    static_assert(sizeof(SyncpointEventValue) == sizeof(u32));
+
+    void SyncpointEvent::Signal() {
+        std::lock_guard lock(mutex);
+
         auto oldState{state};
         state = State::Signalling;
 
-        // This is to ensure that the HOS event isn't signalled when the nvhost event is cancelled
+        // We should only signal the KEvent if the event is actively being waited on
         if (oldState == State::Waiting)
             event->Signal();
 
         state = State::Signalled;
     }
 
-    void NvHostEvent::Cancel(const std::shared_ptr<gpu::GPU> &gpuState) {
+    void SyncpointEvent::Cancel(const std::shared_ptr<gpu::GPU> &gpuState) {
+        std::lock_guard lock(mutex);
+
         gpuState->syncpoints.at(fence.id).DeregisterWaiter(waiterId);
         Signal();
         event->ResetSignal();
     }
 
-    void NvHostEvent::Wait(const std::shared_ptr<gpu::GPU> &gpuState, const Fence &fence) {
-        waiterId = gpuState->syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
+    void SyncpointEvent::Wait(const std::shared_ptr<gpu::GPU> &gpuState, const Fence &fence) {
+        std::lock_guard lock(mutex);
 
-        // If waiter ID is zero then the fence has already been hit and was signalled in the call to RegisterWaiter
-        if (waiterId) {
-            this->fence = fence;
-            state = State::Waiting;
-        }
+        this->fence = fence;
+        state = State::Waiting;
+        waiterId = gpuState->syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
     }
+
 
     NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state) {}
 
-    u32 NvHostCtrl::FindFreeEvent(u32 syncpointId) {
-        u32 eventIndex{constant::NvHostEventCount}; //!< Holds the index of the last populated event in the event array
-        u32 freeIndex{constant::NvHostEventCount}; //!< Holds the index of the first unused event id
+    u32 NvHostCtrl::FindFreeSyncpointEvent(u32 syncpointId) {
+        u32 eventSlot{constant::NvHostEventCount}; //!< Holds the slot of the last populated event in the event array
+        u32 freeSlot{constant::NvHostEventCount}; //!< Holds the slot of the first unused event id
+        std::lock_guard lock(syncpointEventMutex);
 
         for (u32 i{}; i < constant::NvHostEventCount; i++) {
-            if (events[i]) {
-                const auto &event{*events[i]};
+            if (syncpointEvents[i]) {
+                auto event{syncpointEvents[i]};
 
-                if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signalled) {
-                    eventIndex = i;
+                if (event->state == SyncpointEvent::State::Cancelled || event->state == SyncpointEvent::State::Available || event->state == SyncpointEvent::State::Signalled) {
+                    eventSlot = i;
 
                     // This event is already attached to the requested syncpoint, so use it
-                    if (event.fence.id == syncpointId)
-                        return eventIndex;
+                    if (event->fence.id == syncpointId)
+                        return eventSlot;
                 }
-            } else if (freeIndex == constant::NvHostEventCount) {
-                freeIndex = i;
+            } else if (freeSlot == constant::NvHostEventCount) {
+                freeSlot = i;
             }
         }
 
         // Use an unused event if possible
-        if (freeIndex < constant::NvHostEventCount) {
-            events.at(freeIndex) = static_cast<const std::optional<NvHostEvent>>(NvHostEvent(state));
-            return freeIndex;
+        if (freeSlot < constant::NvHostEventCount) {
+            syncpointEvents[eventSlot] = std::make_shared<SyncpointEvent>(state);
+            return freeSlot;
         }
 
         // Recycle an existing event if all else fails
-        if (eventIndex < constant::NvHostEventCount)
-            return eventIndex;
+        if (eventSlot < constant::NvHostEventCount)
+            return eventSlot;
 
         throw exception("Failed to find a free nvhost event!");
     }
 
-    NvStatus NvHostCtrl::EventWaitImpl(span<u8> buffer, bool async) {
+    NvStatus NvHostCtrl::SyncpointEventWaitImpl(span<u8> buffer, bool async) {
         struct Data {
-            Fence fence;      // In
-            u32 timeout;      // In
-            EventValue value; // InOut
+            Fence fence;               // In
+            u32 timeout;               // In
+            SyncpointEventValue value; // InOut
         } &data = buffer.as<Data>();
 
         if (data.fence.id >= constant::MaxHwSyncpointCount)
@@ -100,22 +128,29 @@ namespace skyline::service::nvdrv::device {
             return NvStatus::Success;
         }
 
-        u32 userEventId{};
+        u32 eventSlot{};
         if (async) {
-            if (data.value.val >= constant::NvHostEventCount || !events.at(data.value.val))
+            if (data.value.val >= constant::NvHostEventCount)
                 return NvStatus::BadValue;
 
-            userEventId = data.value.val;
+            eventSlot = data.value.val;
         } else {
             data.fence.value = 0;
 
-            userEventId = FindFreeEvent(data.fence.id);
+            eventSlot = FindFreeSyncpointEvent(data.fence.id);
         }
 
-        auto &event{*events.at(userEventId)};
-        if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signalled) {
-            state.logger->Debug("Waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
-            event.Wait(state.gpu, data.fence);
+        std::lock_guard lock(syncpointEventMutex);
+
+        auto event{syncpointEvents[eventSlot]};
+        if (!event)
+            return NvStatus::BadValue;
+
+        std::lock_guard eventLock(event->mutex);
+
+        if (event->state == SyncpointEvent::State::Cancelled || event->state == SyncpointEvent::State::Available || event->state == SyncpointEvent::State::Signalled) {
+            state.logger->Debug("Waiting on syncpoint event: {} with fence: ({}, {})", eventSlot, data.fence.id, data.fence.value);
+            event->Wait(state.gpu, data.fence);
 
             data.value.val = 0;
 
@@ -126,7 +161,7 @@ namespace skyline::service::nvdrv::device {
                 data.value.nonAsync = true;
             }
 
-            data.value.val |= userEventId;
+            data.value.val |= eventSlot;
 
             return NvStatus::Timeout;
         } else {
@@ -138,53 +173,66 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::BadValue;
     }
 
-    NvStatus NvHostCtrl::EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        auto userEventId{buffer.as<u16>()};
-        state.logger->Debug("Signalling nvhost event: {}", userEventId);
+    NvStatus NvHostCtrl::SyncpointClearEventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        auto eventSlot{buffer.as<u16>()};
 
-        if (userEventId >= constant::NvHostEventCount || !events.at(userEventId))
+        if (eventSlot >= constant::NvHostEventCount)
             return NvStatus::BadValue;
 
-        auto &event{*events.at(userEventId)};
+        std::lock_guard lock(syncpointEventMutex);
 
-        if (event.state == NvHostEvent::State::Waiting) {
-            event.state = NvHostEvent::State::Cancelling;
-            state.logger->Debug("Cancelling waiting nvhost event: {}", userEventId);
-            event.Cancel(state.gpu);
+        auto event{syncpointEvents[eventSlot]};
+        if (!event)
+            return NvStatus::BadValue;
+
+        std::lock_guard eventLock(event->mutex);
+
+        if (event->state == SyncpointEvent::State::Waiting) {
+            event->state = SyncpointEvent::State::Cancelling;
+            state.logger->Debug("Cancelling waiting syncpoint event: {}", eventSlot);
+            event->Cancel(state.gpu);
         }
 
-        event.state = NvHostEvent::State::Cancelled;
+        event->state = SyncpointEvent::State::Cancelled;
 
         auto driver{nvdrv::driver.lock()};
         auto &hostSyncpoint{driver->hostSyncpoint};
-        hostSyncpoint.UpdateMin(event.fence.id);
+        hostSyncpoint.UpdateMin(event->fence.id);
 
         return NvStatus::Success;
     }
 
-    NvStatus NvHostCtrl::EventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        return EventWaitImpl(buffer, false);
+    NvStatus NvHostCtrl::SyncpointEventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        return SyncpointEventWaitImpl(buffer, false);
     }
 
-    NvStatus NvHostCtrl::EventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        return EventWaitImpl(buffer, true);
+    NvStatus NvHostCtrl::SyncpointEventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        return SyncpointEventWaitImpl(buffer, true);
     }
 
-    NvStatus NvHostCtrl::EventRegister(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        auto userEventId{buffer.as<u32>()};
-        state.logger->Debug("Registering nvhost event: {}", userEventId);
+    NvStatus NvHostCtrl::SyncpointRegisterEvent(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        auto eventSlot{buffer.as<u32>()};
+        state.logger->Debug("Registering syncpoint event: {}", eventSlot);
 
-        auto &event{events.at(userEventId)};
+        if (eventSlot >= constant::NvHostEventCount)
+            return NvStatus::BadValue;
+
+        std::lock_guard lock(syncpointEventMutex);
+
+        auto &event{syncpointEvents[eventSlot]};
         if (event)
             throw exception("Recreating events is unimplemented");
-        event = NvHostEvent(state);
+
+        event = std::make_shared<SyncpointEvent>(state);
 
         return NvStatus::Success;
     }
 
     std::shared_ptr<type::KEvent> NvHostCtrl::QueryEvent(u32 eventId) {
-        EventValue eventValue{.val = eventId};
-        const auto &event{events.at(eventValue.nonAsync ? eventValue.eventSlotNonAsync : eventValue.eventSlotAsync)};
+        SyncpointEventValue eventValue{.val = eventId};
+        std::lock_guard lock(syncpointEventMutex);
+
+        auto event{syncpointEvents.at(eventValue.nonAsync ? eventValue.eventSlotNonAsync : eventValue.eventSlotAsync)};
 
         if (event && event->fence.id == (eventValue.nonAsync ? eventValue.syncpointIdNonAsync : eventValue.syncpointIdAsync))
             return event->event;

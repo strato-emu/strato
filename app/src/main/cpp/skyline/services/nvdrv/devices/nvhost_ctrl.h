@@ -13,9 +13,9 @@ namespace skyline {
 
     namespace service::nvdrv::device {
         /**
-         * @brief Events are used to expose fences to the userspace, they can be waited on using an IOCTL or be converted into a native HOS KEvent object that can be waited on just like any other KEvent on the guest
+         * @brief Syncpoint Events are used to expose fences to the userspace, they can be waited on using an IOCTL or be converted into a native HOS KEvent object that can be waited on just like any other KEvent on the guest
          */
-        class NvHostEvent {
+        class SyncpointEvent {
           private:
             u64 waiterId{};
 
@@ -31,61 +31,40 @@ namespace skyline {
                 Cancelled = 5,
             };
 
-            NvHostEvent(const DeviceState &state);
+            SyncpointEvent(const DeviceState &state);
 
+            std::recursive_mutex mutex; //!< Protects access to the entire event
             State state{State::Available};
-            Fence fence{}; //!< The fence that is attached to this event
+            Fence fence{}; //!< The fence that is associated with this syncpoint event
             std::shared_ptr<type::KEvent> event{}; //!< Returned by 'QueryEvent'
 
             /**
-             * @brief Stops any wait requests on an event and immediately signals it
+             * @brief Removes any wait requests on a syncpoint event and resets its state
              */
             void Cancel(const std::shared_ptr<gpu::GPU> &gpuState);
 
             /**
-             * @brief Asynchronously waits on an event using the given fence
+             * @brief Asynchronously waits on a syncpoint event using the given fence
              */
             void Wait(const std::shared_ptr<gpu::GPU> &gpuState, const Fence &fence);
         };
 
         /**
-         * @brief NvHostCtrl (/dev/nvhost-ctrl) is used for GPU synchronization
+         * @brief NvHostCtrl (/dev/nvhost-ctrl) is used for NvHost management and synchronisation
          * @url https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-ctrl
          */
         class NvHostCtrl : public NvDevice {
           private:
-            /**
-             * @brief Metadata about an event, it's used by QueryEvent and EventWait
-             */
-            union EventValue {
-                u32 val;
-
-                struct {
-                    u8 _pad0_ : 4;
-                    u32 syncpointIdAsync : 28;
-                };
-
-                struct {
-                    union {
-                        u8 eventSlotAsync;
-                        u16 eventSlotNonAsync;
-                    };
-                    u16 syncpointIdNonAsync : 12;
-                    bool nonAsync : 1;
-                    u8 _pad12_ : 3;
-                };
-            };
-            static_assert(sizeof(EventValue) == sizeof(u32));
-
-            std::array<std::optional<NvHostEvent>, constant::NvHostEventCount> events{};
+            std::mutex syncpointEventMutex;
+            std::array<std::shared_ptr<SyncpointEvent>, constant::NvHostEventCount> syncpointEvents{};
 
             /**
-             * @brief Finds a free event for the given syncpoint id
-             * @return The index of the event in the event map
+             * @brief Finds a free syncpoint event for the given id
+             * @return The index of the syncpoint event in the map
              */
-            u32 FindFreeEvent(u32 syncpointId);
+            u32 FindFreeSyncpointEvent(u32 syncpointId);
 
-            NvStatus EventWaitImpl(span<u8> buffer, bool async);
+            NvStatus SyncpointEventWaitImpl(span<u8> buffer, bool async);
 
           public:
             NvHostCtrl(const DeviceState &state);
@@ -97,37 +76,37 @@ namespace skyline {
             NvStatus GetConfig(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief Signals an NvHost event
-             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_SIGNAL
+             * @brief Clears a syncpoint event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_SYNCPT_CLEAR_EVENT_WAIT
              */
-            NvStatus EventSignal(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+            NvStatus SyncpointClearEventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief Synchronously waits on an NvHost event
-             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT
+             * @brief Synchronously waits on a syncpoint event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_SYNCPT_EVENT_WAIT
              */
-            NvStatus EventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+            NvStatus SyncpointEventWait(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief Asynchronously waits on an NvHost event
-             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_WAIT_ASYNC
+             * @brief Asynchronously waits on a syncpoint event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_SYNCPT_EVENT_WAIT_ASYNC
              */
-            NvStatus EventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+            NvStatus SyncpointEventWaitAsync(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             /**
-             * @brief Registers an NvHost event
-             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_EVENT_REGISTER
+             * @brief Registers a syncpoint event
+             * @url https://switchbrew.org/wiki/NV_services#NVHOST_IOCTL_CTRL_SYNCPT_REGISTER_EVENT
              */
-            NvStatus EventRegister(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+            NvStatus SyncpointRegisterEvent(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
             std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
 
             NVDEVICE_DECL(
                 NVFUNC(0x001B, NvHostCtrl, GetConfig),
-                NVFUNC(0x001C, NvHostCtrl, EventSignal),
-                NVFUNC(0x001D, NvHostCtrl, EventWait),
-                NVFUNC(0x001E, NvHostCtrl, EventWaitAsync),
-                NVFUNC(0x001F, NvHostCtrl, EventRegister)
+                NVFUNC(0x001C, NvHostCtrl, SyncpointClearEventWait),
+                NVFUNC(0x001D, NvHostCtrl, SyncpointEventWait),
+                NVFUNC(0x001E, NvHostCtrl, SyncpointEventWaitAsync),
+                NVFUNC(0x001F, NvHostCtrl, SyncpointRegisterEvent)
             )
         };
     }
