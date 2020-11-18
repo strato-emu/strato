@@ -132,7 +132,7 @@ namespace skyline {
         }
 
         /**
-         * @brief A way to implicitly convert a pointer to size_t and leave it unaffected if it isn't a pointer
+         * @brief A way to implicitly convert a pointer to uintptr_t and leave it unaffected if it isn't a pointer
          */
         template<class T>
         T PointerValue(T item) {
@@ -145,13 +145,24 @@ namespace skyline {
         }
 
         /**
+         * @brief A way to implicitly convert an integral to a pointer, if the return type is a pointer
+         */
+        template<class Return, class T>
+        Return ValuePointer(T item) {
+            if constexpr (std::is_pointer<Return>::value)
+                return reinterpret_cast<Return>(item);
+            else
+                return item;
+        }
+
+        /**
          * @return The value aligned up to the next multiple
          * @note The multiple needs to be a power of 2
          */
         template<typename TypeVal, typename TypeMul>
         constexpr TypeVal AlignUp(TypeVal value, TypeMul multiple) {
             multiple--;
-            return (PointerValue(value) + multiple) & ~(multiple);
+            return ValuePointer<TypeVal>((PointerValue(value) + multiple) & ~(multiple));
         }
 
         /**
@@ -160,7 +171,7 @@ namespace skyline {
          */
         template<typename TypeVal, typename TypeMul>
         constexpr TypeVal AlignDown(TypeVal value, TypeMul multiple) {
-            return PointerValue(value) & ~(multiple - 1);
+            return ValuePointer<TypeVal>(PointerValue(value) & ~(multiple - 1));
         }
 
         /**

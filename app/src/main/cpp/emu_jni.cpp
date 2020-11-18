@@ -2,8 +2,8 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <csignal>
+#include <pthread.h>
 #include <unistd.h>
-#include <sys/resource.h>
 #include <android/log.h>
 #include "skyline/loader/loader.h"
 #include "skyline/common.h"
@@ -21,8 +21,7 @@ std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
-    Fps = 0;
-    FrameTime = 0;
+    Fps = FrameTime = 0;
 
     pthread_setname_np(pthread_self(), "EmuMain");
 
@@ -65,31 +64,39 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(romFd);
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_stopEmulation(JNIEnv *, jobject) {
+extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_stopEmulation(JNIEnv *, jobject) {
     auto os{OsWeak.lock()};
-    while (!os)
-        os = OsWeak.lock();
+    if (!os)
+        return false;
     auto process{os->state.process};
-    while (!process) {
-        __sync_synchronize();
-        process = os->state.process;
-    }
+    if (!process)
+        return false;
     process->Kill(true, false, true);
+    return true;
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {
+extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {
     auto gpu{GpuWeak.lock()};
-    while (!gpu)
-        gpu = GpuWeak.lock();
+    if (!gpu)
+        return false;
     gpu->presentation.UpdateSurface(surface);
+    return true;
 }
 
-extern "C" JNIEXPORT jint Java_emu_skyline_EmulationActivity_getFps(JNIEnv *, jobject) {
-    return Fps;
-}
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceStatistics(JNIEnv *env, jobject thiz) {
+    static jclass clazz{};
+    if (!clazz)
+        clazz = env->GetObjectClass(thiz);
 
-extern "C" JNIEXPORT jfloat Java_emu_skyline_EmulationActivity_getFrametime(JNIEnv *, jobject) {
-    return static_cast<float>(FrameTime) / 100;
+    static jfieldID fpsField{};
+    if (!fpsField)
+        fpsField = env->GetFieldID(clazz, "fps", "I");
+    env->SetIntField(thiz, fpsField, Fps);
+
+    static jfieldID frametimeField{};
+    if (!frametimeField)
+        frametimeField = env->GetFieldID(clazz, "frametime", "F");
+    env->SetFloatField(thiz, frametimeField, static_cast<float>(FrameTime) / 100);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {

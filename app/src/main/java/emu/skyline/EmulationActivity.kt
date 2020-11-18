@@ -68,26 +68,25 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String)
 
     /**
-     * Terminate of all emulator threads and cause [emulationThread] to return
+     * @return If it successfully caused the [emulationThread] to gracefully stop
      */
-    private external fun stopEmulation()
+    private external fun stopEmulation() : Boolean
 
     /**
      * This sets the surface object in libskyline to the provided value, emulation is halted if set to null
      *
      * @param surface The value to set surface to
+     * @return If the value was successfully set
      */
-    private external fun setSurface(surface : Surface?)
+    private external fun setSurface(surface : Surface?) : Boolean
+
+    var fps : Int = 0
+    var frametime : Float = 0.0f
 
     /**
-     * This returns the current FPS of the application
+     * Writes the current performance statistics into [fps] and [frametime] fields
      */
-    private external fun getFps() : Int
-
-    /**
-     * This returns the current frame-time of the application
-     */
-    private external fun getFrametime() : Float
+    private external fun updatePerformanceStatistics()
 
     /**
      * This initializes a guest controller in libskyline
@@ -170,7 +169,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         emulationThread = Thread {
             executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/")
             if (shouldFinish)
-                runOnUiThread { finish() }
+                runOnUiThread {
+                    emulationThread.join()
+                    finish()
+                }
         }
 
         emulationThread.start()
@@ -203,7 +205,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         if (settings.perfStats) {
             perf_stats.postDelayed(object : Runnable {
                 override fun run() {
-                    perf_stats.text = "${getFps()} FPS\n${getFrametime()}ms"
+                    updatePerformanceStatistics()
+                    perf_stats.text = "$fps FPS\n${frametime}ms"
                     perf_stats.postDelayed(this, 250)
                 }
             }, 250)
@@ -234,8 +237,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         super.onNewIntent(intent)
         shouldFinish = false
 
-        stopEmulation()
-        emulationThread.join()
+        while (emulationThread.isAlive)
+            if (stopEmulation())
+                emulationThread.join()
 
         shouldFinish = true
 
@@ -246,8 +250,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         super.onDestroy()
         shouldFinish = false
 
-        stopEmulation()
-        emulationThread.join()
+        while (emulationThread.isAlive)
+            if (stopEmulation())
+                emulationThread.join()
 
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
@@ -259,7 +264,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun surfaceCreated(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceCreated Holder: $holder")
         surface = holder.surface
-        setSurface(surface)
+        while (emulationThread.isAlive)
+            if (setSurface(surface))
+                return
     }
 
     /**
@@ -275,7 +282,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceDestroyed Holder: $holder")
         surface = null
-        setSurface(surface)
+        while (emulationThread.isAlive)
+            if (setSurface(surface))
+                return
     }
 
     /**

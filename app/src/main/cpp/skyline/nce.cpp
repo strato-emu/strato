@@ -59,7 +59,7 @@ namespace skyline::nce {
                 constexpr u16 instructionCount{20}; // The amount of previous instructions to print
                 auto offset{ctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
                 span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
-                if (mprotect(instructions.data(), instructions.size_bytes(), PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+                if (mprotect(util::AlignDown(instructions.data(), PAGE_SIZE), util::AlignUp(instructions.size_bytes(), PAGE_SIZE), PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
                     for (auto &instruction : instructions) {
                         instruction = __builtin_bswap32(instruction);
 
@@ -75,7 +75,7 @@ namespace skyline::nce {
                     state.logger->Debug("Process Trace:{}", trace);
                     state.logger->Debug("Raw Instructions: 0x{}", raw);
                 } else {
-                    cpuContext += fmt::format("\nPC: 0x{:X}", ctx.pc);
+                    cpuContext += fmt::format("\nPC: 0x{:X} ('mprotect' failed with '{}')", ctx.pc, strerror(errno));
                 }
 
                 if (ctx.fault_address)
@@ -85,7 +85,7 @@ namespace skyline::nce {
                     cpuContext += fmt::format("\nStack Pointer: 0x{:X}", ctx.sp);
 
                 for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
-                    cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? ' ' : '\0', index + 1, ctx.regs[index]);
+                    cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, ctx.regs[index], index < 10 ? 'X' : '\0', index + 1, ctx.regs[index]);
 
                 state.logger->Debug("CPU Context:{}", cpuContext);
             }
