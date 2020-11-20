@@ -17,7 +17,7 @@ namespace skyline::vfs {
 
             if (entry.nameSize) {
                 std::vector<char> name(entry.nameSize);
-                backing->Read(span(name).cast<u8>(), header.fileMetaTableOffset + offset + sizeof(RomFsFileEntry));
+                backing->Read(span(name), header.fileMetaTableOffset + offset + sizeof(RomFsFileEntry));
 
                 std::string fullPath{path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize)};
                 fileMap.emplace(fullPath, entry);
@@ -33,7 +33,7 @@ namespace skyline::vfs {
         std::string childPath{path};
         if (entry.nameSize) {
             std::vector<char> name(entry.nameSize);
-            backing->Read(span(name).cast<u8>(), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
+            backing->Read(span(name), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
             childPath = path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize);
         }
 
@@ -90,7 +90,7 @@ namespace skyline::vfs {
 
                 if (romFsFileEntry.nameSize) {
                     std::vector<char> name(romFsFileEntry.nameSize);
-                    backing->Read(span(name).cast<u8>(), header.fileMetaTableOffset + offset + sizeof(RomFileSystem::RomFsFileEntry));
+                    backing->Read(span(name), header.fileMetaTableOffset + offset + sizeof(RomFileSystem::RomFsFileEntry));
 
                     contents.emplace_back(Entry{std::string(name.data(), romFsFileEntry.nameSize), EntryType::File, romFsFileEntry.size});
                 }
@@ -108,7 +108,7 @@ namespace skyline::vfs {
 
                 if (romFsDirectoryEntry.nameSize) {
                     std::vector<char> name(romFsDirectoryEntry.nameSize);
-                    backing->Read(span(name).cast<u8>(), header.dirMetaTableOffset + offset + sizeof(RomFileSystem::RomFsDirectoryEntry));
+                    backing->Read(span(name), header.dirMetaTableOffset + offset + sizeof(RomFileSystem::RomFsDirectoryEntry));
 
                     contents.emplace_back(Entry{std::string(name.data(), romFsDirectoryEntry.nameSize), EntryType::Directory});
                 }

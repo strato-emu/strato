@@ -15,7 +15,7 @@ namespace skyline::crypto {
 
     void KeyStore::ReadPairs(const std::shared_ptr<vfs::Backing> &backing, ReadPairsCallback callback) {
         std::vector<char> fileContent(backing->size);
-        backing->Read(span(fileContent).cast<u8>());
+        backing->Read(span(fileContent));
 
         auto lineStart{fileContent.begin()};
         std::vector<char>::iterator lineEnd;

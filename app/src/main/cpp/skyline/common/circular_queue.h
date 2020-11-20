@@ -49,18 +49,11 @@ namespace skyline {
                     produceCondition.wait(lock, [this]() { return start != end; });
                 }
 
-                ssize_t size{};
-                if (start < end)
-                    size = end - start;
-                else
-                    size = (reinterpret_cast<Type *>(vector.end().base()) - start) + (end - reinterpret_cast<Type *>(vector.begin().base()));
-
-                while (size--) {
-                    function(*start);
-                    if (start + 1 != reinterpret_cast<Type *>(vector.end().base()))
-                        start++;
-                    else
-                        start = reinterpret_cast<Type *>(vector.begin().base());
+                while (start != end) {
+                    auto next{start + 1};
+                    next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                    function(*next);
+                    start = next;
                 }
 
                 consumeCondition.notify_one();
@@ -81,12 +74,14 @@ namespace skyline {
         inline void Append(span<Type> buffer) {
             std::unique_lock lock(productionMutex);
             for (auto &item : buffer) {
-                end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
-                if (start == end + 1) {
+                auto next{end + 1};
+                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                if (next == start) {
                     std::unique_lock consumeLock(consumptionMutex);
-                    consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
+                    consumeCondition.wait(consumeLock, [=]() { return next != start; });
                 }
-                *(end++) = item;
+                *next = item;
+                end = next++;
             }
             produceCondition.notify_one();
         }
@@ -99,12 +94,14 @@ namespace skyline {
         inline void AppendTranform(span<TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
             for (auto &item : buffer) {
-                end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
-                if (start == end + 1) {
+                auto next{end + 1};
+                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                if (next == start) {
                     std::unique_lock consumeLock(consumptionMutex);
-                    consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
+                    consumeCondition.wait(consumeLock, [=]() { return next != start; });
                 }
-                *(end++) = transformation(item);
+                *next = transformation(item);
+                end = next;
             }
             produceCondition.notify_one();
         }

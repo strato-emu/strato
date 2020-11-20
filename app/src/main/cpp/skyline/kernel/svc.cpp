@@ -3,6 +3,7 @@
 
 #include <os.h>
 #include <kernel/types/KProcess.h>
+#include <vfs/npdm.h>
 #include "results.h"
 #include "svc.h"
 
@@ -239,7 +240,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        if (!constant::HosPriority.Valid(priority)) {
+        if (!state.process->npdm.threadInfo.priority.Valid(priority)) {
             state.ctx->gpr.w0 = result::InvalidPriority;
             state.logger->Warn("svcCreateThread: 'priority' invalid: {}", priority);
             return;
@@ -251,7 +252,7 @@ namespace skyline::kernel::svc {
 
         auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, idealCore)};
         if (thread) {
-            state.logger->Debug("svcCreateThread: Created thread with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, ID: {})", thread->handle, entry, entryArgument, stackTop, priority, thread->id);
+            state.logger->Debug("svcCreateThread: Created thread #{} with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, Ideal Core: {})", thread->id, thread->handle, entry, entryArgument, stackTop, priority, idealCore);
 
             state.ctx->gpr.w1 = thread->handle;
             state.ctx->gpr.w0 = Result{};
@@ -316,7 +317,7 @@ namespace skyline::kernel::svc {
     void SetThreadPriority(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
         u32 priority{state.ctx->gpr.w1};
-        if (!constant::HosPriority.Valid(priority)) {
+        if (!state.process->npdm.threadInfo.priority.Valid(priority)) {
             state.logger->Warn("svcSetThreadPriority: 'priority' invalid: 0x{:X}", priority);
             state.ctx->gpr.w0 = result::InvalidPriority;
             return;
@@ -338,7 +339,7 @@ namespace skyline::kernel::svc {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             auto idealCore{thread->idealCore};
             auto affinityMask{thread->affinityMask};
-            state.logger->Debug("svcGetThreadCoreMask: Writing thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask.to_string());
+            state.logger->Debug("svcGetThreadCoreMask: Writing thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
             state.ctx->gpr.x2 = affinityMask.to_ullong();
             state.ctx->gpr.w1 = idealCore;
@@ -351,29 +352,36 @@ namespace skyline::kernel::svc {
 
     void SetThreadCoreMask(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
-        i32 idealCore{static_cast<i32>(state.ctx->gpr.w1)};
-        std::bitset<constant::CoreCount> affinityMask{state.ctx->gpr.x2};
+        i32 coreId{static_cast<i32>(state.ctx->gpr.w1)};
+        CoreMask affinityMask{state.ctx->gpr.x2};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
 
-            if (idealCore == IdealCoreUseProcessValue) {
-                idealCore = state.process->npdm.meta.idealCore;
-                affinityMask.reset().set(idealCore);
-            } else if (idealCore == IdealCoreNoUpdate) {
-                idealCore = thread->idealCore;
-            } else if (idealCore == IdealCoreDontCare) {
-                idealCore = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
+            if (coreId == IdealCoreUseProcessValue) {
+                coreId = state.process->npdm.meta.idealCore;
+                affinityMask.reset().set(coreId);
+            } else if (coreId == IdealCoreNoUpdate) {
+                coreId = thread->idealCore;
+            } else if (coreId == IdealCoreDontCare) {
+                coreId = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
             }
 
-            if (affinityMask.none() || !affinityMask.test(idealCore)) {
-                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Ideal Core: {})", affinityMask.to_string(), idealCore);
+            auto processMask{state.process->npdm.threadInfo.coreMask};
+            if ((processMask | affinityMask) == processMask) {
+                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Process Mask: {})", affinityMask, processMask);
+                state.ctx->gpr.w0 = result::InvalidCoreId;
+                return;
+            }
+
+            if (affinityMask.none() || !affinityMask.test(coreId)) {
+                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Ideal Core: {})", affinityMask, coreId);
                 state.ctx->gpr.w0 = result::InvalidCombination;
                 return;
             }
 
-            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask.to_string());
+            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, coreId, affinityMask);
 
-            thread->idealCore = idealCore;
+            thread->idealCore = coreId;
             thread->affinityMask = affinityMask;
 
             state.ctx->gpr.w0 = Result{};
@@ -735,7 +743,7 @@ namespace skyline::kernel::svc {
             // 3.0.0+
             TotalSystemResourceAvailable = 16,
             TotalSystemResourceUsage = 17,
-            TitleId = 18,
+            ProgramId = 18,
             // 4.0.0+
             PrivilegedProcessId = 19,
             // 5.0.0+
@@ -753,11 +761,16 @@ namespace skyline::kernel::svc {
 
         u64 out{};
         switch (info) {
-            case InfoState::AllowedCpuIdBitmask:
-            case InfoState::AllowedThreadPriorityMask:
             case InfoState::IsCurrentProcessBeingDebugged:
-            case InfoState::TitleId:
             case InfoState::PrivilegedProcessId:
+                break;
+
+            case InfoState::AllowedCpuIdBitmask:
+                out = state.process->npdm.threadInfo.coreMask.to_ullong();
+                break;
+
+            case InfoState::AllowedThreadPriorityMask:
+                out = state.process->npdm.threadInfo.priority.Mask();
                 break;
 
             case InfoState::AliasRegionBaseAddr:
@@ -811,6 +824,10 @@ namespace skyline::kernel::svc {
             case InfoState::TotalSystemResourceUsage:
                 // A very rough approximation of what this should be on the Switch, the amount of memory allocated for storing the memory blocks (https://switchbrew.org/wiki/Kernel_objects#KMemoryBlockManager)
                 out = std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), state.process->memory.GetKMemoryBlockSize());
+                break;
+
+            case InfoState::ProgramId:
+                out = state.process->npdm.aci0.programId;
                 break;
 
             case InfoState::TotalMemoryAvailableWithoutSystemResource:

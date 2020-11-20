@@ -26,6 +26,19 @@
 
 #define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
 
+namespace fmt {
+    /**
+     * @brief A std::bitset formatter for {fmt}
+     */
+    template <size_t N>
+    struct formatter<std::bitset<N>>: formatter<std::string> {
+        template <typename FormatContext>
+        constexpr auto format(const std::bitset<N> &s, FormatContext &ctx) {
+            return formatter<std::string>::format(s.to_string(), ctx);
+        }
+    };
+}
+
 namespace skyline {
     using u128 = __uint128_t; //!< Unsigned 128-bit integer
     using u64 = __uint64_t; //!< Unsigned 64-bit integer
@@ -79,7 +92,7 @@ namespace skyline {
 
     namespace util {
         /**
-         * @brief A way to implicitly cast all pointers to u64s, this is used for libfmt as we use 0x{:X} to print pointers
+         * @brief A way to implicitly cast all pointers to u64s, this is used for {fmt} as we use 0x{:X} to print pointers
          * @note There's the exception of signed char pointers as they represent C Strings
          * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to u64 or passed through fmt::ptr
          */
@@ -96,12 +109,12 @@ namespace skyline {
     }
 
     /**
-     * @brief A wrapper over std::runtime_error with libfmt formatting
+     * @brief A wrapper over std::runtime_error with {fmt} formatting
      */
     class exception : public std::runtime_error {
       public:
         /**
-         * @param formatStr The exception string to be written, with libfmt formatting
+         * @param formatStr The exception string to be written, with {fmt} formatting
          * @param args The arguments based on format_str
          */
         template<typename S, typename... Args>

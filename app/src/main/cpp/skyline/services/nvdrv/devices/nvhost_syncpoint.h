@@ -18,7 +18,7 @@ namespace skyline::service::nvdrv {
             std::atomic<u32> counterMin; //!< The least value the syncpoint can be (The value it was when it was last synchronized with host1x)
             std::atomic<u32> counterMax; //!< The maximum value the syncpoint can reach according to the current usage
             bool interfaceManaged;       //!< If the syncpoint is managed by a host1x client interface, a client interface is a HW block that can handle host1x transactions on behalf of a host1x client (Which would otherwise need to be manually synced using PIO which is synchronous and requires direct cooperation of the CPU)
-            bool reserved;
+            bool reserved;               //!< If the syncpoint is reserved or not, not to be confused with a reserved value
         };
 
         const DeviceState &state;

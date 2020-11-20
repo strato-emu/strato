@@ -5,40 +5,12 @@
 
 #include <csetjmp>
 #include <nce/guest.h>
+#include <kernel/scheduler.h>
 #include "KSyncObject.h"
 #include "KPrivateMemory.h"
 #include "KSharedMemory.h"
 
 namespace skyline {
-    namespace kernel::type {
-        struct Priority {
-            i8 low; //!< The low range of priority
-            i8 high; //!< The high range of priority
-
-            /**
-             * @param priority The priority range of the value
-             * @param value The priority value to rescale
-             * @return The rescaled priority value according to this range
-             */
-            constexpr i8 Rescale(const Priority &priority, i8 value) const {
-                return static_cast<i8>(priority.low + ((static_cast<float>(priority.high - priority.low) / static_cast<float>(priority.low - priority.high)) * (static_cast<float>(value) - priority.low)));
-            }
-
-            /**
-             * @param value The priority value to check for validity
-             * @return If the supplied priority value is valid
-             */
-            constexpr bool Valid(i8 value) const {
-                return (value >= low) && (value <= high);
-            }
-        };
-    }
-
-    namespace constant {
-        constexpr u8 CoreCount{4}; // The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
-        constexpr kernel::type::Priority HosPriority{0, 63}; //!< The range of priorities for Horizon OS
-    }
-
     namespace kernel::type {
         /**
          * @brief KThread manages a single thread of execution which is responsible for running guest code and kernel code which is invoked by the guest
@@ -67,9 +39,9 @@ namespace skyline {
             void *stackTop;
 
             i8 priority;
-            i8 idealCore;
+            i8 idealCore; //!< The ideal CPU core for this thread to run on
             i8 coreId; //!< The CPU core on which this thread is running
-            std::bitset<constant::CoreCount> affinityMask{}; //!< The CPU core on which this thread is running
+            CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
 
             KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore);
 

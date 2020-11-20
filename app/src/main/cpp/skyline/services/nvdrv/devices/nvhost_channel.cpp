@@ -107,7 +107,7 @@ namespace skyline::service::nvdrv::device {
             u32 numJobs;     // In
             u32 flags;       // In
             Fence fence;     // Out
-            u32 reserved[3]; // In
+            u32 _res_[3];    // In
         } &data = buffer.as<Data>();
 
         state.gpu->gpfifo.Initialize(data.numEntries);

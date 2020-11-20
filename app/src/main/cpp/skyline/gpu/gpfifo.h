@@ -68,7 +68,7 @@ namespace skyline::gpu {
                 };
             };
 
-            constexpr u64 Address() {
+            constexpr u64 Address() const {
                 return (static_cast<u64>(getHi) << 32) | (static_cast<u64>(get) << 2);
             }
         };

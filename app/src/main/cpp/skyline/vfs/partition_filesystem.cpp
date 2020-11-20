@@ -20,7 +20,7 @@ namespace skyline::vfs {
         fileDataOffset = stringTableOffset + header.stringTableSize;
 
         std::vector<char> stringTable(header.stringTableSize + 1);
-        backing->Read(span(stringTable).first(header.stringTableSize).cast<u8>(), stringTableOffset);
+        backing->Read(span(stringTable).first(header.stringTableSize), stringTableOffset);
         stringTable[header.stringTableSize] = 0;
 
         for (u32 entryOffset{sizeof(FsHeader)}; entryOffset < header.numFiles * entrySize; entryOffset += entrySize) {

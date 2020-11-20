@@ -48,7 +48,7 @@ namespace skyline::service::nvdrv::device {
             u32 smArchSpaVersion{0x503};                 // Maxwell Generation 5.0.3
             u32 smArchWarpCount{0x80};
             u32 gpuVaBitCount{0x28};
-            u32 reserved{};
+            u32 _res_{};
             u64 flags{0x55};                             // HAS_SYNCPOINTS | SUPPORT_SPARSE_ALLOCS | SUPPORT_CYCLE_STATS | SUPPORT_CYCLE_STATS_SNAPSHOT
             u32 twodClass{0x902D};                       // FERMI_TWOD_A
             u32 threedClass{0xB197};                     // MAXWELL_B
@@ -92,7 +92,7 @@ namespace skyline::service::nvdrv::device {
     NvStatus NvHostCtrlGpu::GetTpcMasks(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
             u32 maskBufSize; // In
-            u32 reserved[3]; // In
+            u32 _res_[3];    // In
             u64 maskBuf;     // Out
         } &data = buffer.as<Data>();
 

@@ -4,7 +4,6 @@
 #pragma once
 
 #include <list>
-#include <kernel/memory.h>
 #include <vfs/npdm.h>
 #include "KThread.h"
 #include "KTransferMemory.h"

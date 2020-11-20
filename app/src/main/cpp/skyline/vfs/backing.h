@@ -45,6 +45,14 @@ namespace skyline::vfs {
         virtual size_t Read(span<u8> output, size_t offset = 0) = 0;
 
         /**
+         * @brief Implicit casting for reading into spans of different types
+         */
+        template<class T, typename std::enable_if<!std::is_same_v<T, u8>, bool>::type = true>
+        inline size_t Read(span<T> output, size_t offset = 0) {
+            return Read(output.template cast<u8>(), offset);
+        }
+
+        /**
          * @brief Read bytes from the backing at a particular offset into an object
          * @param offset The offset to start reading from
          * @return The object that was read
