@@ -21,7 +21,7 @@ namespace skyline {
             u64 timestamp; //!< The timestamp of the latest entry in ticks
             u64 entryCount; //!< The number of written entries
             u64 currentEntry; //!< The index of the latest entry
-            u64 maxEntry{constant::HidEntryCount - 1}; //!< The maximum entry index (16)
+            u64 maxEntry; //!< The maximum entry index
         };
         static_assert(sizeof(CommonHeader) == 0x20);
     }

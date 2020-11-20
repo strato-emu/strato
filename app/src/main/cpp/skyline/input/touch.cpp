@@ -37,6 +37,7 @@ namespace skyline::input {
 
         section.header.timestamp = util::GetTimeTicks();
         section.header.entryCount = std::min(static_cast<u8>(section.header.entryCount + 1), constant::HidEntryCount);
+        section.header.maxEntry = constant::HidEntryCount - 1;
         section.header.currentEntry = entryIndex;
     }
 }
