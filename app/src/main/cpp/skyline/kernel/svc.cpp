@@ -367,7 +367,7 @@ namespace skyline::kernel::svc {
             }
 
             auto processMask{state.process->npdm.threadInfo.coreMask};
-            if ((processMask | affinityMask) == processMask) {
+            if ((processMask | affinityMask) != processMask) {
                 state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Process Mask: {})", affinityMask, processMask);
                 state.ctx->gpr.w0 = result::InvalidCoreId;
                 return;
@@ -790,11 +790,11 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::TotalMemoryAvailable:
-                out = totalPhysicalMemory;
+                out = std::min(totalPhysicalMemory, state.process->memory.heap.size);
                 break;
 
             case InfoState::TotalMemoryUsage:
-                out = state.process->memory.GetMemoryUsage() + state.process->memory.GetKMemoryBlockSize();
+                out = state.process->memory.GetUserMemoryUsage() + state.process->memory.GetSystemResourceUsage();
                 break;
 
             case InfoState::RandomEntropy:
@@ -823,7 +823,7 @@ namespace skyline::kernel::svc {
 
             case InfoState::TotalSystemResourceUsage:
                 // A very rough approximation of what this should be on the Switch, the amount of memory allocated for storing the memory blocks (https://switchbrew.org/wiki/Kernel_objects#KMemoryBlockManager)
-                out = std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), state.process->memory.GetKMemoryBlockSize());
+                out = state.process->memory.GetSystemResourceUsage();
                 break;
 
             case InfoState::ProgramId:
@@ -831,11 +831,11 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::TotalMemoryAvailableWithoutSystemResource:
-                out = totalPhysicalMemory - state.process->npdm.meta.systemResourceSize;
+                out = std::min(totalPhysicalMemory, state.process->memory.heap.size) - state.process->npdm.meta.systemResourceSize;
                 break;
 
             case InfoState::TotalMemoryUsageWithoutSystemResource:
-                out = state.process->memory.GetMemoryUsage(); // Our regular estimates don't contain the system resources
+                out = state.process->memory.GetUserMemoryUsage();
                 break;
 
             case InfoState::UserExceptionContextAddr:

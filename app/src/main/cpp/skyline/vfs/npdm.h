@@ -81,11 +81,12 @@ namespace skyline {
             union __attribute__((packed)) NpdmKernelCapability {
                 /**
                  * @url https://switchbrew.org/wiki/NPDM#ThreadInfo
+                 * @note Priority field names are based on real scheduler priority (Lower value is higher priority)
                  */
                 struct __attribute__((packed)) {
                     u8 pattern : 4; //!< 0b0111
-                    u8 highestPriority : 6;
                     u8 lowestPriority : 6;
+                    u8 highestPriority : 6;
                     u8 minCoreId : 8;
                     u8 maxCoreId : 8;
                 } threadInfo;

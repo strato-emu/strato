@@ -195,18 +195,18 @@ namespace skyline::kernel {
         return std::nullopt;
     }
 
-    size_t MemoryManager::GetMemoryUsage() {
+    size_t MemoryManager::GetUserMemoryUsage() {
         std::shared_lock lock(mutex);
         size_t size{};
         for (const auto &chunk : chunks)
-            if (chunk.state != memory::states::Unmapped && chunk.state != memory::states::Reserved)
+            if (chunk.state == memory::states::Heap)
                 size += chunk.size;
-        return size;
+        return size + code.size + state.process->mainThreadStack->size;
     }
 
-    size_t MemoryManager::GetKMemoryBlockSize() {
+    size_t MemoryManager::GetSystemResourceUsage() {
         std::shared_lock lock(mutex);
         constexpr size_t KMemoryBlockSize{0x40};
-        return util::AlignUp(chunks.size() * KMemoryBlockSize, PAGE_SIZE);
+        return std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), util::AlignUp(chunks.size() * KMemoryBlockSize, PAGE_SIZE));
     }
 }

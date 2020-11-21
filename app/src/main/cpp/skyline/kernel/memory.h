@@ -240,14 +240,15 @@ namespace skyline {
             std::optional<ChunkDescriptor> Get(void *ptr);
 
             /**
-             * @return The cumulative size of all memory mappings in bytes
+             * @return The cumulative size of all heap (Physical Memory + Process Heap) memory mappings, the code region and the main thread stack in bytes
              */
-            size_t GetMemoryUsage();
+            size_t GetUserMemoryUsage();
 
             /**
              * @return The total page-aligned size used to store memory block metadata, if they were KMemoryBlocks rather than ChunkDescriptor
+             * @note There is a ceiling of SystemResourceSize as specified in the NPDM, this value will be clipped to that
              */
-            size_t GetKMemoryBlockSize();
+            size_t GetSystemResourceUsage();
         };
     }
 }

@@ -21,19 +21,14 @@ namespace skyline {
         std::condition_variable produceCondition;
 
       public:
-        inline CircularQueue(size_t size) : vector(size * sizeof(Type)) {}
+        inline CircularQueue(size_t size) : vector((size + 1) * sizeof(Type)) {}
 
         inline ~CircularQueue() {
-            ssize_t size{};
-            if (start < end)
-                size = end - start;
-            else
-                size = (reinterpret_cast<Type *>(vector.end().base()) - start) + (end - reinterpret_cast<Type *>(vector.begin().base()));
-
-            while (size--) {
-                std::destroy_at(start);
-                if (start + 1 == reinterpret_cast<Type *>(vector.end().base()))
-                    start = reinterpret_cast<Type *>(vector.begin().base());
+            while (start != end) {
+                auto next{start + 1};
+                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                std::destroy_at(next);
+                start = next;
             }
         }
 

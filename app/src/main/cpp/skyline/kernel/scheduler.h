@@ -13,15 +13,19 @@ namespace skyline {
     namespace kernel {
         using CoreMask = std::bitset<constant::CoreCount>;
 
+        /**
+         * @brief Priority on HOS determines scheduling behavior relative to other threads
+         * @note Lower priority values result in a higher priority, similar to niceness on Linux
+         */
         struct Priority {
-            u8 min;
-            u8 max;
+            u8 min; //!< Numerically lowest priority, highest scheduler priority
+            u8 max; //!< Numerically highest priority, lowest scheduler priority
 
+            /**
+             * @return A bitmask with each bit corresponding to if scheduler priority with the same index is valid
+             */
             constexpr u64 Mask() const {
-                u64 mask{};
-                for (u8 i{min}; i <= max; i++)
-                    mask |= 1 << i;
-                return mask;
+                return (std::numeric_limits<u64>::max() >> ((std::numeric_limits<u64>::digits - 1 + min) - max)) << min;
             }
 
             constexpr bool Valid(i8 value) const {
