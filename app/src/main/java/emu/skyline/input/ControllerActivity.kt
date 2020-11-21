@@ -65,7 +65,7 @@ class ControllerActivity : AppCompatActivity() {
             if (controller.type == ControllerType.None)
                 return
 
-            if (id == 0 && controller.type.firstController) {
+            if (id == 0) {
                 items.add(HeaderViewItem(getString(R.string.osc)))
 
                 val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }

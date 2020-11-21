@@ -214,11 +214,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         game_view.setOnTouchListener(this)
 
         // Hide on screen controls when first controller is not set
-        on_screen_controller_view.isGone = !InputManager.controllers[0]!!.type.firstController || !settings.onScreenControl
+        on_screen_controller_view.isGone = InputManager.controllers[0]!!.type == ControllerType.None || !settings.onScreenControl
         on_screen_controller_view.setOnButtonStateChangedListener(::onButtonStateChanged)
         on_screen_controller_view.setOnStickStateChangedListener(::onStickStateChanged)
 
-        on_screen_controller_toggle.isGone = on_screen_controller_toggle.isGone
+        on_screen_controller_toggle.isGone = on_screen_controller_view.isGone
         on_screen_controller_toggle.setOnClickListener {
             on_screen_controller_view.isInvisible = !on_screen_controller_view.isInvisible
         }

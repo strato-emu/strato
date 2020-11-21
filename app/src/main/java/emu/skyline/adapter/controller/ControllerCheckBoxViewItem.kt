@@ -11,8 +11,8 @@ import android.view.ViewGroup
 import androidx.core.view.isGone
 import emu.skyline.R
 import emu.skyline.adapter.GenericLayoutFactory
-import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.adapter.GenericListItem
+import emu.skyline.adapter.GenericViewHolder
 import kotlinx.android.synthetic.main.controller_checkbox_item.*
 
 private object ControllerCheckBoxLayoutFactory : GenericLayoutFactory {
@@ -33,4 +33,8 @@ class ControllerCheckBoxViewItem(var title : String, var summary : String, var c
             onCheckedChange.invoke(this, position)
         }
     }
+
+    override fun areItemsTheSame(other : GenericListItem) = other is ControllerCheckBoxViewItem
+
+    override fun areContentsTheSame(other : GenericListItem) = other is ControllerCheckBoxViewItem && title == other.title && summary == other.summary && checked == other.checked
 }

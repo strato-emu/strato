@@ -38,4 +38,8 @@ open class ControllerViewItem(var content : String = "", var subContent : String
     }
 
     fun update() = adapter?.notifyItemChanged(position)
+
+    override fun areItemsTheSame(other : GenericListItem) = other is ControllerViewItem
+
+    override fun areContentsTheSame(other : GenericListItem) = other is ControllerViewItem && content == other.content && subContent == other.subContent
 }
