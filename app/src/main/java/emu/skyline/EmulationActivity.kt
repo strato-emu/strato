@@ -217,6 +217,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         on_screen_controller_view.isGone = InputManager.controllers[0]!!.type == ControllerType.None || !settings.onScreenControl
         on_screen_controller_view.setOnButtonStateChangedListener(::onButtonStateChanged)
         on_screen_controller_view.setOnStickStateChangedListener(::onStickStateChanged)
+        on_screen_controller_view.recenterSticks = settings.onScreenControlRecenterSticks
 
         on_screen_controller_toggle.isGone = on_screen_controller_view.isGone
         on_screen_controller_toggle.setOnClickListener {

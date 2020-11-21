@@ -41,7 +41,7 @@ object InputManager {
         }
 
         controllers = hashMapOf(
-                0 to Controller(0, ControllerType.None),
+                0 to Controller(0, ControllerType.HandheldProController),
                 1 to Controller(1, ControllerType.None),
                 2 to Controller(2, ControllerType.None),
                 3 to Controller(3, ControllerType.None),
