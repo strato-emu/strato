@@ -86,11 +86,11 @@ class MainViewModel : ViewModel() {
                 val searchDocument = DocumentFile.fromTreeUri(context, searchLocation)!!
 
                 val romElements = ArrayList<DataItem>()
+                addEntries(context, "nsp", RomFormat.NSP, searchDocument, romElements)
+                addEntries(context, "xci", RomFormat.XCI, searchDocument, romElements)
                 addEntries(context, "nro", RomFormat.NRO, searchDocument, romElements)
                 addEntries(context, "nso", RomFormat.NSO, searchDocument, romElements)
                 addEntries(context, "nca", RomFormat.NCA, searchDocument, romElements)
-                addEntries(context, "xci", RomFormat.XCI, searchDocument, romElements)
-                addEntries(context, "nsp", RomFormat.NSP, searchDocument, romElements)
 
                 try {
                     romElements.serialize(romsFile)
