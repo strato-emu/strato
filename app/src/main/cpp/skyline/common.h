@@ -96,7 +96,7 @@ namespace skyline {
          * @note There's the exception of signed char pointers as they represent C Strings
          * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to uintptr_t or passed through fmt::ptr
          */
-        template<class T>
+        template<typename T>
         constexpr auto FmtCast(T object) {
             if constexpr (std::is_pointer<T>::value)
                 if constexpr (std::is_same<char, typename std::remove_cv<typename std::remove_pointer<T>::type>::type>::value)
@@ -147,12 +147,12 @@ namespace skyline {
         /**
          * @brief A way to implicitly convert a pointer to uintptr_t and leave it unaffected if it isn't a pointer
          */
-        template<class T>
+        template<typename T>
         T PointerValue(T item) {
             return item;
         }
 
-        template<class T>
+        template<typename T>
         uintptr_t PointerValue(T *item) {
             return reinterpret_cast<uintptr_t>(item);
         }
@@ -160,7 +160,7 @@ namespace skyline {
         /**
          * @brief A way to implicitly convert an integral to a pointer, if the return type is a pointer
          */
-        template<class Return, class T>
+        template<typename Return, typename T>
         Return ValuePointer(T item) {
             if constexpr (std::is_pointer<Return>::value)
                 return reinterpret_cast<Return>(item);
@@ -253,7 +253,7 @@ namespace skyline {
             return result;
         }
 
-        template<class Type>
+        template<typename Type>
         constexpr Type HexStringToInt(std::string_view string) {
             if (string.size() > sizeof(Type) * 2)
                 throw exception("String size larger than type: {} (sizeof(Type): {})", string.size(), sizeof(Type));
@@ -299,7 +299,7 @@ namespace skyline {
         /**
          * @brief We want to support implicitly casting from std::string_view -> span as it is just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
          */
-        template<class Traits>
+        template<typename Traits>
         constexpr span(const std::basic_string_view<T, Traits> &string) : std::span<T, Extent>(const_cast<T *>(string.data()), string.size()) {}
 
         template<typename Out>
@@ -375,21 +375,21 @@ namespace skyline {
     /**
      * @brief Deduction guides required for arguments to span, CTAD will fail for iterators, arrays and containers without this
      */
-    template<class It, class End, size_t Extent = std::dynamic_extent>
+    template<typename It, typename End, size_t Extent = std::dynamic_extent>
     span(It, End) -> span<typename std::iterator_traits<It>::value_type, Extent>;
-    template<class T, size_t Size>
+    template<typename T, size_t Size>
     span(T (&)[Size]) -> span<T, Size>;
-    template<class T, size_t Size>
+    template<typename T, size_t Size>
     span(std::array<T, Size> &) -> span<T, Size>;
-    template<class T, size_t Size>
+    template<typename T, size_t Size>
     span(const std::array<T, Size> &) -> span<const T, Size>;
-    template<class Container>
+    template<typename Container>
     span(Container &) -> span<typename Container::value_type>;
-    template<class Container>
+    template<typename Container>
     span(const Container &) -> span<const typename Container::value_type>;
 
     /**
-     * @brief The Logger class is to write log output to file and logcat
+     * @brief A wrapper around writing logs into a log file and logcat using Android Log APIs
      */
     class Logger {
       private:

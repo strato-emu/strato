@@ -14,14 +14,14 @@ namespace skyline::signal {
     class SignalException {
       public:
         int signal{};
-        u64 pc{};
+        void* pc{};
         void *fault{};
 
         inline std::string what() const {
             if (!fault)
-                return fmt::format("Signal: {} (PC: 0x{:X})", strsignal(signal), pc);
+                return fmt::format("Signal: {} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<uintptr_t>(pc));
             else
-                return fmt::format("Signal: {} @ 0x{:X} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<uintptr_t>(fault), pc);
+                return fmt::format("Signal: {} @ 0x{:X} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<uintptr_t>(fault), reinterpret_cast<uintptr_t>(pc));
         }
     };
 

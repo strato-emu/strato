@@ -419,7 +419,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->gpr.w3)};
+            memory::Permission permission(state.ctx->gpr.w3);
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
                 state.logger->Warn("svcMapSharedMemory: 'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
                 state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
@@ -452,7 +452,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto permission{*reinterpret_cast<memory::Permission *>(&state.ctx->gpr.w3)};
+        memory::Permission permission(state.ctx->gpr.w3);
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
             state.logger->Warn("svcCreateTransferMemory: 'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
             state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;

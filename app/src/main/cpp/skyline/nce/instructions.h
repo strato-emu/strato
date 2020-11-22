@@ -4,12 +4,15 @@
 #include <common.h>
 
 namespace skyline::nce {
-    namespace regs {
-        enum X { X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30 };
-        enum W { W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18, W19, W20, W21, W22, W23, W24, W25, W26, W27, W28, W29, W30 };
+    /**
+     * @note We use unscoped enumerations to leak all register enumerations into the registers namespace
+     */
+    namespace registers {
+        enum X : u8 { X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30 };
+        enum W : u8 { W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18, W19, W20, W21, W22, W23, W24, W25, W26, W27, W28, W29, W30 };
     }
 
-    namespace instr {
+    namespace instructions {
         /**
          * @url https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/brk-breakpoint-instruction
          */
@@ -66,7 +69,7 @@ namespace skyline::nce {
              * @param srcReg The source system register
              * @param dstReg The destination Xn register
              */
-            constexpr Mrs(u32 srcReg, regs::X dstReg) {
+            constexpr Mrs(u32 srcReg, registers::X dstReg) {
                 this->srcReg = srcReg;
                 this->destReg = dstReg;
                 sig = 0xD53;
@@ -184,7 +187,7 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movz(regs::X destReg, u16 imm16, u8 shift = 0) {
+            constexpr Movz(registers::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = shift;
@@ -197,7 +200,7 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movz(regs::W destReg, u16 imm16, u8 shift = 0) {
+            constexpr Movz(registers::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = shift;
@@ -239,7 +242,7 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movk(regs::X destReg, u16 imm16, u8 shift = 0) {
+            constexpr Movk(registers::X destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = shift;
@@ -252,7 +255,7 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movk(regs::W destReg, u16 imm16, u8 shift = 0) {
+            constexpr Movk(registers::W destReg, u16 imm16, u8 shift = 0) {
                 this->destReg = static_cast<u8>(destReg);
                 this->imm16 = imm16;
                 hw = shift;
@@ -291,7 +294,7 @@ namespace skyline::nce {
          * @note 0 is returned for any instruction that isn't required
          */
         template<typename Type>
-        constexpr std::array<u32, sizeof(Type) / sizeof(u16)> MoveRegister(regs::X destination, Type value) {
+        constexpr std::array<u32, sizeof(Type) / sizeof(u16)> MoveRegister(registers::X destination, Type value) {
             std::array<u32, sizeof(Type) / sizeof(u16)> instructions;
 
             auto valuePointer{reinterpret_cast<u16 *>(&value)};
@@ -302,9 +305,9 @@ namespace skyline::nce {
                 auto offsetValue{*(valuePointer + offset)};
                 if (offsetValue) {
                     if (zeroed) {
-                        instruction = instr::Movk(destination, offsetValue, offset).raw;
+                        instruction = instructions::Movk(destination, offsetValue, offset).raw;
                     } else {
-                        instruction = instr::Movz(destination, offsetValue, offset).raw;
+                        instruction = instructions::Movz(destination, offsetValue, offset).raw;
                         zeroed = true;
                     }
                 } else {
@@ -326,7 +329,7 @@ namespace skyline::nce {
              * @param destReg The destination Xn register to store the value in
              * @param srcReg The source Xn register to retrieve the value from
              */
-            constexpr Mov(regs::X destReg, regs::X srcReg) {
+            constexpr Mov(registers::X destReg, registers::X srcReg) {
                 this->destReg = static_cast<u8>(destReg);
                 sig0 = 0x1F;
                 imm = 0;
@@ -340,7 +343,7 @@ namespace skyline::nce {
              * @param destReg The destination Wn register to store the value in
              * @param srcReg The source Wn register to retrieve the value from
              */
-            constexpr Mov(regs::W destReg, regs::W srcReg) {
+            constexpr Mov(registers::W destReg, registers::W srcReg) {
                 this->destReg = static_cast<u8>(destReg);
                 sig0 = 0x1F;
                 imm = 0;

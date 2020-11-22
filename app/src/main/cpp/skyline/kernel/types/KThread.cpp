@@ -62,7 +62,7 @@ namespace skyline::kernel::type {
         "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
         "MOV X0, %x3\n\t" // Store the argument in X0
         "MOV X1, %x4\n\t" // Store the thread handle in X1, NCA applications require this
-        "MOV X2, XZR\n\t"
+        "MOV X2, XZR\n\t" // Zero out other GP and SIMD registers, not doing this will break applications
         "MOV X3, XZR\n\t"
         "MOV X4, XZR\n\t"
         "MOV X5, XZR\n\t"

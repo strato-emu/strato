@@ -7,11 +7,16 @@
 
 namespace skyline {
     namespace memory {
-        struct Permission {
+        union Permission {
             /**
              * @brief Initializes all permissions to false
              */
             constexpr Permission() : r(), w(), x() {}
+
+            /**
+             * @brief Initializes permissions where the first three bits correspond to RWX
+             */
+            constexpr explicit Permission(u8 raw) : raw(raw) {}
 
             /**
              * @param read If memory has read permission
@@ -38,10 +43,14 @@ namespace skyline {
                 return perm;
             }
 
-            bool r; //!< The permission to read
-            bool w; //!< The permission to write
-            bool x; //!< The permission to execute
+            struct {
+                bool r : 1; //!< The permission to read
+                bool w : 1; //!< The permission to write
+                bool x : 1; //!< The permission to execute
+            };
+            u8 raw;
         };
+        static_assert(sizeof(Permission) == sizeof(u8));
 
         /**
          * @url https://switchbrew.org/wiki/SVC#MemoryAttribute

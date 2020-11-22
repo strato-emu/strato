@@ -18,16 +18,20 @@ namespace skyline::kernel {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
         auto keyStore{std::make_shared<crypto::KeyStore>(appFilesPath)};
 
-        if (romType == loader::RomFormat::NRO)
-            state.loader = std::make_shared<loader::NroLoader>(romFile);
-        else if (romType == loader::RomFormat::NSO)
-            state.loader = std::make_shared<loader::NsoLoader>(romFile);
-        else if (romType == loader::RomFormat::NCA)
-            state.loader = std::make_shared<loader::NcaLoader>(romFile, keyStore);
-        else if (romType == loader::RomFormat::NSP)
-            state.loader = std::make_shared<loader::NspLoader>(romFile, keyStore);
-        else
-            throw exception("Unsupported ROM extension.");
+        state.loader = [=]() -> std::shared_ptr<loader::Loader> {
+            switch (romType) {
+                case loader::RomFormat::NRO:
+                    return std::make_shared<loader::NroLoader>(romFile);
+                case loader::RomFormat::NSO:
+                    return std::make_shared<loader::NsoLoader>(romFile);
+                case loader::RomFormat::NCA:
+                    return std::make_shared<loader::NcaLoader>(romFile, keyStore);
+                case loader::RomFormat::NSP:
+                    return std::make_shared<loader::NspLoader>(romFile, keyStore);
+                default:
+                    throw exception("Unsupported ROM extension.");
+            }
+        }();
 
         auto &process{state.process};
         process = std::make_shared<kernel::type::KProcess>(state);

@@ -27,7 +27,7 @@ namespace skyline::loader {
         u8 *base{loadInfo.base};
         void *entry{loadInfo.entry};
 
-        state.logger->Info("Loaded nso 'rtld' at 0x{:X} (.text @ 0x{:X})", base, entry);
+        state.logger->Info("Loaded 'rtld.nso' at 0x{:X} (.text @ 0x{:X})", base, entry);
 
         for (const auto &nso : {"main", "subsdk0", "subsdk1", "subsdk2", "subsdk3", "subsdk4", "subsdk5", "subsdk6", "subsdk7", "sdk"}) {
             if (exeFs->FileExists(nso))

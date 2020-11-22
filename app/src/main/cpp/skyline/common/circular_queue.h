@@ -21,6 +21,9 @@ namespace skyline {
         std::condition_variable produceCondition;
 
       public:
+        /**
+         * @note The internal allocation is an item larger as we require a sentinel value
+         */
         inline CircularQueue(size_t size) : vector((size + 1) * sizeof(Type)) {}
 
         inline CircularQueue(const CircularQueue &) = delete;

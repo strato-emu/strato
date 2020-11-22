@@ -46,7 +46,7 @@ namespace skyline::signal {
     void ExceptionalSignalHandler(int signal, siginfo *info, ucontext *context) {
         SignalException signalException;
         signalException.signal = signal;
-        signalException.pc = context->uc_mcontext.pc;
+        signalException.pc = reinterpret_cast<void *>(context->uc_mcontext.pc);
         if (signal == SIGSEGV)
             signalException.fault = info->si_addr;
         SignalExceptionPtr = std::make_exception_ptr(signalException);

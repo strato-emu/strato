@@ -94,7 +94,7 @@ namespace skyline::kernel::ipc {
 
         payloadOffset = cmdArg;
 
-        if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext)) // SFCI is the magic in received IPC messages
+        if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
             state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
 
         pointer += constant::IpcPaddingSum - padding + cBufferLengthSize;
