@@ -30,9 +30,9 @@ namespace fmt {
     /**
      * @brief A std::bitset formatter for {fmt}
      */
-    template <size_t N>
-    struct formatter<std::bitset<N>>: formatter<std::string> {
-        template <typename FormatContext>
+    template<size_t N>
+    struct formatter<std::bitset<N>> : formatter<std::string> {
+        template<typename FormatContext>
         constexpr auto format(const std::bitset<N> &s, FormatContext &ctx) {
             return formatter<std::string>::format(s.to_string(), ctx);
         }
@@ -92,9 +92,9 @@ namespace skyline {
 
     namespace util {
         /**
-         * @brief A way to implicitly cast all pointers to u64s, this is used for {fmt} as we use 0x{:X} to print pointers
+         * @brief A way to implicitly cast all pointers to uintptr_t, this is used for {fmt} as we use 0x{:X} to print pointers
          * @note There's the exception of signed char pointers as they represent C Strings
-         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to u64 or passed through fmt::ptr
+         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to uintptr_t or passed through fmt::ptr
          */
         template<class T>
         constexpr auto FmtCast(T object) {
@@ -102,7 +102,7 @@ namespace skyline {
                 if constexpr (std::is_same<char, typename std::remove_cv<typename std::remove_pointer<T>::type>::type>::value)
                     return reinterpret_cast<typename std::common_type<char *, T>::type>(object);
                 else
-                    return reinterpret_cast<const u64>(object);
+                    return reinterpret_cast<const uintptr_t>(object);
             else
                 return object;
         }
@@ -153,7 +153,7 @@ namespace skyline {
         }
 
         template<class T>
-        size_t PointerValue(T *item) {
+        uintptr_t PointerValue(T *item) {
             return reinterpret_cast<uintptr_t>(item);
         }
 
@@ -244,7 +244,7 @@ namespace skyline {
         template<size_t Size>
         constexpr std::array<u8, Size> HexStringToArray(std::string_view string) {
             if (string.size() != Size * 2)
-                throw exception("Invalid size");
+                throw exception("String size: {} (Expected {})", string.size(), Size);
             std::array<u8, Size> result;
             for (size_t i{}; i < Size; i++) {
                 size_t index{i * 2};
@@ -255,9 +255,11 @@ namespace skyline {
 
         template<class Type>
         constexpr Type HexStringToInt(std::string_view string) {
+            if (string.size() > sizeof(Type) * 2)
+                throw exception("String size larger than type: {} (sizeof(Type): {})", string.size(), sizeof(Type));
             Type result{};
             size_t offset{(sizeof(Type) * 8) - 4};
-            for (size_t index{}; index < std::min(sizeof(Type) * 2, string.size()); index++, offset -= 4) {
+            for (size_t index{}; index < string.size(); index++, offset -= 4) {
                 char digit{string[index]};
                 if (digit >= '0' && digit <= '9')
                     result |= static_cast<Type>(digit - '0') << offset;

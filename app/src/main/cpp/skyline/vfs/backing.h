@@ -42,13 +42,13 @@ namespace skyline::vfs {
          * @param offset The offset to start reading from
          * @return The amount of bytes read
          */
-        virtual size_t Read(span<u8> output, size_t offset = 0) = 0;
+        virtual size_t Read(span <u8> output, size_t offset = 0) = 0;
 
         /**
          * @brief Implicit casting for reading into spans of different types
          */
         template<class T, typename std::enable_if<!std::is_same_v<T, u8>, bool>::type = true>
-        inline size_t Read(span<T> output, size_t offset = 0) {
+        inline size_t Read(span <T> output, size_t offset = 0) {
             return Read(output.template cast<u8>(), offset);
         }
 
@@ -70,7 +70,7 @@ namespace skyline::vfs {
          * @param offset The offset where the input buffer should be written
          * @return The amount of bytes written
          */
-        virtual size_t Write(span<u8> input, size_t offset = 0) {
+        virtual size_t Write(span <u8> input, size_t offset = 0) {
             throw exception("This backing does not support being written to");
         }
 

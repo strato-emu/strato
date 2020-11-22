@@ -113,7 +113,7 @@ namespace skyline::kernel::svc {
         }
 
         state.process->NewHandle<type::KPrivateMemory>(destination, size, chunk->permission, memory::states::Stack);
-        memcpy(destination, source, size);
+        std::memcpy(destination, source, size);
 
         auto object{state.process->GetMemoryObject(source)};
         if (!object)
@@ -281,12 +281,11 @@ namespace skyline::kernel::svc {
     }
 
     void SleepThread(const DeviceState &state) {
-        u64 in{state.ctx->gpr.x0};
-
+        i64 in{static_cast<i64>(state.ctx->gpr.x0)};
         switch (in) {
             case 0:
-            case 1:
-            case 2:
+            case -1:
+            case -2:
                 state.logger->Debug("svcSleepThread: Yielding thread: {}", in);
                 break;
             default:
@@ -553,7 +552,7 @@ namespace skyline::kernel::svc {
                 break;
             }
 
-            uint index{};
+            u32 index{};
             for (const auto &object : objectTable) {
                 if (object->signalled) {
                     state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);

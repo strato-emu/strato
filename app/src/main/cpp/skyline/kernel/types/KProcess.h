@@ -183,7 +183,7 @@ namespace skyline {
                         throw exception("GetHandle was called with a deleted handle: 0x{:X}", handle);
                     else
                         throw exception("Tried to get kernel object (0x{:X}) with different type: {} when object is {}", handle, objectType, item->objectType);
-                } catch (const std::out_of_range&) {
+                } catch (const std::out_of_range &) {
                     throw std::out_of_range(fmt::format("GetHandle was called with an invalid handle: 0x{:X}", handle));
                 }
             }

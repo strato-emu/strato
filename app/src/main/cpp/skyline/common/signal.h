@@ -15,13 +15,13 @@ namespace skyline::signal {
       public:
         int signal{};
         u64 pc{};
-        void *faultAddress{};
+        void *fault{};
 
         inline std::string what() const {
-            if (!faultAddress)
+            if (!fault)
                 return fmt::format("Signal: {} (PC: 0x{:X})", strsignal(signal), pc);
             else
-                return fmt::format("Signal: {} @ 0x{:X} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<u64>(faultAddress), pc);
+                return fmt::format("Signal: {} @ 0x{:X} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<uintptr_t>(fault), pc);
         }
     };
 

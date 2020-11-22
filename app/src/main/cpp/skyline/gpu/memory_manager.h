@@ -99,14 +99,13 @@ namespace skyline {
              */
             bool Unmap(u64 virtAddr, u64 size);
 
-
             void Read(u8 *destination, u64 virtAddr, u64 size) const;
 
             /**
              * @brief Reads in a span from a region of the virtual address space
              */
             template<typename T>
-            void Read(span<T> destination, u64 virtAddr) const {
+            void Read(span <T> destination, u64 virtAddr) const {
                 Read(reinterpret_cast<u8 *>(destination.data()), virtAddr, destination.size_bytes());
             }
 
@@ -127,7 +126,7 @@ namespace skyline {
              * @brief Writes out a span to a region of the virtual address space
              */
             template<typename T>
-            void Write(span<T> source, u64 virtAddr) const {
+            void Write(span <T> source, u64 virtAddr) const {
                 Write(reinterpret_cast<u8 *>(source.data()), virtAddr, source.size_bytes());
             }
 

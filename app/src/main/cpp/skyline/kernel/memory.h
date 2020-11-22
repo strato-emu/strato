@@ -186,12 +186,6 @@ namespace skyline {
         };
     }
 
-    namespace loader {
-        class NroLoader;
-        class NsoLoader;
-        class NcaLoader;
-    }
-
     namespace kernel {
         struct ChunkDescriptor {
             u8 *ptr;

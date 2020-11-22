@@ -41,7 +41,7 @@ namespace skyline::kernel {
         // Search for a suitable carveout in host AS to fit the guest AS inside of
         std::ifstream mapsFile("/proc/self/maps");
         std::string maps((std::istreambuf_iterator<char>(mapsFile)), std::istreambuf_iterator<char>());
-        size_t line{}, start{1ULL << 35}, alignedStart{1ULL << 35}; // 1 << 35 is where QC KGSL (Kernel Graphic Support Layer) maps down from, we skip over this or KGSL goes OOM
+        size_t line{}, start{1ULL << 35}, alignedStart{1ULL << 35}; // Qualcomm KGSL (Kernel Graphic Support Layer/Kernel GPU driver) maps below 35-bits, reserving it causes KGSL to go OOM
         do {
             auto end{util::HexStringToInt<u64>(std::string_view(maps.data() + line, sizeof(u64) * 2))};
             if (end < start)

@@ -22,7 +22,7 @@ namespace skyline::vfs {
          */
         RegionBacking(const std::shared_ptr<vfs::Backing> &backing, size_t offset, size_t size, Mode mode = {true, false, false}) : Backing(mode, size), backing(backing), baseOffset(offset) {};
 
-        size_t Read(span<u8> output, size_t offset = 0) {
+        size_t Read(span <u8> output, size_t offset = 0) {
             if (!mode.read)
                 throw exception("Attempting to read a backing that is not readable");
             if (size - offset < output.size())

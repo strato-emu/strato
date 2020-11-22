@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
+#include <vfs/npdm.h>
 #include "nso.h"
 #include "nca.h"
 
@@ -19,7 +20,7 @@ namespace skyline::loader {
         if (nsoFile == nullptr)
             throw exception("Cannot load an ExeFS that doesn't contain rtld");
 
-        state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
+        state.process->memory.InitializeVmm(process->npdm.meta.flags.type);
 
         auto loadInfo{NsoLoader::LoadNso(nsoFile, process, state)};
         u64 offset{loadInfo.size};

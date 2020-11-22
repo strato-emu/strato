@@ -270,7 +270,7 @@ namespace skyline::nce {
                             *instruction = instr::B((end - patch) + offset, true).raw;
 
                             /* Rescale host clock */
-                            std::memcpy(patch, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize);
+                            std::memcpy(patch, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize * sizeof(u32));
                             patch += guest::RescaleClockSize;
 
                             /* Load result from stack into destination register */

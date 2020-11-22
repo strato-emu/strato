@@ -38,4 +38,5 @@ namespace skyline::vfs {
         OsFileSystemDirectory(const std::string &path, ListMode listMode);
 
         std::vector<Entry> Read();
-    };}
+    };
+}

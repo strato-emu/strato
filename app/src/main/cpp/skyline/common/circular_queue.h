@@ -23,6 +23,16 @@ namespace skyline {
       public:
         inline CircularQueue(size_t size) : vector((size + 1) * sizeof(Type)) {}
 
+        inline CircularQueue(const CircularQueue &) = delete;
+
+        inline CircularQueue &operator=(const CircularQueue &) = delete;
+
+        inline CircularQueue(CircularQueue &&other) : vector(std::move(other.vector)), consumptionMutex(std::move(other.consumptionMutex)), consumeCondition(std::move(other.consumeCondition)), productionMutex(std::move(other.productionMutex)), produceCondition(std::move(other.produceCondition)) {
+            this->start = other.start;
+            this->end = other.end;
+            other.start = other.end = nullptr;
+        }
+
         inline ~CircularQueue() {
             while (start != end) {
                 auto next{start + 1};
@@ -66,9 +76,9 @@ namespace skyline {
             produceCondition.notify_one();
         }
 
-        inline void Append(span<Type> buffer) {
+        inline void Append(span <Type> buffer) {
             std::unique_lock lock(productionMutex);
-            for (auto &item : buffer) {
+            for (const auto &item : buffer) {
                 auto next{end + 1};
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
                 if (next == start) {
@@ -86,9 +96,9 @@ namespace skyline {
          * @param tranformation A function that takes in an item of TransformedType as input and returns an item of Type
          */
         template<typename TransformedType, typename Transformation>
-        inline void AppendTranform(span<TransformedType> buffer, Transformation transformation) {
+        inline void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
-            for (auto &item : buffer) {
+            for (const auto &item : buffer) {
                 auto next{end + 1};
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
                 if (next == start) {
