@@ -5,9 +5,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <android/log.h>
-#include "skyline/loader/loader.h"
 #include "skyline/common.h"
+#include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
+#include "skyline/loader/loader.h"
 #include "skyline/os.h"
 #include "skyline/jvm.h"
 #include "skyline/gpu.h"
@@ -49,6 +50,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
+        logger->Error(e.what());
+    } catch (const skyline::signal::SignalException &e) {
         logger->Error(e.what());
     } catch (...) {
         logger->Error("An unknown exception has occurred");

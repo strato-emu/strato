@@ -42,6 +42,8 @@ namespace skyline {
             i8 idealCore; //!< The ideal CPU core for this thread to run on
             i8 coreId; //!< The CPU core on which this thread is running
             CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
+            u64 timesliceStart{}; //!< Start of the scheduler timeslice
+            u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
 
             KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore);
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <cxxabi.h>
 #include <unistd.h>
-#include <android/log.h>
 #include <common/signal.h>
 #include <nce.h>
 #include <os.h>
@@ -39,6 +39,8 @@ namespace skyline::kernel::type {
         state.thread = shared_from_this();
 
         if (setjmp(originalCtx)) { // Returns 1 if it's returning from guest, 0 otherwise
+            state.scheduler->RemoveThread();
+
             running = false;
             Signal();
 
@@ -52,85 +54,108 @@ namespace skyline::kernel::type {
 
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
 
-        asm volatile(
-        "MRS X0, TPIDR_EL0\n\t"
-        "MSR TPIDR_EL0, %x0\n\t" // Set TLS to ThreadContext
-        "STR X0, [%x0, #0x2A0]\n\t" // Write ThreadContext::hostTpidrEl0
-        "MOV X0, SP\n\t"
-        "STR X0, [%x0, #0x2A8]\n\t" // Write ThreadContext::hostSp
-        "MOV SP, %x1\n\t" // Replace SP with guest stack
-        "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
-        "MOV X0, %x3\n\t" // Store the argument in X0
-        "MOV X1, %x4\n\t" // Store the thread handle in X1, NCA applications require this
-        "MOV X2, XZR\n\t" // Zero out other GP and SIMD registers, not doing this will break applications
-        "MOV X3, XZR\n\t"
-        "MOV X4, XZR\n\t"
-        "MOV X5, XZR\n\t"
-        "MOV X6, XZR\n\t"
-        "MOV X7, XZR\n\t"
-        "MOV X8, XZR\n\t"
-        "MOV X9, XZR\n\t"
-        "MOV X10, XZR\n\t"
-        "MOV X11, XZR\n\t"
-        "MOV X12, XZR\n\t"
-        "MOV X13, XZR\n\t"
-        "MOV X14, XZR\n\t"
-        "MOV X15, XZR\n\t"
-        "MOV X16, XZR\n\t"
-        "MOV X17, XZR\n\t"
-        "MOV X18, XZR\n\t"
-        "MOV X19, XZR\n\t"
-        "MOV X20, XZR\n\t"
-        "MOV X21, XZR\n\t"
-        "MOV X22, XZR\n\t"
-        "MOV X23, XZR\n\t"
-        "MOV X24, XZR\n\t"
-        "MOV X25, XZR\n\t"
-        "MOV X26, XZR\n\t"
-        "MOV X27, XZR\n\t"
-        "MOV X28, XZR\n\t"
-        "MOV X29, XZR\n\t"
-        "MSR FPSR, XZR\n\t"
-        "MSR FPCR, XZR\n\t"
-        "DUP V0.16B, WZR\n\t"
-        "DUP V1.16B, WZR\n\t"
-        "DUP V2.16B, WZR\n\t"
-        "DUP V3.16B, WZR\n\t"
-        "DUP V4.16B, WZR\n\t"
-        "DUP V5.16B, WZR\n\t"
-        "DUP V6.16B, WZR\n\t"
-        "DUP V7.16B, WZR\n\t"
-        "DUP V8.16B, WZR\n\t"
-        "DUP V9.16B, WZR\n\t"
-        "DUP V10.16B, WZR\n\t"
-        "DUP V11.16B, WZR\n\t"
-        "DUP V12.16B, WZR\n\t"
-        "DUP V13.16B, WZR\n\t"
-        "DUP V14.16B, WZR\n\t"
-        "DUP V15.16B, WZR\n\t"
-        "DUP V16.16B, WZR\n\t"
-        "DUP V17.16B, WZR\n\t"
-        "DUP V18.16B, WZR\n\t"
-        "DUP V19.16B, WZR\n\t"
-        "DUP V20.16B, WZR\n\t"
-        "DUP V21.16B, WZR\n\t"
-        "DUP V22.16B, WZR\n\t"
-        "DUP V23.16B, WZR\n\t"
-        "DUP V24.16B, WZR\n\t"
-        "DUP V25.16B, WZR\n\t"
-        "DUP V26.16B, WZR\n\t"
-        "DUP V27.16B, WZR\n\t"
-        "DUP V28.16B, WZR\n\t"
-        "DUP V29.16B, WZR\n\t"
-        "DUP V30.16B, WZR\n\t"
-        "DUP V31.16B, WZR\n\t"
-        "RET"
-        :
-        : "r"(&ctx), "r"(stackTop), "r"(entry), "r"(entryArgument), "r"(handle)
-        : "x0", "x1", "lr"
-        );
+        try {
+            state.scheduler->InsertThread();
+            state.scheduler->WaitSchedule();
 
-        __builtin_unreachable();
+            asm volatile(
+            "MRS X0, TPIDR_EL0\n\t"
+            "MSR TPIDR_EL0, %x0\n\t" // Set TLS to ThreadContext
+            "STR X0, [%x0, #0x2A0]\n\t" // Write ThreadContext::hostTpidrEl0
+            "MOV X0, SP\n\t"
+            "STR X0, [%x0, #0x2A8]\n\t" // Write ThreadContext::hostSp
+            "MOV SP, %x1\n\t" // Replace SP with guest stack
+            "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
+            "MOV X0, %x3\n\t" // Store the argument in X0
+            "MOV X1, %x4\n\t" // Store the thread handle in X1, NCA applications require this
+            "MOV X2, XZR\n\t" // Zero out other GP and SIMD registers, not doing this will break applications
+            "MOV X3, XZR\n\t"
+            "MOV X4, XZR\n\t"
+            "MOV X5, XZR\n\t"
+            "MOV X6, XZR\n\t"
+            "MOV X7, XZR\n\t"
+            "MOV X8, XZR\n\t"
+            "MOV X9, XZR\n\t"
+            "MOV X10, XZR\n\t"
+            "MOV X11, XZR\n\t"
+            "MOV X12, XZR\n\t"
+            "MOV X13, XZR\n\t"
+            "MOV X14, XZR\n\t"
+            "MOV X15, XZR\n\t"
+            "MOV X16, XZR\n\t"
+            "MOV X17, XZR\n\t"
+            "MOV X18, XZR\n\t"
+            "MOV X19, XZR\n\t"
+            "MOV X20, XZR\n\t"
+            "MOV X21, XZR\n\t"
+            "MOV X22, XZR\n\t"
+            "MOV X23, XZR\n\t"
+            "MOV X24, XZR\n\t"
+            "MOV X25, XZR\n\t"
+            "MOV X26, XZR\n\t"
+            "MOV X27, XZR\n\t"
+            "MOV X28, XZR\n\t"
+            "MOV X29, XZR\n\t"
+            "MSR FPSR, XZR\n\t"
+            "MSR FPCR, XZR\n\t"
+            "DUP V0.16B, WZR\n\t"
+            "DUP V1.16B, WZR\n\t"
+            "DUP V2.16B, WZR\n\t"
+            "DUP V3.16B, WZR\n\t"
+            "DUP V4.16B, WZR\n\t"
+            "DUP V5.16B, WZR\n\t"
+            "DUP V6.16B, WZR\n\t"
+            "DUP V7.16B, WZR\n\t"
+            "DUP V8.16B, WZR\n\t"
+            "DUP V9.16B, WZR\n\t"
+            "DUP V10.16B, WZR\n\t"
+            "DUP V11.16B, WZR\n\t"
+            "DUP V12.16B, WZR\n\t"
+            "DUP V13.16B, WZR\n\t"
+            "DUP V14.16B, WZR\n\t"
+            "DUP V15.16B, WZR\n\t"
+            "DUP V16.16B, WZR\n\t"
+            "DUP V17.16B, WZR\n\t"
+            "DUP V18.16B, WZR\n\t"
+            "DUP V19.16B, WZR\n\t"
+            "DUP V20.16B, WZR\n\t"
+            "DUP V21.16B, WZR\n\t"
+            "DUP V22.16B, WZR\n\t"
+            "DUP V23.16B, WZR\n\t"
+            "DUP V24.16B, WZR\n\t"
+            "DUP V25.16B, WZR\n\t"
+            "DUP V26.16B, WZR\n\t"
+            "DUP V27.16B, WZR\n\t"
+            "DUP V28.16B, WZR\n\t"
+            "DUP V29.16B, WZR\n\t"
+            "DUP V30.16B, WZR\n\t"
+            "DUP V31.16B, WZR\n\t"
+            "RET"
+            :
+            : "r"(&ctx), "r"(stackTop), "r"(entry), "r"(entryArgument), "r"(handle)
+            : "x0", "x1", "lr"
+            );
+
+            __builtin_unreachable();
+        } catch (const std::exception &e) {
+            state.logger->Error(e.what());
+            if (id) {
+                signal::BlockSignal({SIGINT});
+                state.process->Kill(false);
+            }
+            abi::__cxa_end_catch();
+            std::longjmp(originalCtx, true);
+        } catch (const signal::SignalException &e) {
+            if (e.signal != SIGINT) {
+                state.logger->Error(e.what());
+                if (id) {
+                    signal::BlockSignal({SIGINT});
+                    state.process->Kill(false);
+                }
+            }
+            abi::__cxa_end_catch();
+            std::longjmp(originalCtx, true);
+        }
     }
 
     void KThread::Start(bool self) {

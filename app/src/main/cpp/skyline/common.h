@@ -480,6 +480,7 @@ namespace skyline {
             class KProcess;
             class KThread;
         }
+        class Scheduler;
         class OS;
     }
     namespace audio {
@@ -506,6 +507,7 @@ namespace skyline {
         std::shared_ptr<gpu::GPU> gpu;
         std::shared_ptr<audio::Audio> audio;
         std::shared_ptr<nce::NCE> nce;
+        std::shared_ptr<kernel::Scheduler> scheduler;
         std::shared_ptr<kernel::type::KProcess> process;
         static thread_local inline std::shared_ptr<kernel::type::KThread> thread{}; //!< The KThread of the thread which accesses this object
         static thread_local inline nce::ThreadContext *ctx{}; //!< The context of the guest thread for the corresponding host thread

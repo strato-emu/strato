@@ -41,6 +41,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/jvm.cpp
         ${source_DIR}/skyline/os.cpp
         ${source_DIR}/skyline/kernel/memory.cpp
+        ${source_DIR}/skyline/kernel/scheduler.cpp
         ${source_DIR}/skyline/kernel/ipc.cpp
         ${source_DIR}/skyline/kernel/svc.cpp
         ${source_DIR}/skyline/kernel/types/KProcess.cpp

@@ -281,20 +281,27 @@ namespace skyline::kernel::svc {
     }
 
     void SleepThread(const DeviceState &state) {
+        constexpr i64 yieldWithoutCoreMigration{0};
+        constexpr i64 yieldWithCoreMigration{-1};
+        constexpr i64 yieldToAnyThread{-2};
+
         i64 in{static_cast<i64>(state.ctx->gpr.x0)};
-        switch (in) {
-            case 0:
-            case -1:
-            case -2:
-                state.logger->Debug("svcSleepThread: Yielding thread: {}", in);
-                break;
-            default:
-                state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
-                struct timespec spec{
-                    .tv_sec = static_cast<time_t>(state.ctx->gpr.x0 / 1000000000),
-                    .tv_nsec = static_cast<long>(state.ctx->gpr.x0 % 1000000000)
-                };
-                nanosleep(&spec, nullptr);
+        if (in > 0) {
+            state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
+
+            struct timespec spec{
+                .tv_sec = static_cast<time_t>(in / 1000000000),
+                .tv_nsec = static_cast<long>(in % 1000000000),
+            };
+
+            state.scheduler->Rotate();
+            nanosleep(&spec, nullptr);
+            state.scheduler->WaitSchedule();
+        } else if (in == yieldWithoutCoreMigration || in == yieldWithCoreMigration || in == yieldToAnyThread) {
+            // Core Migration doesn't affect us as threads schedule and load balance themselves
+            state.logger->Debug("svcSleepThread: Yielding thread ({})", in);
+            state.scheduler->Rotate();
+            state.scheduler->WaitSchedule();
         }
     }
 

@@ -29,14 +29,5 @@ namespace skyline::kernel {
          * @param romType The type of the ROM file
          */
         void Execute(int romFd, loader::RomFormat romType);
-
-        /**
-         * @brief Creates a new process
-         * @param entry The entry point for the new process
-         * @param argument The argument for the initial function
-         * @param stackSize The size of the main stack
-         * @return An instance of the KProcess of the created process
-         */
-        std::shared_ptr<type::KProcess> CreateProcess(u64 entry, u64 argument, size_t stackSize);
     };
 }
