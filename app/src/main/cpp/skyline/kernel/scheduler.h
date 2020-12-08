@@ -8,7 +8,7 @@
 
 namespace skyline {
     namespace constant {
-        constexpr u8 CoreCount{4}; // The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
+        constexpr u8 CoreCount{4}; //!< The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
     }
 
     namespace kernel {
@@ -44,22 +44,32 @@ namespace skyline {
 
             struct CoreContext {
                 u8 id;
+                u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::shared_mutex mutex; //!< Synchronizes all operations on the queue
                 std::condition_variable_any mutateCondition; //!< A conditional variable which is signalled on every mutation of the queue
                 std::deque<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
-                explicit CoreContext(u8 id);
+                CoreContext(u8 id, u8 preemptionPriority);
             };
 
-            std::array<CoreContext, constant::CoreCount> cores{CoreContext(0), CoreContext(1), CoreContext(2), CoreContext(3)};
+            std::array<CoreContext, constant::CoreCount> cores{CoreContext(0, 59), CoreContext(1, 59), CoreContext(2, 59), CoreContext(3, 63)};
 
           public:
+            static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
+            inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a yield in running threads
+            inline static thread_local bool YieldPending{}; //!< A flag denoting if a yield is pending on this thread, it's checked at SVC exit
+
             Scheduler(const DeviceState &state);
+
+            /**
+             * @brief A signal handler designed to cause a non-cooperative yield for preemption and higher priority threads being inserted
+             */
+            static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
 
             /**
              * @brief Checks all cores and migrates the calling thread to the core where the calling thread should be scheduled the earliest
              * @return A reference to the CoreContext of the core which the calling thread is running on after load balancing
-             * @note This doesn't insert the thread into the migrated process's queue after load-balancing
+             * @note This doesn't insert the thread into the migrated process's queue after load balancing
              */
             CoreContext& LoadBalance();
 
@@ -77,8 +87,9 @@ namespace skyline {
 
             /**
              * @brief Rotates the calling thread's resident core queue, if it is at the front of it
+             * @param cooperative If this was triggered by a cooperative yield as opposed to a preemptive one
              */
-            void Rotate();
+            void Rotate(bool cooperative = true);
 
             /**
              * @brief Removes the calling thread from it's resident core queue

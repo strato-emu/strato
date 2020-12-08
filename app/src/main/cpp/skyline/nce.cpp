@@ -24,6 +24,12 @@ namespace skyline::nce {
             } else {
                 throw exception("Unimplemented SVC 0x{:X}", svc);
             }
+
+            if (kernel::Scheduler::YieldPending) {
+                state.scheduler->Rotate(false);
+                state.scheduler->WaitSchedule();
+                kernel::Scheduler::YieldPending = false;
+            }
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
@@ -46,7 +52,7 @@ namespace skyline::nce {
     }
 
     void NCE::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
-        if (*tls) {
+        if (*tls) { // If TLS was restored then this occurred in guest code
             auto &mctx{ctx->uc_mcontext};
             const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
             if (signal != SIGINT) {
@@ -95,7 +101,7 @@ namespace skyline::nce {
             mctx.regs[1] = true;
 
             *tls = nullptr;
-        } else {
+        } else { // If TLS wasn't restored then this occurred in host code
             signal::ExceptionalSignalHandler(signal, info, ctx); //!< Delegate throwing a host exception to the exceptional signal handler
         }
     }

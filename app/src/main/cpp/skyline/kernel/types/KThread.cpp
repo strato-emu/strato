@@ -7,6 +7,7 @@
 #include <nce.h>
 #include <os.h>
 #include "KProcess.h"
+#include "KThread.h"
 
 namespace skyline::kernel::type {
     KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
@@ -23,6 +24,9 @@ namespace skyline::kernel::type {
         }
         if (thread.joinable())
             thread.join();
+
+        if (preemptionTimer)
+            timer_delete(*preemptionTimer);
     }
 
     void KThread::StartThread() {
@@ -186,6 +190,12 @@ namespace skyline::kernel::type {
             }
             running = false;
         }
+    }
+
+    void KThread::SendSignal(int signal) {
+        std::lock_guard lock(mutex);
+        if (running)
+            pthread_kill(pthread, signal);
     }
 
     void KThread::UpdatePriority(i8 priority) {

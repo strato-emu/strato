@@ -44,6 +44,8 @@ namespace skyline {
             CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
             u64 timesliceStart{}; //!< Start of the scheduler timeslice
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
+            std::optional<timer_t> preemptionTimer{}; //!< A kernel timer used for preemption interrupts
+            bool isPreempted{}; //!< If the preemption timer has been armed and will fire
 
             KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore);
 
@@ -60,6 +62,11 @@ namespace skyline {
              * @param join Return after the thread has joined rather than instantly
              */
             void Kill(bool join);
+
+            /**
+             * @brief Sends a host OS signal to the thread which is running this KThread
+             */
+            void SendSignal(int signal);
 
             void UpdatePriority(i8 priority);
         };

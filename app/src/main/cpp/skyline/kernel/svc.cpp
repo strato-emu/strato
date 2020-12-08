@@ -299,7 +299,7 @@ namespace skyline::kernel::svc {
             state.scheduler->WaitSchedule();
         } else if (in == yieldWithoutCoreMigration || in == yieldWithCoreMigration || in == yieldToAnyThread) {
             // Core Migration doesn't affect us as threads schedule and load balance themselves
-            state.logger->Debug("svcSleepThread: Yielding thread ({})", in);
+            state.logger->Debug("svcSleepThread: Cooperative Yield");
             state.scheduler->Rotate();
             state.scheduler->WaitSchedule();
         }

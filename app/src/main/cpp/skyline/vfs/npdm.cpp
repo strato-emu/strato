@@ -31,8 +31,8 @@ namespace skyline::vfs {
             .magic = MetaMagic,
         };
         threadInfo = {
-            .coreMask = 0b1110,
-            .priority = {0, 63},
+            .coreMask = 0b0111,
+            .priority = {0, 59},
         };
     }
 
