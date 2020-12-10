@@ -38,7 +38,7 @@ namespace skyline {
             u64 entryArgument;
             void *stackTop;
 
-            i8 priority;
+            std::atomic<u8> priority; //!< The priority of the thread for the scheduler
             i8 idealCore; //!< The ideal CPU core for this thread to run on
             i8 coreId; //!< The CPU core on which this thread is running
             CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
@@ -46,8 +46,10 @@ namespace skyline {
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
             std::optional<timer_t> preemptionTimer{}; //!< A kernel timer used for preemption interrupts
             bool isPreempted{}; //!< If the preemption timer has been armed and will fire
+            bool needsReorder{}; //!< If the thread needs to reorder itself during scheduler rotation
+            std::mutex coreMigrationMutex; //!< Synchronizes operations which depend on which core the thread is running on
 
-            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore);
+            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore);
 
             ~KThread();
 
@@ -67,8 +69,6 @@ namespace skyline {
              * @brief Sends a host OS signal to the thread which is running this KThread
              */
             void SendSignal(int signal);
-
-            void UpdatePriority(i8 priority);
         };
     }
 }

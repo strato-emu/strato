@@ -29,13 +29,13 @@ namespace skyline {
           private:
             struct WaitStatus {
                 std::atomic_bool flag{false};
-                i8 priority;
+                u8 priority;
                 KHandle handle;
                 u32 *mutex{};
 
-                WaitStatus(i8 priority, KHandle handle);
+                WaitStatus(u8 priority, KHandle handle);
 
-                WaitStatus(i8 priority, KHandle handle, u32 *mutex);
+                WaitStatus(u8 priority, KHandle handle, u32 *mutex);
             };
 
             std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
@@ -105,7 +105,7 @@ namespace skyline {
              * @return A shared pointer to a KThread initialized with the specified values or nullptr, if thread creation has been disabled
              * @note The default values are for the main thread and will use values from the NPDM
              */
-            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, i8 priority = -1, i8 idealCore = -1);
+            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, std::optional<u8> priority = std::nullopt, std::optional<u8> idealCore = std::nullopt);
 
             /**
             * @brief The output for functions that return created kernel objects

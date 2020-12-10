@@ -92,6 +92,11 @@ namespace skyline {
             void Rotate(bool cooperative = true);
 
             /**
+             * @brief Updates the placement of the supplied thread in it's resident core's queue according to it's new priority
+             */
+            void UpdatePriority(const std::shared_ptr<type::KThread>& thread);
+
+            /**
              * @brief Removes the calling thread from it's resident core queue
              */
             void RemoveThread();

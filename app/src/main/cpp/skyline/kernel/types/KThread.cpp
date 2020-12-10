@@ -10,9 +10,8 @@
 #include "KThread.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), priority(priority), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
         affinityMask.set(coreId);
-        UpdatePriority(priority);
     }
 
     KThread::~KThread() {
@@ -196,9 +195,5 @@ namespace skyline::kernel::type {
         std::lock_guard lock(mutex);
         if (running)
             pthread_kill(pthread, signal);
-    }
-
-    void KThread::UpdatePriority(i8 priority) {
-        this->priority = priority;
     }
 }

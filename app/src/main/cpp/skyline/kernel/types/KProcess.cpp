@@ -6,9 +6,9 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KProcess::WaitStatus::WaitStatus(i8 priority, KHandle handle) : priority(priority), handle(handle) {}
+    KProcess::WaitStatus::WaitStatus(u8 priority, KHandle handle) : priority(priority), handle(handle) {}
 
-    KProcess::WaitStatus::WaitStatus(i8 priority, KHandle handle, u32 *mutex) : priority(priority), handle(handle), mutex(mutex) {}
+    KProcess::WaitStatus::WaitStatus(u8 priority, KHandle handle, u32 *mutex) : priority(priority), handle(handle), mutex(mutex) {}
 
     KProcess::TlsPage::TlsPage(const std::shared_ptr<KPrivateMemory> &memory) : memory(memory) {}
 
@@ -74,7 +74,7 @@ namespace skyline::kernel::type {
         return tlsPage->ReserveSlot();
     }
 
-    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, i8 priority, i8 idealCore) {
+    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, std::optional<u8> priority, std::optional<u8> idealCore) {
         std::lock_guard guard(threadMutex);
         if (disableThreadCreation)
             return nullptr;
@@ -84,7 +84,7 @@ namespace skyline::kernel::type {
                 throw exception("Failed to create guard page for thread stack at 0x{:X}", mainThreadStack->ptr);
             stackTop = mainThreadStack->ptr + mainThreadStack->size;
         }
-        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, (priority == -1) ? state.process->npdm.meta.mainThreadPriority : priority, (idealCore == -1) ? state.process->npdm.meta.idealCore : idealCore).item};
+        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
         threads.push_back(thread);
         return thread;
     }

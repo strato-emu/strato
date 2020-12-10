@@ -309,7 +309,7 @@ namespace skyline::kernel::svc {
         KHandle handle{state.ctx->gpr.w1};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            auto priority{thread->priority};
+            u8 priority{thread->priority};
             state.logger->Debug("svcGetThreadPriority: Retrieving thread #{}'s priority: {}", thread->id, priority);
 
             state.ctx->gpr.w1 = priority;
@@ -331,7 +331,8 @@ namespace skyline::kernel::svc {
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", thread->id, priority);
-            thread->UpdatePriority(static_cast<u8>(priority));
+            thread->priority = priority;
+            state.scheduler->UpdatePriority(thread);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
@@ -358,18 +359,18 @@ namespace skyline::kernel::svc {
 
     void SetThreadCoreMask(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
-        i32 coreId{static_cast<i32>(state.ctx->gpr.w1)};
+        i32 idealCore{static_cast<i32>(state.ctx->gpr.w1)};
         CoreMask affinityMask{state.ctx->gpr.x2};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
 
-            if (coreId == IdealCoreUseProcessValue) {
-                coreId = state.process->npdm.meta.idealCore;
-                affinityMask.reset().set(coreId);
-            } else if (coreId == IdealCoreNoUpdate) {
-                coreId = thread->idealCore;
-            } else if (coreId == IdealCoreDontCare) {
-                coreId = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
+            if (idealCore == IdealCoreUseProcessValue) {
+                idealCore = state.process->npdm.meta.idealCore;
+                affinityMask.reset().set(idealCore);
+            } else if (idealCore == IdealCoreNoUpdate) {
+                idealCore = thread->idealCore;
+            } else if (idealCore == IdealCoreDontCare) {
+                idealCore = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
             }
 
             auto processMask{state.process->npdm.threadInfo.coreMask};
@@ -379,16 +380,24 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            if (affinityMask.none() || !affinityMask.test(coreId)) {
-                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Ideal Core: {})", affinityMask, coreId);
+            if (affinityMask.none() || !affinityMask.test(idealCore)) {
+                state.logger->Warn("svcSetThreadCoreMask: 'affinityMask' invalid: {} (Ideal Core: {})", affinityMask, idealCore);
                 state.ctx->gpr.w0 = result::InvalidCombination;
                 return;
             }
 
-            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, coreId, affinityMask);
+            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
-            thread->idealCore = coreId;
+            thread->idealCore = idealCore;
             thread->affinityMask = affinityMask;
+
+            if (!affinityMask.test(thread->coreId)) {
+                state.logger->Debug("svcSetThreadCoreMask: Migrating to Ideal Core C{} -> C{}", thread->coreId, idealCore);
+
+                state.scheduler->RemoveThread();
+                thread->coreId = idealCore;
+                state.scheduler->InsertThread(false);
+            }
 
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
