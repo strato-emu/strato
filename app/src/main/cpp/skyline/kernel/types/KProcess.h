@@ -15,7 +15,6 @@ namespace skyline {
         constexpr u16 TlsSlotSize{0x200}; //!< The size of a single TLS slot
         constexpr u8 TlsSlots{PAGE_SIZE / TlsSlotSize}; //!< The amount of TLS slots in a single page
         constexpr KHandle BaseHandleIndex{0xD000}; //!< The index of the base handle
-        constexpr u32 MtxOwnerMask{0xBFFFFFFF}; //!< The mask of values which contain the owner of a mutex
     }
 
     namespace kernel::type {
@@ -27,22 +26,6 @@ namespace skyline {
             MemoryManager memory;
 
           private:
-            struct WaitStatus {
-                std::atomic_bool flag{false};
-                u8 priority;
-                KHandle handle;
-                u32 *mutex{};
-
-                WaitStatus(u8 priority, KHandle handle);
-
-                WaitStatus(u8 priority, KHandle handle, u32 *mutex);
-            };
-
-            std::unordered_map<u64, std::vector<std::shared_ptr<WaitStatus>>> mutexes; //!< A map from a mutex's address to a vector of Mutex objects for threads waiting on it
-            std::unordered_map<u64, std::list<std::shared_ptr<WaitStatus>>> conditionals; //!< A map from a conditional variable's address to a vector of threads waiting on it
-            std::mutex mutexLock;
-            std::mutex conditionalLock;
-
             std::mutex threadMutex; //!< Synchronizes thread creation to prevent a race between thread creation and thread killing
             bool disableThreadCreation{}; //!< If to disable thread creation, we use this to prevent thread creation after all threads have been killed
             std::vector<std::shared_ptr<KThread>> threads;
@@ -208,17 +191,15 @@ namespace skyline {
             }
 
             /**
-            * @brief Locks the Mutex at the specified address
-            * @param owner The handle of the current mutex owner
-            * @return If the mutex was successfully locked
+            * @brief Locks the mutex at the specified address
+            * @param ownerHandle The psuedo-handle of the current mutex owner
             */
-            bool MutexLock(u32 *mutex, KHandle owner);
+            Result MutexLock(u32 *mutex, KHandle ownerHandle);
 
             /**
-            * @brief Unlocks the Mutex at the specified address
-            * @return If the mutex was successfully unlocked
+            * @brief Unlocks the mutex at the specified address
             */
-            bool MutexUnlock(u32 *mutex);
+            void MutexUnlock(u32 *mutex);
 
             /**
             * @param timeout The amount of time to wait for the conditional variable

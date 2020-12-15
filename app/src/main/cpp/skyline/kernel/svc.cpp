@@ -276,7 +276,7 @@ namespace skyline::kernel::svc {
     }
 
     void ExitThread(const DeviceState &state) {
-        state.logger->Debug("svcExitThread: Exiting current thread: {}", state.thread->id);
+        state.logger->Debug("svcExitThread: Exiting current thread");
         std::longjmp(state.thread->originalCtx, true);
     }
 
@@ -330,9 +330,11 @@ namespace skyline::kernel::svc {
         }
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", thread->id, priority);
-            thread->priority = priority;
-            state.scheduler->UpdatePriority(thread);
+            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
+            if (thread->priority != priority) {
+                thread->priority = priority;
+                state.scheduler->UpdatePriority(thread);
+            }
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcSetThreadPriority: 'handle' invalid: 0x{:X}", handle);
@@ -346,7 +348,7 @@ namespace skyline::kernel::svc {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             auto idealCore{thread->idealCore};
             auto affinityMask{thread->affinityMask};
-            state.logger->Debug("svcGetThreadCoreMask: Writing thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
+            state.logger->Debug("svcGetThreadCoreMask: Setting Ideal Core ({}) + Affinity Mask ({})", idealCore, affinityMask);
 
             state.ctx->gpr.x2 = affinityMask.to_ullong();
             state.ctx->gpr.w1 = idealCore;
@@ -386,7 +388,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
+            state.logger->Debug("svcSetThreadCoreMask: Setting Ideal Core ({}) + Affinity Mask ({})", idealCore, affinityMask);
 
             thread->idealCore = idealCore;
             thread->affinityMask = affinityMask;
@@ -396,7 +398,8 @@ namespace skyline::kernel::svc {
 
                 state.scheduler->RemoveThread();
                 thread->coreId = idealCore;
-                state.scheduler->InsertThread(false);
+                state.scheduler->InsertThread(state.thread, false);
+                state.scheduler->WaitSchedule();
             }
 
             state.ctx->gpr.w0 = Result{};
@@ -407,8 +410,9 @@ namespace skyline::kernel::svc {
     }
 
     void GetCurrentProcessorNumber(const DeviceState &state) {
-        state.logger->Debug("svcGetCurrentProcessorNumber: Writing current core for thread #{}: {}", state.thread->id, state.thread->coreId);
-        state.ctx->gpr.w0 = state.thread->coreId;
+        auto coreId{state.thread->coreId};
+        state.logger->Debug("svcGetCurrentProcessorNumber: Writing current core: {}", coreId);
+        state.ctx->gpr.w0 = coreId;
     }
 
     void ClearEvent(const DeviceState &state) {
@@ -611,12 +615,15 @@ namespace skyline::kernel::svc {
 
         state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", pointer);
 
-        if (state.process->MutexLock(pointer, ownerHandle))
+        auto result{state.process->MutexLock(pointer, ownerHandle)};
+        if (result == Result{})
             state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", pointer);
-        else
+        else if (result == result::InvalidHandle)
+            state.logger->Warn("svcArbitrateLock: 'handle' invalid: 0x{:X}", ownerHandle);
+        else if (result == result::InvalidCurrentMemory)
             state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex or didn't have waiter flag at 0x{:X}", pointer);
 
-        state.ctx->gpr.w0 = Result{};
+        state.ctx->gpr.w0 = result;
     }
 
     void ArbitrateUnlock(const DeviceState &state) {
@@ -629,13 +636,10 @@ namespace skyline::kernel::svc {
 
         state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", mutex);
 
-        if (state.process->MutexUnlock(mutex)) {
-            state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", mutex);
-            state.ctx->gpr.w0 = Result{};
-        } else {
-            state.logger->Debug("svcArbitrateUnlock: A non-owner thread tried to release a mutex at 0x{:X}", mutex);
-            state.ctx->gpr.w0 = result::InvalidAddress;
-        }
+        state.process->MutexUnlock(mutex);
+
+        state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", mutex);
+        state.ctx->gpr.w0 = Result{};
     }
 
     void WaitProcessWideKeyAtomic(const DeviceState &state) {
@@ -651,11 +655,7 @@ namespace skyline::kernel::svc {
         if (handle != state.thread->handle)
             throw exception("svcWaitProcessWideKeyAtomic: Handle doesn't match current thread: 0x{:X} for thread 0x{:X}", handle, state.thread->handle);
 
-        if (!state.process->MutexUnlock(mutex)) {
-            state.logger->Debug("WaitProcessWideKeyAtomic: A non-owner thread tried to release a mutex at 0x{:X}", mutex);
-            state.ctx->gpr.w0 = result::InvalidAddress;
-            return;
-        }
+        state.process->MutexUnlock(mutex);
 
         u64 timeout{state.ctx->gpr.x3};
         state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mutex, conditional, timeout);
@@ -731,7 +731,7 @@ namespace skyline::kernel::svc {
         if (debug.back() == '\n')
             debug.remove_suffix(1);
 
-        state.logger->Info("Debug Output: {}", debug);
+        state.logger->Info("svcOutputDebugString: {}", debug);
         state.ctx->gpr.w0 = Result{};
     }
 

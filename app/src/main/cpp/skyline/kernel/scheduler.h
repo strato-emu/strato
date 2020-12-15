@@ -46,7 +46,7 @@ namespace skyline {
                 u8 id;
                 u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::shared_mutex mutex; //!< Synchronizes all operations on the queue
-                std::condition_variable_any mutateCondition; //!< A conditional variable which is signalled on every mutation of the queue
+                std::condition_variable_any frontCondition; //!< A conditional variable which is signalled when the front of the queue has changed
                 std::deque<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, u8 preemptionPriority);
@@ -74,10 +74,11 @@ namespace skyline {
             CoreContext& LoadBalance();
 
             /**
-             * @brief Inserts the calling thread into the scheduler queue at the appropriate location based on it's priority
+             * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on it's priority
              * @param loadBalance If to load balance or use the thread's current core (KThread::coreId)
+             * @note It isn't supported to load balance if the supplied thread isn't the calling thread, it'll lead to UB
              */
-            void InsertThread(bool loadBalance = true);
+            void InsertThread(const std::shared_ptr<type::KThread>& thread, bool loadBalance = true);
 
             /**
              * @brief Wait for the current thread to be scheduled on it's resident core

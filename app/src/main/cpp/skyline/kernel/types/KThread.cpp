@@ -58,7 +58,7 @@ namespace skyline::kernel::type {
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
 
         try {
-            state.scheduler->InsertThread();
+            state.scheduler->InsertThread(state.thread);
             state.scheduler->WaitSchedule();
 
             asm volatile(
