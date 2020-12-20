@@ -30,6 +30,10 @@ namespace skyline {
             bool disableThreadCreation{}; //!< If to disable thread creation, we use this to prevent thread creation after all threads have been killed
             std::vector<std::shared_ptr<KThread>> threads;
 
+            using SyncWaiters = std::multimap<void*, std::shared_ptr<KThread>>;
+            std::mutex syncWaiterMutex; //!< Synchronizes all mutations to the map to prevent races
+            SyncWaiters syncWaiters; //!< All threads waiting on process-wide synchronization primitives (Atomic keys + Address Arbiter)
+
             /**
             * @brief The status of a single TLS page (A page is 4096 bytes on ARMv8)
             * Each TLS page has 8 slots, each 0x200 (512) bytes in size
@@ -101,10 +105,10 @@ namespace skyline {
             };
 
             /**
-            * @brief Creates a new handle to a KObject and adds it to the process handle_table
-            * @tparam objectClass The class of the kernel object to create
-            * @param args The arguments for the kernel object except handle, pid and state
-            */
+             * @brief Creates a new handle to a KObject and adds it to the process handle_table
+             * @tparam objectClass The class of the kernel object to create
+             * @param args The arguments for the kernel object except handle, pid and state
+             */
             template<typename objectClass, typename ...objectArgs>
             HandleOut<objectClass> NewHandle(objectArgs... args) {
                 std::unique_lock lock(handleMutex);
@@ -119,9 +123,9 @@ namespace skyline {
             }
 
             /**
-            * @brief Inserts an item into the process handle table
-            * @return The handle of the corresponding item in the handle table
-            */
+             * @brief Inserts an item into the process handle table
+             * @return The handle of the corresponding item in the handle table
+             */
             template<typename objectClass>
             KHandle InsertItem(std::shared_ptr<objectClass> &item) {
                 std::unique_lock lock(handleMutex);
@@ -177,10 +181,10 @@ namespace skyline {
             }
 
             /**
-            * @brief Retrieves a kernel memory object that owns the specified address
-            * @param address The address to look for
-            * @return A shared pointer to the corresponding KMemory object
-            */
+             * @brief Retrieves a kernel memory object that owns the specified address
+             * @param address The address to look for
+             * @return A shared pointer to the corresponding KMemory object
+             */
             std::optional<HandleOut<KMemory>> GetMemoryObject(u8 *ptr);
 
             /**
@@ -191,27 +195,26 @@ namespace skyline {
             }
 
             /**
-            * @brief Locks the mutex at the specified address
-            * @param ownerHandle The psuedo-handle of the current mutex owner
-            */
-            Result MutexLock(u32 *mutex, KHandle ownerHandle);
+             * @brief Locks the mutex at the specified address
+             * @param ownerHandle The psuedo-handle of the current mutex owner
+             * @param tag The handle of the thread which is requesting this lock
+             */
+            Result MutexLock(u32 *mutex, KHandle ownerHandle, KHandle tag);
 
             /**
-            * @brief Unlocks the mutex at the specified address
-            */
+             * @brief Unlocks the mutex at the specified address
+             */
             void MutexUnlock(u32 *mutex);
 
             /**
-            * @param timeout The amount of time to wait for the conditional variable
-            * @return If the conditional variable was successfully waited for or timed out
-            */
-            bool ConditionalVariableWait(void *conditional, u32 *mutex, u64 timeout);
+             * @brief Waits on the conditional variable at the specified address
+             */
+            Result ConditionalVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout);
 
             /**
-            * @brief Signals a number of conditional variable waiters
-            * @param amount The amount of waiters to signal
-            */
-            void ConditionalVariableSignal(void *conditional, u64 amount);
+             * @brief Signals the conditional variable at the specified address
+             */
+            void ConditionalVariableSignal(u32 *key, u64 amount);
 
             /**
              * @brief Resets the object to an unsignalled state

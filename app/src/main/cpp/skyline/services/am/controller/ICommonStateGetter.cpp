@@ -7,7 +7,7 @@
 
 namespace skyline::service::am {
     void ICommonStateGetter::QueueMessage(ICommonStateGetter::Message message) {
-        messageQueue.emplace(message);
+        messageQueue.emplace_back(message);
         messageEvent->Signal();
     }
 
@@ -29,7 +29,11 @@ namespace skyline::service::am {
             return result::NoMessages;
 
         response.Push(messageQueue.front());
-        messageQueue.pop();
+        messageQueue.pop_front();
+
+        if (messageQueue.empty())
+            messageEvent->ResetSignal();
+
         return {};
     }
 

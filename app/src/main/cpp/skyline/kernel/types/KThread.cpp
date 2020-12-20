@@ -58,7 +58,6 @@ namespace skyline::kernel::type {
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
 
         try {
-            state.scheduler->InsertThread(state.thread);
             state.scheduler->WaitSchedule();
 
             asm volatile(
@@ -165,7 +164,9 @@ namespace skyline::kernel::type {
         std::unique_lock lock(mutex);
         if (!running) {
             running = true;
-            state.logger->Debug("Starting thread #{}", id);
+            auto sharedThis{shared_from_this()};
+            state.scheduler->LoadBalance(sharedThis);
+            state.scheduler->InsertThread(sharedThis);
             if (self) {
                 pthread = pthread_self();
                 lock.unlock();

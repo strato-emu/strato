@@ -22,8 +22,7 @@ namespace skyline::kernel {
         }
     }
 
-    Scheduler::CoreContext &Scheduler::LoadBalance() {
-        auto &thread{state.thread};
+    Scheduler::CoreContext &Scheduler::LoadBalance(const std::shared_ptr<type::KThread> &thread) {
         std::lock_guard migrationLock(thread->coreMigrationMutex);
         auto *currentCore{&cores.at(thread->coreId)};
 
@@ -66,21 +65,21 @@ namespace skyline::kernel {
 
                 thread->coreId = optimalCore->id;
 
-                state.logger->Debug("Load Balancing: C{} -> C{}", currentCore->id, optimalCore->id);
+                state.logger->Debug("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
             } else {
-                state.logger->Debug("Load Balancing: C{} (Late)", currentCore->id);
+                state.logger->Debug("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
             }
 
             return *optimalCore;
         }
 
-        state.logger->Debug("Load Balancing: C{} (Early)", currentCore->id);
+        state.logger->Debug("Load Balancing T{}: C{} (Early)", thread->id, currentCore->id);
 
         return *currentCore;
     }
 
-    void Scheduler::InsertThread(const std::shared_ptr<type::KThread> &thread, bool loadBalance) {
-        auto &core{loadBalance ? LoadBalance() : cores.at(thread->coreId)};
+    void Scheduler::InsertThread(const std::shared_ptr<type::KThread> &thread) {
+        auto &core{cores.at(thread->coreId)};
 
         thread_local bool signalHandlerSetup{};
         if (!signalHandlerSetup) {
@@ -125,20 +124,20 @@ namespace skyline::kernel {
         thread->needsReorder = true; // We need to reorder the thread from back to align it with other threads of it's priority and ensure strict ordering amongst priorities
     }
 
-    void Scheduler::WaitSchedule() {
+    void Scheduler::WaitSchedule(bool loadBalance) {
         auto &thread{state.thread};
         auto *core{&cores.at(thread->coreId)};
 
         std::shared_lock lock(core->mutex);
-        if (thread->affinityMask.count() > 1) {
+        if (loadBalance && thread->affinityMask.count() > 1) {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
             while (!core->frontCondition.wait_for(lock, loadBalanceThreshold, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
                 lock.unlock();
-                LoadBalance();
+                LoadBalance(state.thread);
                 if (thread->coreId == core->id) {
                     lock.lock();
                 } else {
-                    InsertThread(state.thread, false);
+                    InsertThread(state.thread);
                     core = &cores.at(thread->coreId);
                     lock = std::shared_lock(core->mutex);
                 }
@@ -156,6 +155,26 @@ namespace skyline::kernel {
         }
 
         thread->timesliceStart = util::GetTimeTicks();
+    }
+
+    bool Scheduler::TimedWaitSchedule(std::chrono::nanoseconds timeout) {
+        auto &thread{state.thread};
+        auto *core{&cores.at(thread->coreId)};
+
+        std::shared_lock lock(core->mutex);
+        if (core->frontCondition.wait_for(lock, timeout, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
+            if (thread->priority == core->preemptionPriority) {
+                struct itimerspec spec{.it_value = {.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(PreemptiveTimeslice).count()}};
+                timer_settime(*thread->preemptionTimer, 0, &spec, nullptr);
+                thread->isPreempted = true;
+            }
+
+            thread->timesliceStart = util::GetTimeTicks();
+
+            return true;
+        } else {
+            return false;
+        }
     }
 
     void Scheduler::Rotate(bool cooperative) {

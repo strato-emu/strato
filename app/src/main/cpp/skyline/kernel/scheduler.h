@@ -67,24 +67,30 @@ namespace skyline {
             static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
 
             /**
-             * @brief Checks all cores and migrates the calling thread to the core where the calling thread should be scheduled the earliest
+             * @brief Checks all cores and migrates the specified thread to the core where the calling thread should be scheduled the earliest
              * @return A reference to the CoreContext of the core which the calling thread is running on after load balancing
              * @note This doesn't insert the thread into the migrated process's queue after load balancing
              */
-            CoreContext& LoadBalance();
+            CoreContext& LoadBalance(const std::shared_ptr<type::KThread> &thread);
 
             /**
              * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on it's priority
-             * @param loadBalance If to load balance or use the thread's current core (KThread::coreId)
-             * @note It isn't supported to load balance if the supplied thread isn't the calling thread, it'll lead to UB
              */
-            void InsertThread(const std::shared_ptr<type::KThread>& thread, bool loadBalance = true);
+            void InsertThread(const std::shared_ptr<type::KThread>& thread);
 
             /**
              * @brief Wait for the current thread to be scheduled on it's resident core
+             * @param loadBalance If the thread is appropriate for load balancing then if to load balance it occassionally or not
              * @note There is an assumption of the thread being on it's resident core queue, if it's not this'll never return
              */
-            void WaitSchedule();
+            void WaitSchedule(bool loadBalance = true);
+
+            /**
+             * @brief Wait for the current thread to be scheduled on it's resident core or for the timeout to expire
+             * @return If the thread has been scheduled (true) or if the timer expired before it could be (false)
+             * @note This will never load balance as it uses the timeout itself as a result this shouldn't be used as a replacement for regular waits
+             */
+            bool TimedWaitSchedule(std::chrono::nanoseconds timeout);
 
             /**
              * @brief Rotates the calling thread's resident core queue, if it is at the front of it

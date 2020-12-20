@@ -132,7 +132,6 @@ namespace skyline::service::hosbinder {
             }
             if (!nvBuffer)
                 throw exception("A QueueBuffer request has an invalid NVMap Handle ({}) and ID ({})", gbpBuffer.nvmapHandle, gbpBuffer.nvmapId);
-            nvmapLock.unlock();
         }
 
         gpu::texture::Format format;
