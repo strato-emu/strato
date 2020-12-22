@@ -9,6 +9,7 @@
 namespace skyline {
     namespace constant {
         constexpr u8 CoreCount{4}; //!< The amount of cores an HOS process can be scheduled onto (User applications can only be on the first 3 cores, the last one is reserved for the system)
+        constexpr u8 ParkedCoreId{CoreCount}; //!< // An invalid core ID, representing that a thread has been parked
     }
 
     namespace kernel {
@@ -47,12 +48,18 @@ namespace skyline {
                 u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::shared_mutex mutex; //!< Synchronizes all operations on the queue
                 std::condition_variable_any frontCondition; //!< A conditional variable which is signalled when the front of the queue has changed
-                std::deque<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
+                std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, u8 preemptionPriority);
             };
 
             std::array<CoreContext, constant::CoreCount> cores{CoreContext(0, 59), CoreContext(1, 59), CoreContext(2, 59), CoreContext(3, 63)};
+
+            std::mutex parkedMutex; //!< Synchronizes all operations on the queue of parked threads
+            std::condition_variable parkedFrontCondition; //!< A conditional variable which is signalled when the front of the parked queue has changed
+            std::list<std::shared_ptr<type::KThread>> parkedQueue; //!< A queue of threads which are parked and waiting on core migration
+
+            CoreContext parkedCore{constant::CoreCount, 64}; //!< A psuedo-core which all parked threads are moved onto
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
@@ -68,10 +75,11 @@ namespace skyline {
 
             /**
              * @brief Checks all cores and migrates the specified thread to the core where the calling thread should be scheduled the earliest
+             * @param alwaysInsert If to insert the thread even if it hasn't migrated cores, this is used during thread creation
              * @return A reference to the CoreContext of the core which the calling thread is running on after load balancing
-             * @note This doesn't insert the thread into the migrated process's queue after load balancing
+             * @note This inserts the thread into the migrated process's queue after load balancing, there is no need to call it redundantly
              */
-            CoreContext& LoadBalance(const std::shared_ptr<type::KThread> &thread);
+            CoreContext& LoadBalance(const std::shared_ptr<type::KThread> &thread, bool alwaysInsert = false);
 
             /**
              * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on it's priority
@@ -104,9 +112,41 @@ namespace skyline {
             void UpdatePriority(const std::shared_ptr<type::KThread>& thread);
 
             /**
+             * @brief Parks the calling thread after removing it from it's resident core's queue and inserts it on the core it's been awoken on
+             * @note This will not handle waiting for the thread to be scheduled, this should be followed with a call to WaitSchedule/TimedWaitSchedule
+             */
+            void ParkThread();
+
+            /**
+             * @brief Wakes a single parked thread which may be appropriate for running next on this core
+             * @note We will only wake a thread if it is determined to be a better pick than the thread which would be run on this core next
+             */
+            void WakeParkedThread();
+
+            /**
              * @brief Removes the calling thread from it's resident core queue
              */
             void RemoveThread();
+        };
+
+        /**
+         * @brief A lock which removes the calling thread from it's resident core's scheduler queue and adds it back when being destroyed
+         * @note It also blocks till the thread has been rescheduled in it's destructor, this behavior might not be preferable in some cases
+         * @note This is not an analogue to KScopedSchedulerLock on HOS, it is for handling thread state changes which we handle with Scheduler::YieldPending
+         */
+        struct SchedulerScopedLock {
+          private:
+            const DeviceState& state;
+
+          public:
+            inline SchedulerScopedLock(const DeviceState& state) : state(state) {
+                state.scheduler->RemoveThread();
+            }
+
+            inline ~SchedulerScopedLock() {
+                state.scheduler->InsertThread(state.thread);
+                state.scheduler->WaitSchedule();
+            }
         };
     }
 }

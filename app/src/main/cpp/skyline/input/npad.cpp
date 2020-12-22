@@ -10,7 +10,7 @@ namespace skyline::input {
          {*this, hid->npad[2], NpadId::Player3}, {*this, hid->npad[3], NpadId::Player4},
          {*this, hid->npad[4], NpadId::Player5}, {*this, hid->npad[5], NpadId::Player6},
          {*this, hid->npad[6], NpadId::Player7}, {*this, hid->npad[7], NpadId::Player8},
-         {*this, hid->npad[8], NpadId::Unknown}, {*this, hid->npad[9], NpadId::Handheld},
+         {*this, hid->npad[8], NpadId::Handheld}, {*this, hid->npad[9], NpadId::Unknown},
         } {}
 
     void NpadManager::Update() {

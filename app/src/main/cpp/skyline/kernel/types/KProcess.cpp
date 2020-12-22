@@ -15,10 +15,10 @@ namespace skyline::kernel::type {
         return Get(index++);
     }
 
-    u8 *KProcess::TlsPage::Get(u8 index) {
-        if (index >= constant::TlsSlots)
+    u8 *KProcess::TlsPage::Get(u8 slot) {
+        if (slot >= constant::TlsSlots)
             throw exception("TLS slot is out of range");
-        return memory->ptr + (constant::TlsSlotSize * index);
+        return memory->ptr + (constant::TlsSlotSize * slot);
     }
 
     bool KProcess::TlsPage::Full() {
@@ -234,41 +234,34 @@ namespace skyline::kernel::type {
         } else {
             __atomic_store_n(mutex, 0, __ATOMIC_SEQ_CST);
         }
-
-        state.scheduler->Rotate();
-        state.scheduler->WaitSchedule();
     }
 
     Result KProcess::ConditionalVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout) {
         {
             std::lock_guard lock(syncWaiterMutex);
             auto queue{syncWaiters.equal_range(key)};
-            auto it{syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {key, state.thread})};
-
-            // TODO: REMOVE THIS AFTER TESTING
-            auto prevIt{std::prev(it)}, nextIt{std::next(it)};
-            if ((prevIt != syncWaiters.begin() && prevIt->first == key && prevIt->second->priority > state.thread->priority.load()))
-                throw exception("Previous node incorrect");
-            if ((nextIt != syncWaiters.end() && nextIt->first == key && nextIt->second->priority < state.thread->priority.load()))
-                throw exception("Next node incorrect");
+            syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {key, state.thread});
 
             __atomic_store_n(key, true, __ATOMIC_SEQ_CST); // We need to notify any userspace threads that there are waiters on this conditional variable by writing back a boolean flag denoting it
 
-            MutexUnlock(mutex);
             state.scheduler->RemoveThread();
+            MutexUnlock(mutex);
+            __sync_synchronize();
         }
 
-        bool hasTimedOut{};
-        if (timeout > 0)
-            hasTimedOut = !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout));
-        else
-            state.scheduler->WaitSchedule(false);
-
-        if (hasTimedOut) {
-            std::lock_guard lock(syncWaiterMutex);
+        if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
+            std::unique_lock lock(syncWaiterMutex);
             auto queue{syncWaiters.equal_range(key)};
-            syncWaiters.erase(std::find(queue.first, queue.second, SyncWaiters::value_type{key, state.thread}));
+            auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{key, state.thread})};
+            if (iterator != queue.second)
+                if (syncWaiters.erase(iterator) == queue.second)
+                    __atomic_store_n(key, false, __ATOMIC_SEQ_CST);
+            lock.unlock();
+            state.scheduler->InsertThread(state.thread);
+            state.scheduler->WaitSchedule();
             return result::TimedOut;
+        } else {
+            state.scheduler->WaitSchedule(false);
         }
 
         while (true) {
@@ -284,13 +277,13 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ConditionalVariableSignal(u32 *key, u64 amount) {
-        std::unique_lock lock(syncWaiterMutex);
+        std::lock_guard lock(syncWaiterMutex);
         auto queue{syncWaiters.equal_range(key)};
         auto it{queue.first};
         if (queue.first != queue.second)
             for (; it != queue.second && amount; it = syncWaiters.erase(it), amount--)
                 state.scheduler->InsertThread(it->second);
         if (it == queue.second)
-            __atomic_store_n(key, 0, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
+            __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
     }
 }

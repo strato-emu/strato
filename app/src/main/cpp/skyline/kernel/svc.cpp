@@ -72,7 +72,7 @@ namespace skyline::kernel::svc {
         newChunk.attributes.isUncached = value.isUncached;
         state.process->memory.InsertChunk(newChunk);
 
-        state.logger->Debug("svcSetMemoryAttribute: Set caching to {} at 0x{:X} - 0x{:X} (0x{:X} bytes)", static_cast<bool>(value.isUncached), pointer, pointer + size, size);
+        state.logger->Debug("svcSetMemoryAttribute: Set CPU caching to {} at 0x{:X} - 0x{:X} (0x{:X} bytes)", !static_cast<bool>(value.isUncached), pointer, pointer + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
@@ -266,7 +266,7 @@ namespace skyline::kernel::svc {
         KHandle handle{state.ctx->gpr.w0};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            state.logger->Debug("svcStartThread: Starting thread: 0x{:X}, PID: {}", handle, thread->id);
+            state.logger->Debug("svcStartThread: Starting thread #{}: 0x{:X}", thread->id, handle);
             thread->Start();
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
@@ -294,14 +294,28 @@ namespace skyline::kernel::svc {
                 .tv_nsec = static_cast<long>(in % 1000000000),
             };
 
-            state.scheduler->Rotate();
+            SchedulerScopedLock schedulerLock(state);
             nanosleep(&spec, nullptr);
-            state.scheduler->WaitSchedule();
-        } else if (in == yieldWithoutCoreMigration || in == yieldWithCoreMigration || in == yieldToAnyThread) {
-            // Core Migration doesn't affect us as threads schedule and load balance themselves
-            state.logger->Debug("svcSleepThread: Cooperative Yield");
-            state.scheduler->Rotate();
-            state.scheduler->WaitSchedule();
+        } else {
+            switch (in) {
+                case yieldWithCoreMigration:
+                    state.logger->Debug("svcSleepThread: Waking any appropriate parked threads");
+                    state.scheduler->WakeParkedThread();
+                case yieldWithoutCoreMigration:
+                    state.logger->Debug("svcSleepThread: Cooperative Yield");
+                    state.scheduler->Rotate();
+                    state.scheduler->WaitSchedule();
+                    break;
+
+                case yieldToAnyThread:
+                    state.logger->Debug("svcSleepThread: Parking current thread");
+                    state.scheduler->ParkThread();
+                    state.scheduler->WaitSchedule(false);
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 
@@ -330,7 +344,7 @@ namespace skyline::kernel::svc {
         }
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            state.logger->Debug("svcSetThreadPriority: Setting thread priority to {}", priority);
+            state.logger->Debug("svcSetThreadPriority: Setting thread #{}'s priority to {}", thread->id, priority);
             if (thread->priority != priority) {
                 thread->priority = priority;
                 state.scheduler->UpdatePriority(thread);
@@ -348,7 +362,7 @@ namespace skyline::kernel::svc {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             auto idealCore{thread->idealCore};
             auto affinityMask{thread->affinityMask};
-            state.logger->Debug("svcGetThreadCoreMask: Setting Ideal Core ({}) + Affinity Mask ({})", idealCore, affinityMask);
+            state.logger->Debug("svcGetThreadCoreMask: Getting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
             state.ctx->gpr.x2 = affinityMask.to_ullong();
             state.ctx->gpr.w1 = idealCore;
@@ -388,18 +402,23 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            state.logger->Debug("svcSetThreadCoreMask: Setting Ideal Core ({}) + Affinity Mask ({})", idealCore, affinityMask);
+            state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
             thread->idealCore = idealCore;
             thread->affinityMask = affinityMask;
 
             if (!affinityMask.test(thread->coreId)) {
-                state.logger->Debug("svcSetThreadCoreMask: Migrating to Ideal Core C{} -> C{}", thread->coreId, idealCore);
+                state.logger->Debug("svcSetThreadCoreMask: Migrating thread #{} to Ideal Core C{} -> C{}", thread->id, thread->coreId, idealCore);
 
-                state.scheduler->RemoveThread();
-                thread->coreId = idealCore;
-                state.scheduler->InsertThread(state.thread);
-                state.scheduler->WaitSchedule();
+                if (thread == state.thread) {
+                    state.scheduler->RemoveThread();
+                    state.scheduler->InsertThread(state.thread);
+                    state.scheduler->WaitSchedule();
+                } else if (!thread->running) {
+                    thread->coreId = idealCore;
+                } else {
+                    throw exception("svcSetThreadCoreMask: Migrating a running thread due to a new core mask is not supported");
+                }
             }
 
             state.ctx->gpr.w0 = Result{};
@@ -411,7 +430,7 @@ namespace skyline::kernel::svc {
 
     void GetCurrentProcessorNumber(const DeviceState &state) {
         auto coreId{state.thread->coreId};
-        state.logger->Debug("svcGetCurrentProcessorNumber: Writing current core: {}", coreId);
+        state.logger->Debug("svcGetCurrentProcessorNumber: C{}", coreId);
         state.ctx->gpr.w0 = coreId;
     }
 
@@ -520,10 +539,6 @@ namespace skyline::kernel::svc {
 
             state.logger->Debug("svcResetSignal: Resetting signal: 0x{:X}", handle);
             state.ctx->gpr.w0 = Result{};
-
-            // There is an implicit yield while resetting a signal
-            state.scheduler->Rotate();
-            state.scheduler->WaitSchedule();
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcResetSignal: 'handle' invalid: 0x{:X}", handle);
             state.ctx->gpr.w0 = result::InvalidHandle;
@@ -567,36 +582,32 @@ namespace skyline::kernel::svc {
         u64 timeout{state.ctx->gpr.x3};
         state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: 0x{:X} ns", handleStr, timeout);
 
-        // The thread shouldn't be occupying the core while it's waiting on objects
-        state.scheduler->Rotate();
+        SchedulerScopedLock schedulerLock(state);
         auto start{util::GetTimeNs()};
-        [&] () {
-            while (true) {
-                if (state.thread->cancelSync) {
-                    state.thread->cancelSync = false;
-                    state.ctx->gpr.w0 = result::Cancelled;
-                    return;
-                }
-
-                u32 index{};
-                for (const auto &object : objectTable) {
-                    if (object->signalled) {
-                        state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);
-                        state.ctx->gpr.w0 = Result{};
-                        state.ctx->gpr.w1 = index;
-                        return;
-                    }
-                    index++;
-                }
-
-                if ((util::GetTimeNs() - start) >= timeout) {
-                    state.logger->Debug("svcWaitSynchronization: Wait has timed out");
-                    state.ctx->gpr.w0 = result::TimedOut;
-                    return;
-                }
+        while (true) {
+            if (state.thread->cancelSync) {
+                state.thread->cancelSync = false;
+                state.ctx->gpr.w0 = result::Cancelled;
+                return;
             }
-        }();
-        state.scheduler->WaitSchedule();
+
+            u32 index{};
+            for (const auto &object : objectTable) {
+                if (object->signalled) {
+                    state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);
+                    state.ctx->gpr.w0 = Result{};
+                    state.ctx->gpr.w1 = index;
+                    return;
+                }
+                index++;
+            }
+
+            if ((util::GetTimeNs() - start) >= timeout) {
+                state.logger->Debug("svcWaitSynchronization: Wait has timed out");
+                state.ctx->gpr.w0 = result::TimedOut;
+                return;
+            }
+        }
     }
 
     void CancelSynchronization(const DeviceState &state) {
@@ -658,13 +669,13 @@ namespace skyline::kernel::svc {
         KHandle requesterHandle{state.ctx->gpr.w2};
 
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
-        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {} ns", mutex, conditional, timeout);
+        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {}ns", mutex, conditional, timeout);
 
         auto result{state.process->ConditionalVariableWait(conditional, mutex, requesterHandle, timeout)};
         if (result == Result{})
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable and reacquired mutex");
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable (0x{:X}) and reacquired mutex", conditional);
         else if (result == result::TimedOut)
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait has timed out");
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait has timed out ({}ns) for 0x{:X}", timeout, conditional);
         state.ctx->gpr.w0 = result;
     }
 
@@ -716,11 +727,11 @@ namespace skyline::kernel::svc {
 
     void GetThreadId(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w1};
-        size_t pid{state.process->GetHandle<type::KThread>(handle)->id};
+        size_t tid{state.process->GetHandle<type::KThread>(handle)->id};
 
-        state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, PID: {}", handle, pid);
+        state.logger->Debug("svcGetThreadId: Handle: 0x{:X}, TID: {}", handle, tid);
 
-        state.ctx->gpr.x1 = pid;
+        state.ctx->gpr.x1 = tid;
         state.ctx->gpr.w0 = Result{};
     }
 

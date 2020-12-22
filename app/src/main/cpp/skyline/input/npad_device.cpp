@@ -187,7 +187,7 @@ namespace skyline::input {
 
         info.header.timestamp = util::GetTimeTicks();
         info.header.entryCount = std::min(static_cast<u8>(info.header.entryCount + 1), constant::HidEntryCount);
-        info.header.maxEntry = constant::HidEntryCount - 1;
+        info.header.maxEntry = info.header.entryCount;
         info.header.currentEntry = (info.header.currentEntry != constant::HidEntryCount - 1) ? info.header.currentEntry + 1 : 0;
 
         auto &entry{info.state.at(info.header.currentEntry)};

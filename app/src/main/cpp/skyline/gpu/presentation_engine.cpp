@@ -9,7 +9,9 @@ extern skyline::u16 Fps;
 extern skyline::u32 FrameTime;
 
 namespace skyline::gpu {
-    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {}
+    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state)), bufferEvent(std::make_shared<kernel::type::KEvent>(state)) {
+        vsyncEvent->Signal();
+    }
 
     PresentationEngine::~PresentationEngine() {
         if (window)

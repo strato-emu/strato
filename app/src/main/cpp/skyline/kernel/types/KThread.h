@@ -49,7 +49,6 @@ namespace skyline {
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
             std::optional<timer_t> preemptionTimer{}; //!< A kernel timer used for preemption interrupts
             bool isPreempted{}; //!< If the preemption timer has been armed and will fire
-            bool needsReorder{}; //!< If the thread needs to reorder itself during scheduler rotation
             std::mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
             u32* waitKey; //!< The key of the mutex which this thread is waiting on
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock

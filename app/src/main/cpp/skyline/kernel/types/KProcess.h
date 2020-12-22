@@ -48,7 +48,7 @@ namespace skyline {
 
                 u8 *ReserveSlot();
 
-                u8 *Get(u8 index);
+                u8 *Get(u8 slot);
 
                 bool Full();
             };

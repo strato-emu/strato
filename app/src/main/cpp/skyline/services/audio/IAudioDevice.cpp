@@ -10,12 +10,14 @@ namespace skyline::service::audio {
 
     Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         span buffer{request.outputBuf.at(0)};
-        for (std::string_view deviceName : {"AudioTvOutput\0", "AudioStereoJackOutput\0", "AudioBuiltInSpeakerOutput\0"}) {
+        std::array<std::string_view, 3> devices{"AudioTvOutput\0", "AudioStereoJackOutput\0", "AudioBuiltInSpeakerOutput\0"};
+        for (std::string_view deviceName : devices) {
             if (deviceName.size() > buffer.size())
                 throw exception("The buffer supplied to ListAudioDeviceName is too small");
             buffer.copy_from(deviceName);
             buffer = buffer.subspan(deviceName.size());
         }
+        response.Push<u32>(devices.size());
         return {};
     }
 

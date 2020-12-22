@@ -164,9 +164,7 @@ namespace skyline::kernel::type {
         std::unique_lock lock(mutex);
         if (!running) {
             running = true;
-            auto sharedThis{shared_from_this()};
-            state.scheduler->LoadBalance(sharedThis);
-            state.scheduler->InsertThread(sharedThis);
+            state.scheduler->LoadBalance(shared_from_this(), true); // This will automatically insert the thread into the core queue after load balancing
             if (self) {
                 pthread = pthread_self();
                 lock.unlock();
