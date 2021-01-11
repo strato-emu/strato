@@ -347,7 +347,14 @@ namespace skyline::kernel::svc {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
             state.logger->Debug("svcSetThreadPriority: Setting thread #{}'s priority to {}", thread->id, priority);
             if (thread->priority != priority) {
-                thread->priority = priority;
+                thread->basePriority = priority;
+                u8 newPriority{};
+                do {
+                    // Try to CAS the priority of the thread with it's new base priority
+                    // If the new priority is equivalent to the current priority then we don't need to CAS
+                    newPriority = thread->priority.load();
+                    newPriority = std::min(newPriority, priority);
+                } while (newPriority != priority && thread->priority.compare_exchange_strong(newPriority, priority));
                 state.scheduler->UpdatePriority(thread);
             }
             state.ctx->gpr.w0 = Result{};
@@ -773,6 +780,7 @@ namespace skyline::kernel::svc {
     }
 
     void SendSyncRequest(const DeviceState &state) {
+        SchedulerScopedLock schedulerLock(state);
         state.os->serviceManager.SyncRequestHandler(static_cast<KHandle>(state.ctx->gpr.x0));
         state.ctx->gpr.w0 = Result{};
     }

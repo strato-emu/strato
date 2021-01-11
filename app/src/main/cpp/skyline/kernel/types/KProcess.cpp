@@ -137,7 +137,7 @@ namespace skyline::kernel::type {
                 u8 priority, ownerPriority;
                 do {
                     // Try to CAS the priority of the owner with the current thread
-                    // If they're equivalent then we don't need to CAS as the priority won't be inherited
+                    // If the new priority is equivalent to the current priority then we don't need to CAS
                     ownerPriority = owner->priority.load();
                     priority = std::min(ownerPriority, state.thread->priority.load());
                 } while (ownerPriority != priority && owner->priority.compare_exchange_strong(ownerPriority, priority));
@@ -198,13 +198,21 @@ namespace skyline::kernel::type {
 
             if (!waiters.empty()) {
                 // If there are threads still waiting on us then try to inherit their priority
-                auto highestPriority{waiters.front()};
-                u8 priority, ownerPriority;
+                auto highestPriorityThread{waiters.front()};
+                u8 newPriority, basePriority;
                 do {
-                    ownerPriority = state.thread->priority.load();
-                    priority = std::min(ownerPriority, highestPriority->priority.load());
-                } while (ownerPriority != priority && nextOwner->priority.compare_exchange_strong(ownerPriority, priority));
+                    basePriority = state.thread->basePriority.load();
+                    newPriority = std::min(basePriority, highestPriorityThread->priority.load());
+                } while (basePriority != newPriority && state.thread->priority.compare_exchange_strong(basePriority, newPriority));
                 state.scheduler->UpdatePriority(state.thread);
+            } else {
+                u8 priority, basePriority;
+                do {
+                    basePriority = state.thread->basePriority.load();
+                    priority = state.thread->priority.load();
+                } while (priority != basePriority && !state.thread->priority.compare_exchange_strong(priority, basePriority));
+                if (priority != basePriority)
+                    state.scheduler->UpdatePriority(state.thread);
             }
 
             if (nextWaiter) {

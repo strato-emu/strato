@@ -21,7 +21,7 @@ namespace skyline::input {
     class NpadManager {
       private:
         const DeviceState &state;
-        bool activated{false}; //!< If this NpadManager is activated or not
+        bool activated{};
 
         friend NpadDevice;
 

@@ -5,12 +5,14 @@
 
 namespace skyline::input {
     TouchManager::TouchManager(const DeviceState &state, input::HidSharedMemory *hid) : state(state), section(hid->touchScreen) {
-        Activate();
+        Activate(); // The touch screen is expected to be activated by default, commercial games are reliant on this behavior
     }
 
     void TouchManager::Activate() {
-        activated = true;
-        SetState({});
+        if (!activated) {
+            activated = true;
+            SetState({});
+        }
     }
 
     void TouchManager::SetState(const span<TouchScreenPoint> &points) {
@@ -37,7 +39,7 @@ namespace skyline::input {
 
         section.header.timestamp = util::GetTimeTicks();
         section.header.entryCount = std::min(static_cast<u8>(section.header.entryCount + 1), constant::HidEntryCount);
-        section.header.maxEntry = constant::HidEntryCount - 1;
+        section.header.maxEntry = section.header.entryCount;
         section.header.currentEntry = entryIndex;
     }
 }

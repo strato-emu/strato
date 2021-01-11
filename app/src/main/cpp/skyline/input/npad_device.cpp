@@ -425,10 +425,15 @@ namespace skyline::input {
     }
 
     void NpadDevice::Vibrate(bool isRight, const NpadVibrationValue &value) {
-        if (isRight)
+        if (isRight) {
+            if (vibrationRight && (*vibrationRight) == value)
+                return;
             vibrationRight = value;
-        else
+        } else {
+            if (vibrationLeft == value)
+                return;
             vibrationLeft = value;
+        }
 
         if (vibrationRight)
             Vibrate(vibrationLeft, *vibrationRight);
@@ -437,6 +442,12 @@ namespace skyline::input {
     }
 
     void NpadDevice::Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right) {
+        if (vibrationLeft == left && vibrationRight && (*vibrationRight) == right)
+            return;
+
+        vibrationLeft = left;
+        vibrationRight = right;
+
         if (partnerIndex == constant::NullIndex) {
             std::array<VibrationInfo, 4> vibrations{
                 VibrationInfo{left.frequencyLow, left.amplitudeLow * (constant::AmplitudeMax / 4)},

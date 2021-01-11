@@ -30,7 +30,7 @@ namespace skyline {
                 return (std::numeric_limits<u64>::max() >> ((std::numeric_limits<u64>::digits - 1 + min) - max)) << min;
             }
 
-            constexpr bool Valid(i8 value) const {
+            constexpr bool Valid(u8 value) const {
                 return (value >= min) && (value <= max);
             }
         };
@@ -47,7 +47,6 @@ namespace skyline {
                 u8 id;
                 u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::shared_mutex mutex; //!< Synchronizes all operations on the queue
-                std::condition_variable_any frontCondition; //!< A conditional variable which is signalled when the front of the queue has changed
                 std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, u8 preemptionPriority);
@@ -58,8 +57,6 @@ namespace skyline {
             std::mutex parkedMutex; //!< Synchronizes all operations on the queue of parked threads
             std::condition_variable parkedFrontCondition; //!< A conditional variable which is signalled when the front of the parked queue has changed
             std::list<std::shared_ptr<type::KThread>> parkedQueue; //!< A queue of threads which are parked and waiting on core migration
-
-            CoreContext parkedCore{constant::CoreCount, 64}; //!< A psuedo-core which all parked threads are moved onto
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
@@ -78,6 +75,7 @@ namespace skyline {
              * @param alwaysInsert If to insert the thread even if it hasn't migrated cores, this is used during thread creation
              * @return A reference to the CoreContext of the core which the calling thread is running on after load balancing
              * @note This inserts the thread into the migrated process's queue after load balancing, there is no need to call it redundantly
+             * @note alwaysInsert makes the assumption that the thread isn't inserted in any core's queue currently
              */
             CoreContext& LoadBalance(const std::shared_ptr<type::KThread> &thread, bool alwaysInsert = false);
 

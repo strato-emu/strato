@@ -24,9 +24,11 @@ namespace skyline {
             void StartThread();
 
           public:
-            std::mutex mutex; //!< Synchronizes all thread state changes
+            std::mutex statusMutex; //!< Synchronizes all thread state changes, running/ready
+            std::condition_variable statusCondition; //!< A conditional variable signalled on the status of the thread changing
             bool running{false}; //!< If the host thread that corresponds to this thread is running, this doesn't reflect guest scheduling changes
             bool killed{false}; //!< If this thread was previously running and has been killed
+            bool ready{false}; //!< If this thread is ready to recieve signals or not
 
             KHandle handle;
             size_t id; //!< Index of thread in parent process's KThread vector
@@ -38,6 +40,7 @@ namespace skyline {
             u64 entryArgument;
             void *stackTop;
 
+            std::condition_variable_any wakeCondition; //!< A conditional variable which is signalled to wake the current thread while it's sleeping
             std::atomic<u8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
             std::atomic<u8> priority; //!< The priority of the thread for the scheduler
             i8 idealCore; //!< The ideal CPU core for this thread to run on
@@ -46,7 +49,7 @@ namespace skyline {
             std::mutex coreMigrationMutex; //!< Synchronizes operations which depend on which core the thread is running on
             u64 timesliceStart{}; //!< Start of the scheduler timeslice
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
-            std::optional<timer_t> preemptionTimer{}; //!< A kernel timer used for preemption interrupts
+            timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
             bool isPreempted{}; //!< If the preemption timer has been armed and will fire
             std::mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
             u32* waitKey; //!< The key of the mutex which this thread is waiting on

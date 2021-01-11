@@ -25,10 +25,10 @@ namespace skyline::nce {
                 throw exception("Unimplemented SVC 0x{:X}", svc);
             }
 
-            if (kernel::Scheduler::YieldPending) {
+            while (kernel::Scheduler::YieldPending) {
                 state.scheduler->Rotate(false);
-                state.scheduler->WaitSchedule();
                 kernel::Scheduler::YieldPending = false;
+                state.scheduler->WaitSchedule();
             }
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {

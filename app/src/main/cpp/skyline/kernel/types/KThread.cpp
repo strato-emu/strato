@@ -10,22 +10,16 @@
 #include "KThread.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), priority(priority), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), priority(priority), basePriority(priority), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
         affinityMask.set(coreId);
     }
 
     KThread::~KThread() {
-        std::unique_lock lock(mutex);
-        if (running && pthread != pthread_self()) {
-            pthread_kill(pthread, SIGINT);
-            if (!thread.joinable())
-                pthread_join(pthread, nullptr);
-        }
+        Kill(true);
         if (thread.joinable())
             thread.join();
-
         if (preemptionTimer)
-            timer_delete(*preemptionTimer);
+            timer_delete(preemptionTimer);
     }
 
     void KThread::StartThread() {
@@ -44,7 +38,13 @@ namespace skyline::kernel::type {
         if (setjmp(originalCtx)) { // Returns 1 if it's returning from guest, 0 otherwise
             state.scheduler->RemoveThread();
 
-            running = false;
+            {
+                std::unique_lock lock(statusMutex);
+                running = false;
+                ready = false;
+                statusCondition.notify_all();
+            }
+
             Signal();
 
             if (threadName[0] != 'H' || threadName[1] != 'O' || threadName[2] != 'S' || threadName[3] != '-') {
@@ -55,10 +55,32 @@ namespace skyline::kernel::type {
             return;
         }
 
+        struct sigevent event{
+            .sigev_signo = Scheduler::YieldSignal,
+            .sigev_notify = SIGEV_THREAD_ID,
+            .sigev_notify_thread_id = gettid(),
+        };
+        if (timer_create(CLOCK_THREAD_CPUTIME_ID, &event, &preemptionTimer))
+            throw exception("timer_create has failed with '{}'", strerror(errno));
+
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
+        signal::SetSignalHandler({Scheduler::YieldSignal}, Scheduler::SignalHandler);
+
+        {
+            std::lock_guard lock(statusMutex);
+            ready = true;
+            statusCondition.notify_all();
+        }
 
         try {
-            state.scheduler->WaitSchedule();
+            if (!Scheduler::YieldPending)
+                state.scheduler->WaitSchedule();
+            while (Scheduler::YieldPending) {
+                // If there is a yield pending on us after thread creation
+                state.scheduler->Rotate();
+                Scheduler::YieldPending = false;
+                state.scheduler->WaitSchedule();
+            }
 
             asm volatile(
             "MRS X0, TPIDR_EL0\n\t"
@@ -161,10 +183,13 @@ namespace skyline::kernel::type {
     }
 
     void KThread::Start(bool self) {
-        std::unique_lock lock(mutex);
+        std::unique_lock lock(statusMutex);
         if (!running) {
-            running = true;
             state.scheduler->LoadBalance(shared_from_this(), true); // This will automatically insert the thread into the core queue after load balancing
+
+            running = true;
+            killed = false;
+            statusCondition.notify_all();
             if (self) {
                 pthread = pthread_self();
                 lock.unlock();
@@ -177,22 +202,23 @@ namespace skyline::kernel::type {
     }
 
     void KThread::Kill(bool join) {
-        std::lock_guard lock(mutex);
-        if (running) {
-            pthread_kill(pthread, SIGINT);
-            if (join) {
-                if (thread.joinable())
-                    thread.join();
-                else
-                    pthread_join(pthread, nullptr);
+        std::unique_lock lock(statusMutex);
+        if (!killed && running) {
+            statusCondition.wait(lock, [this]() { return ready || killed; });
+            if (!killed) {
+                pthread_kill(pthread, SIGINT);
+                killed = true;
+                statusCondition.notify_all();
             }
-            running = false;
         }
+        if (join)
+            statusCondition.wait(lock, [this]() { return !running; });
     }
 
     void KThread::SendSignal(int signal) {
-        std::lock_guard lock(mutex);
-        if (running)
+        std::unique_lock lock(statusMutex);
+        statusCondition.wait(lock, [this]() { return ready || killed; });
+        if (!killed && running)
             pthread_kill(pthread, signal);
     }
 }

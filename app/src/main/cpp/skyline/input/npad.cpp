@@ -11,7 +11,7 @@ namespace skyline::input {
          {*this, hid->npad[4], NpadId::Player5}, {*this, hid->npad[5], NpadId::Player6},
          {*this, hid->npad[6], NpadId::Player7}, {*this, hid->npad[7], NpadId::Player8},
          {*this, hid->npad[8], NpadId::Handheld}, {*this, hid->npad[9], NpadId::Unknown},
-        } {}
+        } { Activate(); /* NPads are activated by default, certain homebrew is reliant on this behavior */ }
 
     void NpadManager::Update() {
         std::lock_guard guard(mutex);
@@ -83,25 +83,27 @@ namespace skyline::input {
 
     void NpadManager::Activate() {
         std::lock_guard guard(mutex);
+        if (!activated) {
+            supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
+            styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
+            activated = true;
 
-        supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
-        styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
-        activated = true;
-
-        Update();
+            Update();
+        }
     }
 
     void NpadManager::Deactivate() {
         std::lock_guard guard(mutex);
+        if (activated) {
+            supportedIds = {};
+            styles = {};
+            activated = false;
 
-        supportedIds = {};
-        styles = {};
-        activated = false;
+            for (auto &npad : npads)
+                npad.Disconnect();
 
-        for (auto &npad : npads)
-            npad.Disconnect();
-
-        for (auto &controller : controllers)
-            controller.device = nullptr;
+            for (auto &controller : controllers)
+                controller.device = nullptr;
+        }
     }
 }
