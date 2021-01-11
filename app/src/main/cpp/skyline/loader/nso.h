@@ -34,6 +34,12 @@ namespace skyline::loader {
         };
         static_assert(sizeof(NsoSegmentHeader) == 0xC);
 
+        struct NsoRelativeSegmentHeader {
+            u32 offset; //!< The offset of the segment into it's parent segment
+            u32 size; //!< Size of the segment
+        };
+        static_assert(sizeof(NsoRelativeSegmentHeader) == 0x8);
+
         struct NsoHeader {
             u32 magic; //!< The NSO magic "NSO0"
             u32 version; //!< The version of the application
@@ -55,9 +61,9 @@ namespace skyline::loader {
 
             u32 _pad1_[7];
 
-            u64 apiInfo; //!< The .rodata-relative offset of .apiInfo
-            u64 dynstr; //!< The .rodata-relative offset of .dynstr
-            u64 dynsym; //!< The .rodata-relative offset of .dynsym
+            NsoRelativeSegmentHeader apiInfo; //!< The .rodata-relative segment .apiInfo
+            NsoRelativeSegmentHeader dynstr; //!< The .rodata-relative segment .dynstr
+            NsoRelativeSegmentHeader dynsym; //!< The .rodata-relative segment .dynsym
 
             std::array<std::array<u64, 4>, 3> segmentHashes; //!< The SHA256 checksums of the .text, .rodata and .data segments
         };
@@ -76,12 +82,12 @@ namespace skyline::loader {
 
         /**
          * @brief Loads an NSO into memory, offset by the given amount
-         * @param backing The backing of the NSO
-         * @param process The process to load the NSO into
+         * @param backing The backing that the NSO is contained within
          * @param offset The offset from the base address to place the NSO
+         * @param name An optional name for the NSO, used for symbol resolution
          * @return An ExecutableLoadInfo struct containing the load base and size
          */
-        static ExecutableLoadInfo LoadNso(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset = 0);
+        static ExecutableLoadInfo LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset = 0, const std::string &name = {});
 
         void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
     };

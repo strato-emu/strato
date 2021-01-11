@@ -45,21 +45,26 @@ namespace skyline::loader {
     }
 
     void *NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
-        Executable nroExecutable{};
+        Executable executable{};
 
-        nroExecutable.text.contents = GetSegment(header.text);
-        nroExecutable.text.offset = 0;
+        executable.text.contents = GetSegment(header.text);
+        executable.text.offset = 0;
 
-        nroExecutable.ro.contents = GetSegment(header.ro);
-        nroExecutable.ro.offset = header.text.size;
+        executable.ro.contents = GetSegment(header.ro);
+        executable.ro.offset = header.text.size;
 
-        nroExecutable.data.contents = GetSegment(header.data);
-        nroExecutable.data.offset = header.text.size + header.ro.size;
+        executable.data.contents = GetSegment(header.data);
+        executable.data.offset = header.text.size + header.ro.size;
 
-        nroExecutable.bssSize = header.bssSize;
+        executable.bssSize = header.bssSize;
+
+        if (header.dynsym.offset > header.ro.offset && header.dynsym.offset + header.dynsym.size < header.ro.offset + header.ro.size && header.dynstr.offset > header.ro.offset && header.dynstr.offset + header.dynstr.size < header.ro.offset + header.ro.size) {
+            executable.dynsym = {header.dynsym.offset, header.dynsym.size};
+            executable.dynstr = {header.dynstr.offset, header.dynstr.size};
+        }
 
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
-        auto loadInfo{LoadExecutable(process, state, nroExecutable)};
+        auto loadInfo{LoadExecutable(process, state, executable, 0, nacp->applicationName.empty() ? "main.nro" : nacp->applicationName + ".nro")};
         state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
 
         return loadInfo.entry;

@@ -257,6 +257,7 @@ namespace skyline::kernel::svc {
             state.ctx->gpr.w1 = thread->handle;
             state.ctx->gpr.w0 = Result{};
         } else {
+            state.logger->Debug("svcCreateThread: Cannot create thread (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, Ideal Core: {})", entry, entryArgument, stackTop, priority, idealCore);
             state.ctx->gpr.w1 = 0;
             state.ctx->gpr.w0 = result::OutOfResource;
         }
@@ -336,7 +337,7 @@ namespace skyline::kernel::svc {
 
     void SetThreadPriority(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
-        u32 priority{state.ctx->gpr.w1};
+        u8 priority{static_cast<u8>(state.ctx->gpr.w1)};
         if (!state.process->npdm.threadInfo.priority.Valid(priority)) {
             state.logger->Warn("svcSetThreadPriority: 'priority' invalid: 0x{:X}", priority);
             state.ctx->gpr.w0 = result::InvalidPriority;
@@ -735,13 +736,26 @@ namespace skyline::kernel::svc {
         state.ctx->gpr.w0 = Result{};
     }
 
+    void Break(const DeviceState &state) {
+        auto reason{state.ctx->gpr.x0};
+        if (reason & (1ULL << 31)) {
+            state.logger->Error("svcBreak: Debugger is being engaged ({})", reason);
+            __builtin_trap();
+        } else {
+            state.logger->Error("svcBreak: Stack Trace ({}){}", reason, state.loader->GetStackTrace());
+            if (state.thread->id)
+                state.process->Kill(false);
+            std::longjmp(state.thread->originalCtx, true);
+        }
+    }
+
     void OutputDebugString(const DeviceState &state) {
-        auto debug{span(reinterpret_cast<u8 *>(state.ctx->gpr.x0), state.ctx->gpr.x1).as_string()};
+        auto string{span(reinterpret_cast<u8 *>(state.ctx->gpr.x0), state.ctx->gpr.x1).as_string()};
 
-        if (debug.back() == '\n')
-            debug.remove_suffix(1);
+        if (string.back() == '\n')
+            string.remove_suffix(1);
 
-        state.logger->Info("svcOutputDebugString: {}", debug);
+        state.logger->Info("svcOutputDebugString: {}", string);
         state.ctx->gpr.w0 = Result{};
     }
 

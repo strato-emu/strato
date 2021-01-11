@@ -37,7 +37,7 @@ namespace skyline::loader {
 
     void *NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
         process->npdm = vfs::NPDM(programNca->exeFs->OpenFile("main.npdm"), state);
-        return NcaLoader::LoadExeFs(programNca->exeFs, process, state);
+        return NcaLoader::LoadExeFs(this, programNca->exeFs, process, state);
     }
 
     std::vector<u8> NspLoader::GetIcon() {

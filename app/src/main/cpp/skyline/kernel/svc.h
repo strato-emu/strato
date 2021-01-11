@@ -187,6 +187,12 @@ namespace skyline::kernel::svc {
     void GetThreadId(const DeviceState &state);
 
     /**
+     * @brief Causes the debugger to be engaged or the program to end if it isn't being debugged
+     * @url https://switchbrew.org/wiki/SVC#Break
+     */
+    void Break(const DeviceState &state);
+
+    /**
      * @brief Outputs a debug string
      * @url https://switchbrew.org/wiki/SVC#OutputDebugString
      */
@@ -252,7 +258,7 @@ namespace skyline::kernel::svc {
         nullptr, // 0x23
         nullptr, // 0x24
         GetThreadId, // 0x25
-        nullptr, // 0x26
+        Break, // 0x26
         OutputDebugString, // 0x27
         nullptr, // 0x28
         GetInfo, // 0x29

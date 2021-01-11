@@ -14,8 +14,8 @@ namespace skyline::vfs {
             if (entry.applicationName.front() == '\0')
                 continue;
 
-            applicationName = std::string(entry.applicationName.data(), entry.applicationName.size());
-            applicationPublisher = std::string(entry.applicationPublisher.data(), entry.applicationPublisher.size());
+            applicationName = span(entry.applicationName).as_string(true);
+            applicationPublisher = span(entry.applicationPublisher).as_string(true);
         }
     }
 }

@@ -64,7 +64,7 @@ namespace skyline::vfs {
 
         int fd{open((basePath + path).c_str(), (mode.read && mode.write) ? O_RDWR : (mode.write ? O_WRONLY : O_RDONLY))};
         if (fd < 0)
-            throw exception("Failed to open file: {}", strerror(errno));
+            throw exception("Failed to open file at '{}': {}", path, strerror(errno));
 
         return std::make_shared<OsBacking>(fd, true, mode);
     }

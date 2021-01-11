@@ -40,15 +40,15 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#IPC_Command_Structure
          */
         struct CommandHeader {
-            CommandType type : 16;
-            u8 xNo : 4;
-            u8 aNo : 4;
-            u8 bNo : 4;
-            u8 wNo : 4;
-            u32 rawSize : 10;
+            CommandType type  : 16;
+            u8 xNo            : 4;
+            u8 aNo            : 4;
+            u8 bNo            : 4;
+            u8 wNo            : 4;
+            u32 rawSize       : 10;
             BufferCFlag cFlag : 4;
             u32               : 17;
-            bool handleDesc : 1;
+            bool handleDesc   : 1;
         };
         static_assert(sizeof(CommandHeader) == 8);
 
@@ -56,7 +56,7 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/IPC_Marshalling#Handle_descriptor
          */
         struct HandleDescriptor {
-            bool sendPid : 1;
+            bool sendPid  : 1;
             u32 copyCount : 4;
             u32 moveCount : 4;
             u32           : 23;

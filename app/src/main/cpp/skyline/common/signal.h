@@ -7,6 +7,14 @@
 
 namespace skyline::signal {
     /**
+     * @brief The structure of a stack frame entry in the ARMv8 ABI
+     */
+    struct StackFrame {
+        StackFrame *next;
+        void *lr;
+    };
+
+    /**
      * @brief An exception object that is designed specifically to hold Linux signals
      * @note This doesn't inherit std::exception as it shouldn't be caught as such
      * @note Refer to the manpage siginfo(3) for information on members
@@ -16,6 +24,7 @@ namespace skyline::signal {
         int signal{};
         void* pc{};
         void *fault{};
+        std::vector<void*> frames; //!< A vector of all stack frame entries prior to the signal occuring
 
         inline std::string what() const {
             if (!fault)

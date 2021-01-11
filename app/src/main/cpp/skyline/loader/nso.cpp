@@ -29,34 +29,39 @@ namespace skyline::loader {
         return outputBuffer;
     }
 
-    Loader::ExecutableLoadInfo NsoLoader::LoadNso(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset) {
+    Loader::ExecutableLoadInfo NsoLoader::LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset, const std::string& name) {
         auto header{backing->Read<NsoHeader>()};
 
         if (header.magic != util::MakeMagic<u32>("NSO0"))
             throw exception("Invalid NSO magic! 0x{0:X}", header.magic);
 
-        Executable nsoExecutable{};
+        Executable executable{};
 
-        nsoExecutable.text.contents = GetSegment(backing, header.text, header.flags.textCompressed ? header.textCompressedSize : 0);
-        nsoExecutable.text.contents.resize(util::AlignUp(nsoExecutable.text.contents.size(), PAGE_SIZE));
-        nsoExecutable.text.offset = header.text.memoryOffset;
+        executable.text.contents = GetSegment(backing, header.text, header.flags.textCompressed ? header.textCompressedSize : 0);
+        executable.text.contents.resize(util::AlignUp(executable.text.contents.size(), PAGE_SIZE));
+        executable.text.offset = header.text.memoryOffset;
 
-        nsoExecutable.ro.contents = GetSegment(backing, header.ro, header.flags.roCompressed ? header.roCompressedSize : 0);
-        nsoExecutable.ro.contents.resize(util::AlignUp(nsoExecutable.ro.contents.size(), PAGE_SIZE));
-        nsoExecutable.ro.offset = header.ro.memoryOffset;
+        executable.ro.contents = GetSegment(backing, header.ro, header.flags.roCompressed ? header.roCompressedSize : 0);
+        executable.ro.contents.resize(util::AlignUp(executable.ro.contents.size(), PAGE_SIZE));
+        executable.ro.offset = header.ro.memoryOffset;
 
-        nsoExecutable.data.contents = GetSegment(backing, header.data, header.flags.dataCompressed ? header.dataCompressedSize : 0);
-        nsoExecutable.data.contents.resize(util::AlignUp(nsoExecutable.data.contents.size(), PAGE_SIZE));
-        nsoExecutable.data.offset = header.data.memoryOffset;
+        executable.data.contents = GetSegment(backing, header.data, header.flags.dataCompressed ? header.dataCompressedSize : 0);
+        executable.data.contents.resize(util::AlignUp(executable.data.contents.size(), PAGE_SIZE));
+        executable.data.offset = header.data.memoryOffset;
 
-        nsoExecutable.bssSize = util::AlignUp(header.bssSize, PAGE_SIZE);
+        executable.bssSize = util::AlignUp(header.bssSize, PAGE_SIZE);
 
-        return LoadExecutable(process, state, nsoExecutable, offset);
+        if (header.dynsym.offset + header.dynsym.size <= header.ro.decompressedSize && header.dynstr.offset + header.dynstr.size <= header.ro.decompressedSize) {
+            executable.dynsym = {header.dynsym.offset, header.dynsym.size};
+            executable.dynstr = {header.dynstr.offset, header.dynstr.size};
+        }
+
+        return loader->LoadExecutable(process, state, executable, offset, name);
     }
 
     void *NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
-        auto loadInfo{LoadNso(backing, process, state)};
+        auto loadInfo{LoadNso(this, backing, process, state)};
         state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
         return loadInfo.entry;
     }

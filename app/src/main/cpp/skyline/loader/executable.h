@@ -21,7 +21,14 @@ namespace skyline::loader {
         Segment text; //!< The .text segment container
         Segment ro; //!< The .rodata segment container
         Segment data; //!< The .data segment container
-
         size_t bssSize; //!< The size of the .bss segment
+
+        struct RelativeSegment {
+            size_t offset; //!< The offset from the base address of the related segment that this is segment is located at
+            size_t size; //!< The size of the segment
+        };
+
+        RelativeSegment dynsym; //!< The .dynsym segment relative to .rodata
+        RelativeSegment dynstr; //!< The .dynstr segment relative to .rodata
     };
 }

@@ -32,7 +32,7 @@ namespace skyline::nce {
             }
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
+                state.logger->Error("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svc, state.loader->GetStackTrace(e.frames));
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
@@ -41,7 +41,7 @@ namespace skyline::nce {
             abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
-            state.logger->Error("{} (SVC: 0x{:X})", e.what(), svc);
+            state.logger->Error("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svc, state.loader->GetStackTrace());
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
@@ -56,47 +56,26 @@ namespace skyline::nce {
             auto &mctx{ctx->uc_mcontext};
             const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
             if (signal != SIGINT) {
-                state.logger->Warn("Thread #{} has crashed due to signal: {}", state.thread->id, strsignal(signal));
+                signal::StackFrame topFrame{.lr = reinterpret_cast<void *>(ctx->uc_mcontext.pc), .next = reinterpret_cast<signal::StackFrame *>(ctx->uc_mcontext.regs[29])};
+                std::string trace{state.loader->GetStackTrace(&topFrame)};
 
-                std::string raw;
-                std::string trace;
                 std::string cpuContext;
-
-                constexpr u16 instructionCount{20}; // The amount of previous instructions to print
-                auto offset{mctx.pc - (instructionCount * sizeof(u32)) + (2 * sizeof(u32))};
-                span instructions(reinterpret_cast<u32 *>(offset), instructionCount);
-                if (mprotect(util::AlignDown(instructions.data(), PAGE_SIZE), util::AlignUp(instructions.size_bytes(), PAGE_SIZE), PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
-                    for (auto &instruction : instructions) {
-                        instruction = __builtin_bswap32(instruction);
-
-                        if (offset == mctx.pc)
-                            trace += fmt::format("\n-> 0x{:X} : 0x{:08X}", offset, instruction);
-                        else
-                            trace += fmt::format("\n   0x{:X} : 0x{:08X}", offset, instruction);
-
-                        raw += fmt::format("{:08X}", instruction);
-                        offset += sizeof(u32);
-                    }
-
-                    state.logger->Debug("Process Trace:{}", trace);
-                    state.logger->Debug("Raw Instructions: 0x{}", raw);
-                } else {
-                    cpuContext += fmt::format("\nPC: 0x{:X} ('mprotect' failed with '{}')", mctx.pc, strerror(errno));
-                }
-
                 if (mctx.fault_address)
-                    cpuContext += fmt::format("\nFault Address: 0x{:X}", mctx.fault_address);
-
+                    cpuContext += fmt::format("\n  Fault Address: 0x{:X}", mctx.fault_address);
                 if (mctx.sp)
-                    cpuContext += fmt::format("\nStack Pointer: 0x{:X}", mctx.sp);
+                    cpuContext += fmt::format("\n  Stack Pointer: 0x{:X}", mctx.sp);
+                for (u8 index{}; index < (sizeof(mcontext_t::regs) / sizeof(u64)); index += 2)
+                    cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
 
-                for (u8 index{}; index < ((sizeof(mcontext_t::regs) / sizeof(u64)) - 2); index += 2)
-                    cpuContext += fmt::format("\n{}X{}: 0x{:<16X} {}{}: 0x{:X}", index < 10 ? ' ' : '\0', index, mctx.regs[index], index < 10 ? 'X' : '\0', index + 1, mctx.regs[index]);
+                state.logger->Error("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
 
-                state.logger->Debug("CPU Context:{}", cpuContext);
+                if (state.thread->id) {
+                    signal::BlockSignal({SIGINT});
+                    state.process->Kill(false);
+                }
             }
 
-            mctx.pc = reinterpret_cast<skyline::u64>(&std::longjmp);
+            mctx.pc = reinterpret_cast<u64>(&std::longjmp);
             mctx.regs[0] = reinterpret_cast<u64>(state.thread->originalCtx);
             mctx.regs[1] = true;
 
