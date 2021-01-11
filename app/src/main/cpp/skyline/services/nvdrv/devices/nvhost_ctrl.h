@@ -26,8 +26,8 @@ namespace skyline {
                 Available = 0,
                 Waiting = 1,
                 Cancelling = 2,
-                Signaling = 3,
-                Signaled = 4,
+                Signalling = 3,
+                Signalled = 4,
                 Cancelled = 5,
             };
 

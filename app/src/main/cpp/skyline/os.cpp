@@ -36,7 +36,7 @@ namespace skyline::kernel {
         auto &process{state.process};
         process = std::make_shared<kernel::type::KProcess>(state);
         auto entry{state.loader->LoadProcessData(process, state)};
-        process->InitializeHeap();
+        process->InitializeHeapTls();
         auto thread{process->CreateThread(entry)};
         if (thread) {
             state.logger->Debug("Starting main HOS thread");

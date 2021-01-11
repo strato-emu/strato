@@ -6,7 +6,7 @@
 #include "npad.h"
 
 namespace skyline::input {
-    NpadDevice::NpadDevice(NpadManager &manager, NpadSection &section, NpadId id) : manager(manager), section(section), id(id), updateEvent(std::make_shared<kernel::type::KEvent>(manager.state)) {}
+    NpadDevice::NpadDevice(NpadManager &manager, NpadSection &section, NpadId id) : manager(manager), section(section), id(id), updateEvent(std::make_shared<kernel::type::KEvent>(manager.state, false)) {}
 
     void NpadDevice::Connect(NpadControllerType newType) {
         if (type == newType) {

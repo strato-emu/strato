@@ -6,7 +6,7 @@
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
 
     Result ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};

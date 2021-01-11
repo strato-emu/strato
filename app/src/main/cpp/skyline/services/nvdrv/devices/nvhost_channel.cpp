@@ -7,7 +7,7 @@
 #include "nvhost_channel.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostChannel::NvHostChannel(const DeviceState &state) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state)), errorNotifierEvent(std::make_shared<type::KEvent>(state)), NvDevice(state) {
+    NvHostChannel::NvHostChannel(const DeviceState &state) : smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state, false)), smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state, false)), errorNotifierEvent(std::make_shared<type::KEvent>(state, false)), NvDevice(state) {
         auto driver{nvdrv::driver.lock()};
         auto &hostSyncpoint{driver->hostSyncpoint};
 

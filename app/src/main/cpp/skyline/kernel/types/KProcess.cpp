@@ -10,19 +10,9 @@ namespace skyline::kernel::type {
     KProcess::TlsPage::TlsPage(const std::shared_ptr<KPrivateMemory> &memory) : memory(memory) {}
 
     u8 *KProcess::TlsPage::ReserveSlot() {
-        if (Full())
-            throw exception("Trying to reserve TLS slot in full page");
-        return Get(index++);
-    }
-
-    u8 *KProcess::TlsPage::Get(u8 slot) {
-        if (slot >= constant::TlsSlots)
-            throw exception("TLS slot is out of range");
-        return memory->ptr + (constant::TlsSlotSize * slot);
-    }
-
-    bool KProcess::TlsPage::Full() {
-        return index == constant::TlsSlots;
+        if (index == constant::TlsSlots)
+            return nullptr;
+        return memory->ptr + (constant::TlsSlotSize * index++);
     }
 
     KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
@@ -52,22 +42,23 @@ namespace skyline::kernel::type {
         }
     }
 
-    void KProcess::InitializeHeap() {
+    void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
         heap = heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
         InsertItem(heap); // Insert it into the handle table so GetMemoryObject will contain it
+        tlsExceptionContext = AllocateTlsSlot();
     }
 
     u8 *KProcess::AllocateTlsSlot() {
+        std::lock_guard lock(tlsMutex);
+        u8 *slot;
         for (auto &tlsPage: tlsPages)
-            if (!tlsPage->Full())
-                return tlsPage->ReserveSlot();
+            if ((slot = tlsPage->ReserveSlot()))
+                return slot;
 
-        u8 *ptr = tlsPages.empty() ? reinterpret_cast<u8 *>(state.process->memory.tlsIo.address) : ((*(tlsPages.end() - 1))->memory->ptr + PAGE_SIZE);
-        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, ptr, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal))};
+        slot = tlsPages.empty() ? reinterpret_cast<u8 *>(memory.tlsIo.address) : ((*(tlsPages.end() - 1))->memory->ptr + PAGE_SIZE);
+        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, slot, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal))};
         tlsPages.push_back(tlsPage);
-
-        tlsPage->ReserveSlot(); // User-mode exception handling
         return tlsPage->ReserveSlot();
     }
 

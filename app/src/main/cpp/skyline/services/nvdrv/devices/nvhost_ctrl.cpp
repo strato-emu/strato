@@ -7,17 +7,17 @@
 #include "nvhost_ctrl.h"
 
 namespace skyline::service::nvdrv::device {
-    NvHostEvent::NvHostEvent(const DeviceState &state) : event(std::make_shared<type::KEvent>(state)) {}
+    NvHostEvent::NvHostEvent(const DeviceState &state) : event(std::make_shared<type::KEvent>(state, false)) {}
 
     void NvHostEvent::Signal() {
         auto oldState{state};
-        state = State::Signaling;
+        state = State::Signalling;
 
         // This is to ensure that the HOS event isn't signalled when the nvhost event is cancelled
         if (oldState == State::Waiting)
             event->Signal();
 
-        state = State::Signaled;
+        state = State::Signalled;
     }
 
     void NvHostEvent::Cancel(const std::shared_ptr<gpu::GPU> &gpuState) {
@@ -46,7 +46,7 @@ namespace skyline::service::nvdrv::device {
             if (events[i]) {
                 const auto &event{*events[i]};
 
-                if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
+                if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signalled) {
                     eventIndex = i;
 
                     // This event is already attached to the requested syncpoint, so use it
@@ -113,7 +113,7 @@ namespace skyline::service::nvdrv::device {
         }
 
         auto &event{*events.at(userEventId)};
-        if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signaled) {
+        if (event.state == NvHostEvent::State::Cancelled || event.state == NvHostEvent::State::Available || event.state == NvHostEvent::State::Signalled) {
             state.logger->Debug("Waiting on nvhost event: {} with fence: {}", userEventId, data.fence.id);
             event.Wait(state.gpu, data.fence);
 

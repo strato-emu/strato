@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <list>
 #include <csetjmp>
 #include <nce/guest.h>
 #include <kernel/scheduler.h>
@@ -27,7 +26,7 @@ namespace skyline {
           public:
             std::mutex mutex; //!< Synchronizes all thread state changes
             bool running{false}; //!< If the host thread that corresponds to this thread is running, this doesn't reflect guest scheduling changes
-            std::atomic<bool> cancelSync{false}; //!< This is to flag to a thread to cancel a synchronization call it currently is in
+            bool killed{false}; //!< If this thread was previously running and has been killed
 
             KHandle handle;
             size_t id; //!< Index of thread in parent process's KThread vector
@@ -54,6 +53,9 @@ namespace skyline {
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock
             std::shared_ptr<KThread> waitThread; //!< The thread which this thread is waiting on
             std::list<std::shared_ptr<type::KThread>> waiters; //!< A queue of threads waiting on this thread sorted by priority
+            bool isCancellable{false}; //!< If the thread is currently in a position where it is cancellable
+            bool cancelSync{false}; //!< If to cancel a SvcWaitSynchronization call this thread currently is in/the next one it joins
+            type::KSyncObject* wakeObject{}; //!< A pointer to the synchronization object responsible for waking this thread up
 
             KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore);
 

@@ -12,13 +12,9 @@ namespace skyline::kernel::type {
      */
     class KEvent : public KSyncObject {
       public:
-        KEvent(const DeviceState &state) : KSyncObject(state, KType::KEvent) {}
-
         /**
-         * @brief Resets the KEvent to an unsignalled state
+         * @param presignalled If this object should be signalled initially or not
          */
-        inline void ResetSignal() {
-            signalled = false;
-        }
+        KEvent(const DeviceState &state, bool presignalled) : KSyncObject(state, KType::KEvent, presignalled) {}
     };
 }

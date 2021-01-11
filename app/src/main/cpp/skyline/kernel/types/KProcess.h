@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <list>
 #include <vfs/npdm.h>
 #include "KThread.h"
 #include "KTransferMemory.h"
@@ -30,7 +29,7 @@ namespace skyline {
             bool disableThreadCreation{}; //!< If to disable thread creation, we use this to prevent thread creation after all threads have been killed
             std::vector<std::shared_ptr<KThread>> threads;
 
-            using SyncWaiters = std::multimap<void*, std::shared_ptr<KThread>>;
+            using SyncWaiters = std::multimap<void *, std::shared_ptr<KThread>>;
             std::mutex syncWaiterMutex; //!< Synchronizes all mutations to the map to prevent races
             SyncWaiters syncWaiters; //!< All threads waiting on process-wide synchronization primitives (Atomic keys + Address Arbiter)
 
@@ -42,21 +41,23 @@ namespace skyline {
             */
             struct TlsPage {
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
-                std::shared_ptr<KPrivateMemory> memory;
+                std::shared_ptr<KPrivateMemory> memory; //!< A single page sized memory allocation for this TLS page
 
                 TlsPage(const std::shared_ptr<KPrivateMemory> &memory);
 
+                /**
+                 * @return A non-null pointer to a TLS page slot on success, a nullptr will be returned if this page is full
+                 * @note This function is not thread-safe and should be called by exclusively one thread at a time
+                 */
                 u8 *ReserveSlot();
-
-                u8 *Get(u8 slot);
-
-                bool Full();
             };
 
           public:
-            std::shared_ptr<KPrivateMemory> mainThreadStack;
+            u8* tlsExceptionContext{}; //!< A pointer to the TLS Exception Handling Context slot
+            std::mutex tlsMutex; //!< A mutex to synchronize allocation of TLS pages to prevent extra pages from being created
+            std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< All TLS pages allocated by this process
+            std::shared_ptr<KPrivateMemory> mainThreadStack; //!< The stack memory of the main thread stack is owned by the KProcess itself
             std::shared_ptr<KPrivateMemory> heap;
-            std::vector<std::shared_ptr<TlsPage>> tlsPages;
             vfs::NPDM npdm;
 
           private:
@@ -79,9 +80,10 @@ namespace skyline {
             void Kill(bool join, bool all = false, bool disableCreation = false);
 
             /**
+             * @brief This initializes the process heap and TLS Error Context slot pointer, it should be called prior to creating the first thread
              * @note This requires VMM regions to be initialized, it will map heap at an arbitrary location otherwise
              */
-            void InitializeHeap();
+            void InitializeHeapTls();
 
             /**
              * @return A 0x200 TLS slot allocated inside the TLS/IO region
@@ -177,7 +179,12 @@ namespace skyline {
 
             template<>
             std::shared_ptr<KObject> GetHandle<KObject>(KHandle handle) {
-                return handles.at(handle - constant::BaseHandleIndex);
+                std::shared_lock lock(handleMutex);
+                auto &item{handles.at(handle - constant::BaseHandleIndex)};
+                if (item != nullptr)
+                    return item;
+                else
+                    throw std::out_of_range(fmt::format("GetHandle was called with a deleted handle: 0x{:X}", handle));
             }
 
             /**
@@ -215,13 +222,6 @@ namespace skyline {
              * @brief Signals the conditional variable at the specified address
              */
             void ConditionalVariableSignal(u32 *key, u64 amount);
-
-            /**
-             * @brief Resets the object to an unsignalled state
-             */
-            inline void ResetSignal() {
-                signalled = false;
-            }
         };
     }
 }

@@ -6,7 +6,7 @@
 #include "IAudioDevice.h"
 
 namespace skyline::service::audio {
-    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state)), BaseService(state, manager) {}
+    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state, true)), BaseService(state, manager) {}
 
     Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         span buffer{request.outputBuf.at(0)};

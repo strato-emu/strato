@@ -6,7 +6,7 @@
 
 namespace skyline::service::audio::IAudioRenderer {
     IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters)
-        : systemEvent(std::make_shared<type::KEvent>(state)), parameters(parameters), BaseService(state, manager) {
+        : systemEvent(std::make_shared<type::KEvent>(state, true)), parameters(parameters), BaseService(state, manager) {
         track = state.audio->OpenTrack(constant::ChannelCount, constant::SampleRate, []() {});
         track->Start();
 
