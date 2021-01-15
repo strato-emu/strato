@@ -46,7 +46,7 @@ namespace skyline {
             struct CoreContext {
                 u8 id;
                 u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
-                std::shared_mutex mutex; //!< Synchronizes all operations on the queue
+                std::mutex mutex; //!< Synchronizes all operations on the queue
                 std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, u8 preemptionPriority);

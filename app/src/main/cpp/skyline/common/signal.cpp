@@ -10,15 +10,19 @@ namespace skyline::signal {
     thread_local std::exception_ptr SignalExceptionPtr;
 
     void ExceptionThrow() {
-        std::rethrow_exception(SignalExceptionPtr);
+        // We need the compiler to not remove the asm at the end of 'std::rethrow_exception' which is a noreturn function
+        volatile bool alwaysTrue{true};
+        if (alwaysTrue)
+            std::rethrow_exception(SignalExceptionPtr);
     }
 
     std::terminate_handler terminateHandler{};
 
+    [[clang::optnone]]
     inline StackFrame *SafeFrameRecurse(size_t depth, StackFrame *frame) {
         if (frame) {
             for (size_t it{}; it < depth; it++) {
-                if (frame->next)
+                if (frame->lr && frame->next)
                     frame = frame->next;
                 else
                     terminateHandler();
@@ -29,6 +33,7 @@ namespace skyline::signal {
         return frame;
     }
 
+    [[clang::optnone]]
     void TerminateHandler() {
         auto exception{std::current_exception()};
         if (terminateHandler && exception && exception == SignalExceptionPtr) {
@@ -36,11 +41,25 @@ namespace skyline::signal {
             asm("MOV %0, FP" : "=r"(frame));
             frame = SafeFrameRecurse(2, frame); // We unroll past 'std::terminate'
 
+            static void *exceptionThrowEnd{};
+            if (!exceptionThrowEnd) {
+                u32 *it{reinterpret_cast<u32 *>(&ExceptionThrow) + 1};
+                while (_Unwind_FindEnclosingFunction(it) == &ExceptionThrow)
+                    it++;
+                exceptionThrowEnd = it - 1;
+            }
+
             auto lookupFrame{frame};
-            while (lookupFrame) {
-                auto function{_Unwind_FindEnclosingFunction(frame->lr)};
-                if (function == &ExceptionThrow)
-                    terminateHandler(); // We have no handler to consume the exception, it's time to quit
+            bool hasAdvanced{};
+            while (lookupFrame && lookupFrame->lr) {
+                if (lookupFrame->lr >= reinterpret_cast<void *>(&ExceptionThrow) && lookupFrame->lr < exceptionThrowEnd) {
+                    if (!hasAdvanced) {
+                        frame = SafeFrameRecurse(2, lookupFrame);
+                        hasAdvanced = true;
+                    } else {
+                        terminateHandler(); // We have no handler to consume the exception, it's time to quit
+                    }
+                }
                 lookupFrame = lookupFrame->next;
             }
 
@@ -68,7 +87,7 @@ namespace skyline::signal {
 
         signalException.frames.push_back(reinterpret_cast<void *>(context->uc_mcontext.pc));
         StackFrame *frame{reinterpret_cast<StackFrame *>(context->uc_mcontext.regs[29])};
-        while (frame) {
+        while (frame && frame->lr) {
             signalException.frames.push_back(frame->lr);
             frame = frame->next;
         }

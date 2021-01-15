@@ -105,6 +105,7 @@ namespace skyline::gpu::gpfifo {
             }
         } catch (const std::exception &e) {
             state.logger->Write(Logger::LogLevel::Error, e.what());
+            signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }
     }

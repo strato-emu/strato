@@ -15,6 +15,29 @@ namespace skyline::signal {
     };
 
     /**
+     * @brief A scoped way to block a stack trace beyond the scope of this object
+     * @note This is used for JNI functions where the stack trace will be determined as they often contain invalid stack frames which'd cause a SIGSEGV
+     */
+    struct ScopedStackBlocker {
+        StackFrame realFrame;
+
+        __attribute__((noinline)) ScopedStackBlocker() {
+            StackFrame *frame;
+            asm("MOV %0, FP" : "=r"(frame));
+            realFrame = *frame;
+            frame->next = nullptr;
+            frame->lr = nullptr;
+        }
+
+        __attribute__((noinline)) ~ScopedStackBlocker() {
+            StackFrame *frame;
+            asm("MOV %0, FP" : "=r"(frame));
+            frame->next = realFrame.next;
+            frame->lr = realFrame.lr;
+        }
+    };
+
+    /**
      * @brief An exception object that is designed specifically to hold Linux signals
      * @note This doesn't inherit std::exception as it shouldn't be caught as such
      * @note Refer to the manpage siginfo(3) for information on members

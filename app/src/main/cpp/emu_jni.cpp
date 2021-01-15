@@ -22,6 +22,7 @@ std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
+    skyline::signal::ScopedStackBlocker stackBlocker;
     Fps = FrameTime = 0;
 
     pthread_setname_np(pthread_self(), "EmuMain");

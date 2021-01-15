@@ -115,7 +115,13 @@ namespace skyline::service::hid {
         Result CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Send vibration values to an NPad
+         * @brief Send a single vibration value to a HID device
+         * @url https://switchbrew.org/wiki/HID_services#SendVibrationValue
+         */
+        Result SendVibrationValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Send vibration values to a HID device
          * @url https://switchbrew.org/wiki/HID_services#SendVibrationValues
          */
         Result SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -138,6 +144,7 @@ namespace skyline::service::hid {
             SFUNC(0x7B, IHidServer, SetNpadJoyAssignmentModeSingle),
             SFUNC(0x7C, IHidServer, SetNpadJoyAssignmentModeDual),
             SFUNC(0xCB, IHidServer, CreateActiveVibrationDeviceList),
+            SFUNC(0xC9, IHidServer, SendVibrationValue),
             SFUNC(0xCE, IHidServer, SendVibrationValues)
         )
     };

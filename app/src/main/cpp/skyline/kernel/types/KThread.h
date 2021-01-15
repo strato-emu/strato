@@ -6,6 +6,7 @@
 #include <csetjmp>
 #include <nce/guest.h>
 #include <kernel/scheduler.h>
+#include <common/signal.h>
 #include "KSyncObject.h"
 #include "KPrivateMemory.h"
 #include "KSharedMemory.h"
@@ -40,7 +41,7 @@ namespace skyline {
             u64 entryArgument;
             void *stackTop;
 
-            std::condition_variable_any wakeCondition; //!< A conditional variable which is signalled to wake the current thread while it's sleeping
+            std::condition_variable wakeCondition; //!< A conditional variable which is signalled to wake the current thread while it's sleeping
             std::atomic<u8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
             std::atomic<u8> priority; //!< The priority of the thread for the scheduler
             i8 idealCore; //!< The ideal CPU core for this thread to run on
@@ -51,6 +52,7 @@ namespace skyline {
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
             timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
             bool isPreempted{}; //!< If the preemption timer has been armed and will fire
+            bool forceYield{}; //!< If the thread has been forcefully yielded by another thread
             std::mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
             u32* waitKey; //!< The key of the mutex which this thread is waiting on
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock

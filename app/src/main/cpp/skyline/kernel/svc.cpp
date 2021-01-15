@@ -647,7 +647,7 @@ namespace skyline::kernel::svc {
         }
 
         if (wakeObject) {
-            state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);
+            state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[wakeIndex]);
             state.ctx->gpr.w0 = Result{};
             state.ctx->gpr.w1 = wakeIndex;
         } else if (state.thread->cancelSync) {

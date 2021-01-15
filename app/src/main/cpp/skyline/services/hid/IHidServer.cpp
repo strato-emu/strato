@@ -142,6 +142,18 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::SendVibrationValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        const auto &handle{request.Pop<NpadDeviceHandle>()};
+        auto &device{state.input->npad.at(handle.id)};
+        if (device.type == handle.GetType()) {
+            const auto &value{request.Pop<NpadVibrationValue>()};
+            state.logger->Debug("Vibration - Handle: 0x{:02X} (0b{:05b}), Vibration: {:.2f}@{:.2f}Hz, {:.2f}@{:.2f}Hz", static_cast<u8>(handle.id), static_cast<u8>(handle.type), value.amplitudeLow, value.frequencyLow, value.amplitudeHigh, value.frequencyHigh);
+            device.Vibrate(handle.isRight, value);
+        }
+
+        return {};
+    }
+
     Result IHidServer::SendVibrationValues(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.Skip<u64>(); // appletResourceUserId
 
