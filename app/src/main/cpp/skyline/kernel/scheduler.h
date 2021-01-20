@@ -47,6 +47,7 @@ namespace skyline {
                 u8 id;
                 u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::mutex mutex; //!< Synchronizes all operations on the queue
+                std::condition_variable frontCondition; //!< A conditional variable which is signalled when the front of the parked queue has changed
                 std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, u8 preemptionPriority);

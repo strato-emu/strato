@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <common/signal.h>
+#include <loader/loader.h>
 #include <kernel/types/KProcess.h>
 #include <gpu.h>
 #include <gpu/engines/maxwell_3d.h>
@@ -99,12 +100,12 @@ namespace skyline::gpu::gpfifo {
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->Write(Logger::LogLevel::Error, e.what());
+                state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
         } catch (const std::exception &e) {
-            state.logger->Write(Logger::LogLevel::Error, e.what());
+            state.logger->Error(e.what());
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }

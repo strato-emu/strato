@@ -64,7 +64,7 @@ namespace skyline::kernel::type {
             throw exception("timer_create has failed with '{}'", strerror(errno));
 
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
-        signal::SetSignalHandler({Scheduler::YieldSignal}, Scheduler::SignalHandler);
+        signal::SetSignalHandler({Scheduler::YieldSignal}, Scheduler::SignalHandler, false); // We want futexes to fail and their predicates rechecked
 
         {
             std::lock_guard lock(statusMutex);

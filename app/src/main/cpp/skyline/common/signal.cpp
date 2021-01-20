@@ -18,7 +18,6 @@ namespace skyline::signal {
 
     std::terminate_handler terminateHandler{};
 
-    [[clang::optnone]]
     inline StackFrame *SafeFrameRecurse(size_t depth, StackFrame *frame) {
         if (frame) {
             for (size_t it{}; it < depth; it++) {
@@ -33,7 +32,6 @@ namespace skyline::signal {
         return frame;
     }
 
-    [[clang::optnone]]
     void TerminateHandler() {
         auto exception{std::current_exception()};
         if (terminateHandler && exception && exception == SignalExceptionPtr) {
@@ -171,18 +169,18 @@ namespace skyline::signal {
             asm volatile("MSR TPIDR_EL0, %x0"::"r"(tls));
     }
 
-    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function) {
+    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function, bool syscallRestart) {
         static std::array<std::once_flag, NSIG> signalHandlerOnce{};
 
         stack_t stack;
         sigaltstack(nullptr, &stack);
         struct sigaction action{
             .sa_sigaction = reinterpret_cast<void (*)(int, siginfo *, void *)>(ThreadSignalHandler),
-            .sa_flags = SA_RESTART | SA_SIGINFO | (stack.ss_sp && stack.ss_size ? SA_ONSTACK : 0),
+            .sa_flags = (syscallRestart ? SA_RESTART : 0) | SA_SIGINFO | (stack.ss_sp && stack.ss_size ? SA_ONSTACK : 0),
         };
 
         for (int signal : signals) {
-            std::call_once(signalHandlerOnce[signal], [signal, action]() {
+            std::call_once(signalHandlerOnce[signal], [signal, &action]() {
                 struct sigaction oldAction;
                 Sigaction(signal, &action, &oldAction);
                 if (oldAction.sa_flags && oldAction.sa_flags != action.sa_flags)
