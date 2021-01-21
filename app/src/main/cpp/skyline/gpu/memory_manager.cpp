@@ -6,17 +6,17 @@
 
 namespace skyline::gpu::vmm {
     MemoryManager::MemoryManager(const DeviceState &state) : state(state) {
-        constexpr u64 GpuAddressSpaceSize{1ul << 40}; //!< The size of the GPU address space
-        constexpr u64 GpuAddressSpaceBase{0x100000}; //!< The base of the GPU address space - must be non-zero
+        constexpr u64 gpuAddressSpaceSize{1UL << 40}; //!< The size of the GPU address space
+        constexpr u64 gpuAddressSpaceBase{0x100000}; //!< The base of the GPU address space - must be non-zero
 
         // Create the initial chunk that will be split to create new chunks
-        ChunkDescriptor baseChunk(GpuAddressSpaceBase, GpuAddressSpaceSize, 0, ChunkState::Unmapped);
+        ChunkDescriptor baseChunk(gpuAddressSpaceBase, gpuAddressSpaceSize, nullptr, ChunkState::Unmapped);
         chunks.push_back(baseChunk);
     }
 
-    std::optional<ChunkDescriptor> MemoryManager::FindChunk(ChunkState state, u64 size, u64 alignment) {
-        auto chunk{std::find_if(chunks.begin(), chunks.end(), [state, size, alignment](const ChunkDescriptor &chunk) -> bool {
-            return (alignment ? util::IsAligned(chunk.virtAddr, alignment) : true) && chunk.size > size && chunk.state == state;
+    std::optional<ChunkDescriptor> MemoryManager::FindChunk(ChunkState desiredState, u64 size, u64 alignment) {
+        auto chunk{std::find_if(chunks.begin(), chunks.end(), [desiredState, size, alignment](const ChunkDescriptor &chunk) -> bool {
+            return (alignment ? util::IsAligned(chunk.virtAddr, alignment) : true) && chunk.size > size && chunk.state == desiredState;
         })};
 
         if (chunk != chunks.end())
@@ -41,7 +41,7 @@ namespace skyline::gpu::vmm {
                 }
 
                 if (extension)
-                    chunks.insert(std::next(chunk), ChunkDescriptor(newChunk.virtAddr + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuPtr + newSize + newChunk.size) : 0, oldChunk.state));
+                    chunks.insert(std::next(chunk), ChunkDescriptor(newChunk.virtAddr + newChunk.size, extension, (oldChunk.state == ChunkState::Mapped) ? (oldChunk.cpuPtr + newSize + newChunk.size) : nullptr, oldChunk.state));
 
                 return newChunk.virtAddr;
             } else if (chunk->virtAddr + chunk->size > newChunk.virtAddr) {
@@ -83,6 +83,8 @@ namespace skyline::gpu::vmm {
 
     u64 MemoryManager::ReserveSpace(u64 size, u64 alignment) {
         size = util::AlignUp(size, constant::GpuPageSize);
+
+        std::unique_lock lock(vmmMutex);
         auto newChunk{FindChunk(ChunkState::Unmapped, size, alignment)};
         if (!newChunk)
             return 0;
@@ -100,11 +102,14 @@ namespace skyline::gpu::vmm {
 
         size = util::AlignUp(size, constant::GpuPageSize);
 
+        std::unique_lock lock(vmmMutex);
         return InsertChunk(ChunkDescriptor(virtAddr, size, nullptr, ChunkState::Reserved));
     }
 
     u64 MemoryManager::MapAllocate(u8 *cpuPtr, u64 size) {
         size = util::AlignUp(size, constant::GpuPageSize);
+
+        std::unique_lock lock(vmmMutex);
         auto mappedChunk{FindChunk(ChunkState::Unmapped, size)};
         if (!mappedChunk)
             return 0;
@@ -123,6 +128,7 @@ namespace skyline::gpu::vmm {
 
         size = util::AlignUp(size, constant::GpuPageSize);
 
+        std::unique_lock lock(vmmMutex);
         return InsertChunk(ChunkDescriptor(virtAddr, size, cpuPtr, ChunkState::Mapped));
     }
 
@@ -131,7 +137,8 @@ namespace skyline::gpu::vmm {
             return false;
 
         try {
-            InsertChunk(ChunkDescriptor(virtAddr, size, 0, ChunkState::Unmapped));
+            std::unique_lock lock(vmmMutex);
+            InsertChunk(ChunkDescriptor(virtAddr, size, nullptr, ChunkState::Unmapped));
         } catch (const std::exception &e) {
             return false;
         }
@@ -139,7 +146,9 @@ namespace skyline::gpu::vmm {
         return true;
     }
 
-    void MemoryManager::Read(u8 *destination, u64 virtAddr, u64 size) const {
+    void MemoryManager::Read(u8 *destination, u64 virtAddr, u64 size) {
+        std::shared_lock lock(vmmMutex);
+
         auto chunk{std::upper_bound(chunks.begin(), chunks.end(), virtAddr, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.virtAddr;
         })};
@@ -169,7 +178,9 @@ namespace skyline::gpu::vmm {
         }
     }
 
-    void MemoryManager::Write(u8 *source, u64 virtAddr, u64 size) const {
+    void MemoryManager::Write(u8 *source, u64 virtAddr, u64 size) {
+        std::shared_lock lock(vmmMutex);
+
         auto chunk{std::upper_bound(chunks.begin(), chunks.end(), virtAddr, [](const u64 address, const ChunkDescriptor &chunk) -> bool {
             return address < chunk.virtAddr;
         })};
