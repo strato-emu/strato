@@ -45,36 +45,51 @@ namespace skyline::gpu::gpfifo {
         }
     }
 
-    void GPFIFO::Process(const std::vector<u32> &segment) {
-        for (auto entry{segment.begin()}; entry != segment.end(); entry++) {
+    void GPFIFO::Process(GpEntry gpEntry) {
+        if (!gpEntry.size) {
+            // This is a GPFIFO control entry, all control entries have a zero length and contain no pushbuffers
+            switch (gpEntry.opcode) {
+                case GpEntry::Opcode::Nop:
+                    return;
+                default:
+                    state.logger->Warn("Unsupported GpEntry control opcode used: {}", static_cast<u8>(gpEntry.opcode));
+                    return;
+            }
+        }
+
+        pushBufferData.resize(gpEntry.size);
+        state.gpu->memoryManager.Read<u32>(pushBufferData, gpEntry.Address());
+
+        for (auto entry{pushBufferData.begin()}; entry != pushBufferData.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
             if (*entry == 0)
                 continue;
 
-            auto methodHeader{reinterpret_cast<const PushBufferMethodHeader *>(&*entry)};
+            PushBufferMethodHeader methodHeader{.raw = *entry};
 
-            switch (methodHeader->secOp) {
+            switch (methodHeader.secOp) {
                 case PushBufferMethodHeader::SecOp::IncMethod:
-                    for (u16 i{}; i < methodHeader->methodCount; i++)
-                        Send(MethodParams{static_cast<u16>(methodHeader->methodAddress + i), *++entry, methodHeader->methodSubChannel, i == methodHeader->methodCount - 1});
+                    for (u16 i{}; i < methodHeader.methodCount; i++)
+                        Send(MethodParams{static_cast<u16>(methodHeader.methodAddress + i), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
 
                     break;
                 case PushBufferMethodHeader::SecOp::NonIncMethod:
-                    for (u16 i{}; i < methodHeader->methodCount; i++)
-                        Send(MethodParams{methodHeader->methodAddress, *++entry, methodHeader->methodSubChannel, i == methodHeader->methodCount - 1});
+                    for (u16 i{}; i < methodHeader.methodCount; i++)
+                        Send(MethodParams{methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
 
                     break;
                 case PushBufferMethodHeader::SecOp::OneInc:
-                    for (u16 i{}; i < methodHeader->methodCount; i++)
-                        Send(MethodParams{static_cast<u16>(methodHeader->methodAddress + static_cast<bool>(i)), *++entry, methodHeader->methodSubChannel, i == methodHeader->methodCount - 1});
+                    for (u16 i{}; i < methodHeader.methodCount; i++)
+                        Send(MethodParams{static_cast<u16>(methodHeader.methodAddress + static_cast<bool>(i)), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
 
                     break;
                 case PushBufferMethodHeader::SecOp::ImmdDataMethod:
-                    Send(MethodParams{methodHeader->methodAddress, methodHeader->immdData, methodHeader->methodSubChannel, true});
+                    Send(MethodParams{methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true});
                     break;
                 case PushBufferMethodHeader::SecOp::EndPbSegment:
                     return;
                 default:
+                    state.logger->Warn("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
                     break;
             }
         }
@@ -91,12 +106,9 @@ namespace skyline::gpu::gpfifo {
         pthread_setname_np(pthread_self(), "GPFIFO");
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
-            pushBuffers->Process([this](PushBuffer &pushBuffer) {
-                if (pushBuffer.segment.empty())
-                    pushBuffer.Fetch(state.gpu->memoryManager);
-
-                state.logger->Debug("Processing pushbuffer: 0x{:X}", pushBuffer.gpEntry.Address());
-                Process(pushBuffer.segment);
+            pushBuffers->Process([this](GpEntry gpEntry) {
+                state.logger->Debug("Processing pushbuffer: 0x{:X}", gpEntry.Address());
+                Process(gpEntry);
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
@@ -112,12 +124,7 @@ namespace skyline::gpu::gpfifo {
     }
 
     void GPFIFO::Push(span<GpEntry> entries) {
-        bool beforeBarrier{true};
-        pushBuffers->AppendTranform(entries, [&beforeBarrier, this](const GpEntry &entry) {
-            if (entry.sync == GpEntry::Sync::Wait)
-                beforeBarrier = false;
-            return PushBuffer(entry, state.gpu->memoryManager, beforeBarrier);
-        });
+        pushBuffers->Append(entries);
     }
 
     GPFIFO::~GPFIFO() {

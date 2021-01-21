@@ -129,35 +129,17 @@ namespace skyline::gpu {
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_pbdma.ref.txt#L62
          */
         class GPFIFO {
-          private:
-            /**
-             * @brief A pushbuffer is a descriptor of tasks that need to be executed for a specific client
-             */
-            struct PushBuffer {
-                GpEntry gpEntry;
-                std::vector<u32> segment;
-
-                PushBuffer(const GpEntry &gpEntry, const vmm::MemoryManager &memoryManager, bool fetch) : gpEntry(gpEntry) {
-                    if (fetch)
-                        Fetch(memoryManager);
-                }
-
-                inline void Fetch(const vmm::MemoryManager &memoryManager) {
-                    segment.resize(gpEntry.size);
-                    memoryManager.Read<u32>(segment, gpEntry.Address());
-                }
-            };
-
             const DeviceState &state;
             engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
             std::array<std::shared_ptr<engine::Engine>, 8> subchannels;
-            std::optional<CircularQueue<PushBuffer>> pushBuffers;
-            std::thread thread; //!< The thread that manages processing of push-buffers
+            std::optional<CircularQueue<GpEntry>> pushBuffers;
+            std::thread thread; //!< The thread that manages processing of pushbuffers
+            std::vector<u32> pushBufferData; //!< Persistent vector storing pushbuffer data to avoid constant reallocations
 
             /**
-             * @brief Processes a pushbuffer segment, calling methods as needed
+             * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed
              */
-            void Process(const std::vector<u32> &segment);
+            void Process(GpEntry gpEntry);
 
             /**
              * @brief Sends a method call to the GPU hardware
