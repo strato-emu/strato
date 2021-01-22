@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.16)
 project(Skyline LANGUAGES CXX ASM VERSION 0.3)
 
-set(BUILD_TESTS OFF)
-set(BUILD_TESTING OFF)
+set(BUILD_TESTS OFF CACHE BOOL "Build Tests" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Build Testing" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Shared Libraries" FORCE)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
@@ -13,18 +13,21 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -Wno-unused-command-line-argument")
 if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_definitions(NDEBUG)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif ()
 
-set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
-add_subdirectory("libraries/tinyxml2")
 add_subdirectory("libraries/fmt")
+
 add_subdirectory("libraries/oboe")
-add_subdirectory("libraries/lz4/contrib/cmake_unofficial")
-include_directories("libraries/lz4/lib")
 include_directories("libraries/oboe/include")
+
+set(LZ4_BUILD_CLI OFF CACHE BOOL "Build LZ4 CLI" FORCE)
+add_subdirectory("libraries/lz4/build/cmake")
+include_directories("libraries/lz4/lib")
+
 include_directories("libraries/vkhpp/include")
+include_directories("libraries/pugixml/src") # We use PugiXML in header-only mode
 include_directories("libraries/frozen/include")
-set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 find_package(mbedtls REQUIRED CONFIG)
 
@@ -163,7 +166,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/ssl/ISslContext.cpp
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
         )
-
-target_link_libraries(skyline vulkan android fmt tinyxml2 oboe lz4_static mbedtls::mbedcrypto)
-set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=c++2a")
-target_compile_options(skyline PRIVATE -Wno-c++17-extensions -Wall -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)
+target_link_libraries(skyline vulkan android fmt lz4_static oboe mbedtls::mbedcrypto)
+target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)

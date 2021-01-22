@@ -106,12 +106,7 @@ namespace skyline::input {
         float amplitudeHigh;
         float frequencyHigh;
 
-        bool operator==(const NpadVibrationValue &other) const {
-            return (amplitudeLow == other.amplitudeLow) &&
-                (frequencyLow == other.frequencyLow) &&
-                (amplitudeHigh == other.amplitudeHigh) &&
-                (frequencyHigh == other.frequencyHigh);
-        }
+        constexpr bool operator==(const NpadVibrationValue &) const = default;
     };
     static_assert(sizeof(NpadVibrationValue) == 0x10);
 

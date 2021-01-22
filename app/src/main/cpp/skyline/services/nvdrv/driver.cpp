@@ -15,17 +15,17 @@ namespace skyline::service::nvdrv {
         state.logger->Debug("Opening NVDRV device ({}): {}", fdIndex, path);
 
         switch (util::Hash(path)) {
-            #define NVDEVICE(type, name, devicePath)               \
-                case util::Hash(devicePath): {                     \
-                    std::shared_ptr<device::type> device{};        \
-                    if (name.expired()) {                          \
-                        device = device.make_shared(state);        \
-                        name = device;                             \
-                    } else {                                       \
-                        device = name.lock();                      \
-                    }                                              \
-                    devices.push_back(device);                     \
-                    break;                                         \
+            #define NVDEVICE(type, name, devicePath)                     \
+                case util::Hash(devicePath): {                           \
+                    std::shared_ptr<device::type> device{};              \
+                    if (name.expired()) {                                \
+                        device = std::make_shared<device::type>(state);  \
+                        name = device;                                   \
+                    } else {                                             \
+                        device = name.lock();                            \
+                    }                                                    \
+                    devices.push_back(device);                           \
+                    break;                                               \
                 }
             NVDEVICE_LIST
             #undef NVDEVICE

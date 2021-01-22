@@ -1,65 +1,52 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <android/log.h>
-#include <tinyxml2.h>
+#define PUGIXML_HEADER_ONLY
+
+#include <pugixml.hpp>
 #include "settings.h"
 
 namespace skyline {
     Settings::Settings(int fd) {
-        tinyxml2::XMLDocument pref;
+        pugi::xml_document document;
+        auto result{document.load_file(fmt::format("/proc/self/fd/{}", fd).c_str())};
+        if (!result)
+            throw exception("PugiXML Error: {} at {}", result.description(), result.offset);
 
-        auto fileDeleter = [](FILE *file) { fclose(file); };
-        std::unique_ptr<FILE, decltype(fileDeleter)> file{fdopen(fd, "r"), fileDeleter};
-        if (pref.LoadFile(file.get()))
-            throw exception("TinyXML2 Error: " + std::string(pref.ErrorStr()));
+        #define PREF_ELEM(name, memberName, rhs) std::make_pair(std::string(name), [](Settings &settings, const pugi::xml_node &element) { settings.memberName = rhs; })
 
-        tinyxml2::XMLElement *elem{pref.LastChild()->FirstChild()->ToElement()};
-        while (elem) {
-            switch (elem->Value()[0]) {
-                case 's':
-                    stringMap[elem->FindAttribute("name")->Value()] = elem->GetText();
-                    break;
+        std::tuple preferences{
+            PREF_ELEM("operation_mode", operationMode, element.attribute("value").as_bool()),
+            PREF_ELEM("username_value", username, element.text().as_string()),
+            PREF_ELEM("log_level", logLevel, element.attribute("value").as_int()),
+        };
 
-                case 'b':
-                    boolMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->BoolValue();
-                    break;
-
-                case 'i':
-                    intMap[elem->FindAttribute("name")->Value()] = elem->FindAttribute("value")->IntValue();
-                    break;
-
-                default:
-                    __android_log_print(ANDROID_LOG_WARN, "emu-cpp", "Settings type is missing: %s for %s", elem->Value(), elem->FindAttribute("name")->Value());
-                    break;
-            };
-
-            if (elem->NextSibling())
-                elem = elem->NextSibling()->ToElement();
-            else
-                break;
+        std::bitset<std::tuple_size_v<typeof(preferences)>> preferencesSet{}; // A bitfield to keep track of all the preferences we've set
+        for (auto element{document.last_child().first_child()}; element; element = element.next_sibling()) {
+            std::string_view name{element.attribute("name").value()};
+            std::apply([&](auto... preferences) {
+                size_t index{};
+                ([&](auto preference) {
+                    if (name.size() == preference.first.size() && name.starts_with(preference.first)) {
+                        preference.second(*this, element);
+                        preferencesSet.set(index);
+                    }
+                    index++;
+                }(preferences), ...);
+            }, preferences);
         }
 
-        pref.Clear();
-    }
-
-    std::string Settings::GetString(const std::string &key) {
-        return stringMap.at(key);
-    }
-
-    bool Settings::GetBool(const std::string &key) {
-        return boolMap.at(key);
-    }
-
-    int Settings::GetInt(const std::string &key) {
-        return intMap.at(key);
-    }
-
-    void Settings::List(const std::shared_ptr<Logger> &logger) {
-        for (auto &iter : stringMap)
-            logger->Info("{} = \"{}\"", iter.first, GetString(iter.first));
-
-        for (auto &iter : boolMap)
-            logger->Info("{} = {}", iter.first, GetBool(iter.first));
+        if (!preferencesSet.all()) {
+            std::string unsetPreferences;
+            std::apply([&](auto... preferences) {
+                size_t index{};
+                ([&](auto preference) {
+                    if (!preferencesSet.test(index))
+                        unsetPreferences += std::string("\n* ") + preference.first;
+                    index++;
+                }(preferences), ...);
+            }, preferences);
+            throw exception("Cannot find the following preferences:{}", unsetPreferences);
+        }
     }
 }

@@ -32,8 +32,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(preferenceFd);
 
     auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
-    auto logger{std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(std::stoi(settings->GetString("log_level"))))};
-    //settings->List(logger); // (Uncomment when you want to print out all settings strings)
+    auto logger{std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", static_cast<skyline::Logger::LogLevel>(settings->logLevel))};
 
     auto start{std::chrono::steady_clock::now()};
 

@@ -8,6 +8,7 @@
 #include <span>
 #include <list>
 #include <vector>
+#include <span>
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
@@ -292,8 +293,8 @@ namespace skyline {
         using std::span<T, Extent>::span;
         using std::span<T, Extent>::operator=;
 
-        typedef typename std::span<T, Extent>::element_type elementType;
-        typedef typename std::span<T, Extent>::index_type indexType;
+        typedef typename std::span<T, Extent>::element_type element_type;
+        typedef typename std::span<T, Extent>::size_type size_type;
 
         constexpr span(const std::span<T, Extent> &spn) : std::span<T, Extent>(spn) {}
 
@@ -329,7 +330,7 @@ namespace skyline {
          * @param amount The amount of elements that need to be copied (in terms of the supplied span), 0 will try to copy the entirety of the other span
          */
         template<typename In, size_t InExtent>
-        constexpr void copy_from(const span<In, InExtent> spn, indexType amount = 0) {
+        constexpr void copy_from(const span<In, InExtent> spn, size_type amount = 0) {
             auto size{amount ? amount * sizeof(In) : spn.size_bytes()};
             if (span::size_bytes() < size)
                 throw exception("Data being copied is larger than this span");
@@ -340,7 +341,7 @@ namespace skyline {
          * @brief Implicit type conversion for copy_from, this allows passing in std::vector/std::array in directly is automatically passed by reference which is important for any containers
          */
         template<typename In>
-        constexpr void copy_from(const In &in, indexType amount = 0) {
+        constexpr void copy_from(const In &in, size_type amount = 0) {
             copy_from(span<typename std::add_const<typename In::value_type>::type>(in), amount);
         }
 
@@ -355,11 +356,11 @@ namespace skyline {
             return std::span<T, Extent>::template last<Count>();
         }
 
-        constexpr span<elementType, std::dynamic_extent> first(indexType count) const noexcept {
+        constexpr span<element_type, std::dynamic_extent> first(size_type count) const noexcept {
             return std::span<T, Extent>::first(count);
         }
 
-        constexpr span<elementType, std::dynamic_extent> last(indexType count) const noexcept {
+        constexpr span<element_type, std::dynamic_extent> last(size_type count) const noexcept {
             return std::span<T, Extent>::last(count);
         }
 
@@ -368,7 +369,7 @@ namespace skyline {
             return std::span<T, Extent>::template subspan<Offset, Count>();
         }
 
-        constexpr span<T, std::dynamic_extent> subspan(indexType offset, indexType count = std::dynamic_extent) const noexcept {
+        constexpr span<T, std::dynamic_extent> subspan(size_type offset, size_type count = std::dynamic_extent) const noexcept {
             return std::span<T, Extent>::subspan(offset, count);
         }
     };

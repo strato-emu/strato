@@ -44,7 +44,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
-        heap = heap.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
+        heap = std::make_shared<KPrivateMemory>(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
         InsertItem(heap); // Insert it into the handle table so GetMemoryObject will contain it
         tlsExceptionContext = AllocateTlsSlot();
     }
@@ -67,7 +67,7 @@ namespace skyline::kernel::type {
         if (disableThreadCreation)
             return nullptr;
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
-            mainThreadStack = mainThreadStack.make_shared(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), state.process->npdm.meta.mainThreadStackSize, memory::Permission{true, true, false}, memory::states::Stack);
+            mainThreadStack = std::make_shared<KPrivateMemory>(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), state.process->npdm.meta.mainThreadStackSize, memory::Permission{true, true, false}, memory::states::Stack);
             if (mprotect(mainThreadStack->ptr, PAGE_SIZE, PROT_NONE))
                 throw exception("Failed to create guard page for thread stack at 0x{:X}", mainThreadStack->ptr);
             stackTop = mainThreadStack->ptr + mainThreadStack->size;

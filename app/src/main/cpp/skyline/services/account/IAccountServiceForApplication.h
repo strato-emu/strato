@@ -21,13 +21,9 @@ namespace skyline {
             u64 upper; //!< The upper 64 bits of the user ID
             u64 lower; //!< The lower 64 bits of the user ID
 
-            constexpr bool operator==(const UserId &userId) {
-                return upper == userId.upper && lower == userId.lower;
-            }
+            constexpr bool operator==(const UserId &userId) const = default;
 
-            constexpr bool operator!=(const UserId &userId) {
-                return !(*this == userId);
-            }
+            constexpr bool operator!=(const UserId &userId) const = default;
         };
 
         /**
@@ -39,7 +35,7 @@ namespace skyline {
             /**
              * @brief Writes a vector of 128-bit user IDs to an output buffer
              */
-            Result WriteUserList(span <u8> buffer, std::vector<UserId> userIds);
+            Result WriteUserList(span <u8> buffer, std::vector <UserId> userIds);
 
           public:
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
@@ -80,14 +76,16 @@ namespace skyline {
              */
             Result GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-            SERVICE_DECL(
-                SFUNC(0x1, IAccountServiceForApplication, GetUserExistence),
-                SFUNC(0x2, IAccountServiceForApplication, ListAllUsers),
-                SFUNC(0x3, IAccountServiceForApplication, ListOpenUsers),
-                SFUNC(0x4, IAccountServiceForApplication, GetLastOpenedUser),
-                SFUNC(0x5, IAccountServiceForApplication, GetProfile),
-                SFUNC(0x64, IAccountServiceForApplication, InitializeApplicationInfoV0),
-                SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication)
+            SERVICE_DECL (
+            SFUNC(
+
+            0x1, IAccountServiceForApplication, GetUserExistence),
+            SFUNC(0x2, IAccountServiceForApplication, ListAllUsers),
+            SFUNC(0x3, IAccountServiceForApplication, ListOpenUsers),
+            SFUNC(0x4, IAccountServiceForApplication, GetLastOpenedUser),
+            SFUNC(0x5, IAccountServiceForApplication, GetProfile),
+            SFUNC(0x64, IAccountServiceForApplication, InitializeApplicationInfoV0),
+            SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication)
             )
         };
     }

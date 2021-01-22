@@ -23,13 +23,7 @@ namespace skyline {
 
                 constexpr Dimensions(u32 width, u32 height, u32 depth) : width(width), height(height), depth(depth) {}
 
-                constexpr bool operator==(const Dimensions &dimensions) {
-                    return (width == dimensions.width) && (height == dimensions.height) && (depth == dimensions.depth);
-                }
-
-                constexpr bool operator!=(const Dimensions &dimensions) {
-                    return (width != dimensions.width) || (height != dimensions.height) || (depth != dimensions.depth);
-                }
+                auto operator<=>(const Dimensions &) const = default;
             };
 
             /**
