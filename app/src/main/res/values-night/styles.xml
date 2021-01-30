@@ -4,13 +4,6 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowLightStatusBar">true</item>
-    </style>
-
-    <style name="AppTheme" parent="BaseAppTheme" />
-
-    <style name="roundedAppImage">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">6dp</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

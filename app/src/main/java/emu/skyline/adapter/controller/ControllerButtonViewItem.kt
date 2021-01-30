@@ -5,6 +5,7 @@
 
 package emu.skyline.adapter.controller
 
+import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.input.ButtonGuestEvent
 import emu.skyline.input.ButtonId
@@ -23,4 +24,8 @@ class ControllerButtonViewItem(private val controllerId : Int, val button : Butt
 
         holder.itemView.setOnClickListener { onClick.invoke(this, position) }
     }
+
+    override fun areItemsTheSame(other : GenericListItem) = other is ControllerButtonViewItem && controllerId == other.controllerId
+
+    override fun areContentsTheSame(other : GenericListItem) = other is ControllerButtonViewItem && button == other.button
 }

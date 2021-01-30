@@ -11,15 +11,15 @@ import android.view.ViewGroup
 import androidx.core.view.isGone
 import emu.skyline.R
 import emu.skyline.adapter.GenericLayoutFactory
+import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
-import emu.skyline.adapter.GenericViewHolderBinder
 import kotlinx.android.synthetic.main.controller_item.*
 
 private object ControllerLayoutFactory : GenericLayoutFactory {
     override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(R.layout.controller_item, parent, false)
 }
 
-open class ControllerViewItem(var content : String = "", var subContent : String = "", private val onClick : (() -> Unit)? = null) : GenericViewHolderBinder() {
+open class ControllerViewItem(var content : String = "", var subContent : String = "", private val onClick : (() -> Unit)? = null) : GenericListItem() {
     private var position = -1
 
     override fun getLayoutFactory() : GenericLayoutFactory = ControllerLayoutFactory

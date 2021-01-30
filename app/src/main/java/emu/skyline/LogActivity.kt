@@ -66,22 +66,23 @@ class LogActivity : AppCompatActivity() {
         try {
             logFile = File(applicationContext.filesDir.canonicalPath + "/skyline.log")
 
-            logFile.forEachLine { logLine ->
+            adapter.setItems(logFile.readLines().mapNotNull { logLine ->
                 try {
                     val logMeta = logLine.split("|", limit = 3)
 
                     if (logMeta[0].startsWith("1")) {
                         val level = logMeta[1].toInt()
-                        if (level > logLevel) return@forEachLine
+                        if (level > logLevel) return@mapNotNull null
 
-                        adapter.addItem(LogViewItem(compact, "(" + logMeta[2] + ") " + logMeta[3].replace('\\', '\n'), logLevels[level]))
+                        return@mapNotNull LogViewItem(compact, "(" + logMeta[2] + ") " + logMeta[3].replace('\\', '\n'), logLevels[level])
                     } else {
-                        adapter.addItem(HeaderViewItem(logMeta[1]))
+                        return@mapNotNull HeaderViewItem(logMeta[1])
                     }
                 } catch (ignored : IndexOutOfBoundsException) {
                 } catch (ignored : NumberFormatException) {
                 }
-            }
+                null
+            })
         } catch (e : FileNotFoundException) {
             Log.w("Logger", "IO Error during access of log file: " + e.message)
             Toast.makeText(applicationContext, getString(R.string.file_missing), Toast.LENGTH_LONG).show()

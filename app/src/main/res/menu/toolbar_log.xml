@@ -6,15 +6,18 @@
             android:icon="@drawable/ic_search"
             android:title="@string/search"
             app:actionViewClass="androidx.appcompat.widget.SearchView"
+            app:iconTint="?android:attr/textColorSecondary"
             app:showAsAction="ifRoom|withText" />
     <item
             android:id="@+id/action_share_log"
             android:icon="@drawable/ic_share"
             android:title="@string/share"
+            app:iconTint="?android:attr/textColorSecondary"
             app:showAsAction="ifRoom" />
     <item
             android:id="@+id/action_clear"
             android:icon="@drawable/ic_clear"
             android:title="@string/clear"
+            app:iconTint="?android:attr/textColorSecondary"
             app:showAsAction="ifRoom" />
 </menu>

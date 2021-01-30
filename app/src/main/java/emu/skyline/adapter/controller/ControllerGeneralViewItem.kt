@@ -6,6 +6,7 @@
 package emu.skyline.adapter.controller
 
 import emu.skyline.R
+import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.input.GeneralType
 import emu.skyline.input.InputManager
@@ -38,4 +39,8 @@ class ControllerGeneralViewItem(private val controllerId : Int, val type : Gener
 
         holder.itemView.setOnClickListener { onClick.invoke(this, position) }
     }
+
+    override fun areItemsTheSame(other : GenericListItem) = other is ControllerGeneralViewItem && controllerId == other.controllerId
+
+    override fun areContentsTheSame(other : GenericListItem) = other is ControllerGeneralViewItem && type == other.type
 }

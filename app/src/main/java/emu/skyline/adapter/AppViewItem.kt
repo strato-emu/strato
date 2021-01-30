@@ -35,7 +35,7 @@ private data class AppLayoutFactory(private val layoutType : LayoutType) : Gener
     override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(layoutType.layoutRes, parent, false)
 }
 
-class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericViewHolderBinder() {
+class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem() {
     override fun getLayoutFactory() : GenericLayoutFactory = AppLayoutFactory(layoutType)
 
     override fun bind(holder : GenericViewHolder, position : Int) {
@@ -48,10 +48,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
             holder.icon.setOnClickListener { showIconDialog(holder.icon.context, item) }
         }
 
-        when (layoutType) {
-            LayoutType.List -> holder.itemView
-            LayoutType.Grid, LayoutType.GridCompact -> holder.card_app_item_grid
-        }.apply {
+        holder.itemView.findViewById<View>(R.id.item_click_layout).apply {
             setOnClickListener { onClick.invoke(item) }
             setOnLongClickListener { true.also { onLongClick.invoke(item) } }
         }
@@ -70,4 +67,8 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
     }
 
     override fun key() = item.key()
+
+    override fun areItemsTheSame(other : GenericListItem) = key() == other.key()
+
+    override fun areContentsTheSame(other : GenericListItem) = other is AppViewItem && layoutType == other.layoutType && item == other.item
 }

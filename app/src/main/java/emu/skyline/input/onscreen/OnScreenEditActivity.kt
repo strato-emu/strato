@@ -5,9 +5,9 @@
 
 package emu.skyline.input.onscreen
 
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -17,7 +17,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import emu.skyline.R
 import emu.skyline.utils.Settings
-import kotlinx.android.synthetic.main.main_activity.fab_parent
 import kotlinx.android.synthetic.main.on_screen_edit_activity.*
 
 class OnScreenEditActivity : AppCompatActivity() {
@@ -87,10 +86,8 @@ class OnScreenEditActivity : AppCompatActivity() {
         on_screen_controller_view.recenterSticks = Settings(this).onScreenControlRecenterSticks
 
         actions.forEach { pair ->
-            fab_parent.addView(FloatingActionButton(this).apply {
-                size = FloatingActionButton.SIZE_MINI
-                setColorFilter(Color.WHITE)
-                setImageDrawable(ContextCompat.getDrawable(context, pair.first))
+            fab_parent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, fab_parent, false).apply {
+                (this as FloatingActionButton).setImageDrawable(ContextCompat.getDrawable(context, pair.first))
                 setOnClickListener { pair.second.invoke() }
                 fabMapping[pair.first] = this
             })

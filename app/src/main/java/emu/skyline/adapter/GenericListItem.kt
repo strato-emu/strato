@@ -16,7 +16,7 @@ interface GenericLayoutFactory {
     fun createLayout(parent : ViewGroup) : View
 }
 
-abstract class GenericViewHolderBinder {
+abstract class GenericListItem {
     var adapter : GenericAdapter? = null
 
     abstract fun getLayoutFactory() : GenericLayoutFactory
@@ -27,4 +27,11 @@ abstract class GenericViewHolderBinder {
      * Used for filtering
      */
     open fun key() : String = ""
+
+    open fun areItemsTheSame(other : GenericListItem) = this == other
+
+    /**
+     * Will only be called when [areItemsTheSame] returns true, thus returning true by default
+     */
+    open fun areContentsTheSame(other : GenericListItem) = true
 }

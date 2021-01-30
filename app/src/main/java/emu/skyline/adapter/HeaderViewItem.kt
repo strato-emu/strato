@@ -15,7 +15,7 @@ private object HeaderLayoutFactory : GenericLayoutFactory {
     override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(R.layout.section_item, parent, false)
 }
 
-class HeaderViewItem(private val text : String) : GenericViewHolderBinder() {
+class HeaderViewItem(private val text : String) : GenericListItem() {
     override fun getLayoutFactory() : GenericLayoutFactory = HeaderLayoutFactory
 
     override fun bind(holder : GenericViewHolder, position : Int) {
@@ -23,4 +23,6 @@ class HeaderViewItem(private val text : String) : GenericViewHolderBinder() {
     }
 
     override fun toString() = ""
+
+    override fun areItemsTheSame(other : GenericListItem) = other is HeaderViewItem && text == other.text
 }

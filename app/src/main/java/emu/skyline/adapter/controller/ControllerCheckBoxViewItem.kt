@@ -12,14 +12,14 @@ import androidx.core.view.isGone
 import emu.skyline.R
 import emu.skyline.adapter.GenericLayoutFactory
 import emu.skyline.adapter.GenericViewHolder
-import emu.skyline.adapter.GenericViewHolderBinder
+import emu.skyline.adapter.GenericListItem
 import kotlinx.android.synthetic.main.controller_checkbox_item.*
 
 private object ControllerCheckBoxLayoutFactory : GenericLayoutFactory {
     override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(R.layout.controller_checkbox_item, parent, false)
 }
 
-class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericViewHolderBinder() {
+class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericListItem() {
     override fun getLayoutFactory() : GenericLayoutFactory = ControllerCheckBoxLayoutFactory
 
     override fun bind(holder : GenericViewHolder, position : Int) {

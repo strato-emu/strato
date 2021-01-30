@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.appbar.AppBarLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/toolbar_layout"
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true"
-        app:layout_scrollFlags="scroll|exitUntilCollapsed"
-        app:liftOnScroll="true">
+        android:keyboardNavigationCluster="false"
+        android:touchscreenBlocksFocus="false">
 
     <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
-            style="@style/Widget.MaterialComponents.Toolbar.Primary"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:theme="@style/AppTheme.ActionBar"
-            app:layout_scrollFlags="scroll|enterAlways|snap" />
+            app:elevation="16dp"
+            app:layout_scrollFlags="scroll" />
 </com.google.android.material.appbar.AppBarLayout>

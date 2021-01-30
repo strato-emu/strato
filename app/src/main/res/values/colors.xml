@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FFFF0000</color>
-    <color name="colorPrimaryDark">#BFFF0000</color>
-    <color name="colorOnPrimary">#DFFFFFFF</color>
-    <color name="colorSecondary">#FFFF0000</color>
-    <color name="colorSecondaryDark">#BFFF0000</color>
-    <color name="colorOnSecondary">#DFFFFFFF</color>
+    <color name="colorPrimary">@color/cardview_light_background</color>
+    <color name="colorPrimaryDark">@android:color/white</color>
+    <color name="colorAccent">#FFFF0000</color>
 </resources>

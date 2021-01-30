@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
+import emu.skyline.utils.Settings
 
 /**
  * This activity is used to launch a document picker and saves the result to preferences
@@ -45,9 +46,9 @@ abstract class DocumentActivity : AppCompatActivity() {
 
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
+            Settings(this).refreshRequired = true
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putString(keyName, uri.toString())
-                    .putBoolean("refresh_required", true)
                     .apply()
         }
         finish()

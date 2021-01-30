@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FFFF0000</color>
-    <color name="colorPrimaryDark">#BFFF0000</color>
-    <color name="colorOnPrimary">#D7000000</color>
-    <color name="colorSecondary">#FFFF0000</color>
-    <color name="colorSecondaryDark">#BFFF0000</color>
-    <color name="colorOnSecondary">#DF000000</color>
+    <color name="colorPrimary">#FF424242</color>
+    <color name="colorPrimaryDark">@android:color/black</color>
 </resources>

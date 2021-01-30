@@ -1,65 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:foreground="?attr/selectableItemBackground"
+        android:orientation="vertical">
 
-    <androidx.cardview.widget.CardView
-            android:id="@+id/card_app_item_grid"
+    <com.google.android.material.card.MaterialCardView
+            android:id="@+id/item_click_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="@dimen/app_card_margin_half"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardCornerRadius="4dp"
-            app:cardElevation="@dimen/app_card_margin"
-            app:cardUseCompatPadding="true">
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-        <LinearLayout
+        <ImageView
+                android:id="@+id/icon"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:orientation="vertical">
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/icon"
+                tools:src="@drawable/default_icon" />
+    </com.google.android.material.card.MaterialCardView>
 
-            <ImageView
-                    android:id="@+id/icon"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="@string/icon"
-                    tools:src="@drawable/default_icon" />
+    <TextView
+            android:id="@+id/text_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="12sp"
+            tools:text="Title" />
 
-            <TextView
-                    android:id="@+id/text_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
-                    android:paddingStart="15dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="15dp"
-                    android:singleLine="true"
-                    android:textAlignment="center"
-                    android:textAppearance="?android:attr/textAppearanceListItem"
-                    tools:text="Title" />
-
-            <TextView
-                    android:id="@+id/text_subtitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp"
-                    android:paddingBottom="15dp"
-                    android:singleLine="true"
-                    android:textAlignment="center"
-                    android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                    android:textColor="@android:color/tertiary_text_light"
-                    tools:text="Subtitle" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-</FrameLayout>
+    <TextView
+            android:id="@+id/text_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="16dp"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
+            android:textSize="12sp"
+            tools:text="Subtitle" />
+</LinearLayout>

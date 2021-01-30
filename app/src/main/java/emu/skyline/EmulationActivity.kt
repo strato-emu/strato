@@ -39,12 +39,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var vibrators = HashMap<Int, Vibrator>()
 
     /**
-     * The surface object used for displaying frames
-     */
-    @Volatile
-    private var surface : Surface? = null
-
-    /**
      * A boolean flag denoting if the emulation thread should call finish() or not
      */
     @Volatile
@@ -262,14 +256,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         vibrators.clear()
     }
 
-    /**
-     * This sets [surface] to [holder].surface and passes it into libskyline
-     */
     override fun surfaceCreated(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceCreated Holder: $holder")
-        surface = holder.surface
         while (emulationThread.isAlive)
-            if (setSurface(surface))
+            if (setSurface(holder.surface))
                 return
     }
 
@@ -280,14 +270,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         Log.d(Tag, "surfaceChanged Holder: $holder, Format: $format, Width: $width, Height: $height")
     }
 
-    /**
-     * This sets [surface] to null and passes it into libskyline
-     */
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceDestroyed Holder: $holder")
-        surface = null
         while (emulationThread.isAlive)
-            if (setSurface(surface))
+            if (setSurface(null))
                 return
     }
 

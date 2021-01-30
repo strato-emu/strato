@@ -13,7 +13,6 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceGroup
 import emu.skyline.preference.ActivityResultDelegate
 import emu.skyline.preference.DocumentActivity
-import kotlinx.android.synthetic.main.settings_activity.*
 import kotlinx.android.synthetic.main.titlebar.*
 
 class SettingsActivity : AppCompatActivity() {
@@ -46,8 +45,6 @@ class SettingsActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         preferenceFragment.delegateActivityResult(requestCode, resultCode, data)
-
-        settings
     }
 
     /**
@@ -100,5 +97,10 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         return super.onKeyUp(keyCode, event)
+    }
+
+    override fun finish() {
+        setResult(RESULT_OK)
+        super.finish()
     }
 }

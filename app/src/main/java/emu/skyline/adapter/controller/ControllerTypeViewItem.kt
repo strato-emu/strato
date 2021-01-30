@@ -6,6 +6,7 @@
 package emu.skyline.adapter.controller
 
 import emu.skyline.R
+import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.input.ControllerType
 
@@ -23,4 +24,8 @@ class ControllerTypeViewItem(private val type : ControllerType, private val onCl
 
         holder.itemView.setOnClickListener { onClick.invoke(this, position) }
     }
+
+    override fun areItemsTheSame(other : GenericListItem) = other is ControllerTypeViewItem
+
+    override fun areContentsTheSame(other : GenericListItem) = other is ControllerTypeViewItem && type == other.type
 }

@@ -10,9 +10,11 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import emu.skyline.R
 import emu.skyline.adapter.GenericAdapter
+import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.controller.*
 import emu.skyline.input.dialog.ButtonDialog
@@ -53,99 +55,103 @@ class ControllerActivity : AppCompatActivity() {
      * This function updates the [adapter] based on information from [InputManager]
      */
     private fun update() {
-        adapter.removeAllItems()
+        val items = mutableListOf<GenericListItem>()
 
-        val controller = InputManager.controllers[id]!!
+        try {
+            val controller = InputManager.controllers[id]!!
 
-        adapter.addItem(ControllerTypeViewItem(controller.type, onControllerTypeClick))
+            items.add(ControllerTypeViewItem(controller.type, onControllerTypeClick))
 
-        if (controller.type == ControllerType.None)
-            return
+            if (controller.type == ControllerType.None)
+                return
 
-        if (id == 0 && controller.type.firstController) {
-            adapter.addItem(HeaderViewItem(getString(R.string.osc)))
+            if (id == 0 && controller.type.firstController) {
+                items.add(HeaderViewItem(getString(R.string.osc)))
 
-            val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
-            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(settings.onScreenControl), settings.onScreenControl) { item, position ->
-                item.summary = oscSummary.invoke(item.checked)
-                settings.onScreenControl = item.checked
-                adapter.notifyItemChanged(position)
-            })
+                val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(settings.onScreenControl), settings.onScreenControl) { item, position ->
+                    item.summary = oscSummary.invoke(item.checked)
+                    settings.onScreenControl = item.checked
+                    adapter.notifyItemChanged(position)
+                })
 
-            adapter.addItem(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", settings.onScreenControlRecenterSticks) { item, position ->
-                settings.onScreenControlRecenterSticks = item.checked
-                adapter.notifyItemChanged(position)
-            })
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", settings.onScreenControlRecenterSticks) { item, position ->
+                    settings.onScreenControlRecenterSticks = item.checked
+                    adapter.notifyItemChanged(position)
+                })
 
-            adapter.addItem(ControllerViewItem(content = getString(R.string.osc_edit), onClick = {
-                startActivity(Intent(this, OnScreenEditActivity::class.java))
-            }))
-        }
+                items.add(ControllerViewItem(content = getString(R.string.osc_edit), onClick = {
+                    startActivity(Intent(this, OnScreenEditActivity::class.java))
+                }))
+            }
 
-        var wroteTitle = false
+            var wroteTitle = false
 
-        for (item in GeneralType.values()) {
-            if (item.compatibleControllers == null || item.compatibleControllers.contains(controller.type)) {
+            for (item in GeneralType.values()) {
+                if (item.compatibleControllers == null || item.compatibleControllers.contains(controller.type)) {
+                    if (!wroteTitle) {
+                        items.add(HeaderViewItem(getString(R.string.general)))
+                        wroteTitle = true
+                    }
+
+                    items.add(ControllerGeneralViewItem(id, item, onControllerGeneralClick))
+                }
+            }
+
+            wroteTitle = false
+
+            for (stick in controller.type.sticks) {
                 if (!wroteTitle) {
-                    adapter.addItem(HeaderViewItem(getString(R.string.general)))
+                    items.add(HeaderViewItem(getString(R.string.sticks)))
                     wroteTitle = true
                 }
 
-                adapter.addItem(ControllerGeneralViewItem(id, item, onControllerGeneralClick))
-            }
-        }
+                val stickItem = ControllerStickViewItem(id, stick, onControllerStickClick)
 
-        wroteTitle = false
-
-        for (stick in controller.type.sticks) {
-            if (!wroteTitle) {
-                adapter.addItem(HeaderViewItem(getString(R.string.sticks)))
-                wroteTitle = true
+                items.add(stickItem)
+                buttonMap[stick.button] = stickItem
+                axisMap[stick.xAxis] = stickItem
+                axisMap[stick.yAxis] = stickItem
             }
 
-            val stickItem = ControllerStickViewItem(id, stick, onControllerStickClick)
+            val dpadButtons = Pair(R.string.dpad, arrayOf(ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight))
+            val faceButtons = Pair(R.string.face_buttons, arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y))
+            val shoulderTriggerButtons = Pair(R.string.shoulder_trigger, arrayOf(ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR))
+            val shoulderRailButtons = Pair(R.string.shoulder_rail, arrayOf(ButtonId.LeftSL, ButtonId.LeftSR, ButtonId.RightSL, ButtonId.RightSR))
 
-            adapter.addItem(stickItem)
-            buttonMap[stick.button] = stickItem
-            axisMap[stick.xAxis] = stickItem
-            axisMap[stick.yAxis] = stickItem
-        }
+            val buttonArrays = arrayOf(dpadButtons, faceButtons, shoulderTriggerButtons, shoulderRailButtons)
 
-        val dpadButtons = Pair(R.string.dpad, arrayOf(ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight))
-        val faceButtons = Pair(R.string.face_buttons, arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y))
-        val shoulderTriggerButtons = Pair(R.string.shoulder_trigger, arrayOf(ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR))
-        val shoulderRailButtons = Pair(R.string.shoulder_rail, arrayOf(ButtonId.LeftSL, ButtonId.LeftSR, ButtonId.RightSL, ButtonId.RightSR))
+            for (buttonArray in buttonArrays) {
+                wroteTitle = false
 
-        val buttonArrays = arrayOf(dpadButtons, faceButtons, shoulderTriggerButtons, shoulderRailButtons)
+                for (button in controller.type.buttons.filter { it in buttonArray.second }) {
+                    if (!wroteTitle) {
+                        items.add(HeaderViewItem(getString(buttonArray.first)))
+                        wroteTitle = true
+                    }
 
-        for (buttonArray in buttonArrays) {
+                    val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
+
+                    items.add(buttonItem)
+                    buttonMap[button] = buttonItem
+                }
+            }
+
             wroteTitle = false
 
-            for (button in controller.type.buttons.filter { it in buttonArray.second }) {
+            for (button in controller.type.buttons.filterNot { item -> buttonArrays.any { item in it.second } }.plus(ButtonId.Menu)) {
                 if (!wroteTitle) {
-                    adapter.addItem(HeaderViewItem(getString(buttonArray.first)))
+                    items.add(HeaderViewItem(getString(R.string.misc_buttons)))
                     wroteTitle = true
                 }
 
                 val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
 
-                adapter.addItem(buttonItem)
+                items.add(buttonItem)
                 buttonMap[button] = buttonItem
             }
-        }
-
-        wroteTitle = false
-
-        for (button in controller.type.buttons.filterNot { item -> buttonArrays.any { item in it.second } }.plus(ButtonId.Menu)) {
-            if (!wroteTitle) {
-                adapter.addItem(HeaderViewItem(getString(R.string.misc_buttons)))
-                wroteTitle = true
-            }
-
-            val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
-
-            adapter.addItem(buttonItem)
-            buttonMap[button] = buttonItem
+        } finally {
+            adapter.setItems(items)
         }
     }
 
@@ -165,8 +171,17 @@ class ControllerActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        controller_list.layoutManager = LinearLayoutManager(this)
+        val layoutManager = LinearLayoutManager(this)
+        controller_list.layoutManager = layoutManager
         controller_list.adapter = adapter
+
+        controller_list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                if (layoutManager.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) app_bar_layout.setExpanded(false)
+            }
+        })
 
         update()
     }

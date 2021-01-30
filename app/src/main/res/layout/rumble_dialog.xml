@@ -60,7 +60,6 @@
                 android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                 android:textColor="@android:color/tertiary_text_light"
                 android:textSize="13sp" />
-
     </RelativeLayout>
 
     <LinearLayout
@@ -76,6 +75,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
                 android:text="@string/builtin"
+                android:textColor="?attr/colorAccent"
                 android:visibility="gone" />
 
         <Button
@@ -84,8 +84,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
-                android:text="@string/reset" />
-
+                android:text="@string/reset"
+                android:textColor="?attr/colorAccent" />
     </LinearLayout>
-
 </LinearLayout>

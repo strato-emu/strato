@@ -18,7 +18,7 @@ private data class LogLayoutFactory(private val compact : Boolean) : GenericLayo
     override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(if (compact) R.layout.log_item_compact else R.layout.log_item, parent, false)
 }
 
-class LogViewItem(private val compact : Boolean, private val message : String, private val level : String) : GenericViewHolderBinder() {
+data class LogViewItem(private val compact : Boolean, private val message : String, private val level : String) : GenericListItem() {
     override fun getLayoutFactory() : GenericLayoutFactory = LogLayoutFactory(compact)
 
     override fun bind(holder : GenericViewHolder, position : Int) {
