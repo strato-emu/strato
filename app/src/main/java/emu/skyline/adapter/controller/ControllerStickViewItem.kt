@@ -9,7 +9,7 @@ import emu.skyline.R
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.databinding.ControllerItemBinding
-import emu.skyline.di.InputManagerProviderEntryPoint
+import emu.skyline.di.getInputManager
 import emu.skyline.input.AxisGuestEvent
 import emu.skyline.input.ButtonGuestEvent
 import emu.skyline.input.StickId
@@ -20,7 +20,7 @@ import emu.skyline.input.StickId
 class ControllerStickViewItem(private val controllerId : Int, val stick : StickId, private val onClick : (item : ControllerStickViewItem, position : Int) -> Unit) : ControllerViewItem(stick.toString()) {
     override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         val context = holder.itemView.context
-        val inputManager = InputManagerProviderEntryPoint.getInputManager(context)
+        val inputManager = context.getInputManager()
 
         val buttonGuestEvent = ButtonGuestEvent(controllerId, stick.button)
         val button = inputManager.eventMap.filter { it.value is ButtonGuestEvent && it.value == buttonGuestEvent }.keys.firstOrNull()?.toString() ?: context.getString(R.string.none)

@@ -12,7 +12,7 @@ import android.util.AttributeSet
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import emu.skyline.R
-import emu.skyline.di.InputManagerProviderEntryPoint
+import emu.skyline.di.getInputManager
 import emu.skyline.input.ControllerActivity
 
 /**
@@ -26,7 +26,7 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
 
     override var requestCode = 0
 
-    private val inputManager = InputManagerProviderEntryPoint.getInputManager(context)
+    private val inputManager = context.getInputManager()
 
     init {
         for (i in 0 until attrs!!.attributeCount) {

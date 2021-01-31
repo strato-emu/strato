@@ -9,7 +9,7 @@ import emu.skyline.R
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.databinding.ControllerItemBinding
-import emu.skyline.di.InputManagerProviderEntryPoint
+import emu.skyline.di.getInputManager
 import emu.skyline.input.GeneralType
 import emu.skyline.input.JoyConLeftController
 
@@ -21,7 +21,7 @@ import emu.skyline.input.JoyConLeftController
 class ControllerGeneralViewItem(private val controllerId : Int, val type : GeneralType, private val onClick : (item : ControllerGeneralViewItem, position : Int) -> Unit) : ControllerViewItem() {
     override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         val context = holder.itemView.context
-        val controller = InputManagerProviderEntryPoint.getInputManager(context).controllers[controllerId]!!
+        val controller = context.getInputManager().controllers[controllerId]!!
 
         content = context.getString(type.stringRes)
         subContent = when (type) {

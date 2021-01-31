@@ -8,7 +8,7 @@ package emu.skyline.adapter.controller
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.databinding.ControllerItemBinding
-import emu.skyline.di.InputManagerProviderEntryPoint
+import emu.skyline.di.getInputManager
 import emu.skyline.input.ButtonGuestEvent
 import emu.skyline.input.ButtonId
 
@@ -19,7 +19,7 @@ class ControllerButtonViewItem(private val controllerId : Int, val button : Butt
     override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         content = button.long?.let { holder.itemView.context.getString(it) } ?: button.toString()
         val guestEvent = ButtonGuestEvent(controllerId, button)
-        subContent = InputManagerProviderEntryPoint.getInputManager(holder.binding.root.context).eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: ""
+        subContent = holder.binding.root.context.getInputManager().eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: ""
 
         super.bind(holder, position)
 

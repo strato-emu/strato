@@ -11,8 +11,6 @@ import emu.skyline.input.InputManager
 @InstallIn(SingletonComponent::class)
 interface InputManagerProviderEntryPoint {
     fun inputManager() : InputManager
-
-    companion object {
-        fun getInputManager(context : Context) = EntryPointAccessors.fromApplication(context, InputManagerProviderEntryPoint::class.java).inputManager()
-    }
 }
+
+fun Context.getInputManager() = EntryPointAccessors.fromApplication(this, InputManagerProviderEntryPoint::class.java).inputManager()
