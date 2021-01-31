@@ -7,16 +7,20 @@ package emu.skyline.input
 
 import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * This object is used to manage all transactions with storing/retrieving data in relation to input
  */
-object InputManager {
+@Singleton
+class InputManager @Inject constructor(@ApplicationContext context : Context) {
     /**
      * The underlying [File] object with the input data
      */
-    private lateinit var file : File
+    private val file = File("${context.applicationInfo.dataDir}/input.bin")
 
     /**
      * A [HashMap] of all the controllers that contains their metadata
@@ -28,31 +32,31 @@ object InputManager {
      */
     lateinit var eventMap : HashMap<HostEvent?, GuestEvent?>
 
-    fun init(context : Context) {
-        file = File("${context.applicationInfo.dataDir}/input.bin")
-
-        try {
-            if (file.exists() && file.length() != 0L) {
-                syncObjects()
-                return
+    init {
+        run {
+            try {
+                if (file.exists() && file.length() != 0L) {
+                    syncObjects()
+                    return@run
+                }
+            } catch (e : Exception) {
+                Log.e(this.toString(), e.localizedMessage ?: "InputManager cannot read \"${file.absolutePath}\"")
             }
-        } catch (e : Exception) {
-            Log.e(this.toString(), e.localizedMessage ?: "InputManager cannot read \"${file.absolutePath}\"")
+
+            controllers = hashMapOf(
+                    0 to Controller(0, ControllerType.HandheldProController),
+                    1 to Controller(1, ControllerType.None),
+                    2 to Controller(2, ControllerType.None),
+                    3 to Controller(3, ControllerType.None),
+                    4 to Controller(4, ControllerType.None),
+                    5 to Controller(5, ControllerType.None),
+                    6 to Controller(6, ControllerType.None),
+                    7 to Controller(7, ControllerType.None))
+
+            eventMap = hashMapOf()
+
+            syncFile()
         }
-
-        controllers = hashMapOf(
-                0 to Controller(0, ControllerType.HandheldProController),
-                1 to Controller(1, ControllerType.None),
-                2 to Controller(2, ControllerType.None),
-                3 to Controller(3, ControllerType.None),
-                4 to Controller(4, ControllerType.None),
-                5 to Controller(5, ControllerType.None),
-                6 to Controller(6, ControllerType.None),
-                7 to Controller(7, ControllerType.None))
-
-        eventMap = hashMapOf()
-
-        syncFile()
     }
 
     /**

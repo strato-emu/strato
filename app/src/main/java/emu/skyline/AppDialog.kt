@@ -20,8 +20,8 @@ import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.data.AppItem
+import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
-import kotlinx.android.synthetic.main.app_dialog.*
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -41,19 +41,15 @@ class AppDialog : BottomSheetDialogFragment() {
         }
     }
 
-    private lateinit var item : AppItem
+    private lateinit var binding : AppDialogBinding
+
+    private val item by lazy { requireArguments().getSerializable("item") as AppItem }
 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
     override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
-        return requireActivity().layoutInflater.inflate(R.layout.app_dialog, container)
-    }
-
-    override fun onCreate(savedInstanceState : Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        item = requireArguments().getSerializable("item") as AppItem
+        return AppDialogBinding.inflate(inflater).also { binding = it }.root
     }
 
     /**
@@ -82,19 +78,19 @@ class AppDialog : BottomSheetDialogFragment() {
 
         val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
 
-        game_icon.setImageBitmap(item.icon ?: missingIcon)
-        game_title.text = item.title
-        game_subtitle.text = item.subTitle ?: item.loaderResultString(requireContext())
+        binding.gameIcon.setImageBitmap(item.icon ?: missingIcon)
+        binding.gameTitle.text = item.title
+        binding.gameSubtitle.text = item.subTitle ?: item.loaderResultString(requireContext())
 
-        game_play.isEnabled = item.loaderResult == LoaderResult.Success
-        game_play.setOnClickListener {
+        binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
+        binding.gamePlay.setOnClickListener {
             startActivity(Intent(activity, EmulationActivity::class.java).apply { data = item.uri })
         }
 
         val shortcutManager = requireActivity().getSystemService(ShortcutManager::class.java)
-        game_pin.isEnabled = shortcutManager.isRequestPinShortcutSupported
+        binding.gamePin.isEnabled = shortcutManager.isRequestPinShortcutSupported
 
-        game_pin.setOnClickListener {
+        binding.gamePin.setOnClickListener {
             val info = ShortcutInfo.Builder(context, item.title)
             info.setShortLabel(item.title)
             info.setActivity(ComponentName(requireContext(), EmulationActivity::class.java))

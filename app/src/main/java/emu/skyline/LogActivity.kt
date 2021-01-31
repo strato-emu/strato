@@ -20,9 +20,8 @@ import com.google.android.material.snackbar.Snackbar
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.LogViewItem
+import emu.skyline.databinding.LogActivityBinding
 import emu.skyline.utils.Settings
-import kotlinx.android.synthetic.main.log_activity.*
-import kotlinx.android.synthetic.main.titlebar.*
 import org.json.JSONObject
 import java.io.File
 import java.io.FileNotFoundException
@@ -31,25 +30,21 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
 class LogActivity : AppCompatActivity() {
+    private val binding by lazy { LogActivityBinding.inflate(layoutInflater) }
+
     /**
      * The log file is used to read log entries from or to clear all entries
      */
     private lateinit var logFile : File
 
-    /**
-     * The adapter used for adding elements from the log to [log_list]
-     */
     private val adapter = GenericAdapter()
 
-    /**
-     * This initializes [toolbar] and fills [log_list] with data from the logs
-     */
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.log_activity)
+        setContentView(binding.root)
 
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val settings = Settings(this)
@@ -58,10 +53,9 @@ class LogActivity : AppCompatActivity() {
         val logLevel = settings.logLevel.toInt()
         val logLevels = resources.getStringArray(R.array.log_level)
 
-        log_list.adapter = adapter
+        binding.logList.adapter = adapter
 
-        if (!compact)
-            log_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
+        if (!compact) binding.logList.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
 
         try {
             logFile = File(applicationContext.filesDir.canonicalPath + "/skyline.log")

@@ -11,11 +11,13 @@ import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceGroup
+import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.preference.ActivityResultDelegate
 import emu.skyline.preference.DocumentActivity
-import kotlinx.android.synthetic.main.titlebar.*
 
 class SettingsActivity : AppCompatActivity() {
+    val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
+
     /**
      * This is the instance of [PreferenceFragment] that is shown inside [R.id.settings]
      */
@@ -27,9 +29,9 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.settings_activity)
+        setContentView(binding.root)
 
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         supportFragmentManager

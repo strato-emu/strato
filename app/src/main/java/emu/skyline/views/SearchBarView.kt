@@ -11,13 +11,13 @@ import androidx.core.view.MarginLayoutParamsCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.google.android.material.card.MaterialCardView
-import emu.skyline.R
-import kotlinx.android.synthetic.main.view_search_bar.view.*
+import emu.skyline.databinding.ViewSearchBarBinding
 import kotlin.math.roundToInt
 
 class SearchBarView @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = com.google.android.material.R.attr.materialCardViewStyle) : MaterialCardView(context, attrs, defStyleAttr) {
+    private val binding = ViewSearchBarBinding.inflate(LayoutInflater.from(context), this)
+
     init {
-        LayoutInflater.from(context).inflate(R.layout.view_search_bar, this)
         useCompatPadding = true
     }
 
@@ -32,32 +32,32 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
         cardElevation = radius / 2f
     }
 
-    fun setRefreshIconListener(listener : OnClickListener) = refresh_icon.setOnClickListener(listener)
-    fun setLogIconListener(listener : OnClickListener) = log_icon.setOnClickListener(listener)
-    fun setSettingsIconListener(listener : OnClickListener) = settings_icon.setOnClickListener(listener)
+    fun setRefreshIconListener(listener : OnClickListener) = binding.refreshIcon.setOnClickListener(listener)
+    fun setLogIconListener(listener : OnClickListener) = binding.logIcon.setOnClickListener(listener)
+    fun setSettingsIconListener(listener : OnClickListener) = binding.settingsIcon.setOnClickListener(listener)
 
     var refreshIconVisible = false
         set(visible) {
             field = visible
-            refresh_icon.apply {
+            binding.refreshIcon.apply {
                 if (visible != isVisible) {
-                    refresh_icon.alpha = if (visible) 0f else 1f
+                    binding.refreshIcon.alpha = if (visible) 0f else 1f
                     animate().alpha(if (visible) 1f else 0f).withStartAction { isVisible = true }.withEndAction { isInvisible = !visible }.apply { duration = 500 }.start()
                 }
             }
         }
 
     var text : CharSequence
-        get() = search_field.text
-        set(value) = search_field.setText(value)
+        get() = binding.searchField.text
+        set(value) = binding.searchField.setText(value)
 
     fun startTitleAnimation() {
-        motion_layout.progress = 0f
-        motion_layout.transitionToEnd()
-        search_field.apply {
+        binding.motionLayout.progress = 0f
+        binding.motionLayout.transitionToEnd()
+        binding.searchField.apply {
             setOnFocusChangeListener { v, hasFocus ->
                 if (hasFocus) {
-                    this@SearchBarView.motion_layout.progress = 1f
+                    binding.motionLayout.progress = 1f
                     context.getSystemService(InputMethodManager::class.java).showSoftInput(v, InputMethodManager.SHOW_IMPLICIT)
                     onFocusChangeListener = null
                 }
@@ -66,23 +66,23 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
     }
 
     fun animateRefreshIcon() {
-        refresh_icon.animate().rotationBy(-180f)
+        binding.refreshIcon.animate().rotationBy(-180f)
     }
 
-    inline fun addTextChangedListener(
-            crossinline beforeTextChanged : (
+    fun addTextChangedListener(
+            beforeTextChanged : (
                     text : CharSequence?,
                     start : Int,
                     count : Int,
                     after : Int
             ) -> Unit = { _, _, _, _ -> },
-            crossinline onTextChanged : (
+            onTextChanged : (
                     text : CharSequence?,
                     start : Int,
                     before : Int,
                     count : Int
             ) -> Unit = { _, _, _, _ -> },
-            crossinline afterTextChanged : (text : Editable?) -> Unit = {}
+            afterTextChanged : (text : Editable?) -> Unit = {}
     ) : TextWatcher {
         val textWatcher = object : TextWatcher {
             override fun afterTextChanged(s : Editable?) {
@@ -97,7 +97,7 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
                 onTextChanged.invoke(text, start, before, count)
             }
         }
-        search_field.addTextChangedListener(textWatcher)
+        binding.searchField.addTextChangedListener(textWatcher)
 
         return textWatcher
     }

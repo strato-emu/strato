@@ -15,8 +15,8 @@ import emu.skyline.R
 /**
  * This class adapts [EditTextPreference] so that it supports setting the value as the summary automatically. Also added useful attributes.
  */
-class CustomEditTextPreference : EditTextPreference {
-    constructor(context : Context, attrs : AttributeSet?, defStyleAttr : Int, defStyleRes : Int) : super(context, attrs, defStyleAttr, defStyleRes) {
+class CustomEditTextPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.editTextPreferenceStyle) : EditTextPreference(context, attrs, defStyleAttr) {
+    init {
         attrs?.let {
             val a = context.obtainStyledAttributes(it, R.styleable.CustomEditTextPreference, defStyleAttr, 0)
             val limit = a.getInt(R.styleable.CustomEditTextPreference_limit, -1)
@@ -32,12 +32,6 @@ class CustomEditTextPreference : EditTextPreference {
             true
         }
     }
-
-    constructor(context : Context, attrs : AttributeSet?, defStyleAttr : Int) : this(context, attrs, defStyleAttr, 0)
-
-    constructor(context : Context, attrs : AttributeSet?) : this(context, attrs, androidx.preference.R.attr.editTextPreferenceStyle)
-
-    constructor(context : Context) : this(context, null)
 
     override fun onAttached() {
         super.onAttached()

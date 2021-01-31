@@ -10,42 +10,88 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.ImageView
 import android.widget.RelativeLayout
+import android.widget.TextView
+import androidx.viewbinding.ViewBinding
 import emu.skyline.R
 import emu.skyline.data.AppItem
-import kotlinx.android.synthetic.main.app_item_grid_compact.*
+import emu.skyline.databinding.AppItemGridBinding
+import emu.skyline.databinding.AppItemGridCompactBinding
+import emu.skyline.databinding.AppItemLinearBinding
 
-/**
- * This enumerates the type of layouts the menu can be in
- */
-enum class LayoutType(val layoutRes : Int) {
-    List(R.layout.app_item_linear),
-    Grid(R.layout.app_item_grid),
-    GridCompact(R.layout.app_item_grid_compact)
+sealed class LayoutType(val builder : (parent : ViewGroup) -> ViewBinding) {
+    object List : LayoutType({ ListBinding(it) })
+    object Grid : LayoutType({ GridBinding(it) })
+    object GridCompact : LayoutType({ GridCompatBinding(it) })
+
+    companion object {
+        fun values() = arrayListOf(List, Grid, GridCompact)
+    }
+}
+
+data class LayoutBindingFactory(private val layoutType : LayoutType) : ViewBindingFactory {
+    override fun createBinding(parent : ViewGroup) = layoutType.builder(parent)
+}
+
+interface LayoutBinding<V : ViewBinding> : ViewBinding {
+    val binding : V
+
+    override fun getRoot() = binding.root
+
+    val textTitle : TextView
+
+    val textSubtitle : TextView
+
+    val icon : ImageView
+}
+
+class ListBinding(parent : ViewGroup) : LayoutBinding<AppItemLinearBinding> {
+    override val binding = AppItemLinearBinding.inflate(parent.inflater(), parent, false)
+
+    override val textTitle = binding.textTitle
+
+    override val textSubtitle = binding.textSubtitle
+
+    override val icon = binding.icon
+}
+
+class GridBinding(parent : ViewGroup) : LayoutBinding<AppItemGridBinding> {
+    override val binding = AppItemGridBinding.inflate(parent.inflater(), parent, false)
+
+    override val textTitle = binding.textTitle
+
+    override val textSubtitle = binding.textSubtitle
+
+    override val icon = binding.icon
+}
+
+class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBinding> {
+    override val binding = AppItemGridCompactBinding.inflate(parent.inflater(), parent, false)
+
+    override val textTitle = binding.textTitle
+
+    override val textSubtitle = binding.textSubtitle
+
+    override val icon = binding.icon
 }
 
 private typealias InteractionFunction = (appItem : AppItem) -> Unit
 
-private data class AppLayoutFactory(private val layoutType : LayoutType) : GenericLayoutFactory {
-    override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(layoutType.layoutRes, parent, false)
-}
+class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
+    override fun getViewBindingFactory() = LayoutBindingFactory(layoutType)
 
-class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem() {
-    override fun getLayoutFactory() : GenericLayoutFactory = AppLayoutFactory(layoutType)
+    override fun bind(holder : GenericViewHolder<LayoutBinding<*>>, position : Int) {
+        holder.binding.textTitle.text = item.title
+        holder.binding.textSubtitle.text = item.subTitle ?: item.loaderResultString(holder.binding.root.context)
 
-    override fun bind(holder : GenericViewHolder, position : Int) {
-        holder.text_title.text = item.title
-        holder.text_subtitle.text = item.subTitle ?: item.loaderResultString(holder.text_subtitle.context)
-
-        holder.icon.setImageBitmap(item.icon ?: missingIcon)
+        holder.binding.icon.setImageBitmap(item.icon ?: missingIcon)
 
         if (layoutType == LayoutType.List) {
-            holder.icon.setOnClickListener { showIconDialog(holder.icon.context, item) }
+            holder.binding.icon.setOnClickListener { showIconDialog(it.context, item) }
         }
 
         holder.itemView.findViewById<View>(R.id.item_click_layout).apply {
@@ -68,7 +114,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
 
     override fun key() = item.key()
 
-    override fun areItemsTheSame(other : GenericListItem) = key() == other.key()
+    override fun areItemsTheSame(other : GenericListItem<LayoutBinding<*>>) = key() == other.key()
 
-    override fun areContentsTheSame(other : GenericListItem) = other is AppViewItem && layoutType == other.layoutType && item == other.item
+    override fun areContentsTheSame(other : GenericListItem<LayoutBinding<*>>) = other is AppViewItem && layoutType == other.layoutType && item == other.item
 }

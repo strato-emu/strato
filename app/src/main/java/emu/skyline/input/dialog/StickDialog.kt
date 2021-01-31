@@ -14,12 +14,14 @@ import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerStickViewItem
+import emu.skyline.databinding.StickDialogBinding
 import emu.skyline.input.*
 import emu.skyline.input.MotionHostEvent.Companion.axes
-import kotlinx.android.synthetic.main.stick_dialog.*
 import java.util.*
+import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -28,6 +30,7 @@ import kotlin.math.max
  *
  * @param item This is used to hold the [ControllerStickViewItem] between instances
  */
+@AndroidEntryPoint
 class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? = null) : BottomSheetDialogFragment() {
     /**
      * This enumerates all of the stages this dialog can be in
@@ -40,6 +43,8 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         XPlus(R.string.x_plus),
         Stick(R.string.stick_preview);
     }
+
+    private lateinit var binding : StickDialogBinding
 
     /**
      * This is the current stage of the dialog
@@ -61,12 +66,13 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
      */
     private var animationStop = false
 
+    @Inject
+    lateinit var inputManager : InputManager
+
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
-        return requireActivity().layoutInflater.inflate(R.layout.stick_dialog, container)
-    }
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = StickDialogBinding.inflate(inflater).also { binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible
@@ -91,7 +97,13 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         animationStop = false
         stageAnimation?.let { handler.removeCallbacks(it) }
 
-        stick_container?.animate()?.scaleX(1f)?.scaleY(1f)?.alpha(1f)?.translationY(0f)?.translationX(0f)?.rotationX(0f)?.rotationY(0f)?.start()
+        binding.stickContainer.animate()
+                .scaleX(1f).scaleY(1f)
+                .alpha(1f)
+                .translationY(0f).translationX(0f)
+                .rotationX(0f)
+                .rotationY(0f)
+                .start()
 
         when (stage) {
             DialogStage.Button -> {
@@ -99,7 +111,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                     if (stage != DialogStage.Button || animationStop)
                         return@Runnable
 
-                    stick_container?.animate()?.scaleX(0.85f)?.scaleY(0.85f)?.alpha(1f)?.withEndAction {
+                    binding.stickContainer.animate().scaleX(0.85f).scaleY(0.85f).alpha(1f).withEndAction {
                         if (stage != DialogStage.Button || animationStop)
                             return@withEndAction
 
@@ -107,7 +119,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             if (stage != DialogStage.Button || animationStop)
                                 return@Runnable
 
-                            stick_container?.animate()?.scaleX(1f)?.scaleY(1f)?.alpha(0.85f)?.withEndAction {
+                            binding.stickContainer.animate().scaleX(1f).scaleY(1f).alpha(0.85f).withEndAction {
                                 if (stage != DialogStage.Button || animationStop)
                                     return@withEndAction
 
@@ -129,7 +141,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                     if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                         return@Runnable
 
-                    stick_container?.animate()?.setDuration(300)?.translationY(dipToPixels(15f) * polarity)?.rotationX(27f * polarity)?.alpha(1f)?.withEndAction {
+                    binding.stickContainer.animate().setDuration(300).translationY(dipToPixels(15f) * polarity).rotationX(27f * polarity).alpha(1f).withEndAction {
                         if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                             return@withEndAction
 
@@ -137,7 +149,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                                 return@Runnable
 
-                            stick_container?.animate()?.setDuration(250)?.translationY(0f)?.rotationX(0f)?.alpha(0.85f)?.withEndAction {
+                            binding.stickContainer.animate().setDuration(250).translationY(0f).rotationX(0f).alpha(0.85f).withEndAction {
                                 if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                                     return@withEndAction
 
@@ -159,7 +171,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                     if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                         return@Runnable
 
-                    stick_container?.animate()?.setDuration(300)?.translationX(dipToPixels(16.5f) * polarity)?.rotationY(27f * polarity)?.alpha(1f)?.withEndAction {
+                    binding.stickContainer.animate().setDuration(300).translationX(dipToPixels(16.5f) * polarity).rotationY(27f * polarity).alpha(1f).withEndAction {
                         if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                             return@withEndAction
 
@@ -167,14 +179,14 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                                 return@Runnable
 
-                            stick_container?.animate()?.setDuration(250)?.translationX(0f)?.rotationY(0f)?.alpha(0.85f)?.withEndAction {
+                            binding.stickContainer.animate().setDuration(250).translationX(0f).rotationY(0f).alpha(0.85f).withEndAction {
                                 if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                                     return@withEndAction
 
                                 stageAnimation?.let {
                                     handler.postDelayed(it, 750)
                                 }
-                            }?.start()
+                            }.start()
                         }
 
                         handler.postDelayed(runnable, 300)
@@ -199,13 +211,13 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         if (ordinal in 0 until size) {
             stage = DialogStage.values()[ordinal]
 
-            stick_title.text = getString(stage.string)
-            stick_subtitle.text = if (stage != DialogStage.Stick) getString(R.string.use_button_axis) else getString(R.string.use_non_stick)
-            stick_icon.animate().alpha(0.25f).setDuration(50).start()
-            stick_name.animate().alpha(0.35f).setDuration(50).start()
-            stick_seekbar.visibility = View.GONE
+            binding.stickTitle.text = getString(stage.string)
+            binding.stickSubtitle.text = getString(if (stage != DialogStage.Stick) R.string.use_button_axis else R.string.use_non_stick)
+            binding.stickIcon.animate().alpha(0.25f).setDuration(50).start()
+            binding.stickName.animate().alpha(0.35f).setDuration(50).start()
+            binding.stickSeekbar.visibility = View.GONE
 
-            stick_next.text = if (ordinal + 1 == size) getString(R.string.done) else getString(R.string.next)
+            binding.stickNext.text = getString(if (ordinal + 1 == size) R.string.done else R.string.next)
 
             updateAnimation()
         } else {
@@ -221,28 +233,28 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
-            val controller = InputManager.controllers[context.id]!!
+            val controller = inputManager.controllers[context.id]!!
 
             // View focus handling so all input is always directed to this view
             view?.requestFocus()
             view?.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if (!hasFocus) v.requestFocus() }
 
             // Write the text for the stick's icon
-            stick_name.text = item.stick.button.short ?: item.stick.button.toString()
+            binding.stickName.text = item.stick.button.short ?: item.stick.button.toString()
 
-            // Set up the reset button to clear out all entries corresponding to this stick from [InputManager.eventMap]
-            stick_reset.setOnClickListener {
+            // Set up the reset button to clear out all entries corresponding to this stick from [inputManager.eventMap]
+            binding.stickReset.setOnClickListener {
                 for (axis in arrayOf(item.stick.xAxis, item.stick.yAxis)) {
                     for (polarity in booleanArrayOf(true, false)) {
                         val guestEvent = AxisGuestEvent(context.id, axis, polarity)
 
-                        InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
+                        inputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { inputManager.eventMap.remove(it) }
                     }
                 }
 
                 val guestEvent = ButtonGuestEvent(context.id, item.stick.button)
 
-                InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
+                inputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { inputManager.eventMap.remove(it) }
 
                 item.update()
 
@@ -250,11 +262,11 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
             }
 
             // Ensure that layout animations are proper
-            stick_layout.layoutTransition.setAnimateParentHierarchy(false)
-            stick_layout.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
+            binding.stickLayout.layoutTransition.setAnimateParentHierarchy(false)
+            binding.stickLayout.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
 
             // We want the secondary progress bar to be visible through the first one
-            stick_seekbar.progressDrawable.alpha = 128
+            binding.stickSeekbar.progressDrawable.alpha = 128
 
             updateAnimation()
 
@@ -266,7 +278,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
             var axisPolarity = false // The polarity of the axis for the currently selected event
             var axisRunnable : Runnable? = null // The Runnable that is used for counting down till an axis is selected
 
-            stick_next.setOnClickListener {
+            binding.stickNext.setOnClickListener {
                 gotoStage(1)
 
                 deviceId = null
@@ -280,39 +292,41 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                     // We want all input events from Joysticks and Buttons except for [KeyEvent.KEYCODE_BACK] as that will should be processed elsewhere
                     ((event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON) && event.keyCode != KeyEvent.KEYCODE_BACK) || event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) && event.repeatCount == 0 -> {
                         if (stage == DialogStage.Stick) {
-                            // When the stick is being previewed after everything is mapped we do a lookup into [InputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
-                            when (val guestEvent = InputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
+                            // When the stick is being previewed after everything is mapped we do a lookup into [inputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
+                            when (val guestEvent = inputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
                                 is ButtonGuestEvent -> {
                                     if (guestEvent.button == item.stick.button) {
                                         if (event.action == KeyEvent.ACTION_DOWN) {
-                                            stick_container?.animate()?.setStartDelay(0)?.setDuration(50)?.scaleX(0.85f)?.scaleY(0.85f)?.start()
+                                            binding.stickContainer.animate().setStartDelay(0).setDuration(50).scaleX(0.85f).scaleY(0.85f).start()
 
-                                            stick_icon.animate().alpha(0.85f).setDuration(50).start()
-                                            stick_name.animate().alpha(0.95f).setDuration(50).start()
+                                            binding.stickIcon.animate().alpha(0.85f).setDuration(50).start()
+                                            binding.stickName.animate().alpha(0.95f).setDuration(50).start()
                                         } else {
-                                            stick_container?.animate()?.setStartDelay(0)?.setDuration(25)?.scaleX(1f)?.scaleY(1f)?.start()
+                                            binding.stickContainer.animate().setStartDelay(0).setDuration(25).scaleX(1f).scaleY(1f).start()
 
-                                            stick_icon.animate().alpha(0.25f).setDuration(25).start()
-                                            stick_name.animate().alpha(0.35f).setDuration(25).start()
+                                            binding.stickIcon.animate().alpha(0.25f).setDuration(25).start()
+                                            binding.stickName.animate().alpha(0.35f).setDuration(25).start()
                                         }
                                     } else if (event.action == KeyEvent.ACTION_UP) {
-                                        stick_next?.callOnClick()
+                                        binding.stickNext.callOnClick()
                                     }
                                 }
 
                                 is AxisGuestEvent -> {
                                     val coefficient = if (event.action == KeyEvent.ACTION_DOWN) if (guestEvent.polarity) 1 else -1 else 0
 
-                                    if (guestEvent.axis == item.stick.xAxis) {
-                                        stick_container?.translationX = dipToPixels(16.5f) * coefficient
-                                        stick_container?.rotationY = 27f * coefficient
-                                    } else if (guestEvent.axis == item.stick.yAxis) {
-                                        stick_container?.translationY = dipToPixels(16.5f) * -coefficient
-                                        stick_container?.rotationX = 27f * coefficient
+                                    binding.stickContainer.apply {
+                                        if (guestEvent.axis == item.stick.xAxis) {
+                                            translationX = dipToPixels(16.5f) * coefficient
+                                            rotationY = 27f * coefficient
+                                        } else if (guestEvent.axis == item.stick.yAxis) {
+                                            translationY = dipToPixels(16.5f) * -coefficient
+                                            rotationX = 27f * coefficient
+                                        }
                                     }
                                 }
 
-                                null -> if (event.action == KeyEvent.ACTION_UP) stick_next?.callOnClick()
+                                null -> if (event.action == KeyEvent.ACTION_UP) binding.stickNext.callOnClick()
                             }
                         } else if (stage != DialogStage.Stick) {
                             if ((deviceId != event.deviceId || inputId != event.keyCode) && event.action == KeyEvent.ACTION_DOWN && !ignoredEvents.any { it == Objects.hash(event.deviceId, event.keyCode) }) {
@@ -330,26 +344,28 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 val coefficient = if (stage == DialogStage.YMinus || stage == DialogStage.XPlus) 1 else -1
 
                                 when (stage) {
-                                    DialogStage.Button -> stick_container?.animate()?.setStartDelay(0)?.setDuration(25)?.scaleX(0.85f)?.scaleY(0.85f)?.alpha(1f)?.start()
-                                    DialogStage.YPlus, DialogStage.YMinus -> stick_container?.animate()?.setStartDelay(0)?.setDuration(75)?.translationY(dipToPixels(16.5f) * coefficient)?.rotationX(27f * coefficient)?.alpha(1f)?.start()
-                                    DialogStage.XPlus, DialogStage.XMinus -> stick_container?.animate()?.setStartDelay(0)?.setDuration(75)?.translationX(dipToPixels(16.5f) * coefficient)?.rotationY(27f * coefficient)?.alpha(1f)?.start()
+                                    DialogStage.Button -> binding.stickContainer.animate().setStartDelay(0).setDuration(25).scaleX(0.85f).scaleY(0.85f).alpha(1f).start()
+
+                                    DialogStage.YPlus, DialogStage.YMinus -> binding.stickContainer.animate().setStartDelay(0).setDuration(75).translationY(dipToPixels(16.5f) * coefficient).rotationX(27f * coefficient).alpha(1f).start()
+
+                                    DialogStage.XPlus, DialogStage.XMinus -> binding.stickContainer.animate().setStartDelay(0).setDuration(75).translationX(dipToPixels(16.5f) * coefficient).rotationY(27f * coefficient).alpha(1f).start()
                                     else -> {
                                     }
                                 }
 
-                                stick_icon.animate().alpha(0.85f).setDuration(50).start()
-                                stick_name.animate().alpha(0.95f).setDuration(50).start()
+                                binding.stickIcon.animate().alpha(0.85f).setDuration(50).start()
+                                binding.stickName.animate().alpha(0.95f).setDuration(50).start()
 
-                                stick_subtitle.text = getString(R.string.release_confirm)
-                                stick_seekbar.visibility = View.GONE
+                                binding.stickSubtitle.text = getString(R.string.release_confirm)
+                                binding.stickSeekbar.visibility = View.GONE
                             } else if (deviceId == event.deviceId && inputId == event.keyCode && event.action == KeyEvent.ACTION_UP) {
                                 // We serialize the current [deviceId] and [inputId] into a [KeyHostEvent] and map it to a corresponding [GuestEvent] and add it to [ignoredEvents] on [KeyEvent.ACTION_UP]
                                 val hostEvent = KeyHostEvent(event.device.descriptor, event.keyCode)
 
-                                var guestEvent = InputManager.eventMap[hostEvent]
+                                var guestEvent = inputManager.eventMap[hostEvent]
 
                                 if (guestEvent is GuestEvent) {
-                                    InputManager.eventMap.remove(hostEvent)
+                                    inputManager.eventMap.remove(hostEvent)
 
                                     if (guestEvent is ButtonGuestEvent)
                                         context.buttonMap[guestEvent.button]?.update()
@@ -364,15 +380,15 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                     else -> null
                                 }
 
-                                InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
+                                inputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { inputManager.eventMap.remove(it) }
 
-                                InputManager.eventMap[hostEvent] = guestEvent
+                                inputManager.eventMap[hostEvent] = guestEvent
 
                                 ignoredEvents.add(Objects.hash(deviceId!!, inputId!!))
 
                                 item.update()
 
-                                stick_next?.callOnClick()
+                                binding.stickNext.callOnClick()
                             }
                         }
 
@@ -407,7 +423,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                 // We want all input events from Joysticks and Buttons that are [MotionEvent.ACTION_MOVE] and not from the D-pad
                 if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE && hat == oldHat) {
                     if (stage == DialogStage.Stick) {
-                        // When the stick is being previewed after everything is mapped we do a lookup into [InputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
+                        // When the stick is being previewed after everything is mapped we do a lookup into [inputManager.eventMap] to find a corresponding [GuestEvent] and animate the stick correspondingly
                         for (axisItem in axes.withIndex()) {
                             val axis = axisItem.value
                             var value = event.getAxisValue(axis)
@@ -421,9 +437,9 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
 
                             var polarity = value >= 0
                             val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
-                                InputManager.eventMap[hostEvent] ?: if (value == 0f) {
+                                inputManager.eventMap[hostEvent] ?: if (value == 0f) {
                                     polarity = false
-                                    InputManager.eventMap[hostEvent.copy(polarity = false)]
+                                    inputManager.eventMap[hostEvent.copy(polarity = false)]
                                 } else {
                                     null
                                 }
@@ -433,13 +449,13 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 is ButtonGuestEvent -> {
                                     if (guestEvent.button == item.stick.button) {
                                         if (abs(value) >= guestEvent.threshold) {
-                                            stick_container?.animate()?.setStartDelay(0)?.setDuration(50)?.scaleX(0.85f)?.scaleY(0.85f)?.start()
-                                            stick_icon.animate().alpha(0.85f).setDuration(50).start()
-                                            stick_name.animate().alpha(0.95f).setDuration(50).start()
+                                            binding.stickContainer.animate().setStartDelay(0).setDuration(50).scaleX(0.85f).scaleY(0.85f).start()
+                                            binding.stickIcon.animate().alpha(0.85f).setDuration(50).start()
+                                            binding.stickName.animate().alpha(0.95f).setDuration(50).start()
                                         } else {
-                                            stick_container?.animate()?.setStartDelay(0)?.setDuration(25)?.scaleX(1f)?.scaleY(1f)?.start()
-                                            stick_icon.animate().alpha(0.25f).setDuration(25).start()
-                                            stick_name.animate().alpha(0.35f).setDuration(25).start()
+                                            binding.stickContainer.animate().setStartDelay(0).setDuration(25).scaleX(1f).scaleY(1f).start()
+                                            binding.stickIcon.animate().alpha(0.25f).setDuration(25).start()
+                                            binding.stickName.animate().alpha(0.35f).setDuration(25).start()
                                         }
                                     }
                                 }
@@ -449,12 +465,14 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
 
                                     val coefficient = if (polarity) abs(value) else -abs(value)
 
-                                    if (guestEvent.axis == item.stick.xAxis) {
-                                        stick_container?.translationX = dipToPixels(16.5f) * coefficient
-                                        stick_container?.rotationY = 27f * coefficient
-                                    } else if (guestEvent.axis == item.stick.yAxis) {
-                                        stick_container?.translationY = dipToPixels(16.5f) * coefficient
-                                        stick_container?.rotationX = 27f * -coefficient
+                                    binding.stickContainer.apply {
+                                        if (guestEvent.axis == item.stick.xAxis) {
+                                            translationX = dipToPixels(16.5f) * coefficient
+                                            rotationY = 27f * coefficient
+                                        } else if (guestEvent.axis == item.stick.yAxis) {
+                                            translationY = dipToPixels(16.5f) * coefficient
+                                            rotationX = 27f * -coefficient
+                                        }
                                     }
                                 }
                             }
@@ -480,10 +498,10 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 inputId = axis
                                 axisPolarity = value >= 0
 
-                                stick_subtitle.text = getString(R.string.hold_confirm)
+                                binding.stickSubtitle.text = getString(R.string.hold_confirm)
 
                                 if (stage == DialogStage.Button)
-                                    stick_seekbar.visibility = View.VISIBLE
+                                    binding.stickSeekbar.visibility = View.VISIBLE
 
                                 animationStop = true
 
@@ -494,13 +512,13 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                         // If the currently active input is a valid axis
                         if (axes.contains(inputId)) {
                             val value = event.getAxisValue(inputId!!)
-                            val threshold = if (stage == DialogStage.Button) stick_seekbar.progress / 100f else 0.5f
+                            val threshold = if (stage == DialogStage.Button) binding.stickSeekbar.progress / 100f else 0.5f
 
                             when (stage) {
                                 // Update the secondary progress bar in [button_seekbar] based on the axis's value
                                 DialogStage.Button -> {
-                                    stick_container?.animate()?.setStartDelay(0)?.setDuration(25)?.scaleX(0.85f)?.scaleY(0.85f)?.alpha(1f)?.start()
-                                    stick_seekbar.secondaryProgress = (abs(value) * 100).toInt()
+                                    binding.stickContainer.animate().setStartDelay(0).setDuration(25).scaleX(0.85f).scaleY(0.85f).alpha(1f).start()
+                                    binding.stickSeekbar.secondaryProgress = (abs(value) * 100).toInt()
                                 }
 
 
@@ -508,16 +526,16 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 DialogStage.YPlus, DialogStage.YMinus -> {
                                     val coefficient = if (stage == DialogStage.YMinus) abs(value) else -abs(value)
 
-                                    stick_container?.translationY = dipToPixels(16.5f) * coefficient
-                                    stick_container?.rotationX = 27f * -coefficient
+                                    binding.stickContainer.translationY = dipToPixels(16.5f) * coefficient
+                                    binding.stickContainer.rotationX = 27f * -coefficient
                                 }
 
                                 // Update the the position of the stick in the X-axis based on the axis's value
                                 DialogStage.XPlus, DialogStage.XMinus -> {
                                     val coefficient = if (stage == DialogStage.XPlus) abs(value) else -abs(value)
 
-                                    stick_container?.translationX = dipToPixels(16.5f) * coefficient
-                                    stick_container?.rotationY = 27f * coefficient
+                                    binding.stickContainer.translationX = dipToPixels(16.5f) * coefficient
+                                    binding.stickContainer.rotationY = 27f * coefficient
                                 }
 
                                 else -> {
@@ -530,10 +548,10 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                     axisRunnable = Runnable {
                                         val hostEvent = MotionHostEvent(event.device.descriptor, inputId!!, axisPolarity)
 
-                                        var guestEvent = InputManager.eventMap[hostEvent]
+                                        var guestEvent = inputManager.eventMap[hostEvent]
 
                                         if (guestEvent is GuestEvent) {
-                                            InputManager.eventMap.remove(hostEvent)
+                                            inputManager.eventMap.remove(hostEvent)
 
                                             if (guestEvent is ButtonGuestEvent)
                                                 context.buttonMap[(guestEvent as ButtonGuestEvent).button]?.update()
@@ -550,9 +568,9 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                             else -> null
                                         }
 
-                                        InputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { InputManager.eventMap.remove(it) }
+                                        inputManager.eventMap.filterValues { it == guestEvent }.keys.forEach { inputManager.eventMap.remove(it) }
 
-                                        InputManager.eventMap[hostEvent] = guestEvent
+                                        inputManager.eventMap[hostEvent] = guestEvent
 
                                         ignoredEvents.add(Objects.hash(deviceId!!, inputId!!, axisPolarity))
 
@@ -560,14 +578,14 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
 
                                         item.update()
 
-                                        stick_next?.callOnClick()
+                                        binding.stickNext.callOnClick()
                                     }
 
                                     handler.postDelayed(axisRunnable!!, 1000)
                                 }
 
-                                stick_icon.animate().alpha(0.85f).setInterpolator(LinearInterpolator(context, null)).setDuration(1000).start()
-                                stick_name.animate().alpha(0.95f).setInterpolator(LinearInterpolator(context, null)).setDuration(1000).start()
+                                binding.stickIcon.animate().alpha(0.85f).setInterpolator(LinearInterpolator(context, null)).setDuration(1000).start()
+                                binding.stickName.animate().alpha(0.95f).setInterpolator(LinearInterpolator(context, null)).setDuration(1000).start()
                             } else {
                                 // If the axis value is below the threshold, remove [axisRunnable] from it being posted and animate the views accordingly
                                 if (axisRunnable != null) {
@@ -576,10 +594,10 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 }
 
                                 if (stage == DialogStage.Button)
-                                    stick_container?.animate()?.setStartDelay(0)?.setDuration(10)?.scaleX(1f)?.scaleY(1f)?.alpha(1f)?.start()
+                                    binding.stickContainer.animate().setStartDelay(0).setDuration(10).scaleX(1f).scaleY(1f).alpha(1f).start()
 
-                                stick_icon.animate().alpha(0.25f).setDuration(50).start()
-                                stick_name.animate().alpha(0.35f).setDuration(50).start()
+                                binding.stickIcon.animate().alpha(0.25f).setDuration(50).start()
+                                binding.stickName.animate().alpha(0.35f).setDuration(50).start()
                             }
                         }
                     }

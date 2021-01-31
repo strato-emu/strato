@@ -31,12 +31,14 @@ import emu.skyline.adapter.LayoutType
 import emu.skyline.data.AppItem
 import emu.skyline.data.DataItem
 import emu.skyline.data.HeaderItem
+import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.LoaderResult
 import emu.skyline.utils.Settings
-import kotlinx.android.synthetic.main.main_activity.*
 import kotlin.math.ceil
 
 class MainActivity : AppCompatActivity() {
+    private val binding by lazy { MainActivityBinding.inflate(layoutInflater) }
+
     private val settings by lazy { Settings(this) }
 
     private val adapter = GenericAdapter()
@@ -60,24 +62,23 @@ class MainActivity : AppCompatActivity() {
         )
 
         super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.main_activity)
+        setContentView(binding.root)
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
         setupAppList()
 
-        swipe_refresh_layout.apply {
+        binding.swipeRefreshLayout.apply {
             setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.BLACK) })
             setColorSchemeColors(obtainStyledAttributes(intArrayOf(R.attr.colorAccent)).use { it.getColor(0, Color.BLACK) })
-            post { setDistanceToTriggerSync(swipe_refresh_layout.height / 3) }
+            post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
             setOnRefreshListener { loadRoms(false) }
         }
 
-        viewModel.state.observe(owner = this, onChanged = ::handleState)
+        viewModel.stateData.observe(owner = this, onChanged = ::handleState)
         loadRoms(!settings.refreshRequired)
 
-        search_bar.apply {
+        binding.searchBar.apply {
             setLogIconListener { startActivity(Intent(context, LogActivity::class.java)) }
             setSettingsIconListener { startActivityForResult(Intent(context, SettingsActivity::class.java), 3) }
             setRefreshIconListener { loadRoms(false) }
@@ -90,7 +91,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->
-            search_bar.refreshIconVisible = !isInTouchMode
+            binding.searchBar.refreshIconVisible = !isInTouchMode
         }
     }
 
@@ -118,11 +119,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setAppListDecoration() {
-        while (app_list.itemDecorationCount > 0) app_list.removeItemDecorationAt(0)
-        when (layoutType) {
-            LayoutType.List -> app_list.addItemDecoration(DividerItemDecoration(this, RecyclerView.VERTICAL))
+        binding.appList.apply {
+            while (itemDecorationCount > 0) removeItemDecorationAt(0)
+            when (layoutType) {
+                LayoutType.List -> addItemDecoration(DividerItemDecoration(context, RecyclerView.VERTICAL))
 
-            LayoutType.Grid, LayoutType.GridCompact -> app_list.addItemDecoration(GridSpacingItemDecoration())
+                LayoutType.Grid, LayoutType.GridCompact -> addItemDecoration(GridSpacingItemDecoration())
+            }
         }
     }
 
@@ -132,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     private inner class CustomLayoutManager(gridSpan : Int) : GridLayoutManager(this, gridSpan) {
         init {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position : Int) = if (layoutType == LayoutType.List || adapter.currentItems[position] is HeaderViewItem) gridSpan else 1
+                override fun getSpanSize(position : Int) = if (layoutType == LayoutType.List || adapter.currentItems[position].fullSpan) gridSpan else 1
             }
         }
 
@@ -141,23 +144,24 @@ class MainActivity : AppCompatActivity() {
             when (focusDirection) {
                 View.FOCUS_DOWN -> {
                     findContainingItemView(focused)?.let { focusedChild ->
-                        val current = app_list.indexOfChild(focusedChild)
+                        val current = binding.appList.indexOfChild(focusedChild)
                         val currentSpanIndex = (focusedChild.layoutParams as LayoutParams).spanIndex
-                        for (i in current + 1 until app_list.size) {
+                        for (i in current + 1 until binding.appList.size) {
                             val candidate = getChildAt(i)!!
                             // Return candidate when span index matches
                             if (currentSpanIndex == (candidate.layoutParams as LayoutParams).spanIndex) return candidate
                         }
                         if (nextFocus == null) {
-                            app_bar_layout.setExpanded(false) // End of list, hide app bar, so bottom row is fully visible
-                            app_list.smoothScrollToPosition(adapter.itemCount)
+                            binding.appBarLayout.setExpanded(false) // End of list, hide app bar, so bottom row is fully visible
+                            binding.appList.smoothScrollToPosition(adapter.itemCount)
                         }
                     }
                 }
+
                 View.FOCUS_UP -> {
                     if (nextFocus?.isFocusable != true) {
-                        search_bar.requestFocus()
-                        app_bar_layout.setExpanded(true)
+                        binding.searchBar.requestFocus()
+                        binding.appBarLayout.setExpanded(true)
                         return null
                     }
                 }
@@ -167,13 +171,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAppList() {
-        app_list.adapter = adapter
+        binding.appList.adapter = adapter
 
         val itemWidth = 225
         val metrics = resources.displayMetrics
         val gridSpan = ceil((metrics.widthPixels / metrics.density) / itemWidth).toInt()
 
-        app_list.layoutManager = CustomLayoutManager(gridSpan)
+        binding.appList.layoutManager = CustomLayoutManager(gridSpan)
         setAppListDecoration()
 
         if (settings.searchLocation.isEmpty()) {
@@ -186,18 +190,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleState(state : MainState) = when (state) {
         MainState.Loading -> {
-            search_bar.animateRefreshIcon()
-            swipe_refresh_layout.isRefreshing = true
+            binding.searchBar.animateRefreshIcon()
+            binding.swipeRefreshLayout.isRefreshing = true
         }
         is MainState.Loaded -> {
-            swipe_refresh_layout.isRefreshing = false
+            binding.swipeRefreshLayout.isRefreshing = false
             populateAdapter(state.items)
         }
         is MainState.Error -> Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${state.ex.localizedMessage}", Snackbar.LENGTH_SHORT).show()
     }
 
     private fun selectStartGame(appItem : AppItem) {
-        if (swipe_refresh_layout.isRefreshing) return
+        if (binding.swipeRefreshLayout.isRefreshing) return
 
         if (settings.selectAction)
             AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
@@ -206,7 +210,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectShowGameDialog(appItem : AppItem) {
-        if (swipe_refresh_layout.isRefreshing) return
+        if (binding.swipeRefreshLayout.isRefreshing) return
 
         AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
     }
@@ -281,7 +285,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        search_bar.apply {
+        binding.searchBar.apply {
             if (hasFocus() && text.isNotEmpty()) {
                 text = ""
                 clearFocus()

@@ -12,23 +12,27 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.controller.*
+import emu.skyline.databinding.ControllerActivityBinding
 import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
 import emu.skyline.utils.Settings
-import kotlinx.android.synthetic.main.controller_activity.*
-import kotlinx.android.synthetic.main.titlebar.*
+import javax.inject.Inject
 
 /**
  * This activity is used to change the settings for a specific controller
  */
+@AndroidEntryPoint
 class ControllerActivity : AppCompatActivity() {
+    private val binding by lazy { ControllerActivityBinding.inflate(layoutInflater) }
+
     /**
      * The index of the controller this activity manages
      */
@@ -51,14 +55,17 @@ class ControllerActivity : AppCompatActivity() {
 
     private val settings by lazy { Settings(this) }
 
+    @Inject
+    lateinit var inputManager : InputManager
+
     /**
      * This function updates the [adapter] based on information from [InputManager]
      */
     private fun update() {
-        val items = mutableListOf<GenericListItem>()
+        val items = mutableListOf<GenericListItem<*>>()
 
         try {
-            val controller = InputManager.controllers[id]!!
+            val controller = inputManager.controllers[id]!!
 
             items.add(ControllerTypeViewItem(controller.type, onControllerTypeClick))
 
@@ -166,20 +173,20 @@ class ControllerActivity : AppCompatActivity() {
 
         title = "${getString(R.string.config_controller)} #${id + 1}"
 
-        setContentView(R.layout.controller_activity)
+        setContentView(binding.root)
 
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val layoutManager = LinearLayoutManager(this)
-        controller_list.layoutManager = layoutManager
-        controller_list.adapter = adapter
+        binding.controllerList.layoutManager = layoutManager
+        binding.controllerList.adapter = adapter
 
-        controller_list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+        binding.controllerList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
                 super.onScrolled(recyclerView, dx, dy)
 
-                if (layoutManager.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) app_bar_layout.setExpanded(false)
+                if (layoutManager.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) binding.titlebar.appBarLayout.setExpanded(false)
             }
         })
 
@@ -190,12 +197,12 @@ class ControllerActivity : AppCompatActivity() {
      * This causes the input file to be synced when the activity has been paused
      */
     override fun onPause() {
-        InputManager.syncFile()
+        inputManager.syncFile()
         super.onPause()
     }
 
     private val onControllerTypeClick = { item : ControllerTypeViewItem, _ : Int ->
-        val controller = InputManager.controllers[id]!!
+        val controller = inputManager.controllers[id]!!
 
         val types = ControllerType.values().apply { if (id != 0) filter { !it.firstController } }
         val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
@@ -206,11 +213,11 @@ class ControllerActivity : AppCompatActivity() {
                     val selectedType = types[typeIndex]
                     if (controller.type != selectedType) {
                         if (controller is JoyConLeftController)
-                            controller.partnerId?.let { (InputManager.controllers[it] as JoyConRightController).partnerId = null }
+                            controller.partnerId?.let { (inputManager.controllers[it] as JoyConRightController).partnerId = null }
                         else if (controller is JoyConRightController)
-                            controller.partnerId?.let { (InputManager.controllers[it] as JoyConLeftController).partnerId = null }
+                            controller.partnerId?.let { (inputManager.controllers[it] as JoyConLeftController).partnerId = null }
 
-                        InputManager.controllers[id] = when (selectedType) {
+                        inputManager.controllers[id] = when (selectedType) {
                             ControllerType.None -> Controller(id, ControllerType.None)
                             ControllerType.HandheldProController -> HandheldController(id)
                             ControllerType.ProController -> ProController(id)
@@ -230,9 +237,9 @@ class ControllerActivity : AppCompatActivity() {
     private val onControllerGeneralClick = { item : ControllerGeneralViewItem, _ : Int ->
         when (item.type) {
             GeneralType.PartnerJoyCon -> {
-                val controller = InputManager.controllers[id] as JoyConLeftController
+                val controller = inputManager.controllers[id] as JoyConLeftController
 
-                val rJoyCons = InputManager.controllers.values.filter { it.type == ControllerType.JoyConRight }
+                val rJoyCons = inputManager.controllers.values.filter { it.type == ControllerType.JoyConRight }
                 val rJoyConNames = (listOf(getString(R.string.none)) + rJoyCons.map { "${getString(R.string.controller)} #${it.id + 1}" }).toTypedArray()
 
                 val partnerNameIndex = controller.partnerId?.let { partnerId ->
@@ -242,12 +249,12 @@ class ControllerActivity : AppCompatActivity() {
                 MaterialAlertDialogBuilder(this)
                         .setTitle(item.content)
                         .setSingleChoiceItems(rJoyConNames, partnerNameIndex) { dialog, index ->
-                            (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
+                            (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
 
                             controller.partnerId = if (index == 0) null else rJoyCons[index - 1].id
 
                             if (controller.partnerId != null)
-                                (InputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
+                                (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
 
                             item.update()
 

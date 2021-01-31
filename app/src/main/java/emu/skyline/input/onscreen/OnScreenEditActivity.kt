@@ -16,17 +16,19 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import emu.skyline.R
+import emu.skyline.databinding.OnScreenEditActivityBinding
 import emu.skyline.utils.Settings
-import kotlinx.android.synthetic.main.on_screen_edit_activity.*
 
 class OnScreenEditActivity : AppCompatActivity() {
+    private val binding by lazy { OnScreenEditActivityBinding.inflate(layoutInflater) }
+
     private var fullEditVisible = true
     private var editMode = false
 
     private val closeAction : () -> Unit = {
         if (editMode) {
             toggleFabVisibility(true)
-            on_screen_controller_view.setEditMode(false)
+            binding.onScreenControllerView.setEditMode(false)
             editMode = false
         } else {
             fullEditVisible = !fullEditVisible
@@ -45,12 +47,12 @@ class OnScreenEditActivity : AppCompatActivity() {
 
     private val editAction = {
         editMode = true
-        on_screen_controller_view.setEditMode(true)
+        binding.onScreenControllerView.setEditMode(true)
         toggleFabVisibility(false)
     }
 
     private val toggleAction : () -> Unit = {
-        val buttonProps = on_screen_controller_view.getButtonProps()
+        val buttonProps = binding.onScreenControllerView.getButtonProps()
         val checkArray = buttonProps.map { it.second }.toBooleanArray()
 
         MaterialAlertDialogBuilder(this)
@@ -62,7 +64,7 @@ class OnScreenEditActivity : AppCompatActivity() {
                 }.setPositiveButton(R.string.confirm) { _, _ ->
                     buttonProps.forEachIndexed { index, pair ->
                         if (checkArray[index] != pair.second)
-                            on_screen_controller_view.setButtonEnabled(pair.first, checkArray[index])
+                            binding.onScreenControllerView.setButtonEnabled(pair.first, checkArray[index])
                     }
                 }.setNegativeButton(R.string.cancel, null)
                 .setOnDismissListener { fullScreen() }
@@ -70,11 +72,11 @@ class OnScreenEditActivity : AppCompatActivity() {
     }
 
     private val actions : List<Pair<Int, () -> Unit>> = listOf(
-            Pair(R.drawable.ic_restore, { on_screen_controller_view.resetControls() }),
+            Pair(R.drawable.ic_restore, { binding.onScreenControllerView.resetControls() }),
             Pair(R.drawable.ic_toggle, toggleAction),
             Pair(R.drawable.ic_edit, editAction),
-            Pair(R.drawable.ic_zoom_out, { on_screen_controller_view.decreaseScale() }),
-            Pair(R.drawable.ic_zoom_in, { on_screen_controller_view.increaseScale() }),
+            Pair(R.drawable.ic_zoom_out, { binding.onScreenControllerView.decreaseScale() }),
+            Pair(R.drawable.ic_zoom_in, { binding.onScreenControllerView.increaseScale() }),
             Pair(R.drawable.ic_close, closeAction)
     )
 
@@ -82,11 +84,11 @@ class OnScreenEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.on_screen_edit_activity)
-        on_screen_controller_view.recenterSticks = Settings(this).onScreenControlRecenterSticks
+        setContentView(binding.root)
+        binding.onScreenControllerView.recenterSticks = Settings(this).onScreenControlRecenterSticks
 
         actions.forEach { pair ->
-            fab_parent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, fab_parent, false).apply {
+            binding.fabParent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, binding.fabParent, false).apply {
                 (this as FloatingActionButton).setImageDrawable(ContextCompat.getDrawable(context, pair.first))
                 setOnClickListener { pair.second.invoke() }
                 fabMapping[pair.first] = this

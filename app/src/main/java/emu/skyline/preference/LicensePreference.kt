@@ -16,63 +16,50 @@ import emu.skyline.R
 /**
  * This preference is used to show licenses and the source of a library
  */
-class LicensePreference : Preference {
+class LicensePreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : Preference(context, attrs, defStyleAttr) {
     /**
      * The [FragmentManager] is used to show the [LicenseDialog] fragment
      */
-    private val fragmentManager : FragmentManager
+    private val fragmentManager = (context as AppCompatActivity).supportFragmentManager
 
-    /**
-     * The tag used by this preference when launching a corresponding fragment
-     */
-    private val mDialogFragmentTag = "LicensePreference"
+    companion object {
+        private const val LIBRARY_URL_ARG = "libraryUrl"
+        private const val LIBRARY_LICENSE_ARG = "libraryLicense"
+
+        private val DIALOG_TAG = LicensePreference::class.java.simpleName
+    }
 
     /**
      * The URL of the library
      */
-    private var libraryUrl : String? = null
+    private lateinit var libraryUrl : String
 
     /**
      * The contents of the license of this library
      */
-    private var libraryLicense : Int? = null
+    private var libraryLicense = 0
 
-    /**
-     * The constructor assigns the [fragmentManager] from the activity and finds [libraryUrl] and [libraryLicense] in the attributes
-     */
-    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int, defStyleRes : Int) : super(context, attrs, defStyleAttr, defStyleRes) {
-        fragmentManager = (context as AppCompatActivity).supportFragmentManager
-
+    init {
         for (i in 0 until attrs!!.attributeCount) {
-            val attr = attrs.getAttributeName(i)
+            when (attrs.getAttributeName(i)) {
+                LIBRARY_URL_ARG -> libraryUrl = attrs.getAttributeValue(i)
 
-            if (attr.equals("libraryUrl", ignoreCase = true))
-                libraryUrl = attrs.getAttributeValue(i)
-            else if (attr.equals("libraryLicense", ignoreCase = true))
-                libraryLicense = attrs.getAttributeValue(i).substring(1).toInt()
+                LIBRARY_LICENSE_ARG -> libraryLicense = attrs.getAttributeValue(i).substring(1).toInt()
+            }
         }
     }
-
-    constructor(context : Context?, attrs : AttributeSet?, defStyleAttr : Int) : this(context, attrs, defStyleAttr, 0)
-
-    constructor(context : Context?, attrs : AttributeSet?) : this(context, attrs, R.attr.dialogPreferenceStyle)
-
-    constructor(context : Context?) : this(context, null)
 
     /**
      * The [LicenseDialog] fragment is shown using [fragmentManager] on click with [libraryUrl] and [libraryLicense] passed as arguments
      */
     override fun onClick() {
-        if (fragmentManager.findFragmentByTag(mDialogFragmentTag) != null)
-            return
-
-        val dialog = LicenseDialog()
-
-        val bundle = Bundle(2)
-        bundle.putString("libraryUrl", libraryUrl!!)
-        bundle.putInt("libraryLicense", libraryLicense!!)
-        dialog.arguments = bundle
-
-        dialog.show(fragmentManager, mDialogFragmentTag)
+        fragmentManager.findFragmentByTag(DIALOG_TAG) ?: run {
+            LicenseDialog().apply {
+                arguments = Bundle().apply {
+                    putString(LIBRARY_URL_ARG, libraryUrl)
+                    putInt(LIBRARY_LICENSE_ARG, libraryLicense)
+                }
+            }.show(fragmentManager, DIALOG_TAG)
+        }
     }
 }

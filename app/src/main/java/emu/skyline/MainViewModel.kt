@@ -31,8 +31,11 @@ class MainViewModel : ViewModel() {
         private val TAG = MainViewModel::class.java.simpleName
     }
 
-    private val mutableState = MutableLiveData<MainState>()
-    val state : LiveData<MainState> = mutableState
+    private var state
+        get() = _stateData.value
+        set(value) = _stateData.postValue(value)
+    private val _stateData = MutableLiveData<MainState>()
+    val stateData : LiveData<MainState> = _stateData
 
     var searchBarAnimated = false
 
@@ -66,16 +69,15 @@ class MainViewModel : ViewModel() {
      * @param loadFromFile If this is false then trying to load cached adapter data is skipped entirely
      */
     fun loadRoms(context : Context, loadFromFile : Boolean, searchLocation : Uri) {
-        if (mutableState.value == MainState.Loading) return
-
-        mutableState.postValue(MainState.Loading)
+        if (state == MainState.Loading) return
+        state = MainState.Loading
 
         val romsFile = File(context.filesDir.canonicalPath + "/roms.bin")
 
         viewModelScope.launch(Dispatchers.IO) {
             if (loadFromFile) {
                 try {
-                    mutableState.postValue(MainState.Loaded(loadSerializedList(romsFile)))
+                    state = MainState.Loaded(loadSerializedList(romsFile))
                     return@launch
                 } catch (e : Exception) {
                     Log.w(TAG, "Ran into exception while loading: ${e.message}")
@@ -98,9 +100,9 @@ class MainViewModel : ViewModel() {
                     Log.w(TAG, "Ran into exception while saving: ${e.message}")
                 }
 
-                mutableState.postValue(MainState.Loaded(romElements))
+                state = MainState.Loaded(romElements)
             } catch (e : Exception) {
-                mutableState.postValue(MainState.Error(e))
+                state = MainState.Error(e)
             }
         }
     }

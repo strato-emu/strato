@@ -5,39 +5,41 @@
 
 package emu.skyline.adapter
 
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.Filterable
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewbinding.ViewBinding
 import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.JaroWinkler
 import java.util.*
 
 /**
- * Can handle any view types with [GenericListItem] implemented, [GenericListItem] are differentiated by the return value of [GenericListItem.getLayoutFactory]
+ * Can handle any view types with [GenericListItem] implemented, [GenericListItem] are differentiated by the return value of [GenericListItem.getViewBindingFactory]
  */
-class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
+class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), Filterable {
     companion object {
-        private val DIFFER = object : DiffUtil.ItemCallback<GenericListItem>() {
-            override fun areItemsTheSame(oldItem : GenericListItem, newItem : GenericListItem) = oldItem.areItemsTheSame(newItem)
+        private val DIFFER = object : DiffUtil.ItemCallback<GenericListItem<ViewBinding>>() {
+            override fun areItemsTheSame(oldItem : GenericListItem<ViewBinding>, newItem : GenericListItem<ViewBinding>) = oldItem.areItemsTheSame(newItem)
 
-            override fun areContentsTheSame(oldItem : GenericListItem, newItem : GenericListItem) = oldItem.areContentsTheSame(newItem)
+            override fun areContentsTheSame(oldItem : GenericListItem<ViewBinding>, newItem : GenericListItem<ViewBinding>) = oldItem.areContentsTheSame(newItem)
         }
     }
 
     private val asyncListDiffer = AsyncListDiffer(this, DIFFER)
-    private val allItems = mutableListOf<GenericListItem>()
-    val currentItems : List<GenericListItem> get() = asyncListDiffer.currentList
+    private val allItems = mutableListOf<GenericListItem<out ViewBinding>>()
+    val currentItems : List<GenericListItem<in ViewBinding>> get() = asyncListDiffer.currentList
 
     var currentSearchTerm = ""
 
-    private val viewTypesMapping = mutableMapOf<GenericLayoutFactory, Int>()
+    private val viewTypesMapping = mutableMapOf<ViewBindingFactory, Int>()
 
-    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) = GenericViewHolder(viewTypesMapping.filterValues { it == viewType }.keys.single().createLayout(parent))
+    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) = GenericViewHolder(viewTypesMapping.filterValues { it == viewType }.keys.single().createBinding(parent))
 
-    override fun onBindViewHolder(holder : GenericViewHolder, position : Int) {
+    override fun onBindViewHolder(holder : GenericViewHolder<ViewBinding>, position : Int) {
         currentItems[position].apply {
             adapter = this@GenericAdapter
             bind(holder, position)
@@ -46,9 +48,9 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
 
     override fun getItemCount() = currentItems.size
 
-    override fun getItemViewType(position : Int) = viewTypesMapping.getOrPut(currentItems[position].getLayoutFactory(), { viewTypesMapping.size })
+    override fun getItemViewType(position : Int) = viewTypesMapping.getOrPut(currentItems[position].getViewBindingFactory()) { viewTypesMapping.size }
 
-    fun setItems(items : List<GenericListItem>) {
+    fun setItems(items : List<GenericListItem<*>>) {
         allItems.clear()
         allItems.addAll(items)
         filter.filter(currentSearchTerm)
@@ -68,7 +70,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
          */
         private val cos = Cosine()
 
-        inner class ScoredItem(val score : Double, val item : GenericListItem)
+        inner class ScoredItem(val score : Double, val item : GenericListItem<*>)
 
         /**
          * This sorts the items in [allItems] in relation to how similar they are to [currentSearchTerm]
@@ -93,7 +95,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
                 results.values = allItems.toMutableList()
                 results.count = allItems.size
             } else {
-                val filterData = mutableListOf<GenericListItem>()
+                val filterData = mutableListOf<GenericListItem<*>>()
 
                 val topResults = extractSorted()
                 val avgScore = topResults.sumByDouble { it.score } / topResults.size
@@ -112,7 +114,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder>(), Filterable {
          */
         override fun publishResults(charSequence : CharSequence, results : FilterResults) {
             @Suppress("UNCHECKED_CAST")
-            asyncListDiffer.submitList(results.values as List<GenericListItem>)
+            asyncListDiffer.submitList(results.values as List<GenericListItem<ViewBinding>>)
         }
     }
 }

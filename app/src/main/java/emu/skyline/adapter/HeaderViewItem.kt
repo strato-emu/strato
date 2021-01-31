@@ -5,24 +5,23 @@
 
 package emu.skyline.adapter
 
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import emu.skyline.R
-import kotlinx.android.synthetic.main.section_item.*
+import emu.skyline.databinding.SectionItemBinding
 
-private object HeaderLayoutFactory : GenericLayoutFactory {
-    override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(R.layout.section_item, parent, false)
+object HeaderBindingFactory : ViewBindingFactory {
+    override fun createBinding(parent : ViewGroup) = SectionItemBinding.inflate(parent.inflater(), parent, false)
 }
 
-class HeaderViewItem(private val text : String) : GenericListItem() {
-    override fun getLayoutFactory() : GenericLayoutFactory = HeaderLayoutFactory
+class HeaderViewItem(private val text : String) : GenericListItem<SectionItemBinding>() {
+    override fun getViewBindingFactory() = HeaderBindingFactory
 
-    override fun bind(holder : GenericViewHolder, position : Int) {
-        holder.text_title.text = text
+    override fun bind(holder : GenericViewHolder<SectionItemBinding>, position : Int) {
+        holder.binding.textTitle.text = text
     }
 
     override fun toString() = ""
 
-    override fun areItemsTheSame(other : GenericListItem) = other is HeaderViewItem && text == other.text
+    override fun areItemsTheSame(other : GenericListItem<SectionItemBinding>) = other is HeaderViewItem && text == other.text
+
+    override val fullSpan = true
 }

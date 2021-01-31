@@ -8,13 +8,14 @@ package emu.skyline.adapter.controller
 import emu.skyline.R
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
+import emu.skyline.databinding.ControllerItemBinding
 import emu.skyline.input.ControllerType
 
 /**
  * This item is used to display the [type] of the currently active controller
  */
 class ControllerTypeViewItem(private val type : ControllerType, private val onClick : (item : ControllerTypeViewItem, position : Int) -> Unit) : ControllerViewItem() {
-    override fun bind(holder : GenericViewHolder, position : Int) {
+    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         val context = holder.itemView.context
 
         content = context.getString(R.string.controller_type)
@@ -25,7 +26,7 @@ class ControllerTypeViewItem(private val type : ControllerType, private val onCl
         holder.itemView.setOnClickListener { onClick.invoke(this, position) }
     }
 
-    override fun areItemsTheSame(other : GenericListItem) = other is ControllerTypeViewItem
+    override fun areItemsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerTypeViewItem
 
-    override fun areContentsTheSame(other : GenericListItem) = other is ControllerTypeViewItem && type == other.type
+    override fun areContentsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerTypeViewItem && type == other.type
 }

@@ -5,33 +5,38 @@
 
 package emu.skyline.adapter
 
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.extensions.LayoutContainer
+import androidx.viewbinding.ViewBinding
 
-class GenericViewHolder(override val containerView : View) : RecyclerView.ViewHolder(containerView), LayoutContainer
+class GenericViewHolder<out V : ViewBinding>(val binding : V) : RecyclerView.ViewHolder(binding.root)
 
-interface GenericLayoutFactory {
-    fun createLayout(parent : ViewGroup) : View
+fun View.inflater() = LayoutInflater.from(context)!!
+
+interface ViewBindingFactory {
+    fun createBinding(parent : ViewGroup) : ViewBinding
 }
 
-abstract class GenericListItem {
+abstract class GenericListItem<V : ViewBinding> {
     var adapter : GenericAdapter? = null
 
-    abstract fun getLayoutFactory() : GenericLayoutFactory
+    abstract fun getViewBindingFactory() : ViewBindingFactory
 
-    abstract fun bind(holder : GenericViewHolder, position : Int)
+    abstract fun bind(holder : GenericViewHolder<V>, position : Int)
 
     /**
      * Used for filtering
      */
     open fun key() : String = ""
 
-    open fun areItemsTheSame(other : GenericListItem) = this == other
+    open fun areItemsTheSame(other : GenericListItem<V>) = this == other
 
     /**
      * Will only be called when [areItemsTheSame] returns true, thus returning true by default
      */
-    open fun areContentsTheSame(other : GenericListItem) = true
+    open fun areContentsTheSame(other : GenericListItem<V>) = true
+
+    open val fullSpan : Boolean = false
 }

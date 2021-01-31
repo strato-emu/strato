@@ -7,25 +7,51 @@ package emu.skyline.adapter
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
-import emu.skyline.R
-import kotlinx.android.synthetic.main.log_item.*
+import androidx.viewbinding.ViewBinding
+import emu.skyline.databinding.LogItemBinding
+import emu.skyline.databinding.LogItemCompactBinding
 
-private data class LogLayoutFactory(private val compact : Boolean) : GenericLayoutFactory {
-    override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(if (compact) R.layout.log_item_compact else R.layout.log_item, parent, false)
+data class LogBindingFactory(private val compact : Boolean) : ViewBindingFactory {
+    override fun createBinding(parent : ViewGroup) = if (compact) LogCompactBinding(parent) else LogBinding(parent)
 }
 
-data class LogViewItem(private val compact : Boolean, private val message : String, private val level : String) : GenericListItem() {
-    override fun getLayoutFactory() : GenericLayoutFactory = LogLayoutFactory(compact)
+interface ILogBinding : ViewBinding {
+    val binding : ViewBinding
 
-    override fun bind(holder : GenericViewHolder, position : Int) {
-        holder.text_title.text = message
-        holder.text_subtitle?.text = level
+    override fun getRoot() = binding.root
 
-        holder.itemView.setOnClickListener {
+    val textTitle : TextView
+
+    val textSubTitle : TextView?
+}
+
+class LogCompactBinding(parent : ViewGroup) : ILogBinding {
+    override val binding = LogItemCompactBinding.inflate(parent.inflater(), parent, false)
+
+    override val textTitle = binding.textTitle
+
+    override val textSubTitle : Nothing? = null
+}
+
+class LogBinding(parent : ViewGroup) : ILogBinding {
+    override val binding = LogItemBinding.inflate(parent.inflater(), parent, false)
+
+    override val textTitle = binding.textTitle
+
+    override val textSubTitle = binding.textSubtitle
+}
+
+data class LogViewItem(private val compact : Boolean, private val message : String, private val level : String) : GenericListItem<ILogBinding>() {
+    override fun getViewBindingFactory() = LogBindingFactory(compact)
+
+    override fun bind(holder : GenericViewHolder<ILogBinding>, position : Int) {
+        holder.binding.textTitle.text = message
+        holder.binding.textSubTitle?.text = level
+
+        holder.binding.root.setOnClickListener {
             it.context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Log Message", "$message ($level)"))
             Toast.makeText(it.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
         }

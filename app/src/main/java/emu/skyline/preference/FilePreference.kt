@@ -16,7 +16,6 @@ import com.google.android.material.snackbar.Snackbar
 import emu.skyline.KeyReader
 import emu.skyline.R
 import emu.skyline.SettingsActivity
-import kotlinx.android.synthetic.main.settings_activity.*
 
 /**
  * Launches [FileActivity] and process the selected file for key import
@@ -27,14 +26,14 @@ class FilePreference @JvmOverloads constructor(context : Context?, attrs : Attri
     override fun onClick() = (context as Activity).startActivityForResult(Intent(context, FileActivity::class.java).apply { putExtra(DocumentActivity.KEY_NAME, key) }, requestCode)
 
     override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-        if (this.requestCode == requestCode) {
+        if (this.requestCode == requestCode && requestCode == Activity.RESULT_OK) {
             if (key == "prod_keys" || key == "title_keys") {
                 val success = KeyReader.import(
                         context,
                         Uri.parse(PreferenceManager.getDefaultSharedPreferences(context).getString(key, "")),
                         KeyReader.KeyType.parse(key)
                 )
-                Snackbar.make((context as SettingsActivity).settings, if (success) R.string.import_keys_success else R.string.import_keys_failed, Snackbar.LENGTH_LONG).show()
+                Snackbar.make((context as SettingsActivity).binding.root, if (success) R.string.import_keys_success else R.string.import_keys_failed, Snackbar.LENGTH_LONG).show()
             }
         }
     }

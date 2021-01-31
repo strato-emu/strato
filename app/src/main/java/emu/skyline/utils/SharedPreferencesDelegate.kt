@@ -16,7 +16,7 @@ inline fun <reified T> sharedPreferences(context : Context, default : T, prefix 
 class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<T>, private val default : T, private val prefix : String, prefName : String?) : ReadWriteProperty<Any, T> {
     private val prefs = prefName?.let { context.getSharedPreferences(prefName, Context.MODE_PRIVATE) } ?: PreferenceManager.getDefaultSharedPreferences(context)
 
-    override fun setValue(thisRef : Any, property : KProperty<*>, value : T) = (prefix + pascalToSnakeCase(property.name)).let { keyName ->
+    override fun setValue(thisRef : Any, property : KProperty<*>, value : T) = (prefix + camelToSnakeCase(property.name)).let { keyName ->
         prefs.edit().apply {
             when (clazz) {
                 Float::class.java, java.lang.Float::class.java -> putFloat(keyName, value as Float)
@@ -27,7 +27,7 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
         }.apply()
     }
 
-    override fun getValue(thisRef : Any, property : KProperty<*>) : T = (prefix + pascalToSnakeCase(property.name)).let { keyName ->
+    override fun getValue(thisRef : Any, property : KProperty<*>) : T = (prefix + camelToSnakeCase(property.name)).let { keyName ->
         prefs.let {
             @Suppress("IMPLICIT_CAST_TO_ANY")
             when (clazz) {
@@ -39,7 +39,7 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
         } as T
     }
 
-    private fun pascalToSnakeCase(text : String) = StringBuilder().apply {
+    private fun camelToSnakeCase(text : String) = StringBuilder().apply {
         text.forEachIndexed { index, c ->
             if (index != 0 && c.isUpperCase()) append('_')
             append(c.toLowerCase())

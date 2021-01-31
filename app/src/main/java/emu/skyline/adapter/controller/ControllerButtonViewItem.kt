@@ -7,25 +7,26 @@ package emu.skyline.adapter.controller
 
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
+import emu.skyline.databinding.ControllerItemBinding
+import emu.skyline.di.InputManagerProviderEntryPoint
 import emu.skyline.input.ButtonGuestEvent
 import emu.skyline.input.ButtonId
-import emu.skyline.input.InputManager
 
 /**
  * This item is used to display a particular [button] mapping for the controller
  */
 class ControllerButtonViewItem(private val controllerId : Int, val button : ButtonId, private val onClick : (item : ControllerButtonViewItem, position : Int) -> Unit) : ControllerViewItem() {
-    override fun bind(holder : GenericViewHolder, position : Int) {
+    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         content = button.long?.let { holder.itemView.context.getString(it) } ?: button.toString()
         val guestEvent = ButtonGuestEvent(controllerId, button)
-        subContent = InputManager.eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: ""
+        subContent = InputManagerProviderEntryPoint.getInputManager(holder.binding.root.context).eventMap.filter { it.value is ButtonGuestEvent && it.value == guestEvent }.keys.firstOrNull()?.toString() ?: ""
 
         super.bind(holder, position)
 
-        holder.itemView.setOnClickListener { onClick.invoke(this, position) }
+        holder.binding.root.setOnClickListener { onClick.invoke(this, position) }
     }
 
-    override fun areItemsTheSame(other : GenericListItem) = other is ControllerButtonViewItem && controllerId == other.controllerId
+    override fun areItemsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerButtonViewItem && controllerId == other.controllerId
 
-    override fun areContentsTheSame(other : GenericListItem) = other is ControllerButtonViewItem && button == other.button
+    override fun areContentsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerButtonViewItem && button == other.button
 }

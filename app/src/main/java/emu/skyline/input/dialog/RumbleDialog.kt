@@ -14,22 +14,30 @@ import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerGeneralViewItem
+import emu.skyline.databinding.RumbleDialogBinding
 import emu.skyline.input.ControllerActivity
 import emu.skyline.input.InputManager
-import kotlinx.android.synthetic.main.rumble_dialog.*
+import javax.inject.Inject
 
 /**
  * This dialog is used to set a device to pass on any rumble/force feedback data onto
  *
  * @param item This is used to hold the [ControllerGeneralViewItem] between instances
  */
+@AndroidEntryPoint
 class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewItem? = null) : BottomSheetDialogFragment() {
+    private lateinit var binding : RumbleDialogBinding
+
+    @Inject
+    lateinit var inputManager : InputManager
+
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? = inflater.inflate(R.layout.rumble_dialog, container)
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = RumbleDialogBinding.inflate(inflater).also { binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible
@@ -49,10 +57,10 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
-            val controller = InputManager.controllers[context.id]!!
+            val controller = inputManager.controllers[context.id]!!
 
             // Set up the reset button to clear out [Controller.rumbleDevice] when pressed
-            rumble_reset.setOnClickListener {
+            binding.rumbleReset.setOnClickListener {
                 controller.rumbleDeviceDescriptor = null
                 controller.rumbleDeviceName = null
                 item.update()
@@ -61,10 +69,10 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
             }
 
             if (context.id == 0) {
-                rumble_builtin.visibility = View.VISIBLE
+                binding.rumbleBuiltin.visibility = View.VISIBLE
                 if (!(context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).hasVibrator())
-                    rumble_builtin.isEnabled = false
-                rumble_builtin.setOnClickListener {
+                    binding.rumbleBuiltin.isEnabled = false
+                binding.rumbleBuiltin.setOnClickListener {
                     controller.rumbleDeviceDescriptor = "builtin"
                     controller.rumbleDeviceName = getString(R.string.builtin_vibrator)
                     item.update()
@@ -74,8 +82,8 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
             }
 
             // Ensure that layout animations are proper
-            rumble_layout.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
-            rumble_controller.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
+            binding.rumbleLayout.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
+            binding.rumbleController.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
 
             var deviceId : Int? = null // The ID of the currently selected device
 
@@ -88,20 +96,20 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
                         when {
                             // If the device doesn't match the currently selected device then update the UI accordingly and set [deviceId] to the current device
                             deviceId != event.deviceId -> {
-                                rumble_controller_name.text = event.device.name
+                                binding.rumbleControllerName.text = event.device.name
 
                                 if (vibrator.hasVibrator()) {
-                                    rumble_controller_supported.text = getString(R.string.supported)
-                                    rumble_title.text = getString(R.string.confirm_button_again)
+                                    binding.rumbleControllerSupported.text = getString(R.string.supported)
+                                    binding.rumbleTitle.text = getString(R.string.confirm_button_again)
 
                                     vibrator.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
                                 } else {
-                                    rumble_controller_supported.text = getString(R.string.not_supported)
+                                    binding.rumbleControllerSupported.text = getString(R.string.not_supported)
                                     dialog?.setOnKeyListener { _, _, _ -> false }
-                                    rumble_reset.requestFocus()
+                                    binding.rumbleReset.requestFocus()
                                 }
 
-                                rumble_controller_icon.animate().apply {
+                                binding.rumbleControllerIcon.animate().apply {
                                     interpolator = LinearInterpolator()
                                     duration = 100
                                     alpha(if (vibrator.hasVibrator()) 0.75f else 0.5f)

@@ -5,36 +5,34 @@
 
 package emu.skyline.adapter.controller
 
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
-import emu.skyline.R
-import emu.skyline.adapter.GenericLayoutFactory
 import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GenericViewHolder
-import kotlinx.android.synthetic.main.controller_checkbox_item.*
+import emu.skyline.adapter.ViewBindingFactory
+import emu.skyline.adapter.inflater
+import emu.skyline.databinding.ControllerCheckboxItemBinding
 
-private object ControllerCheckBoxLayoutFactory : GenericLayoutFactory {
-    override fun createLayout(parent : ViewGroup) : View = LayoutInflater.from(parent.context).inflate(R.layout.controller_checkbox_item, parent, false)
+object ControllerCheckBoxBindingFactory : ViewBindingFactory {
+    override fun createBinding(parent : ViewGroup) = ControllerCheckboxItemBinding.inflate(parent.inflater(), parent, false)
 }
 
-class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericListItem() {
-    override fun getLayoutFactory() : GenericLayoutFactory = ControllerCheckBoxLayoutFactory
+class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericListItem<ControllerCheckboxItemBinding>() {
+    override fun getViewBindingFactory() = ControllerCheckBoxBindingFactory
 
-    override fun bind(holder : GenericViewHolder, position : Int) {
-        holder.text_title.isGone = title.isEmpty()
-        holder.text_title.text = title
-        holder.text_subtitle.isGone = summary.isEmpty()
-        holder.text_subtitle.text = summary
-        holder.checkbox.isChecked = checked
+    override fun bind(holder : GenericViewHolder<ControllerCheckboxItemBinding>, position : Int) {
+        holder.binding.textTitle.isGone = title.isEmpty()
+        holder.binding.textTitle.text = title
+        holder.binding.textSubtitle.isGone = summary.isEmpty()
+        holder.binding.textSubtitle.text = summary
+        holder.binding.checkbox.isChecked = checked
         holder.itemView.setOnClickListener {
             checked = !checked
             onCheckedChange.invoke(this, position)
         }
     }
 
-    override fun areItemsTheSame(other : GenericListItem) = other is ControllerCheckBoxViewItem
+    override fun areItemsTheSame(other : GenericListItem<ControllerCheckboxItemBinding>) = other is ControllerCheckBoxViewItem
 
-    override fun areContentsTheSame(other : GenericListItem) = other is ControllerCheckBoxViewItem && title == other.title && summary == other.summary && checked == other.checked
+    override fun areContentsTheSame(other : GenericListItem<ControllerCheckboxItemBinding>) = other is ControllerCheckBoxViewItem && title == other.title && summary == other.summary && checked == other.checked
 }
