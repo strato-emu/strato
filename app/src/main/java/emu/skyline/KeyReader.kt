@@ -26,7 +26,7 @@ object KeyReader {
      * Reads keys file, trims and writes to internal app data storage, it makes sure file is properly formatted
      */
     fun import(context : Context, uri : Uri, keyType : KeyType) : Boolean {
-        Log.i(Tag, "Parsing ${keyType.name}")
+        Log.i(Tag, "Parsing ${keyType.name} $uri")
 
         if (!DocumentFile.isDocumentUri(context, uri))
             return false

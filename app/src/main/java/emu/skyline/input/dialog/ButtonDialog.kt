@@ -13,12 +13,11 @@ import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerButtonViewItem
 import emu.skyline.databinding.ButtonDialogBinding
+import emu.skyline.di.getInputManager
 import emu.skyline.input.*
-import javax.inject.Inject
 import kotlin.math.abs
 
 /**
@@ -26,12 +25,10 @@ import kotlin.math.abs
  *
  * @param item This is used to hold the [ControllerButtonViewItem] between instances
  */
-@AndroidEntryPoint
 class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null) : BottomSheetDialogFragment() {
     private lateinit var binding : ButtonDialogBinding
 
-    @Inject
-    lateinit var inputManager : InputManager
+    private val inputManager by lazy { requireContext().getInputManager() }
 
     /**
      * This inflates the layout of the dialog after initial view creation

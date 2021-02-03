@@ -18,6 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerStickViewItem
 import emu.skyline.databinding.StickDialogBinding
+import emu.skyline.di.getInputManager
 import emu.skyline.input.*
 import emu.skyline.input.MotionHostEvent.Companion.axes
 import java.util.*
@@ -30,7 +31,6 @@ import kotlin.math.max
  *
  * @param item This is used to hold the [ControllerStickViewItem] between instances
  */
-@AndroidEntryPoint
 class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? = null) : BottomSheetDialogFragment() {
     /**
      * This enumerates all of the stages this dialog can be in
@@ -66,8 +66,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
      */
     private var animationStop = false
 
-    @Inject
-    lateinit var inputManager : InputManager
+    private val inputManager by lazy { requireContext().getInputManager() }
 
     /**
      * This inflates the layout of the dialog after initial view creation

@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.AttributeSet
-import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.KeyReader
@@ -20,21 +19,17 @@ import emu.skyline.SettingsActivity
 /**
  * Launches [FileActivity] and process the selected file for key import
  */
-class FilePreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
-    override var requestCode = 0
-
+class FilePreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : ActivityResultPreference(context, attrs, defStyleAttr) {
     override fun onClick() = (context as Activity).startActivityForResult(Intent(context, FileActivity::class.java).apply { putExtra(DocumentActivity.KEY_NAME, key) }, requestCode)
 
     override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-        if (this.requestCode == requestCode && requestCode == Activity.RESULT_OK) {
-            if (key == "prod_keys" || key == "title_keys") {
-                val success = KeyReader.import(
-                        context,
-                        Uri.parse(PreferenceManager.getDefaultSharedPreferences(context).getString(key, "")),
-                        KeyReader.KeyType.parse(key)
-                )
-                Snackbar.make((context as SettingsActivity).binding.root, if (success) R.string.import_keys_success else R.string.import_keys_failed, Snackbar.LENGTH_LONG).show()
-            }
+        if (this.requestCode == requestCode && resultCode == Activity.RESULT_OK && (key == KeyReader.KeyType.Prod.keyName || key == KeyReader.KeyType.Title.keyName)) {
+            val success = KeyReader.import(
+                    context,
+                    Uri.parse(PreferenceManager.getDefaultSharedPreferences(context).getString(key, "")),
+                    KeyReader.KeyType.parse(key)
+            )
+            Snackbar.make((context as SettingsActivity).binding.root, if (success) R.string.import_keys_success else R.string.import_keys_failed, Snackbar.LENGTH_LONG).show()
         }
     }
 }

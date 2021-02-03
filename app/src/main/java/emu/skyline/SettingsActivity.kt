@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceGroup
 import emu.skyline.databinding.SettingsActivityBinding
-import emu.skyline.preference.ActivityResultDelegate
+import emu.skyline.preference.ActivityResultPreference
 import emu.skyline.preference.DocumentActivity
 
 class SettingsActivity : AppCompatActivity() {
@@ -56,7 +56,7 @@ class SettingsActivity : AppCompatActivity() {
         private var requestCodeCounter = 0
 
         /**
-         * Delegates activity result to all preferences which implement [ActivityResultDelegate]
+         * Delegates activity result to all preferences which implement [ActivityResultPreference]
          */
         fun delegateActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
             preferenceScreen.delegateActivityResult(requestCode, resultCode, data)
@@ -74,7 +74,7 @@ class SettingsActivity : AppCompatActivity() {
             for (i in 0 until preferenceCount) {
                 when (val pref = getPreference(i)) {
                     is PreferenceGroup -> pref.assignActivityRequestCode()
-                    is ActivityResultDelegate -> pref.requestCode = requestCodeCounter++
+                    is ActivityResultPreference -> pref.requestCode = requestCodeCounter++
                 }
             }
         }
@@ -83,7 +83,7 @@ class SettingsActivity : AppCompatActivity() {
             for (i in 0 until preferenceCount) {
                 when (val pref = getPreference(i)) {
                     is PreferenceGroup -> pref.delegateActivityResult(requestCode, resultCode, data)
-                    is ActivityResultDelegate -> pref.onActivityResult(requestCode, resultCode, data)
+                    is ActivityResultPreference -> pref.onActivityResult(requestCode, resultCode, data)
                 }
             }
         }

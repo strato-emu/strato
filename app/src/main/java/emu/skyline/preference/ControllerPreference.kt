@@ -9,7 +9,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
-import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import emu.skyline.R
 import emu.skyline.di.getInputManager
@@ -18,13 +17,11 @@ import emu.skyline.input.ControllerActivity
 /**
  * This preference is used to launch [ControllerActivity] using a preference
  */
-class ControllerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
+class ControllerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : ActivityResultPreference(context, attrs, defStyleAttr) {
     /**
      * The index of the controller this preference manages
      */
     private var index = -1
-
-    override var requestCode = 0
 
     private val inputManager = context.getInputManager()
 

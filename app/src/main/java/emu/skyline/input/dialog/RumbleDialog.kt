@@ -14,25 +14,21 @@ import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerGeneralViewItem
 import emu.skyline.databinding.RumbleDialogBinding
+import emu.skyline.di.getInputManager
 import emu.skyline.input.ControllerActivity
-import emu.skyline.input.InputManager
-import javax.inject.Inject
 
 /**
  * This dialog is used to set a device to pass on any rumble/force feedback data onto
  *
  * @param item This is used to hold the [ControllerGeneralViewItem] between instances
  */
-@AndroidEntryPoint
 class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewItem? = null) : BottomSheetDialogFragment() {
     private lateinit var binding : RumbleDialogBinding
 
-    @Inject
-    lateinit var inputManager : InputManager
+    private val inputManager by lazy { requireContext().getInputManager() }
 
     /**
      * This inflates the layout of the dialog after initial view creation

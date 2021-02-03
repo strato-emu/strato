@@ -51,6 +51,7 @@ abstract class DocumentActivity : AppCompatActivity() {
                     .putString(keyName, uri.toString())
                     .apply()
         }
+        setResult(resultCode)
         finish()
     }
 }

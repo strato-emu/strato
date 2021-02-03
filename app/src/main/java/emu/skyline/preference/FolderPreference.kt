@@ -10,16 +10,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.AttributeSet
-import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
 
 /**
  * This preference shows the decoded URI of it's preference and launches [DocumentActivity]
  */
-class FolderPreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr), ActivityResultDelegate {
-    override var requestCode = 0
-
+class FolderPreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : ActivityResultPreference(context, attrs, defStyleAttr) {
     init {
         summaryProvider = SummaryProvider<FolderPreference> { preference ->
             Uri.decode(preference.getPersistedString(""))

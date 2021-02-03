@@ -38,7 +38,7 @@ class ControllerGeneralViewItem(private val controllerId : Int, val type : Gener
         }
         super.bind(holder, position)
 
-        holder.itemView.setOnClickListener { onClick.invoke(this, position) }
+        holder.binding.root.setOnClickListener { onClick.invoke(this, position) }
     }
 
     override fun areItemsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerGeneralViewItem && controllerId == other.controllerId
