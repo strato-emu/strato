@@ -70,6 +70,7 @@ abstract class OnScreenButton(
      * Keeps track of finger when there are multiple touches
      */
     var touchPointerId = -1
+    var partnerPointerId = -1
 
     var isEditing = false
         private set

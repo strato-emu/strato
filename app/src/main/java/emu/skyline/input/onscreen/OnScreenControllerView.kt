@@ -67,8 +67,14 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         button.onFingerUp(x, y)
                         onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
                         handled = true
+                    } else if (pointerId == button.partnerPointerId) {
+                        button.partnerPointerId = -1
+                        button.onFingerUp(x, y)
+                        onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
+                        handled = true
                     }
                 }
+
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (button.config.enabled && button.isTouched(x, y)) {
@@ -77,6 +83,24 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         performClick()
                         onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Pressed)
                         handled = true
+                    }
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    if (pointerId == button.touchPointerId) {
+                        for (buttonPair in controls.buttonPairs) {
+                            if (buttonPair.contains(button)) {
+                                for (otherButton in buttonPair) {
+                                    if (otherButton != button && otherButton.config.enabled && otherButton.isTouched(x, y)) {
+                                        otherButton.partnerPointerId = pointerId
+                                        otherButton.onFingerDown(x, y)
+                                        performClick()
+                                        onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
+                                        handled = true
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -126,6 +150,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         handled = true
                     }
                 }
+
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (joystick.config.enabled && joystick.isTouched(x, y)) {
@@ -141,6 +166,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         handled = true
                     }
                 }
+
                 MotionEvent.ACTION_MOVE -> {
                     for (i in 0 until event.pointerCount) {
                         if (event.getPointerId(i) == joystick.touchPointerId) {
@@ -166,6 +192,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         return@any true
                     }
                 }
+
                 MotionEvent.ACTION_DOWN,
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (button.config.enabled && button.isTouched(event.x, event.y)) {
@@ -174,6 +201,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         return@any true
                     }
                 }
+
                 MotionEvent.ACTION_MOVE -> {
                     if (button.isEditing) {
                         button.edit(event.x, event.y)
