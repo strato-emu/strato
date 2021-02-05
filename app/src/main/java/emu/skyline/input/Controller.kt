@@ -45,7 +45,10 @@ open class Controller(val id : Int, var type : ControllerType, var rumbleDeviceD
     /**
      * The current version of this class so that different versions won't be deserialized mistakenly
      */
-    private val serialVersionUID = 0L
+    companion object {
+        @JvmStatic
+        private val serialVersionUID = 6529685098267757690L
+    }
 }
 
 /**

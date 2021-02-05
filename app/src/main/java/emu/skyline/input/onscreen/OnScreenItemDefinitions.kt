@@ -249,8 +249,8 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
      * We can take any of the global scale variables from the buttons
      */
     var globalScale
-        get() = circularButtons[0].config.globalScale
+        get() = circularButtons.first().config.globalScale
         set(value) {
-            circularButtons[0].config.globalScale = value
+            circularButtons.first().config.globalScale = value
         }
 }
