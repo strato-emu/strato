@@ -94,18 +94,21 @@ class OnScreenEditActivity : AppCompatActivity() {
                 fabMapping[pair.first] = this
             })
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.hide(WindowInsets.Type.navigationBars() or WindowInsets.Type.systemBars() or WindowInsets.Type.systemGestures() or WindowInsets.Type.statusBars())
+            window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
     }
 
     override fun onResume() {
         super.onResume()
+
         fullScreen()
     }
 
     private fun fullScreen() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.navigationBars() or WindowInsets.Type.systemBars() or WindowInsets.Type.systemGestures() or WindowInsets.Type.statusBars())
-            window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     or View.SYSTEM_UI_FLAG_LAYOUT_STABLE

@@ -30,7 +30,7 @@ class ControllerConfigurationImpl(private val context : Context, private val but
     private inline fun <reified T> config(default : T, prefix : String = "${buttonId.name}_") = sharedPreferences(context, default, prefix, "controller_config")
 
     override var enabled by config(true)
-    override var globalScale by config(1f, "")
+    override var globalScale by config(1.15f, "")
     override var relativeX by config(defaultRelativeX)
     override var relativeY by config(defaultRelativeY)
 }

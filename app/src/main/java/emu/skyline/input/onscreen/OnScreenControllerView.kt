@@ -87,16 +87,18 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    if (pointerId == button.touchPointerId) {
-                        for (buttonPair in controls.buttonPairs) {
-                            if (buttonPair.contains(button)) {
-                                for (otherButton in buttonPair) {
-                                    if (otherButton != button && otherButton.config.enabled && otherButton.isTouched(x, y)) {
-                                        otherButton.partnerPointerId = pointerId
-                                        otherButton.onFingerDown(x, y)
-                                        performClick()
-                                        onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
-                                        handled = true
+                    for (fingerId in 0 until event.pointerCount) {
+                        if (fingerId == button.touchPointerId) {
+                            for (buttonPair in controls.buttonPairs) {
+                                if (buttonPair.contains(button)) {
+                                    for (otherButton in buttonPair) {
+                                        if (otherButton != button && otherButton.config.enabled && otherButton.isTouched(event.getX(fingerId), event.getY(fingerId))) {
+                                            otherButton.partnerPointerId = fingerId
+                                            otherButton.onFingerDown(x, y)
+                                            performClick()
+                                            onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
+                                            handled = true
+                                        }
                                     }
                                 }
                             }

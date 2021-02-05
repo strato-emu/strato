@@ -22,7 +22,7 @@ class Settings(context : Context) {
 
     var operationMode by sharedPreferences(context, true)
 
-    var onScreenControl by sharedPreferences(context, false)
+    var onScreenControl by sharedPreferences(context, true)
 
     var onScreenControlRecenterSticks by sharedPreferences(context, true)
 
