@@ -12,20 +12,20 @@
 #include "os.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath) : state(this, jvmManager, settings, logger), serviceManager(state), appFilesPath(appFilesPath) {}
+    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, std::string appFilesPath) : state(this, jvmManager, settings, logger), serviceManager(state), appFilesPath(std::move(appFilesPath)) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
         auto keyStore{std::make_shared<crypto::KeyStore>(appFilesPath)};
 
-        state.loader = [=]() -> std::shared_ptr<loader::Loader> {
+        state.loader = [&]() -> std::shared_ptr<loader::Loader> {
             switch (romType) {
                 case loader::RomFormat::NRO:
-                    return std::make_shared<loader::NroLoader>(romFile);
+                    return std::make_shared<loader::NroLoader>(std::move(romFile));
                 case loader::RomFormat::NSO:
-                    return std::make_shared<loader::NsoLoader>(romFile);
+                    return std::make_shared<loader::NsoLoader>(std::move(romFile));
                 case loader::RomFormat::NCA:
-                    return std::make_shared<loader::NcaLoader>(romFile, keyStore);
+                    return std::make_shared<loader::NcaLoader>(std::move(romFile), std::move(keyStore));
                 case loader::RomFormat::NSP:
                     return std::make_shared<loader::NspLoader>(romFile, keyStore);
                 default:

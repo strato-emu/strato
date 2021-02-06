@@ -40,7 +40,7 @@ namespace skyline::vfs {
         std::unordered_map<std::string, PartitionFileEntry> fileMap; //!< A map that maps file names to their corresponding entry
 
       public:
-        PartitionFileSystem(std::shared_ptr<Backing> backing);
+        PartitionFileSystem(const std::shared_ptr<Backing> &backing);
 
         std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
 
@@ -57,7 +57,7 @@ namespace skyline::vfs {
         std::vector<Entry> fileList; //!< A list of every file in the PFS root directory
 
       public:
-        PartitionFileSystemDirectory(const std::vector<Entry> &fileList, ListMode listMode);
+        PartitionFileSystemDirectory(std::vector<Entry> fileList, ListMode listMode);
 
         std::vector<Entry> Read();
     };

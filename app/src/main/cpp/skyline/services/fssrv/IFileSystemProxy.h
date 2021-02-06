@@ -48,7 +48,7 @@ namespace skyline::service::fssrv {
      */
     class IFileSystemProxy : public BaseService {
       public:
-        pid_t process{}; //!< The PID as set by SetCurrentProcess
+        u64 process{}; //!< The PID as set by SetCurrentProcess
 
         IFileSystemProxy(const DeviceState &state, ServiceManager &manager);
 

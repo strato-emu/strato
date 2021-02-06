@@ -28,7 +28,7 @@ namespace skyline::service::am {
          * @brief Writes an object to the storage
          */
         template<typename ValueType>
-        inline void Push(const ValueType &value) {
+        void Push(const ValueType &value) {
             if (offset + sizeof(ValueType) > content.size())
                 throw exception("The supplied value cannot fit into the IStorage");
 

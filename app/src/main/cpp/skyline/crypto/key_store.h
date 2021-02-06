@@ -47,7 +47,7 @@ namespace skyline::crypto {
         void PopulateKeys(std::string_view keyName, std::string_view value);
 
       public:
-        inline std::optional<Key128> GetTitleKey(const Key128 &title) {
+        std::optional<Key128> GetTitleKey(const Key128 &title) {
             auto it{titleKeys.find(title)};
             if (it == titleKeys.end())
                 return std::nullopt;

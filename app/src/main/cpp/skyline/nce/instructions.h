@@ -19,13 +19,8 @@ namespace skyline::nce {
         struct Brk {
             /**
              * @brief Creates a BRK instruction with a specific immediate value, used for generating BRK opcodes
-             * @param value The immediate value of the instruction
              */
-            constexpr Brk(u16 value) {
-                sig0 = 0x0;
-                this->value = value;
-                sig1 = 0x6A1;
-            }
+            constexpr Brk(u16 value) : sig0(0x0), value(value), sig1(0x6A1) {}
 
             constexpr bool Verify() {
                 return (sig0 == 0x0 && sig1 == 0x6A1);
@@ -65,15 +60,7 @@ namespace skyline::nce {
          * @url https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/mrs-move-system-register
          */
         struct Mrs {
-            /**
-             * @param srcReg The source system register
-             * @param dstReg The destination Xn register
-             */
-            constexpr Mrs(u32 srcReg, registers::X dstReg) {
-                this->srcReg = srcReg;
-                this->destReg = dstReg;
-                sig = 0xD53;
-            }
+            constexpr Mrs(u32 srcReg, registers::X destReg) : srcReg(srcReg), destReg(destReg), sig(0xD54) {}
 
             constexpr bool Verify() {
                 return (sig == 0xD53);
@@ -115,12 +102,9 @@ namespace skyline::nce {
         struct B {
           public:
             /**
-             * @param offset The relative offset to branch to (In 32-bit units)
+             * @param negate The direction of the supplied offset
              */
-            constexpr B(i64 offset, bool negate = false) {
-                this->offset = negate ? -offset : offset;
-                sig = 0x5;
-            }
+            constexpr B(i64 offset, bool negate = false) : offset(negate ? -offset : offset), sig(0x5) {}
 
             /**
              * @return The offset encoded within the instruction in bytes
@@ -148,13 +132,7 @@ namespace skyline::nce {
          */
         struct BL {
           public:
-            /**
-             * @param offset The relative offset to branch to (In 32-bit units)
-             */
-            constexpr BL(i32 offset) {
-                this->offset = offset;
-                sig = 0x25;
-            }
+            constexpr BL(i32 offset) : offset(offset), sig(0x25) {}
 
             /**
              * @return The offset encoded within the instruction in bytes
@@ -187,26 +165,14 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movz(registers::X destReg, u16 imm16, u8 shift = 0) {
-                this->destReg = static_cast<u8>(destReg);
-                this->imm16 = imm16;
-                hw = shift;
-                sig = 0xA5;
-                sf = 1;
-            }
+            constexpr Movz(registers::X destReg, u16 imm16, u8 shift = 0) : destReg(static_cast<u8>(destReg)), imm16(imm16), hw(shift), sig(0xA5), sf(1) {}
 
             /**
              * @param destReg The destination Wn register to store the value in
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movz(registers::W destReg, u16 imm16, u8 shift = 0) {
-                this->destReg = static_cast<u8>(destReg);
-                this->imm16 = imm16;
-                hw = shift;
-                sig = 0xA5;
-                sf = 0;
-            }
+            constexpr Movz(registers::W destReg, u16 imm16, u8 shift = 0) : destReg(static_cast<u8>(destReg)), imm16(imm16), hw(shift), sig(0xA5), sf(0) {}
 
             /**
              * @return The shift encoded within the instruction in bytes
@@ -242,26 +208,14 @@ namespace skyline::nce {
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movk(registers::X destReg, u16 imm16, u8 shift = 0) {
-                this->destReg = static_cast<u8>(destReg);
-                this->imm16 = imm16;
-                hw = shift;
-                sig = 0xE5;
-                sf = 1;
-            }
+            constexpr Movk(registers::X destReg, u16 imm16, u8 shift = 0) : destReg(static_cast<u8>(destReg)), imm16(imm16), hw(shift), sig(0xE5), sf(1) {}
 
             /**
              * @param destReg The destination Wn register to store the value in
              * @param imm16 The 16-bit value to store
              * @param shift The offset (in units of 16-bits) in the register to store the value at
              */
-            constexpr Movk(registers::W destReg, u16 imm16, u8 shift = 0) {
-                this->destReg = static_cast<u8>(destReg);
-                this->imm16 = imm16;
-                hw = shift;
-                sig = 0xE5;
-                sf = 0;
-            }
+            constexpr Movk(registers::W destReg, u16 imm16, u8 shift = 0) : destReg(static_cast<u8>(destReg)), imm16(imm16), hw(shift), sig(0xE5), sf(0) {}
 
             /**
              * @return The shift encoded within the instruction in bytes
@@ -329,28 +283,14 @@ namespace skyline::nce {
              * @param destReg The destination Xn register to store the value in
              * @param srcReg The source Xn register to retrieve the value from
              */
-            constexpr Mov(registers::X destReg, registers::X srcReg) {
-                this->destReg = static_cast<u8>(destReg);
-                sig0 = 0x1F;
-                imm = 0;
-                this->srcReg = static_cast<u8>(srcReg);
-                sig1 = 0x150;
-                sf = 1;
-            }
+            constexpr Mov(registers::X destReg, registers::X srcReg) : destReg(static_cast<u8>(destReg)), sig0(0x1F), imm(0), srcReg(static_cast<u8>(srcReg)), sig1(0x150), sf(1) {}
 
             /**
              * @brief Creates a MOV instruction
              * @param destReg The destination Wn register to store the value in
              * @param srcReg The source Wn register to retrieve the value from
              */
-            constexpr Mov(registers::W destReg, registers::W srcReg) {
-                this->destReg = static_cast<u8>(destReg);
-                sig0 = 0x1F;
-                imm = 0;
-                this->srcReg = static_cast<u8>(srcReg);
-                sig1 = 0x150;
-                sf = 0;
-            }
+            constexpr Mov(registers::W destReg, registers::W srcReg) : destReg(static_cast<u8>(destReg)), sig0(0x1F), imm(0), srcReg(static_cast<u8>(srcReg)), sig1(0x150), sf(0) {}
 
             constexpr bool Verify() {
                 return (sig0 == 0x1F) && (sig1 == 0x150);

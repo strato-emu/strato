@@ -260,7 +260,7 @@ namespace skyline::kernel::type {
             if (ownerPriority != currentPriority) {
                 std::lock_guard waiterLock(waitingOn->waiterMutex);
                 auto nextThread{waitingOn->waitThread};
-                if (nextThread){
+                if (nextThread) {
                     // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
                     std::lock_guard nextWaiterLock(nextThread->waiterMutex);
                     auto &piWaiters{nextThread->waiters};

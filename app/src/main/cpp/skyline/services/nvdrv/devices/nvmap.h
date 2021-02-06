@@ -39,7 +39,7 @@ namespace skyline::service::nvdrv::device {
 
         NvMap(const DeviceState &state);
 
-        inline std::shared_ptr<NvMapObject> GetObject(u32 handle) {
+        std::shared_ptr<NvMapObject> GetObject(u32 handle) {
             if (handle-- == 0)
                 throw std::out_of_range("0 is an invalid nvmap handle");
             std::shared_lock lock(mapMutex);

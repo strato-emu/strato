@@ -10,7 +10,7 @@ namespace skyline::loader {
         auto root{nsp->OpenDirectory("", {false, true})};
 
         for (const auto &entry : root->Read()) {
-            if (entry.name.substr(entry.name.find_last_of(".") + 1) != "nca")
+            if (entry.name.substr(entry.name.find_last_of('.') + 1) != "nca")
                 continue;
 
             try {
@@ -35,7 +35,7 @@ namespace skyline::loader {
         nacp.emplace(controlRomFs->OpenFile("control.nacp"));
     }
 
-    void *NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
         process->npdm = vfs::NPDM(programNca->exeFs->OpenFile("main.npdm"), state);
         return NcaLoader::LoadExeFs(this, programNca->exeFs, process, state);
     }

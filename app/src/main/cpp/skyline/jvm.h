@@ -35,7 +35,7 @@ namespace skyline {
          * @return The contents of the field as objectType
          */
         template<typename objectType>
-        inline objectType GetField(const char *key) {
+        objectType GetField(const char *key) {
             JNIEnv *env{GetEnv()};
             if constexpr(std::is_same<objectType, jboolean>())
                 return env->GetBooleanField(instance, env->GetFieldID(instanceClass, key, "Z"));
@@ -53,6 +53,8 @@ namespace skyline {
                 return env->GetFloatField(instance, env->GetFieldID(instanceClass, key, "F"));
             else if constexpr(std::is_same<objectType, jdouble>())
                 return env->GetDoubleField(instance, env->GetFieldID(instanceClass, key, "D"));
+            else
+                throw exception("GetField: Unhandled object type");
         }
 
         /**

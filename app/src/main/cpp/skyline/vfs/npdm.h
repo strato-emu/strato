@@ -19,7 +19,7 @@ namespace skyline {
                 u32 size;
 
                 template<typename T>
-                inline T Read(const std::shared_ptr<vfs::Backing> &backing, size_t baseOffset = 0) {
+                T Read(const std::shared_ptr<vfs::Backing> &backing, size_t baseOffset = 0) {
                     if (sizeof(T) > size)
                         throw exception("Section size ({}) smaller than Read type size ({})", size, sizeof(T));
                     return backing->Read<T>(baseOffset + offset);

@@ -89,8 +89,9 @@ namespace skyline::input {
                     return NpadControllerType::JoyconLeft;
                 case 7:
                     return NpadControllerType::JoyconRight;
+                default:
+                    return NpadControllerType::None;
             }
-            return NpadControllerType::None;
         }
     };
 
@@ -146,11 +147,11 @@ namespace skyline::input {
 
         NpadDevice(NpadManager &manager, NpadSection &section, NpadId id);
 
-        inline void SetAssignment(NpadJoyAssignment assignment) {
+        void SetAssignment(NpadJoyAssignment assignment) {
             section.header.assignment = assignment;
         }
 
-        inline NpadJoyAssignment GetAssignment() {
+        NpadJoyAssignment GetAssignment() {
             return section.header.assignment;
         }
 

@@ -75,4 +75,4 @@ namespace skyline::kernel::type {
 
         close(fd);
     }
-};
+}

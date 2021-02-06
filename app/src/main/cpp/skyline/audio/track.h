@@ -31,12 +31,12 @@ namespace skyline::audio {
          * @param sampleRate The sample rate to use for the track
          * @param releaseCallback A callback to call when a buffer has been played
          */
-        AudioTrack(u8 channelCount, u32 sampleRate, const std::function<void()> &releaseCallback);
+        AudioTrack(u8 channelCount, u32 sampleRate, std::function<void()> releaseCallback);
 
         /**
          * @brief Starts audio playback using data from appended buffers
          */
-        inline void Start() {
+        void Start() {
             playbackState = AudioOutState::Started;
         }
 

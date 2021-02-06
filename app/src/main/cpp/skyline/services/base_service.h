@@ -10,7 +10,7 @@
 #define SERVICE_DECL_AUTO(name, value) decltype(value) name = value
 #define SERVICE_DECL(...)                                                                                                                         \
 SERVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                             \
-std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> GetServiceFunction(u32 id) {          \
+std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> GetServiceFunction(u32 id) override {  \
     auto& function{functions.at(id)};                                                                                                            \
     return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
 }
@@ -63,6 +63,6 @@ namespace skyline::service {
         /**
          * @brief Handles an IPC Request to a service
          */
-        Result HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);;
+        Result HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };
 }

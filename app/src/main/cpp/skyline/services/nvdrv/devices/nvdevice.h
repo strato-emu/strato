@@ -10,7 +10,7 @@
 #define NVDEVICE_DECL_AUTO(name, value) decltype(value) name = value
 #define NVDEVICE_DECL(...)                                                                                                                        \
 NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                            \
-std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) {                          \
+std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) override {                          \
     auto& function{functions.at(id)};                                                                                                            \
     return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
 }
@@ -68,7 +68,7 @@ namespace skyline::service::nvdrv::device {
         const DeviceState &state;
 
       public:
-        inline NvDevice(const DeviceState &state) : state(state) {}
+        NvDevice(const DeviceState &state) : state(state) {}
 
         virtual ~NvDevice() = default;
 
@@ -86,7 +86,7 @@ namespace skyline::service::nvdrv::device {
          */
         NvStatus HandleIoctl(u32 cmd, IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
-        inline virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
+        virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
             return nullptr;
         }
     };

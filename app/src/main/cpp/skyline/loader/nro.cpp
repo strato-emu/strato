@@ -8,7 +8,7 @@
 #include "nro.h"
 
 namespace skyline::loader {
-    NroLoader::NroLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
+    NroLoader::NroLoader(std::shared_ptr<vfs::Backing> pBacking) : backing(std::move(pBacking)) {
         header = backing->Read<NroHeader>();
 
         if (header.magic != util::MakeMagic<u32>("NRO0"))
@@ -44,7 +44,7 @@ namespace skyline::loader {
         return buffer;
     }
 
-    void *NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NroLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
         Executable executable{};
 
         executable.text.contents = GetSegment(header.text);

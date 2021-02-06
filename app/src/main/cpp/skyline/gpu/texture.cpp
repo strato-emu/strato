@@ -9,15 +9,15 @@
 namespace skyline::gpu {
     GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> format, std::optional<texture::Dimensions> dimensions, texture::Swizzle swizzle) {
+    std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> pFormat, std::optional<texture::Dimensions> pDimensions, texture::Swizzle swizzle) {
         if (!host.expired())
             throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(state, shared_from_this(), dimensions ? *dimensions : this->dimensions, format ? *format : this->format, swizzle)};
+        auto sharedHost{std::make_shared<Texture>(state, shared_from_this(), pDimensions ? *pDimensions : dimensions, pFormat ? *pFormat : format, swizzle)};
         host = sharedHost;
         return sharedHost;
     }
 
-    Texture::Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : state(state), guest(guest), dimensions(dimensions), format(format), swizzle(swizzle) {
+    Texture::Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : state(state), guest(std::move(guest)), dimensions(dimensions), format(format), swizzle(swizzle) {
         SynchronizeHost();
     }
 
@@ -25,7 +25,7 @@ namespace skyline::gpu {
         auto pointer{guest->pointer};
         auto size{format.GetSize(dimensions)};
         backing.resize(size);
-        auto output{reinterpret_cast<u8 *>(backing.data())};
+        auto output{backing.data()};
 
         if (guest->tileMode == texture::TileMode::Block) {
             // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32

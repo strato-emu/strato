@@ -17,7 +17,7 @@ namespace skyline {
             constexpr u32 PerformanceMetricsDataFormatV2{5}; //!< The revision a new performance metrics format is used
             constexpr u32 VaradicCommandBufferSize{5}; //!< The revision support for varying command buffer sizes was added
             constexpr u32 ElapsedFrameCount{5}; //!< The revision support for counting elapsed frames was added
-        };
+        }
     }
 
     namespace service::audio::IAudioRenderer {
@@ -42,7 +42,7 @@ namespace skyline {
              * @brief Extracts the audren revision from the magic and sets the behaviour revision to it
              * @param revision The revision magic from guest
              */
-            inline void SetUserRevision(u32 revision) {
+            void SetUserRevision(u32 revision) {
                 userRevision = ExtractVersionFromRevision(revision);
 
                 if (userRevision > constant::SupportedRevision)
@@ -52,35 +52,35 @@ namespace skyline {
             /**
              * @return Whether the splitter is supported
              */
-            inline bool SplitterSupported() {
+            bool SplitterSupported() {
                 return userRevision >= constant::supportTags::Splitter;
             }
 
             /**
              * @return Whether the splitter is fixed
              */
-            inline bool SplitterBugFixed() {
+            bool SplitterBugFixed() {
                 return userRevision >= constant::supportTags::SplitterBugFix;
             }
 
             /**
              * @return Whether the new performance metrics format is used
              */
-            inline bool UsesPerformanceMetricDataFormatV2() {
+            bool UsesPerformanceMetricDataFormatV2() {
                 return userRevision >= constant::supportTags::PerformanceMetricsDataFormatV2;
             }
 
             /**
              * @return Whether varying command buffer sizes are supported
              */
-            inline bool VaradicCommandBufferSizeSupported() {
+            bool VaradicCommandBufferSizeSupported() {
                 return userRevision >= constant::supportTags::VaradicCommandBufferSize;
             }
 
             /**
              * @return Whether elapsed frame counting is supported
              */
-            inline bool ElapsedFrameCountSupported() {
+            bool ElapsedFrameCountSupported() {
                 return userRevision >= constant::supportTags::ElapsedFrameCount;
             }
         };

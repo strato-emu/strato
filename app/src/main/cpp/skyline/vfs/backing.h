@@ -48,7 +48,7 @@ namespace skyline::vfs {
          * @brief Implicit casting for reading into spans of different types
          */
         template<typename T, typename std::enable_if<!std::is_same_v<T, u8>, bool>::type = true>
-        inline size_t Read(span <T> output, size_t offset = 0) {
+        size_t Read(span <T> output, size_t offset = 0) {
             return Read(output.template cast<u8>(), offset);
         }
 
@@ -58,7 +58,7 @@ namespace skyline::vfs {
          * @return The object that was read
          */
         template<typename T>
-        inline T Read(size_t offset = 0) {
+        T Read(size_t offset = 0) {
             T object;
             Read(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset);
             return object;
@@ -80,7 +80,7 @@ namespace skyline::vfs {
          * @param offset The offset where the input should be written
          */
         template<typename T>
-        inline void WriteObject(const T &object, size_t offset = 0) {
+        void WriteObject(const T &object, size_t offset = 0) {
             size_t size;
             if ((size = Write(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset)) != sizeof(T))
                 throw exception("Object wasn't written fully into output backing: {}/{}", size, sizeof(T));

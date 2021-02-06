@@ -49,7 +49,7 @@ namespace skyline::signal {
         void *fault{};
         std::vector<void *> frames; //!< A vector of all stack frame entries prior to the signal occuring
 
-        inline std::string what() const {
+        std::string what() const {
             if (!fault)
                 return fmt::format("Signal: {} (PC: 0x{:X})", strsignal(signal), reinterpret_cast<uintptr_t>(pc));
             else

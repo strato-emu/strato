@@ -5,7 +5,7 @@
 #include "adpcm_decoder.h"
 
 namespace skyline::audio {
-    AdpcmDecoder::AdpcmDecoder(const std::vector<std::array<i16, 2>> &coefficients) : coefficients(coefficients) {}
+    AdpcmDecoder::AdpcmDecoder(std::vector<std::array<i16, 2>> coefficients) : coefficients(std::move(coefficients)) {}
 
     std::vector<i16> AdpcmDecoder::Decode(span<u8> adpcmData) {
         constexpr size_t BytesPerFrame{0x8};

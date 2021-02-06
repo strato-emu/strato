@@ -16,7 +16,7 @@ namespace skyline::service::fssrv {
         std::shared_ptr<vfs::Backing> backing;
 
       public:
-        IFile(std::shared_ptr<vfs::Backing> &backing, const DeviceState &state, ServiceManager &manager);
+        IFile(std::shared_ptr<vfs::Backing> backing, const DeviceState &state, ServiceManager &manager);
 
         /**
          * @brief Reads a buffer from a region of an IFile

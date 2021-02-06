@@ -42,11 +42,11 @@ namespace skyline::vfs {
         return static_cast<size_t>(ret);
     }
 
-    void OsBacking::Resize(size_t size) {
-        int ret{ftruncate(fd, size)};
+    void OsBacking::Resize(size_t pSize) {
+        int ret{ftruncate(fd, pSize)};
         if (ret < 0)
             throw exception("Failed to resize file: {}", strerror(errno));
 
-        this->size = size;
+        size = pSize;
     }
 }

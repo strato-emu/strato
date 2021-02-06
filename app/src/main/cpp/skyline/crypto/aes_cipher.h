@@ -19,7 +19,7 @@ namespace skyline::crypto {
         /**
          * @brief Calculates IV for XTS, basically just big to little endian conversion
          */
-        inline static std::array<u8, 0x10> GetTweak(size_t sector) {
+        static std::array<u8, 0x10> GetTweak(size_t sector) {
             std::array<u8, 0x10> tweak{};
             size_t le{__builtin_bswap64(sector)};
             std::memcpy(tweak.data() + 8, &le, 8);
@@ -45,7 +45,7 @@ namespace skyline::crypto {
         /**
          * @brief Decrypts the supplied data in-place
          */
-        inline void Decrypt(span<u8> data) {
+        void Decrypt(span<u8> data) {
             Decrypt(data.data(), data.data(), data.size());
         }
 
@@ -57,7 +57,7 @@ namespace skyline::crypto {
         /**
          * @brief Decrypts data with XTS and writes back to it
          */
-        inline void XtsDecrypt(span<u8> data, size_t sector, size_t sectorSize) {
+        void XtsDecrypt(span<u8> data, size_t sector, size_t sectorSize) {
             XtsDecrypt(data.data(), data.data(), data.size(), sector, sectorSize);
         }
     };

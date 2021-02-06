@@ -91,6 +91,8 @@ namespace skyline::gpu {
                 }
                 break;
             }
+            default:
+                throw exception("Unknown MME opcode encountered: 0x{:X}", static_cast<u8>(opcode->operation));
         }
 
         if (opcode->exit && (delayedOpcode == nullptr)) {

@@ -21,7 +21,7 @@ namespace skyline::kernel {
          * @param settings An instance of the Settings class
          * @param window The ANativeWindow object to draw the screen to
          */
-        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, const std::string &appFilesPath);
+        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, std::string appFilesPath);
 
         /**
          * @brief Execute a particular ROM file

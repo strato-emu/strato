@@ -37,7 +37,7 @@ namespace skyline::service::audio::IAudioRenderer {
       public:
         EffectOut output{};
 
-        inline void ProcessInput(const EffectIn &input) {
+        void ProcessInput(const EffectIn &input) {
             if (input.isNew)
                 output.state = EffectState::New;
         }

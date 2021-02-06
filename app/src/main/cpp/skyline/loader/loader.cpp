@@ -10,7 +10,7 @@
 #include "loader.h"
 
 namespace skyline::loader {
-    Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name) {
+    Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name) {
         u8 *base{reinterpret_cast<u8 *>(process->memory.base.address + offset)};
 
         u64 textSize{executable.text.contents.size()};
@@ -109,7 +109,7 @@ namespace skyline::loader {
         return trace;
     }
 
-    std::string Loader::GetStackTrace(const std::vector<void *> frames) {
+    std::string Loader::GetStackTrace(const std::vector<void *> &frames) {
         std::string trace;
         for (const auto &frame : frames)
             trace += GetFunctionStackTrace(this, frame);

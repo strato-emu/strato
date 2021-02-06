@@ -140,7 +140,6 @@ namespace skyline::service::nvdrv {
         else
             buffer = request.outputBuf[0];
 
-
         response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, buffer, request.outputBuf.size() >= 2 ? request.outputBuf[1] : span<u8>()));
         return {};
     }

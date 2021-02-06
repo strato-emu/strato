@@ -169,7 +169,7 @@ namespace skyline {
           public:
             GPFIFO(const DeviceState &state) : Engine(state) {}
 
-            void CallMethod(MethodParams params) {
+            void CallMethod(MethodParams params) override {
                 state.logger->Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", params.method, params.argument);
 
                 registers.raw[params.method] = params.argument;

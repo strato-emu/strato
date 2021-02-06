@@ -16,14 +16,14 @@ namespace skyline::loader {
         vfs::NCA nca; //!< The backing NCA of the loader
 
       public:
-        NcaLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
+        NcaLoader(std::shared_ptr<vfs::Backing> backing, std::shared_ptr<crypto::KeyStore> keyStore);
 
         /**
          * @brief Loads an ExeFS into memory and processes it accordingly for execution
          * @param exefs A filesystem object containing the ExeFS filesystem to load into memory
          */
-        static void *LoadExeFs(Loader *loader, const std::shared_ptr<vfs::FileSystem> &exefs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        static void *LoadExeFs(Loader *loader, const std::shared_ptr<vfs::FileSystem> &exefs, const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state);
 
-        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) override;
     };
 }

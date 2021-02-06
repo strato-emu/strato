@@ -31,7 +31,7 @@ namespace skyline::kernel::type {
          */
         u8 *Map(u8 *ptr, u64 size, memory::Permission permission);
 
-        inline span<u8> Get() override {
+        span<u8> Get() override {
             return span(guest.ptr, guest.size);
         }
 

@@ -10,7 +10,7 @@
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    Buffer::Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::Texture> &texture) : gbpBuffer(gbpBuffer), texture(texture) {}
+    Buffer::Buffer(const GbpBuffer &gbpBuffer, std::shared_ptr<gpu::Texture> texture) : gbpBuffer(gbpBuffer), texture(std::move(texture)) {}
 
     GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state) {}
 
@@ -35,7 +35,7 @@ namespace skyline::service::hosbinder {
         std::optional<u32> slot{std::nullopt};
         while (!slot) {
             for (auto &buffer : queue) {
-                if (buffer.second->status == BufferStatus::Free && (format ? buffer.second->gbpBuffer.format == format : true) && buffer.second->gbpBuffer.width == width && buffer.second->gbpBuffer.height == height && (buffer.second->gbpBuffer.usage & usage) == usage) {
+                if (buffer.second->status == BufferStatus::Free && (format == 0 || buffer.second->gbpBuffer.format == format) && buffer.second->gbpBuffer.width == width && buffer.second->gbpBuffer.height == height && (buffer.second->gbpBuffer.usage & usage) == usage) {
                     slot = buffer.first;
                     buffer.second->status = BufferStatus::Dequeued;
                     break;

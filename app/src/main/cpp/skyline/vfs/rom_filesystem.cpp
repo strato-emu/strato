@@ -5,7 +5,7 @@
 #include "rom_filesystem.h"
 
 namespace skyline::vfs {
-    RomFileSystem::RomFileSystem(std::shared_ptr<Backing> backing) : FileSystem(), backing(backing) {
+    RomFileSystem::RomFileSystem(std::shared_ptr<Backing> pBacking) : FileSystem(), backing(std::move(pBacking)) {
         header = backing->Read<RomFsHeader>();
         TraverseDirectory(0, "");
     }
@@ -30,7 +30,7 @@ namespace skyline::vfs {
     void RomFileSystem::TraverseDirectory(u32 offset, const std::string &path) {
         auto entry{backing->Read<RomFsDirectoryEntry>(header.dirMetaTableOffset + offset)};
 
-        std::string childPath{path};
+        std::string childPath(path);
         if (entry.nameSize) {
             std::vector<char> name(entry.nameSize);
             backing->Read(span(name), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
@@ -76,7 +76,7 @@ namespace skyline::vfs {
         }
     }
 
-    RomFileSystemDirectory::RomFileSystemDirectory(const std::shared_ptr<Backing> &backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode) : Directory(listMode), backing(backing), header(header), ownEntry(ownEntry) {}
+    RomFileSystemDirectory::RomFileSystemDirectory(std::shared_ptr<Backing> backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode) : Directory(listMode), backing(std::move(backing)), header(header), ownEntry(ownEntry) {}
 
     std::vector<RomFileSystemDirectory::Entry> RomFileSystemDirectory::Read() {
         std::vector<Entry> contents;

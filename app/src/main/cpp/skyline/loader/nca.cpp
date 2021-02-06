@@ -7,12 +7,12 @@
 #include "nca.h"
 
 namespace skyline::loader {
-    NcaLoader::NcaLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : nca(backing, keyStore) {
+    NcaLoader::NcaLoader(std::shared_ptr<vfs::Backing> backing, std::shared_ptr<crypto::KeyStore> keyStore) : nca(std::move(backing), std::move(keyStore)) {
         if (nca.exeFs == nullptr)
             throw exception("Only NCAs with an ExeFS can be loaded directly");
     }
 
-    void *NcaLoader::LoadExeFs(Loader *loader, const std::shared_ptr<vfs::FileSystem> &exeFs, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NcaLoader::LoadExeFs(Loader *loader, const std::shared_ptr<vfs::FileSystem> &exeFs, const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
         if (exeFs == nullptr)
             throw exception("Cannot load a null ExeFS");
 
@@ -45,7 +45,7 @@ namespace skyline::loader {
         return entry;
     }
 
-    void *NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NcaLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
         process->npdm = vfs::NPDM(nca.exeFs->OpenFile("main.npdm"), state);
         return LoadExeFs(this, nca.exeFs, process, state);
     }

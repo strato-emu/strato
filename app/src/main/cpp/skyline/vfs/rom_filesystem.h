@@ -87,7 +87,7 @@ namespace skyline {
             std::shared_ptr<Backing> backing;
 
           public:
-            RomFileSystemDirectory(const std::shared_ptr<Backing> &backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode);
+            RomFileSystemDirectory(std::shared_ptr<Backing> backing, const RomFileSystem::RomFsHeader &header, const RomFileSystem::RomFsDirectoryEntry &ownEntry, ListMode listMode);
 
             std::vector<Entry> Read();
         };

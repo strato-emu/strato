@@ -87,4 +87,4 @@ namespace skyline::kernel::type {
             .state = memory::states::Unmapped,
         });
     }
-};
+}

@@ -12,7 +12,7 @@ namespace skyline::service::fssrv {
     IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IFileSystemProxy::SetCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        process = request.Pop<pid_t>();
+        process = request.Pop<u64>();
         return {};
     }
 
@@ -39,7 +39,7 @@ namespace skyline::service::fssrv {
                         return "/nand/temp";
                     default:
                         throw exception("Unsupported savedata ID: {}", spaceId);
-                };
+                }
             }()};
 
             switch (attribute.type) {
@@ -54,7 +54,7 @@ namespace skyline::service::fssrv {
                     return fmt::format("{}/save/cache/{:016X}/", spaceIdStr, attribute.programId);
                 default:
                     throw exception("Unsupported savedata type: {}", attribute.type);
-            };
+            }
         }()};
 
         manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch" + saveDataPath), state, manager), session, response);

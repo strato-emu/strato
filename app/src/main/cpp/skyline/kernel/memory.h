@@ -25,7 +25,7 @@ namespace skyline {
              */
             constexpr Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {}
 
-            inline bool operator==(const Permission &rhs) const { return (this->r == rhs.r && this->w == rhs.w && this->x == rhs.x); }
+            inline bool operator==(const Permission &rhs) const { return r == rhs.r && w == rhs.w && x == rhs.x; }
 
             inline bool operator!=(const Permission &rhs) const { return !operator==(rhs); }
 
@@ -176,7 +176,7 @@ namespace skyline {
             constexpr MemoryState KernelStack{0x00002013};
             constexpr MemoryState CodeReadOnly{0x00402214};
             constexpr MemoryState CodeWritable{0x00402015};
-        };
+        }
 
         struct Region {
             u64 address;

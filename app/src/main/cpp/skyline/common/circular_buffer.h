@@ -28,7 +28,7 @@ namespace skyline {
          * @param copyOffset The offset into the buffer after which to use memcpy rather than copyFunction, -1 will use it for the entire buffer
          * @return The amount of data written into the input buffer in units of Type
          */
-        inline size_t Read(span <Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
+        size_t Read(span <Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
             std::lock_guard guard(mtx);
 
             if (empty)
@@ -91,7 +91,7 @@ namespace skyline {
         /**
          * @brief Appends data from the specified buffer into this buffer
          */
-        inline void Append(span <Type> buffer) {
+        void Append(span <Type> buffer) {
             std::lock_guard guard(mtx);
 
             Type *pointer{buffer.data()};

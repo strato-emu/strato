@@ -24,19 +24,19 @@ namespace skyline {
         /**
          * @note The internal allocation is an item larger as we require a sentinel value
          */
-        inline CircularQueue(size_t size) : vector((size + 1) * sizeof(Type)) {}
+        CircularQueue(size_t size) : vector((size + 1) * sizeof(Type)) {}
 
-        inline CircularQueue(const CircularQueue &) = delete;
+        CircularQueue(const CircularQueue &) = delete;
 
-        inline CircularQueue &operator=(const CircularQueue &) = delete;
+        CircularQueue &operator=(const CircularQueue &) = delete;
 
-        inline CircularQueue(CircularQueue &&other) : vector(std::move(other.vector)), consumptionMutex(std::move(other.consumptionMutex)), consumeCondition(std::move(other.consumeCondition)), productionMutex(std::move(other.productionMutex)), produceCondition(std::move(other.produceCondition)) {
-            this->start = other.start;
-            this->end = other.end;
+        CircularQueue(CircularQueue &&other) : vector(std::move(other.vector)), consumptionMutex(std::move(other.consumptionMutex)), consumeCondition(std::move(other.consumeCondition)), productionMutex(std::move(other.productionMutex)), produceCondition(std::move(other.produceCondition)) {
+            start = other.start;
+            end = other.end;
             other.start = other.end = nullptr;
         }
 
-        inline ~CircularQueue() {
+        ~CircularQueue() {
             while (start != end) {
                 auto next{start + 1};
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
@@ -50,7 +50,7 @@ namespace skyline {
          * @param function A function that is called for each item (with the only parameter as a reference to that item)
          */
         template<typename F>
-        [[noreturn]] inline void Process(F function) {
+        [[noreturn]] void Process(F function) {
             while (true) {
                 if (start == end) {
                     std::unique_lock lock(productionMutex);
@@ -68,7 +68,7 @@ namespace skyline {
             }
         }
 
-        inline void Push(const Type &item) {
+        void Push(const Type &item) {
             std::unique_lock lock(productionMutex);
             end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
             if (start == end + 1) {
@@ -79,7 +79,7 @@ namespace skyline {
             produceCondition.notify_one();
         }
 
-        inline void Append(span <Type> buffer) {
+        void Append(span <Type> buffer) {
             std::unique_lock lock(productionMutex);
             for (const auto &item : buffer) {
                 auto next{end + 1};
@@ -99,7 +99,7 @@ namespace skyline {
          * @param tranformation A function that takes in an item of TransformedType as input and returns an item of Type
          */
         template<typename TransformedType, typename Transformation>
-        inline void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
+        void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
             for (const auto &item : buffer) {
                 auto next{end + 1};

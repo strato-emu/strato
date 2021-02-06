@@ -16,7 +16,7 @@ namespace skyline::service::nvdrv {
         /**
          * @brief Synchronizes the fence's value with its underlying syncpoint
          */
-        inline void UpdateValue(NvHostSyncpoint &hostSyncpoint) {
+        void UpdateValue(NvHostSyncpoint &hostSyncpoint) {
             value = hostSyncpoint.UpdateMin(id);
         }
     };

@@ -26,7 +26,7 @@ namespace skyline::audio {
         std::vector<std::array<i16, 2>> coefficients; //!< The coefficients for decoding the ADPCM stream
 
       public:
-        AdpcmDecoder(const std::vector<std::array<i16, 2>> &coefficients);
+        AdpcmDecoder(std::vector<std::array<i16, 2>> coefficients);
 
         /**
          * @brief Decodes a buffer of ADPCM data into I16 PCM

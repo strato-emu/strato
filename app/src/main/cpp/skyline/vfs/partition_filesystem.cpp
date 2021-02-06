@@ -5,7 +5,7 @@
 #include "partition_filesystem.h"
 
 namespace skyline::vfs {
-    PartitionFileSystem::PartitionFileSystem(std::shared_ptr<Backing> backing) : FileSystem(), backing(backing) {
+    PartitionFileSystem::PartitionFileSystem(const std::shared_ptr<Backing> &backing) : FileSystem(), backing(backing) {
         header = backing->Read<FsHeader>();
 
         if (header.magic == util::MakeMagic<u32>("PFS0"))
@@ -27,7 +27,7 @@ namespace skyline::vfs {
             auto entry{backing->Read<PartitionFileEntry>(entryOffset)};
 
             std::string name(&stringTable[entry.stringTableOffset]);
-            fileMap.emplace(name, std::move(entry));
+            fileMap.emplace(name, entry);
         }
     }
 
@@ -59,7 +59,7 @@ namespace skyline::vfs {
         return std::make_shared<PartitionFileSystemDirectory>(fileList, listMode);
     }
 
-    PartitionFileSystemDirectory::PartitionFileSystemDirectory(const std::vector<Entry> &fileList, ListMode listMode) : Directory(listMode), fileList(fileList) {}
+    PartitionFileSystemDirectory::PartitionFileSystemDirectory(std::vector<Entry> fileList, ListMode listMode) : Directory(listMode), fileList(std::move(fileList)) {}
 
     std::vector<Directory::Entry> PartitionFileSystemDirectory::Read() {
         if (listMode.file)

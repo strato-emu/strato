@@ -7,7 +7,7 @@
 #include "nso.h"
 
 namespace skyline::loader {
-    NsoLoader::NsoLoader(const std::shared_ptr<vfs::Backing> &backing) : backing(backing) {
+    NsoLoader::NsoLoader(std::shared_ptr<vfs::Backing> pBacking) : backing(std::move(pBacking)) {
         u32 magic{backing->Read<u32>()};
 
         if (magic != util::MakeMagic<u32>("NSO0"))
@@ -29,7 +29,7 @@ namespace skyline::loader {
         return outputBuffer;
     }
 
-    Loader::ExecutableLoadInfo NsoLoader::LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset, const std::string &name) {
+    Loader::ExecutableLoadInfo NsoLoader::LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, size_t offset, const std::string &name) {
         auto header{backing->Read<NsoHeader>()};
 
         if (header.magic != util::MakeMagic<u32>("NSO0"))
@@ -59,7 +59,7 @@ namespace skyline::loader {
         return loader->LoadExecutable(process, state, executable, offset, name);
     }
 
-    void *NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) {
+    void *NsoLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
         auto loadInfo{LoadNso(this, backing, process, state)};
         state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);

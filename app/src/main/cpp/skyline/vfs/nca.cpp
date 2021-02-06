@@ -3,6 +3,7 @@
 
 #include <crypto/aes_cipher.h>
 #include <loader/loader.h>
+
 #include "ctr_encrypted_backing.h"
 #include "region_backing.h"
 #include "partition_filesystem.h"
@@ -13,7 +14,7 @@
 namespace skyline::vfs {
     using namespace loader;
 
-    NCA::NCA(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : backing(backing), keyStore(keyStore) {
+    NCA::NCA(std::shared_ptr<vfs::Backing> pBacking, std::shared_ptr<crypto::KeyStore> pKeyStore) : backing(std::move(pBacking)), keyStore(std::move(pKeyStore)) {
         header = backing->Read<NcaHeader>();
 
         if (header.magic != util::MakeMagic<u32>("NCA3")) {
@@ -116,7 +117,7 @@ namespace skyline::vfs {
     }
 
     crypto::KeyStore::Key128 NCA::GetKeyAreaKey(NCA::NcaSectionEncryptionType type) {
-        auto keyArea{[&](crypto::KeyStore::IndexedKeys128 &keys) {
+        auto keyArea{[this, &type](crypto::KeyStore::IndexedKeys128 &keys) {
             u8 keyGeneration{GetKeyGeneration()};
 
             auto &keyArea{keys[keyGeneration]};

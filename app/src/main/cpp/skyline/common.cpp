@@ -39,7 +39,7 @@ namespace skyline {
         logFile << "\0360\035" << str << '\n';
     }
 
-    void Logger::Write(LogLevel level, const std::string& str) {
+    void Logger::Write(LogLevel level, const std::string &str) {
         constexpr std::array<char, 5> levelCharacter{'E', 'W', 'I', 'D', 'V'}; // The LogLevel as written out to a file
         constexpr std::array<int, 5> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG, ANDROID_LOG_VERBOSE}; // This corresponds to LogLevel and provides its equivalent for NDK Logging
 

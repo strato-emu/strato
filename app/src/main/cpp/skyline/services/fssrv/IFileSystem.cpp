@@ -7,7 +7,7 @@
 #include "IFileSystem.h"
 
 namespace skyline::service::fssrv {
-    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(backing), BaseService(state, manager) {}
+    IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(std::move(backing)), BaseService(state, manager) {}
 
     Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path(request.inputBuf.at(0).as_string(true));
@@ -42,7 +42,7 @@ namespace skyline::service::fssrv {
         if (file == nullptr)
             return result::UnexpectedFailure;
         else
-            manager.RegisterService(std::make_shared<IFile>(file, state, manager), session, response);
+            manager.RegisterService(std::make_shared<IFile>(std::move(file), state, manager), session, response);
 
         return {};
     }
@@ -56,7 +56,7 @@ namespace skyline::service::fssrv {
         auto listMode{request.Pop<vfs::Directory::ListMode>()};
         auto directory{backing->OpenDirectory(path, listMode)};
 
-        manager.RegisterService(std::make_shared<IDirectory>(directory, backing, state, manager), session, response);
+        manager.RegisterService(std::make_shared<IDirectory>(std::move(directory), backing, state, manager), session, response);
         return {};
     }
 

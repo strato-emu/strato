@@ -62,7 +62,7 @@ namespace skyline {
              * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
              * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in its new affinity mask
              */
-            void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext* targetCore, std::unique_lock<std::mutex> &lock);
+            void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<std::mutex> &lock);
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
@@ -149,11 +149,11 @@ namespace skyline {
             const DeviceState &state;
 
           public:
-            inline SchedulerScopedLock(const DeviceState &state) : state(state) {
+            SchedulerScopedLock(const DeviceState &state) : state(state) {
                 state.scheduler->RemoveThread();
             }
 
-            inline ~SchedulerScopedLock() {
+            ~SchedulerScopedLock() {
                 state.scheduler->InsertThread(state.thread);
                 state.scheduler->WaitSchedule();
             }

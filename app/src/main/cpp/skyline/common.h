@@ -73,10 +73,7 @@ namespace skyline {
          */
         Result() = default;
 
-        constexpr Result(u16 module, u16 id) {
-            this->module = module;
-            this->id = id;
-        }
+        constexpr Result(u16 module, u16 id) : module(module), id(id) {}
 
         constexpr operator u32() const {
             return raw;
@@ -121,7 +118,7 @@ namespace skyline {
          * @param args The arguments based on format_str
          */
         template<typename S, typename... Args>
-        inline exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::FmtCast(args)...)) {}
+        exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::FmtCast(args)...)) {}
     };
 
     namespace util {
@@ -434,31 +431,31 @@ namespace skyline {
         void Write(LogLevel level, const std::string &str);
 
         template<typename S, typename... Args>
-        inline void Error(const S &formatStr, Args &&... args) {
+        void Error(const S &formatStr, Args &&... args) {
             if (LogLevel::Error <= configLevel)
                 Write(LogLevel::Error, fmt::format(formatStr, util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
-        inline void Warn(const S &formatStr, Args &&... args) {
+        void Warn(const S &formatStr, Args &&... args) {
             if (LogLevel::Warn <= configLevel)
                 Write(LogLevel::Warn, fmt::format(formatStr, util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
-        inline void Info(const S &formatStr, Args &&... args) {
+        void Info(const S &formatStr, Args &&... args) {
             if (LogLevel::Info <= configLevel)
                 Write(LogLevel::Info, fmt::format(formatStr, util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
-        inline void Debug(const S &formatStr, Args &&... args) {
+        void Debug(const S &formatStr, Args &&... args) {
             if (LogLevel::Debug <= configLevel)
                 Write(LogLevel::Debug, fmt::format(formatStr, util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
-        inline void Verbose(const S &formatStr, Args &&... args) {
+        void Verbose(const S &formatStr, Args &&... args) {
             if (LogLevel::Verbose <= configLevel)
                 Write(LogLevel::Verbose, fmt::format(formatStr, util::FmtCast(args)...));
         }

@@ -99,7 +99,7 @@ namespace skyline {
              */
             NvStatus SyncpointRegisterEvent(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
-            std::shared_ptr<type::KEvent> QueryEvent(u32 eventId);
+            std::shared_ptr<type::KEvent> QueryEvent(u32 eventId) override;
 
             NVDEVICE_DECL(
                 NVFUNC(0x001B, NvHostCtrl, GetConfig),

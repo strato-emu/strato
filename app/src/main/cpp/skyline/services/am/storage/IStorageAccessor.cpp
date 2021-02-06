@@ -5,7 +5,7 @@
 #include "IStorageAccessor.h"
 
 namespace skyline::service::am {
-    IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(parent), BaseService(state, manager) {}
+    IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(std::move(parent)), BaseService(state, manager) {}
 
     Result IStorageAccessor::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<i64>(parent->content.size());

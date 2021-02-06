@@ -12,7 +12,7 @@ namespace skyline {
         constexpr u8 ChannelCount{2}; //!< The common amount of channels to use for audio output
         constexpr u16 MixBufferSize{960}; //!< The size of the mix buffer by default
         constexpr auto PcmFormat{oboe::AudioFormat::I16}; //!< The common PCM data format to use for audio output
-    };
+    }
 
     namespace audio {
         enum class AudioFormat : u8 {

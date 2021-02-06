@@ -68,10 +68,10 @@ namespace skyline::loader {
         std::vector<u8> GetSegment(const NroSegmentHeader &segment);
 
       public:
-        NroLoader(const std::shared_ptr<vfs::Backing> &backing);
+        NroLoader(std::shared_ptr<vfs::Backing> backing);
 
-        std::vector<u8> GetIcon();
+        std::vector<u8> GetIcon() override;
 
-        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) override;
     };
 }

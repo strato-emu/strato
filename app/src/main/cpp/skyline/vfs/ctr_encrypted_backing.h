@@ -25,7 +25,7 @@ namespace skyline::vfs {
         void UpdateCtr(u64 offset);
 
       public:
-        CtrEncryptedBacking(crypto::KeyStore::Key128 &ctr, crypto::KeyStore::Key128 &key, const std::shared_ptr<Backing> &backing, size_t baseOffset);
+        CtrEncryptedBacking(crypto::KeyStore::Key128 ctr, crypto::KeyStore::Key128 key, std::shared_ptr<Backing> backing, size_t baseOffset);
 
         size_t Read(span<u8> output, size_t offset = 0) override;
     };

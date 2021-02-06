@@ -43,7 +43,7 @@ namespace skyline {
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
                 std::shared_ptr<KPrivateMemory> memory; //!< A single page sized memory allocation for this TLS page
 
-                TlsPage(const std::shared_ptr<KPrivateMemory> &memory);
+                TlsPage(std::shared_ptr<KPrivateMemory> memory);
 
                 /**
                  * @return A non-null pointer to a TLS page slot on success, a nullptr will be returned if this page is full
@@ -197,7 +197,7 @@ namespace skyline {
             /**
              * @brief Closes a handle in the handle table
              */
-            inline void CloseHandle(KHandle handle) {
+            void CloseHandle(KHandle handle) {
                 handles.at(handle - constant::BaseHandleIndex) = nullptr;
             }
 

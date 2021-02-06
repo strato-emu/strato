@@ -11,7 +11,7 @@ namespace skyline::gpu {
         }
 
         std::lock_guard guard(waiterLock);
-        waiterMap.insert({nextWaiterId, Waiter{threshold, callback}});
+        waiterMap.emplace(nextWaiterId, Waiter{threshold, callback});
 
         return nextWaiterId++;
     }
@@ -42,7 +42,7 @@ namespace skyline::gpu {
         std::condition_variable cv;
         bool flag{};
 
-        if (timeout == timeout.max())
+        if (timeout == std::chrono::steady_clock::duration::max())
             timeout = std::chrono::seconds(1);
 
         if (!RegisterWaiter(threshold, [&cv, &mtx, &flag] {
@@ -57,5 +57,5 @@ namespace skyline::gpu {
         std::unique_lock lock(mtx);
         return cv.wait_for(lock, timeout, [&flag] { return flag; });
     }
-};
+}
 

@@ -6,7 +6,7 @@
 namespace skyline::vfs {
     constexpr size_t SectorSize{0x10};
 
-    CtrEncryptedBacking::CtrEncryptedBacking(crypto::KeyStore::Key128 &ctr, crypto::KeyStore::Key128 &key, const std::shared_ptr<Backing> &backing, size_t baseOffset) : Backing({true, false, false}), ctr(ctr), cipher(key, MBEDTLS_CIPHER_AES_128_CTR), backing(backing), baseOffset(baseOffset) {}
+    CtrEncryptedBacking::CtrEncryptedBacking(crypto::KeyStore::Key128 ctr, crypto::KeyStore::Key128 key, std::shared_ptr<Backing> backing, size_t baseOffset) : Backing({true, false, false}), ctr(ctr), cipher(key, MBEDTLS_CIPHER_AES_128_CTR), backing(std::move(backing)), baseOffset(baseOffset) {}
 
     void CtrEncryptedBacking::UpdateCtr(u64 offset) {
         offset >>= 4;

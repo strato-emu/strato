@@ -29,7 +29,7 @@ namespace skyline {
              * @return If the given chunk can be contained wholly within this chunk
              */
             inline bool CanContain(const ChunkDescriptor &chunk) {
-                return (chunk.virtAddr >= this->virtAddr) && ((this->size + this->virtAddr) >= (chunk.size + chunk.virtAddr));
+                return (chunk.virtAddr >= virtAddr) && ((size + virtAddr) >= (chunk.size + chunk.virtAddr));
             }
         };
 

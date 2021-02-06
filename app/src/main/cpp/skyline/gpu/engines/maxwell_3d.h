@@ -569,7 +569,7 @@ namespace skyline {
              */
             void ResetRegs();
 
-            void CallMethod(MethodParams params);
+            void CallMethod(MethodParams params) override;
         };
     }
 }

@@ -122,7 +122,7 @@ namespace skyline::service::audio::IAudioRenderer {
         /**
          * @return If the voice is currently playable
          */
-        inline bool Playable() {
+        bool Playable() {
             return acquired && playbackState == skyline::audio::AudioOutState::Started && waveBuffers[bufferIndex].size != 0;
         }
     };

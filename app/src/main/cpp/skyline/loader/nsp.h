@@ -24,8 +24,8 @@ namespace skyline::loader {
       public:
         NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
 
-        std::vector<u8> GetIcon();
+        std::vector<u8> GetIcon() override;
 
-        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state);
+        void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) override;
     };
 }

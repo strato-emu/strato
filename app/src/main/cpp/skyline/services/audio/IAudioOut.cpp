@@ -6,7 +6,7 @@
 
 namespace skyline::service::audio {
     IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, u8 channelCount, u32 sampleRate) : sampleRate(sampleRate), channelCount(channelCount), releaseEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {
-        track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { this->releaseEvent->Signal(); });
+        track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { releaseEvent->Signal(); });
     }
 
     IAudioOut::~IAudioOut() {

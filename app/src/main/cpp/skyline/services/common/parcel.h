@@ -43,7 +43,7 @@ namespace skyline::service {
          * @return A reference to an item from the top of data
          */
         template<typename ValueType>
-        inline ValueType &Pop() {
+        ValueType &Pop() {
             ValueType &value{*reinterpret_cast<ValueType *>(data.data() + dataOffset)};
             dataOffset += sizeof(ValueType);
             return value;

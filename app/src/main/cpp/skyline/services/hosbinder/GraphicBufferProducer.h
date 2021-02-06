@@ -50,7 +50,7 @@ namespace skyline::service::hosbinder {
         std::shared_ptr<gpu::Texture> texture;
         GbpBuffer gbpBuffer;
 
-        Buffer(const GbpBuffer &gbpBuffer, const std::shared_ptr<gpu::Texture> &texture);
+        Buffer(const GbpBuffer &gbpBuffer, std::shared_ptr<gpu::Texture> texture);
     };
 
     /**

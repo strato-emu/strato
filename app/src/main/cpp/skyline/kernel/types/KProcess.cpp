@@ -4,10 +4,11 @@
 #include <nce.h>
 #include <os.h>
 #include <kernel/results.h>
+
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KProcess::TlsPage::TlsPage(const std::shared_ptr<KPrivateMemory> &memory) : memory(memory) {}
+    KProcess::TlsPage::TlsPage(std::shared_ptr<KPrivateMemory> memory) : memory(std::move(memory)) {}
 
     u8 *KProcess::TlsPage::ReserveSlot() {
         if (index == constant::TlsSlots)
