@@ -32,6 +32,13 @@ namespace skyline {
              */
             void TraverseDirectory(u32 offset, const std::string &path);
 
+          protected:
+            std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) override;
+
+            std::optional<Directory::EntryType> GetEntryTypeImpl(const std::string &path) override;
+
+            std::shared_ptr<Directory> OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) override;
+
           public:
             struct RomFsHeader {
                 u64 headerSize; //!< The size of the header
@@ -69,12 +76,6 @@ namespace skyline {
             std::unordered_map<std::string, RomFsDirectoryEntry> directoryMap; //!< A map that maps directory names to their corresponding entry
 
             RomFileSystem(std::shared_ptr<Backing> backing);
-
-            std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
-
-            std::optional<Directory::EntryType> GetEntryType(const std::string &path);
-
-            std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
         };
 
         /**

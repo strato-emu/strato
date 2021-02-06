@@ -14,6 +14,13 @@ namespace skyline::vfs {
         int fd; //!< An FD to the backing
         bool closable; //!< Whether the FD can be closed when the backing is destroyed
 
+      protected:
+        size_t ReadImpl(span<u8> output, size_t offset) override;
+
+        size_t WriteImpl(span<u8> input, size_t offset) override;
+
+        void ResizeImpl(size_t size) override;
+
       public:
         /**
          * @param fd The file descriptor of the backing
@@ -21,11 +28,5 @@ namespace skyline::vfs {
         OsBacking(int fd, bool closable = false, Mode = {true, false, false});
 
         ~OsBacking();
-
-        size_t Read(span<u8> output, size_t offset = 0);
-
-        size_t Write(span<u8> input, size_t offset = 0);
-
-        void Resize(size_t size);
     };
 }

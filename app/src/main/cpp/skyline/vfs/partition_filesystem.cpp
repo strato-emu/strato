@@ -31,7 +31,7 @@ namespace skyline::vfs {
         }
     }
 
-    std::shared_ptr<Backing> PartitionFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
+    std::shared_ptr<Backing> PartitionFileSystem::OpenFileImpl(const std::string &path, Backing::Mode mode) {
         try {
             auto &entry{fileMap.at(path)};
             return std::make_shared<RegionBacking>(backing, fileDataOffset + entry.offset, entry.size, mode);
@@ -40,16 +40,16 @@ namespace skyline::vfs {
         }
     }
 
-    std::optional<Directory::EntryType> PartitionFileSystem::GetEntryType(const std::string &path) {
+    std::optional<Directory::EntryType> PartitionFileSystem::GetEntryTypeImpl(const std::string &path) {
         if (fileMap.count(path))
             return Directory::EntryType::File;
 
         return std::nullopt;
     }
 
-    std::shared_ptr<Directory> PartitionFileSystem::OpenDirectory(const std::string &path, Directory::ListMode listMode) {
+    std::shared_ptr<Directory> PartitionFileSystem::OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) {
         // PFS doesn't have directories
-        if (path != "")
+        if (!path.empty())
             return nullptr;
 
         std::vector<Directory::Entry> fileList;

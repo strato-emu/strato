@@ -39,14 +39,15 @@ namespace skyline::vfs {
         std::shared_ptr<Backing> backing; //!< The backing file of the filesystem
         std::unordered_map<std::string, PartitionFileEntry> fileMap; //!< A map that maps file names to their corresponding entry
 
+      protected:
+        std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) override;
+
+        std::optional<Directory::EntryType> GetEntryTypeImpl(const std::string &path) override;
+
+        std::shared_ptr<Directory> OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) override;
+
       public:
         PartitionFileSystem(const std::shared_ptr<Backing> &backing);
-
-        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
-
-        std::optional<Directory::EntryType> GetEntryType(const std::string &path);
-
-        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
     };
 
     /**

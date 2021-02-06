@@ -49,7 +49,7 @@ namespace skyline::vfs {
             TraverseDirectory(entry.siblingOffset, path);
     }
 
-    std::shared_ptr<Backing> RomFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
+    std::shared_ptr<Backing> RomFileSystem::OpenFileImpl(const std::string &path, Backing::Mode mode) {
         try {
             const auto &entry{fileMap.at(path)};
             return std::make_shared<RegionBacking>(backing, header.dataOffset + entry.offset, entry.size, mode);
@@ -58,7 +58,7 @@ namespace skyline::vfs {
         }
     }
 
-    std::optional<Directory::EntryType> RomFileSystem::GetEntryType(const std::string &path) {
+    std::optional<Directory::EntryType> RomFileSystem::GetEntryTypeImpl(const std::string &path) {
         if (fileMap.count(path))
             return Directory::EntryType::File;
         else if (directoryMap.count(path))
@@ -67,7 +67,7 @@ namespace skyline::vfs {
         return std::nullopt;
     }
 
-    std::shared_ptr<Directory> RomFileSystem::OpenDirectory(const std::string &path, Directory::ListMode listMode) {
+    std::shared_ptr<Directory> RomFileSystem::OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) {
         try {
             auto &entry{directoryMap.at(path)};
             return std::make_shared<RomFileSystemDirectory>(backing, header, entry, listMode);

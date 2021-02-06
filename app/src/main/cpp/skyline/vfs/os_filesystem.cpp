@@ -15,7 +15,7 @@ namespace skyline::vfs {
                 throw exception("Error creating the OS filesystem backing directory");
     }
 
-    bool OsFileSystem::CreateFile(const std::string &path, size_t size) {
+    bool OsFileSystem::CreateFileImpl(const std::string &path, size_t size) {
         auto fullPath{basePath + path};
 
         // Create a directory that will hold the file
@@ -38,7 +38,7 @@ namespace skyline::vfs {
         return true;
     }
 
-    bool OsFileSystem::CreateDirectory(const std::string &path, bool parents) {
+    bool OsFileSystem::CreateDirectoryImpl(const std::string &path, bool parents) {
         if (!parents) {
             int ret{mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
             return ret == 0 || errno == EEXIST;
@@ -58,10 +58,7 @@ namespace skyline::vfs {
         return true;
     }
 
-    std::shared_ptr<Backing> OsFileSystem::OpenFile(const std::string &path, Backing::Mode mode) {
-        if (!(mode.read || mode.write))
-            throw exception("Cannot open a file that is neither readable or writable");
-
+    std::shared_ptr<Backing> OsFileSystem::OpenFileImpl(const std::string &path, Backing::Mode mode) {
         int fd{open((basePath + path).c_str(), (mode.read && mode.write) ? O_RDWR : (mode.write ? O_WRONLY : O_RDONLY))};
         if (fd < 0)
             throw exception("Failed to open file at '{}': {}", path, strerror(errno));
@@ -69,7 +66,7 @@ namespace skyline::vfs {
         return std::make_shared<OsBacking>(fd, true, mode);
     }
 
-    std::optional<Directory::EntryType> OsFileSystem::GetEntryType(const std::string &path) {
+    std::optional<Directory::EntryType> OsFileSystem::GetEntryTypeImpl(const std::string &path) {
         auto fullPath{basePath + path};
 
         auto directory{opendir(fullPath.c_str())};
@@ -84,7 +81,7 @@ namespace skyline::vfs {
         return std::nullopt;
     }
 
-    std::shared_ptr<Directory> OsFileSystem::OpenDirectory(const std::string &path, Directory::ListMode listMode) {
+    std::shared_ptr<Directory> OsFileSystem::OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) {
         return std::make_shared<OsFileSystemDirectory>(basePath + path, listMode);
     }
 

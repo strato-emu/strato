@@ -11,6 +11,23 @@ namespace skyline::vfs {
      * @brief The FileSystem class represents an abstract filesystem with child files and folders
      */
     class FileSystem {
+      protected:
+        virtual bool CreateFileImpl(const std::string &path, size_t size) {
+            throw exception("This filesystem does not support creating files");
+        };
+
+        virtual bool CreateDirectoryImpl(const std::string &path, bool parents) {
+            throw exception("This filesystem does not support creating directories");
+        };
+
+        virtual std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) = 0;
+
+        virtual std::optional<Directory::EntryType> GetEntryTypeImpl(const std::string &path) = 0;
+
+        virtual std::shared_ptr<Directory> OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) {
+            throw exception("This filesystem does not support opening directories");
+        };
+
       public:
         FileSystem() = default;
 
@@ -27,8 +44,8 @@ namespace skyline::vfs {
          * @param size The size of the file to create
          * @return Whether creating the file succeeded
          */
-        virtual bool CreateFile(const std::string &path, size_t size) {
-            throw exception("This filesystem does not support creating files");
+        bool CreateFile(const std::string &path, size_t size) {
+            return CreateFileImpl(path, size);
         };
 
         /**
@@ -37,8 +54,8 @@ namespace skyline::vfs {
          * @param parents Whether all parent directories in the given path should be created
          * @return Whether creating the directory succeeded
          */
-        virtual bool CreateDirectory(const std::string &path, bool parents) {
-            throw exception("This filesystem does not support creating directories");
+        bool CreateDirectory(const std::string &path, bool parents) {
+            return CreateDirectoryImpl(path, parents);
         };
 
         /**
@@ -47,14 +64,21 @@ namespace skyline::vfs {
          * @param mode The mode to open the file with
          * @return A shared pointer to a Backing object of the file
          */
-        virtual std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false}) = 0;
+        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false}) {
+            if (!mode.write && !mode.read)
+                throw exception("Cannot open a file with a mode that is neither readable nor writable");
+
+            return OpenFileImpl(path, mode);
+        }
 
         /**
          * @brief Queries the type of the entry given by path
          * @param path The path to the entry
          * @return The type of the entry, if present
          */
-        virtual std::optional<Directory::EntryType> GetEntryType(const std::string &path) = 0;
+        std::optional<Directory::EntryType> GetEntryType(const std::string &path) {
+            return GetEntryTypeImpl(path);
+        }
 
         /**
          * @brief Checks if a given file exists in a filesystem
@@ -82,8 +106,11 @@ namespace skyline::vfs {
          * @param listMode The list mode for the directory
          * @return A shared pointer to a Directory object of the directory
          */
-        virtual std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode) {
-            throw exception("This filesystem does not support opening directories");
+        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode = {true, true}) {
+            if (!listMode.raw)
+                throw exception("Cannot open a directory with an empty listMode");
+
+            return OpenDirectoryImpl(path, listMode);
         };
     };
 }

@@ -13,18 +13,19 @@ namespace skyline::vfs {
       private:
         std::string basePath; //!< The base path for filesystem operations
 
+      protected:
+        bool CreateFileImpl(const std::string &path, size_t size) override;
+
+        bool CreateDirectoryImpl(const std::string &path, bool parents) override;
+
+        std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) override;
+
+        std::optional<Directory::EntryType> GetEntryTypeImpl(const std::string &path) override;
+
+        std::shared_ptr<Directory> OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) override;
+
       public:
         OsFileSystem(const std::string &basePath);
-
-        bool CreateFile(const std::string &path, size_t size);
-
-        bool CreateDirectory(const std::string &path, bool parents);
-
-        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false});
-
-        std::optional<Directory::EntryType> GetEntryType(const std::string &path);
-
-        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode);
     };
 
     /**

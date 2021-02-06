@@ -14,20 +14,20 @@ namespace skyline::vfs {
         std::shared_ptr<vfs::Backing> backing; //!< The parent backing
         size_t baseOffset; //!< The offset of the region in the parent backing
 
+      protected:
+        size_t ReadImpl(span <u8> output, size_t offset) override {
+            return backing->Read(output, baseOffset + offset);
+        }
+
       public:
         /**
          * @param file The backing to create the RegionBacking from
          * @param offset The offset of the region start within the parent backing
          * @param size The size of the region in the parent backing
          */
-        RegionBacking(const std::shared_ptr<vfs::Backing> &backing, size_t offset, size_t size, Mode mode = {true, false, false}) : Backing(mode, size), backing(backing), baseOffset(offset) {};
-
-        size_t Read(span <u8> output, size_t offset = 0) {
-            if (!mode.read)
-                throw exception("Attempting to read a backing that is not readable");
-            if (size - offset < output.size())
-                throw exception("Trying to read past the end of a region backing: 0x{:X}/0x{:X} (Offset: 0x{:X})", output.size(), size, offset);
-            return backing->Read(output, baseOffset + offset);
-        }
+        RegionBacking(const std::shared_ptr<vfs::Backing> &backing, size_t offset, size_t size, Mode mode = {true, false, false}) : Backing(mode, size), backing(backing), baseOffset(offset) {
+            if (mode.write || mode.append)
+                throw exception("Cannot open a RegionBacking as writable");
+        };
     };
 }
