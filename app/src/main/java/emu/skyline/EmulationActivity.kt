@@ -39,7 +39,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private val binding by lazy { EmuActivityBinding.inflate(layoutInflater) }
 
     /**
-     * A map of [Vibrator]s that correspond to [inputManager.controllers]
+     * A map of [Vibrator]s that correspond to [InputManager.controllers]
      */
     private var vibrators = HashMap<Int, Vibrator>()
 
@@ -54,7 +54,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     private lateinit var emulationThread : Thread
 
-    private val settings by lazy { Settings(this) }
+    @Inject
+    lateinit var settings : Settings
 
     @Inject
     lateinit var inputManager : InputManager

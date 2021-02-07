@@ -15,15 +15,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.databinding.OnScreenEditActivityBinding
 import emu.skyline.utils.Settings
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class OnScreenEditActivity : AppCompatActivity() {
     private val binding by lazy { OnScreenEditActivityBinding.inflate(layoutInflater) }
 
     private var fullEditVisible = true
     private var editMode = false
+
+    @Inject
+    lateinit var settings : Settings
 
     private val closeAction : () -> Unit = {
         if (editMode) {
@@ -85,7 +91,7 @@ class OnScreenEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-        binding.onScreenControllerView.recenterSticks = Settings(this).onScreenControlRecenterSticks
+        binding.onScreenControllerView.recenterSticks = settings.onScreenControlRecenterSticks
 
         actions.forEach { pair ->
             binding.fabParent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, binding.fabParent, false).apply {

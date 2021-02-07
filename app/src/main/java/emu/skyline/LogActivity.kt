@@ -17,6 +17,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.LogViewItem
@@ -27,8 +28,10 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.URL
+import javax.inject.Inject
 import javax.net.ssl.HttpsURLConnection
 
+@AndroidEntryPoint
 class LogActivity : AppCompatActivity() {
     private val binding by lazy { LogActivityBinding.inflate(layoutInflater) }
 
@@ -39,6 +42,9 @@ class LogActivity : AppCompatActivity() {
 
     private val adapter = GenericAdapter()
 
+    @Inject
+    lateinit var settings : Settings
+
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,8 +52,6 @@ class LogActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        val settings = Settings(this)
 
         val compact = settings.logCompact
         val logLevel = settings.logLevel.toInt()

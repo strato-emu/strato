@@ -53,7 +53,8 @@ class ControllerActivity : AppCompatActivity() {
      */
     val axisMap = mutableMapOf<AxisId, ControllerStickViewItem>()
 
-    private val settings by lazy { Settings(this) }
+    @Inject
+    lateinit var settings : Settings
 
     @Inject
     lateinit var inputManager : InputManager

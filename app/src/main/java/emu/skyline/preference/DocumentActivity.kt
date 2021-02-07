@@ -10,11 +10,14 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.utils.Settings
+import javax.inject.Inject
 
 /**
  * This activity is used to launch a document picker and saves the result to preferences
  */
+@AndroidEntryPoint
 abstract class DocumentActivity : AppCompatActivity() {
     companion object {
         const val KEY_NAME = "key_name"
@@ -23,6 +26,9 @@ abstract class DocumentActivity : AppCompatActivity() {
     private lateinit var keyName : String
 
     protected abstract val actionIntent : Intent
+
+    @Inject
+    lateinit var settings : Settings
 
     /**
      * This launches the [Intent.ACTION_OPEN_DOCUMENT_TREE] intent on creation
@@ -46,7 +52,7 @@ abstract class DocumentActivity : AppCompatActivity() {
 
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-            Settings(this).refreshRequired = true
+            settings.refreshRequired = true
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putString(keyName, uri.toString())
                     .apply()

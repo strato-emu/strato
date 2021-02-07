@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.adapter.AppViewItem
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.HeaderViewItem
@@ -33,13 +34,17 @@ import emu.skyline.data.DataItem
 import emu.skyline.data.HeaderItem
 import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.LoaderResult
+import emu.skyline.loader.RomFormat
 import emu.skyline.utils.Settings
+import javax.inject.Inject
 import kotlin.math.ceil
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { MainActivityBinding.inflate(layoutInflater) }
 
-    private val settings by lazy { Settings(this) }
+    @Inject
+    lateinit var settings : Settings
 
     private val adapter = GenericAdapter()
 
@@ -52,16 +57,15 @@ class MainActivity : AppCompatActivity() {
     private fun AppItem.toViewItem() = AppViewItem(layoutType, this, missingIcon, ::selectStartGame, ::selectShowGameDialog)
 
     override fun onCreate(savedInstanceState : Bundle?) {
-        AppCompatDelegate.setDefaultNightMode(
-            when ((settings.appTheme.toInt())) {
-                0 -> AppCompatDelegate.MODE_NIGHT_NO
-                1 -> AppCompatDelegate.MODE_NIGHT_YES
-                2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
-            }
-        )
-
+        // Need to create new instance of settings, dependency injection happens
+        AppCompatDelegate.setDefaultNightMode(when ((Settings(this).appTheme.toInt())) {
+            0 -> AppCompatDelegate.MODE_NIGHT_NO
+            1 -> AppCompatDelegate.MODE_NIGHT_YES
+            2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
+        })
         super.onCreate(savedInstanceState)
+
         setContentView(binding.root)
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
@@ -195,7 +199,16 @@ class MainActivity : AppCompatActivity() {
         }
         is MainState.Loaded -> {
             binding.swipeRefreshLayout.isRefreshing = false
-            populateAdapter(state.items)
+
+            val formatOrder = arrayOf(RomFormat.NSP, RomFormat.NRO, RomFormat.NSO, RomFormat.NCA)
+            val items = mutableListOf<DataItem>()
+            for (format in formatOrder) {
+                state.items[format]?.let {
+                    items.add(HeaderItem(format.name))
+                    it.forEach { entry -> items.add(AppItem(entry)) }
+                }
+            }
+            populateAdapter(items)
         }
         is MainState.Error -> Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${state.ex.localizedMessage}", Snackbar.LENGTH_SHORT).show()
     }
