@@ -30,8 +30,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cxx-
 
-    - name: Setup Environment for Gradle
-      run: chmod +x gradlew
+    - name: Setup Environment for Gradle & Ninja Build
+      run: |
+        chmod +x gradlew
+        sudo apt-get install -y ninja-build
 
     - name: Android Lint
       run: ./gradlew --stacktrace lint

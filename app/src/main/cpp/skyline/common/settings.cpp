@@ -18,7 +18,7 @@ namespace skyline {
         std::tuple preferences{
             PREF_ELEM("operation_mode", operationMode, element.attribute("value").as_bool()),
             PREF_ELEM("username_value", username, element.text().as_string()),
-            PREF_ELEM("log_level", logLevel, element.attribute("value").as_int()),
+            PREF_ELEM("log_level", logLevel, static_cast<Logger::LogLevel>(element.text().as_uint(static_cast<unsigned int>(Logger::LogLevel::Info)))),
         };
 
         std::bitset<std::tuple_size_v<typeof(preferences)>> preferencesSet{}; // A bitfield to keep track of all the preferences we've set

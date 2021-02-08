@@ -11,7 +11,7 @@ namespace skyline {
      */
     class Settings {
       public:
-        int logLevel; //!< The minimum level that logs need to be for them to be printed
+        Logger::LogLevel logLevel; //!< The minimum level that logs need to be for them to be printed
         bool operationMode; //!< If the emulated Switch should be handheld or docked
         std::string username; //!< The name set by the user to be supplied to the guest
 

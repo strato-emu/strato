@@ -12,7 +12,7 @@
     <application
             android:name=".SkylineApplication"
             android:allowBackup="true"
-            android:extractNativeLibs="false"
+            android:extractNativeLibs="true"
             android:fullBackupContent="@xml/backup_descriptor"
             android:icon="@drawable/logo_skyline"
             android:isGame="true"

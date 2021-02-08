@@ -1,12 +1,13 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Setting" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
-    <module name="Skyline.app" />
+    <module name="skyline.app" />
     <option name="DEPLOY" value="true" />
     <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
     <option name="DEPLOY_AS_INSTANT" value="false" />
     <option name="ARTIFACT_NAME" value="" />
     <option name="PM_INSTALL_OPTIONS" value="" />
     <option name="ALL_USERS" value="false" />
+    <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
     <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
     <option name="ACTIVITY_EXTRA_FLAGS" value="" />
     <option name="MODE" value="specific_activity" />
