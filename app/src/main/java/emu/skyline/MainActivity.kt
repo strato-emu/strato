@@ -22,7 +22,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.size
 import androidx.lifecycle.observe
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
@@ -163,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         binding.appList.apply {
             while (itemDecorationCount > 0) removeItemDecorationAt(0)
             when (layoutType) {
-                LayoutType.List -> addItemDecoration(DividerItemDecoration(context, RecyclerView.VERTICAL))
+                LayoutType.List -> Unit
 
                 LayoutType.Grid, LayoutType.GridCompact -> addItemDecoration(GridSpacingItemDecoration())
             }

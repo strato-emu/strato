@@ -33,14 +33,14 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_gravity="center_vertical"
-                    android:layout_marginTop="16dp"
                     android:layout_marginEnd="4dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/refresh"
                     android:padding="5dp"
                     android:visibility="invisible"
+                    app:layout_constraintBottom_toBottomOf="@id/sub_text"
                     app:layout_constraintEnd_toStartOf="@id/log_icon"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/title_text"
                     app:srcCompat="@drawable/ic_refresh"
                     app:tint="?android:attr/textColorSecondary"
                     tools:visibility="visible" />
@@ -50,13 +50,13 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_gravity="center_vertical"
-                    android:layout_marginTop="16dp"
                     android:layout_marginEnd="4dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/log"
                     android:padding="5dp"
+                    app:layout_constraintBottom_toBottomOf="@id/sub_text"
                     app:layout_constraintEnd_toStartOf="@id/settings_icon"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/title_text"
                     app:srcCompat="@drawable/ic_log"
                     app:tint="?android:attr/textColorSecondary" />
 
@@ -65,13 +65,13 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_gravity="center_vertical"
-                    android:layout_marginTop="16dp"
                     android:layout_marginEnd="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/settings"
                     android:padding="5dp"
+                    app:layout_constraintBottom_toBottomOf="@id/sub_text"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/title_text"
                     app:srcCompat="@drawable/ic_settings"
                     app:tint="?android:attr/textColorSecondary" />
 
@@ -87,7 +87,22 @@
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="32sp"
                     android:textStyle="bold"
-                    app:layout_constraintTop_toBottomOf="@id/settings_icon" />
+                    app:layout_constraintEnd_toStartOf="@id/refresh_icon"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/sub_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginEnd="18dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.1"
+                    android:text="@string/emulator"
+                    android:textAllCaps="true"
+                    android:textSize="12sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/title_text" />
 
                 <emu.skyline.views.SearchBarView
                     android:id="@+id/search_bar"
@@ -98,7 +113,7 @@
                     android:layout_marginEnd="12dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:layout_constraintTop_toBottomOf="@id/title_text" />
+                    app:layout_constraintTop_toBottomOf="@id/sub_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
