@@ -8,6 +8,7 @@
     <string name="log">Logger</string>
     <string name="refresh">Refresh</string>
     <!-- Main -->
+    <string name="all">All</string>
     <string name="metadata_missing">Metadata Missing</string>
     <string name="icon">Icon</string>
     <string name="no_rom">Cannot find any ROMs</string>

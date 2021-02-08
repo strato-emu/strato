@@ -17,12 +17,15 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import androidx.core.view.size
 import androidx.lifecycle.observe
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.adapter.AppViewItem
@@ -33,6 +36,7 @@ import emu.skyline.data.AppItem
 import emu.skyline.data.DataItem
 import emu.skyline.data.HeaderItem
 import emu.skyline.databinding.MainActivityBinding
+import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.utils.Settings
@@ -41,6 +45,10 @@ import kotlin.math.ceil
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    companion object {
+        private val formatOrder = arrayOf(RomFormat.NSP, RomFormat.XCI, RomFormat.NRO, RomFormat.NSO, RomFormat.NCA)
+    }
+
     private val binding by lazy { MainActivityBinding.inflate(layoutInflater) }
 
     @Inject
@@ -54,16 +62,32 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel by viewModels<MainViewModel>()
 
+    private var formatFilter : RomFormat? = null
+    private var appEntries : Map<RomFormat, List<AppEntry>>? = null
+
+    private var refreshIconVisible = false
+        set(visible) {
+            field = visible
+            binding.refreshIcon.apply {
+                if (visible != isVisible) {
+                    binding.refreshIcon.alpha = if (visible) 0f else 1f
+                    animate().alpha(if (visible) 1f else 0f).withStartAction { isVisible = true }.withEndAction { isInvisible = !visible }.apply { duration = 500 }.start()
+                }
+            }
+        }
+
     private fun AppItem.toViewItem() = AppViewItem(layoutType, this, missingIcon, ::selectStartGame, ::selectShowGameDialog)
 
     override fun onCreate(savedInstanceState : Bundle?) {
         // Need to create new instance of settings, dependency injection happens
-        AppCompatDelegate.setDefaultNightMode(when ((Settings(this).appTheme.toInt())) {
-            0 -> AppCompatDelegate.MODE_NIGHT_NO
-            1 -> AppCompatDelegate.MODE_NIGHT_YES
-            2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
-        })
+        AppCompatDelegate.setDefaultNightMode(
+            when ((Settings(this).appTheme.toInt())) {
+                0 -> AppCompatDelegate.MODE_NIGHT_NO
+                1 -> AppCompatDelegate.MODE_NIGHT_YES
+                2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                else -> AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
+            }
+        )
         super.onCreate(savedInstanceState)
 
         setContentView(binding.root)
@@ -79,13 +103,26 @@ class MainActivity : AppCompatActivity() {
             setOnRefreshListener { loadRoms(false) }
         }
 
+        for (format in formatOrder) {
+            binding.chipGroup.addView(Chip(this, null, R.attr.chipChoiceStyle).apply { text = format.name })
+        }
+        binding.chipGroup.setOnCheckedChangeListener { group, checkedId ->
+            for (i in 0 until group.childCount) {
+                if (group.getChildAt(i).id == checkedId) {
+                    formatFilter = if (i == 0) null else formatOrder[i - 1]
+                    populateAdapter()
+                    break
+                }
+            }
+        }
+
         viewModel.stateData.observe(owner = this, onChanged = ::handleState)
         loadRoms(!settings.refreshRequired)
 
         binding.searchBar.apply {
-            setLogIconListener { startActivity(Intent(context, LogActivity::class.java)) }
-            setSettingsIconListener { startActivityForResult(Intent(context, SettingsActivity::class.java), 3) }
-            setRefreshIconListener { loadRoms(false) }
+            binding.logIcon.setOnClickListener { startActivity(Intent(context, LogActivity::class.java)) }
+            binding.settingsIcon.setOnClickListener { startActivityForResult(Intent(context, SettingsActivity::class.java), 3) }
+            binding.refreshIcon.setOnClickListener { loadRoms(false) }
             addTextChangedListener(afterTextChanged = { editable ->
                 editable?.let { text -> adapter.filter.filter(text.toString()) }
             })
@@ -95,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->
-            binding.searchBar.refreshIconVisible = !isInTouchMode
+            refreshIconVisible = !isInTouchMode
         }
     }
 
@@ -184,32 +221,38 @@ class MainActivity : AppCompatActivity() {
         binding.appList.layoutManager = CustomLayoutManager(gridSpan)
         setAppListDecoration()
 
-        if (settings.searchLocation.isEmpty()) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (settings.searchLocation.isEmpty()) startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }, 1)
+    }
 
-            startActivityForResult(intent, 1)
+    private fun getDataItems() = mutableListOf<DataItem>().apply {
+        appEntries?.let { entries ->
+            val formats = formatFilter?.let { arrayOf(it) } ?: formatOrder
+            for (format in formats) {
+                entries[format]?.let {
+                    add(HeaderItem(format.name))
+                    it.forEach { entry -> add(AppItem(entry)) }
+                }
+            }
         }
     }
 
     private fun handleState(state : MainState) = when (state) {
         MainState.Loading -> {
-            binding.searchBar.animateRefreshIcon()
+            binding.refreshIcon.animate().rotationBy(-180f)
             binding.swipeRefreshLayout.isRefreshing = true
         }
+
         is MainState.Loaded -> {
             binding.swipeRefreshLayout.isRefreshing = false
 
-            val formatOrder = arrayOf(RomFormat.NSP, RomFormat.NRO, RomFormat.NSO, RomFormat.NCA)
-            val items = mutableListOf<DataItem>()
-            for (format in formatOrder) {
-                state.items[format]?.let {
-                    items.add(HeaderItem(format.name))
-                    it.forEach { entry -> items.add(AppItem(entry)) }
-                }
-            }
-            populateAdapter(items)
+            appEntries = state.items
+            populateAdapter()
         }
+
         is MainState.Error -> Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${state.ex.localizedMessage}", Snackbar.LENGTH_SHORT).show()
     }
 
@@ -233,7 +276,8 @@ class MainActivity : AppCompatActivity() {
         settings.refreshRequired = false
     }
 
-    private fun populateAdapter(items : List<DataItem>) {
+    private fun populateAdapter() {
+        val items = getDataItems()
         adapter.setItems(items.map {
             when (it) {
                 is HeaderItem -> HeaderViewItem(it.title)

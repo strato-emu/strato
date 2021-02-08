@@ -15,8 +15,9 @@ import emu.skyline.utils.toFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
+import java.util.*
 import javax.inject.Inject
+import kotlin.collections.HashMap
 
 sealed class MainState {
     object Loading : MainState()
@@ -50,7 +51,7 @@ class MainViewModel @Inject constructor(private val romProvider : RomProvider) :
         val romsFile = File(context.filesDir.canonicalPath + "/roms.bin")
 
         viewModelScope.launch(Dispatchers.IO) {
-            if (loadFromFile) {
+            if (loadFromFile && romsFile.exists()) {
                 try {
                     state = MainState.Loaded(fromFile(romsFile))
                     return@launch
@@ -59,14 +60,19 @@ class MainViewModel @Inject constructor(private val romProvider : RomProvider) :
                 }
             }
 
-            val romElements = romProvider.loadRoms(searchLocation)
-            try {
-                romElements.toFile(romsFile)
-            } catch (e : IOException) {
-                Log.w(TAG, "Ran into exception while saving: ${e.message}")
+            state = if (searchLocation.toString().isEmpty()) {
+                @Suppress("ReplaceWithEnumMap")
+                MainState.Loaded(HashMap())
+            } else {
+                try {
+                    val romElements = romProvider.loadRoms(searchLocation)
+                    romElements.toFile(romsFile)
+                    MainState.Loaded(romElements)
+                } catch (e : Exception) {
+                    Log.w(TAG, "Ran into exception while saving: ${e.message}")
+                    MainState.Error(e)
+                }
             }
-
-            state = MainState.Loaded(romElements)
         }
     }
 }

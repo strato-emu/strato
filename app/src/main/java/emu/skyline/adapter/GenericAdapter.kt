@@ -5,7 +5,6 @@
 
 package emu.skyline.adapter
 
-import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.Filterable
@@ -101,7 +100,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
                 val avgScore = topResults.sumByDouble { it.score } / topResults.size
 
                 for (result in topResults)
-                    if (result.score > avgScore) filterData.add(result.item)
+                    if (result.score >= avgScore) filterData.add(result.item)
 
                 results.values = filterData
                 results.count = filterData.size

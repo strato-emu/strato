@@ -1,16 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="BaseAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowLightStatusBar">true</item>
-    </style>
-
-    <style name="AppTheme" parent="BaseAppTheme" />
-
-    <style name="roundedAppImage">
+    <style name="RoundedAppImage">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">6dp</item>
+    </style>
+
+    <style name="ChipChoice.Material">
+        <item name="colorPrimary">@color/colorOnPrimary</item>
+        <item name="colorOnPrimary">@color/colorPrimary</item>
+    </style>
+
+    <style name="ChipChoice" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="android:textAllCaps">true</item>
+        <item name="chipStartPadding">8dp</item>
+        <item name="chipEndPadding">8dp</item>
+        <item name="materialThemeOverlay">@style/ChipChoice.Material</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.MaterialComponents.LargeComponent</item>
     </style>
 </resources>

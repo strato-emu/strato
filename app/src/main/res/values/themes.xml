@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="BaseAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorSecondary">@color/colorOnPrimary</item>
+        <item name="colorOnSecondary">@color/colorPrimary</item>
+        <item name="android:statusBarColor">@color/colorPrimaryVariant</item>
+        <item name="android:navigationBarColor">@color/colorPrimaryVariant</item>
+
+        <item name="chipChoiceStyle">@style/ChipChoice</item>
+    </style>
+
+    <style name="AppTheme" parent="BaseAppTheme">
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="ToolbarTheme" parent="AppTheme">
+        <item name="colorPrimary">@color/colorPrimary</item>
+    </style>
+</resources>

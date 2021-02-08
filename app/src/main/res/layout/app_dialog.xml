@@ -14,7 +14,7 @@
             android:layout_height="150dp"
             android:contentDescription="@string/icon"
             android:focusable="false"
-            app:shapeAppearanceOverlay="@style/roundedAppImage"
+            app:shapeAppearanceOverlay="@style/RoundedAppImage"
             tools:src="@drawable/default_icon" />
 
     <LinearLayout

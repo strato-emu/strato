@@ -1,130 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/stick_layout"
-        android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/stick_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:animateLayoutChanges="true"
+    android:defaultFocusHighlightEnabled="false"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:focusedByDefault="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/stick_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginBottom="10dp"
+        android:animateLayoutChanges="true"
+        android:text="@string/stick_button"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/stick_subtitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:animateLayoutChanges="true"
-        android:defaultFocusHighlightEnabled="false"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:focusedByDefault="true"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-    <TextView
-            android:id="@+id/stick_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginBottom="10dp"
-            android:animateLayoutChanges="true"
-            android:text="@string/stick_button"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="16sp" />
-
-    <TextView
-            android:id="@+id/stick_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:animateLayoutChanges="true"
-            android:text="@string/use_button_axis"
-            android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-            android:textSize="16sp" />
+        android:text="@string/use_button_axis"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+        android:textSize="16sp" />
 
     <RelativeLayout
-            android:id="@+id/stick_circle_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:gravity="center">
+        android:id="@+id/stick_circle_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center">
 
         <ImageView
-                android:id="@+id/stick_circle_icon"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:alpha="0.4"
-                android:contentDescription="@string/buttons"
-                android:outlineProvider="bounds"
-                android:src="@drawable/ic_button"
-                app:tint="?android:attr/textColorPrimary" />
+            android:id="@+id/stick_circle_icon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:alpha="0.4"
+            android:contentDescription="@string/buttons"
+            android:outlineProvider="bounds"
+            android:src="@drawable/ic_button"
+            app:tint="?android:attr/textColorPrimary" />
 
 
         <RelativeLayout
-                android:id="@+id/stick_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignStart="@id/stick_circle_icon"
-                android:layout_alignTop="@id/stick_circle_icon"
-                android:layout_alignEnd="@id/stick_circle_icon"
-                android:layout_alignBottom="@id/stick_circle_icon">
+            android:id="@+id/stick_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/stick_circle_icon"
+            android:layout_alignTop="@id/stick_circle_icon"
+            android:layout_alignEnd="@id/stick_circle_icon"
+            android:layout_alignBottom="@id/stick_circle_icon">
 
             <ImageView
-                    android:id="@+id/stick_icon"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_margin="15dp"
-                    android:alpha="0.4"
-                    android:contentDescription="@string/buttons"
-                    android:outlineProvider="bounds"
-                    android:src="@drawable/ic_stick"
-                    app:tint="?android:attr/textColorPrimary" />
+                android:id="@+id/stick_icon"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_margin="15dp"
+                android:alpha="0.4"
+                android:contentDescription="@string/buttons"
+                android:outlineProvider="bounds"
+                android:src="@drawable/ic_stick"
+                app:tint="?android:attr/textColorPrimary" />
 
             <TextView
-                    android:id="@+id/stick_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignStart="@id/stick_icon"
-                    android:layout_alignTop="@id/stick_icon"
-                    android:layout_alignEnd="@id/stick_icon"
-                    android:layout_alignBottom="@id/stick_icon"
-                    android:alpha="0.55"
-                    android:fontFamily="monospace"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:textColor="@android:color/white"
-                    android:textSize="27sp" />
+                android:id="@+id/stick_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignStart="@id/stick_icon"
+                android:layout_alignTop="@id/stick_icon"
+                android:layout_alignEnd="@id/stick_icon"
+                android:layout_alignBottom="@id/stick_icon"
+                android:alpha="0.55"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@android:color/white"
+                android:textSize="27sp" />
 
         </RelativeLayout>
 
     </RelativeLayout>
 
     <SeekBar
-            android:id="@+id/stick_seekbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:max="100"
-            android:progress="25"
-            android:secondaryProgressTint="@color/colorPrimaryDark"
-            android:secondaryProgressTintMode="screen"
-            android:visibility="gone" />
+        android:id="@+id/stick_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:max="100"
+        android:progress="25"
+        android:secondaryProgressTintMode="screen"
+        android:visibility="gone" />
 
     <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end">
+
+        <Button
+            android:id="@+id/stick_reset"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end">
+            android:layout_marginEnd="10dp"
+            android:text="@string/reset"
+            android:textColor="?attr/colorAccent" />
 
         <Button
-                android:id="@+id/stick_reset"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"
-                android:text="@string/reset"
-                android:textColor="?attr/colorAccent" />
-
-        <Button
-                android:id="@+id/stick_next"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/next"
-                android:textColor="?attr/colorAccent" />
+            android:id="@+id/stick_next"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/next"
+            android:textColor="?attr/colorAccent" />
     </LinearLayout>
 </LinearLayout>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="CustomEditTextPreference">
-        <attr name="limit" format="integer"/>
+        <attr name="limit" format="integer" />
     </declare-styleable>
+    <attr name="chipChoiceStyle" format="reference" />
 </resources>

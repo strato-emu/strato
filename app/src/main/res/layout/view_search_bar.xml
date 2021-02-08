@@ -1,107 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        tools:parentTag="com.google.android.material.card.MaterialCardView">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:parentTag="com.google.android.material.card.MaterialCardView">
 
     <androidx.constraintlayout.motion.widget.MotionLayout
-            android:id="@+id/motion_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layoutDescription="@xml/view_search_bar_xml_constraintlayout_scene"
-            app:motionProgress="1"
-            tools:motionDebug="SHOW_ALL">
+        android:id="@+id/motion_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layoutDescription="@xml/view_search_bar_xml_constraintlayout_scene"
+        app:motionProgress="1"
+        tools:motionDebug="SHOW_ALL">
 
         <ImageView
-                android:id="@+id/search_icon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="16dp"
-                android:contentDescription="@string/search"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_search"
-                app:tint="?android:attr/textColorSecondary" />
+            android:id="@+id/search_icon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="16dp"
+            android:contentDescription="@string/search"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_search"
+            app:tint="?android:attr/textColorSecondary" />
 
         <EditText
-                android:id="@+id/search_field"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:background="@null"
-                android:focusedByDefault="false"
-                android:hint="@string/search"
-                android:importantForAutofill="no"
-                android:inputType="text"
-                android:singleLine="true"
-                android:textSize="16sp"
-                app:layout_constrainedWidth="true"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/refresh_icon"
-                app:layout_constraintHorizontal_bias="0"
-                app:layout_constraintStart_toEndOf="@id/search_icon"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:ignore="LabelFor" />
-
-        <ImageView
-                android:id="@+id/refresh_icon"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginEnd="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/refresh"
-                android:padding="5dp"
-                android:visibility="invisible"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/log_icon"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_refresh"
-                app:tint="?android:attr/textColorSecondary"
-                tools:visibility="visible" />
-
-        <ImageView
-                android:id="@+id/log_icon"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginEnd="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/log"
-                android:padding="5dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/settings_icon"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_log"
-                app:tint="?android:attr/textColorSecondary" />
-
-        <ImageView
-                android:id="@+id/settings_icon"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/settings"
-                android:padding="5dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_settings"
-                app:tint="?android:attr/textColorSecondary" />
+            android:id="@+id/search_field"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@null"
+            android:focusedByDefault="false"
+            android:hint="@string/search"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textSize="16sp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toEndOf="@id/search_icon"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="LabelFor" />
 
         <TextView
-                android:id="@+id/skyline_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/app_name"
-                android:textColor="?android:attr/textColorPrimary"
-                android:textSize="18sp" />
+            android:id="@+id/skyline_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/app_name"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="18sp" />
     </androidx.constraintlayout.motion.widget.MotionLayout>
 </merge>

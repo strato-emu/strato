@@ -4,15 +4,10 @@ import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.inputmethod.InputMethodManager
-import androidx.core.view.MarginLayoutParamsCompat
-import androidx.core.view.isInvisible
-import androidx.core.view.isVisible
 import com.google.android.material.card.MaterialCardView
 import emu.skyline.databinding.ViewSearchBarBinding
-import kotlin.math.roundToInt
 
 class SearchBarView @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = com.google.android.material.R.attr.materialCardViewStyle) : MaterialCardView(context, attrs, defStyleAttr) {
     private val binding = ViewSearchBarBinding.inflate(LayoutInflater.from(context), this)
@@ -20,32 +15,6 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
     init {
         useCompatPadding = true
     }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-        val margin = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16f, context.resources.displayMetrics).roundToInt()
-        MarginLayoutParamsCompat.setMarginStart(layoutParams as MarginLayoutParams?, margin)
-        MarginLayoutParamsCompat.setMarginEnd(layoutParams as MarginLayoutParams?, margin)
-
-        radius = margin / 2f
-        cardElevation = radius / 2f
-    }
-
-    fun setRefreshIconListener(listener : OnClickListener) = binding.refreshIcon.setOnClickListener(listener)
-    fun setLogIconListener(listener : OnClickListener) = binding.logIcon.setOnClickListener(listener)
-    fun setSettingsIconListener(listener : OnClickListener) = binding.settingsIcon.setOnClickListener(listener)
-
-    var refreshIconVisible = false
-        set(visible) {
-            field = visible
-            binding.refreshIcon.apply {
-                if (visible != isVisible) {
-                    binding.refreshIcon.alpha = if (visible) 0f else 1f
-                    animate().alpha(if (visible) 1f else 0f).withStartAction { isVisible = true }.withEndAction { isInvisible = !visible }.apply { duration = 500 }.start()
-                }
-            }
-        }
 
     var text : CharSequence
         get() = binding.searchField.text
@@ -63,10 +32,6 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
                 }
             }
         }
-    }
-
-    fun animateRefreshIcon() {
-        binding.refreshIcon.animate().rotationBy(-180f)
     }
 
     fun addTextChangedListener(

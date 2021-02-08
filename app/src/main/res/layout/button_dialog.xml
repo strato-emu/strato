@@ -1,81 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/button_layout"
-        android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/button_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:animateLayoutChanges="true"
+    android:defaultFocusHighlightEnabled="false"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:focusedByDefault="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/button_title"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:animateLayoutChanges="true"
-        android:defaultFocusHighlightEnabled="false"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:focusedByDefault="true"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-    <TextView
-            android:id="@+id/button_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:animateLayoutChanges="true"
-            android:text="@string/use_button_axis"
-            android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-            android:textSize="16sp" />
+        android:text="@string/use_button_axis"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+        android:textSize="16sp" />
 
     <RelativeLayout
-            android:id="@+id/button_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:animateLayoutChanges="true"
-            android:gravity="center">
+        android:id="@+id/button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:animateLayoutChanges="true"
+        android:gravity="center">
 
         <ImageView
-                android:id="@+id/button_icon"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:contentDescription="@string/buttons"
-                android:outlineProvider="bounds"
-                android:src="@drawable/ic_button"
-                app:tint="?android:attr/textColorPrimary" />
+            android:id="@+id/button_icon"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:contentDescription="@string/buttons"
+            android:outlineProvider="bounds"
+            android:src="@drawable/ic_button"
+            app:tint="?android:attr/textColorPrimary" />
 
         <TextView
-                android:id="@+id/button_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignStart="@id/button_icon"
-                android:layout_alignTop="@id/button_icon"
-                android:layout_alignEnd="@id/button_icon"
-                android:layout_alignBottom="@id/button_icon"
-                android:alpha="0.25"
-                android:fontFamily="monospace"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:textSize="27sp" />
+            android:id="@+id/button_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/button_icon"
+            android:layout_alignTop="@id/button_icon"
+            android:layout_alignEnd="@id/button_icon"
+            android:layout_alignBottom="@id/button_icon"
+            android:alpha="0.25"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textSize="27sp" />
 
     </RelativeLayout>
 
     <SeekBar
-            android:id="@+id/button_seekbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:max="100"
-            android:progress="25"
-            android:secondaryProgressTint="@color/colorPrimaryDark"
-            android:secondaryProgressTintMode="screen"
-            android:visibility="gone" />
+        android:id="@+id/button_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:max="100"
+        android:progress="25"
+        android:secondaryProgressTintMode="screen"
+        android:visibility="gone" />
 
     <Button
-            android:id="@+id/button_reset"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginEnd="10dp"
-            android:text="@string/reset"
-            android:textColor="?attr/colorAccent" />
+        android:id="@+id/button_reset"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="10dp"
+        android:text="@string/reset"
+        android:textColor="?attr/colorAccent" />
 </LinearLayout>
