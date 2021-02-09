@@ -76,7 +76,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
          */
         fun extractSorted() = allItems.mapNotNull { item ->
             item.key().toLowerCase(Locale.getDefault()).let {
-                val similarity = (jw.similarity(currentSearchTerm, it)) + cos.similarity(currentSearchTerm, it) / 2
+                val similarity = (jw.similarity(currentSearchTerm, it) + cos.similarity(currentSearchTerm, it)) / 2
                 if (similarity != 0.0) ScoredItem(similarity, item) else null
             }
         }.apply {
