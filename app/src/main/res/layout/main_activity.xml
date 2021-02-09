@@ -122,7 +122,7 @@
         android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="-4dp"
+        android:layout_marginTop="-8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -139,9 +139,10 @@
                     android:id="@+id/chip_group"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginEnd="18dp"
+                    android:paddingStart="18dp"
+                    android:paddingTop="16dp"
+                    android:paddingEnd="18dp"
+                    android:paddingBottom="4dp"
                     app:checkedChip="@id/all_chip"
                     app:chipSpacingHorizontal="16dp"
                     app:selectionRequired="true"
@@ -161,8 +162,7 @@
                 android:id="@+id/app_list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingTop="4dp" />
+                android:clipToPadding="false" />
         </LinearLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

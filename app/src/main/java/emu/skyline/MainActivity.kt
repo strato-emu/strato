@@ -108,12 +108,14 @@ class MainActivity : AppCompatActivity() {
         binding.chipGroup.setOnCheckedChangeListener { group, checkedId ->
             for (i in 0 until group.childCount) {
                 if (group.getChildAt(i).id == checkedId) {
+                    settings.filter = i
                     formatFilter = if (i == 0) null else formatOrder[i - 1]
                     populateAdapter()
                     break
                 }
             }
         }
+        binding.chipGroup.check(binding.chipGroup.getChildAt(settings.filter).id)
 
         viewModel.stateData.observe(owner = this, onChanged = ::handleState)
         loadRoms(!settings.refreshRequired)

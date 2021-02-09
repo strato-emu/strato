@@ -1,73 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:nextFocusRight="@id/game_play"
-        android:padding="16dp">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:nextFocusRight="@id/game_play"
+    android:padding="16dp">
 
     <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/game_icon"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:contentDescription="@string/icon"
-            android:focusable="false"
-            app:shapeAppearanceOverlay="@style/RoundedAppImage"
-            tools:src="@drawable/default_icon" />
+        android:id="@+id/game_icon"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:contentDescription="@string/icon"
+        android:focusable="false"
+        app:shapeAppearanceOverlay="@style/RoundedAppImage"
+        tools:src="@drawable/default_icon" />
 
     <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/game_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:orientation="vertical">
+            android:textAppearance="?android:attr/textAppearanceListItem"
+            android:textSize="18sp"
+            tools:text="Title" />
 
         <TextView
-                android:id="@+id/game_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceListItem"
-                android:textSize="18sp"
-                tools:text="Title" />
+            android:id="@+id/game_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+            android:textColor="@android:color/tertiary_text_light"
+            android:textSize="14sp"
+            tools:text="Subtitle" />
 
-        <TextView
-                android:id="@+id/game_subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                android:textColor="@android:color/tertiary_text_light"
-                android:textSize="14sp"
-                tools:text="Subtitle" />
-
-        <LinearLayout
-                android:id="@+id/linearLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            app:flexWrap="wrap">
 
             <Button
-                    android:id="@+id/game_play"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:focusedByDefault="true"
-                    android:text="@string/play"
-                    android:textColor="?attr/colorAccent"
-                    app:icon="@drawable/ic_play"
-                    app:iconTint="?attr/colorAccent" />
+                android:id="@+id/game_play"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:focusedByDefault="true"
+                android:text="@string/play"
+                android:textColor="?attr/colorAccent"
+                app:icon="@drawable/ic_play"
+                app:iconTint="?attr/colorAccent" />
 
             <Button
-                    android:id="@+id/game_pin"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/pin"
-                    android:textColor="?attr/colorAccent" />
-        </LinearLayout>
+                android:id="@+id/game_pin"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/pin"
+                android:textColor="?attr/colorAccent" />
+        </com.google.android.flexbox.FlexboxLayout>
     </LinearLayout>
 </LinearLayout>

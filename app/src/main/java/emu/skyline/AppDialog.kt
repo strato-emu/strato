@@ -48,9 +48,7 @@ class AppDialog : BottomSheetDialogFragment() {
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
-        return AppDialogBinding.inflate(inflater).also { binding = it }.root
-    }
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = AppDialogBinding.inflate(inflater).also { binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible and map the B button to back

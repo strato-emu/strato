@@ -22,7 +22,8 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
                 Float::class.java, java.lang.Float::class.java -> putFloat(keyName, value as Float)
                 Boolean::class.java, java.lang.Boolean::class.java -> putBoolean(keyName, value as Boolean)
                 String::class.java, java.lang.String::class.java -> putString(keyName, value as String)
-                else -> error("Unsupported type $clazz ${Float::class.java}")
+                Int::class.java, java.lang.Integer::class.java -> putInt(keyName, value as Int)
+                else -> error("Unsupported type $clazz")
             }
         }.apply()
     }
@@ -34,6 +35,7 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
                 Float::class.java, java.lang.Float::class.java -> it.getFloat(keyName, default as Float)
                 Boolean::class.java, java.lang.Boolean::class.java -> it.getBoolean(keyName, default as Boolean)
                 String::class.java, java.lang.String::class.java -> it.getString(keyName, default as String)
+                Int::class.java, java.lang.Integer::class.java -> it.getInt(keyName, default as Int)
                 else -> error("Unsupported type $clazz")
             }
         } as T

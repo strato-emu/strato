@@ -100,6 +100,7 @@ dependencies {
     implementation 'androidx.fragment:fragment-ktx:1.2.5'
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+    implementation 'com.google.android:flexbox:2.0.1'
 
     /* Kotlin */
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"

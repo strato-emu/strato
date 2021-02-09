@@ -31,16 +31,14 @@ object KeyReader {
         if (!DocumentFile.isDocumentUri(context, uri))
             return false
 
-        val fileName = DocumentFile.fromSingleUri(context, uri)!!.name
-        if (fileName?.substringAfterLast('.')?.startsWith("keys")?.not() == true)
-            return false
-
         val tmpOutputFile = File("${context.filesDir.canonicalFile}/${keyType.fileName}.tmp")
 
         val inputStream = context.contentResolver.openInputStream(uri)
         tmpOutputFile.bufferedWriter().use { writer ->
             val valid = inputStream!!.bufferedReader().useLines {
                 for (line in it) {
+                    if (line.startsWith(";")) continue
+
                     val pair = line.split("=")
                     if (pair.size != 2)
                         return@useLines false

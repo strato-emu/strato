@@ -33,4 +33,6 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
     var logCompact by sharedPreferences(context, false)
 
     var logLevel by sharedPreferences(context, "3")
+
+    var filter by sharedPreferences(context, 0)
 }
