@@ -113,7 +113,7 @@ namespace skyline::kernel {
                 core.queue.push_front(thread);
             }
             if (thread != state.thread)
-                core.frontCondition.notify_all(); // We only want to trigger the conditional variable if the current thread isn't inserting itself
+                thread->wakeCondition.notify_one(); // We only want to trigger the conditional variable if the current thread isn't inserting itself
         } else {
             core.queue.insert(nextThread, thread);
         }
@@ -126,7 +126,7 @@ namespace skyline::kernel {
         std::unique_lock lock(core->mutex);
         if (loadBalance && thread->affinityMask.count() > 1) {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
-            while (!core->frontCondition.wait_for(lock, loadBalanceThreshold, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
+            while (!thread->wakeCondition.wait_for(lock, loadBalanceThreshold, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
                 lock.unlock();
                 LoadBalance(state.thread);
                 if (thread->coreId == core->id) {
@@ -139,7 +139,7 @@ namespace skyline::kernel {
                 loadBalanceThreshold *= 2; // We double the duration required for future load balancing for this invocation to minimize pointless load balancing
             }
         } else {
-            core->frontCondition.wait(lock, [&]() { return !core->queue.empty() && core->queue.front() == thread; });
+            thread->wakeCondition.wait(lock, [&]() { return !core->queue.empty() && core->queue.front() == thread; });
         }
 
         if (thread->priority == core->preemptionPriority) {
@@ -156,7 +156,7 @@ namespace skyline::kernel {
         auto *core{&cores.at(thread->coreId)};
 
         std::unique_lock lock(core->mutex);
-        if (core->frontCondition.wait_for(lock, timeout, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
+        if (thread->wakeCondition.wait_for(lock, timeout, [&]() { return !core->queue.empty() && core->queue.front() == thread; })) {
             if (thread->priority == core->preemptionPriority) {
                 struct itimerspec spec{.it_value = {.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(PreemptiveTimeslice).count()}};
                 timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
@@ -182,8 +182,9 @@ namespace skyline::kernel {
             // Splice the linked element from the beginning of the queue to where it's priority is present
             core.queue.splice(std::upper_bound(core.queue.begin(), core.queue.end(), thread->priority.load(), type::KThread::IsHigherPriority), core.queue, core.queue.begin());
 
-            if (core.queue.front() != thread)
-                core.frontCondition.notify_all(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
+            auto& front{core.queue.front()};
+            if (front != thread)
+                front->wakeCondition.notify_one(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
         } else if (!thread->forceYield) { [[unlikely]]
             throw exception("T{} called Rotate while not being in C{}'s queue", thread->id, thread->coreId);
         }
@@ -267,7 +268,7 @@ namespace skyline::kernel {
         if (thread->coreId == constant::ParkedCoreId) {
             std::unique_lock lock(parkedMutex);
             parkedQueue.insert(std::upper_bound(parkedQueue.begin(), parkedQueue.end(), thread->priority.load(), type::KThread::IsHigherPriority), thread);
-            parkedFrontCondition.wait(lock, [&]() { return parkedQueue.front() == thread && thread->coreId != constant::ParkedCoreId; });
+            thread->wakeCondition.wait(lock, [&]() { return parkedQueue.front() == thread && thread->coreId != constant::ParkedCoreId; });
         }
 
         InsertThread(thread);
@@ -288,7 +289,7 @@ namespace skyline::kernel {
             if (parkedThread->priority < thread->priority || (parkedThread->priority == thread->priority && (!nextThread || parkedThread->timesliceStart < nextThread->timesliceStart))) {
                 parkedThread->coreId = thread->coreId;
                 parkedLock.unlock();
-                parkedFrontCondition.notify_all();
+                parkedThread->wakeCondition.notify_one();
             }
         }
     }
@@ -307,7 +308,7 @@ namespace skyline::kernel {
                         thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
 
                     if (it != core.queue.end())
-                        core.frontCondition.notify_all(); // We need to wake the thread at the front of the queue, if we were at the front previously
+                        (*it)->wakeCondition.notify_one(); // We need to wake the thread at the front of the queue, if we were at the front previously
                 }
             }
         }
