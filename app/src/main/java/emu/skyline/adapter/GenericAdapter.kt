@@ -79,9 +79,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
                 val similarity = (jw.similarity(currentSearchTerm, it) + cos.similarity(currentSearchTerm, it)) / 2
                 if (similarity != 0.0) ScoredItem(similarity, item) else null
             }
-        }.apply {
-            sortedByDescending { it.score }
-        }
+        }.sortedByDescending { it.score }
 
         /**
          * This performs filtering on the items in [allItems] based on similarity to [term]
