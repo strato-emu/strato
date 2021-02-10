@@ -7,7 +7,7 @@
 namespace skyline::service::audio::IAudioRenderer {
     IAudioRenderer::IAudioRenderer(const DeviceState &state, ServiceManager &manager, AudioRendererParameters &parameters)
         : systemEvent(std::make_shared<type::KEvent>(state, true)), parameters(parameters), BaseService(state, manager) {
-        track = state.audio->OpenTrack(constant::ChannelCount, constant::SampleRate, []() {});
+        track = state.audio->OpenTrack(constant::ChannelCount, constant::SampleRate, [&]() {systemEvent->Signal();});
         track->Start();
 
         memoryPools.resize(parameters.effectCount + parameters.voiceCount * 4);
@@ -69,7 +69,6 @@ namespace skyline::service::audio::IAudioRenderer {
             effects[i].ProcessInput(effectsIn[i]);
 
         UpdateAudio();
-        systemEvent->Signal();
 
         UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,
