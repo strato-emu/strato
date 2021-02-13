@@ -39,6 +39,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/common/settings.cpp
         ${source_DIR}/skyline/common/signal.cpp
+        ${source_DIR}/skyline/common/uuid.cpp
         ${source_DIR}/skyline/nce/guest.S
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp
