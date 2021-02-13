@@ -13,7 +13,7 @@ namespace skyline::vfs {
 
     void CtrEncryptedBacking::UpdateCtr(u64 offset) {
         offset >>= 4;
-        size_t le{__builtin_bswap64(offset)};
+        size_t le{util::SwapEndianness(offset)};
         std::memcpy(ctr.data() + 8, &le, 8);
         cipher.SetIV(ctr);
     }

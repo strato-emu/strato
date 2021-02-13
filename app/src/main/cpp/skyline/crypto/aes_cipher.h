@@ -21,7 +21,7 @@ namespace skyline::crypto {
          */
         static std::array<u8, 0x10> GetTweak(size_t sector) {
             std::array<u8, 0x10> tweak{};
-            size_t le{__builtin_bswap64(sector)};
+            size_t le{util::SwapEndianness(sector)};
             std::memcpy(tweak.data() + 8, &le, 8);
             return tweak;
         }

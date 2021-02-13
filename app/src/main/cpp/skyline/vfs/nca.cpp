@@ -81,8 +81,8 @@ namespace skyline::vfs {
                 auto key{!(rightsIdEmpty || useKeyArea) ? GetTitleKey() : GetKeyAreaKey(sectionHeader.encryptionType)};
 
                 std::array<u8, 0x10> ctr{};
-                u32 secureValueLE{__builtin_bswap32(sectionHeader.secureValue)};
-                u32 generationLE{__builtin_bswap32(sectionHeader.generation)};
+                u32 secureValueLE{util::SwapEndianness(sectionHeader.secureValue)};
+                u32 generationLE{util::SwapEndianness(sectionHeader.generation)};
                 std::memcpy(ctr.data(), &secureValueLE, 4);
                 std::memcpy(ctr.data() + 4, &generationLE, 4);
 

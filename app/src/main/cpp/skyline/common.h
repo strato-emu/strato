@@ -311,6 +311,24 @@ namespace skyline {
             return result >> (offset + 4);
         }
 
+        template<size_t N>
+        constexpr std::array<u8, N> SwapEndianness(std::array<u8, N> in) {
+            std::reverse(in.begin(), in.end());
+            return in;
+        }
+
+        constexpr u64 SwapEndianness(u64 in) {
+            return __builtin_bswap64(in);
+        }
+
+        constexpr u32 SwapEndianness(u32 in) {
+            return __builtin_bswap32(in);
+        }
+
+        constexpr u16 SwapEndianness(u16 in) {
+            return __builtin_bswap16(in);
+        }
+
         /**
          * @brief A compile-time hash function as std::hash isn't constexpr
          */
