@@ -182,12 +182,28 @@ We generally support the usage of functional programming and lambda, usage of it
 
 ### References
 For passing any parameter which isn't a primitive prefer to use references/const references to pass them into functions or other places as a copy can be avoided that way.  
-In addition, always use a const reference rather than a normal reference unless the argument needs to be modified in-place as the compiler knows the intent far better in that case.
+In addition, always use a const reference rather than a normal reference unless the argument needs to be modified in-place as the compiler knows the intent far better in that case.  
+Note: In constructors if you are copying to a member variable `std::move` is preferred as it allows copy-elision in some circumstances.
 ```cpp
 void DoSomething(const Class& class, u32 primitive);
-void ClassConstructor(const Class& class) : class(class) {} // Make a copy directly from a `const reference` for class member initialization
+void ClassConstructor(Class class) : class(std::move(class)) {} // Make a copy directly from a `const reference` for class member initialization
 ```
 
+### Member Variable Shadowing
+Shadowing of class member variables should be avoided aside from in constructors when they are exclusively used in the initialisation list.
+To avoid shadowing a prefix of p (parameter) or l (local) should be added to the offending variable:
+
+* Correct
+```cpp
+ClassA(ClassB pClassB) : classB(std::move(pClassB)) {
+	classB->Initialise();
+}
+```
+
+* Incorrect
+```c++
+ClassA(ClassB pClassB) : classB(std::move(pClassB)) {}
+```
 ### Range-based Iterators
 Use C++ range-based iterators for any C++ container iteration unless it can be performed better with functional programming (After C++20 when they are merged with the container). In addition, stick to using references/const references using them
 
