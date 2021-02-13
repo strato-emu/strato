@@ -71,12 +71,50 @@ namespace skyline {
         /**
          * @note Success is 0, it's the only result that's not specific to a module
          */
-        Result() = default;
+        constexpr Result() = default;
 
-        constexpr Result(u16 module, u16 id) : module(module), id(id) {}
+        constexpr explicit Result(u16 module, u16 id) : module(module), id(id) {}
 
         constexpr operator u32() const {
             return raw;
+        }
+    };
+
+    /**
+     * @brief A wrapper around std::optional that also stores a HOS result code
+     * @tparam T The object type to hold
+     */
+    template<typename T>
+    class ResultValue {
+        static_assert(!std::is_same<T, Result>::value);
+
+      private:
+        std::optional<T> value;
+
+      public:
+        Result result;
+
+        constexpr ResultValue(T value) : value(value) {};
+
+        constexpr ResultValue(Result result) : result(result) {};
+
+        template<typename G>
+        constexpr ResultValue(ResultValue<G> result) : result(result) {};
+
+        constexpr operator Result() const {
+            return result;
+        }
+
+        explicit constexpr operator bool() const {
+            return value.has_value();
+        }
+
+        constexpr T& operator*()  {
+            return *value;
+        }
+
+        constexpr T* operator->()  {
+            return &*value;
         }
     };
 
