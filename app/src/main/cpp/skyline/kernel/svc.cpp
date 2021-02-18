@@ -443,9 +443,16 @@ namespace skyline::kernel::svc {
     }
 
     void ClearEvent(const DeviceState &state) {
-        auto object{state.process->GetHandle<type::KEvent>(state.ctx->gpr.w0)};
-        object->signalled = false;
-        state.ctx->gpr.w0 = Result{};
+        KHandle handle{state.ctx->gpr.w0};
+        try {
+            std::static_pointer_cast<type::KEvent>(state.process->GetHandle(handle))->ResetSignal();
+            state.logger->Debug("svcClearEvent: Clearing event: 0x{:X}", handle);
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("svcClearEvent: 'handle' invalid: 0x{:X}", handle);
+            state.ctx->gpr.w0 = result::InvalidHandle;
+            return;
+        }
     }
 
     void MapSharedMemory(const DeviceState &state) {
