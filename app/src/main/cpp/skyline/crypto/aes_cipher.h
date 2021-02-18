@@ -9,6 +9,7 @@
 namespace skyline::crypto {
     /**
      * @brief Wrapper for mbedtls for AES decryption using a cipher
+     * @note The IV state must be appropriately locked during multi-threaded usage
      */
     class AesCipher {
       private:
