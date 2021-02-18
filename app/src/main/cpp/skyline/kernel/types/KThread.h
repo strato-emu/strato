@@ -41,7 +41,7 @@ namespace skyline {
             u64 entryArgument;
             void *stackTop;
 
-            std::condition_variable_any wakeCondition; //!< A conditional variable which is signalled to wake the current thread while it's sleeping
+            std::condition_variable wakeCondition; //!< A conditional variable which is signalled to wake the current thread while it's sleeping
             std::atomic<u8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
             std::atomic<u8> priority; //!< The priority of the thread for the scheduler
             i8 idealCore; //!< The ideal CPU core for this thread to run on

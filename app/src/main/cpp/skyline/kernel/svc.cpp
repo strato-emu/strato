@@ -412,10 +412,11 @@ namespace skyline::kernel::svc {
 
             state.logger->Debug("svcSetThreadCoreMask: Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
+            std::lock_guard guard(thread->coreMigrationMutex);
             thread->idealCore = idealCore;
             thread->affinityMask = affinityMask;
 
-            if (!affinityMask.test(thread->coreId)) {
+            if (!affinityMask.test(thread->coreId) && thread->coreId != constant::ParkedCoreId) {
                 state.logger->Debug("svcSetThreadCoreMask: Migrating thread #{} to Ideal Core C{} -> C{}", thread->id, thread->coreId, idealCore);
 
                 if (thread == state.thread) {
@@ -425,7 +426,7 @@ namespace skyline::kernel::svc {
                 } else if (!thread->running) {
                     thread->coreId = idealCore;
                 } else {
-                    throw exception("svcSetThreadCoreMask: Migrating a running thread due to a new core mask is not supported");
+                    state.scheduler->UpdateCore(thread);
                 }
             }
 

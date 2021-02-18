@@ -104,9 +104,20 @@ namespace skyline {
             void Rotate(bool cooperative = true);
 
             /**
+             * @brief Removes the calling thread from it's resident core queue
+             */
+            void RemoveThread();
+
+            /**
              * @brief Updates the placement of the supplied thread in it's resident core's queue according to it's new priority
              */
             void UpdatePriority(const std::shared_ptr<type::KThread>& thread);
+
+            /**
+             * @brief Updates the core that the supplied thread is resident to according to it's new affinity mask and ideal core
+             * @note This supports changing the core of a thread which is currently running
+             */
+            void UpdateCore(const std::shared_ptr<type::KThread>& thread);
 
             /**
              * @brief Parks the calling thread after removing it from it's resident core's queue and inserts it on the core it's been awoken on
@@ -119,11 +130,6 @@ namespace skyline {
              * @note We will only wake a thread if it is determined to be a better pick than the thread which would be run on this core next
              */
             void WakeParkedThread();
-
-            /**
-             * @brief Removes the calling thread from it's resident core queue
-             */
-            void RemoveThread();
         };
 
         /**
