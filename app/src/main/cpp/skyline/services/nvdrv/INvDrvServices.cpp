@@ -125,10 +125,14 @@ namespace skyline::service::nvdrv {
         // Strip the permissions from the command leaving only the ID
         cmd &= 0xFFFF;
 
-        if (request.inputBuf.empty() || request.outputBuf.size() < 2)
+        if (request.inputBuf.empty() || request.outputBuf.empty()) {
             throw exception("Inadequate amount of buffers for IOCTL3: I - {}, O - {}", request.inputBuf.size(), request.outputBuf.size());
-        else if (request.inputBuf[0].data() != request.outputBuf[0].data())
-            throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", request.inputBuf[0].data(), request.outputBuf[0].data(), request.outputBuf[1].data());
+        } else if (request.inputBuf[0].data() != request.outputBuf[0].data()) {
+            if (request.outputBuf.size() >= 2)
+                throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X}) [Output Buffer #2: 0x{:X}]", request.inputBuf[0].data(), request.outputBuf[0].data(), request.outputBuf[1].data());
+            else
+                throw exception("IOCTL3 Input Buffer (0x{:X}) != Output Buffer (0x{:X})", request.inputBuf[0].data(), request.outputBuf[0].data());
+        }
 
         span<u8> buffer{};
         if (request.inputBuf[0].size() >= request.outputBuf[0].size())
@@ -136,7 +140,8 @@ namespace skyline::service::nvdrv {
         else
             buffer = request.outputBuf[0];
 
-        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, buffer, request.outputBuf[1]));
+
+        response.Push(device->HandleIoctl(cmd, device::IoctlType::Ioctl3, buffer, request.outputBuf.size() >= 2 ? request.outputBuf[1] : span<u8>()));
         return {};
     }
 
