@@ -125,10 +125,15 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
         ${source_DIR}/skyline/services/hid/IAppletResource.cpp
         ${source_DIR}/skyline/services/hid/IActiveVibrationDeviceList.cpp
+        ${source_DIR}/skyline/services/timesrv/common.cpp
+        ${source_DIR}/skyline/services/timesrv/core.cpp
+        ${source_DIR}/skyline/services/timesrv/time_shared_memory.cpp
+        ${source_DIR}/skyline/services/timesrv/time_manager_server.cpp
         ${source_DIR}/skyline/services/timesrv/IStaticService.cpp
         ${source_DIR}/skyline/services/timesrv/ISystemClock.cpp
         ${source_DIR}/skyline/services/timesrv/ISteadyClock.cpp
         ${source_DIR}/skyline/services/timesrv/ITimeZoneService.cpp
+        ${source_DIR}/skyline/services/glue/IStaticService.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystemProxy.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystem.cpp
         ${source_DIR}/skyline/services/fssrv/IFile.cpp

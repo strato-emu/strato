@@ -126,6 +126,7 @@ namespace skyline {
         constexpr u16 DockedResolutionH{1080}; //!< The height component of the docked resolution
         // Time
         constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
+        constexpr u64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
     }
 
     namespace util {

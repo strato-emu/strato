@@ -8,6 +8,11 @@
 
 namespace skyline::service {
     /**
+     * @brief Holds global service state for service data that persists across sessions
+     */
+    struct GlobalServiceState;
+
+    /**
      * @brief The ServiceManager class manages passing IPC requests to the right Service and running event loops of Services
      */
     class ServiceManager {
@@ -25,6 +30,7 @@ namespace skyline::service {
 
       public:
         std::shared_ptr<BaseService> smUserInterface; //!< Used by applications to open connections to services
+        std::shared_ptr<GlobalServiceState> globalServiceState;
 
         ServiceManager(const DeviceState &state);
 

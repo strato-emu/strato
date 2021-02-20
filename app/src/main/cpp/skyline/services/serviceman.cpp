@@ -13,6 +13,8 @@
 #include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
+#include "glue/IStaticService.h"
+#include "services/timesrv/core.h"
 #include "fssrv/IFileSystemProxy.h"
 #include "services/nvdrv/INvDrvServices.h"
 #include "visrv/IManagerRootService.h"
@@ -29,15 +31,21 @@
 #include "prepo/IPrepoService.h"
 #include "serviceman.h"
 
-#define SERVICE_CASE(class, name) \
+#define SERVICE_CASE(class, name, ...) \
     case util::MakeMagic<ServiceName>(name): { \
-            std::shared_ptr<BaseService> serviceObject = std::make_shared<class>(state, *this); \
+            std::shared_ptr<BaseService> serviceObject = std::make_shared<class>(state, *this __VA_OPT__(,) __VA_ARGS__); \
             serviceMap[util::MakeMagic<ServiceName>(name)] = serviceObject; \
             return serviceObject; \
         }
 
 namespace skyline::service {
-    ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)) {}
+    struct GlobalServiceState {
+        timesrv::core::TimeServiceObject timesrv;
+
+        explicit GlobalServiceState(const DeviceState &state) : timesrv(state) {}
+    };
+
+    ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)), globalServiceState(std::make_shared<GlobalServiceState>(state)) {}
 
     std::shared_ptr<BaseService> ServiceManager::CreateService(ServiceName name) {
         auto serviceIter{serviceMap.find(name)};
@@ -54,9 +62,11 @@ namespace skyline::service {
             SERVICE_CASE(audio::IAudioOutManager, "audout:u")
             SERVICE_CASE(audio::IAudioRendererManager, "audren:u")
             SERVICE_CASE(hid::IHidServer, "hid")
-            SERVICE_CASE(timesrv::IStaticService, "time:s")
-            SERVICE_CASE(timesrv::IStaticService, "time:a")
-            SERVICE_CASE(timesrv::IStaticService, "time:u")
+            SERVICE_CASE(timesrv::IStaticService, "time:s", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemPermissions) // Both of these would be registered after TimeServiceManager::Setup normally but we call that in the GlobalServiceState constructor so can just list them here directly
+            SERVICE_CASE(timesrv::IStaticService, "time:su", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemUpdatePermissions)
+            SERVICE_CASE(glue::IStaticService, "time:a", globalServiceState->timesrv.managerServer.GetAdminStaticService(state, *this), timesrv::constant::StaticServiceAdminPermissions)
+            SERVICE_CASE(glue::IStaticService, "time:r", globalServiceState->timesrv.managerServer.GetRepairStaticService(state, *this), timesrv::constant::StaticServiceRepairPermissions)
+            SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetUserStaticService(state, *this), timesrv::constant::StaticServiceUserPermissions)
             SERVICE_CASE(fssrv::IFileSystemProxy, "fsp-srv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a")

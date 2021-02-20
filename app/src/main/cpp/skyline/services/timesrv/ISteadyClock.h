@@ -6,29 +6,45 @@
 #include <services/serviceman.h>
 
 namespace skyline::service::timesrv {
-    /**
-     * @url https://switchbrew.org/wiki/PSC_services#SteadyClockTimePoint
-     */
-    struct SteadyClockTimePoint {
-        u64 timepoint; //!< The point in time of this timepoint
-        u8 id[0x10]; //!< The ID of the source clock
-    };
+    namespace core {
+        class SteadyClockCore;
+    }
 
     /**
-     * @brief ISteadyClock is used to retrieve a steady time that increments uniformly for the lifetime on an application
+     * @brief ISteadyClock is used to interface with timesrv steady clocks
      * @url https://switchbrew.org/wiki/PSC_services#ISteadyClock
      */
     class ISteadyClock : public BaseService {
-      public:
-        ISteadyClock(const DeviceState &state, ServiceManager &manager);
+      private:
+        core::SteadyClockCore &core;
+        bool writeable;
+        bool ignoreUninitializedChecks;
 
-        /**
-         * @brief Returns the current value of the steady clock
-         */
+      public:
+        ISteadyClock(const DeviceState &state, ServiceManager &manager, core::SteadyClockCore &core, bool writeable, bool ignoreUninitializedChecks);
+
         Result GetCurrentTimePoint(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetTestOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result SetTestOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result GetRtcValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result IsRtcResetDetected(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result GetSetupResultValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result GetInternalOffset(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x0, ISteadyClock, GetCurrentTimePoint)
+            SFUNC(0x0, ISteadyClock, GetCurrentTimePoint),
+            SFUNC(0x2, ISteadyClock, GetTestOffset),
+            SFUNC(0x3, ISteadyClock, SetTestOffset),
+            SFUNC(0x64, ISteadyClock, GetRtcValue),
+            SFUNC(0x65, ISteadyClock, IsRtcResetDetected),
+            SFUNC(0x66, ISteadyClock, GetSetupResultValue),
+            SFUNC(0xC8, ISteadyClock, GetInternalOffset),
         )
     };
 }
