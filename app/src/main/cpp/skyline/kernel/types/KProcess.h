@@ -222,6 +222,16 @@ namespace skyline {
              * @brief Signals the conditional variable at the specified address
              */
             void ConditionalVariableSignal(u32 *key, u64 amount);
+
+            /**
+             * @brief Waits on the supplied address with the specified arbitration function
+             */
+            Result WaitForAddress(u32 *address, u32 value, i64 timeout, bool(*arbitrationFunction)(u32* address, u32 value));
+
+            /**
+             * @brief Signals a variable amount of waiters at the supplied address
+             */
+            Result SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32* address, u32 value, u32 waiterCount) = nullptr);
         };
     }
 }

@@ -217,6 +217,18 @@ namespace skyline::kernel::svc {
     void UnmapPhysicalMemory(const DeviceState &state);
 
     /**
+     * @brief Waits on an address based on the value of the address
+     * @url https://switchbrew.org/wiki/SVC#WaitForAddress
+     */
+    void WaitForAddress(const DeviceState &state);
+
+    /**
+     * @brief Signals a thread which is waiting on an address
+     * @url https://switchbrew.org/wiki/SVC#SignalToAddress
+     */
+    void SignalToAddress(const DeviceState &state);
+
+    /**
      * @brief The SVC Table maps all SVCs to their corresponding functions
      */
     static std::array<void (*)(const DeviceState &), 0x80> SvcTable{
@@ -272,8 +284,8 @@ namespace skyline::kernel::svc {
         nullptr, // 0x31
         nullptr, // 0x32
         nullptr, // 0x33
-        nullptr, // 0x34
-        nullptr, // 0x35
+        WaitForAddress, // 0x34
+        SignalToAddress, // 0x35
         nullptr, // 0x36
         nullptr, // 0x37
         nullptr, // 0x38

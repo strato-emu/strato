@@ -1032,4 +1032,119 @@ namespace skyline::kernel::svc {
 
         state.ctx->gpr.w0 = Result{};
     }
+
+    void WaitForAddress(const DeviceState &state) {
+        auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
+        if (!util::WordAligned(address)) [[unlikely]] {
+            state.logger->Warn("svcWaitForAddress: 'address' not word aligned: 0x{:X}", address);
+            state.ctx->gpr.w0 = result::InvalidAddress;
+            return;
+        }
+
+        enum class ArbitrationType : u32 {
+            WaitIfLessThan = 0,
+            DecrementAndWaitIfLessThan = 1,
+            WaitIfEqual = 2,
+        } arbitrationType{static_cast<ArbitrationType>(static_cast<u32>(state.ctx->gpr.w1))};
+        u32 value{state.ctx->gpr.w2};
+        i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
+
+        Result result;
+        switch (arbitrationType) {
+            case ArbitrationType::WaitIfLessThan:
+                state.logger->Debug("svcWaitForAddress: Waiting on 0x{:X} if less than {} for {}ns", address, value, timeout);
+                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
+                    return *address < value;
+                });
+                break;
+
+            case ArbitrationType::DecrementAndWaitIfLessThan:
+                state.logger->Debug("svcWaitForAddress: Waiting on and decrementing 0x{:X} if less than {} for {}ns", address, value, timeout);
+                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
+                    u32 userValue{__atomic_load_n(address, __ATOMIC_SEQ_CST)};
+                    do {
+                        if (value <= userValue) [[unlikely]] // We want to explicitly decrement **after** the check
+                            return false;
+                    } while (!__atomic_compare_exchange_n(address, &userValue, userValue - 1, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
+                    return true;
+                });
+                break;
+
+            case ArbitrationType::WaitIfEqual:
+                state.logger->Debug("svcWaitForAddress: Waiting on 0x{:X} if equal to {} for {}ns", address, value, timeout);
+                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
+                    return *address == value;
+                });
+                break;
+
+            default:
+                [[unlikely]]
+                    state.logger->Error("svcWaitForAddress: 'arbitrationType' invalid: {}", arbitrationType);
+                state.ctx->gpr.w0 = result::InvalidEnumValue;
+                return;
+        }
+
+        if (result == Result{})
+            [[likely]]
+                state.logger->Debug("svcWaitForAddress: Waited on 0x{:X} successfully", address);
+        else if (result == result::TimedOut)
+            state.logger->Debug("svcWaitForAddress: Wait on 0x{:X} has timed out after {}ns", address, timeout);
+        else if (result == result::InvalidState)
+            state.logger->Debug("svcWaitForAddress: The value at 0x{:X} did not satisfy the arbitration condition", address);
+
+        state.ctx->gpr.w0 = result;
+    }
+
+    void SignalToAddress(const DeviceState &state) {
+        auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
+        if (!util::WordAligned(address)) [[unlikely]] {
+            state.logger->Warn("svcWaitForAddress: 'address' not word aligned: 0x{:X}", address);
+            state.ctx->gpr.w0 = result::InvalidAddress;
+            return;
+        }
+
+        enum class SignalType : u32 {
+            Signal = 0,
+            SignalAndIncrementIfEqual = 1,
+            SignalAndModifyBasedOnWaitingThreadCountIfEqual = 2,
+        } signalType{static_cast<SignalType>(static_cast<u32>(state.ctx->gpr.w1))};
+        u32 value{state.ctx->gpr.w2};
+        i32 count{static_cast<i32>(state.ctx->gpr.w3)};
+
+        Result result;
+        switch (signalType) {
+            case SignalType::Signal:
+                state.logger->Debug("svcSignalToAddress: Signalling 0x{:X} for {} waiters", address, count);
+                result = state.process->SignalToAddress(address, value, count);
+                break;
+
+            case SignalType::SignalAndIncrementIfEqual:
+                state.logger->Debug("svcSignalToAddress: Signalling 0x{:X} and incrementing if equal to {} for {} waiters", address, value, count);
+                result = state.process->SignalToAddress(address, value, count, [](u32 *address, u32 value, u32) {
+                    return __atomic_compare_exchange_n(address, &value, value + 1, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                });
+                break;
+
+            case SignalType::SignalAndModifyBasedOnWaitingThreadCountIfEqual:
+                state.logger->Debug("svcSignalToAddress: Signalling 0x{:X} and setting to waiting thread count if equal to {} for {} waiters", address, value, count);
+                result = state.process->SignalToAddress(address, value, count, [](u32 *address, u32 value, u32 waiterCount) {
+                    return __atomic_compare_exchange_n(address, &value, waiterCount, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                });
+                break;
+
+            default:
+                [[unlikely]]
+                    state.logger->Error("svcSignalToAddress: 'signalType' invalid: {}", signalType);
+                state.ctx->gpr.w0 = result::InvalidEnumValue;
+                return;
+        }
+
+        if (result == Result{})
+            [[likely]]
+                state.logger->Debug("svcSignalToAddress: Signalled 0x{:X} for {} successfully", address, count);
+        else if (result == result::InvalidState)
+            state.logger->Debug("svcSignalToAddress: The value at 0x{:X} did not satisfy the mutation condition", address);
+
+        state.ctx->gpr.w0 = Result{};
+    }
 }

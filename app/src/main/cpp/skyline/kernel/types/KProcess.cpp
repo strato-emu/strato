@@ -285,4 +285,52 @@ namespace skyline::kernel::type {
         if (it == queue.second)
             __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
     }
+
+    Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, bool (*arbitrationFunction)(u32 *, u32)) {
+        {
+            std::lock_guard lock(syncWaiterMutex);
+            if (!arbitrationFunction(address, value)) [[unlikely]]
+                return result::InvalidState;
+
+            auto queue{syncWaiters.equal_range(address)};
+            syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {address, state.thread});
+
+            state.scheduler->RemoveThread();
+        }
+
+        if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
+            std::unique_lock lock(syncWaiterMutex);
+            auto queue{syncWaiters.equal_range(address)};
+            auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{address, state.thread})};
+            if (iterator != queue.second)
+                if (syncWaiters.erase(iterator) == queue.second)
+                    __atomic_store_n(address, false, __ATOMIC_SEQ_CST);
+
+            lock.unlock();
+            state.scheduler->InsertThread(state.thread);
+            state.scheduler->WaitSchedule();
+
+            return result::TimedOut;
+        } else {
+            state.scheduler->WaitSchedule(false);
+        }
+
+        return {};
+    }
+
+    Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount)) {
+        std::lock_guard lock(syncWaiterMutex);
+        auto queue{syncWaiters.equal_range(address)};
+
+        if (mutateFunction)
+            if (!mutateFunction(address, value, (amount <= 0) ? 0 : std::min(static_cast<u32>(std::distance(queue.first, queue.second) - amount), 0U))) [[unlikely]]
+                return result::InvalidState;
+
+        i32 waiterCount{amount};
+        if (queue.first != queue.second)
+            for (auto it{queue.first}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
+                state.scheduler->InsertThread(it->second);
+
+        return {};
+    }
 }
