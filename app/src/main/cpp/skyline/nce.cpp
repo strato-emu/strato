@@ -18,14 +18,14 @@ namespace skyline::nce {
         const auto &state{*ctx->state};
         try {
             auto function{kernel::svc::SvcTable[svc]};
-            if (function) {
+            if (function) [[likely]] {
                 state.logger->Debug("SVC called 0x{:X}", svc);
                 (*function)(state);
-            } else {
+            } else [[unlikely]] {
                 throw exception("Unimplemented SVC 0x{:X}", svc);
             }
 
-            while (kernel::Scheduler::YieldPending) {
+            while (kernel::Scheduler::YieldPending) [[unlikely]] {
                 state.scheduler->Rotate(false);
                 kernel::Scheduler::YieldPending = false;
                 state.scheduler->WaitSchedule();

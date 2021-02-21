@@ -221,7 +221,7 @@ namespace skyline {
             /**
              * @brief Signals the conditional variable at the specified address
              */
-            void ConditionalVariableSignal(u32 *key, u64 amount);
+            void ConditionalVariableSignal(u32 *key, i32 amount);
 
             /**
              * @brief Waits on the supplied address with the specified arbitration function

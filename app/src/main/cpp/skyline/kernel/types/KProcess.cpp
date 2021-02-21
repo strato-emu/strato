@@ -245,7 +245,6 @@ namespace skyline::kernel::type {
 
             state.scheduler->RemoveThread();
             MutexUnlock(mutex);
-            __sync_synchronize();
         }
 
         if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
@@ -255,9 +254,11 @@ namespace skyline::kernel::type {
             if (iterator != queue.second)
                 if (syncWaiters.erase(iterator) == queue.second)
                     __atomic_store_n(key, false, __ATOMIC_SEQ_CST);
+
             lock.unlock();
             state.scheduler->InsertThread(state.thread);
             state.scheduler->WaitSchedule();
+
             return result::TimedOut;
         } else {
             state.scheduler->WaitSchedule(false);
@@ -275,13 +276,15 @@ namespace skyline::kernel::type {
         }
     }
 
-    void KProcess::ConditionalVariableSignal(u32 *key, u64 amount) {
+    void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
         std::lock_guard lock(syncWaiterMutex);
         auto queue{syncWaiters.equal_range(key)};
+
         auto it{queue.first};
         if (queue.first != queue.second)
-            for (; it != queue.second && amount; it = syncWaiters.erase(it), amount--)
+            for (i32 waiterCount{amount}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
                 state.scheduler->InsertThread(it->second);
+
         if (it == queue.second)
             __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
     }

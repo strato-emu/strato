@@ -288,7 +288,7 @@ namespace skyline::kernel::svc {
 
         i64 in{static_cast<i64>(state.ctx->gpr.x0)};
         if (in > 0) {
-            state.logger->Debug("svcSleepThread: Thread sleeping for {} ns", in);
+            state.logger->Debug("svcSleepThread: Sleeping for {}ns", in);
 
             struct timespec spec{
                 .tv_sec = static_cast<time_t>(in / 1000000000),
@@ -302,6 +302,8 @@ namespace skyline::kernel::svc {
                 case yieldWithCoreMigration:
                     state.logger->Debug("svcSleepThread: Waking any appropriate parked threads");
                     state.scheduler->WakeParkedThread();
+                    break;
+
                 case yieldWithoutCoreMigration:
                     state.logger->Debug("svcSleepThread: Cooperative Yield");
                     state.scheduler->Rotate();
@@ -447,7 +449,7 @@ namespace skyline::kernel::svc {
         KHandle handle{state.ctx->gpr.w0};
         try {
             std::static_pointer_cast<type::KEvent>(state.process->GetHandle(handle))->ResetSignal();
-            state.logger->Debug("svcClearEvent: Clearing event: 0x{:X}", handle);
+            state.logger->Debug("svcClearEvent: Clearing 0x{:X}", handle);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcClearEvent: 'handle' invalid: 0x{:X}", handle);
@@ -525,7 +527,7 @@ namespace skyline::kernel::svc {
         KHandle handle{static_cast<KHandle>(state.ctx->gpr.w0)};
         try {
             state.process->CloseHandle(handle);
-            state.logger->Debug("svcCloseHandle: Closing handle: 0x{:X}", handle);
+            state.logger->Debug("svcCloseHandle: Closing 0x{:X}", handle);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcCloseHandle: 'handle' invalid: 0x{:X}", handle);
@@ -540,7 +542,7 @@ namespace skyline::kernel::svc {
             switch (object->objectType) {
                 case type::KType::KEvent:
                 case type::KType::KProcess:
-                    std::static_pointer_cast<type::KSyncObject>(object)->ResetSignal();
+                    state.ctx->gpr.w0 = std::static_pointer_cast<type::KSyncObject>(object)->ResetSignal() ? Result{} : result::InvalidState;
                     break;
 
                 default: {
@@ -550,7 +552,7 @@ namespace skyline::kernel::svc {
                 }
             }
 
-            state.logger->Debug("svcResetSignal: Resetting signal: 0x{:X}", handle);
+            state.logger->Debug("svcResetSignal: Resetting 0x{:X}", handle);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcResetSignal: 'handle' invalid: 0x{:X}", handle);
@@ -572,11 +574,7 @@ namespace skyline::kernel::svc {
         std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
         objectTable.reserve(numHandles);
 
-        std::string handleString;
         for (const auto &handle : waitHandles) {
-            if (Logger::LogLevel::Debug <= state.logger->configLevel)
-                handleString += fmt::format("* 0x{:X}\n", handle);
-
             auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {
                 case type::KType::KProcess:
@@ -595,7 +593,14 @@ namespace skyline::kernel::svc {
         }
 
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
-        state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
+        if (waitHandles.size() == 1) {
+            state.logger->Debug("svcWaitSynchronization: Waiting on 0x{:X} for {}ns", waitHandles[0], timeout);
+        } else if (Logger::LogLevel::Debug <= state.logger->configLevel) {
+            std::string handleString;
+            for (const auto &handle : waitHandles)
+                handleString += fmt::format("* 0x{:X}\n", handle);
+            state.logger->Debug("svcWaitSynchronization: Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
+        }
 
         std::unique_lock lock(type::KSyncObject::syncObjectMutex);
         if (state.thread->cancelSync) {
@@ -607,7 +612,7 @@ namespace skyline::kernel::svc {
         u32 index{};
         for (const auto &object : objectTable) {
             if (object->signalled) {
-                state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[index]);
+                state.logger->Debug("svcWaitSynchronization: Signalled 0x{:X}", waitHandles[index]);
                 state.ctx->gpr.w0 = Result{};
                 state.ctx->gpr.w1 = index;
                 return;
@@ -655,7 +660,7 @@ namespace skyline::kernel::svc {
         }
 
         if (wakeObject) {
-            state.logger->Debug("svcWaitSynchronization: Signalled handle: 0x{:X}", waitHandles[wakeIndex]);
+            state.logger->Debug("svcWaitSynchronization: Signalled 0x{:X}", waitHandles[wakeIndex]);
             state.ctx->gpr.w0 = Result{};
             state.ctx->gpr.w1 = wakeIndex;
         } else if (state.thread->cancelSync) {
@@ -680,6 +685,7 @@ namespace skyline::kernel::svc {
                 thread->isCancellable = false;
                 state.scheduler->InsertThread(thread);
             }
+            state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("svcCancelSynchronization: 'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
             state.ctx->gpr.w0 = result::InvalidHandle;
@@ -687,24 +693,24 @@ namespace skyline::kernel::svc {
     }
 
     void ArbitrateLock(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u32 *>(state.ctx->gpr.x1)};
-        if (!util::WordAligned(pointer)) {
-            state.logger->Warn("svcArbitrateLock: 'pointer' not word aligned: 0x{:X}", pointer);
+        auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x1)};
+        if (!util::WordAligned(mutex)) {
+            state.logger->Warn("svcArbitrateLock: 'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
-        state.logger->Debug("svcArbitrateLock: Locking mutex at 0x{:X}", pointer);
+        state.logger->Debug("svcArbitrateLock: Locking 0x{:X}", mutex);
 
         KHandle ownerHandle{state.ctx->gpr.w0};
         KHandle requesterHandle{state.ctx->gpr.w2};
-        auto result{state.process->MutexLock(pointer, ownerHandle, requesterHandle)};
+        auto result{state.process->MutexLock(mutex, ownerHandle, requesterHandle)};
         if (result == Result{})
-            state.logger->Debug("svcArbitrateLock: Locked mutex at 0x{:X}", pointer);
+            state.logger->Debug("svcArbitrateLock: Locked 0x{:X}", mutex);
+        else if (result == result::InvalidCurrentMemory)
+            result = Result{}; // If the mutex value isn't expected then it's still successful
         else if (result == result::InvalidHandle)
             state.logger->Warn("svcArbitrateLock: 'ownerHandle' invalid: 0x{:X}", ownerHandle);
-        else if (result == result::InvalidCurrentMemory)
-            state.logger->Debug("svcArbitrateLock: Owner handle did not match current owner for mutex or didn't have waiter flag at 0x{:X}", pointer);
 
         state.ctx->gpr.w0 = result;
     }
@@ -717,9 +723,9 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        state.logger->Debug("svcArbitrateUnlock: Unlocking mutex at 0x{:X}", mutex);
+        state.logger->Debug("svcArbitrateUnlock: Unlocking 0x{:X}", mutex);
         state.process->MutexUnlock(mutex);
-        state.logger->Debug("svcArbitrateUnlock: Unlocked mutex at 0x{:X}", mutex);
+        state.logger->Debug("svcArbitrateUnlock: Unlocked 0x{:X}", mutex);
 
         state.ctx->gpr.w0 = Result{};
     }
@@ -736,22 +742,22 @@ namespace skyline::kernel::svc {
         KHandle requesterHandle{state.ctx->gpr.w2};
 
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
-        state.logger->Debug("svcWaitProcessWideKeyAtomic: Mutex: 0x{:X}, Conditional-Variable: 0x{:X}, Timeout: {}ns", mutex, conditional, timeout);
+        state.logger->Debug("svcWaitProcessWideKeyAtomic: Waiting on 0x{:X} with 0x{:X} for {}ns", conditional, mutex, timeout);
 
         auto result{state.process->ConditionalVariableWait(conditional, mutex, requesterHandle, timeout)};
         if (result == Result{})
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for conditional variable (0x{:X}) and reacquired mutex", conditional);
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Waited for 0x{:X} and reacquired 0x{:X}", conditional, mutex);
         else if (result == result::TimedOut)
-            state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait has timed out ({}ns) for 0x{:X}", timeout, conditional);
+            state.logger->Debug("svcWaitProcessWideKeyAtomic: Wait on 0x{:X} has timed out after {}ns", conditional, timeout);
         state.ctx->gpr.w0 = result;
     }
 
     void SignalProcessWideKey(const DeviceState &state) {
-        auto key{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
-        KHandle count{state.ctx->gpr.w1};
+        auto conditional{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
+        i32 count{static_cast<i32>(state.ctx->gpr.w1)};
 
-        state.logger->Debug("svcSignalProcessWideKey: Signalling Conditional-Variable at 0x{:X} for {}", key, count);
-        state.process->ConditionalVariableSignal(key, count);
+        state.logger->Debug("svcSignalProcessWideKey: Signalling 0x{:X} for {} waiters", conditional, count);
+        state.process->ConditionalVariableSignal(conditional, count);
         state.ctx->gpr.w0 = Result{};
     }
 

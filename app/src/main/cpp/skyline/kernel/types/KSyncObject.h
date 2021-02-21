@@ -14,7 +14,7 @@ namespace skyline::kernel::type {
       public:
         inline static std::mutex syncObjectMutex; //!< A global lock used for locking all signalling to avoid races
         std::list<std::shared_ptr<KThread>> syncObjectWaiters; //!< A list of threads waiting on this object to be signalled
-        std::atomic<bool> signalled; //!< If the current object is signalled (An object stays signalled till the signal has been explicitly reset)
+        bool signalled; //!< If the current object is signalled (An object stays signalled till the signal has been explicitly reset)
 
         /**
          * @param presignalled If this object should be signalled initially or not
@@ -28,10 +28,15 @@ namespace skyline::kernel::type {
 
         /**
          * @brief Resets the object to an unsignalled state
+         * @return If the signal was reset or not
          */
-        inline void ResetSignal() {
+        inline bool ResetSignal() {
             std::lock_guard lock(syncObjectMutex);
-            signalled = false;
+            if (signalled) {
+                signalled = false;
+                return true;
+            }
+            return false;
         }
 
         virtual ~KSyncObject() = default;
