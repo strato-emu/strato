@@ -53,5 +53,10 @@ namespace skyline::crypto {
                 return std::nullopt;
             return it->second;
         }
+
+        /**
+         * @note Any title keys which are already in the store will not have their values updated
+         */
+        void PopulateTitleKey(Key128 keyName, Key128 value);
     };
 }

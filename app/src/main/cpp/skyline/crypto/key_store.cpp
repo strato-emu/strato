@@ -38,6 +38,11 @@ namespace skyline::crypto {
         titleKeys.emplace(key, valueArray);
     }
 
+    void KeyStore::PopulateTitleKey(Key128 keyName, Key128 value) {
+        if (!titleKeys.contains(keyName))
+            titleKeys.emplace(keyName, value);
+    }
+
     void KeyStore::PopulateKeys(std::string_view keyName, std::string_view value) {
         {
             auto it{key256Names.find(keyName)};

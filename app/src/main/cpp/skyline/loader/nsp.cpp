@@ -2,13 +2,30 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
+#include <vfs/ticket.h>
 #include "nca.h"
 #include "nsp.h"
 
 namespace skyline::loader {
-    NspLoader::NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : nsp(std::make_shared<vfs::PartitionFileSystem>(backing)) {
-        auto root{nsp->OpenDirectory("", {false, true})};
+    static void ExtractTickets(const std::shared_ptr<vfs::PartitionFileSystem>& dir, const std::shared_ptr<crypto::KeyStore> &keyStore) {
+        std::vector<vfs::Ticket> tickets;
 
+        auto dirContent{dir->OpenDirectory("", {false, true})};
+        for (const auto &entry : dirContent->Read()) {
+            if (entry.name.substr(entry.name.find_last_of('.') + 1) == "tik")
+                tickets.emplace_back(dir->OpenFile(entry.name));
+        }
+
+        for (auto ticket : tickets) {
+            auto titleKey{span(ticket.titleKeyBlock).subspan(0, 16).as<crypto::KeyStore::Key128>()};
+            keyStore->PopulateTitleKey(ticket.rightsId, titleKey);
+        }
+    }
+
+    NspLoader::NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore) : nsp(std::make_shared<vfs::PartitionFileSystem>(backing)) {
+        ExtractTickets(nsp, keyStore);
+
+        auto root{nsp->OpenDirectory("", {false, true})};
         for (const auto &entry : root->Read()) {
             if (entry.name.substr(entry.name.find_last_of('.') + 1) != "nca")
                 continue;
