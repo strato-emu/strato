@@ -45,19 +45,16 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
         behavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
-    /**
-     * This sets up all user interaction with this dialog
-     */
-    override fun onActivityCreated(savedInstanceState : Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
             val controller = inputManager.controllers[context.id]!!
 
             // View focus handling so all input is always directed to this view
-            view?.requestFocus()
-            view?.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if (!hasFocus) v.requestFocus() }
+            view.requestFocus()
+            view.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if (!hasFocus) v.requestFocus() }
 
             // Write the text for the button's icon
             binding.buttonText.text = item.button.short ?: item.button.toString()
@@ -145,7 +142,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
 
             val axesHistory = arrayOfNulls<Float>(axes.size) // The last recorded value of an axis, this is used to eliminate any stagnant axes
 
-            view?.setOnGenericMotionListener { _, event ->
+            view.setOnGenericMotionListener { _, event ->
                 // We retrieve the value of the HAT axes so that we can check for change and ignore any input from them so it'll be passed onto the [KeyEvent] handler
                 val dpadX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
                 val dpadY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)

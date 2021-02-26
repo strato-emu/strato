@@ -45,11 +45,8 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
         behavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
-    /**
-     * This sets up all user interaction with this dialog
-     */
-    override fun onActivityCreated(savedInstanceState : Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity

@@ -11,6 +11,7 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -20,7 +21,6 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.size
-import androidx.lifecycle.observe
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -75,6 +75,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
+        it?.let { uri ->
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            settings.searchLocation = uri.toString()
+
+            loadRoms(false)
+        }
+    }
+
+    private val settingsCallback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (settings.refreshRequired) loadRoms(false)
+    }
+
     private fun AppItem.toViewItem() = AppViewItem(layoutType, this, missingIcon, ::selectStartGame, ::selectShowGameDialog)
 
     override fun onCreate(savedInstanceState : Bundle?) {
@@ -117,12 +130,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.chipGroup.check(binding.chipGroup.getChildAt(settings.filter).id)
 
-        viewModel.stateData.observe(owner = this, onChanged = ::handleState)
+        viewModel.stateData.observe(this, ::handleState)
         loadRoms(!settings.refreshRequired)
 
         binding.searchBar.apply {
             binding.logIcon.setOnClickListener { startActivity(Intent(context, LogActivity::class.java)) }
-            binding.settingsIcon.setOnClickListener { startActivityForResult(Intent(context, SettingsActivity::class.java), 3) }
+            binding.settingsIcon.setOnClickListener { settingsCallback.launch(Intent(context, SettingsActivity::class.java)) }
             binding.refreshIcon.setOnClickListener { loadRoms(false) }
             addTextChangedListener(afterTextChanged = { editable ->
                 editable?.let { text -> adapter.filter.filter(text.toString()) }
@@ -222,11 +235,7 @@ class MainActivity : AppCompatActivity() {
         binding.appList.layoutManager = CustomLayoutManager(gridSpan)
         setAppListDecoration()
 
-        if (settings.searchLocation.isEmpty()) startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-            flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
-                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }, 1)
+        if (settings.searchLocation.isEmpty()) documentPicker.launch(null)
     }
 
     private fun getDataItems() = mutableListOf<DataItem>().apply {
@@ -286,41 +295,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
         if (items.isEmpty()) adapter.setItems(listOf(HeaderViewItem(getString(R.string.no_rom))))
-    }
-
-    /**
-     * This handles receiving activity result from [Intent.ACTION_OPEN_DOCUMENT_TREE], [Intent.ACTION_OPEN_DOCUMENT] and [SettingsActivity]
-     */
-    override fun onActivityResult(requestCode : Int, resultCode : Int, intent : Intent?) {
-        super.onActivityResult(requestCode, resultCode, intent)
-
-        if (resultCode == RESULT_OK) {
-            when (requestCode) {
-                1 -> {
-                    val uri = intent!!.data!!
-                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    settings.searchLocation = uri.toString()
-
-                    loadRoms(!settings.refreshRequired)
-                }
-
-                2 -> {
-                    try {
-                        val intentGame = Intent(this, EmulationActivity::class.java)
-                        intentGame.data = intent!!.data!!
-
-                        if (resultCode != 0)
-                            startActivityForResult(intentGame, resultCode)
-                        else
-                            startActivity(intentGame)
-                    } catch (e : Exception) {
-                        Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${e.localizedMessage}", Snackbar.LENGTH_SHORT).show()
-                    }
-                }
-
-                3 -> if (settings.refreshRequired) loadRoms(false)
-            }
-        }
     }
 
     override fun onResume() {

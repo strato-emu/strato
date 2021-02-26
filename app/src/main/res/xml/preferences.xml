@@ -3,7 +3,7 @@
     <PreferenceCategory
             android:key="category_emulator"
             android:title="@string/emulator">
-        <emu.skyline.preference.FolderPreference
+        <emu.skyline.preference.FolderPickerPreference
                 app:key="search_location"
                 app:title="@string/search_location" />
         <emu.skyline.preference.ThemePreference
@@ -54,11 +54,11 @@
     <PreferenceCategory
             android:key="category_keys"
             android:title="@string/keys">
-        <emu.skyline.preference.FilePreference
+        <emu.skyline.preference.KeyPickerPreference
                 app:key="prod_keys"
                 app:title="@string/prod_keys"
                 app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.FilePreference
+        <emu.skyline.preference.KeyPickerPreference
                 app:key="title_keys"
                 app:title="@string/title_keys"
                 app:useSimpleSummaryProvider="true" />

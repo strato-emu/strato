@@ -5,10 +5,12 @@
 
 package emu.skyline.preference
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import emu.skyline.R
 import emu.skyline.di.getInputManager
@@ -17,7 +19,12 @@ import emu.skyline.input.ControllerActivity
 /**
  * This preference is used to launch [ControllerActivity] using a preference
  */
-class ControllerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : ActivityResultPreference(context, attrs, defStyleAttr) {
+class ControllerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
+    private val controllerCallback = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        inputManager.syncObjects()
+        notifyChanged()
+    }
+
     /**
      * The index of the controller this preference manages
      */
@@ -48,14 +55,5 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
     /**
      * This launches [ControllerActivity] on click to configure the controller
      */
-    override fun onClick() {
-        (context as Activity).startActivityForResult(Intent(context, ControllerActivity::class.java).apply { putExtra("index", index) }, requestCode)
-    }
-
-    override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-        if (this.requestCode == requestCode) {
-            inputManager.syncObjects()
-            notifyChanged()
-        }
-    }
+    override fun onClick() = controllerCallback.launch(Intent(context, ControllerActivity::class.java))
 }

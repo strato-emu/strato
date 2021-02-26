@@ -68,11 +68,8 @@ class AppDialog : BottomSheetDialogFragment() {
         }
     }
 
-    /**
-     * This fills all the dialog with the information from [item] if it is valid and setup all user interaction
-     */
-    override fun onActivityCreated(savedInstanceState : Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
 

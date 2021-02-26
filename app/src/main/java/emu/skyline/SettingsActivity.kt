@@ -5,15 +5,11 @@
 
 package emu.skyline
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceGroup
 import emu.skyline.databinding.SettingsActivityBinding
-import emu.skyline.preference.ActivityResultPreference
-import emu.skyline.preference.DocumentActivity
 
 class SettingsActivity : AppCompatActivity() {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
@@ -35,57 +31,21 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.settings, preferenceFragment)
-                .commit()
-    }
-
-    /**
-     * This is used to refresh the preferences after [DocumentActivity] or [emu.skyline.input.ControllerActivity] has returned
-     */
-    public override fun onActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        preferenceFragment.delegateActivityResult(requestCode, resultCode, data)
+            .beginTransaction()
+            .replace(R.id.settings, preferenceFragment)
+            .commit()
     }
 
     /**
      * This fragment is used to display all of the preferences
      */
     class PreferenceFragment : PreferenceFragmentCompat() {
-        private var requestCodeCounter = 0
-
-        /**
-         * Delegates activity result to all preferences which implement [ActivityResultPreference]
-         */
-        fun delegateActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-            preferenceScreen.delegateActivityResult(requestCode, resultCode, data)
-        }
 
         /**
          * This constructs the preferences from [R.xml.preferences]
          */
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
-            preferenceScreen.assignActivityRequestCode()
-        }
-
-        private fun PreferenceGroup.assignActivityRequestCode() {
-            for (i in 0 until preferenceCount) {
-                when (val pref = getPreference(i)) {
-                    is PreferenceGroup -> pref.assignActivityRequestCode()
-                    is ActivityResultPreference -> pref.requestCode = requestCodeCounter++
-                }
-            }
-        }
-
-        private fun PreferenceGroup.delegateActivityResult(requestCode : Int, resultCode : Int, data : Intent?) {
-            for (i in 0 until preferenceCount) {
-                when (val pref = getPreference(i)) {
-                    is PreferenceGroup -> pref.delegateActivityResult(requestCode, resultCode, data)
-                    is ActivityResultPreference -> pref.onActivityResult(requestCode, resultCode, data)
-                }
-            }
         }
     }
 

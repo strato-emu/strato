@@ -14,7 +14,6 @@ import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerStickViewItem
 import emu.skyline.databinding.StickDialogBinding
@@ -22,7 +21,6 @@ import emu.skyline.di.getInputManager
 import emu.skyline.input.*
 import emu.skyline.input.MotionHostEvent.Companion.axes
 import java.util.*
-import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -224,19 +222,16 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         }
     }
 
-    /**
-     * This sets up all user interaction with this dialog
-     */
-    override fun onActivityCreated(savedInstanceState : Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
             val controller = inputManager.controllers[context.id]!!
 
             // View focus handling so all input is always directed to this view
-            view?.requestFocus()
-            view?.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if (!hasFocus) v.requestFocus() }
+            view.requestFocus()
+            view.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if (!hasFocus) v.requestFocus() }
 
             // Write the text for the stick's icon
             binding.stickName.text = item.stick.button.short ?: item.stick.button.toString()
@@ -286,7 +281,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                 axisRunnable?.let { handler.removeCallbacks(it) }
             }
 
-            view?.setOnKeyListener { _, _, event ->
+            view.setOnKeyListener { _, _, event ->
                 when {
                     // We want all input events from Joysticks and Buttons except for [KeyEvent.KEYCODE_BACK] as that will should be processed elsewhere
                     ((event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON) && event.keyCode != KeyEvent.KEYCODE_BACK) || event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) && event.repeatCount == 0 -> {
@@ -415,7 +410,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
 
             var oldHat = Pair(0.0f, 0.0f) // The last values of the HAT axes so that they can be ignored in [View.OnGenericMotionListener] so they are passed onto [DialogInterface.OnKeyListener] as [KeyEvent]s
 
-            view?.setOnGenericMotionListener { _, event ->
+            view.setOnGenericMotionListener { _, event ->
                 // We retrieve the value of the HAT axes so that we can check for change and ignore any input from them so it'll be passed onto the [KeyEvent] handler
                 val hat = Pair(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
 
