@@ -7,6 +7,7 @@
 #include "skyline/loader/nro.h"
 #include "skyline/loader/nso.h"
 #include "skyline/loader/nca.h"
+#include "skyline/loader/xci.h"
 #include "skyline/loader/nsp.h"
 #include "skyline/jvm.h"
 
@@ -30,6 +31,9 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
                 break;
             case skyline::loader::RomFormat::NCA:
                 loader = std::make_unique<skyline::loader::NcaLoader>(backing, keyStore);
+                break;
+            case skyline::loader::RomFormat::XCI:
+                loader = std::make_unique<skyline::loader::XciLoader>(backing, keyStore);
                 break;
             case skyline::loader::RomFormat::NSP:
                 loader = std::make_unique<skyline::loader::NspLoader>(backing, keyStore);

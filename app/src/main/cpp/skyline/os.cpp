@@ -9,6 +9,7 @@
 #include "loader/nso.h"
 #include "loader/nca.h"
 #include "loader/nsp.h"
+#include "loader/xci.h"
 #include "os.h"
 
 namespace skyline::kernel {
@@ -28,6 +29,8 @@ namespace skyline::kernel {
                     return std::make_shared<loader::NcaLoader>(std::move(romFile), std::move(keyStore));
                 case loader::RomFormat::NSP:
                     return std::make_shared<loader::NspLoader>(romFile, keyStore);
+                case loader::RomFormat::XCI:
+                    return std::make_shared<loader::XciLoader>(romFile, keyStore);
                 default:
                     throw exception("Unsupported ROM extension.");
             }

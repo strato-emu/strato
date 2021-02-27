@@ -139,6 +139,7 @@ class MainActivity : AppCompatActivity() {
                 addEntries("nro", RomFormat.NRO, searchLocation, romElements)
                 addEntries("nso", RomFormat.NSO, searchLocation, romElements)
                 addEntries("nca", RomFormat.NCA, searchLocation, romElements)
+                addEntries("xci", RomFormat.XCI, searchLocation, romElements)
                 addEntries("nsp", RomFormat.NSP, searchLocation, romElements)
 
                 runOnUiThread {

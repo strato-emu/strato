@@ -45,7 +45,7 @@ namespace skyline::loader {
             return std::vector<u8>();
 
         auto root{controlRomFs->OpenDirectory("", {false, true})};
-        std::shared_ptr<vfs::Backing> icon;
+        std::shared_ptr<vfs::Backing> icon{};
 
         // Use the first icon file available
         for (const auto &entry : root->Read()) {
