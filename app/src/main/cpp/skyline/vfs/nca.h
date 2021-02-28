@@ -173,6 +173,7 @@ namespace skyline {
             std::shared_ptr<crypto::KeyStore> keyStore;
             bool encrypted{false};
             bool rightsIdEmpty;
+            bool useKeyArea;
 
             void ReadPfs0(const NcaSectionHeader &sectionHeader, const NcaFsEntry &entry);
 
@@ -193,7 +194,7 @@ namespace skyline {
             std::shared_ptr<Backing> romFs; //!< The backing for this NCA's RomFS section
             NcaContentType contentType; //!< The content type of the NCA
 
-            NCA(std::shared_ptr<vfs::Backing> backing, std::shared_ptr<crypto::KeyStore> keyStore);
+            NCA(std::shared_ptr<vfs::Backing> backing, std::shared_ptr<crypto::KeyStore> keyStore, bool useKeyArea = false);
         };
     }
 }

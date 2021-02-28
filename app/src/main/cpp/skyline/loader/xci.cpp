@@ -36,7 +36,7 @@ namespace skyline::loader {
                     continue;
 
                 try {
-                    auto nca{vfs::NCA(secure->OpenFile(entry.name), keyStore)};
+                    auto nca{vfs::NCA(secure->OpenFile(entry.name), keyStore, true)};
 
                     if (nca.contentType == vfs::NcaContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
                         programNca = std::move(nca);

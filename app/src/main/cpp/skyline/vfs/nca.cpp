@@ -14,7 +14,7 @@
 namespace skyline::vfs {
     using namespace loader;
 
-    NCA::NCA(std::shared_ptr<vfs::Backing> pBacking, std::shared_ptr<crypto::KeyStore> pKeyStore) : backing(std::move(pBacking)), keyStore(std::move(pKeyStore)) {
+    NCA::NCA(std::shared_ptr<vfs::Backing> pBacking, std::shared_ptr<crypto::KeyStore> pKeyStore, bool pUseKeyArea) : backing(std::move(pBacking)), keyStore(std::move(pKeyStore)), useKeyArea(pUseKeyArea) {
         header = backing->Read<NcaHeader>();
 
         if (header.magic != util::MakeMagic<u32>("NCA3")) {
@@ -78,7 +78,7 @@ namespace skyline::vfs {
                 return rawBacking;
             case NcaSectionEncryptionType::CTR:
             case NcaSectionEncryptionType::BKTR: {
-                auto key{!rightsIdEmpty ? GetTitleKey() : GetKeyAreaKey(sectionHeader.encryptionType)};
+                auto key{!(rightsIdEmpty || useKeyArea) ? GetTitleKey() : GetKeyAreaKey(sectionHeader.encryptionType)};
 
                 std::array<u8, 0x10> ctr{};
                 u32 secureValueLE{__builtin_bswap32(sectionHeader.secureValue)};
