@@ -13,6 +13,7 @@ namespace skyline::kernel {
     }
 
     constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
+    constexpr size_t CodeRegionSize{4ULL * 1024 * 1024 * 1024}; //!< The assumed maximum size of the code region (4GiB)
 
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
         switch (type) {
@@ -30,7 +31,7 @@ namespace skyline::kernel {
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 addressSpace.address = 0;
                 addressSpace.size = 1UL << 39;
-                base.size = 0x78000000 + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000; // Code region size is an assumed maximum here
+                base.size = CodeRegionSize + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000;
                 break;
             }
 
@@ -53,7 +54,7 @@ namespace skyline::kernel {
 
             start = util::HexStringToInt<u64>(std::string_view(maps.data() + maps.find_first_of('-', line) + 1, sizeof(u64) * 2));
             alignedStart = util::AlignUp(start, RegionAlignment);
-            if (alignedStart + base.size > addressSpace.size)
+            if (alignedStart + base.size > addressSpace.size) // We don't want to map past the end of the address space
                 break;
         } while ((line = maps.find_first_of('\n', line)) != std::string::npos && line++);
 
@@ -121,7 +122,7 @@ namespace skyline::kernel {
 
         auto newSize{code.size + alias.size + stack.size + heap.size + ((addressSpace.size == 1UL << 39) ? tlsIo.size : 0)};
         if (newSize > base.size)
-            throw exception("Region size has exceeded pre-allocated area: 0x{:X}/0x{:X}", newSize, base.size);
+            throw exception("Guest VMM size has exceeded host carveout size: 0x{:X}/0x{:X} (Code: 0x{:X}/0x{:X})", newSize, base.size, code.size, CodeRegionSize);
         if (newSize != base.size)
             munmap(reinterpret_cast<u8 *>(base.address) + base.size, newSize - base.size);
 
