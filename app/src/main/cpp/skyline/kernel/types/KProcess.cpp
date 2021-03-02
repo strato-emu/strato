@@ -264,16 +264,14 @@ namespace skyline::kernel::type {
             state.scheduler->WaitSchedule(false);
         }
 
-        while (true) {
-            KHandle value{};
-            if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-                return {};
-            if (!(value & HandleWaitersBit))
-                if (!__atomic_compare_exchange_n(mutex, &value, value | HandleWaitersBit, false, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED))
-                    continue;
-            if (MutexLock(mutex, value & ~HandleWaitersBit, tag) == Result{})
-                return {};
-        }
+        KHandle value{};
+        if (!__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+            while (MutexLock(mutex, value & ~HandleWaitersBit, tag) != Result{})
+                if ((value = __atomic_or_fetch(mutex, HandleWaitersBit, __ATOMIC_SEQ_CST)) == HandleWaitersBit)
+                    if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+                        break;
+
+        return {};
     }
 
     void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
@@ -281,7 +279,6 @@ namespace skyline::kernel::type {
         auto queue{syncWaiters.equal_range(key)};
 
         auto it{queue.first};
-        if (queue.first != queue.second)
             for (i32 waiterCount{amount}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
                 state.scheduler->InsertThread(it->second);
 
@@ -330,9 +327,8 @@ namespace skyline::kernel::type {
                 return result::InvalidState;
 
         i32 waiterCount{amount};
-        if (queue.first != queue.second)
-            for (auto it{queue.first}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
-                state.scheduler->InsertThread(it->second);
+        for (auto it{queue.first}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
+            state.scheduler->InsertThread(it->second);
 
         return {};
     }

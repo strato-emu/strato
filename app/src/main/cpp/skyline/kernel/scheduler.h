@@ -57,6 +57,12 @@ namespace skyline {
             std::mutex parkedMutex; //!< Synchronizes all operations on the queue of parked threads
             std::list<std::shared_ptr<type::KThread>> parkedQueue; //!< A queue of threads which are parked and waiting on core migration
 
+            /**
+             * @brief Migrate a thread from it's resident core to it's ideal core
+             * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in it's new affinity mask
+             */
+            void MigrateToIdealCore(const std::shared_ptr<type::KThread>& thread, CoreContext*& core, std::unique_lock<std::mutex>& lock);
+
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
             inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a yield in running threads

@@ -300,12 +300,12 @@ namespace skyline::kernel::svc {
         } else {
             switch (in) {
                 case yieldWithCoreMigration:
-                    state.logger->Debug("svcSleepThread: Waking any appropriate parked threads");
+                    state.logger->Debug("svcSleepThread: Waking any appropriate parked threads and yielding");
                     state.scheduler->WakeParkedThread();
-                    break;
-
+                    [[fallthrough]];
                 case yieldWithoutCoreMigration:
-                    state.logger->Debug("svcSleepThread: Cooperative Yield");
+                    if (in == yieldWithoutCoreMigration)
+                        state.logger->Debug("svcSleepThread: Cooperative yield");
                     state.scheduler->Rotate();
                     state.scheduler->WaitSchedule();
                     break;
@@ -710,7 +710,7 @@ namespace skyline::kernel::svc {
         else if (result == result::InvalidCurrentMemory)
             result = Result{}; // If the mutex value isn't expected then it's still successful
         else if (result == result::InvalidHandle)
-            state.logger->Warn("svcArbitrateLock: 'ownerHandle' invalid: 0x{:X}", ownerHandle);
+            state.logger->Warn("svcArbitrateLock: 'ownerHandle' invalid: 0x{:X} (0x{:X})", ownerHandle, mutex);
 
         state.ctx->gpr.w0 = result;
     }

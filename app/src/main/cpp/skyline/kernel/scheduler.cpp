@@ -120,6 +120,27 @@ namespace skyline::kernel {
         }
     }
 
+    void Scheduler::MigrateToIdealCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&core, std::unique_lock<std::mutex> &lock) {
+        // We need to check if the thread was in it's resident core's queue
+        // If it was, we need to remove it from the queue
+        auto it{std::find(core->queue.begin(), core->queue.end(), thread)};
+        bool wasInserted{it != core->queue.end()};
+        if (wasInserted) {
+            it = core->queue.erase(it);
+            if (it == core->queue.begin() && it != core->queue.end())
+                (*it)->wakeCondition.notify_one();
+        }
+        lock.unlock();
+
+        thread->coreId = thread->idealCore;
+        if (wasInserted)
+            // We need to add the thread to the ideal core queue, if it was previously it's resident core's queue
+            InsertThread(thread);
+
+        core = &cores.at(thread->coreId);
+        lock = std::unique_lock(core->mutex);
+    }
+
     void Scheduler::WaitSchedule(bool loadBalance) {
         auto &thread{state.thread};
         CoreContext *core{&cores.at(thread->coreId)};
@@ -127,14 +148,7 @@ namespace skyline::kernel {
 
         auto wakeFunction{[&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
-                lock.unlock();
-
-                RemoveThread();
-                thread->coreId = thread->idealCore;
-                InsertThread(thread);
-
-                core = &cores.at(thread->coreId);
-                lock = std::unique_lock(core->mutex);
+                MigrateToIdealCore(thread, core, lock);
             }
             return !core->queue.empty() && core->queue.front() == thread;
         }};
@@ -173,14 +187,7 @@ namespace skyline::kernel {
         std::unique_lock lock(core->mutex);
         if (thread->wakeCondition.wait_for(lock, timeout, [&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
-                lock.unlock();
-
-                RemoveThread();
-                thread->coreId = thread->idealCore;
-                InsertThread(thread);
-
-                core = &cores.at(thread->coreId);
-                lock = std::unique_lock(core->mutex);
+                MigrateToIdealCore(thread, core, lock);
             }
             return !core->queue.empty() && core->queue.front() == thread;
         })) {
@@ -212,9 +219,8 @@ namespace skyline::kernel {
             auto &front{core.queue.front()};
             if (front != thread)
                 front->wakeCondition.notify_one(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
-        } else if (!thread->forceYield) {
-            [[unlikely]]
-                throw exception("T{} called Rotate while not being in C{}'s queue", thread->id, thread->coreId);
+        } else if (!thread->forceYield) [[unlikely]] {
+            throw exception("T{} called Rotate while not being in C{}'s queue", thread->id, thread->coreId);
         }
 
         thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
