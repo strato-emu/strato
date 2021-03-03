@@ -17,3 +17,7 @@
 [submodule "app/libraries/pugixml"]
 	path = app/libraries/pugixml
 	url = https://github.com/zeux/pugixml.git
+[submodule "app/libraries/tzcode"]
+	path = app/libraries/tzcode
+	url = https://github.com/bylaws/tz
+	branch = master

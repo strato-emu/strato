@@ -74,6 +74,10 @@ android {
             path "CMakeLists.txt"
         }
     }
+
+    aaptOptions {
+        ignoreAssetsPattern "*.md"
+    }
 }
 
 dependencies {

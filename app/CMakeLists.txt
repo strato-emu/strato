@@ -17,6 +17,7 @@ if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
 endif ()
 
 add_subdirectory("libraries/fmt")
+add_subdirectory("libraries/tzcode")
 
 add_subdirectory("libraries/oboe")
 include_directories("libraries/oboe/include")
@@ -172,5 +173,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
         )
 # target_precompile_headers(skyline PRIVATE ${source_DIR}/skyline/common.h) # PCH will currently break Intellisense
-target_link_libraries(skyline vulkan android fmt lz4_static oboe mbedtls::mbedcrypto)
+target_link_libraries(skyline vulkan android fmt lz4_static tzcode oboe mbedtls::mbedcrypto)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)
