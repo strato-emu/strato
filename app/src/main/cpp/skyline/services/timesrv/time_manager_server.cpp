@@ -33,6 +33,10 @@ namespace skyline::service::timesrv {
         return {};
     }
 
+    Result TimeManagerServer::SetupTimeZoneManager(std::string_view locationName, const SteadyClockTimePoint &updateTime, size_t locationCount, std::array<u8, 0x10> binaryVersion, span<u8> binary) {
+        return core.timeZoneManager.Setup(locationName, updateTime, locationCount, binaryVersion, binary);
+    }
+
     Result TimeManagerServer::SetupStandardLocalSystemClock(const SystemClockContext &context, PosixTime posixTime) {
         core.localSystemClock.SetUpdateCallback(&core.localSystemClockContextWriter);
         core.localSystemClock.Setup(context, posixTime);

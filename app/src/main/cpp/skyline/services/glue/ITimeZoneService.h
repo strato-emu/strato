@@ -3,24 +3,28 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include <services/serviceman.h>
 
 namespace skyline::service::timesrv {
+    class ITimeZoneService;
+
     namespace core {
         struct TimeServiceObject;
     }
+}
+namespace skyline::service::glue {
 
-    /**
-     * @brief ITimeZoneService is used to retrieve and set timezone info and convert between times and dates
-     * @url https://switchbrew.org/wiki/PSC_services#ITimeZoneService
-     */
+
     class ITimeZoneService : public BaseService {
       private:
-        core::TimeServiceObject &core;
+        std::shared_ptr<timesrv::ITimeZoneService> core;
+        timesrv::core::TimeServiceObject &timesrvCore;
+        std::shared_ptr<kernel::type::KEvent> locationNameUpdateEvent; //!< N uses a list here but a single event should be fine
         bool writeable; //!< If this instance is allowed to set the device timezone
 
       public:
-        ITimeZoneService(const DeviceState &state, ServiceManager &manager, core::TimeServiceObject &core, bool writeable);
+        ITimeZoneService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::ITimeZoneService> core, timesrv::core::TimeServiceObject &timesrvCore, bool writeable);
 
         Result GetDeviceLocationName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
@@ -36,13 +40,9 @@ namespace skyline::service::timesrv {
 
         Result GetDeviceLocationNameAndUpdatedTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-        Result SetDeviceLocationNameWithTimeZoneBinaryIpc(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetDeviceLocationNameWithTimeZoneBinary(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-        Result SetDeviceLocationNameWithTimeZoneBinary(std::string_view locationName, span<u8> rule);
-
-        Result ParseTimeZoneBinaryIpc(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-
-        Result ParseTimeZoneBinary(span<u8> binary, span<u8> rule);
+        Result ParseTimeZoneBinary(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         Result GetDeviceLocationNameOperationEventReadableHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
@@ -62,8 +62,8 @@ namespace skyline::service::timesrv {
             SFUNC(0x4, ITimeZoneService, LoadTimeZoneRule),
             SFUNC(0x5, ITimeZoneService, GetTimeZoneRuleVersion),
             SFUNC(0x6, ITimeZoneService, GetDeviceLocationNameAndUpdatedTime),
-            SFUNC(0x7, ITimeZoneService, SetDeviceLocationNameWithTimeZoneBinaryIpc),
-            SFUNC(0x8, ITimeZoneService, ParseTimeZoneBinaryIpc),
+            SFUNC(0x7, ITimeZoneService, SetDeviceLocationNameWithTimeZoneBinary),
+            SFUNC(0x8, ITimeZoneService, ParseTimeZoneBinary),
             SFUNC(0x9, ITimeZoneService, GetDeviceLocationNameOperationEventReadableHandle),
             SFUNC(0x64, ITimeZoneService, ToCalendarTime),
             SFUNC(0x65, ITimeZoneService, ToCalendarTimeWithMyRule),

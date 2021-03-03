@@ -8,8 +8,10 @@
 #include <kernel/types/KEvent.h>
 #include <kernel/types/KSharedMemory.h>
 #include <services/timesrv/common.h>
+#include <horizon_time.h>
 #include "time_shared_memory.h"
 #include "time_manager_server.h"
+#include "timezone_manager.h"
 #include "results.h"
 
 namespace skyline::service::timesrv::core {
@@ -307,6 +309,9 @@ namespace skyline::service::timesrv::core {
         StandardNetworkSystemClockCore networkSystemClock;
         StandardUserSystemClockCore userSystemClock;
         EphemeralNetworkSystemClockCore empheralSystemClock;
+
+        TimeZoneManager timeZoneManager;
+        std::vector<LocationName> locationNameList; //!< N stores in glue but we are fine putting it here
 
         TimeManagerServer managerServer;
 

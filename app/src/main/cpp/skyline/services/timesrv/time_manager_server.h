@@ -31,6 +31,9 @@ namespace skyline::service::timesrv {
 
         Result SetupStandardSteadyClock(UUID rtcId, TimeSpanType rtcOffset, TimeSpanType internalOffset, TimeSpanType testOffset, bool rtcResetDetected);
 
+
+        Result SetupTimeZoneManager(std::string_view locationName, const SteadyClockTimePoint &updateTime, size_t locationCount, std::array<u8, 0x10> binaryVersion, span<u8> binary);
+
         Result SetupStandardLocalSystemClock(const SystemClockContext &context, PosixTime posixTime);
 
         Result SetupStandardNetworkSystemClock(const SystemClockContext &context, TimeSpanType sufficientAccuracy);
@@ -42,11 +45,5 @@ namespace skyline::service::timesrv {
         std::shared_ptr<kernel::type::KEvent> GetStandardUserSystemClockAutomaticCorrectionEvent();
 
         Result SetStandardSteadyClockRtcOffset(TimeSpanType rtcOffset);
-
-        /*
-        Result SetupTimeZoneManager
-         */
-
-
     };
 }

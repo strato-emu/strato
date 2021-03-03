@@ -5,6 +5,7 @@
 
 namespace skyline::service::timesrv {
     using PosixTime = i64; //!< Unit for time in seconds since the epoch
+    using LocationName = std::array<char, 0x18>;
 
     /**
      * @brief Stores a quantity of time with nanosecond accuracy and provides helper functions to convert it to other units
@@ -97,11 +98,20 @@ namespace skyline::service::timesrv {
     struct CalendarAdditionalInfo {
         u32 dayOfWeek; //!< 0-6
         u32 dayOfYear; //!< 0-365
-        std::array<u8, 8> timezoneName;
+        std::array<char, 8> timeZoneName;
         u32 dst; //!< If DST is in effect or not
         i32 gmtOffset; //!< Offset of the time from GMT in seconds
     };
     static_assert(sizeof(CalendarAdditionalInfo) == 0x18);
+
+    /**
+     * @brief Returned by ToCalendarTime and contains all details about a time
+     */
+    struct FullCalendarTime {
+        CalendarTime calendarTime;
+        CalendarAdditionalInfo additionalInfo;
+    };
+    static_assert(sizeof(FullCalendarTime) == 0x20);
 
     /**
      * @brief A snapshot of all clocks in the system

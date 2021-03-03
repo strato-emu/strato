@@ -46,6 +46,8 @@ namespace skyline::service::timesrv {
 
     }
 
+    class ITimeZoneService;
+
     namespace core {
         struct TimeServiceObject;
     }
@@ -70,7 +72,9 @@ namespace skyline::service::timesrv {
 
         Result GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-        Result GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetTimeZoneServiceIpc(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        std::shared_ptr<ITimeZoneService> GetTimeZoneService(const DeviceState &state, ServiceManager &manager);
 
         Result GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
@@ -121,7 +125,7 @@ namespace skyline::service::timesrv {
             SFUNC(0x0, IStaticService, GetStandardUserSystemClock),
             SFUNC(0x1, IStaticService, GetStandardNetworkSystemClock),
             SFUNC(0x2, IStaticService, GetStandardSteadyClock),
-            SFUNC(0x3, IStaticService, GetTimeZoneService),
+            SFUNC(0x3, IStaticService, GetTimeZoneServiceIpc),
             SFUNC(0x4, IStaticService, GetStandardLocalSystemClock),
             SFUNC(0x5, IStaticService, GetEphemeralNetworkSystemClock),
             SFUNC(0x14, IStaticService, GetSharedMemoryNativeHandle),

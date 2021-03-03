@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <os.h>
+#include <vfs/filesystem.h>
+#include <time.h>
 #include "core.h"
 #include "time_manager_server.h"
 
@@ -220,7 +223,6 @@ namespace skyline::service::timesrv::core {
     }
 
     TimeServiceObject::TimeServiceObject(const DeviceState &state) : timeSharedMemory(state), localSystemClockContextWriter(timeSharedMemory), networkSystemClockContextWriter(timeSharedMemory), localSystemClock(standardSteadyClock), networkSystemClock(standardSteadyClock), userSystemClock(state, standardSteadyClock, localSystemClock, networkSystemClock, timeSharedMemory), empheralSystemClock(tickBasedSteadyClock), managerServer(*this) {
-
         // Setup time service:
         // A new rtc UUID is generated every time glue inits time
         auto rtcId{UUID::GenerateUuidV4()};
@@ -256,5 +258,42 @@ namespace skyline::service::timesrv::core {
         // Initialise the user system clock with automatic correction disabled as we don't emulate the automatic correction thread
         managerServer.SetupStandardUserSystemClock(false, SteadyClockTimePoint{.clockSourceId = UUID::GenerateUuidV4()});
         managerServer.SetupEphemeralSystemClock();
+
+        // Timezone init - normally done in glue
+
+        // Act as if we just updated the current timezone
+        auto timezoneUpdateTime{standardSteadyClock.GetTimePoint()};
+        if (!timezoneUpdateTime)
+            throw exception("Failed to create a timezone updated timepoint!");
+
+        // TODO Checked
+        auto timeZoneBinaryListFile{state.os->assetFileSystem->OpenFile("tzdata/binaryList.txt")};
+        std::vector<u8> buffer(timeZoneBinaryListFile->size);
+        timeZoneBinaryListFile->Read(buffer);
+
+        // Parse binaryList.txt into a vector
+        auto prev{buffer.begin()};
+        for (auto it{buffer.begin()}; it != buffer.end(); it++) {
+            if (*it == '\n' && prev != it) {
+                timesrv::LocationName name{};
+                span(prev.base(), std::distance(prev, std::prev(it))).as_string().copy(name.data(), name.size());
+                locationNameList.push_back(name);
+
+                if (std::next(it) != buffer.end())
+                    prev = std::next(it);
+            }
+        }
+
+        // TODO Checked
+        auto timeZoneBinaryVersionFile{state.os->assetFileSystem->OpenFile("tzdata/version.txt")};
+        std::array<u8, 0x10> timeZoneBinaryVersion{};
+        timeZoneBinaryVersionFile->Read(timeZoneBinaryVersion);
+
+        // TODO Checked
+        auto timeZoneBinaryFile{state.os->assetFileSystem->OpenFile(fmt::format("tzdata/zoneinfo/{}", state.os->deviceTimeZone))};
+        buffer.resize(timeZoneBinaryFile->size);
+        timeZoneBinaryFile->Read(buffer);
+
+        managerServer.SetupTimeZoneManager(state.os->deviceTimeZone, *timezoneUpdateTime, locationNameList.size(), timeZoneBinaryVersion, buffer);
     }
 }

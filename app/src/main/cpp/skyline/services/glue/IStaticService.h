@@ -14,10 +14,11 @@ namespace skyline::service::glue {
     class IStaticService : public BaseService {
       private:
         std::shared_ptr<timesrv::IStaticService> core;
+        timesrv::core::TimeServiceObject &timesrvCore;
         timesrv::StaticServicePermissions permissions;
 
       public:
-        IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::StaticServicePermissions permissions);
+        IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::core::TimeServiceObject &timesrvCore, timesrv::StaticServicePermissions permissions);
 
         Result GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

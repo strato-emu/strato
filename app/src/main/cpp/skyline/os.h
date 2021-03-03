@@ -15,6 +15,7 @@ namespace skyline::kernel {
       public:
         DeviceState state;
         std::string appFilesPath; //!< The full path to the app's files directory
+        std::string deviceTimeZone; //!< The timezone name (e.g. Europe/London)
         std::shared_ptr<vfs::FileSystem> assetFileSystem; //!< A filesystem to be used for accessing emulator assets (like tzdata)
         service::ServiceManager serviceManager;
 
@@ -23,7 +24,7 @@ namespace skyline::kernel {
          * @param settings An instance of the Settings class
          * @param window The ANativeWindow object to draw the screen to
          */
-        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, std::string appFilesPath, std::shared_ptr<vfs::FileSystem>);
+        OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, std::string appFilesPath, std::string deviceTimeZone, std::shared_ptr<vfs::FileSystem>);
 
         /**
          * @brief Execute a particular ROM file

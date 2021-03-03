@@ -2,12 +2,12 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
-#include <services/timesrv/IStaticService.h>
 #include <services/timesrv/results.h>
+#include "ITimeZoneService.h"
 #include "IStaticService.h"
 
 namespace skyline::service::glue {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::StaticServicePermissions permissions) : BaseService(state, manager), core(std::move(core)), permissions(permissions) {}
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::core::TimeServiceObject &timesrvCore, timesrv::StaticServicePermissions permissions) : BaseService(state, manager), core(std::move(core)), timesrvCore(timesrvCore), permissions(permissions) {}
 
     Result IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return core->GetStandardUserSystemClock(session, request, response);
@@ -20,9 +20,10 @@ namespace skyline::service::glue {
     Result IStaticService::GetStandardSteadyClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return core->GetStandardSteadyClock(session, request, response);
     }
+
     Result IStaticService::GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        // STUFFF
-        return core->GetTimeZoneService(session, request, response);
+        manager.RegisterService(std::make_shared<ITimeZoneService>(state, manager, core->GetTimeZoneService(state, manager), timesrvCore, true), session, response);
+        return {};
     }
 
     Result IStaticService::GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

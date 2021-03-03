@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <android/log.h>
 #include <android/asset_manager_jni.h>
+#include <sys/system_properties.h>
 #include "skyline/common.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
@@ -23,6 +24,31 @@ std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
+// https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=43;drc=master;bpv=1;bpt=1
+static std::string GetTimeZoneName() {
+    const char* nameEnv = getenv("TZ");
+    if (nameEnv)
+        return std::string(nameEnv);
+
+    char propBuf[PROP_VALUE_MAX];
+    if (__system_property_get("persist.sys.timezone", propBuf)) {
+        std::string nameProp(propBuf);
+
+        // Flip -/+, see https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=53;drc=master;bpv=1;bpt=1
+        if (nameProp.size() > 2) {
+            if (nameProp[2] == '-')
+                nameProp[2] = '+';
+            else if (nameProp[2] == '+')
+                nameProp[2] = '-';
+        }
+
+        return nameProp;
+    }
+
+    // Fallback to GMT
+    return "GMT";
+}
+
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring, jobject assetManager) {
     skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
     Fps = FrameTime = 0;
@@ -39,7 +65,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     auto start{std::chrono::steady_clock::now()};
 
     try {
-        auto os{std::make_shared<skyline::kernel::OS>(jvmManager, logger, settings, std::string(appFilesPath), std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager)))};
+        auto os{std::make_shared<skyline::kernel::OS>(jvmManager, logger, settings, std::string(appFilesPath), GetTimeZoneName(), std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager)))};
         OsWeak = os;
         GpuWeak = os->state.gpu;
         InputWeak = os->state.input;

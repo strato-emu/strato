@@ -27,9 +27,13 @@ namespace skyline::service::timesrv {
         return {};
     }
 
-    Result IStaticService::GetTimeZoneService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(std::make_shared<ITimeZoneService>(state, manager), session, response);
+    Result IStaticService::GetTimeZoneServiceIpc(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(std::make_shared<ITimeZoneService>(state, manager, core, permissions.writeTimezone), session, response);
         return {};
+    }
+
+    std::shared_ptr<ITimeZoneService> IStaticService::GetTimeZoneService(const DeviceState &state, ServiceManager &manager) {
+        return std::make_shared<ITimeZoneService>(state, manager, core, permissions.writeTimezone);
     }
 
     Result IStaticService::GetStandardLocalSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

@@ -11,5 +11,6 @@ namespace skyline::service::timesrv::result {
     constexpr Result ClockUninitialized(116, 103);
     constexpr Result InvalidComparison(116, 200);
     constexpr Result CompareOverflow(116, 201);
+    constexpr Result RuleConversionFailed(116, 903);
     constexpr Result Unimplemented(116, 990);
 }
