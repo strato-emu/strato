@@ -75,11 +75,13 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/loader/nca.cpp
         ${source_DIR}/skyline/loader/xci.cpp
         ${source_DIR}/skyline/loader/nsp.cpp
-        ${source_DIR}/skyline/vfs/os_filesystem.cpp
         ${source_DIR}/skyline/vfs/partition_filesystem.cpp
         ${source_DIR}/skyline/vfs/ctr_encrypted_backing.cpp
         ${source_DIR}/skyline/vfs/rom_filesystem.cpp
+        ${source_DIR}/skyline/vfs/os_filesystem.cpp
         ${source_DIR}/skyline/vfs/os_backing.cpp
+        ${source_DIR}/skyline/vfs/android_asset_filesystem.cpp
+        ${source_DIR}/skyline/vfs/android_asset_backing.cpp
         ${source_DIR}/skyline/vfs/nacp.cpp
         ${source_DIR}/skyline/vfs/npdm.cpp
         ${source_DIR}/skyline/vfs/nca.cpp

@@ -8,6 +8,7 @@ package emu.skyline
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.AssetManager
 import android.graphics.PointF
 import android.net.Uri
 import android.os.*
@@ -64,8 +65,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * @param romFd The file descriptor of the ROM object
      * @param preferenceFd The file descriptor of the Preference XML
      * @param appFilesPath The full path to the app files directory
+     * @param assetManager The asset manager used for accessing app assets
      */
-    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String, assetManager : AssetManager)
 
     /**
      * @return If it successfully caused the [emulationThread] to gracefully stop
@@ -167,7 +169,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
-            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/")
+            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/", assets)
             if (shouldFinish)
                 runOnUiThread {
                     emulationThread.join()
