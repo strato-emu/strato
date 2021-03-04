@@ -352,7 +352,7 @@ namespace skyline::kernel::svc {
                 thread->basePriority = priority;
                 u8 newPriority{};
                 do {
-                    // Try to CAS the priority of the thread with it's new base priority
+                    // Try to CAS the priority of the thread with its new base priority
                     // If the new priority is equivalent to the current priority then we don't need to CAS
                     newPriority = thread->priority.load();
                     newPriority = std::min(newPriority, priority);
@@ -396,7 +396,7 @@ namespace skyline::kernel::svc {
             } else if (idealCore == IdealCoreNoUpdate) {
                 idealCore = thread->idealCore;
             } else if (idealCore == IdealCoreDontCare) {
-                idealCore = __builtin_ctzll(affinityMask.to_ullong()); // The first enabled core in the affinity mask
+                idealCore = std::countr_zero(affinityMask.to_ullong()); // The first enabled core in the affinity mask
             }
 
             auto processMask{state.process->npdm.threadInfo.coreMask};
@@ -1151,6 +1151,6 @@ namespace skyline::kernel::svc {
         else if (result == result::InvalidState)
             state.logger->Debug("svcSignalToAddress: The value at 0x{:X} did not satisfy the mutation condition", address);
 
-        state.ctx->gpr.w0 = Result{};
+        state.ctx->gpr.w0 = result;
     }
 }

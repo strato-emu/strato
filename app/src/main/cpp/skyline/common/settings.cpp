@@ -21,6 +21,8 @@ namespace skyline {
             PREF_ELEM("log_level", logLevel, static_cast<Logger::LogLevel>(element.text().as_uint(static_cast<unsigned int>(Logger::LogLevel::Info)))),
         };
 
+        #undef PREF_ELEM
+
         std::bitset<std::tuple_size_v<typeof(preferences)>> preferencesSet{}; // A bitfield to keep track of all the preferences we've set
         for (auto element{document.last_child().first_child()}; element; element = element.next_sibling()) {
             std::string_view name{element.attribute("name").value()};

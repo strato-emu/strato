@@ -10,10 +10,7 @@ namespace skyline::signal {
     thread_local std::exception_ptr SignalExceptionPtr;
 
     void ExceptionThrow() {
-        // We need the compiler to not remove the asm at the end of 'std::rethrow_exception' which is a noreturn function
-        volatile bool alwaysTrue{true};
-        if (alwaysTrue)
-            std::rethrow_exception(SignalExceptionPtr);
+        std::rethrow_exception(SignalExceptionPtr);
     }
 
     std::terminate_handler terminateHandler{};
@@ -41,6 +38,7 @@ namespace skyline::signal {
 
             static void *exceptionThrowEnd{};
             if (!exceptionThrowEnd) {
+                // We need to find the function bounds for ExceptionThrow, if we haven't already
                 u32 *it{reinterpret_cast<u32 *>(&ExceptionThrow) + 1};
                 while (_Unwind_FindEnclosingFunction(it) == &ExceptionThrow)
                     it++;
@@ -51,11 +49,13 @@ namespace skyline::signal {
             bool hasAdvanced{};
             while (lookupFrame && lookupFrame->lr) {
                 if (lookupFrame->lr >= reinterpret_cast<void *>(&ExceptionThrow) && lookupFrame->lr < exceptionThrowEnd) {
+                    // We need to check if the current stack frame is from ExceptionThrow
+                    // As we need to skip past it (2 frames) and be able to recognize when we're in an infinite loop
                     if (!hasAdvanced) {
                         frame = SafeFrameRecurse(2, lookupFrame);
                         hasAdvanced = true;
                     } else {
-                        terminateHandler(); // We have no handler to consume the exception, it's time to quit
+                        terminateHandler(); // We presumably have no exception handlers left on the stack to consume the exception, it's time to quit
                     }
                 }
                 lookupFrame = lookupFrame->next;

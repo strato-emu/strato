@@ -27,7 +27,7 @@ namespace skyline::service::hid {
         Result ActivateDebugPad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Activates the touch screen (if it's disabled, it is enabled by default)
+         * @brief Activates the touch screen (if it's disabled, it's enabled by default)
          */
         Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

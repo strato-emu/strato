@@ -97,7 +97,7 @@ namespace skyline::kernel::svc {
     void GetCurrentProcessorNumber(const DeviceState &state);
 
     /**
-     * @brief Clears a KEvent of it's signal
+     * @brief Resets a KEvent to its unsignalled state
      * @url https://switchbrew.org/wiki/SVC#ClearEvent
      */
     void ClearEvent(const DeviceState &state);

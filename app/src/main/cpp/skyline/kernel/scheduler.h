@@ -35,7 +35,7 @@ namespace skyline {
             }
         };
 
-        /*
+        /**
          * @brief The Scheduler is responsible for determining which threads should run on which virtual cores and when they should be scheduled
          * @note We tend to stray a lot from HOS in our scheduler design as we've designed it around our 1 host thread per guest thread which leads to scheduling from the perspective of threads while the HOS scheduler deals with scheduling from the perspective of cores, not doing this would lead to missing out on key optimizations and serialization of scheduling
          */
@@ -58,10 +58,11 @@ namespace skyline {
             std::list<std::shared_ptr<type::KThread>> parkedQueue; //!< A queue of threads which are parked and waiting on core migration
 
             /**
-             * @brief Migrate a thread from it's resident core to it's ideal core
-             * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in it's new affinity mask
+             * @brief Migrate a thread from its resident core to its ideal core
+             * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
+             * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in its new affinity mask
              */
-            void MigrateToIdealCore(const std::shared_ptr<type::KThread>& thread, CoreContext*& core, std::unique_lock<std::mutex>& lock);
+            void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext* targetCore, std::unique_lock<std::mutex> &lock);
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
@@ -76,79 +77,78 @@ namespace skyline {
             static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
 
             /**
-             * @brief Checks all cores and migrates the specified thread to the core where the calling thread should be scheduled the earliest
-             * @param alwaysInsert If to insert the thread even if it hasn't migrated cores, this is used during thread creation
-             * @return A reference to the CoreContext of the core which the calling thread is running on after load balancing
-             * @note This inserts the thread into the migrated process's queue after load balancing, there is no need to call it redundantly
-             * @note alwaysInsert makes the assumption that the thread isn't inserted in any core's queue currently
+             * @brief Checks all cores and determines the core where the supplied thread should be scheduled the earliest
+             * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
+             * @note No core mutexes should be held by the calling thread, that will cause a recursive lock and lead to a deadlock
+             * @return A reference to the CoreContext of the optimal core
              */
-            CoreContext& LoadBalance(const std::shared_ptr<type::KThread> &thread, bool alwaysInsert = false);
+            CoreContext &GetOptimalCoreForThread(const std::shared_ptr<type::KThread> &thread);
 
             /**
-             * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on it's priority
+             * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on its priority
              */
-            void InsertThread(const std::shared_ptr<type::KThread>& thread);
+            void InsertThread(const std::shared_ptr<type::KThread> &thread);
 
             /**
-             * @brief Wait for the current thread to be scheduled on it's resident core
+             * @brief Wait for the calling thread to be scheduled on its resident core
              * @param loadBalance If the thread is appropriate for load balancing then if to load balance it occassionally or not
-             * @note There is an assumption of the thread being on it's resident core queue, if it's not this'll never return
+             * @note There is an assumption of the thread being on its resident core queue, if it's not this'll never return
              */
             void WaitSchedule(bool loadBalance = true);
 
             /**
-             * @brief Wait for the current thread to be scheduled on it's resident core or for the timeout to expire
+             * @brief Wait for the calling thread to be scheduled on its resident core or for the timeout to expire
              * @return If the thread has been scheduled (true) or if the timer expired before it could be (false)
              * @note This will never load balance as it uses the timeout itself as a result this shouldn't be used as a replacement for regular waits
              */
             bool TimedWaitSchedule(std::chrono::nanoseconds timeout);
 
             /**
-             * @brief Rotates the calling thread's resident core queue, if it is at the front of it
+             * @brief Rotates the calling thread's resident core queue, if it's at the front of it
              * @param cooperative If this was triggered by a cooperative yield as opposed to a preemptive one
              */
             void Rotate(bool cooperative = true);
 
             /**
-             * @brief Removes the calling thread from it's resident core queue
+             * @brief Removes the calling thread from its resident core queue
              */
             void RemoveThread();
 
             /**
-             * @brief Updates the placement of the supplied thread in it's resident core's queue according to it's new priority
+             * @brief Updates the placement of the supplied thread in its resident core's queue according to its new priority
              */
-            void UpdatePriority(const std::shared_ptr<type::KThread>& thread);
+            void UpdatePriority(const std::shared_ptr<type::KThread> &thread);
 
             /**
-             * @brief Updates the core that the supplied thread is resident to according to it's new affinity mask and ideal core
+             * @brief Updates the core that the supplied thread is resident to according to its new affinity mask and ideal core
              * @note This supports changing the core of a thread which is currently running
              */
-            void UpdateCore(const std::shared_ptr<type::KThread>& thread);
+            void UpdateCore(const std::shared_ptr<type::KThread> &thread);
 
             /**
-             * @brief Parks the calling thread after removing it from it's resident core's queue and inserts it on the core it's been awoken on
+             * @brief Parks the calling thread after removing it from its resident core's queue and inserts it on the core it's been awoken on
              * @note This will not handle waiting for the thread to be scheduled, this should be followed with a call to WaitSchedule/TimedWaitSchedule
              */
             void ParkThread();
 
             /**
              * @brief Wakes a single parked thread which may be appropriate for running next on this core
-             * @note We will only wake a thread if it is determined to be a better pick than the thread which would be run on this core next
+             * @note We will only wake a thread if it's determined to be a better pick than the thread which would be run on this core next
              */
             void WakeParkedThread();
         };
 
         /**
-         * @brief A lock which removes the calling thread from it's resident core's scheduler queue and adds it back when being destroyed
-         * @note It also blocks till the thread has been rescheduled in it's destructor, this behavior might not be preferable in some cases
-         * @note This is not an analogue to KScopedSchedulerLock on HOS, it is for handling thread state changes which we handle with Scheduler::YieldPending
+         * @brief A lock which removes the calling thread from its resident core's scheduler queue and adds it back when being destroyed
+         * @note It also blocks till the thread has been rescheduled in its destructor, this behavior might not be preferable in some cases
+         * @note This is not an analogue to KScopedSchedulerLock on HOS, it's for handling thread state changes which we handle with Scheduler::YieldPending
          */
         struct SchedulerScopedLock {
           private:
-            const DeviceState& state;
+            const DeviceState &state;
 
           public:
-            inline SchedulerScopedLock(const DeviceState& state) : state(state) {
+            inline SchedulerScopedLock(const DeviceState &state) : state(state) {
                 state.scheduler->RemoveThread();
             }
 

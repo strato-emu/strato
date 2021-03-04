@@ -7,7 +7,7 @@
 
 namespace skyline::input {
     /**
-     * @brief A controller equivalent to a physical one connected to the Switch, it's translation into a Player (NpadDevice) is also encapsulated here
+     * @brief A controller equivalent to a physical one connected to the Switch, its translation into a Player (NpadDevice) is also encapsulated here
      */
     struct GuestController {
         NpadControllerType type{};
@@ -26,7 +26,7 @@ namespace skyline::input {
         friend NpadDevice;
 
         /**
-         * @brief Translates an NPad's ID into it's index in the array
+         * @brief Translates an NPad's ID into its index in the array
          * @param id The ID of the NPad to translate
          * @return The corresponding index of the NPad in the array
          */

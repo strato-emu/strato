@@ -45,9 +45,9 @@ namespace skyline::signal {
     class SignalException {
       public:
         int signal{};
-        void* pc{};
+        void *pc{};
         void *fault{};
-        std::vector<void*> frames; //!< A vector of all stack frame entries prior to the signal occuring
+        std::vector<void *> frames; //!< A vector of all stack frame entries prior to the signal occuring
 
         inline std::string what() const {
             if (!fault)

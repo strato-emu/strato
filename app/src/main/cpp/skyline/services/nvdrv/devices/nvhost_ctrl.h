@@ -55,7 +55,7 @@ namespace skyline {
         class NvHostCtrl : public NvDevice {
           private:
             /**
-             * @brief Metadata about an event, it is used by QueryEvent and EventWait
+             * @brief Metadata about an event, it's used by QueryEvent and EventWait
              */
             union EventValue {
                 u32 val;

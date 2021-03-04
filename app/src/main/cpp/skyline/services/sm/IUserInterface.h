@@ -33,7 +33,7 @@ namespace skyline::service::sm {
         Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Returns a handle to a service with it's name passed in as an argument
+         * @brief Returns a handle to a service with its name passed in as an argument
          * @url https://switchbrew.org/wiki/Services_API#GetService
          */
         Result GetService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

@@ -8,7 +8,7 @@
 
 namespace skyline::service::am {
     /**
-     * @brief This is used to notify an application about it's own state
+     * @brief This is used to notify an application about its own state
      * @url https://switchbrew.org/wiki/Applet_Manager_services#IApplicationFunctions
      */
     class IApplicationFunctions : public BaseService {

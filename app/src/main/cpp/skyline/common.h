@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <compare>
 #include <sys/mman.h>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -68,7 +69,7 @@ namespace skyline {
         };
 
         /**
-         * @note Success is 0, 0 - it is the only error that's not specific to a module
+         * @note Success is 0, it's the only result that's not specific to a module
          */
         Result() = default;
 
@@ -299,7 +300,7 @@ namespace skyline {
         constexpr span(const std::span<T, Extent> &spn) : std::span<T, Extent>(spn) {}
 
         /**
-         * @brief We want to support implicitly casting from std::string_view -> span as it is just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
+         * @brief We want to support implicitly casting from std::string_view -> span as it's just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
          */
         template<typename Traits>
         constexpr span(const std::basic_string_view<T, Traits> &string) : std::span<T, Extent>(const_cast<T *>(string.data()), string.size()) {}

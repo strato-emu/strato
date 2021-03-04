@@ -56,7 +56,7 @@ namespace skyline::service::nvdrv::device {
         NvStatus Create(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief Returns the handle of an NvMapObject from it's ID
+         * @brief Returns the handle of an NvMapObject from its ID
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID
          */
         NvStatus FromId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
@@ -80,7 +80,7 @@ namespace skyline::service::nvdrv::device {
         NvStatus Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
-         * @brief Returns the ID of an NvMapObject from it's handle
+         * @brief Returns the ID of an NvMapObject from its handle
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID
          */
         NvStatus GetId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);

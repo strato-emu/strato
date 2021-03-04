@@ -67,7 +67,7 @@ namespace skyline::service::nvdrv {
         }
 
         /**
-         * @brief Closes the specified device with it's file descriptor
+         * @brief Closes the specified device with its file descriptor
          */
         void CloseDevice(u32 fd);
     };

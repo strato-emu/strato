@@ -8,7 +8,7 @@
 namespace skyline::input {
     /*
      * @brief A description of a point being touched on the screen
-     * @note All members are jint as it is treated as a jint array in Kotlin
+     * @note All members are jint as it's treated as a jint array in Kotlin
      * @note This structure corresponds to TouchScreenStateData, see that for details
      */
     struct TouchScreenPoint {

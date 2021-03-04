@@ -209,7 +209,7 @@ namespace skyline {
         };
 
         /**
-         * @brief MemoryManager keeps track of guest virtual memory and it's related attributes
+         * @brief MemoryManager keeps track of guest virtual memory and its related attributes
          */
         class MemoryManager {
           private:
@@ -225,7 +225,7 @@ namespace skyline {
             memory::Region stack{};
             memory::Region tlsIo{}; //!< TLS/IO
 
-            std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it is locked in shared mode by readers and exclusive mode by writers
+            std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
             MemoryManager(const DeviceState &state);
 

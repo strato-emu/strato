@@ -39,13 +39,13 @@ namespace skyline::service::visrv {
         Result GetManagerDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Opens up a display using it's name as the input
+         * @brief Opens up a display using its name as the input
          * @url https://switchbrew.org/wiki/Display_services#OpenDisplay
          */
         Result OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Closes an open display using it's ID
+         * @brief Closes an open display using its ID
          * @url https://switchbrew.org/wiki/Display_services#CloseDisplay
          */
         Result CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

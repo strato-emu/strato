@@ -51,7 +51,7 @@ namespace skyline::vfs {
         std::vector<NpdmKernelCapability> capabilities(aci0.kernelCapability.size / sizeof(NpdmKernelCapability));
         backing->Read(span(capabilities), meta.aci0.offset + aci0.kernelCapability.offset);
         for (auto capability : capabilities) {
-            auto trailingOnes{__builtin_ctz(~capability.raw)};
+            auto trailingOnes{std::countr_zero(~capability.raw)};
             switch (trailingOnes) {
                 case 3:
                     threadInfo.priority = kernel::Priority{capability.threadInfo.highestPriority, capability.threadInfo.lowestPriority};
@@ -64,6 +64,9 @@ namespace skyline::vfs {
                 case 14:
                     kernelVersion.minorVersion = capability.kernelVersion.minorVersion;
                     kernelVersion.majorVersion = capability.kernelVersion.majorVersion;
+                    break;
+
+                default:
                     break;
             }
         }

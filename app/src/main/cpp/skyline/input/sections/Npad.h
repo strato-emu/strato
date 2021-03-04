@@ -243,7 +243,7 @@ namespace skyline::input {
         NpadControllerInfo leftController; //!< The Left Joy-Con controller data (Only in Single Mode, no input rotation based on rotation)
         NpadControllerInfo rightController; //!< The Right Joy-Con controller data (Only in Single Mode, no input rotation based on rotation)
         NpadControllerInfo palmaController; //!< The Poké Ball Plus controller data
-        NpadControllerInfo defaultController; //!< The Default controller data (Inputs are rotated based on orientation and SL/SR are mapped to L/R incase it is a single JC)
+        NpadControllerInfo defaultController; //!< The Default controller data (Inputs are rotated based on orientation and SL/SR are mapped to L/R incase it's a single JC)
 
         NpadSixAxisInfo fullKeySixAxis; //!< The Pro/GC IMU data
         NpadSixAxisInfo handheldSixAxis; //!< The Handheld IMU data

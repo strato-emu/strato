@@ -29,7 +29,7 @@ namespace skyline::service {
         ServiceManager(const DeviceState &state);
 
         /**
-         * @brief Creates a new service using it's type enum and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
+         * @brief Creates a new service using its type enum and writes its handle or virtual handle (If it's a domain request) to IpcResponse
          * @param name The service's name
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to
@@ -37,7 +37,7 @@ namespace skyline::service {
         std::shared_ptr<BaseService> NewService(ServiceName name, type::KSession &session, ipc::IpcResponse &response);
 
         /**
-         * @brief Registers a service object in the manager and writes it's handle or virtual handle (If it's a domain request) to IpcResponse
+         * @brief Registers a service object in the manager and writes its handle or virtual handle (If it's a domain request) to IpcResponse
          * @param serviceObject An instance of the service
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to

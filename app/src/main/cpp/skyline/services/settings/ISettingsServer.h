@@ -26,7 +26,7 @@ namespace skyline::service {
             Result GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
             /**
-             * @brief Converts a language code list index to it's corresponding language code
+             * @brief Converts a language code list index to its corresponding language code
              */
             Result MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

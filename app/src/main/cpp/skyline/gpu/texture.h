@@ -150,7 +150,7 @@ namespace skyline {
 
           public:
             std::vector<u8> backing; //!< The object that holds a host copy of the guest texture (Will be replaced with a vk::Image)
-            std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it is required for syncing
+            std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing
             texture::Dimensions dimensions;
             texture::Format format;
             texture::Swizzle swizzle;

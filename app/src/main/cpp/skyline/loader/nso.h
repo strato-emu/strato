@@ -35,7 +35,7 @@ namespace skyline::loader {
         static_assert(sizeof(NsoSegmentHeader) == 0xC);
 
         struct NsoRelativeSegmentHeader {
-            u32 offset; //!< The offset of the segment into it's parent segment
+            u32 offset; //!< The offset of the segment into its parent segment
             u32 size; //!< Size of the segment
         };
         static_assert(sizeof(NsoRelativeSegmentHeader) == 0x8);

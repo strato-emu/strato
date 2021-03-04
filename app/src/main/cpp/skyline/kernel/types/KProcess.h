@@ -26,7 +26,7 @@ namespace skyline {
 
           private:
             std::mutex threadMutex; //!< Synchronizes thread creation to prevent a race between thread creation and thread killing
-            bool disableThreadCreation{}; //!< If to disable thread creation, we use this to prevent thread creation after all threads have been killed
+            bool disableThreadCreation{}; //!< Whether to disable thread creation, we use this to prevent thread creation after all threads have been killed
             std::vector<std::shared_ptr<KThread>> threads;
 
             using SyncWaiters = std::multimap<void *, std::shared_ptr<KThread>>;
@@ -47,13 +47,13 @@ namespace skyline {
 
                 /**
                  * @return A non-null pointer to a TLS page slot on success, a nullptr will be returned if this page is full
-                 * @note This function is not thread-safe and should be called by exclusively one thread at a time
+                 * @note This function is not thread-safe and should be called exclusively by one thread at a time
                  */
                 u8 *ReserveSlot();
             };
 
           public:
-            u8* tlsExceptionContext{}; //!< A pointer to the TLS Exception Handling Context slot
+            u8 *tlsExceptionContext{}; //!< A pointer to the TLS exception handling context slot
             std::mutex tlsMutex; //!< A mutex to synchronize allocation of TLS pages to prevent extra pages from being created
             std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< All TLS pages allocated by this process
             std::shared_ptr<KPrivateMemory> mainThreadStack; //!< The stack memory of the main thread stack is owned by the KProcess itself
@@ -72,8 +72,8 @@ namespace skyline {
             /**
              * @brief Kill the main thread/all running threads in the process in a graceful manner
              * @param join Return after the main thread has joined rather than instantly
-             * @param all If to kill all running threads or just the main thread
-             * @param disableCreation If to disable further thread creation
+             * @param all Whether to kill all running threads or just the main thread
+             * @param disableCreation Whether to disable further thread creation
              * @note If there are no threads then this will silently return
              * @note The main thread should eventually kill the rest of the threads itself
              */
@@ -226,12 +226,12 @@ namespace skyline {
             /**
              * @brief Waits on the supplied address with the specified arbitration function
              */
-            Result WaitForAddress(u32 *address, u32 value, i64 timeout, bool(*arbitrationFunction)(u32* address, u32 value));
+            Result WaitForAddress(u32 *address, u32 value, i64 timeout, bool(*arbitrationFunction)(u32 *address, u32 value));
 
             /**
              * @brief Signals a variable amount of waiters at the supplied address
              */
-            Result SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32* address, u32 value, u32 waiterCount) = nullptr);
+            Result SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount) = nullptr);
         };
     }
 }

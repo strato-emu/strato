@@ -30,14 +30,7 @@ namespace skyline::kernel::type {
          * @brief Resets the object to an unsignalled state
          * @return If the signal was reset or not
          */
-        inline bool ResetSignal() {
-            std::lock_guard lock(syncObjectMutex);
-            if (signalled) {
-                signalled = false;
-                return true;
-            }
-            return false;
-        }
+        bool ResetSignal();
 
         virtual ~KSyncObject() = default;
     };

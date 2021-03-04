@@ -31,7 +31,7 @@ namespace skyline::service {
      */
     class BaseService {
       private:
-        std::string name; //!< The name of the service, it is only assigned after GetName is called and shouldn't be used directly
+        std::string name; //!< The name of the service, it's only assigned after GetName is called and shouldn't be used directly
 
       protected:
         const DeviceState &state;

@@ -30,7 +30,7 @@ namespace skyline::service {
         /**
          * @brief This constructor fills in the Parcel object with data from a IPC buffer
          * @param buffer The buffer that contains the parcel
-         * @param hasToken If the parcel starts with a token, it is skipped if this flag is true
+         * @param hasToken If the parcel starts with a token, it's skipped if this flag is true
          */
         Parcel(span<u8> buffer, const DeviceState &state, bool hasToken = false);
 

@@ -22,7 +22,7 @@ std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring) {
-    skyline::signal::ScopedStackBlocker stackBlocker;
+    skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
     Fps = FrameTime = 0;
 
     pthread_setname_np(pthread_self(), "EmuMain");

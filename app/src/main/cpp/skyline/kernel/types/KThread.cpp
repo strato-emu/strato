@@ -39,7 +39,7 @@ namespace skyline::kernel::type {
             state.scheduler->RemoveThread();
 
             {
-                std::unique_lock lock(statusMutex);
+                std::lock_guard lock(statusMutex);
                 running = false;
                 ready = false;
                 statusCondition.notify_all();
@@ -89,7 +89,7 @@ namespace skyline::kernel::type {
             "MOV X0, SP\n\t"
             "STR X0, [%x0, #0x2A8]\n\t" // Write ThreadContext::hostSp
             "MOV SP, %x1\n\t" // Replace SP with guest stack
-            "MOV LR, %x2\n\t" // Store entry in Link Register so it is jumped to on return
+            "MOV LR, %x2\n\t" // Store entry in Link Register so it's jumped to on return
             "MOV X0, %x3\n\t" // Store the argument in X0
             "MOV X1, %x4\n\t" // Store the thread handle in X1, NCA applications require this
             "MOV X2, XZR\n\t" // Zero out other GP and SIMD registers, not doing this will break applications
@@ -185,7 +185,12 @@ namespace skyline::kernel::type {
     void KThread::Start(bool self) {
         std::unique_lock lock(statusMutex);
         if (!running) {
-            state.scheduler->LoadBalance(shared_from_this(), true); // This will automatically insert the thread into the core queue after load balancing
+            {
+                std::lock_guard migrationLock(coreMigrationMutex);
+                auto thisShared{shared_from_this()};
+                coreId = state.scheduler->GetOptimalCoreForThread(thisShared).id;
+                state.scheduler->InsertThread(thisShared);
+            }
 
             running = true;
             killed = false;

@@ -100,7 +100,7 @@ namespace skyline::kernel::type {
         return std::nullopt;
     }
 
-    constexpr u32 HandleWaitersBit{0b01000000000000000000000000000000}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not
+    constexpr u32 HandleWaitersBit{1UL << 30}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not
 
     Result KProcess::MutexLock(u32 *mutex, KHandle ownerHandle, KHandle tag) {
         std::shared_ptr<KThread> owner;
@@ -126,7 +126,7 @@ namespace skyline::kernel::type {
             isHighestPriority = waiters.insert(std::upper_bound(waiters.begin(), waiters.end(), state.thread->priority.load(), KThread::IsHigherPriority), state.thread) == waiters.begin();
             state.scheduler->RemoveThread();
 
-            std::atomic_store(&state.thread->waitThread, owner);
+            state.thread->waitThread = owner;
             state.thread->waitKey = mutex;
             state.thread->waitTag = tag;
         }
@@ -143,15 +143,10 @@ namespace skyline::kernel::type {
                 } while (ownerPriority != priority && owner->priority.compare_exchange_strong(ownerPriority, priority));
 
                 if (ownerPriority != priority) {
-                    auto waitThread{std::atomic_load(&owner->waitThread)};
-                    while (waitThread) {
+                    std::shared_ptr<KThread> waitThread;
+                    {
                         std::lock_guard lock(waitThread->waiterMutex);
-
-                        auto currentWaitThread{std::atomic_load(&owner->waitThread)};
-                        if (waitThread != currentWaitThread) {
-                            waitThread = currentWaitThread;
-                            continue;
-                        }
+                        waitThread = owner->waitThread;
 
                         // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
                         auto &waiters{waitThread->waiters};
@@ -181,7 +176,7 @@ namespace skyline::kernel::type {
         if (nextOwnerIt != waiters.end()) {
             auto nextOwner{*nextOwnerIt};
             std::lock_guard nextLock(nextOwner->waiterMutex);
-            std::atomic_store(&nextOwner->waitThread, std::shared_ptr<KThread>{nullptr});
+            nextOwner->waitThread = std::shared_ptr<KThread>{nullptr};
             nextOwner->waitKey = nullptr;
 
             // Move all threads waiting on this key to the next owner's waiter list
@@ -190,7 +185,7 @@ namespace skyline::kernel::type {
                 auto thread{*it};
                 if (thread->waitKey == mutex) {
                     nextOwner->waiters.splice(std::upper_bound(nextOwner->waiters.begin(), nextOwner->waiters.end(), (*it)->priority.load(), KThread::IsHigherPriority), waiters, it);
-                    std::atomic_store(&thread->waitThread, nextOwner);
+                    thread->waitThread = nextOwner;
                     if (!nextWaiter)
                         nextWaiter = thread;
                 }
@@ -216,7 +211,7 @@ namespace skyline::kernel::type {
             }
 
             if (nextWaiter) {
-                // If there is a waiter on the new owner then try to inherit it's priority
+                // If there is a waiter on the new owner then try to inherit its priority
                 u8 priority, ownerPriority;
                 do {
                     ownerPriority = nextOwner->priority.load();
@@ -279,8 +274,8 @@ namespace skyline::kernel::type {
         auto queue{syncWaiters.equal_range(key)};
 
         auto it{queue.first};
-            for (i32 waiterCount{amount}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
-                state.scheduler->InsertThread(it->second);
+        for (i32 waiterCount{amount}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
+            state.scheduler->InsertThread(it->second);
 
         if (it == queue.second)
             __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
@@ -299,14 +294,15 @@ namespace skyline::kernel::type {
         }
 
         if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
-            std::unique_lock lock(syncWaiterMutex);
-            auto queue{syncWaiters.equal_range(address)};
-            auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{address, state.thread})};
-            if (iterator != queue.second)
-                if (syncWaiters.erase(iterator) == queue.second)
-                    __atomic_store_n(address, false, __ATOMIC_SEQ_CST);
+            {
+                std::lock_guard lock(syncWaiterMutex);
+                auto queue{syncWaiters.equal_range(address)};
+                auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{address, state.thread})};
+                if (iterator != queue.second)
+                    if (syncWaiters.erase(iterator) == queue.second)
+                        __atomic_store_n(address, false, __ATOMIC_SEQ_CST);
+            }
 
-            lock.unlock();
             state.scheduler->InsertThread(state.thread);
             state.scheduler->WaitSchedule();
 

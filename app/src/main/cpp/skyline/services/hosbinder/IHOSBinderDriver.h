@@ -25,13 +25,13 @@ namespace skyline::service::hosbinder {
         Result TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols
+         * @brief Adjusts the reference counts to the underlying binder, it's stubbed as we aren't using the real symbols
          * @url https://switchbrew.org/wiki/Nvnflinger_services#AdjustRefcount
          */
         Result AdjustRefcount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Adjusts the reference counts to the underlying binder, it is stubbed as we aren't using the real symbols
+         * @brief Adjusts the reference counts to the underlying binder, it's stubbed as we aren't using the real symbols
          * @url https://switchbrew.org/wiki/Nvnflinger_services#GetNativeHandle
          */
         Result GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

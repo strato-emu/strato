@@ -33,7 +33,7 @@ namespace skyline::service::visrv {
         Result CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Destroys a stray layer by it's ID
+         * @brief Destroys a stray layer by its ID
          */
         Result DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
     };

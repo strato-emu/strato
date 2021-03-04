@@ -241,6 +241,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             if (stopEmulation())
                 emulationThread.join()
 
+        vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
+
         shouldFinish = true
 
         executeApplication(intent?.data!!)
@@ -410,7 +412,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
             ButtonId.RightStick -> StickId.Right
 
-            else -> error("Invalid button id")
+            else -> error("Invalid button ID")
         }
         setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
         setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted, since drawing starts from top left

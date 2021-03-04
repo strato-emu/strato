@@ -29,7 +29,7 @@ namespace skyline::loader {
         return outputBuffer;
     }
 
-    Loader::ExecutableLoadInfo NsoLoader::LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset, const std::string& name) {
+    Loader::ExecutableLoadInfo NsoLoader::LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, size_t offset, const std::string &name) {
         auto header{backing->Read<NsoHeader>()};
 
         if (header.magic != util::MakeMagic<u32>("NSO0"))

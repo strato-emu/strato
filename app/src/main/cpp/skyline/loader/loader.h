@@ -50,16 +50,16 @@ namespace skyline::loader {
     class Loader {
       private:
         /**
-         * @brief All data used to determine the corresponding symbol for an address
+         * @brief All data used to determine the corresponding symbol for an address from an executable
          */
         struct ExecutableSymbolicInfo {
-            void* patchStart; //!< A pointer to the start of this executable's patch section
-            void* programStart; //!< A pointer to the start of this executable
-            void* programEnd; //!< A pointer to the end of this executable
-            std::string name; //!< The name of the executable this belongs to
-            std::string patchName; //!< The name of the executable this belongs to's patch section
-            span<Elf64_Sym> symbols; //!< A span over the .dynsym section of this executable
-            span<char> symbolStrings; //!< A span over the .dynstr section of this executable
+            void *patchStart; //!< A pointer to the start of this executable's patch section
+            void *programStart; //!< A pointer to the start of the executable
+            void *programEnd; //!< A pointer to the end of the executable
+            std::string name; //!< The name of the executable
+            std::string patchName; //!< The name of the patch section
+            span<Elf64_Sym> symbols; //!< A span over the .dynsym section
+            span<char> symbolStrings; //!< A span over the .dynstr section
         };
 
         std::vector<ExecutableSymbolicInfo> executables;
@@ -80,7 +80,7 @@ namespace skyline::loader {
          * @param name An optional name for the executable, used for symbol resolution
          * @return An ExecutableLoadInfo struct containing the load base and size
          */
-        ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset = 0, const std::string& name = {});
+        ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state, Executable &executable, size_t offset = 0, const std::string &name = {});
 
         std::optional<vfs::NACP> nacp;
         std::shared_ptr<vfs::Backing> romFs;
@@ -96,8 +96,11 @@ namespace skyline::loader {
          */
         virtual void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> process, const DeviceState &state) = 0;
 
+        /**
+         * @note The lifetime of the data contained within is tied to the lifetime of the Loader class it was obtained from (as this points to symbols from the executables loaded into memory directly)
+         */
         struct SymbolInfo {
-            char* name; //!< The name of the symbol that was found
+            char *name; //!< The name of the symbol that was found
             std::string_view executableName; //!< The executable that contained the symbol
         };
 
@@ -111,11 +114,11 @@ namespace skyline::loader {
          * @param frame The initial stack frame or the calling function's stack frame by default
          * @return A string with the stack trace based on the supplied context
          */
-        std::string GetStackTrace(signal::StackFrame* frame = nullptr);
+        std::string GetStackTrace(signal::StackFrame *frame = nullptr);
 
         /**
          * @return A string with the stack trace based on the stack frames in the supplied vector
          */
-        std::string GetStackTrace(const std::vector<void*> frames);
+        std::string GetStackTrace(const std::vector<void *> frames);
     };
 }

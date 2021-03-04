@@ -65,7 +65,7 @@ namespace skyline::input {
     };
 
     /**
-     * @brief A handle to a specific device addressed by it's ID and type
+     * @brief A handle to a specific device addressed by its ID and type
      * @note This is used by both Six-Axis and Vibration
      */
     union __attribute__((__packed__)) NpadDeviceHandle {
@@ -130,7 +130,7 @@ namespace skyline::input {
         NpadControllerState &GetNextEntry(NpadControllerInfo &info);
 
         /**
-         * @return The NpadControllerInfo for this controller based on it's type
+         * @return The NpadControllerInfo for this controller based on its type
          */
         NpadControllerInfo &GetControllerInfo();
 
