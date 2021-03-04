@@ -2,26 +2,26 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <common.h>
-#include <services/serviceman.h>
 #include "core.h"
+#include "IStaticService.h"
 #include "time_manager_server.h"
 
 namespace skyline::service::timesrv {
     TimeManagerServer::TimeManagerServer(core::TimeServiceObject &core) : core(core) {}
 
-    std::shared_ptr<IStaticService> TimeManagerServer::GetUserStaticService(const DeviceState &state, ServiceManager &manager) {
+    std::shared_ptr<IStaticService> TimeManagerServer::GetStaticServiceAsUser(const DeviceState &state, ServiceManager &manager) {
         return std::make_shared<IStaticService>(state, manager, core, constant::StaticServiceUserPermissions);
     }
 
-    std::shared_ptr<IStaticService> TimeManagerServer::GetAdminStaticService(const DeviceState &state, ServiceManager &manager) {
+    std::shared_ptr<IStaticService> TimeManagerServer::GetStaticServiceAsAdmin(const DeviceState &state, ServiceManager &manager) {
         return std::make_shared<IStaticService>(state, manager, core, constant::StaticServiceAdminPermissions);
     }
 
-    std::shared_ptr<IStaticService> TimeManagerServer::GetRepairStaticService(const DeviceState &state, ServiceManager &manager) {
+    std::shared_ptr<IStaticService> TimeManagerServer::GetStaticServiceAsRepair(const DeviceState &state, ServiceManager &manager) {
         return std::make_shared<IStaticService>(state, manager, core, constant::StaticServiceRepairPermissions);
     }
 
-    std::shared_ptr<IStaticService> TimeManagerServer::GetManagerStaticService(const DeviceState &state, ServiceManager &manager) {
+    std::shared_ptr<IStaticService> TimeManagerServer::GetStaticServiceAsServiceManager(const DeviceState &state, ServiceManager &manager) {
         return std::make_shared<IStaticService>(state, manager, core, constant::StaticServiceManagerPermissions);
     }
 

@@ -127,14 +127,25 @@ namespace skyline::service::timesrv {
 
         out.steadyClockTimePoint = *timePoint;
         out.automaticCorrectionEnabled = core.userSystemClock.IsAutomaticCorrectionEnabled();
-        // TODO GetDeviceLocationName
+
+        auto locationName{core.timeZoneManager.GetLocationName()};
+        if (!locationName)
+            return locationName;
+
+        out.locationName = *locationName;
+
         auto userPosixTime{ClockSnapshot::GetCurrentTime(out.steadyClockTimePoint, out.userContext)};
         if (!userPosixTime)
             return userPosixTime;
 
         out.userPosixTime = *userPosixTime;
 
-        // TODO CalendarTimeWithMyRule
+        auto userCalendarTime{core.timeZoneManager.ToCalendarTimeWithMyRule(*userPosixTime)};
+        if (!userCalendarTime)
+            return userCalendarTime;
+
+        out.userCalendarTime = userCalendarTime->calendarTime;
+        out.userCalendarAdditionalInfo = userCalendarTime->additionalInfo;
 
         // Not necessarily a fatal error if this fails
         auto networkPosixTime{ClockSnapshot::GetCurrentTime(out.steadyClockTimePoint, out.networkContext)};
@@ -143,7 +154,12 @@ namespace skyline::service::timesrv {
         else
             out.networkPosixTime = 0;
 
-        // TODO CalendarTimeWithMyRule
+        auto networkCalendarTime{core.timeZoneManager.ToCalendarTimeWithMyRule(out.networkPosixTime)};
+        if (!networkCalendarTime)
+            return networkCalendarTime;
+
+        out.networkCalendarTime = networkCalendarTime->calendarTime;
+        out.networkCalendarAdditionalInfo = networkCalendarTime->additionalInfo;
 
         out._unk_ = unk;
         out.version = 0;

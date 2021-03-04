@@ -64,9 +64,9 @@ namespace skyline::service {
             SERVICE_CASE(hid::IHidServer, "hid")
             SERVICE_CASE(timesrv::IStaticService, "time:s", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemPermissions) // Both of these would be registered after TimeServiceManager::Setup normally but we call that in the GlobalServiceState constructor so can just list them here directly
             SERVICE_CASE(timesrv::IStaticService, "time:su", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemUpdatePermissions)
-            SERVICE_CASE(glue::IStaticService, "time:a", globalServiceState->timesrv.managerServer.GetAdminStaticService(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceAdminPermissions)
-            SERVICE_CASE(glue::IStaticService, "time:r", globalServiceState->timesrv.managerServer.GetRepairStaticService(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceRepairPermissions)
-            SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetUserStaticService(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceUserPermissions)
+            SERVICE_CASE(glue::IStaticService, "time:a", globalServiceState->timesrv.managerServer.GetStaticServiceAsAdmin(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceAdminPermissions)
+            SERVICE_CASE(glue::IStaticService, "time:r", globalServiceState->timesrv.managerServer.GetStaticServiceAsRepair(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceRepairPermissions)
+            SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetStaticServiceAsUser(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceUserPermissions)
             SERVICE_CASE(fssrv::IFileSystemProxy, "fsp-srv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a")

@@ -53,11 +53,9 @@ namespace skyline::service::timesrv::core {
         return out;
     }
 
-    namespace constant {
-        constexpr size_t TimeSharedMemorySize{0x1000}; //!< The size of the time shared memory region
-    }
+    constexpr size_t TimeSharedMemorySize{0x1000}; //!< The size of the time shared memory region
 
-    TimeSharedMemory::TimeSharedMemory(const DeviceState &state) : kTimeSharedMemory(std::make_shared<kernel::type::KSharedMemory>(state, constant::TimeSharedMemorySize)), timeSharedMemory(reinterpret_cast<TimeSharedMemoryLayout *>(kTimeSharedMemory->kernel.ptr)) {}
+    TimeSharedMemory::TimeSharedMemory(const DeviceState &state) : kTimeSharedMemory(std::make_shared<kernel::type::KSharedMemory>(state, TimeSharedMemorySize)), timeSharedMemory(reinterpret_cast<TimeSharedMemoryLayout *>(kTimeSharedMemory->kernel.ptr)) {}
 
     void TimeSharedMemory::SetupStandardSteadyClock(UUID rtcId, TimeSpanType baseTimePoint) {
         SteadyClockTimePoint context{

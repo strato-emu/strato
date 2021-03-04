@@ -57,7 +57,7 @@ namespace skyline::service::timesrv {
             return updateTime;
 
         response.Push(*locationName);
-        response.Push<u32>(0);
+        response.Push<u32>(0); // Padding
         response.Push(*updateTime);
 
         return {};
@@ -77,11 +77,11 @@ namespace skyline::service::timesrv {
     }
 
     Result ITimeZoneService::ParseTimeZoneBinaryIpc(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return core.timeZoneManager.ParseTimeZoneBinary(request.inputBuf.at(0), request.outputBuf.at(0));
+        return core::TimeZoneManager::ParseTimeZoneBinary(request.inputBuf.at(0), request.outputBuf.at(0));
     }
 
     Result ITimeZoneService::ParseTimeZoneBinary(span<u8> binary, span<u8> rule) {
-        return core.timeZoneManager.ParseTimeZoneBinary(binary, rule);
+        return core::TimeZoneManager::ParseTimeZoneBinary(binary, rule);
     }
 
     Result ITimeZoneService::GetDeviceLocationNameOperationEventReadableHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -90,7 +90,7 @@ namespace skyline::service::timesrv {
 
     Result ITimeZoneService::ToCalendarTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto posixTime{request.Pop<PosixTime>()};
-        auto calendarTime{core.timeZoneManager.ToCalendarTime(reinterpret_cast<tz_timezone_t>(request.inputBuf.at(0).data()), posixTime)};
+        auto calendarTime{core::TimeZoneManager::ToCalendarTime(reinterpret_cast<tz_timezone_t>(request.inputBuf.at(0).data()), posixTime)};
 
         if (calendarTime)
             response.Push(*calendarTime);
@@ -110,7 +110,7 @@ namespace skyline::service::timesrv {
 
     Result ITimeZoneService::ToPosixTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto calendarTime{request.Pop<CalendarTime>()};
-        auto posixTime{core.timeZoneManager.ToPosixTime(reinterpret_cast<tz_timezone_t>(request.inputBuf.at(0).data()), calendarTime)};
+        auto posixTime{core::TimeZoneManager::ToPosixTime(reinterpret_cast<tz_timezone_t>(request.inputBuf.at(0).data()), calendarTime)};
         if (!posixTime)
             return posixTime;
 

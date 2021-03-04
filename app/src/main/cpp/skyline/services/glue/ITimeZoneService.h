@@ -13,9 +13,13 @@ namespace skyline::service::timesrv {
         struct TimeServiceObject;
     }
 }
+
 namespace skyline::service::glue {
 
-
+    /**
+     * @brief ITimeZoneService is glue's extension of psc::ITimeZoneService, it adds support for reading TimeZone location data and simplifies rule handling. This is the variant normally used by applications.
+     * @url https://switchbrew.org/wiki/Glue_services#ITimeZoneService
+     */
     class ITimeZoneService : public BaseService {
       private:
         std::shared_ptr<timesrv::ITimeZoneService> core;
@@ -32,6 +36,10 @@ namespace skyline::service::glue {
 
         Result GetTotalLocationNameCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @brief Returns a list of available timezone location names beginning from the given index
+         * @url https://switchbrew.org/wiki/Glue_services#LoadLocationNameList
+         */
         Result LoadLocationNameList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         Result LoadTimeZoneRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

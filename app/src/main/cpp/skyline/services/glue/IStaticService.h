@@ -8,8 +8,8 @@
 
 namespace skyline::service::glue {
     /**
-     * @brief IStaticService (covers time:a, time:r, time:u) is glue's version of pcv::IStaticService, it adds some more functions and provides the user variant
-     * @url https://switchbrew.org/wiki/PSC_services#time:su.2C_time:s
+     * @brief IStaticService (covers time:a, time:r, time:u) is glue's extension of pcv::IStaticService, it adds some more functions and provides the user variant that most applications use
+     * @url https://switchbrew.org/wiki/Glue_services#time:a.2C_time:r.2C_time:u
      */
     class IStaticService : public BaseService {
       private:

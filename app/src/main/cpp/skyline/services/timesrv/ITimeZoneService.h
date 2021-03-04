@@ -11,7 +11,7 @@ namespace skyline::service::timesrv {
     }
 
     /**
-     * @brief ITimeZoneService is used to retrieve and set timezone info and convert between times and dates
+     * @brief ITimeZoneService is used to retrieve and set timezone info and convert between times and dates by the system
      * @url https://switchbrew.org/wiki/PSC_services#ITimeZoneService
      */
     class ITimeZoneService : public BaseService {

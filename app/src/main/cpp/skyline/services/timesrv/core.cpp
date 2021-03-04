@@ -3,7 +3,7 @@
 
 #include <os.h>
 #include <vfs/filesystem.h>
-#include <time.h>
+#include <ctime>
 #include "core.h"
 #include "time_manager_server.h"
 

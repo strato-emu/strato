@@ -18,7 +18,7 @@ namespace skyline::service::timesrv::core {
     ResultValue<LocationName> TimeZoneManager::GetLocationName() {
         std::lock_guard lock(mutex);
 
-        if (!initialized)
+        if (!IsInitialized())
             return result::ClockUninitialized;
 
         return locationName;
@@ -39,7 +39,7 @@ namespace skyline::service::timesrv::core {
     ResultValue<SteadyClockTimePoint> TimeZoneManager::GetUpdateTime() {
         std::lock_guard lock(mutex);
 
-        if (!initialized)
+        if (!IsInitialized())
             return result::ClockUninitialized;
 
         return updateTime;
@@ -53,7 +53,7 @@ namespace skyline::service::timesrv::core {
     ResultValue<int> TimeZoneManager::GetLocationCount() {
         std::lock_guard lock(mutex);
 
-        if (!initialized)
+        if (!IsInitialized())
             return result::ClockUninitialized;
 
         return locationCount;
@@ -67,7 +67,7 @@ namespace skyline::service::timesrv::core {
     ResultValue<std::array<u8, 0x10>> TimeZoneManager::GetBinaryVersion() {
         std::lock_guard lock(mutex);
 
-        if (!initialized)
+        if (!IsInitialized())
             return result::ClockUninitialized;
 
         return binaryVersion;
@@ -124,7 +124,7 @@ namespace skyline::service::timesrv::core {
             .tm_sec = calendarTime.second,
         };
 
-        // Nintendo optionally two times here, presumably to deal with DST correction but we are probably fine without it
+        // Nintendo optionally returns two times here, presumably to deal with DST correction but we are probably fine without it
         return static_cast<PosixTime>(tz_mktime_z(pRule, &posixCalendarTime));
     }
 }

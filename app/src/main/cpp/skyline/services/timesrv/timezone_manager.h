@@ -26,6 +26,10 @@ namespace skyline::service::timesrv::core {
         }
 
       public:
+        bool IsInitialized() {
+            return initialized;
+        }
+
         /**
          * @brief Initialises the manager, setting the initial timezone so it is ready for use by applications
          */
@@ -53,12 +57,12 @@ namespace skyline::service::timesrv::core {
         /**
          * @brief Parses a raw TZIF2 file into a timezone rule that can be passed to other functions
          */
-        Result ParseTimeZoneBinary(span<u8> binary, span<u8> ruleOut);
+        static Result ParseTimeZoneBinary(span<u8> binary, span<u8> ruleOut);
 
         /**
          * @brief Converts a POSIX time to a calendar time using the given rule
          */
-        ResultValue<FullCalendarTime> ToCalendarTime(tz_timezone_t pRule, PosixTime posixTime);
+        static ResultValue<FullCalendarTime> ToCalendarTime(tz_timezone_t pRule, PosixTime posixTime);
 
         /**
          * @brief Converts a POSIX to a calendar time using the current location's rule
@@ -70,7 +74,7 @@ namespace skyline::service::timesrv::core {
         /**
          * @brief Converts a calendar time to a POSIX time using the given rule
          */
-        ResultValue<PosixTime> ToPosixTime(tz_timezone_t pRule, CalendarTime calendarTime);
+        static ResultValue<PosixTime> ToPosixTime(tz_timezone_t pRule, CalendarTime calendarTime);
 
         /**
          * @brief Converts a calendar time to a POSIX time using the current location's rule

@@ -5,7 +5,7 @@
 
 namespace skyline::service::timesrv {
     using PosixTime = i64; //!< Unit for time in seconds since the epoch
-    using LocationName = std::array<char, 0x18>;
+    using LocationName = std::array<char, 0x24>;
 
     /**
      * @brief Stores a quantity of time with nanosecond accuracy and provides helper functions to convert it to other units
@@ -58,6 +58,7 @@ namespace skyline::service::timesrv {
 
     /**
      * @brief Holds details about a point in time sourced from a steady clock (e.g. RTC)
+     * @url https://switchbrew.org/w/index.php?title=PSC_services#SteadyClockTimePoint
      */
     struct __attribute__((packed)) SteadyClockTimePoint {
         i64 timePoint; //!< Time in seconds
@@ -69,6 +70,7 @@ namespace skyline::service::timesrv {
 
     /**
      * @brief Describes a system clocks offset from its associated steady clock
+     * @url https://switchbrew.org/w/index.php?title=PSC_services#SystemClockContext
      */
     struct __attribute__((packed)) SystemClockContext {
         i64 offset; // Offset between the steady timepoint and the epoch
@@ -80,6 +82,7 @@ namespace skyline::service::timesrv {
 
     /**
      * @brief A particular time point in Nintendo's calendar format
+     * @url https://switchbrew.org/w/index.php?title=PSC_services#CalendarTime
      */
     struct CalendarTime {
         u16 year; //!< The current year minus 1900
@@ -94,6 +97,7 @@ namespace skyline::service::timesrv {
 
     /**
      * @brief Additional metadata about the time alongside CalendarTime
+     * @url https://switchbrew.org/w/index.php?title=PSC_services#CalendarAdditionalInfo
      */
     struct CalendarAdditionalInfo {
         u32 dayOfWeek; //!< 0-6
@@ -126,7 +130,7 @@ namespace skyline::service::timesrv {
         CalendarAdditionalInfo userCalendarAdditionalInfo;
         CalendarAdditionalInfo networkCalendarAdditionalInfo;
         SteadyClockTimePoint steadyClockTimePoint;
-        std::array<u8, 36> locationName;
+        LocationName locationName;
         u8 automaticCorrectionEnabled;
         u8 _unk_;
         u16 version;
