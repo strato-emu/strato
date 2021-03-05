@@ -66,8 +66,9 @@ namespace skyline {
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
-            inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a yield in running threads
-            inline static thread_local bool YieldPending{}; //!< A flag denoting if a yield is pending on this thread, it's checked at SVC exit
+            inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a non-cooperative yield in running threads
+            inline static int PreemptionSignal{SIGRTMIN + 1}; //!< The signal used to cause a preemptive yield in running threads
+            inline static thread_local bool YieldPending{}; //!< A flag denoting if a yield is pending on this thread, it's checked prior to entering guest code as signals cannot interrupt host code
 
             Scheduler(const DeviceState &state);
 
@@ -115,7 +116,7 @@ namespace skyline {
             void RemoveThread();
 
             /**
-             * @brief Updates the placement of the supplied thread in its resident core's queue according to its new priority
+             * @brief Updates the placement of the supplied thread in its resident core's queue according to its current priority
              */
             void UpdatePriority(const std::shared_ptr<type::KThread> &thread);
 

@@ -14,6 +14,8 @@ namespace skyline::kernel {
     void Scheduler::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
         if (*tls) {
             const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
+            if (signal == PreemptionSignal)
+                state.thread->isPreempted = false;
             state.scheduler->Rotate(false);
             YieldPending = false;
             state.scheduler->WaitSchedule();
@@ -64,33 +66,10 @@ namespace skyline::kernel {
                 }
             }
 
-            if (optimalCore != currentCore) {
-                /*
-                bool isInserted;
-                if (conditionalInsert) {
-                    auto it{std::find(currentCore->queue.begin(), currentCore->queue.end(), thread)};
-                    isInserted = it != currentCore->queue.end();
-                    if (isInserted && thread == state.thread) {
-                        // If the thread is in it's current core's queue
-                        // We need to remove the thread from the current core's queue
-                        it = currentCore->queue.erase(it);
-                        if (it == currentCore->queue.begin() && it != currentCore->queue.end())
-                            (*it)->scheduleCondition.notify_one();
-                    } else if (isInserted && thread != state.thread) [[unlikely]] {
-                        // It's not very useful to insert an external thread on the core optimal for it
-                        // We leave any sort of load balancing to a thread to do on it's own
-                        // Our systems can support it but it's pointless to do and would waste precious CPU cycles
-                        throw exception("Migrating an external thread (T{}) which is potentially inserted in its resident core's queue isn't supported", thread->id);
-                    }
-                } else {
-                    isInserted = false;
-                }
-                thread->coreId = optimalCore->id;
-                 */
+            if (optimalCore != currentCore)
                 state.logger->Debug("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
-            } else {
+            else
                 state.logger->Debug("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
-            }
 
             return *optimalCore;
         }
@@ -115,7 +94,7 @@ namespace skyline::kernel {
                 core.queue.push_front(thread);
 
                 if (state.thread != front) {
-                    // If the inserting thread isn't at the front, we need to send it an OS signal to yield
+                    // If the calling thread isn't at the front, we need to send it an OS signal to yield
                     if (!front->pendingYield) {
                         // We only want to yield the thread if it hasn't already been sent a signal to yield in the past
                         // Not doing this can lead to races and deadlocks but is also slower as it prevents redundant signals
@@ -123,8 +102,8 @@ namespace skyline::kernel {
                         front->pendingYield = true;
                     }
                 } else {
-                    // If the thread at the front is being yielded, we can just set the YieldPending flag
-                    // This avoids an OS signal and would cause a deadlock otherwise as the core lock would be relocked
+                    // If the calling thread at the front is being yielded, we can just set the YieldPending flag
+                    // This avoids an OS signal which would just flip the YieldPending flag but with significantly more overhead
                     YieldPending = true;
                 }
             } else {
@@ -187,12 +166,9 @@ namespace skyline::kernel {
             thread->scheduleCondition.wait(lock, wakeFunction);
         }
 
-        if (thread->priority == core->preemptionPriority) {
+        if (thread->priority == core->preemptionPriority)
             // If the thread needs to be preempted then arm its preemption timer
-            struct itimerspec spec{.it_value = {.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(PreemptiveTimeslice).count()}};
-            timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-            thread->isPreempted = true;
-        }
+            thread->ArmPreemptionTimer(PreemptiveTimeslice);
 
         thread->timesliceStart = util::GetTimeTicks();
     }
@@ -209,11 +185,8 @@ namespace skyline::kernel {
             }
             return !core->queue.empty() && core->queue.front() == thread;
         })) {
-            if (thread->priority == core->preemptionPriority) {
-                struct itimerspec spec{.it_value = {.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(PreemptiveTimeslice).count()}};
-                timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-                thread->isPreempted = true;
-            }
+            if (thread->priority == core->preemptionPriority)
+                thread->ArmPreemptionTimer(PreemptiveTimeslice);
 
             thread->timesliceStart = util::GetTimeTicks();
 
@@ -243,13 +216,7 @@ namespace skyline::kernel {
 
         thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
 
-        if (cooperative && thread->isPreempted) {
-            // If a preemptive thread did a cooperative yield then we need to disarm the preemptive timer
-            struct itimerspec spec{};
-            timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-        }
-
-        thread->isPreempted = false;
+        thread->DisarmPreemptionTimer(); // If a preemptive thread did a cooperative yield then we need to disarm the preemptive timer
         thread->pendingYield = false;
         thread->forceYield = false;
     }
@@ -273,12 +240,9 @@ namespace skyline::kernel {
             }
         }
 
-        if (thread->isPreempted) {
-            struct itimerspec spec{};
-            timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-            thread->isPreempted = false;
-        }
-
+        thread->DisarmPreemptionTimer();
+        thread->pendingYield = false;
+        thread->forceYield = false;
         YieldPending = false;
     }
 
@@ -287,50 +251,36 @@ namespace skyline::kernel {
         auto *core{&cores.at(thread->coreId)};
         std::unique_lock coreLock(core->mutex);
 
-        auto currentIt{std::find(core->queue.begin(), core->queue.end(), thread)};
-        if (currentIt == core->queue.end() || currentIt == core->queue.begin())
-            // If the thread isn't in the queue then the new priority will be handled automatically on insertion
-            return;
+        auto currentIt{std::find(core->queue.begin(), core->queue.end(), thread)}, nextIt{std::next(currentIt)};
         if (currentIt == core->queue.begin()) {
-            // Alternatively, if it's currently running then we'd just want to cause it to yield if its priority is lower than the the thread behind it
-            auto nextIt{std::next(currentIt)};
+            // Alternatively, if it's currently running then we'd just want to yield if there's a higher priority thread to run instead
             if (nextIt != core->queue.end() && (*nextIt)->priority < thread->priority) {
                 if (!thread->pendingYield) {
                     thread->SendSignal(YieldSignal);
                     thread->pendingYield = true;
                 }
             } else if (!thread->isPreempted && thread->priority == core->preemptionPriority) {
-                // If the thread needs to be preempted due to the new priority then arm its preemption timer
-                struct itimerspec spec{.it_value = {.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(PreemptiveTimeslice).count()}};
-                timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-                thread->isPreempted = true;
+                // If the thread needs to be preempted due to its new priority then arm its preemption timer
+                thread->ArmPreemptionTimer(PreemptiveTimeslice);
+            } else if (thread->isPreempted && thread->priority != core->preemptionPriority) {
+                // If the thread no longer needs to be preempted due to its new priority then disarm its preemption timer
+                thread->DisarmPreemptionTimer();
             }
-            return;
-        }
+        } else if (currentIt != core->queue.end() && (thread->priority < (*std::prev(currentIt))->priority || (nextIt != core->queue.end() && thread->priority > (*nextIt)->priority))) {
+            // If the thread is in the queue and it's position is affected by the priority change then need to remove and re-insert the thread
+            core->queue.erase(currentIt);
 
-        auto targetIt{std::upper_bound(core->queue.begin(), core->queue.end(), thread->priority.load(), type::KThread::IsHigherPriority)};
-        if (currentIt == targetIt)
-            // If this thread's position isn't affected by the priority change then we have nothing to do
-            return;
-
-        core->queue.erase(currentIt);
-
-        if (thread->isPreempted && thread->priority != core->preemptionPriority) {
-            struct itimerspec spec{};
-            timer_settime(thread->preemptionTimer, 0, &spec, nullptr);
-            thread->isPreempted = false;
-        }
-
-        targetIt = std::upper_bound(core->queue.begin(), core->queue.end(), thread->priority.load(), type::KThread::IsHigherPriority); // Iterator invalidation
-        if (targetIt == core->queue.begin() && targetIt != core->queue.end()) {
-            core->queue.insert(std::next(core->queue.begin()), thread);
-            auto front{core->queue.front()};
-            if (!front->pendingYield) {
-                front->SendSignal(YieldSignal);
-                front->pendingYield = true;
+            auto targetIt{std::upper_bound(core->queue.begin(), core->queue.end(), thread->priority.load(), type::KThread::IsHigherPriority)};
+            if (targetIt == core->queue.begin() && targetIt != core->queue.end()) {
+                core->queue.insert(std::next(core->queue.begin()), thread);
+                auto front{core->queue.front()};
+                if (!front->pendingYield) {
+                    front->SendSignal(YieldSignal);
+                    front->pendingYield = true;
+                }
+            } else {
+                core->queue.insert(targetIt, thread);
             }
-        } else {
-            core->queue.insert(targetIt, thread);
         }
     }
 

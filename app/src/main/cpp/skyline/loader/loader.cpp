@@ -84,17 +84,17 @@ namespace skyline::loader {
             size_t length{};
             std::unique_ptr<char, decltype(&std::free)> demangled{abi::__cxa_demangle(symbol.name, nullptr, &length, &status), std::free};
 
-            return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<u64>(pointer), (status == 0) ? std::string(demangled.get()) : symbol.name, symbol.executableName);
+            return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<uintptr_t>(pointer), (status == 0) ? std::string(demangled.get()) : symbol.name, symbol.executableName);
         } else if (!symbol.executableName.empty()) {
-            return fmt::format("\n* 0x{:X} (from {})", reinterpret_cast<u64>(pointer), symbol.executableName);
+            return fmt::format("\n* 0x{:X} (from {})", reinterpret_cast<uintptr_t>(pointer), symbol.executableName);
         } else if (dladdr(pointer, &info)) {
             int status{};
             size_t length{};
             std::unique_ptr<char, decltype(&std::free)> demangled{abi::__cxa_demangle(info.dli_sname, nullptr, &length, &status), std::free};
 
-            return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<u64>(pointer), (status == 0) ? std::string(demangled.get()) : info.dli_sname, info.dli_fname);
+            return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<uintptr_t>(pointer), (status == 0) ? std::string(demangled.get()) : info.dli_sname, info.dli_fname);
         } else {
-            return fmt::format("\n* 0x{:X}", reinterpret_cast<u64>(pointer));
+            return fmt::format("\n* 0x{:X}", reinterpret_cast<uintptr_t>(pointer));
         }
     }
 

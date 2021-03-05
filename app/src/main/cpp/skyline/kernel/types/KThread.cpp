@@ -56,7 +56,7 @@ namespace skyline::kernel::type {
         }
 
         struct sigevent event{
-            .sigev_signo = Scheduler::YieldSignal,
+            .sigev_signo = Scheduler::PreemptionSignal,
             .sigev_notify = SIGEV_THREAD_ID,
             .sigev_notify_thread_id = gettid(),
         };
@@ -64,7 +64,7 @@ namespace skyline::kernel::type {
             throw exception("timer_create has failed with '{}'", strerror(errno));
 
         signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
-        signal::SetSignalHandler({Scheduler::YieldSignal}, Scheduler::SignalHandler, false); // We want futexes to fail and their predicates rechecked
+        signal::SetSignalHandler({Scheduler::YieldSignal, Scheduler::PreemptionSignal}, Scheduler::SignalHandler, false); // We want futexes to fail and their predicates rechecked
 
         {
             std::lock_guard lock(statusMutex);
@@ -225,5 +225,54 @@ namespace skyline::kernel::type {
         statusCondition.wait(lock, [this]() { return ready || killed; });
         if (!killed && running)
             pthread_kill(pthread, signal);
+    }
+
+    void KThread::ArmPreemptionTimer(std::chrono::nanoseconds timeToFire) {
+        struct itimerspec spec{.it_value = {
+            .tv_nsec = std::min(timeToFire.count(), static_cast<long long>(constant::NsInSecond)),
+            .tv_sec = std::max(std::chrono::duration_cast<std::chrono::seconds>(timeToFire).count() - 1, 0LL),
+        }};
+        timer_settime(preemptionTimer, 0, &spec, nullptr);
+        isPreempted = true;
+    }
+
+    void KThread::DisarmPreemptionTimer() {
+        if (isPreempted) {
+            struct itimerspec spec{};
+            timer_settime(preemptionTimer, 0, &spec, nullptr);
+            isPreempted = false;
+        }
+    }
+
+    void KThread::UpdatePriorityInheritance() {
+        auto waitingOn{waitThread};
+        u8 currentPriority{priority.load()};
+        while (waitingOn) {
+            u8 ownerPriority;
+            do {
+                // Try to CAS the priority of the owner with the current thread
+                // If the new priority is equivalent to the current priority then we don't need to CAS
+                ownerPriority = waitingOn->priority.load();
+                if (ownerPriority <= currentPriority)
+                    return;
+            } while (waitingOn->priority.compare_exchange_strong(ownerPriority, currentPriority));
+
+            if (ownerPriority != currentPriority) {
+                std::lock_guard waiterLock(waitingOn->waiterMutex);
+                auto nextThread{waitingOn->waitThread};
+                if (nextThread){
+                    // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
+                    std::lock_guard nextWaiterLock(nextThread->waiterMutex);
+                    auto &piWaiters{nextThread->waiters};
+                    piWaiters.erase(std::find(piWaiters.begin(), piWaiters.end(), waitingOn));
+                    piWaiters.insert(std::upper_bound(piWaiters.begin(), piWaiters.end(), currentPriority, KThread::IsHigherPriority), waitingOn);
+                    break;
+                }
+                state.scheduler->UpdatePriority(waitingOn);
+                waitingOn = nextThread;
+            } else {
+                break;
+            }
+        }
     }
 }

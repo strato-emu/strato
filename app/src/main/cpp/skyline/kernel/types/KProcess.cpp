@@ -131,38 +131,9 @@ namespace skyline::kernel::type {
             state.thread->waitTag = tag;
         }
 
-        if (isHighestPriority) {
+        if (isHighestPriority)
             // If we were the highest priority thread then we need to inherit priorities for all threads we're waiting on recursively
-            do {
-                u8 priority, ownerPriority;
-                do {
-                    // Try to CAS the priority of the owner with the current thread
-                    // If the new priority is equivalent to the current priority then we don't need to CAS
-                    ownerPriority = owner->priority.load();
-                    priority = std::min(ownerPriority, state.thread->priority.load());
-                } while (ownerPriority != priority && owner->priority.compare_exchange_strong(ownerPriority, priority));
-
-                if (ownerPriority != priority) {
-                    std::shared_ptr<KThread> waitThread;
-                    {
-                        std::lock_guard lock(waitThread->waiterMutex);
-                        waitThread = owner->waitThread;
-
-                        // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
-                        auto &waiters{waitThread->waiters};
-                        waiters.erase(std::find(waiters.begin(), waiters.end(), waitThread));
-                        waiters.insert(std::upper_bound(waiters.begin(), waiters.end(), state.thread->priority.load(), KThread::IsHigherPriority), owner);
-                        break;
-                    }
-
-                    state.scheduler->UpdatePriority(owner);
-
-                    owner = waitThread;
-                } else {
-                    break;
-                }
-            } while (owner);
-        }
+            state.thread->UpdatePriorityInheritance();
 
         state.scheduler->WaitSchedule(false);
 

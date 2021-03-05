@@ -358,6 +358,7 @@ namespace skyline::kernel::svc {
                     newPriority = std::min(newPriority, priority);
                 } while (newPriority != priority && thread->priority.compare_exchange_strong(newPriority, priority));
                 state.scheduler->UpdatePriority(thread);
+                thread->UpdatePriorityInheritance();
             }
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
@@ -423,6 +424,7 @@ namespace skyline::kernel::svc {
 
                 if (thread == state.thread) {
                     state.scheduler->RemoveThread();
+                    thread->coreId = idealCore;
                     state.scheduler->InsertThread(state.thread);
                     state.scheduler->WaitSchedule();
                 } else if (!thread->running) {
@@ -440,6 +442,7 @@ namespace skyline::kernel::svc {
     }
 
     void GetCurrentProcessorNumber(const DeviceState &state) {
+        std::lock_guard guard(state.thread->coreMigrationMutex);
         auto coreId{state.thread->coreId};
         state.logger->Debug("svcGetCurrentProcessorNumber: C{}", coreId);
         state.ctx->gpr.w0 = coreId;
@@ -812,10 +815,9 @@ namespace skyline::kernel::svc {
     void Break(const DeviceState &state) {
         auto reason{state.ctx->gpr.x0};
         if (reason & (1ULL << 31)) {
-            state.logger->Error("svcBreak: Debugger is being engaged ({})", reason);
-            __builtin_trap();
+            state.logger->Debug("svcBreak: Debugger is being engaged ({})", reason);
         } else {
-            state.logger->Error("svcBreak: Stack Trace ({}){}", reason, state.loader->GetStackTrace());
+            state.logger->Error("svcBreak: Exit Stack Trace ({}){}", reason, state.loader->GetStackTrace());
             if (state.thread->id)
                 state.process->Kill(false);
             std::longjmp(state.thread->originalCtx, true);

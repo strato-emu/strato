@@ -21,6 +21,7 @@ namespace skyline {
             KProcess *parent;
             std::thread thread; //!< If this KThread is backed by a host thread then this'll hold it
             pthread_t pthread{}; //!< The pthread_t for the host thread running this guest thread
+            timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
 
             /**
              * @brief Entry function any guest threads, sets up necessary context and jumps into guest code from the calling thread
@@ -56,7 +57,6 @@ namespace skyline {
 
             u64 timesliceStart{}; //!< A timestamp in host CNTVCT ticks of when the thread's current timeslice started
             u64 averageTimeslice{}; //!< A weighted average of the timeslice duration for this thread
-            timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
 
             bool isPreempted{}; //!< If the preemption timer has been armed and will fire
             bool pendingYield{}; //!< If the thread has been yielded and hasn't been acted upon it yet
@@ -92,6 +92,22 @@ namespace skyline {
              * @brief Sends a host OS signal to the thread which is running this KThread
              */
             void SendSignal(int signal);
+
+            /**
+             * @brief Arms the preemption kernel timer to fire in the specified amount of time
+             */
+            void ArmPreemptionTimer(std::chrono::nanoseconds timeToFire);
+
+            /**
+             * @brief Disarms the preemption kernel timer, any scheduled firings will be cancelled
+             */
+            void DisarmPreemptionTimer();
+
+            /**
+             * @brief Recursively updates the priority for any threads this thread might be waiting on
+             * @note PI is performed by temporarily upgrading a thread's priority if a thread waiting on it has a higher priority to prevent priority inversion
+             */
+            void UpdatePriorityInheritance();
 
             /**
              * @return If the supplied priority value is higher than the supplied thread's priority value
