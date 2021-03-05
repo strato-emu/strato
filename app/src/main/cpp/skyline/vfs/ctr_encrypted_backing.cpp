@@ -25,7 +25,7 @@ namespace skyline::vfs {
 
         size_t sectorOffset{offset % SectorSize};
         if (sectorOffset == 0) {
-            size_t read{backing->Read(output, offset)};
+            size_t read{backing->ReadUnchecked(output, offset)};
             if (read != size)
                 return 0;
             {
@@ -38,7 +38,7 @@ namespace skyline::vfs {
 
         size_t sectorStart{offset - sectorOffset};
         std::vector<u8> blockBuf(SectorSize);
-        size_t read{backing->Read(blockBuf, sectorStart)};
+        size_t read{backing->ReadUnchecked(blockBuf, sectorStart)};
         if (read != SectorSize)
             return 0;
         {
@@ -53,6 +53,6 @@ namespace skyline::vfs {
 
         size_t readInBlock{SectorSize - sectorOffset};
         std::memcpy(output.data(), blockBuf.data() + sectorOffset, readInBlock);
-        return readInBlock + Read(output.subspan(readInBlock), offset + readInBlock);
+        return readInBlock + ReadUnchecked(output.subspan(readInBlock), offset + readInBlock);
     }
 }

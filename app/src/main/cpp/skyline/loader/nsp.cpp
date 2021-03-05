@@ -50,7 +50,7 @@ namespace skyline::loader {
         // Use the first icon file available
         for (const auto &entry : root->Read()) {
             if (entry.name.rfind("icon") == 0) {
-                icon = controlRomFs->OpenFile(entry.name);
+                icon = controlRomFs->OpenFileUnchecked(entry.name);
                 break;
             }
         }

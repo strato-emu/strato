@@ -16,7 +16,7 @@ namespace skyline::vfs {
 
       protected:
         size_t ReadImpl(span <u8> output, size_t offset) override {
-            return backing->Read(output, baseOffset + offset);
+            return backing->ReadUnchecked(output, baseOffset + offset);
         }
 
       public:

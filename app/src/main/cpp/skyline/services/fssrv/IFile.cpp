@@ -23,7 +23,7 @@ namespace skyline::service::fssrv {
             return result::InvalidSize;
         }
 
-        response.Push<u32>(static_cast<u32>(backing->Read(request.outputBuf.at(0), offset)));
+        response.Push<u32>(static_cast<u32>(backing->ReadUnchecked(request.outputBuf.at(0), offset)));
         return {};
     }
 

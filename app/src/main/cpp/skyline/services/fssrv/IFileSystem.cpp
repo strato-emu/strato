@@ -38,7 +38,7 @@ namespace skyline::service::fssrv {
         if (!backing->FileExists(path))
             return result::PathDoesNotExist;
 
-        auto file{backing->OpenFile(path, mode)};
+        auto file{backing->OpenFileUnchecked(path, mode)};
         if (file == nullptr)
             return result::UnexpectedFailure;
         else

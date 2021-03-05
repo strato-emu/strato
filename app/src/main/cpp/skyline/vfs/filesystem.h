@@ -62,13 +62,27 @@ namespace skyline::vfs {
          * @brief Opens a file from the specified path in the filesystem
          * @param path The path to the file
          * @param mode The mode to open the file with
-         * @return A shared pointer to a Backing object of the file
+         * @return A shared pointer to a Backing object of the file (may be nullptr)
          */
-        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false}) {
+        std::shared_ptr<Backing> OpenFileUnchecked(const std::string &path, Backing::Mode mode = {true, false, false}) {
             if (!mode.write && !mode.read)
                 throw exception("Cannot open a file with a mode that is neither readable nor writable");
 
             return OpenFileImpl(path, mode);
+        }
+
+        /**
+         * @brief Opens a file from the specified path in the filesystem and throws an exception if opening fails
+         * @param path The path to the file
+         * @param mode The mode to open the file with
+         * @return A shared pointer to a Backing object of the file
+         */
+        std::shared_ptr<Backing> OpenFile(const std::string &path, Backing::Mode mode = {true, false, false}) {
+            auto file{OpenFileUnchecked(path, mode)};
+            if (file == nullptr)
+                throw exception("Failed to open file: {}", path);
+
+            return file;
         }
 
         /**
@@ -104,13 +118,27 @@ namespace skyline::vfs {
          * @brief Opens a directory from the specified path in the filesystem
          * @param path The path to the directory
          * @param listMode The list mode for the directory
-         * @return A shared pointer to a Directory object of the directory
+         * @return A shared pointer to a Directory object of the directory (may be nullptr)
          */
-        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode = {true, true}) {
+        std::shared_ptr<Directory> OpenDirectoryUnchecked(const std::string &path, Directory::ListMode listMode = {true, true}) {
             if (!listMode.raw)
                 throw exception("Cannot open a directory with an empty listMode");
 
             return OpenDirectoryImpl(path, listMode);
+        };
+
+        /**
+         * @brief Opens a directory from the specified path in the filesystem and throws an exception if opening fails
+         * @param path The path to the directory
+         * @param listMode The list mode for the directory
+         * @return A shared pointer to a Directory object of the directory
+         */
+        std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode = {true, true}) {
+            auto dir{OpenDirectoryUnchecked(path, listMode)};
+            if (dir == nullptr)
+                throw exception("Failed to open directory: {}", path);
+
+            return dir;
         };
     };
 }

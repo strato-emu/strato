@@ -16,9 +16,10 @@ namespace skyline::loader {
         if (exeFs == nullptr)
             throw exception("Cannot load a null ExeFS");
 
-        auto nsoFile{exeFs->OpenFile("rtld")};
-        if (nsoFile == nullptr)
+        if (!exeFs->FileExists("rtld"))
             throw exception("Cannot load an ExeFS that doesn't contain rtld");
+
+        auto nsoFile{exeFs->OpenFile("rtld")};
 
         state.process->memory.InitializeVmm(process->npdm.meta.flags.type);
 
