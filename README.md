@@ -21,11 +21,11 @@ You can contact the core developers of Skyline at our [Discord](https://discord.
 [**Ryujinx**](https://ryujinx.org/)<br>
 We've used Ryujinx throughout the project for reference, the amount of accuracy of their HLE kernel implementation is what makes them such an amazing reference. In addition, the team behind the project has been really helpful with any queries we had.  
 
-[<img align="left" height="10%" width="10%" src="https://avatars3.githubusercontent.com/u/35075882?v=4"/>](https://ryujinx.org/)
+[<img align="left" height="10%" width="10%" src="https://avatars3.githubusercontent.com/u/35075882?v=4"/>](https://yuzu-emu.org/)
 [**Team yuzu**](https://github.com/yuzu-emu/)<br>
 We have recieved a fair share of advice from the team behind [yuzu](https://yuzu-emu.org/). Just like the Ryujinx team, they've been really receptive and helpful for any queries we've had and have provided feedback on our code which was extremely useful during the early stages of the emulator.  
 
-[<img align="left" height="10%" width="10%" src="https://avatars3.githubusercontent.com/u/31827450?v=4"/>](https://ryujinx.org/)
+[<img align="left" height="10%" width="10%" src="https://avatars3.githubusercontent.com/u/31827450?v=4"/>](https://switchbrew.org/)
 [**Switchbrew**](https://github.com/switchbrew/)<br>
 We've extensively used Switchbrew whether that be their [wiki](https://switchbrew.org/) with it's collosal amount of information on the Switch that has saved us countless hours of time or [libnx](https://github.com/switchbrew/libnx) which was crucial to initial development of the emulator to ensure that our implementations were correct.
 
