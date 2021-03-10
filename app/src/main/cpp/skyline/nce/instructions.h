@@ -60,7 +60,7 @@ namespace skyline::nce {
          * @url https://developer.arm.com/docs/ddi0596/latest/base-instructions-alphabetic-order/mrs-move-system-register
          */
         struct Mrs {
-            constexpr Mrs(u32 srcReg, registers::X destReg) : srcReg(srcReg), destReg(destReg), sig(0xD54) {}
+            constexpr Mrs(u32 srcReg, registers::X destReg) : srcReg(srcReg), destReg(destReg), sig(0xD53) {}
 
             constexpr bool Verify() {
                 return (sig == 0xD53);
