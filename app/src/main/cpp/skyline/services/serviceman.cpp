@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
+#include <common/tracing.h>
 #include "sm/IUserInterface.h"
 #include "settings/ISettingsServer.h"
 #include "settings/ISystemSettingsServer.h"
@@ -146,6 +147,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::SyncRequestHandler(KHandle handle) {
+        TRACE_EVENT("kernel", "ServiceManager::SyncRequestHandler");
         auto session{state.process->GetHandle<type::KSession>(handle)};
         state.logger->Verbose("----IPC Start----");
         state.logger->Verbose("Handle is 0x{:X}", handle);

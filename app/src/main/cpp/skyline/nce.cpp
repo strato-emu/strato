@@ -4,8 +4,8 @@
 #include <cxxabi.h>
 #include <unistd.h>
 #include "common/signal.h"
+#include "common/tracing.h"
 #include "os.h"
-#include "gpu.h"
 #include "jvm.h"
 #include "kernel/types/KProcess.h"
 #include "kernel/svc.h"
@@ -15,10 +15,13 @@
 
 namespace skyline::nce {
     void NCE::SvcHandler(u16 svc, ThreadContext *ctx) {
+        TRACE_EVENT_END("guest");
+
         const auto &state{*ctx->state};
         try {
             auto function{kernel::svc::SvcTable[svc]};
             if (function) [[likely]] {
+                TRACE_EVENT("kernel", "SVC");
                 state.logger->Debug("SVC called 0x{:X}", svc);
                 (*function)(state);
             } else [[unlikely]] {
@@ -49,6 +52,8 @@ namespace skyline::nce {
             abi::__cxa_end_catch();
             std::longjmp(state.thread->originalCtx, true);
         }
+
+        TRACE_EVENT_BEGIN("guest", "Guest");
     }
 
     void NCE::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {

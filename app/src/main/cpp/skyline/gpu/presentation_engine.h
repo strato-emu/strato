@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/tracing.h>
 #include <kernel/types/KEvent.h>
 #include "texture.h"
 
@@ -16,6 +17,7 @@ namespace skyline::gpu {
         std::condition_variable windowConditional;
         jobject surface{}; //!< The Surface object backing the ANativeWindow
         u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
+        perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
       public:
         texture::Dimensions resolution{};

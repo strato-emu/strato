@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/tracing.h>
 #include <android/native_window.h>
 #include <kernel/types/KProcess.h>
 #include <unistd.h>
@@ -22,6 +23,7 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost() {
+        TRACE_EVENT("gpu", "Texture::SynchronizeHost");
         auto pointer{guest->pointer};
         auto size{format.GetSize(dimensions)};
         backing.resize(size);

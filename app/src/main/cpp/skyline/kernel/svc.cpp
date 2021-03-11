@@ -3,6 +3,7 @@
 
 #include <os.h>
 #include <kernel/types/KProcess.h>
+#include <common/tracing.h>
 #include <vfs/npdm.h>
 #include "results.h"
 #include "svc.h"
@@ -285,6 +286,8 @@ namespace skyline::kernel::svc {
         constexpr i64 yieldWithoutCoreMigration{0};
         constexpr i64 yieldWithCoreMigration{-1};
         constexpr i64 yieldToAnyThread{-2};
+
+        TRACE_EVENT("kernel", "SleepThread");
 
         i64 in{static_cast<i64>(state.ctx->gpr.x0)};
         if (in > 0) {

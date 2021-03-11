@@ -9,7 +9,11 @@ extern skyline::u16 Fps;
 extern skyline::u32 FrameTime;
 
 namespace skyline::gpu {
-    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)) {}
+    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), presentationTrack(static_cast<uint64_t>(tracing::TrackIds::Presentation), perfetto::ProcessTrack::Current()) {
+        auto desc{presentationTrack.Serialize()};
+        desc.set_name("Presentation");
+        perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
+    }
 
     PresentationEngine::~PresentationEngine() {
         if (window)
@@ -75,6 +79,8 @@ namespace skyline::gpu {
 
             FrameTime = static_cast<u32>((now - frameTimestamp) / 10000); // frametime / 100 is the real ms value, this is to retain the first two decimals
             Fps = static_cast<u16>(constant::NsInSecond / (now - frameTimestamp));
+
+            TRACE_EVENT_INSTANT("gpu", "Present", presentationTrack, "FrameTimeNs", now - frameTimestamp, "Fps", Fps);
 
             frameTimestamp = now;
         } else {

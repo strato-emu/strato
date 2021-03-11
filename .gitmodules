@@ -21,3 +21,7 @@
 	path = app/libraries/tzcode
 	url = https://github.com/skyline-emu/tz
 	branch = master
+[submodule "app/libraries/perfetto"]
+	path = app/libraries/perfetto
+	url = https://android.googlesource.com/platform/external/perfetto
+	branch = releases/v12.x

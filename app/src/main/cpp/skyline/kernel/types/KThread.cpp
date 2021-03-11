@@ -4,6 +4,7 @@
 #include <cxxabi.h>
 #include <unistd.h>
 #include <common/signal.h>
+#include <common/tracing.h>
 #include <nce.h>
 #include <os.h>
 #include "KProcess.h"
@@ -81,6 +82,8 @@ namespace skyline::kernel::type {
                 Scheduler::YieldPending = false;
                 state.scheduler->WaitSchedule();
             }
+
+            TRACE_EVENT_BEGIN("guest", "Guest");
 
             asm volatile(
             "MRS X0, TPIDR_EL0\n\t"

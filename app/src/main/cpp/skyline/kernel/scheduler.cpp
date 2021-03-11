@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <common/signal.h>
+#include <common/tracing.h>
 #include "types/KThread.h"
 #include "scheduler.h"
 
@@ -12,6 +13,8 @@ namespace skyline::kernel {
     Scheduler::Scheduler(const DeviceState &state) : state(state) {}
 
     void Scheduler::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
+        TRACE_EVENT_END("guest");
+
         if (*tls) {
             const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
             if (signal == PreemptionSignal)
@@ -22,6 +25,7 @@ namespace skyline::kernel {
         } else {
             YieldPending = true;
         }
+        TRACE_EVENT_BEGIN("guest", "Guest");
     }
 
     Scheduler::CoreContext &Scheduler::GetOptimalCoreForThread(const std::shared_ptr<type::KThread> &thread) {
@@ -150,6 +154,7 @@ namespace skyline::kernel {
             return !core->queue.empty() && core->queue.front() == thread;
         }};
 
+        TRACE_EVENT("sched", "WaitSchedule");
         if (loadBalance && thread->affinityMask.count() > 1) {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
             while (!thread->scheduleCondition.wait_for(lock, loadBalanceThreshold, wakeFunction)) {
@@ -177,6 +182,7 @@ namespace skyline::kernel {
         auto &thread{state.thread};
         auto *core{&cores.at(thread->coreId)};
 
+        TRACE_EVENT("sched", "TimedWaitSchedule");
         std::unique_lock lock(core->mutex);
         if (thread->scheduleCondition.wait_for(lock, timeout, [&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
@@ -201,6 +207,7 @@ namespace skyline::kernel {
         auto &core{cores.at(thread->coreId)};
 
         std::unique_lock lock(core.mutex);
+
         if (core.queue.front() == thread) {
             // If this thread is at the front of the thread queue then we need to rotate the thread
             // In the case where this thread was forcefully yielded, we don't need to do this as it's done by the thread which yielded to this thread
