@@ -7,12 +7,12 @@
 
 namespace skyline::kernel::type {
     /**
-     * @brief KSharedMemory is used to retain two mappings of the same underlying memory, allowing persistence of the memory
+     * @brief KSharedMemory is used to retain two mappings of the same underlying memory, allowing sharing memory between two processes
      */
     class KSharedMemory : public KMemory {
       private:
         int fd; //!< A file descriptor to the underlying shared memory
-        memory::MemoryState initialState;
+        memory::MemoryState memoryState; //!< The state of the memory as supplied initially, this is retained for any mappings
 
       public:
         struct MapInfo {

@@ -1017,7 +1017,7 @@ namespace skyline::kernel::svc {
             if (memory) {
                 auto item{static_pointer_cast<type::KPrivateMemory>(memory->item)};
                 auto initialSize{item->size};
-                if (item->memState == memory::states::Heap) {
+                if (item->memoryState == memory::states::Heap) {
                     if (item->ptr >= pointer) {
                         if (item->size <= size) {
                             item->Resize(0);

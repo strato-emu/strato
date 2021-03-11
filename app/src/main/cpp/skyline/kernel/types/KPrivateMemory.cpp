@@ -8,7 +8,7 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memState(memState), KMemory(state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memoryState(memState), KMemory(state, KType::KPrivateMemory) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
         if (!util::PageAligned(ptr) || !util::PageAligned(size))
@@ -40,7 +40,7 @@ namespace skyline::kernel::type {
                 .ptr = ptr + size,
                 .size = nSize - size,
                 .permission = permission,
-                .state = memState,
+                .state = memoryState,
             });
         }
 
@@ -60,22 +60,22 @@ namespace skyline::kernel::type {
             throw exception("An occurred while remapping private memory: {}", strerror(errno));
     }
 
-    void KPrivateMemory::UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) {
-        ptr = std::clamp(ptr, this->ptr, this->ptr + this->size);
-        size = std::min(size, static_cast<size_t>((this->ptr + this->size) - ptr));
+    void KPrivateMemory::UpdatePermission(u8 *pPtr, size_t pSize, memory::Permission pPermission) {
+        pPtr = std::clamp(pPtr, ptr, ptr + size);
+        pSize = std::min(pSize, static_cast<size_t>((ptr + size) - pPtr));
 
-        if (ptr && !util::PageAligned(ptr))
-            throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
+        if (pPtr && !util::PageAligned(pPtr))
+            throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", pPtr);
 
         // If a static code region has been mapped as writable it needs to be changed to mutable
-        if (memState == memory::states::CodeStatic && permission.w)
-            memState = memory::states::CodeMutable;
+        if (memoryState == memory::states::CodeStatic && pPermission.w)
+            memoryState = memory::states::CodeMutable;
 
         state.process->memory.InsertChunk(ChunkDescriptor{
-            .ptr = ptr,
-            .size = size,
-            .permission = permission,
-            .state = memState,
+            .ptr = pPtr,
+            .size = pSize,
+            .permission = pPermission,
+            .state = memoryState,
         });
     }
 

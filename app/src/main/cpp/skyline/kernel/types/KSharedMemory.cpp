@@ -8,14 +8,15 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type) : initialState(memState), KMemory(state, type) {
+    KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type) : memoryState(memState), KMemory(state, type) {
         fd = ASharedMemory_create("KSharedMemory", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
         kernel.ptr = reinterpret_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
         if (kernel.ptr == MAP_FAILED)
-            throw exception("An occurred while mapping shared memory: {}", strerror(errno));
+            [[unlikely]]
+                throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
         kernel.size = size;
     }
@@ -28,14 +29,15 @@ namespace skyline::kernel::type {
 
         guest.ptr = reinterpret_cast<u8 *>(mmap(ptr, size, permission.Get(), MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)
-            throw exception("An error occurred while mapping shared memory in guest");
+            [[unlikely]]
+                throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
         guest.size = size;
 
         state.process->memory.InsertChunk(ChunkDescriptor{
             .ptr = guest.ptr,
             .size = size,
             .permission = permission,
-            .state = initialState,
+            .state = memoryState,
         });
 
         return guest.ptr;
@@ -47,15 +49,15 @@ namespace skyline::kernel::type {
 
         if (guest.Valid()) {
             mprotect(ptr, size, permission.Get());
-
             if (guest.ptr == MAP_FAILED)
-                throw exception("An error occurred while updating shared memory's permissions in guest");
+                [[unlikely]]
+                    throw exception("An error occurred while updating shared memory's permissions in guest: {}", strerror(errno));
 
             state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = ptr,
                 .size = size,
                 .permission = permission,
-                .state = initialState,
+                .state = memoryState,
             });
         }
     }
@@ -65,7 +67,7 @@ namespace skyline::kernel::type {
             munmap(kernel.ptr, kernel.size);
 
         if (state.process && guest.Valid()) {
-            mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+           mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // As this is the destructor, we cannot throw on this failing
             state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = guest.ptr,
                 .size = guest.size,
