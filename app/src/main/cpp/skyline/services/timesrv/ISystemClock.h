@@ -18,7 +18,7 @@ namespace skyline::service::timesrv {
     class ISystemClock : public BaseService {
       private:
         core::SystemClockCore &core;
-        bool writeClock;
+        bool writable; //!< If this instance can set the clock time
         bool ignoreUninitializedChecks;
 
         std::shared_ptr<kernel::type::KEvent> operationEvent{};

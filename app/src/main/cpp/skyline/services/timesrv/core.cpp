@@ -54,7 +54,6 @@ namespace skyline::service::timesrv::core {
         std::lock_guard lock(mutex);
 
         auto timePoint{TimeSpanType::FromNanoseconds(util::GetTimeNs()) + rtcOffset};
-
         if (timePoint > cachedValue)
             cachedValue = timePoint;
 
@@ -81,16 +80,12 @@ namespace skyline::service::timesrv::core {
     }
 
     Result SystemClockCore::UpdateClockContext(const SystemClockContext &newContext) {
-        auto ret{SetClockContext(newContext)};
-        if (ret)
-            return ret;
+        auto result{SetClockContext(newContext)};
+        if (result)
+            return result;
 
         // Writes new state to shared memory etc
-        if (updateCallback) {
-            return updateCallback->UpdateContext(newContext);
-        } else {
-            return {};
-        }
+        return updateCallback ? updateCallback->UpdateContext(newContext) : Result{};
     }
 
     Result SystemClockCore::SetCurrentTime(PosixTime posixTimePoint) {
@@ -127,15 +122,15 @@ namespace skyline::service::timesrv::core {
     void StandardLocalSystemClockCore::Setup(const SystemClockContext &context, PosixTime posixTime) {
         auto timePoint{steadyClock.GetCurrentTimePoint()};
 
-        Result ret{};
+        Result result{};
 
         // If the new context comes from the same clock as what we currently have we don't need to set any offset as they share the same base
         if (timePoint && timePoint->clockSourceId == context.timestamp.clockSourceId)
-            ret = UpdateClockContext(context);
+            result = UpdateClockContext(context);
         else
-            ret = SetCurrentTime(posixTime);
+            result = SetCurrentTime(posixTime);
 
-        if (ret)
+        if (result)
             throw exception("Failed to setup StandardLocalSystemClockCore");
 
         MarkInitialized();
@@ -168,9 +163,9 @@ namespace skyline::service::timesrv::core {
             if (!ctx)
                 return ctx;
 
-            auto ret{localSystemClock.SetClockContext(*ctx)};
-            if (ret)
-                return ret;
+            auto result{localSystemClock.SetClockContext(*ctx)};
+            if (result)
+                return result;
         }
 
         automaticCorrectionEnabled = enable;
@@ -183,8 +178,8 @@ namespace skyline::service::timesrv::core {
     }
 
     Result StandardUserSystemClockCore::UpdateAutomaticCorrectionState(bool enable) {
-        auto ret{SetAutomaticCorrectionEnabled(enable)};
-        if (!ret) {
+        auto result{SetAutomaticCorrectionEnabled(enable)};
+        if (!result) {
             timeSharedMemory.SetStandardUserSystemClockAutomaticCorrectionEnabled(enable);
 
             auto timePoint{steadyClock.GetCurrentTimePoint()};
@@ -194,7 +189,7 @@ namespace skyline::service::timesrv::core {
                 return timePoint;
         }
 
-        return ret;
+        return result;
     }
 
     void StandardUserSystemClockCore::Setup(bool enableAutomaticCorrection, const SteadyClockTimePoint &automaticCorrectionUpdateTime) {
@@ -214,9 +209,9 @@ namespace skyline::service::timesrv::core {
             if (!ctx)
                 return ctx;
 
-            auto ret{localSystemClock.SetClockContext(*ctx)};
-            if (ret)
-                return ret;
+            auto result{localSystemClock.SetClockContext(*ctx)};
+            if (result)
+                return result;
         }
 
         return localSystemClock.GetClockContext();
@@ -266,7 +261,6 @@ namespace skyline::service::timesrv::core {
         if (!timezoneUpdateTime)
             throw exception("Failed to create a timezone updated timepoint!");
 
-        // TODO Checked
         auto timeZoneBinaryListFile{state.os->assetFileSystem->OpenFile("tzdata/binaryList.txt")};
         std::vector<u8> buffer(timeZoneBinaryListFile->size);
         timeZoneBinaryListFile->Read(buffer);
@@ -284,12 +278,10 @@ namespace skyline::service::timesrv::core {
             }
         }
 
-        // TODO Checked
         auto timeZoneBinaryVersionFile{state.os->assetFileSystem->OpenFile("tzdata/version.txt")};
         std::array<u8, 0x10> timeZoneBinaryVersion{};
-        timeZoneBinaryVersionFile->Read(timeZoneBinaryVersion);
+        timeZoneBinaryVersionFile->ReadUnchecked(timeZoneBinaryVersion);
 
-        // TODO Checked
         auto timeZoneBinaryFile{state.os->assetFileSystem->OpenFile(fmt::format("tzdata/zoneinfo/{}", state.os->deviceTimeZone))};
         buffer.resize(timeZoneBinaryFile->size);
         timeZoneBinaryFile->Read(buffer);

@@ -111,7 +111,8 @@ namespace skyline::service::timesrv::core {
             },
         };
 
-        std::string_view(posixCalendarTime->tm_zone).copy(out.additionalInfo.timeZoneName.data(), strlen(posixCalendarTime->tm_zone));
+        std::string_view timeZoneName(posixCalendarTime->tm_zone);
+        timeZoneName.copy(out.additionalInfo.timeZoneName.data(), timeZoneName.size());
         return out;
     }
 

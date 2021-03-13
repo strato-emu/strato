@@ -6,25 +6,25 @@
 #include "android_asset_backing.h"
 
 namespace skyline::vfs {
-    AndroidAssetBacking::AndroidAssetBacking(AAsset *backing, Mode mode) : Backing(mode), backing(backing) {
+    AndroidAssetBacking::AndroidAssetBacking(AAsset *asset, Mode mode) : Backing(mode), asset(asset) {
         if (mode.write || mode.append)
             throw exception("AndroidAssetBacking doesn't support writing");
 
-        size = AAsset_getLength64(backing);
+        size = AAsset_getLength64(asset);
     }
 
     AndroidAssetBacking::~AndroidAssetBacking() {
-        AAsset_close(backing);
+        AAsset_close(asset);
     }
 
     size_t AndroidAssetBacking::ReadImpl(span<u8> output, size_t offset) {
-        if (AAsset_seek64(backing, offset, SEEK_SET) != offset)
+        if (AAsset_seek64(asset, offset, SEEK_SET) != offset)
             throw exception("Failed to seek asset position");
 
-        auto ret{AAsset_read(backing, output.data(), output.size())};
-        if (ret < 0)
+        auto result{AAsset_read(asset, output.data(), output.size())};
+        if (result < 0)
             throw exception("Failed to read from fd: {}", strerror(errno));
 
-        return static_cast<size_t>(ret);
+        return static_cast<size_t>(result);
     }
 }

@@ -228,7 +228,7 @@ namespace skyline::service::timesrv::core {
         void Setup(const SystemClockContext &context, TimeSpanType newSufficientAccuracy);
 
         /**
-         * @brief Checks if the clock accuracy is less than sufficientAccuracy
+         * @return If the clock accuracy is less than sufficientAccuracy
          */
         bool IsAccuracySufficient();
     };
@@ -282,7 +282,7 @@ namespace skyline::service::timesrv::core {
     };
 
     /**
-     * @brief The ephemeral system clock provides a per-boot timepoint
+     * @brief The ephemeral network system clock provides a per-boot timepoint
      */
     class EphemeralNetworkSystemClockCore : public SystemClockCore {
       public:
@@ -311,7 +311,7 @@ namespace skyline::service::timesrv::core {
         EphemeralNetworkSystemClockCore empheralSystemClock;
 
         TimeZoneManager timeZoneManager;
-        std::vector<LocationName> locationNameList; //!< N stores in glue but we are fine putting it here
+        std::vector<LocationName> locationNameList; //!< N stores in glue
 
         TimeManagerServer managerServer;
 

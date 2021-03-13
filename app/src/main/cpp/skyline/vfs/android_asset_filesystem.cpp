@@ -6,26 +6,26 @@
 #include "android_asset_filesystem.h"
 
 namespace skyline::vfs {
-    AndroidAssetFileSystem::AndroidAssetFileSystem(AAssetManager *backing) : FileSystem(), backing(backing) {}
+    AndroidAssetFileSystem::AndroidAssetFileSystem(AAssetManager *assetManager) : FileSystem(), assetManager(assetManager) {}
 
     std::shared_ptr<Backing> AndroidAssetFileSystem::OpenFileImpl(const std::string &path, Backing::Mode mode) {
-        auto file{AAssetManager_open(backing, path.c_str(), AASSET_MODE_RANDOM)};
+        auto file{AAssetManager_open(assetManager, path.c_str(), AASSET_MODE_RANDOM)};
         if (file == nullptr)
             return nullptr;
 
-        return std::make_shared<AndroidAssetBacking>(file, mode);
+        return file ? std::make_shared<AndroidAssetBacking>(file, mode) : nullptr;
     }
 
     std::optional<Directory::EntryType> AndroidAssetFileSystem::GetEntryTypeImpl(const std::string &path) {
         // Tries to open as a file then as a directory in order to check the type
-        // This is really hacky but it at least it works
-        if (AAssetManager_open(backing, path.c_str(), AASSET_MODE_RANDOM) != nullptr)
+        // This is really hacky but at least it works
+        if (AAssetManager_open(assetManager, path.c_str(), AASSET_MODE_RANDOM) != nullptr)
             return Directory::EntryType::File;
 
-        if (AAssetManager_openDir(backing, path.c_str()) != nullptr)
+        if (AAssetManager_openDir(assetManager, path.c_str()) != nullptr)
             return Directory::EntryType::Directory;
 
-        // Doesn't exit
+        // Path doesn't exit
         return std::nullopt;
     }
 

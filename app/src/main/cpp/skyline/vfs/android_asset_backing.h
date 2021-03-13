@@ -5,7 +5,7 @@
 
 #include "backing.h"
 
-struct AAsset;
+struct AAsset; //!< https://developer.android.com/ndk/reference/group/asset#aasset
 
 namespace skyline::vfs {
     /**
@@ -15,13 +15,13 @@ namespace skyline::vfs {
      */
     class AndroidAssetBacking : public Backing {
       private:
-        AAsset *backing; //!< The backing AAsset object we abstract
+        AAsset *asset; //!< The NDK AAsset object we abstract
 
       protected:
         size_t ReadImpl(span<u8> output, size_t offset) override;
 
       public:
-        AndroidAssetBacking(AAsset *backing, Mode mode = {true, false, false});
+        AndroidAssetBacking(AAsset *asset, Mode mode = {true, false, false});
 
         virtual ~AndroidAssetBacking();
     };

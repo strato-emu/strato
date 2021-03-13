@@ -17,7 +17,7 @@ namespace skyline::service::timesrv {
     class ISteadyClock : public BaseService {
       private:
         core::SteadyClockCore &core;
-        bool writeable;
+        bool writeable; //!< If this instance can set the test offset
         bool ignoreUninitializedChecks;
 
       public:

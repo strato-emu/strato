@@ -98,8 +98,8 @@ namespace skyline {
 
         constexpr ResultValue(Result result) : result(result) {};
 
-        template<typename G>
-        constexpr ResultValue(ResultValue<G> result) : result(result) {};
+        template<typename U>
+        constexpr ResultValue(ResultValue<U> result) : result(result) {};
 
         constexpr operator Result() const {
             return result;

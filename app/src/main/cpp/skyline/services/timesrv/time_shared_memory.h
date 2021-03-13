@@ -46,8 +46,8 @@ namespace skyline::service::timesrv::core {
      */
     class SystemClockContextUpdateCallback {
       private:
-        std::list<std::shared_ptr<kernel::type::KEvent>> operationEventList; //!< List of KEvents to be signalled when this callback is called
-        std::mutex mutex; //!< Protects access to operationEventList
+        std::list<std::shared_ptr<kernel::type::KEvent>> operationEvents; //!< List of KEvents to be signalled when this callback is called
+        std::mutex mutex; //!< Synchronises access to operationEvents
         std::optional<SystemClockContext> context; //!< The context that used when this callback was last called
 
       protected:
@@ -69,7 +69,7 @@ namespace skyline::service::timesrv::core {
         void AddOperationEvent(const std::shared_ptr<kernel::type::KEvent> &event);
 
         /**
-         * @brief Repllaces the current context with the supplied one and signals events if the context differs from the last used one
+         * @brief Replaces the current context with the supplied one and signals events if the context differs from the last used one
          */
         virtual Result UpdateContext(const SystemClockContext &newContext) = 0;
     };

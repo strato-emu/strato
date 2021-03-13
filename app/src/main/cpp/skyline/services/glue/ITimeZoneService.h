@@ -8,14 +8,12 @@
 
 namespace skyline::service::timesrv {
     class ITimeZoneService;
-
     namespace core {
         struct TimeServiceObject;
     }
 }
 
 namespace skyline::service::glue {
-
     /**
      * @brief ITimeZoneService is glue's extension of psc::ITimeZoneService, it adds support for reading TimeZone location data and simplifies rule handling. This is the variant normally used by applications.
      * @url https://switchbrew.org/wiki/Glue_services#ITimeZoneService

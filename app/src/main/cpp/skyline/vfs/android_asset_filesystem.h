@@ -13,7 +13,7 @@ namespace skyline::vfs {
      */
     class AndroidAssetFileSystem : public FileSystem {
       private:
-        AAssetManager *backing; //!< The backing manager of the filesystem
+        AAssetManager *assetManager; //!< The NDK asset manager for the filesystem
 
       protected:
         std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) override;
@@ -23,6 +23,6 @@ namespace skyline::vfs {
         std::shared_ptr<Directory> OpenDirectoryImpl(const std::string &path, Directory::ListMode listMode) override;
 
       public:
-        AndroidAssetFileSystem(AAssetManager *backing);
+        AndroidAssetFileSystem(AAssetManager *assetManager);
     };
 }

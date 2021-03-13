@@ -43,11 +43,9 @@ namespace skyline::service::timesrv {
         constexpr StaticServicePermissions StaticServiceSystemUpdatePermissions{
             .ignoreUninitializedChecks = true,
         };
-
     }
 
     class ITimeZoneService;
-
     namespace core {
         struct TimeServiceObject;
     }

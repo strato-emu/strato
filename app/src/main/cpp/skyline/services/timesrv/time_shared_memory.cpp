@@ -5,6 +5,8 @@
 #include "time_manager_server.h"
 
 namespace skyline::service::timesrv::core {
+    constexpr size_t TimeSharedMemorySize{0x1000}; //!< The size of the time shared memory region
+
     struct __attribute__((packed)) TimeSharedMemoryLayout {
         template<typename T>
         struct ClockContextEntry {
@@ -24,15 +26,17 @@ namespace skyline::service::timesrv::core {
     static_assert(offsetof(TimeSharedMemoryLayout, localSystemClockContextEntry) == 0x38);
     static_assert(offsetof(TimeSharedMemoryLayout, networkSystemClockContextEntry) == 0x80);
     static_assert(offsetof(TimeSharedMemoryLayout, standardUserSystemClockAutomaticCorrectionEnabledEntry) == 0xC8);
+    static_assert(sizeof(TimeSharedMemoryLayout) <= TimeSharedMemorySize);
 
     /**
-     * @brief Time Shared Memory uses a double buffered format that alternates writes context data, this is a helper to simplify that
+     * @brief Time Shared Memory uses a double buffered format that alternates context data writes, this is a helper to simplify that
      */
     template<typename T>
     static void UpdateTimeSharedMemoryItem(u32 &updateCount, std::array<T, 2> &item, const T &newValue) {
         u32 newCount{updateCount + 1};
         item[newCount & 1] = newValue;
-        asm volatile("DMB ISHST"); // 0xA
+        // The item value must be updated prior to updateCount to prevent reading in an invalid item value
+        std::atomic_thread_fence(std::memory_order_release);
         updateCount = newCount;
     }
 
@@ -47,13 +51,11 @@ namespace skyline::service::timesrv::core {
         do {
             checkUpdateCount = updateCount;
             out = item[updateCount & 1];
-            asm volatile("DMB ISHLD"); // 0x9
+            std::atomic_thread_fence(std::memory_order_consume);
         } while (checkUpdateCount != updateCount);
 
         return out;
     }
-
-    constexpr size_t TimeSharedMemorySize{0x1000}; //!< The size of the time shared memory region
 
     TimeSharedMemory::TimeSharedMemory(const DeviceState &state) : kTimeSharedMemory(std::make_shared<kernel::type::KSharedMemory>(state, TimeSharedMemorySize)), timeSharedMemory(reinterpret_cast<TimeSharedMemoryLayout *>(kTimeSharedMemory->kernel.ptr)) {}
 
@@ -97,14 +99,14 @@ namespace skyline::service::timesrv::core {
     void SystemClockContextUpdateCallback::SignalOperationEvent() {
         std::lock_guard lock(mutex);
 
-        for (const auto &event : operationEventList)
+        for (const auto &event : operationEvents)
             event->Signal();
     }
 
     void SystemClockContextUpdateCallback::AddOperationEvent(const std::shared_ptr<kernel::type::KEvent> &event) {
         std::lock_guard lock(mutex);
 
-        operationEventList.push_back(event);
+        operationEvents.push_back(event);
     }
 
     LocalSystemClockUpdateCallback::LocalSystemClockUpdateCallback(TimeSharedMemory &timeSharedMemory) : timeSharedMemory(timeSharedMemory) {}

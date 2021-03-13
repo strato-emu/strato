@@ -21,14 +21,12 @@ namespace skyline::service::glue {
             return timesrv::result::PermissionDenied;
 
         auto locationName{span(request.Pop<timesrv::LocationName>()).as_string(true)};
-
-        // TODO Checked
         auto timeZoneBinaryFile{state.os->assetFileSystem->OpenFile(fmt::format("tzdata/zoneinfo/{}", locationName))};
         std::vector<u8> timeZoneBinaryBuffer(timeZoneBinaryFile->size);
         timeZoneBinaryFile->Read(timeZoneBinaryBuffer);
-        auto ret{core->SetDeviceLocationNameWithTimeZoneBinary(span(locationName).as_string(true), timeZoneBinaryBuffer)};
-        if (ret)
-            return ret;
+        auto result{core->SetDeviceLocationNameWithTimeZoneBinary(span(locationName).as_string(true), timeZoneBinaryBuffer)};
+        if (result)
+            return result;
 
         locationNameUpdateEvent->Signal();
         return {};
@@ -50,8 +48,6 @@ namespace skyline::service::glue {
 
     Result ITimeZoneService::LoadTimeZoneRule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto locationName{span(request.Pop<timesrv::LocationName>()).as_string(true)};
-
-        // TODO Checked
         auto timeZoneBinaryFile{state.os->assetFileSystem->OpenFile(fmt::format("tzdata/zoneinfo/{}", locationName))};
         std::vector<u8> timeZoneBinaryBuffer(timeZoneBinaryFile->size);
         timeZoneBinaryFile->Read(timeZoneBinaryBuffer);

@@ -183,7 +183,6 @@ namespace skyline::service::timesrv {
             return snapshot;
 
         request.outputBuf.at(0).as<ClockSnapshot>() = *snapshot;
-
         return {};
     }
 

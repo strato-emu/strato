@@ -7,7 +7,7 @@
 #include "ISystemClock.h"
 
 namespace skyline::service::timesrv {
-    ISystemClock::ISystemClock(const DeviceState &state, ServiceManager &manager, core::SystemClockCore &core, bool writeClock, bool ignoreUninitializedChecks) : BaseService(state, manager), core(core), writeClock(writeClock), ignoreUninitializedChecks(ignoreUninitializedChecks) {}
+    ISystemClock::ISystemClock(const DeviceState &state, ServiceManager &manager, core::SystemClockCore &core, bool writeClock, bool ignoreUninitializedChecks) : BaseService(state, manager), core(core), writable(writeClock), ignoreUninitializedChecks(ignoreUninitializedChecks) {}
 
     Result ISystemClock::GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (!ignoreUninitializedChecks && !core.IsClockInitialized())
@@ -21,7 +21,7 @@ namespace skyline::service::timesrv {
     }
 
     Result ISystemClock::SetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (!writeClock)
+        if (!writable)
             return result::PermissionDenied;
 
         if (!ignoreUninitializedChecks && !core.IsClockInitialized())
@@ -42,7 +42,7 @@ namespace skyline::service::timesrv {
     }
 
     Result ISystemClock::SetSystemClockContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (!writeClock)
+        if (!writable)
             return result::PermissionDenied;
 
         if (!ignoreUninitializedChecks && !core.IsClockInitialized())
@@ -62,5 +62,4 @@ namespace skyline::service::timesrv {
         response.copyHandles.push_back(handle);
         return {};
     }
-
 }
