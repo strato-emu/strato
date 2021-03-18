@@ -22,7 +22,7 @@ namespace skyline::service::hosbinder {
         out.Push<u32>(0);
         out.Push(queue.at(slot)->gbpBuffer);
 
-        state.logger->Debug("RequestBuffer: Slot: {}", slot, sizeof(GbpBuffer));
+        state.logger->Debug("Slot: {}", slot, sizeof(GbpBuffer));
     }
 
     void GraphicBufferProducer::DequeueBuffer(Parcel &in, Parcel &out) {
@@ -46,7 +46,7 @@ namespace skyline::service::hosbinder {
         out.Push(*slot);
         out.Push(std::array<u32, 13>{1, 0x24}); // Unknown
 
-        state.logger->Debug("DequeueBuffer: Width: {}, Height: {}, Format: {}, Usage: {}, Slot: {}", width, height, format, usage, *slot);
+        state.logger->Debug("Width: {}, Height: {}, Format: {}, Usage: {}, Slot: {}", width, height, format, usage, *slot);
     }
 
     void GraphicBufferProducer::QueueBuffer(Parcel &in, Parcel &out) {
@@ -81,7 +81,7 @@ namespace skyline::service::hosbinder {
         };
         out.Push(output);
 
-        state.logger->Debug("QueueBuffer: Timestamp: {}, Auto Timestamp: {}, Crop: [T: {}, B: {}, L: {}, R: {}], Scaling Mode: {}, Transform: {}, Sticky Transform: {}, Swap Interval: {}, Slot: {}", data.timestamp, data.autoTimestamp, data.crop.top, data.crop.bottom, data.crop.left, data.crop.right, data.scalingMode, data.transform, data.stickyTransform, data.swapInterval, data.slot);
+        state.logger->Debug("Timestamp: {}, Auto Timestamp: {}, Crop: [T: {}, B: {}, L: {}, R: {}], Scaling Mode: {}, Transform: {}, Sticky Transform: {}, Swap Interval: {}, Slot: {}", data.timestamp, data.autoTimestamp, data.crop.top, data.crop.bottom, data.crop.left, data.crop.right, data.scalingMode, data.transform, data.stickyTransform, data.swapInterval, data.slot);
     }
 
     void GraphicBufferProducer::CancelBuffer(Parcel &in) {
@@ -90,7 +90,7 @@ namespace skyline::service::hosbinder {
 
         queue.at(slot)->status = BufferStatus::Free;
 
-        state.logger->Debug("CancelBuffer: Slot: {}", slot);
+        state.logger->Debug("Slot: {}", slot);
     }
 
     void GraphicBufferProducer::Connect(Parcel &out) {
@@ -152,7 +152,7 @@ namespace skyline::service::hosbinder {
         queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializeTexture());
         state.gpu->presentation.bufferEvent->Signal();
 
-        state.logger->Debug("SetPreallocatedBuffer: Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}", data.slot, gbpBuffer.magic, gbpBuffer.width, gbpBuffer.height, gbpBuffer.stride, gbpBuffer.format, gbpBuffer.usage, gbpBuffer.index, gbpBuffer.nvmapId, gbpBuffer.nvmapHandle, gbpBuffer.offset, (1U << gbpBuffer.blockHeightLog2), gbpBuffer.size);
+        state.logger->Debug("Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}", data.slot, gbpBuffer.magic, gbpBuffer.width, gbpBuffer.height, gbpBuffer.stride, gbpBuffer.format, gbpBuffer.usage, gbpBuffer.index, gbpBuffer.nvmapId, gbpBuffer.nvmapHandle, gbpBuffer.offset, (1U << gbpBuffer.blockHeightLog2), gbpBuffer.size);
     }
 
     void GraphicBufferProducer::OnTransact(TransactionCode code, Parcel &in, Parcel &out) {

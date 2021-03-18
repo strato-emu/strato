@@ -23,7 +23,7 @@ namespace skyline::service::hosbinder {
         // If this was not done then we would need to maintain an array of GraphicBufferProducer objects for each layer and send the request for it specifically
         // There would also need to be an external compositor which composites all the graphics buffers submitted to every GraphicBufferProducer
 
-        state.logger->Debug("TransactParcel: Layer ID: {}, Code: {}", layerId, code);
+        state.logger->Debug("Layer ID: {}, Code: {}", layerId, code);
         producer->OnTransact(code, in, out);
 
         out.WriteParcel(request.outputBuf.at(0));

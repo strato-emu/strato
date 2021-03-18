@@ -11,7 +11,7 @@ namespace skyline::service::audio {
     Result IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         IAudioRenderer::AudioRendererParameters params{request.Pop<IAudioRenderer::AudioRendererParameters>()};
 
-        state.logger->Debug("IAudioRendererManager: Opening a rev {} IAudioRenderer with sample rate: {}, voice count: {}, effect count: {}", IAudioRenderer::ExtractVersionFromRevision(params.revision), params.sampleRate, params.voiceCount, params.effectCount);
+        state.logger->Debug("Opening a rev {} IAudioRenderer with sample rate: {}, voice count: {}, effect count: {}", IAudioRenderer::ExtractVersionFromRevision(params.revision), params.sampleRate, params.voiceCount, params.effectCount);
 
         manager.RegisterService(std::make_shared<IAudioRenderer::IAudioRenderer>(state, manager, params), session, response);
 

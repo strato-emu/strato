@@ -76,7 +76,7 @@ namespace skyline::service::nvdrv {
         if (event != nullptr) {
             auto handle{state.process->InsertItem<type::KEvent>(event)};
 
-            state.logger->Debug("QueryEvent: FD: {}, Event ID: {}, Handle: 0x{:X}", fd, eventId, handle);
+            state.logger->Debug("FD: {}, Event ID: {}, Handle: 0x{:X}", fd, eventId, handle);
             response.copyHandles.push_back(handle);
 
             response.Push(device::NvStatus::Success);

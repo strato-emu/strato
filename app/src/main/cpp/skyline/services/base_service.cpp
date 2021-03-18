@@ -22,7 +22,7 @@ namespace skyline::service {
         std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> function;
         try {
             function = GetServiceFunction(request.payload->value);
-            state.logger->Debug("Service: {} @ {}", function.second, GetName());
+            state.logger->DebugNoPrefix("Service: {} @ {}", function.second, GetName());
         } catch (const std::out_of_range &) {
             state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
             return {};

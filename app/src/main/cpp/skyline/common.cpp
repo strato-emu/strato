@@ -35,7 +35,7 @@ namespace skyline {
     void Logger::WriteHeader(const std::string &str) {
         __android_log_write(ANDROID_LOG_INFO, "emu-cpp", str.c_str());
 
-        std::lock_guard guard(mtx);
+        std::lock_guard guard(mutex);
         logFile << "\0360\035" << str << '\n';
     }
 
@@ -48,7 +48,7 @@ namespace skyline {
 
         __android_log_write(levelAlog[static_cast<u8>(level)], logTag.c_str(), str.c_str());
 
-        std::lock_guard guard(mtx);
+        std::lock_guard guard(mutex);
         logFile << "\0361\035" << levelCharacter[static_cast<u8>(level)] << '\035' << threadName << '\035' << str << '\n'; // We use RS (\036) and GS (\035) as our delimiters
     }
 
