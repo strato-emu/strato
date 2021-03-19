@@ -20,9 +20,6 @@ namespace skyline::service::am {
          */
         Result GetApplicationFunctions(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-        //#undef SFUNC_BASE
-        //#define SFUNC_BASE(id, Class, BaseClass, Function) std::pair<u32, std::pair<std::function<Result(Class*, type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view>>{id, {&CallBaseFunction<Class, BaseClass, BaseClass::Function>, #Function}}
-
         SERVICE_DECL(
             SFUNC_BASE(0x0, IApplicationProxy, BaseProxy, GetCommonStateGetter),
             SFUNC_BASE(0x1, IApplicationProxy, BaseProxy, GetSelfController),

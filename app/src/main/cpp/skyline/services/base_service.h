@@ -5,14 +5,25 @@
 
 #include <kernel/ipc.h>
 
-#define SFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<Result(Class*, type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view>>{id, {&Class::Function, #Function}}
-#define SFUNC_BASE(id, Class, BaseClass, Function) std::pair<u32, std::pair<std::function<Result(Class*, type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view>>{id, {&CallBaseFunction<Class, BaseClass, decltype(&BaseClass::Function), &BaseClass::Function>, #Function}}
+#define SERVICE_STRINGIFY(string) #string
+#define SFUNC(id, Class, Function) std::pair<u32, std::pair<Result(Class::*)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &), const char*>>{id, {&Class::Function, SERVICE_STRINGIFY(Class::Function)}}
+#define SFUNC_BASE(id, Class, BaseClass, Function) std::pair<u32, std::pair<Result(Class::*)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &), const char*>>{id, {&Class::CallBaseFunction<BaseClass, decltype(&BaseClass::Function), &BaseClass::Function>, SERVICE_STRINGIFY(Class::Function)}}
 #define SERVICE_DECL_AUTO(name, value) decltype(value) name = value
-#define SERVICE_DECL(...)                                                                                                                         \
-SERVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                             \
-std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> GetServiceFunction(u32 id) override {  \
-    auto& function{functions.at(id)};                                                                                                            \
-    return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
+#define SERVICE_DECL(...)                                                                                      \
+private:                                                                                                       \
+template<typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFunction>                         \
+Result CallBaseFunction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {       \
+    return (static_cast<BaseClass *>(this)->*BaseFunction)(session, request, response);                        \
+}                                                                                                              \
+SERVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                          \
+protected:                                                                                                     \
+ServiceFunctionDescriptor GetServiceFunction(u32 id) override {                                                \
+    auto& function{functions.at(id)};                                                                          \
+    return ServiceFunctionDescriptor{                                                                          \
+        reinterpret_cast<DerivedService*>(this),                                                               \
+        reinterpret_cast<decltype(ServiceFunctionDescriptor::function)>(function.first),                       \
+        function.second                                                                                        \
+    };                                                                                                         \
 }
 #define SRVREG(class, ...) std::make_shared<class>(state, manager, ##__VA_ARGS__)
 
@@ -37,10 +48,20 @@ namespace skyline::service {
         const DeviceState &state;
         ServiceManager &manager;
 
-        template<typename Class, typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFunction>
-        static constexpr Result CallBaseFunction(Class *clazz, type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-            return (static_cast<BaseClass *>(clazz)->*BaseFunction)(session, request, response);
-        }
+        class DerivedService; //!< A placeholder derived class which is used for class function semantics
+
+        /**
+         * @brief A per-service-function descriptor with it's name and a function pointer to it
+         */
+        struct ServiceFunctionDescriptor {
+            DerivedService *clazz; //!< A pointer to the class that this was derived from, it's used as the 'this' pointer for the function
+            Result (DerivedService::*function)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &); //!< A function pointer to a HLE implementation of the service function
+            const char *name; //!< A pointer to a static string in the format "Class::Function" for the specific service class/function
+
+            constexpr Result operator()(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+                return (clazz->*function)(session, request, response);
+            }
+        };
 
       public:
         BaseService(const DeviceState &state, ServiceManager &manager) : state(state), manager(manager) {}
@@ -50,12 +71,12 @@ namespace skyline::service {
          */
         virtual ~BaseService() = default;
 
-        virtual std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> GetServiceFunction(u32 id) {
+        virtual ServiceFunctionDescriptor GetServiceFunction(u32 id) {
             throw std::out_of_range("GetServiceFunction not implemented");
         }
 
         /**
-         * @return The name of the class
+         * @return A string with the name of the service class
          * @note The lifetime of the returned string is tied to that of the class
          */
         const std::string &GetName();

@@ -19,18 +19,18 @@ namespace skyline::service {
     }
 
     Result service::BaseService::HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::pair<std::function<Result(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &)>, std::string_view> function;
+        ServiceFunctionDescriptor function;
         try {
             function = GetServiceFunction(request.payload->value);
-            state.logger->DebugNoPrefix("Service: {} @ {}", function.second, GetName());
+            state.logger->DebugNoPrefix("Service: {}", function.name);
         } catch (const std::out_of_range &) {
             state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
             return {};
         }
         try {
-            return function.first(session, request, response);
+            return function(session, request, response);
         } catch (const std::exception &e) {
-            throw exception("{} (Service: {} @ {})", e.what(), function.second, GetName());
+            throw exception("{} (Service: {})", e.what(), function.name);
         }
     }
 }
