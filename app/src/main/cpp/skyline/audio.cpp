@@ -11,6 +11,8 @@ namespace skyline::audio {
         builder.setFramesPerCallback(constant::MixBufferSize);
         builder.setUsage(oboe::Usage::Game);
         builder.setCallback(this);
+        builder.setSharingMode(oboe::SharingMode::Exclusive);
+        builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
 
         builder.openManagedStream(outputStream);
         outputStream->requestStart();
