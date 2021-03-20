@@ -51,7 +51,7 @@ namespace skyline::service {
         class DerivedService; //!< A placeholder derived class which is used for class function semantics
 
         /**
-         * @brief A per-service-function descriptor with it's name and a function pointer to it
+         * @brief A per-function descriptor for HLE service functions
          */
         struct ServiceFunctionDescriptor {
             DerivedService *clazz; //!< A pointer to the class that this was derived from, it's used as the 'this' pointer for the function

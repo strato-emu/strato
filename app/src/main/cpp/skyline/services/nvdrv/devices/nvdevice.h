@@ -6,13 +6,18 @@
 #include <kernel/ipc.h>
 #include <kernel/types/KEvent.h>
 
-#define NVFUNC(id, Class, Function) std::pair<u32, std::pair<std::function<NvStatus(Class*, IoctlType, span<u8>, span<u8>)>, std::string_view>>{id, {&Class::Function, #Function}}
+#define NV_STRINGIFY(string) #string
+#define NVFUNC(id, Class, Function) std::pair<u32, std::pair<NvStatus(Class::*)(IoctlType, span<u8>, span<u8>), const char*>>{id, {&Class::Function, NV_STRINGIFY(Class::Function)}}
 #define NVDEVICE_DECL_AUTO(name, value) decltype(value) name = value
-#define NVDEVICE_DECL(...)                                                                                                                        \
-NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                                                            \
-std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) override {                          \
-    auto& function{functions.at(id)};                                                                                                            \
-    return std::make_pair(std::bind(function.first, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), function.second); \
+#define NVDEVICE_DECL(...)                                                                \
+NVDEVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                    \
+NvDeviceFunctionDescriptor GetIoctlFunction(u32 id) override {                            \
+    auto& function{functions.at(id)};                                                     \
+    return NvDeviceFunctionDescriptor{                                                    \
+        reinterpret_cast<DerivedDevice*>(this),                                           \
+        reinterpret_cast<decltype(NvDeviceFunctionDescriptor::function)>(function.first), \
+        function.second                                                                   \
+    };                                                                                    \
 }
 
 namespace skyline::service::nvdrv::device {
@@ -67,12 +72,27 @@ namespace skyline::service::nvdrv::device {
       protected:
         const DeviceState &state;
 
+        class DerivedDevice; //!< A placeholder derived class which is used for class function semantics
+
+        /**
+         * @brief A per-function descriptor for NvDevice functions
+         */
+        struct NvDeviceFunctionDescriptor {
+            DerivedDevice *clazz; //!< A pointer to the class that this was derived from, it's used as the 'this' pointer for the function
+            NvStatus (DerivedDevice::*function)(IoctlType, span<u8>, span<u8>); //!< A function pointer to the implementation of the function
+            const char *name; //!< A pointer to a static string in the format "Class::Function" for the specific device class/function
+
+            constexpr NvStatus operator()(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+                return (clazz->*function)(type, buffer, inlineBuffer);
+            }
+        };
+
       public:
         NvDevice(const DeviceState &state) : state(state) {}
 
         virtual ~NvDevice() = default;
 
-        virtual std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> GetIoctlFunction(u32 id) = 0;
+        virtual NvDeviceFunctionDescriptor GetIoctlFunction(u32 id) = 0;
 
         /**
          * @return The name of the class

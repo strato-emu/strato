@@ -30,18 +30,18 @@ namespace skyline::service::nvdrv::device {
             }
         }()};
 
-        std::pair<std::function<NvStatus(IoctlType, span<u8>, span<u8>)>, std::string_view> function;
+        NvDeviceFunctionDescriptor function;
         try {
             function = GetIoctlFunction(cmd);
-            state.logger->DebugNoPrefix("{}: {} @ {}", typeString, GetName(), function.second);
+            state.logger->DebugNoPrefix("{}: {}", typeString, function.name);
         } catch (std::out_of_range &) {
             state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", GetName(), cmd);
             return NvStatus::NotImplemented;
         }
         try {
-            return function.first(type, buffer, inlineBuffer);
+            return function(type, buffer, inlineBuffer);
         } catch (const std::exception &e) {
-            throw exception("{} ({} @ {}: {})", e.what(), typeString, GetName(), function.second);
+            throw exception("{} ({}: {})", e.what(), typeString, function.name);
         }
     }
 }
