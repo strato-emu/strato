@@ -4,7 +4,7 @@
 #include <cxxabi.h>
 #include <unistd.h>
 #include "common/signal.h"
-#include "common/tracing.h"
+#include "common/trace.h"
 #include "os.h"
 #include "jvm.h"
 #include "kernel/types/KProcess.h"
@@ -21,6 +21,7 @@ namespace skyline::nce {
         auto svc{kernel::svc::SvcTable[svcId]};
         try {
             if (svc) [[likely]] {
+                TRACE_EVENT("kernel", perfetto::StaticString{svc.name});
                 (svc.function)(state);
             } else [[unlikely]] {
                 throw exception("Unimplemented SVC 0x{:X}", svcId);

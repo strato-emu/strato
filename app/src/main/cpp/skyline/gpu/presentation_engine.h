@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common/tracing.h>
+#include <common/trace.h>
 #include <kernel/types/KEvent.h>
 #include "texture.h"
 

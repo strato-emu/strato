@@ -3,8 +3,8 @@
 
 #include <nce.h>
 #include <os.h>
+#include <common/trace.h>
 #include <kernel/results.h>
-
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
@@ -104,6 +104,8 @@ namespace skyline::kernel::type {
     constexpr u32 HandleWaitersBit{1UL << 30}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not
 
     Result KProcess::MutexLock(u32 *mutex, KHandle ownerHandle, KHandle tag) {
+        TRACE_EVENT_FMT("kernel", "MutexLock 0x{:X}", mutex);
+
         std::shared_ptr<KThread> owner;
         try {
             owner = GetHandle<KThread>(ownerHandle);
@@ -142,6 +144,8 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::MutexUnlock(u32 *mutex) {
+        TRACE_EVENT_FMT("kernel", "MutexUnlock 0x{:X}", mutex);
+
         std::lock_guard lock(state.thread->waiterMutex);
         auto &waiters{state.thread->waiters};
         auto nextOwnerIt{std::find_if(waiters.begin(), waiters.end(), [mutex](const std::shared_ptr<KThread> &thread) { return thread->waitKey == mutex; })};
@@ -203,6 +207,8 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::ConditionalVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout) {
+        TRACE_EVENT_FMT("kernel", "ConditionalVariableWait 0x{:X} (0x{:X})", key, mutex);
+
         {
             std::lock_guard lock(syncWaiterMutex);
             auto queue{syncWaiters.equal_range(key)};
@@ -242,6 +248,8 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
+        TRACE_EVENT_FMT("kernel", "ConditionalVariableSignal 0x{:X}", key);
+
         std::lock_guard lock(syncWaiterMutex);
         auto queue{syncWaiters.equal_range(key)};
 
@@ -254,6 +262,8 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, bool (*arbitrationFunction)(u32 *, u32)) {
+        TRACE_EVENT_FMT("kernel", "WaitForAddress 0x{:X}", address);
+
         {
             std::lock_guard lock(syncWaiterMutex);
             if (!arbitrationFunction(address, value)) [[unlikely]]
@@ -287,6 +297,8 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount)) {
+        TRACE_EVENT_FMT("kernel", "SignalToAddress 0x{:X}", address);
+
         std::lock_guard lock(syncWaiterMutex);
         auto queue{syncWaiters.equal_range(address)};
 

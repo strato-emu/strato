@@ -4,7 +4,7 @@
 #include <cxxabi.h>
 #include <unistd.h>
 #include <common/signal.h>
-#include <common/tracing.h>
+#include <common/trace.h>
 #include <nce.h>
 #include <os.h>
 #include "KProcess.h"

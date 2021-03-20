@@ -3,7 +3,7 @@
 
 #include <os.h>
 #include <kernel/types/KProcess.h>
-#include <common/tracing.h>
+#include <common/trace.h>
 #include <vfs/npdm.h>
 #include "results.h"
 #include "svc.h"
@@ -287,11 +287,10 @@ namespace skyline::kernel::svc {
         constexpr i64 yieldWithCoreMigration{-1};
         constexpr i64 yieldToAnyThread{-2};
 
-        TRACE_EVENT("kernel", "SleepThread");
-
         i64 in{static_cast<i64>(state.ctx->gpr.x0)};
         if (in > 0) {
             state.logger->Debug("Sleeping for {}ns", in);
+            TRACE_EVENT("kernel", "SleepThread", "duration", in);
 
             struct timespec spec{
                 .tv_sec = static_cast<time_t>(in / 1000000000),
@@ -302,22 +301,30 @@ namespace skyline::kernel::svc {
             nanosleep(&spec, nullptr);
         } else {
             switch (in) {
-                case yieldWithCoreMigration:
+                case yieldWithCoreMigration: {
                     state.logger->Debug("Waking any appropriate parked threads and yielding");
+                    TRACE_EVENT("kernel", "YieldWithCoreMigration");
                     state.scheduler->WakeParkedThread();
-                    [[fallthrough]];
-                case yieldWithoutCoreMigration:
-                    if (in == yieldWithoutCoreMigration)
-                        state.logger->Debug("Cooperative yield");
                     state.scheduler->Rotate();
                     state.scheduler->WaitSchedule();
                     break;
+                }
 
-                case yieldToAnyThread:
+                case yieldWithoutCoreMigration: {
+                    state.logger->Debug("Cooperative yield");
+                    TRACE_EVENT("kernel", "YieldWithoutCoreMigration");
+                    state.scheduler->Rotate();
+                    state.scheduler->WaitSchedule();
+                    break;
+                }
+
+                case yieldToAnyThread: {
                     state.logger->Debug("Parking current thread");
+                    TRACE_EVENT("kernel", "YieldToAnyThread");
                     state.scheduler->ParkThread();
                     state.scheduler->WaitSchedule(false);
                     break;
+                }
 
                 default:
                     break;
@@ -453,6 +460,7 @@ namespace skyline::kernel::svc {
 
     void ClearEvent(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
+        TRACE_EVENT_FMT("kernel", "ClearEvent 0x{:X}", handle);
         try {
             std::static_pointer_cast<type::KEvent>(state.process->GetHandle(handle))->ResetSignal();
             state.logger->Debug("Clearing 0x{:X}", handle);
@@ -543,6 +551,7 @@ namespace skyline::kernel::svc {
 
     void ResetSignal(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
+        TRACE_EVENT_FMT("kernel", "ResetSignal 0x{:X}", handle);
         try {
             auto object{state.process->GetHandle(handle)};
             switch (object->objectType) {
@@ -601,11 +610,13 @@ namespace skyline::kernel::svc {
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
         if (waitHandles.size() == 1) {
             state.logger->Debug("Waiting on 0x{:X} for {}ns", waitHandles[0], timeout);
+            TRACE_EVENT_FMT("kernel", "WaitSynchronization 0x{:X}", waitHandles[0]);
         } else if (Logger::LogLevel::Debug <= state.logger->configLevel) {
             std::string handleString;
             for (const auto &handle : waitHandles)
                 handleString += fmt::format("* 0x{:X}\n", handle);
             state.logger->Debug("Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
+            TRACE_EVENT("kernel", "WaitSynchronizationMultiple");
         }
 
         std::unique_lock lock(type::KSyncObject::syncObjectMutex);
@@ -707,6 +718,7 @@ namespace skyline::kernel::svc {
         }
 
         state.logger->Debug("Locking 0x{:X}", mutex);
+        TRACE_EVENT_FMT("kernel", "MutexLock 0x{:X}", mutex);
 
         KHandle ownerHandle{state.ctx->gpr.w0};
         KHandle requesterHandle{state.ctx->gpr.w2};
@@ -728,6 +740,8 @@ namespace skyline::kernel::svc {
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
+
+        TRACE_EVENT_FMT("kernel", "MutexUnlock 0x{:X}", mutex);
 
         state.logger->Debug("Unlocking 0x{:X}", mutex);
         state.process->MutexUnlock(mutex);

@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <cxxabi.h>
+#include <common/trace.h>
 #include "base_service.h"
 
 namespace skyline::service {
@@ -27,6 +28,7 @@ namespace skyline::service {
             state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
             return {};
         }
+        TRACE_EVENT("service", perfetto::StaticString{function.name});
         try {
             return function(session, request, response);
         } catch (const std::exception &e) {

@@ -10,7 +10,7 @@
 #include "skyline/common.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
-#include "skyline/common/tracing.h"
+#include "skyline/common/trace.h"
 #include "skyline/loader/loader.h"
 #include "skyline/vfs/android_asset_filesystem.h"
 #include "skyline/os.h"
@@ -80,14 +80,14 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
 
         auto romUri{env->GetStringUTFChars(romUriJstring, nullptr)};
-        logger->Info("Launching ROM {}", romUri);
+        logger->InfoNoPrefix("Launching ROM {}", romUri);
         env->ReleaseStringUTFChars(romUriJstring, romUri);
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
-        logger->Error(e.what());
+        logger->Error("An exception has occurred: {}", e.what());
     } catch (const skyline::signal::SignalException &e) {
-        logger->Error(e.what());
+        logger->Error("An exception has occurred: {}", e.what());
     } catch (...) {
         logger->Error("An unknown exception has occurred");
     }
@@ -96,10 +96,10 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     InputWeak.reset();
 
-    logger->Info("Emulation has ended");
+    logger->InfoNoPrefix("Emulation has ended");
 
     auto end{std::chrono::steady_clock::now()};
-    logger->Info("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    logger->InfoNoPrefix("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 
     close(romFd);
 }

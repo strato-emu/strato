@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
-#include <common/tracing.h>
+#include <common/trace.h>
 #include "sm/IUserInterface.h"
 #include "settings/ISettingsServer.h"
 #include "settings/ISystemSettingsServer.h"

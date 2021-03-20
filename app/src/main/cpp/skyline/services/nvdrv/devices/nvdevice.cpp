@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <cxxabi.h>
+#include <common/trace.h>
 #include "nvdevice.h"
 
 namespace skyline::service::nvdrv::device {
@@ -38,6 +39,7 @@ namespace skyline::service::nvdrv::device {
             state.logger->Warn("Cannot find IOCTL for device '{}': 0x{:X}", GetName(), cmd);
             return NvStatus::NotImplemented;
         }
+        TRACE_EVENT("service", perfetto::StaticString{function.name});
         try {
             return function(type, buffer, inlineBuffer);
         } catch (const std::exception &e) {

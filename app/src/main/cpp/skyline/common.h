@@ -145,6 +145,14 @@ namespace skyline {
             else
                 return object;
         }
+
+        /**
+         * @brief {fmt}::format but with FmtCast built into it
+         */
+        template<typename S, typename... Args>
+        auto Format(S formatString, Args &&... args) {
+            return fmt::format(formatString, FmtCast(args)...);
+        }
     }
 
     /**

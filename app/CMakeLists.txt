@@ -32,9 +32,10 @@ include_directories("libraries/frozen/include")
 
 find_package(mbedtls REQUIRED CONFIG)
 
-# Define a static library for Perfetto.
+# Perfetto SDK
 include_directories(libraries/perfetto/sdk)
 add_library(perfetto STATIC libraries/perfetto/sdk/perfetto.cc)
+target_compile_options(perfetto PRIVATE -Wno-everything)
 
 include_directories(${source_DIR}/skyline)
 
@@ -45,7 +46,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/common/settings.cpp
         ${source_DIR}/skyline/common/signal.cpp
         ${source_DIR}/skyline/common/uuid.cpp
-        ${source_DIR}/skyline/common/tracing.cpp
+        ${source_DIR}/skyline/common/trace.cpp
         ${source_DIR}/skyline/nce/guest.S
         ${source_DIR}/skyline/nce.cpp
         ${source_DIR}/skyline/jvm.cpp

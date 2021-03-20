@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <common/tracing.h>
+#include <common/trace.h>
 #include <android/native_window.h>
 #include <kernel/types/KProcess.h>
 #include <unistd.h>

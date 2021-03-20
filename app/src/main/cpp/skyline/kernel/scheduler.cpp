@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 #include <common/signal.h>
-#include <common/tracing.h>
+#include <common/trace.h>
 #include "types/KThread.h"
 #include "scheduler.h"
 
@@ -13,19 +13,18 @@ namespace skyline::kernel {
     Scheduler::Scheduler(const DeviceState &state) : state(state) {}
 
     void Scheduler::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
-        TRACE_EVENT_END("guest");
-
         if (*tls) {
+            TRACE_EVENT_END("guest");
             const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
             if (signal == PreemptionSignal)
                 state.thread->isPreempted = false;
             state.scheduler->Rotate(false);
             YieldPending = false;
             state.scheduler->WaitSchedule();
+            TRACE_EVENT_BEGIN("guest", "Guest");
         } else {
             YieldPending = true;
         }
-        TRACE_EVENT_BEGIN("guest", "Guest");
     }
 
     Scheduler::CoreContext &Scheduler::GetOptimalCoreForThread(const std::shared_ptr<type::KThread> &thread) {
@@ -154,7 +153,7 @@ namespace skyline::kernel {
             return !core->queue.empty() && core->queue.front() == thread;
         }};
 
-        TRACE_EVENT("sched", "WaitSchedule");
+        TRACE_EVENT("scheduler", "WaitSchedule");
         if (loadBalance && thread->affinityMask.count() > 1) {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
             while (!thread->scheduleCondition.wait_for(lock, loadBalanceThreshold, wakeFunction)) {
@@ -182,7 +181,7 @@ namespace skyline::kernel {
         auto &thread{state.thread};
         auto *core{&cores.at(thread->coreId)};
 
-        TRACE_EVENT("sched", "TimedWaitSchedule");
+        TRACE_EVENT("scheduler", "TimedWaitSchedule");
         std::unique_lock lock(core->mutex);
         if (thread->scheduleCondition.wait_for(lock, timeout, [&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
