@@ -14,7 +14,7 @@ namespace skyline::nce {
       private:
         const DeviceState &state;
 
-        static void SvcHandler(u16 svc, ThreadContext *ctx);
+        static void SvcHandler(u16 svcId, ThreadContext *ctx);
 
       public:
         static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);

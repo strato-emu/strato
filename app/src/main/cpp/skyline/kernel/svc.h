@@ -229,136 +229,157 @@ namespace skyline::kernel::svc {
     void SignalToAddress(const DeviceState &state);
 
     /**
-     * @brief The SVC Table maps all SVCs to their corresponding functions
+     * @brief A per-SVC descriptor with it's name and a function pointer
+     * @note The descriptor is nullable, the validity of the descriptor can be checked with the boolean operator
      */
-    static std::array<void (*)(const DeviceState &), 0x80> SvcTable{
-        nullptr, // 0x00 (Does not exist)
-        SetHeapSize, // 0x01
-        nullptr, // 0x02
-        SetMemoryAttribute, // 0x03
-        MapMemory, // 0x04
-        UnmapMemory, // 0x05
-        QueryMemory, // 0x06
-        ExitProcess, // 0x07
-        CreateThread, // 0x08
-        StartThread, // 0x09
-        ExitThread, // 0x0A
-        SleepThread, // 0x0B
-        GetThreadPriority, // 0x0C
-        SetThreadPriority, // 0x0D
-        GetThreadCoreMask, // 0x0E
-        SetThreadCoreMask, // 0x0F
-        GetCurrentProcessorNumber, // 0x10
-        nullptr, // 0x11
-        ClearEvent, // 0x12
-        MapSharedMemory, // 0x13
-        nullptr, // 0x14
-        CreateTransferMemory, // 0x15
-        CloseHandle, // 0x16
-        ResetSignal, // 0x17
-        WaitSynchronization, // 0x18
-        CancelSynchronization, // 0x19
-        ArbitrateLock, // 0x1A
-        ArbitrateUnlock, // 0x1B
-        WaitProcessWideKeyAtomic, // 0x1C
-        SignalProcessWideKey, // 0x1D
-        GetSystemTick, // 0x1E
-        ConnectToNamedPort, // 0x1F
-        nullptr, // 0x20
-        SendSyncRequest, // 0x21
-        nullptr, // 0x22
-        nullptr, // 0x23
-        nullptr, // 0x24
-        GetThreadId, // 0x25
-        Break, // 0x26
-        OutputDebugString, // 0x27
-        nullptr, // 0x28
-        GetInfo, // 0x29
-        nullptr, // 0x2A
-        nullptr, // 0x2B
-        MapPhysicalMemory, // 0x2C
-        UnmapPhysicalMemory, // 0x2D
-        nullptr, // 0x2E
-        nullptr, // 0x2F
-        nullptr, // 0x30
-        nullptr, // 0x31
-        nullptr, // 0x32
-        nullptr, // 0x33
-        WaitForAddress, // 0x34
-        SignalToAddress, // 0x35
-        nullptr, // 0x36
-        nullptr, // 0x37
-        nullptr, // 0x38
-        nullptr, // 0x39
-        nullptr, // 0x3A
-        nullptr, // 0x3B
-        nullptr, // 0x3C
-        nullptr, // 0x3D
-        nullptr, // 0x3E
-        nullptr, // 0x3F
-        nullptr, // 0x40
-        nullptr, // 0x41
-        nullptr, // 0x42
-        nullptr, // 0x43
-        nullptr, // 0x44
-        nullptr, // 0x45
-        nullptr, // 0x46
-        nullptr, // 0x47
-        nullptr, // 0x48
-        nullptr, // 0x49
-        nullptr, // 0x4A
-        nullptr, // 0x4B
-        nullptr, // 0x4C
-        nullptr, // 0x4D
-        nullptr, // 0x4E
-        nullptr, // 0x4F
-        nullptr, // 0x50
-        nullptr, // 0x51
-        nullptr, // 0x52
-        nullptr, // 0x53
-        nullptr, // 0x54
-        nullptr, // 0x55
-        nullptr, // 0x56
-        nullptr, // 0x57
-        nullptr, // 0x58
-        nullptr, // 0x59
-        nullptr, // 0x5A
-        nullptr, // 0x5B
-        nullptr, // 0x5C
-        nullptr, // 0x5D
-        nullptr, // 0x5E
-        nullptr, // 0x5F
-        nullptr, // 0x60
-        nullptr, // 0x61
-        nullptr, // 0x62
-        nullptr, // 0x63
-        nullptr, // 0x64
-        nullptr, // 0x65
-        nullptr, // 0x66
-        nullptr, // 0x67
-        nullptr, // 0x68
-        nullptr, // 0x69
-        nullptr, // 0x6A
-        nullptr, // 0x6B
-        nullptr, // 0x6C
-        nullptr, // 0x6D
-        nullptr, // 0x6E
-        nullptr, // 0x6F
-        nullptr, // 0x70
-        nullptr, // 0x71
-        nullptr, // 0x72
-        nullptr, // 0x73
-        nullptr, // 0x74
-        nullptr, // 0x75
-        nullptr, // 0x76
-        nullptr, // 0x77
-        nullptr, // 0x78
-        nullptr, // 0x79
-        nullptr, // 0x7A
-        nullptr, // 0x7B
-        nullptr, // 0x7C
-        nullptr, // 0x7D
-        nullptr, // 0x7E
-        nullptr // 0x7F
+    struct SvcDescriptor {
+        void (*function)(const DeviceState &); //!< A function pointer to a HLE implementation of the SVC
+        const char* name; //!< A pointer to a static string of the SVC name, the underlying data should not be mutated
+
+        operator bool() {
+            return function;
+        }
     };
+
+    #define SVC_NONE SvcDescriptor{} //!< A macro with a placeholder value for the SVC not being implemented or not existing
+    #define SVC_STRINGIFY(name) #name
+    #define SVC_ENTRY(function) SvcDescriptor{function, SVC_STRINGIFY(Svc ## function)} //!< A macro which automatically stringifies the function name as the name to prevent pointless duplication
+
+    /**
+     * @brief The SVC table maps all SVCs to their corresponding functions
+     */
+    static constexpr std::array<SvcDescriptor, 0x80> SvcTable{
+        SVC_NONE, // 0x00 (Does not exist)
+        SVC_ENTRY(SetHeapSize), // 0x01
+        SVC_NONE, // 0x02
+        SVC_ENTRY(SetMemoryAttribute), // 0x03
+        SVC_ENTRY(MapMemory), // 0x04
+        SVC_ENTRY(UnmapMemory), // 0x05
+        SVC_ENTRY(QueryMemory), // 0x06
+        SVC_ENTRY(ExitProcess), // 0x07
+        SVC_ENTRY(CreateThread), // 0x08
+        SVC_ENTRY(StartThread), // 0x09
+        SVC_ENTRY(ExitThread), // 0x0A
+        SVC_ENTRY(SleepThread), // 0x0B
+        SVC_ENTRY(GetThreadPriority), // 0x0C
+        SVC_ENTRY(SetThreadPriority), // 0x0D
+        SVC_ENTRY(GetThreadCoreMask), // 0x0E
+        SVC_ENTRY(SetThreadCoreMask), // 0x0F
+        SVC_ENTRY(GetCurrentProcessorNumber), // 0x10
+        SVC_NONE, // 0x11
+        SVC_ENTRY(ClearEvent), // 0x12
+        SVC_ENTRY(MapSharedMemory), // 0x13
+        SVC_NONE, // 0x14
+        SVC_ENTRY(CreateTransferMemory), // 0x15
+        SVC_ENTRY(CloseHandle), // 0x16
+        SVC_ENTRY(ResetSignal), // 0x17
+        SVC_ENTRY(WaitSynchronization), // 0x18
+        SVC_ENTRY(CancelSynchronization), // 0x19
+        SVC_ENTRY(ArbitrateLock), // 0x1A
+        SVC_ENTRY(ArbitrateUnlock), // 0x1B
+        SVC_ENTRY(WaitProcessWideKeyAtomic), // 0x1C
+        SVC_ENTRY(SignalProcessWideKey), // 0x1D
+        SVC_ENTRY(GetSystemTick), // 0x1E
+        SVC_ENTRY(ConnectToNamedPort), // 0x1F
+        SVC_NONE, // 0x20
+        SVC_ENTRY(SendSyncRequest), // 0x21
+        SVC_NONE, // 0x22
+        SVC_NONE, // 0x23
+        SVC_NONE, // 0x24
+        SVC_ENTRY(GetThreadId), // 0x25
+        SVC_ENTRY(Break), // 0x26
+        SVC_ENTRY(OutputDebugString), // 0x27
+        SVC_NONE, // 0x28
+        SVC_ENTRY(GetInfo), // 0x29
+        SVC_NONE, // 0x2A
+        SVC_NONE, // 0x2B
+        SVC_ENTRY(MapPhysicalMemory), // 0x2C
+        SVC_ENTRY(UnmapPhysicalMemory), // 0x2D
+        SVC_NONE, // 0x2E
+        SVC_NONE, // 0x2F
+        SVC_NONE, // 0x30
+        SVC_NONE, // 0x31
+        SVC_NONE, // 0x32
+        SVC_NONE, // 0x33
+        SVC_ENTRY(WaitForAddress), // 0x34
+        SVC_ENTRY(SignalToAddress), // 0x35
+        SVC_NONE, // 0x36
+        SVC_NONE, // 0x37
+        SVC_NONE, // 0x38
+        SVC_NONE, // 0x39
+        SVC_NONE, // 0x3A
+        SVC_NONE, // 0x3B
+        SVC_NONE, // 0x3C
+        SVC_NONE, // 0x3D
+        SVC_NONE, // 0x3E
+        SVC_NONE, // 0x3F
+        SVC_NONE, // 0x40
+        SVC_NONE, // 0x41
+        SVC_NONE, // 0x42
+        SVC_NONE, // 0x43
+        SVC_NONE, // 0x44
+        SVC_NONE, // 0x45
+        SVC_NONE, // 0x46
+        SVC_NONE, // 0x47
+        SVC_NONE, // 0x48
+        SVC_NONE, // 0x49
+        SVC_NONE, // 0x4A
+        SVC_NONE, // 0x4B
+        SVC_NONE, // 0x4C
+        SVC_NONE, // 0x4D
+        SVC_NONE, // 0x4E
+        SVC_NONE, // 0x4F
+        SVC_NONE, // 0x50
+        SVC_NONE, // 0x51
+        SVC_NONE, // 0x52
+        SVC_NONE, // 0x53
+        SVC_NONE, // 0x54
+        SVC_NONE, // 0x55
+        SVC_NONE, // 0x56
+        SVC_NONE, // 0x57
+        SVC_NONE, // 0x58
+        SVC_NONE, // 0x59
+        SVC_NONE, // 0x5A
+        SVC_NONE, // 0x5B
+        SVC_NONE, // 0x5C
+        SVC_NONE, // 0x5D
+        SVC_NONE, // 0x5E
+        SVC_NONE, // 0x5F
+        SVC_NONE, // 0x60
+        SVC_NONE, // 0x61
+        SVC_NONE, // 0x62
+        SVC_NONE, // 0x63
+        SVC_NONE, // 0x64
+        SVC_NONE, // 0x65
+        SVC_NONE, // 0x66
+        SVC_NONE, // 0x67
+        SVC_NONE, // 0x68
+        SVC_NONE, // 0x69
+        SVC_NONE, // 0x6A
+        SVC_NONE, // 0x6B
+        SVC_NONE, // 0x6C
+        SVC_NONE, // 0x6D
+        SVC_NONE, // 0x6E
+        SVC_NONE, // 0x6F
+        SVC_NONE, // 0x70
+        SVC_NONE, // 0x71
+        SVC_NONE, // 0x72
+        SVC_NONE, // 0x73
+        SVC_NONE, // 0x74
+        SVC_NONE, // 0x75
+        SVC_NONE, // 0x76
+        SVC_NONE, // 0x77
+        SVC_NONE, // 0x78
+        SVC_NONE, // 0x79
+        SVC_NONE, // 0x7A
+        SVC_NONE, // 0x7B
+        SVC_NONE, // 0x7C
+        SVC_NONE, // 0x7D
+        SVC_NONE, // 0x7E
+        SVC_NONE // 0x7F
+    };
+
+    #undef SVC_NONE
+    #undef SVC_STRINGIFY
+    #undef SVC_ENTRY
 }
