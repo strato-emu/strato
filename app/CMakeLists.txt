@@ -17,7 +17,9 @@ if (uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
 endif ()
 
 add_subdirectory("libraries/fmt")
+
 add_subdirectory("libraries/tzcode")
+target_compile_options(tzcode PRIVATE -Wno-everything)
 
 add_subdirectory("libraries/oboe")
 include_directories("libraries/oboe/include")
