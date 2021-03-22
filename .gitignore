@@ -50,6 +50,7 @@ build/
 # Android Studio
 .idea/caches
 .idea/assetWizardSettings.xml
+.idea/runConfigurations.xml
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
