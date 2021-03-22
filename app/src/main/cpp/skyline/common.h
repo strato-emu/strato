@@ -455,7 +455,7 @@ namespace skyline {
     class Logger {
       private:
         std::ofstream logFile; //!< An output stream to the log file
-        std::mutex mutex; //!< Synchronizes all output I/O to ensure there's no races
+        std::mutex mutex; //!< Synchronizes all output I/O to ensure there are no races
 
       public:
         enum class LogLevel {
