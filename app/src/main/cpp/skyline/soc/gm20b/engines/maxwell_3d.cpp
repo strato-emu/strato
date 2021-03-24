@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <gpu.h>
-#include "maxwell_3d.h"
+#include <soc.h>
 
-namespace skyline::gpu::engine {
+namespace skyline::soc::gm20b::engine::maxwell3d {
     Maxwell3D::Maxwell3D(const DeviceState &state) : Engine(state), macroInterpreter(*this) {
         ResetRegs();
     }
@@ -77,9 +76,9 @@ namespace skyline::gpu::engine {
         state.logger->Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", params.method, params.argument);
 
         // Methods that are greater than the register size are for macro control
-        if (params.method > constant::Maxwell3DRegisterCounter) {
+        if (params.method > RegisterCount) {
             if (!(params.method & 1))
-                macroInvocation.index = ((params.method - constant::Maxwell3DRegisterCounter) >> 1) % macroPositions.size();
+                macroInvocation.index = ((params.method - RegisterCount) >> 1) % macroPositions.size();
 
             macroInvocation.arguments.push_back(params.argument);
 
@@ -100,6 +99,8 @@ namespace skyline::gpu::engine {
         else if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodReplay)
             params.argument = shadowRegisters.raw[params.method];
 
+        #define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
+
         switch (params.method) {
             case MAXWELL3D_OFFSET(mme.instructionRamLoad):
                 if (registers.mme.instructionRamPointer >= macroCode.size())
@@ -118,7 +119,7 @@ namespace skyline::gpu::engine {
                 break;
             case MAXWELL3D_OFFSET(syncpointAction):
                 state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(registers.syncpointAction.id));
-                state.gpu->syncpoints.at(registers.syncpointAction.id).Increment();
+                state.soc->host1x.syncpoints.at(registers.syncpointAction.id).Increment();
                 break;
             case MAXWELL3D_OFFSET(semaphore.info):
                 switch (registers.semaphore.info.op) {
@@ -137,6 +138,8 @@ namespace skyline::gpu::engine {
                 registers.raw[0xD00] = 1;
                 break;
         }
+
+        #undef MAXWELL3D_OFFSET
     }
 
     void Maxwell3D::HandleSemaphoreCounterOperation() {
@@ -158,7 +161,7 @@ namespace skyline::gpu::engine {
 
         switch (registers.semaphore.info.structureSize) {
             case Registers::SemaphoreInfo::StructureSize::OneWord:
-                state.gpu->memoryManager.Write<u32>(static_cast<u32>(result), registers.semaphore.address.Pack());
+                state.soc->gmmu.Write<u32>(static_cast<u32>(result), registers.semaphore.address.Pack());
                 break;
             case Registers::SemaphoreInfo::StructureSize::FourWords: {
                 // Convert the current nanosecond time to GPU ticks
@@ -168,7 +171,7 @@ namespace skyline::gpu::engine {
                 u64 nsTime{util::GetTimeNs()};
                 u64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                state.gpu->memoryManager.Write<FourWordResult>(FourWordResult{result, timestamp}, registers.semaphore.address.Pack());
+                state.soc->gmmu.Write<FourWordResult>(FourWordResult{result, timestamp}, registers.semaphore.address.Pack());
                 break;
             }
         }

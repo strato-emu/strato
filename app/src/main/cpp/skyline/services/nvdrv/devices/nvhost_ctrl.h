@@ -41,12 +41,12 @@ namespace skyline {
             /**
              * @brief Removes any wait requests on a syncpoint event and resets its state
              */
-            void Cancel(const std::shared_ptr<gpu::GPU> &gpuState);
+            void Cancel(soc::host1x::Host1X &host1x);
 
             /**
              * @brief Asynchronously waits on a syncpoint event using the given fence
              */
-            void Wait(const std::shared_ptr<gpu::GPU> &gpuState, const Fence &fence);
+            void Wait(soc::host1x::Host1X &host1x, const Fence &fence);
         };
 
         /**

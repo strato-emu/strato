@@ -7,7 +7,7 @@
 
 #define U32_OFFSET(regs, field) (offsetof(regs, field) / sizeof(u32))
 
-namespace skyline::gpu {
+namespace skyline::soc::gm20b {
     enum class EngineID {
         Fermi2D = 0x902D,
         KeplerMemory = 0xA140,

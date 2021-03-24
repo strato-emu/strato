@@ -27,7 +27,7 @@
 #include <frozen/string.h>
 #include <jni.h>
 
-#define FORCE_INLINE __attribute__((always_inline)) inline // NOLINT(cppcoreguidelines-macro-usage)
+#define FORCE_INLINE __attribute__((always_inline)) // NOLINT(cppcoreguidelines-macro-usage)
 
 namespace fmt {
     /**
@@ -605,6 +605,9 @@ namespace skyline {
         struct ThreadContext;
     }
     class JvmManager;
+    namespace soc {
+        class SOC;
+    }
     namespace gpu {
         class GPU;
     }
@@ -637,6 +640,7 @@ namespace skyline {
         std::shared_ptr<Settings> settings;
         std::shared_ptr<Logger> logger;
         std::shared_ptr<loader::Loader> loader;
+        std::shared_ptr<soc::SOC> soc;
         std::shared_ptr<gpu::GPU> gpu;
         std::shared_ptr<audio::Audio> audio;
         std::shared_ptr<nce::NCE> nce;

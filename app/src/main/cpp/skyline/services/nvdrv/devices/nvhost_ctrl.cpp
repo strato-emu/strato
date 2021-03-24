@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 // Copyright © 2019-2020 Ryujinx Team and Contributors
 
-#include <gpu.h>
+#include <soc.h>
 #include <kernel/types/KProcess.h>
 #include <services/nvdrv/driver.h>
 #include "nvhost_ctrl.h"
@@ -46,20 +46,20 @@ namespace skyline::service::nvdrv::device {
         state = State::Signalled;
     }
 
-    void SyncpointEvent::Cancel(const std::shared_ptr<gpu::GPU> &gpuState) {
+    void SyncpointEvent::Cancel(soc::host1x::Host1X &host1x) {
         std::lock_guard lock(mutex);
 
-        gpuState->syncpoints.at(fence.id).DeregisterWaiter(waiterId);
+        host1x.syncpoints.at(fence.id).DeregisterWaiter(waiterId);
         Signal();
         event->ResetSignal();
     }
 
-    void SyncpointEvent::Wait(const std::shared_ptr<gpu::GPU> &gpuState, const Fence &pFence) {
+    void SyncpointEvent::Wait(soc::host1x::Host1X &host1x, const Fence &pFence) {
         std::lock_guard lock(mutex);
 
         fence = pFence;
         state = State::Waiting;
-        waiterId = gpuState->syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
+        waiterId = host1x.syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
     }
 
     NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state) {}
@@ -105,7 +105,7 @@ namespace skyline::service::nvdrv::device {
             SyncpointEventValue value; // InOut
         } &data = buffer.as<Data>();
 
-        if (data.fence.id >= constant::MaxHwSyncpointCount)
+        if (data.fence.id >= soc::host1x::SyncpointCount)
             return NvStatus::BadValue;
 
         if (data.timeout == 0)
@@ -149,7 +149,7 @@ namespace skyline::service::nvdrv::device {
 
         if (event->state == SyncpointEvent::State::Cancelled || event->state == SyncpointEvent::State::Available || event->state == SyncpointEvent::State::Signalled) {
             state.logger->Debug("Waiting on syncpoint event: {} with fence: ({}, {})", eventSlot, data.fence.id, data.fence.value);
-            event->Wait(state.gpu, data.fence);
+            event->Wait(state.soc->host1x, data.fence);
 
             data.value.val = 0;
 
@@ -189,7 +189,7 @@ namespace skyline::service::nvdrv::device {
         if (event->state == SyncpointEvent::State::Waiting) {
             event->state = SyncpointEvent::State::Cancelling;
             state.logger->Debug("Cancelling waiting syncpoint event: {}", eventSlot);
-            event->Cancel(state.gpu);
+            event->Cancel(state.soc->host1x);
         }
 
         event->state = SyncpointEvent::State::Cancelled;

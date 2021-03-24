@@ -9,7 +9,7 @@ extern skyline::u16 Fps;
 extern skyline::u32 FrameTime;
 
 namespace skyline::gpu {
-    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), presentationTrack(static_cast<uint64_t>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()) {
+    PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()) {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);

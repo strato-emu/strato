@@ -3,7 +3,7 @@
 
 #include "syncpoint.h"
 
-namespace skyline::gpu {
+namespace skyline::soc::host1x {
     u64 Syncpoint::RegisterWaiter(u32 threshold, const std::function<void()> &callback) {
         if (value >= threshold) {
             callback();

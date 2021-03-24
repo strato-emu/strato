@@ -2,7 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 
-#include <gpu.h>
+#include <soc.h>
 #include "nvhost_syncpoint.h"
 
 namespace skyline::service::nvdrv {
@@ -28,7 +28,7 @@ namespace skyline::service::nvdrv {
     }
 
     u32 NvHostSyncpoint::FindFreeSyncpoint() {
-        for (u32 i{1}; i < constant::MaxHwSyncpointCount; i++)
+        for (u32 i{1}; i < syncpoints.size(); i++)
             if (!syncpoints[i].reserved)
                 return i;
 
@@ -71,7 +71,7 @@ namespace skyline::service::nvdrv {
         if (!syncpoints.at(id).reserved)
             throw exception("Cannot update an unreserved syncpoint!");
 
-        syncpoints.at(id).counterMin = state.gpu->syncpoints.at(id).value.load();
+        syncpoints.at(id).counterMin = state.soc->host1x.syncpoints.at(id).value.load();
         return syncpoints.at(id).counterMin;
     }
 }

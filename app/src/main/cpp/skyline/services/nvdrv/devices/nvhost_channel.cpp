@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <soc.h>
 #include <kernel/types/KProcess.h>
-#include <gpu.h>
 #include <services/nvdrv/driver.h>
 #include "nvhost_channel.h"
 
@@ -25,7 +25,7 @@ namespace skyline::service::nvdrv::device {
 
     NvStatus NvHostChannel::SubmitGpfifo(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
         struct Data {
-            gpu::gpfifo::GpEntry *entries; // In
+            soc::gm20b::GpEntry *entries; // In
             u32 numEntries;                // In
             union {
                 struct __attribute__((__packed__)) {
@@ -53,9 +53,9 @@ namespace skyline::service::nvdrv::device {
                 throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
-        state.gpu->gpfifo.Push([&]() {
+        state.soc->gm20b.gpfifo.Push([&]() {
             if (type == IoctlType::Ioctl2)
-                return inlineBuffer.cast<gpu::gpfifo::GpEntry>();
+                return inlineBuffer.cast<soc::gm20b::GpEntry>();
             else
                 return span(data.entries, data.numEntries);
         }());
@@ -110,7 +110,7 @@ namespace skyline::service::nvdrv::device {
             u32 _res_[3];    // In
         } &data = buffer.as<Data>();
 
-        state.gpu->gpfifo.Initialize(data.numEntries);
+        state.soc->gm20b.gpfifo.Initialize(data.numEntries);
 
         auto driver{nvdrv::driver.lock()};
         channelFence.UpdateValue(driver->hostSyncpoint);

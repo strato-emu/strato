@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <gpu.h>
+#include <soc.h>
 #include <services/nvdrv/driver.h>
 #include "nvmap.h"
 #include "nvhost_as_gpu.h"
@@ -36,9 +36,9 @@ namespace skyline::service::nvdrv::device {
         u64 size{static_cast<u64>(region.pages) * static_cast<u64>(region.pageSize)};
 
         if (region.flags.fixed)
-            region.offset = state.gpu->memoryManager.ReserveFixed(region.offset, size);
+            region.offset = state.soc->gmmu.ReserveFixed(region.offset, size);
         else
-            region.offset = state.gpu->memoryManager.ReserveSpace(size, region.align);
+            region.offset = state.soc->gmmu.ReserveSpace(size, region.align);
 
         if (region.offset == 0) {
             state.logger->Warn("Failed to allocate GPU address space region!");
@@ -56,7 +56,7 @@ namespace skyline::service::nvdrv::device {
 
             // Non-fixed regions are unmapped so that they can be used by future non-fixed mappings
             if (!region.fixed)
-                if (!state.gpu->memoryManager.Unmap(offset, region.size))
+                if (!state.soc->gmmu.Unmap(offset, region.size))
                     state.logger->Warn("Failed to unmap region at 0x{:X}", offset);
 
             regionMap.erase(offset);
@@ -94,7 +94,7 @@ namespace skyline::service::nvdrv::device {
                 u64 gpuAddress{data.offset + data.bufferOffset};
                 u8 *cpuPtr{region->second.ptr + data.bufferOffset};
 
-                if (!state.gpu->memoryManager.MapFixed(gpuAddress, cpuPtr, data.mappingSize)) {
+                if (!state.soc->gmmu.MapFixed(gpuAddress, cpuPtr, data.mappingSize)) {
                     state.logger->Warn("Failed to remap GPU address space region: 0x{:X}", gpuAddress);
                     return NvStatus::BadParameter;
                 }
@@ -110,9 +110,9 @@ namespace skyline::service::nvdrv::device {
             u64 size{data.mappingSize ? data.mappingSize : mapping->size};
 
             if (data.flags.fixed)
-                data.offset = state.gpu->memoryManager.MapFixed(data.offset, cpuPtr, size);
+                data.offset = state.soc->gmmu.MapFixed(data.offset, cpuPtr, size);
             else
-                data.offset = state.gpu->memoryManager.MapAllocate(cpuPtr, size);
+                data.offset = state.soc->gmmu.MapAllocate(cpuPtr, size);
 
             if (data.offset == 0) {
                 state.logger->Warn("Failed to map GPU address space region!");
@@ -184,7 +184,7 @@ namespace skyline::service::nvdrv::device {
                 u8 *cpuPtr{mapping->ptr + (static_cast<u64>(entry.mapOffset) << MinAlignmentShift)};
                 u64 size{static_cast<u64>(entry.pages) << MinAlignmentShift};
 
-                state.gpu->memoryManager.MapFixed(virtAddr, cpuPtr, size);
+                state.soc->gmmu.MapFixed(virtAddr, cpuPtr, size);
             } catch (const std::out_of_range &) {
                 state.logger->Warn("Invalid NvMap handle: 0x{:X}", entry.nvmapHandle);
                 return NvStatus::BadParameter;

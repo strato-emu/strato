@@ -67,12 +67,12 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
-        ${source_DIR}/skyline/gpu/macro_interpreter.cpp
-        ${source_DIR}/skyline/gpu/memory_manager.cpp
-        ${source_DIR}/skyline/gpu/gpfifo.cpp
-        ${source_DIR}/skyline/gpu/syncpoint.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
-        ${source_DIR}/skyline/gpu/engines/maxwell_3d.cpp
+        ${source_DIR}/skyline/soc/gmmu.cpp
+        ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
+        ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp
+        ${source_DIR}/skyline/soc/gm20b/engines/maxwell_3d.cpp
+        ${source_DIR}/skyline/soc/gm20b/engines/maxwell/macro_interpreter.cpp
         ${source_DIR}/skyline/input/npad.cpp
         ${source_DIR}/skyline/input/npad_device.cpp
         ${source_DIR}/skyline/input/touch.cpp

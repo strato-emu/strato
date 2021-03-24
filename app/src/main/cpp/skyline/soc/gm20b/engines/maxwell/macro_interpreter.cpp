@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include "engines/maxwell_3d.h"
-#include "memory_manager.h"
-#include "macro_interpreter.h"
+#include <soc/gmmu.h>
+#include <soc/gm20b/engines/maxwell_3d.h>
 
-namespace skyline::gpu {
+namespace skyline::soc::gm20b::engine::maxwell3d {
     void MacroInterpreter::Execute(size_t offset, const std::vector<u32> &args) {
         // Reset the interpreter state
         registers = {};
@@ -28,9 +27,11 @@ namespace skyline::gpu {
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
+
             case Opcode::Operation::AddImmediate:
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, registers[opcode->srcA] + opcode->immediate);
                 break;
+
             case Opcode::Operation::BitfieldReplace: {
                 u32 src{registers[opcode->srcB]};
                 u32 dest{registers[opcode->srcA]};
@@ -47,6 +48,7 @@ namespace skyline::gpu {
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, dest);
                 break;
             }
+
             case Opcode::Operation::BitfieldExtractShiftLeftImmediate: {
                 u32 src{registers[opcode->srcB]};
                 u32 dest{registers[opcode->srcA]};
@@ -56,6 +58,7 @@ namespace skyline::gpu {
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
+
             case Opcode::Operation::BitfieldExtractShiftLeftRegister: {
                 u32 src{registers[opcode->srcB]};
                 u32 dest{registers[opcode->srcA]};
@@ -65,17 +68,19 @@ namespace skyline::gpu {
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
+
             case Opcode::Operation::ReadImmediate: {
                 u32 result{maxwell3D.registers.raw[registers[opcode->srcA] + opcode->immediate]};
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
+
             case Opcode::Operation::Branch: {
                 if (delayedOpcode != nullptr)
                     throw exception("Cannot branch while inside a delay slot");
 
                 u32 value{registers[opcode->srcA]};
-                bool branch{(opcode->branchCondition == Opcode::BranchCondition::Zero) ? (value == 0) : (value != 0)};
+                bool branch{(opcode->branchCondition == Opcode::BranchCondition::Zero) == (value == 0)};
 
                 if (branch) {
                     if (opcode->noDelay) {
@@ -91,6 +96,7 @@ namespace skyline::gpu {
                 }
                 break;
             }
+
             default:
                 throw exception("Unknown MME opcode encountered: 0x{:X}", static_cast<u8>(opcode->operation));
         }
@@ -186,15 +192,14 @@ namespace skyline::gpu {
         }
     }
 
-    FORCE_INLINE void MacroInterpreter::Send(u32 argument) {
-        maxwell3D.CallMethod(MethodParams{methodAddress.address, argument, 0, true});
-
+    FORCE_INLINE void MacroInterpreter::Send(u32 pArgument) {
+        maxwell3D.CallMethod(MethodParams{methodAddress.address, pArgument, 0, true});
         methodAddress.address += methodAddress.increment;
     }
 
     FORCE_INLINE void MacroInterpreter::WriteRegister(u8 reg, u32 value) {
         // Register 0 should always be zero so block writes to it
-        if (reg == 0)
+        if (reg == 0) [[unlikely]]
             return;
 
         registers[reg] = value;

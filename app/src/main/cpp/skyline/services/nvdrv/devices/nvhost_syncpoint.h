@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpu/syncpoint.h>
+#include <soc/host1x.h>
 
 namespace skyline::service::nvdrv {
     /**
@@ -22,7 +22,7 @@ namespace skyline::service::nvdrv {
         };
 
         const DeviceState &state;
-        std::array<SyncpointInfo, skyline::constant::MaxHwSyncpointCount> syncpoints{};
+        std::array<SyncpointInfo, soc::host1x::SyncpointCount> syncpoints{};
         std::mutex reservationLock;
 
         /**

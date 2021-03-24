@@ -4,30 +4,28 @@
 #include <common/signal.h>
 #include <loader/loader.h>
 #include <kernel/types/KProcess.h>
-#include <gpu.h>
-#include <gpu/engines/maxwell_3d.h>
-#include "gpfifo.h"
+#include <soc.h>
 
-namespace skyline::gpu::gpfifo {
+namespace skyline::soc::gm20b {
     void GPFIFO::Send(MethodParams params) {
         state.logger->Debug("Called GPU method - method: 0x{:X} argument: 0x{:X} subchannel: 0x{:X} last: {}", params.method, params.argument, params.subChannel, params.lastCall);
 
         if (params.method == 0) {
             switch (static_cast<EngineID>(params.argument)) {
                 case EngineID::Fermi2D:
-                    subchannels.at(params.subChannel) = state.gpu->fermi2D;
+                    subchannels.at(params.subChannel) = &state.soc->gm20b.fermi2D;
                     break;
                 case EngineID::KeplerMemory:
-                    subchannels.at(params.subChannel) = state.gpu->keplerMemory;
+                    subchannels.at(params.subChannel) = &state.soc->gm20b.keplerMemory;
                     break;
                 case EngineID::Maxwell3D:
-                    subchannels.at(params.subChannel) = state.gpu->maxwell3D;
+                    subchannels.at(params.subChannel) = &state.soc->gm20b.maxwell3D;
                     break;
                 case EngineID::MaxwellCompute:
-                    subchannels.at(params.subChannel) = state.gpu->maxwellCompute;
+                    subchannels.at(params.subChannel) = &state.soc->gm20b.maxwellCompute;
                     break;
                 case EngineID::MaxwellDma:
-                    subchannels.at(params.subChannel) = state.gpu->maxwellDma;
+                    subchannels.at(params.subChannel) = &state.soc->gm20b.maxwellDma;
                     break;
                 default:
                     throw exception("Unknown engine 0x{:X} cannot be bound to subchannel {}", params.argument, params.subChannel);
@@ -35,7 +33,7 @@ namespace skyline::gpu::gpfifo {
 
             state.logger->Info("Bound GPU engine 0x{:X} to subchannel {}", params.argument, params.subChannel);
             return;
-        } else if (params.method < constant::GpfifoRegisterCount) {
+        } else if (params.method < engine::GPFIFO::RegisterCount) {
             gpfifoEngine.CallMethod(params);
         } else {
             if (subchannels.at(params.subChannel) == nullptr)
@@ -58,7 +56,7 @@ namespace skyline::gpu::gpfifo {
         }
 
         pushBufferData.resize(gpEntry.size);
-        state.gpu->memoryManager.Read<u32>(pushBufferData, gpEntry.Address());
+        state.soc->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
 
         for (auto entry{pushBufferData.begin()}; entry != pushBufferData.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
@@ -66,28 +64,29 @@ namespace skyline::gpu::gpfifo {
                 continue;
 
             PushBufferMethodHeader methodHeader{.raw = *entry};
-
             switch (methodHeader.secOp) {
                 case PushBufferMethodHeader::SecOp::IncMethod:
                     for (u16 i{}; i < methodHeader.methodCount; i++)
                         Send(MethodParams{static_cast<u16>(methodHeader.methodAddress + i), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
-
                     break;
+
                 case PushBufferMethodHeader::SecOp::NonIncMethod:
                     for (u16 i{}; i < methodHeader.methodCount; i++)
                         Send(MethodParams{methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
-
                     break;
+
                 case PushBufferMethodHeader::SecOp::OneInc:
                     for (u16 i{}; i < methodHeader.methodCount; i++)
                         Send(MethodParams{static_cast<u16>(methodHeader.methodAddress + static_cast<bool>(i)), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1});
-
                     break;
+
                 case PushBufferMethodHeader::SecOp::ImmdDataMethod:
                     Send(MethodParams{methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true});
                     break;
+
                 case PushBufferMethodHeader::SecOp::EndPbSegment:
                     return;
+
                 default:
                     state.logger->Warn("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
                     break;

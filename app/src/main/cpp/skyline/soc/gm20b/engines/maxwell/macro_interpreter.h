@@ -5,10 +5,8 @@
 
 #include <common.h>
 
-namespace skyline::gpu {
-    namespace engine {
-        class Maxwell3D;
-    }
+namespace skyline::soc::gm20b::engine::maxwell3d {
+    class Maxwell3D; // A forward declaration of Maxwell3D as we don't want to import it here
 
     /**
      * @brief The MacroInterpreter class handles interpreting macros. Macros are small programs that run on the GPU and are used for things like instanced rendering.
@@ -105,14 +103,13 @@ namespace skyline::gpu {
             };
         };
 
-        engine::Maxwell3D &maxwell3D;
+        Maxwell3D &maxwell3D; //!< A reference to the parent engine object
 
-        std::array<u32, 8> registers{};
-
-        Opcode *opcode{};
-        const u32 *argument{};
+        Opcode *opcode{}; //!< A pointer to the instruction that is currently being executed
+        std::array<u32, 8> registers{}; //!< The state of all the general-purpose registers in the macro interpreter
+        const u32 *argument{}; //!< A pointer to the argument buffer for the program, it is read from sequentially
         MethodAddress methodAddress{};
-        bool carryFlag{};
+        bool carryFlag{}; //!< A flag representing if an arithmetic operation has set the most significant bit
 
         /**
          * @brief Steps forward one macro instruction, including delay slots
@@ -135,10 +132,13 @@ namespace skyline::gpu {
          */
         void Send(u32 argument);
 
+        /**
+         * @brief Writes to the specified register with sanity checking
+         */
         void WriteRegister(u8 reg, u32 value);
 
       public:
-        MacroInterpreter(engine::Maxwell3D &maxwell3D) : maxwell3D(maxwell3D) {}
+        MacroInterpreter(Maxwell3D &maxwell3D) : maxwell3D(maxwell3D) {}
 
         /**
          * @brief Executes a GPU macro from macro memory with the given arguments
