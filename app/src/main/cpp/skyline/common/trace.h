@@ -4,7 +4,7 @@
 #include <perfetto.h>
 #include <common.h>
 
-#define TRACE_EVENT_FMT(category, formatString, ...) TRACE_EVENT("kernel", nullptr, [&](perfetto::EventContext ctx) { \
+#define TRACE_EVENT_FMT(category, formatString, ...) TRACE_EVENT(category, nullptr, [&](perfetto::EventContext ctx) { \
     ctx.event()->set_name(skyline::util::Format(formatString, __VA_ARGS__));                                          \
 })
 

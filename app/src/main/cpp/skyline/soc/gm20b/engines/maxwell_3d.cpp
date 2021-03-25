@@ -99,8 +99,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         else if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodReplay)
             params.argument = shadowRegisters.raw[params.method];
 
-        #define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
-
         switch (params.method) {
             case MAXWELL3D_OFFSET(mme.instructionRamLoad):
                 if (registers.mme.instructionRamPointer >= macroCode.size())
@@ -138,8 +136,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.raw[0xD00] = 1;
                 break;
         }
-
-        #undef MAXWELL3D_OFFSET
     }
 
     void Maxwell3D::HandleSemaphoreCounterOperation() {

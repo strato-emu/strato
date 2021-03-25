@@ -6,6 +6,8 @@
 #include "engine.h"
 #include "maxwell/macro_interpreter.h"
 
+#define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
+
 namespace skyline::soc::gm20b::engine::maxwell3d {
     /**
      * @brief The Maxwell 3D engine handles processing 3D graphics
@@ -555,7 +557,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         Registers registers{};
         Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
 
-        std::array<u32, 0x10000> macroCode{}; //!< This stores GPU macros, the 256kb size is from Ryujinx
+        std::array<u32, 0x10000> macroCode{}; //!< This stores GPU macros, the 256KiB size is from Ryujinx
 
         Maxwell3D(const DeviceState &state);
 

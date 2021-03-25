@@ -9,7 +9,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     class Maxwell3D; // A forward declaration of Maxwell3D as we don't want to import it here
 
     /**
-     * @brief The MacroInterpreter class handles interpreting macros. Macros are small programs that run on the GPU and are used for things like instanced rendering.
+     * @brief The MacroInterpreter class handles interpreting macros. Macros are small programs that run on the GPU and are used for things like instanced rendering
      */
     class MacroInterpreter {
       private:

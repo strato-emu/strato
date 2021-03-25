@@ -80,7 +80,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     throw exception("Cannot branch while inside a delay slot");
 
                 u32 value{registers[opcode->srcA]};
-                bool branch{(opcode->branchCondition == Opcode::BranchCondition::Zero) == (value == 0)};
+                bool branch{(opcode->branchCondition == Opcode::BranchCondition::Zero) ? (value == 0) : (value != 0)};
 
                 if (branch) {
                     if (opcode->noDelay) {

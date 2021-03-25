@@ -610,14 +610,14 @@ namespace skyline::kernel::svc {
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
         if (waitHandles.size() == 1) {
             state.logger->Debug("Waiting on 0x{:X} for {}ns", waitHandles[0], timeout);
-            TRACE_EVENT_FMT("kernel", "WaitSynchronization 0x{:X}", waitHandles[0]);
         } else if (Logger::LogLevel::Debug <= state.logger->configLevel) {
             std::string handleString;
             for (const auto &handle : waitHandles)
                 handleString += fmt::format("* 0x{:X}\n", handle);
             state.logger->Debug("Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
-            TRACE_EVENT("kernel", "WaitSynchronizationMultiple");
         }
+
+        TRACE_EVENT_FMT("kernel", waitHandles.size() == 1 ? "WaitSynchronization 0x{:X}" : "WaitSynchronizationMultiple 0x{:X}", waitHandles[0]);
 
         std::unique_lock lock(type::KSyncObject::syncObjectMutex);
         if (state.thread->cancelSync) {
