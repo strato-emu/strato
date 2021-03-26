@@ -5,9 +5,6 @@
 	path = app/libraries/oboe
 	url = https://github.com/google/oboe
 	branch = 1.3-stable
-[submodule "app/libraries/vkhpp"]
-	path = app/libraries/vkhpp
-	url = https://github.com/skyline-emu/vkhpp
 [submodule "app/libraries/lz4"]
 	path = app/libraries/lz4
 	url = https://github.com/lz4/lz4.git
@@ -25,3 +22,6 @@
 	path = app/libraries/perfetto
 	url = https://android.googlesource.com/platform/external/perfetto
 	branch = releases/v12.x
+[submodule "app/libraries/vkhpp"]
+	path = app/libraries/vkhpp
+	url = https://github.com/KhronosGroup/Vulkan-Hpp

@@ -225,6 +225,9 @@ In addition, try to `constexpr` as much as possible including constructors and f
 We should also mention that this isn't promoting the usage of `const`, it's use is actually discouraged out of references, in which case it is extremely encouraged. In addition, pointers are a general exception to this, using `const` with them isn't encouraged nor discouraged. Another exception are class functions, they can be made `const` if used from a `const` reference/pointer and don't
  modify any members but do not do this preemptively.
 
+### Vulkan.hpp Header Size
+The size of the header imported for [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp) is extremely large and exceeds the CLion default analysis limit, it is required to run for properly annotating any code which uses components from it. To override this limit, refer to this [article from JetBrains](https://www.jetbrains.com/help/objc/configuring-file-size-limit.html#file-size-limit) or navigate to Help -> Edit Custom Properties and add `idea.max.intellisense.filesize=20000` to set the maximum limit to 20MB which should be adequate for it.
+
 ## Kotlin
 ### Naming rules
 * Enumerator: `PascalCase` **(1)**

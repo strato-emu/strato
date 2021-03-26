@@ -25,10 +25,16 @@ add_subdirectory("libraries/oboe")
 include_directories("libraries/oboe/include")
 
 set(LZ4_BUILD_CLI OFF CACHE BOOL "Build LZ4 CLI" FORCE)
+set(LZ4_BUILD_LEGACY_LZ4C OFF CACHE BOOL "Build lz4c progam with legacy argument support" FORCE)
 add_subdirectory("libraries/lz4/build/cmake")
 include_directories("libraries/lz4/lib")
 
-include_directories("libraries/vkhpp/include")
+add_compile_definitions(VULKAN_HPP_NO_SPACESHIP_OPERATOR) # libcxx doesn't implement operator<=> for std::array which breaks this
+add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # We want to use designated initializers in Vulkan-Hpp
+add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1) # We use the dynamic loader rather than the static one
+include_directories("libraries/vkhpp")
+include_directories("libraries/vkhpp/Vulkan-Headers/include") # We use base Vulkan headers from this to ensure version parity with Vulkan-Hpp
+
 include_directories("libraries/pugixml/src") # We use PugiXML in header-only mode
 include_directories("libraries/frozen/include")
 
@@ -188,5 +194,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp
         )
 # target_precompile_headers(skyline PRIVATE ${source_DIR}/skyline/common.h) # PCH will currently break Intellisense
-target_link_libraries(skyline vulkan android perfetto fmt lz4_static tzcode oboe mbedtls::mbedcrypto)
+target_link_libraries(skyline android perfetto fmt lz4_static tzcode oboe mbedtls::mbedcrypto)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)

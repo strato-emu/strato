@@ -9,6 +9,7 @@
     <mapping directory="$PROJECT_DIR$/app/libraries/perfetto" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/libraries/pugixml" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/libraries/tzcode" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/libraries/vk-headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/libraries/vkhpp" vcs="Git" />
   </component>
 </project>

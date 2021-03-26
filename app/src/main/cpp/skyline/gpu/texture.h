@@ -4,7 +4,7 @@
 #pragma once
 
 #include <common.h>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace skyline {
     namespace service::hosbinder {
