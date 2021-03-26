@@ -29,5 +29,5 @@ class KeyPickerPreference @JvmOverloads constructor(context : Context, attrs : A
         }
     }
 
-    override fun onClick() = documentPicker.launch(null)
+    override fun onClick() = documentPicker.launch(arrayOf("*/*"))
 }
