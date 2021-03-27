@@ -70,7 +70,8 @@ namespace skyline {
             };
 
             /**
-             * @brief The linearity of a texture, refer to Chapter 20.1 of the Tegra X1 TRM for information
+             * @brief The layout of a texture in GPU memory
+             * @note Refer to Chapter 20.1 of the Tegra X1 TRM for information
              */
             enum class TileMode {
                 Linear, //!< This is a purely linear texture

@@ -19,8 +19,8 @@
 #include "skyline/input.h"
 #include "skyline/kernel/types/KProcess.h"
 
-skyline::u16 Fps;
-skyline::u32 FrameTime;
+skyline::i32 Fps;
+skyline::i32 FrameTime;
 std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
@@ -85,11 +85,11 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
-        logger->Error("An exception has occurred: {}", e.what());
+        logger->ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
     } catch (const skyline::signal::SignalException &e) {
-        logger->Error("An exception has occurred: {}", e.what());
+        logger->ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
     } catch (...) {
-        logger->Error("An unknown exception has occurred");
+        logger->ErrorNoPrefix("An unknown uncaught exception has occurred");
     }
 
     perfetto::TrackEvent::Flush();

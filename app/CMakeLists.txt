@@ -31,7 +31,7 @@ include_directories("libraries/lz4/lib")
 
 add_compile_definitions(VULKAN_HPP_NO_SPACESHIP_OPERATOR) # libcxx doesn't implement operator<=> for std::array which breaks this
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # We want to use designated initializers in Vulkan-Hpp
-add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1) # We use the dynamic loader rather than the static one
+add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1) # We use the dynamic loader rather than the static one to avoid an additional level of indirection
 include_directories("libraries/vkhpp")
 include_directories("libraries/vkhpp/Vulkan-Headers/include") # We use base Vulkan headers from this to ensure version parity with Vulkan-Hpp
 
@@ -72,6 +72,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/track.cpp
         ${source_DIR}/skyline/audio/resampler.cpp
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
+        ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/soc/gmmu.cpp

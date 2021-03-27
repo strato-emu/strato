@@ -71,9 +71,42 @@ android {
         }
     }
 
+    /* Vulkan Validation Layers */
+    sourceSets {
+        debug {
+            main {
+                jniLibs {
+                    srcDir "$buildDir/generated/vulkan_layers"
+                }
+            }
+        }
+    }
+
+    /* Android Assets */
     aaptOptions {
         ignoreAssetsPattern "*.md"
     }
+}
+
+/**
+ * We just want VK_LAYER_KHRONOS_validation in the APK while NDK contains several other legacy layers
+ * This task copies shared objects associated with that layer into a folder from where JNI can use it
+ */
+task setupValidationLayer(type: Copy) {
+    doFirst {
+        def folder = new File("$buildDir/generated/vulkan_layers")
+        if (!folder.exists()) {
+            folder.mkdirs() // We need to recursively create all directories as the copy requires the output directory to exist
+        }
+    }
+    from("${android.ndkDirectory}/sources/third_party/vulkan/src/build-android/jniLibs") {
+        include "*/libVkLayer_khronos_validation.so"
+    }
+    into "$buildDir/generated/vulkan_layers"
+}
+
+afterEvaluate {
+    preDebugBuild.dependsOn setupValidationLayer
 }
 
 dependencies {

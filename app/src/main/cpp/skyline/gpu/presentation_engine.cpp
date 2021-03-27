@@ -5,8 +5,8 @@
 #include "jvm.h"
 #include "presentation_engine.h"
 
-extern skyline::u16 Fps;
-extern skyline::u32 FrameTime;
+extern skyline::i32 Fps;
+extern skyline::i32 FrameTime;
 
 namespace skyline::gpu {
     PresentationEngine::PresentationEngine(const DeviceState &state) : state(state), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()) {
