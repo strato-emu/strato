@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <jvm.h>
 #include "gpu.h"
 
 namespace skyline::gpu {
     vk::raii::Instance GPU::CreateInstance(const DeviceState &state, const vk::raii::Context &context) {
         vk::ApplicationInfo applicationInfo{
             .pApplicationName = "Skyline",
-            .applicationVersion = VK_MAKE_VERSION('S', 'K', 'Y'), // "SKY" magic as the application version
-            .pEngineName = "GPU",
-            .engineVersion = VK_MAKE_VERSION('G', 'P', 'U'), // "GPU" magic as engine version
+            .applicationVersion = state.jvm->GetVersionCode(), // Get the application version from JNI
+            .pEngineName = "FTX1", // "Fast Tegra X1"
             .apiVersion = VK_API_VERSION_1_1,
         };
 
         #ifdef NDEBUG
-        std::array<const char *, 0> requiredLayers{};
+        constexpr std::array<const char *, 0> requiredLayers{};
         #else
-        std::array<const char *, 1> requiredLayers{
+        constexpr std::array<const char *, 1> requiredLayers{
             "VK_LAYER_KHRONOS_validation"
         };
         #endif
@@ -25,7 +25,7 @@ namespace skyline::gpu {
         if (state.logger->configLevel >= Logger::LogLevel::Debug) {
             std::string layers;
             for (const auto &instanceLayer : instanceLayers)
-                layers += fmt::format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_VERSION_MAJOR(instanceLayer.specVersion), VK_VERSION_MINOR(instanceLayer.specVersion), VK_VERSION_PATCH(instanceLayer.specVersion), VK_VERSION_MAJOR(instanceLayer.implementationVersion), VK_VERSION_MINOR(instanceLayer.implementationVersion), VK_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
+                layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_VERSION_MAJOR(instanceLayer.specVersion), VK_VERSION_MINOR(instanceLayer.specVersion), VK_VERSION_PATCH(instanceLayer.specVersion), VK_VERSION_MAJOR(instanceLayer.implementationVersion), VK_VERSION_MINOR(instanceLayer.implementationVersion), VK_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
             state.logger->Debug("Vulkan Layers:{}", layers);
         }
 
@@ -40,9 +40,9 @@ namespace skyline::gpu {
         }
 
         #ifdef NDEBUG
-        std::array<const char*, 0> requiredInstanceExtensions{};
+        constexpr std::array<const char*, 0> requiredInstanceExtensions{};
         #else
-        std::array<const char *, 1> requiredInstanceExtensions{
+        constexpr std::array<const char *, 1> requiredInstanceExtensions{
             VK_EXT_DEBUG_REPORT_EXTENSION_NAME
         };
         #endif
@@ -51,7 +51,7 @@ namespace skyline::gpu {
         if (state.logger->configLevel >= Logger::LogLevel::Debug) {
             std::string extensions;
             for (const auto &instanceExtension : instanceExtensions)
-                extensions += fmt::format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_VERSION_MAJOR(instanceExtension.specVersion), VK_VERSION_MINOR(instanceExtension.specVersion), VK_VERSION_PATCH(instanceExtension.specVersion));
+                extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_VERSION_MAJOR(instanceExtension.specVersion), VK_VERSION_MINOR(instanceExtension.specVersion), VK_VERSION_PATCH(instanceExtension.specVersion));
             state.logger->Debug("Vulkan Instance Extensions:{}", extensions);
         }
 
@@ -82,8 +82,6 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : presentation(state), instance(CreateInstance(state, context)), debugReportCallback(CreateDebugReportCallback(state, instance)) {}
-
     VkBool32 GPU::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message, Logger *logger) {
         constexpr std::array<Logger::LogLevel, 5> severityLookup{
             Logger::LogLevel::Info,  // VK_DEBUG_REPORT_INFORMATION_BIT_EXT
@@ -95,4 +93,63 @@ namespace skyline::gpu {
         logger->Write(severityLookup.at(std::countr_zero(static_cast<u32>(flags))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
         return VK_FALSE;
     }
+
+    vk::raii::PhysicalDevice GPU::CreatePhysicalDevice(const DeviceState &state, const vk::raii::Instance &instance) {
+        return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
+    }
+
+    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice) {
+        auto properties{physicalDevice.getProperties2().properties}; // We should check for required properties here, if/when we have them
+
+        // auto features{physicalDevice.getFeatures2().features}; // Same as above
+
+        constexpr std::array<const char *, 1> requiredDeviceExtensions{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        };
+        auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
+        for (const auto &requiredExtension : requiredDeviceExtensions) {
+            if (![&] {
+                for (const auto &deviceExtension : deviceExtensions)
+                    if (std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension))
+                        return true;
+                return false;
+            }())
+                throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension);
+        }
+
+        auto queueFamilies{physicalDevice.getQueueFamilyProperties2()};
+        if (auto family{queueFamilies.front().queueFamilyProperties}; !(family.queueFlags & vk::QueueFlagBits::eGraphics && family.queueFlags & vk::QueueFlagBits::eCompute))
+            // We only check the first queue family as essentially all mobile GPUs only have a single queue family which supports all operations
+            throw exception("The first queue family doesn't support both eGraphics and eCompute workloads");
+
+        float queuePriority{1.f}; //!< As we only have one queue, it's priority is set to the maximum of 1.0
+        vk::DeviceQueueCreateInfo queue{
+            .queueFamilyIndex = 0,
+            .queueCount = 1,
+            .pQueuePriorities = &queuePriority,
+        };
+
+        if (state.logger->configLevel >= Logger::LogLevel::Error) {
+            std::string extensionString;
+            for (const auto &extension : deviceExtensions)
+                extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
+
+            std::string queueString;
+            for (const auto &queueFamily : queueFamilies) {
+                auto &family{queueFamily.queueFamilyProperties};
+                queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{}, MIG({},{},{})", family.queueCount, family.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', family.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', family.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', family.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', family.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', family.timestampValidBits, family.minImageTransferGranularity.width, family.minImageTransferGranularity.height, family.minImageTransferGranularity.depth);
+            }
+
+            state.logger->Error("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
+        }
+
+        return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
+            .queueCreateInfoCount = 1,
+            .pQueueCreateInfos = &queue,
+            .enabledExtensionCount = requiredDeviceExtensions.size(),
+            .ppEnabledExtensionNames = requiredDeviceExtensions.data(),
+        });
+    }
+
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice)), vkQueue(vkDevice, 0, 0), presentation(state) {}
 }

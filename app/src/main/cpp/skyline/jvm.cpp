@@ -46,7 +46,7 @@ namespace skyline {
 
     thread_local inline JniEnvironment env;
 
-    JvmManager::JvmManager(JNIEnv *environ, jobject instance) : instance(environ->NewGlobalRef(instance)), instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))), initializeControllersId(environ->GetMethodID(instanceClass, "initializeControllers", "()V")), vibrateDeviceId(environ->GetMethodID(instanceClass, "vibrateDevice", "(I[J[I)V")), clearVibrationDeviceId(environ->GetMethodID(instanceClass, "clearVibrationDevice", "(I)V")) {
+    JvmManager::JvmManager(JNIEnv *environ, jobject instance) : instance(environ->NewGlobalRef(instance)), instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))), initializeControllersId(environ->GetMethodID(instanceClass, "initializeControllers", "()V")), vibrateDeviceId(environ->GetMethodID(instanceClass, "vibrateDevice", "(I[J[I)V")), clearVibrationDeviceId(environ->GetMethodID(instanceClass, "clearVibrationDevice", "(I)V")), getVersionCodeId(environ->GetMethodID(instanceClass, "getVersionCode", "()I")) {
         env.Initialize(environ);
     }
 
@@ -89,5 +89,9 @@ namespace skyline {
 
     void JvmManager::ClearVibrationDevice(jint index) {
         env->CallVoidMethod(instance, clearVibrationDeviceId, index);
+    }
+
+    u32 JvmManager::GetVersionCode() {
+        return env->CallIntMethod(instance, getVersionCodeId);
     }
 }

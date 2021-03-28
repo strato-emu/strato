@@ -95,9 +95,16 @@ namespace skyline {
          */
         void ClearVibrationDevice(jint index);
 
+        /**
+         * @brief A call to EmulationActivity.getVersionCode in Kotlin
+         * @return A version code in Vulkan's format with 14-bit patch + 10-bit major and minor components
+         */
+        u32 GetVersionCode();
+
       private:
         jmethodID initializeControllersId;
         jmethodID vibrateDeviceId;
         jmethodID clearVibrationDeviceId;
+        jmethodID getVersionCodeId;
     };
 }

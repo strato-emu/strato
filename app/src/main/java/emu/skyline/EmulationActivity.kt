@@ -454,4 +454,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     fun clearVibrationDevice(index : Int) {
         vibrators[index]?.cancel()
     }
+
+    /**
+     * @return A version code in Vulkan's format with 14-bit patch + 10-bit major and minor components
+     */
+    @ExperimentalUnsignedTypes
+    @Suppress("unused")
+    fun getVersionCode() : Int {
+        val (major, minor, patch) = BuildConfig.VERSION_NAME.split('.').map { it.toUInt() }
+        return ((major shl 22) or (minor shl 12) or (patch)).toInt()
+    }
 }
