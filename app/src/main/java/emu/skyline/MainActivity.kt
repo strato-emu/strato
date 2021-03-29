@@ -41,6 +41,7 @@ import emu.skyline.loader.RomFormat
 import emu.skyline.utils.Settings
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -111,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         binding.swipeRefreshLayout.apply {
             setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.BLACK) })
             setColorSchemeColors(obtainStyledAttributes(intArrayOf(R.attr.colorAccent)).use { it.getColor(0, Color.BLACK) })
-            post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
+            post { setDistanceToTriggerSync((binding.swipeRefreshLayout.height / 2.5f).roundToInt()) }
             setOnRefreshListener { loadRoms(false) }
         }
 

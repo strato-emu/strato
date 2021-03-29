@@ -28,6 +28,10 @@ android {
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
     }
+    kotlinOptions {
+        jvmTarget = javaVersion.toString()
+    }
+
     buildTypes {
         release {
             debuggable true
@@ -48,6 +52,10 @@ android {
             shrinkResources false
         }
     }
+    buildFeatures {
+        prefab true
+        viewBinding true
+    }
 
     /* Linting */
     lintOptions {
@@ -56,7 +64,6 @@ android {
 
     /* NDK */
     ndkVersion '22.0.7026061'
-
     externalNativeBuild {
         cmake {
             version '3.18.1+'
@@ -66,14 +73,6 @@ android {
 
     aaptOptions {
         ignoreAssetsPattern "*.md"
-    }
-
-    kotlinOptions {
-        jvmTarget = javaVersion.toString()
-    }
-    buildFeatures {
-        viewBinding true
-        prefab true
     }
 }
 
