@@ -16,7 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.adapter.GenericAdapter
 import emu.skyline.adapter.GenericListItem
-import emu.skyline.adapter.HeaderViewItem
 import emu.skyline.adapter.controller.*
 import emu.skyline.databinding.ControllerActivityBinding
 import emu.skyline.input.dialog.ButtonDialog
@@ -38,9 +37,6 @@ class ControllerActivity : AppCompatActivity() {
      */
     val id by lazy { intent.getIntExtra("index", 0) }
 
-    /**
-     * The adapter used by [controller_list] to hold all the items
-     */
     private val adapter = GenericAdapter()
 
     /**
@@ -74,7 +70,7 @@ class ControllerActivity : AppCompatActivity() {
                 return
 
             if (id == 0) {
-                items.add(HeaderViewItem(getString(R.string.osc)))
+                items.add(ControllerHeaderItem(getString(R.string.osc)))
 
                 val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
                 items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(settings.onScreenControl), settings.onScreenControl) { item, position ->
@@ -98,7 +94,7 @@ class ControllerActivity : AppCompatActivity() {
             for (item in GeneralType.values()) {
                 if (item.compatibleControllers == null || item.compatibleControllers.contains(controller.type)) {
                     if (!wroteTitle) {
-                        items.add(HeaderViewItem(getString(R.string.general)))
+                        items.add(ControllerHeaderItem(getString(R.string.general)))
                         wroteTitle = true
                     }
 
@@ -110,7 +106,7 @@ class ControllerActivity : AppCompatActivity() {
 
             for (stick in controller.type.sticks) {
                 if (!wroteTitle) {
-                    items.add(HeaderViewItem(getString(R.string.sticks)))
+                    items.add(ControllerHeaderItem(getString(R.string.sticks)))
                     wroteTitle = true
                 }
 
@@ -134,7 +130,7 @@ class ControllerActivity : AppCompatActivity() {
 
                 for (button in controller.type.buttons.filter { it in buttonArray.second }) {
                     if (!wroteTitle) {
-                        items.add(HeaderViewItem(getString(buttonArray.first)))
+                        items.add(ControllerHeaderItem(getString(buttonArray.first)))
                         wroteTitle = true
                     }
 
@@ -149,7 +145,7 @@ class ControllerActivity : AppCompatActivity() {
 
             for (button in controller.type.buttons.filterNot { item -> buttonArrays.any { item in it.second } }.plus(ButtonId.Menu)) {
                 if (!wroteTitle) {
-                    items.add(HeaderViewItem(getString(R.string.misc_buttons)))
+                    items.add(ControllerHeaderItem(getString(R.string.misc_buttons)))
                     wroteTitle = true
                 }
 
@@ -209,29 +205,29 @@ class ControllerActivity : AppCompatActivity() {
         val typeNames = types.map { getString(it.stringRes) }.toTypedArray()
 
         MaterialAlertDialogBuilder(this)
-                .setTitle(item.content)
-                .setSingleChoiceItems(typeNames, types.indexOf(controller.type)) { dialog, typeIndex ->
-                    val selectedType = types[typeIndex]
-                    if (controller.type != selectedType) {
-                        if (controller is JoyConLeftController)
-                            controller.partnerId?.let { (inputManager.controllers[it] as JoyConRightController).partnerId = null }
-                        else if (controller is JoyConRightController)
-                            controller.partnerId?.let { (inputManager.controllers[it] as JoyConLeftController).partnerId = null }
+            .setTitle(item.content)
+            .setSingleChoiceItems(typeNames, types.indexOf(controller.type)) { dialog, typeIndex ->
+                val selectedType = types[typeIndex]
+                if (controller.type != selectedType) {
+                    if (controller is JoyConLeftController)
+                        controller.partnerId?.let { (inputManager.controllers[it] as JoyConRightController).partnerId = null }
+                    else if (controller is JoyConRightController)
+                        controller.partnerId?.let { (inputManager.controllers[it] as JoyConLeftController).partnerId = null }
 
-                        inputManager.controllers[id] = when (selectedType) {
-                            ControllerType.None -> Controller(id, ControllerType.None)
-                            ControllerType.HandheldProController -> HandheldController(id)
-                            ControllerType.ProController -> ProController(id)
-                            ControllerType.JoyConLeft -> JoyConLeftController(id)
-                            ControllerType.JoyConRight -> JoyConRightController(id)
-                        }
-
-                        update()
+                    inputManager.controllers[id] = when (selectedType) {
+                        ControllerType.None -> Controller(id, ControllerType.None)
+                        ControllerType.HandheldProController -> HandheldController(id)
+                        ControllerType.ProController -> ProController(id)
+                        ControllerType.JoyConLeft -> JoyConLeftController(id)
+                        ControllerType.JoyConRight -> JoyConRightController(id)
                     }
 
-                    dialog.dismiss()
+                    update()
                 }
-                .show()
+
+                dialog.dismiss()
+            }
+            .show()
         Unit
     }
 
@@ -248,20 +244,20 @@ class ControllerActivity : AppCompatActivity() {
                 } ?: 0
 
                 MaterialAlertDialogBuilder(this)
-                        .setTitle(item.content)
-                        .setSingleChoiceItems(rJoyConNames, partnerNameIndex) { dialog, index ->
-                            (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
+                    .setTitle(item.content)
+                    .setSingleChoiceItems(rJoyConNames, partnerNameIndex) { dialog, index ->
+                        (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = null
 
-                            controller.partnerId = if (index == 0) null else rJoyCons[index - 1].id
+                        controller.partnerId = if (index == 0) null else rJoyCons[index - 1].id
 
-                            if (controller.partnerId != null)
-                                (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
+                        if (controller.partnerId != null)
+                            (inputManager.controllers[controller.partnerId ?: -1] as JoyConRightController?)?.partnerId = controller.id
 
-                            item.update()
+                        item.update()
 
-                            dialog.dismiss()
-                        }
-                        .show()
+                        dialog.dismiss()
+                    }
+                    .show()
             }
 
             GeneralType.RumbleDevice -> {

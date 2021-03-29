@@ -282,7 +282,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadRoms(loadFromFile : Boolean) {
-        viewModel.loadRoms(this, loadFromFile, Uri.parse(settings.searchLocation))
+        viewModel.loadRoms(loadFromFile, Uri.parse(settings.searchLocation))
         settings.refreshRequired = false
     }
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:layout_marginBottom="16dp"
+    android:paddingStart="72dp"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+    android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+    android:textColor="?attr/colorAccent"
+    tools:text="Header" />

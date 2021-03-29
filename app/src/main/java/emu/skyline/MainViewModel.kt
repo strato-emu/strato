@@ -1,13 +1,12 @@
 package emu.skyline
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.RomFormat
 import emu.skyline.utils.fromFile
@@ -26,7 +25,7 @@ sealed class MainState {
 }
 
 @HiltViewModel
-class MainViewModel @Inject constructor(private val romProvider : RomProvider) : ViewModel() {
+class MainViewModel @Inject constructor(@ApplicationContext context : Context, private val romProvider : RomProvider) : AndroidViewModel(context as Application) {
     companion object {
         private val TAG = MainViewModel::class.java.simpleName
     }
@@ -44,11 +43,11 @@ class MainViewModel @Inject constructor(private val romProvider : RomProvider) :
      *
      * @param loadFromFile If this is false then trying to load cached adapter data is skipped entirely
      */
-    fun loadRoms(context : Context, loadFromFile : Boolean, searchLocation : Uri) {
+    fun loadRoms(loadFromFile : Boolean, searchLocation : Uri) {
         if (state == MainState.Loading) return
         state = MainState.Loading
 
-        val romsFile = File(context.filesDir.canonicalPath + "/roms.bin")
+        val romsFile = File(getApplication<SkylineApplication>().filesDir.canonicalPath + "/roms.bin")
 
         viewModelScope.launch(Dispatchers.IO) {
             if (loadFromFile && romsFile.exists()) {
