@@ -98,10 +98,10 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice) {
-        auto properties{physicalDevice.getProperties2().properties}; // We should check for required properties here, if/when we have them
+    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& vkQueueFamilyIndex) {
+        auto properties{physicalDevice.getProperties()}; // We should check for required properties here, if/when we have them
 
-        // auto features{physicalDevice.getFeatures2().features}; // Same as above
+        // auto features{physicalDevice.getFeatures()}; // Same as above
 
         constexpr std::array<const char *, 1> requiredDeviceExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -117,17 +117,24 @@ namespace skyline::gpu {
                 throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension);
         }
 
-        auto queueFamilies{physicalDevice.getQueueFamilyProperties2()};
-        if (auto family{queueFamilies.front().queueFamilyProperties}; !(family.queueFlags & vk::QueueFlagBits::eGraphics && family.queueFlags & vk::QueueFlagBits::eCompute))
-            // We only check the first queue family as essentially all mobile GPUs only have a single queue family which supports all operations
-            throw exception("The first queue family doesn't support both eGraphics and eCompute workloads");
+        auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
+        float queuePriority{1.f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
+        vk::DeviceQueueCreateInfo queue{[&] {
+            typeof(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
+            for (const auto &queueFamily : queueFamilies) {
+                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+                    vkQueueFamilyIndex = index;
+                    return vk::DeviceQueueCreateInfo{
+                        .queueFamilyIndex = index,
+                        .queueCount = 1,
+                        .pQueuePriorities = &queuePriority,
+                    };
+                }
+                index++;
+            }
+            throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
+        }()};
 
-        float queuePriority{1.f}; //!< As we only have one queue, it's priority is set to the maximum of 1.0
-        vk::DeviceQueueCreateInfo queue{
-            .queueFamilyIndex = 0,
-            .queueCount = 1,
-            .pQueuePriorities = &queuePriority,
-        };
 
         if (state.logger->configLevel >= Logger::LogLevel::Error) {
             std::string extensionString;
@@ -135,10 +142,9 @@ namespace skyline::gpu {
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
-            for (const auto &queueFamily : queueFamilies) {
-                auto &family{queueFamily.queueFamilyProperties};
-                queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{}, MIG({},{},{})", family.queueCount, family.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', family.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', family.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', family.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', family.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', family.timestampValidBits, family.minImageTransferGranularity.width, family.minImageTransferGranularity.height, family.minImageTransferGranularity.depth);
-            }
+            typeof(vk::DeviceQueueCreateInfo::queueFamilyIndex) familyIndex{};
+            for (const auto &queueFamily : queueFamilies)
+                queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
             state.logger->Error("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
         }
@@ -151,5 +157,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice)), vkQueue(vkDevice, 0, 0), presentation(state) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), presentation(state) {}
 }

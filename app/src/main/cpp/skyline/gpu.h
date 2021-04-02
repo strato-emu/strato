@@ -19,13 +19,14 @@ namespace skyline::gpu {
 
         static vk::raii::PhysicalDevice CreatePhysicalDevice(const DeviceState &state, const vk::raii::Instance &instance);
 
-        static vk::raii::Device CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice);
+        static vk::raii::Device CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration);
 
       public:
         vk::raii::Context vkContext; //!< An overarching context for Vulkan with
         vk::raii::Instance vkInstance; //!< An instance of Vulkan with all application context
         vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into DebugCallback
         vk::raii::PhysicalDevice vkPhysicalDevice; //!< The underlying physical Vulkan device from which we derieve our logical device
+        typeof(vk::DeviceQueueCreateInfo::queueCount) vkQueueFamilyIndex{}; //!< The index of the family the queue is from
         vk::raii::Device vkDevice; //!< The logical Vulkan device which we want to render using
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations
 
