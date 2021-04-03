@@ -30,10 +30,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cxx-
 
-      - name: Setup Environment for Gradle & Ninja Build
+      - name: Setup Environment for Gradle & Ninja Build & CMake
         run: |
           chmod +x gradlew
           sudo apt-get install -y ninja-build
+          echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.18.1" --channel=3
 
       - name: Android Lint
         run: ./gradlew --stacktrace lint
@@ -45,7 +46,7 @@ jobs:
           path: app/build/reports/lint-results.html
 
       - name: Android Assemble
-        run: ./gradlew assemble
+        run: ./gradlew --stacktrace assemble
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v2
