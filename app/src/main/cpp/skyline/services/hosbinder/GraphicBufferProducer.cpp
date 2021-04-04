@@ -4,6 +4,7 @@
 #include <android/hardware_buffer.h>
 #include <gpu.h>
 #include <gpu/format.h>
+#include <common/settings.h>
 #include <services/nvdrv/driver.h>
 #include <services/nvdrv/devices/nvmap.h>
 #include <services/common/fence.h>
@@ -22,7 +23,7 @@ namespace skyline::service::hosbinder {
         out.Push<u32>(0);
         out.Push(queue.at(slot)->gbpBuffer);
 
-        state.logger->Debug("Slot: {}", slot, sizeof(GbpBuffer));
+        state.logger->Debug("#{}", slot, sizeof(GbpBuffer));
     }
 
     void GraphicBufferProducer::DequeueBuffer(Parcel &in, Parcel &out) {
@@ -32,21 +33,16 @@ namespace skyline::service::hosbinder {
         u32 format{in.Pop<u32>()};
         u32 usage{in.Pop<u32>()};
 
-        std::optional<u32> slot{std::nullopt};
-        while (!slot) {
-            for (auto &buffer : queue) {
-                if (buffer.second->status == BufferStatus::Free && (format == 0 || buffer.second->gbpBuffer.format == format) && buffer.second->gbpBuffer.width == width && buffer.second->gbpBuffer.height == height && (buffer.second->gbpBuffer.usage & usage) == usage) {
-                    slot = buffer.first;
-                    buffer.second->status = BufferStatus::Dequeued;
-                    break;
-                }
-            }
+        u32 slot{state.gpu->presentation.GetFreeTexture()};
+        auto &buffer{queue.at(slot)};
+        if ((format != 0 && buffer->gbpBuffer.format != format) || buffer->gbpBuffer.width != width || buffer->gbpBuffer.height != height || (buffer->gbpBuffer.usage & usage) != usage) {
+            throw exception("Buffer which has been dequeued isn't compatible with the supplied parameters: {}x{}={}x{} F{}={} U{}={}", width, height, buffer->gbpBuffer.width, buffer->gbpBuffer.height, format, buffer->gbpBuffer.format, usage, buffer->gbpBuffer.usage);
         }
 
-        out.Push(*slot);
+        out.Push(slot);
         out.Push(std::array<u32, 13>{1, 0x24}); // Unknown
 
-        state.logger->Debug("Width: {}, Height: {}, Format: {}, Usage: {}, Slot: {}", width, height, format, usage, *slot);
+        state.logger->Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}", slot, width, height, format, usage);
     }
 
     void GraphicBufferProducer::QueueBuffer(Parcel &in, Parcel &out) {
@@ -61,14 +57,11 @@ namespace skyline::service::hosbinder {
             u64 _unk0_;
             u32 swapInterval;
             std::array<nvdrv::Fence, 4> fence;
-        } &data = in.Pop<Data>();
+        } &data{in.Pop<Data>()};
 
         auto buffer{queue.at(data.slot)};
-        buffer->status = BufferStatus::Queued;
-
         buffer->texture->SynchronizeHost();
         state.gpu->presentation.Present(buffer->texture);
-        queue.at(data.slot)->status = BufferStatus::Free;
         state.gpu->presentation.bufferEvent->Signal();
 
         struct {
@@ -81,16 +74,17 @@ namespace skyline::service::hosbinder {
         };
         out.Push(output);
 
-        state.logger->Debug("Timestamp: {}, Auto Timestamp: {}, Crop: [T: {}, B: {}, L: {}, R: {}], Scaling Mode: {}, Transform: {}, Sticky Transform: {}, Swap Interval: {}, Slot: {}", data.timestamp, data.autoTimestamp, data.crop.top, data.crop.bottom, data.crop.left, data.crop.right, data.scalingMode, data.transform, data.stickyTransform, data.swapInterval, data.slot);
+        state.logger->Debug("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}", data.slot, data.autoTimestamp ? "Auto " : "", data.timestamp, data.crop.top, data.crop.bottom, data.crop.left, data.crop.right, data.scalingMode, data.transform, data.stickyTransform, data.swapInterval);
     }
 
     void GraphicBufferProducer::CancelBuffer(Parcel &in) {
         u32 slot{in.Pop<u32>()};
         //auto fences{in.Pop<std::array<nvdrv::Fence, 4>>()};
 
-        queue.at(slot)->status = BufferStatus::Free;
+        // We cannot force the host GPU API to give us back a particular buffer due to how the swapchain works
+        // As a result of this, we just assume it'll be presented and dequeued at some point and not cancel the buffer here
 
-        state.logger->Debug("Slot: {}", slot);
+        state.logger->Debug("#{}", slot);
     }
 
     void GraphicBufferProducer::Connect(Parcel &out) {
@@ -102,7 +96,7 @@ namespace skyline::service::hosbinder {
             u32 status{}; //!< The status of the buffer queue
         } data{};
         out.Push(data);
-        state.logger->Debug("Connect");
+        state.logger->Debug("{}x{}", data.width, data.height);
     }
 
     void GraphicBufferProducer::SetPreallocatedBuffer(Parcel &in) {
@@ -149,10 +143,11 @@ namespace skyline::service::hosbinder {
 
         auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->ptr + gbpBuffer.offset, gpu::texture::Dimensions(gbpBuffer.width, gbpBuffer.height), format, gpu::texture::TileMode::Block, gpu::texture::TileConfig{.surfaceWidth = static_cast<u16>(gbpBuffer.stride), .blockHeight = static_cast<u8>(1U << gbpBuffer.blockHeightLog2), .blockDepth = 1})};
 
-        queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, texture->InitializeTexture());
+        queue.resize(std::max(data.slot + 1, static_cast<u32>(queue.size())));
+        queue[data.slot] = std::make_shared<Buffer>(gbpBuffer, state.gpu->presentation.CreatePresentationTexture(texture, data.slot));
         state.gpu->presentation.bufferEvent->Signal();
 
-        state.logger->Debug("Slot: {}, Magic: 0x{:X}, Width: {}, Height: {}, Stride: {}, Format: {}, Usage: {}, Index: {}, ID: {}, Handle: {}, Offset: 0x{:X}, Block Height: {}, Size: 0x{:X}", data.slot, gbpBuffer.magic, gbpBuffer.width, gbpBuffer.height, gbpBuffer.stride, gbpBuffer.format, gbpBuffer.usage, gbpBuffer.index, gbpBuffer.nvmapId, gbpBuffer.nvmapHandle, gbpBuffer.offset, (1U << gbpBuffer.blockHeightLog2), gbpBuffer.size);
+        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Block Height: {}, Usage: 0x{:X}, Index: {}, NvMap: {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", data.slot, gbpBuffer.width, gbpBuffer.stride, gbpBuffer.height, gbpBuffer.format, (1U << gbpBuffer.blockHeightLog2), gbpBuffer.usage, gbpBuffer.index, gbpBuffer.nvmapHandle ? "Handle" : "ID", gbpBuffer.nvmapHandle ? gbpBuffer.nvmapHandle : gbpBuffer.nvmapId, gbpBuffer.offset, gbpBuffer.offset + gbpBuffer.size);
     }
 
     void GraphicBufferProducer::OnTransact(TransactionCode code, Parcel &in, Parcel &out) {

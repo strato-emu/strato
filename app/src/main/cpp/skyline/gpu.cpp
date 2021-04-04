@@ -40,10 +40,15 @@ namespace skyline::gpu {
         }
 
         #ifdef NDEBUG
-        constexpr std::array<const char*, 0> requiredInstanceExtensions{};
+        constexpr std::array<const char*, 2> requiredInstanceExtensions{
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+        };
         #else
-        constexpr std::array<const char *, 1> requiredInstanceExtensions{
-            VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+        constexpr std::array<const char *, 3> requiredInstanceExtensions{
+            VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
         };
         #endif
 
@@ -98,7 +103,7 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& vkQueueFamilyIndex) {
+    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex) {
         auto properties{physicalDevice.getProperties()}; // We should check for required properties here, if/when we have them
 
         // auto features{physicalDevice.getFeatures()}; // Same as above
@@ -135,8 +140,7 @@ namespace skyline::gpu {
             throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
         }()};
 
-
-        if (state.logger->configLevel >= Logger::LogLevel::Error) {
+        if (state.logger->configLevel >= Logger::LogLevel::Debug) {
             std::string extensionString;
             for (const auto &extension : deviceExtensions)
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
@@ -146,7 +150,7 @@ namespace skyline::gpu {
             for (const auto &queueFamily : queueFamilies)
                 queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
-            state.logger->Error("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
+            state.logger->Debug("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
         }
 
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
@@ -157,5 +161,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), presentation(state) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), presentation(state, *this) {}
 }

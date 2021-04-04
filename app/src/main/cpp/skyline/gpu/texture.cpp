@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <gpu.h>
 #include <common/trace.h>
-#include <android/native_window.h>
 #include <kernel/types/KProcess.h>
-#include <unistd.h>
 #include "texture.h"
 
 namespace skyline::gpu {
     GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(std::optional<texture::Format> pFormat, std::optional<texture::Dimensions> pDimensions, texture::Swizzle swizzle) {
+    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::raii::Image &&backing, std::optional<texture::Format> pFormat, std::optional<texture::Dimensions> pDimensions, texture::Swizzle swizzle) {
         if (!host.expired())
             throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(state, shared_from_this(), pDimensions ? *pDimensions : dimensions, pFormat ? *pFormat : format, swizzle)};
+        auto sharedHost{std::make_shared<Texture>(std::move(backing), shared_from_this(), pDimensions ? *pDimensions : dimensions, pFormat ? *pFormat : format, swizzle)};
         host = sharedHost;
         return sharedHost;
     }
 
-    Texture::Texture(const DeviceState &state, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : state(state), guest(std::move(guest)), dimensions(dimensions), format(format), swizzle(swizzle) {
+    Texture::Texture(vk::raii::Image&& backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle) : backing(std::move(backing)), guest(std::move(guest)), dimensions(dimensions), format(format), swizzle(swizzle) {
         SynchronizeHost();
     }
 
@@ -26,8 +25,8 @@ namespace skyline::gpu {
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
         auto pointer{guest->pointer};
         auto size{format.GetSize(dimensions)};
-        backing.resize(size);
-        auto output{backing.data()};
+        u8* output{nullptr};
+        return;
 
         if (guest->tileMode == texture::TileMode::Block) {
             // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32

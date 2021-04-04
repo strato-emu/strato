@@ -35,18 +35,11 @@ namespace skyline::service::hosbinder {
         u32 _pad5_[58];
     };
 
-    enum class BufferStatus {
-        Free, //!< The buffer is free
-        Dequeued, //!< The buffer has been dequeued from the display
-        Queued, //!< The buffer is queued to be displayed
-    };
-
     /**
      * @brief A wrapper over GbpBuffer which contains additional state that we track for a buffer
      */
     class Buffer {
       public:
-        BufferStatus status{BufferStatus::Free};
         std::shared_ptr<gpu::Texture> texture;
         GbpBuffer gbpBuffer;
 
@@ -78,7 +71,7 @@ namespace skyline::service::hosbinder {
     class GraphicBufferProducer {
       private:
         const DeviceState &state;
-        std::unordered_map<u32, std::shared_ptr<Buffer>> queue; //!< A vector of shared pointers to all the queued buffers
+        std::vector<std::shared_ptr<Buffer>> queue; //!< A vector of shared pointers to all the queued buffers
 
         /**
          * @brief Request for the GbpBuffer of a buffer
