@@ -12,8 +12,8 @@
 
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:contentDescription="@string/icon"
         android:focusable="false"
         app:layout_constraintStart_toStartOf="parent"

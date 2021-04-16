@@ -47,11 +47,11 @@ class LogBinding(parent : ViewGroup) : ILogBinding {
 data class LogViewItem(private val compact : Boolean, private val message : String, private val level : String) : GenericListItem<ILogBinding>() {
     override fun getViewBindingFactory() = LogBindingFactory(compact)
 
-    override fun bind(holder : GenericViewHolder<ILogBinding>, position : Int) {
-        holder.binding.textTitle.text = message
-        holder.binding.textSubTitle?.text = level
+    override fun bind(binding : ILogBinding, position : Int) {
+        binding.textTitle.text = message
+        binding.textSubTitle?.text = level
 
-        holder.binding.root.setOnClickListener {
+        binding.root.setOnClickListener {
             it.context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Log Message", "$message ($level)"))
             Toast.makeText(it.context, "Copied to clipboard", Toast.LENGTH_LONG).show()
         }

@@ -79,9 +79,9 @@
                     android:id="@+id/title_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
+                    android:layout_marginStart="16dp"
                     android:layout_marginTop="16dp"
-                    android:layout_marginEnd="18dp"
+                    android:layout_marginEnd="16dp"
                     android:fontFamily="sans-serif-medium"
                     android:text="@string/app_name"
                     android:textColor="?android:attr/textColorPrimary"
@@ -94,8 +94,8 @@
                     android:id="@+id/sub_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:layout_marginEnd="18dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
                     android:fontFamily="sans-serif-medium"
                     android:letterSpacing="0.1"
                     android:text="@string/emulator"
@@ -108,9 +108,9 @@
                     android:id="@+id/search_bar"
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="10dp"
                     android:layout_marginTop="16dp"
-                    android:layout_marginEnd="12dp"
+                    android:layout_marginEnd="10dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
                     app:layout_constraintTop_toBottomOf="@id/sub_text" />
@@ -125,44 +125,11 @@
         android:layout_marginTop="-8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/app_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none">
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingStart="18dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="18dp"
-                    android:paddingBottom="4dp"
-                    app:checkedChip="@id/all_chip"
-                    app:chipSpacingHorizontal="16dp"
-                    app:selectionRequired="true"
-                    app:singleLine="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/all_chip"
-                        style="?attr/chipChoiceStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/all" />
-                </com.google.android.material.chip.ChipGroup>
-            </HorizontalScrollView>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/app_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false" />
-        </LinearLayout>
+            android:clipToPadding="false"
+            android:overScrollMode="never" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

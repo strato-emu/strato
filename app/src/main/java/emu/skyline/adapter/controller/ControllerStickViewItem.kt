@@ -18,8 +18,8 @@ import emu.skyline.input.StickId
  * This item is used to display all information regarding a [stick] and it's mappings for the controller
  */
 class ControllerStickViewItem(private val controllerId : Int, val stick : StickId, private val onClick : (item : ControllerStickViewItem, position : Int) -> Unit) : ControllerViewItem(stick.toString()) {
-    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
-        val context = holder.itemView.context
+    override fun bind(binding : ControllerItemBinding, position : Int) {
+        val context = binding.root.context
         val inputManager = context.getInputManager()
 
         val buttonGuestEvent = ButtonGuestEvent(controllerId, stick.button)
@@ -39,9 +39,9 @@ class ControllerStickViewItem(private val controllerId : Int, val stick : StickI
 
         subContent = "${context.getString(R.string.button)}: $button\n${context.getString(R.string.up)}: $yAxisPlus\n${context.getString(R.string.down)}: $yAxisMinus\n${context.getString(R.string.left)}: $xAxisMinus\n${context.getString(R.string.right)}: $xAxisPlus"
 
-        super.bind(holder, position)
+        super.bind(binding, position)
 
-        holder.binding.root.setOnClickListener { onClick.invoke(this, position) }
+        binding.root.setOnClickListener { onClick.invoke(this, position) }
     }
 
     override fun areItemsTheSame(other : GenericListItem<ControllerItemBinding>) = other is ControllerStickViewItem && controllerId == other.controllerId

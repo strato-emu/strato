@@ -24,7 +24,7 @@ abstract class GenericListItem<V : ViewBinding> {
 
     abstract fun getViewBindingFactory() : ViewBindingFactory
 
-    abstract fun bind(holder : GenericViewHolder<V>, position : Int)
+    abstract fun bind(binding : V, position : Int)
 
     /**
      * Used for filtering
@@ -33,10 +33,7 @@ abstract class GenericListItem<V : ViewBinding> {
 
     open fun areItemsTheSame(other : GenericListItem<V>) = this == other
 
-    /**
-     * Will only be called when [areItemsTheSame] returns true, thus returning true by default
-     */
-    open fun areContentsTheSame(other : GenericListItem<V>) = true
+    open fun areContentsTheSame(other : GenericListItem<V>) = this == other
 
     open val fullSpan : Boolean = false
 }

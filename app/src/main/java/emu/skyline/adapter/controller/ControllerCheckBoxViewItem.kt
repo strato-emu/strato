@@ -20,13 +20,13 @@ object ControllerCheckBoxBindingFactory : ViewBindingFactory {
 class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericListItem<ControllerCheckboxItemBinding>() {
     override fun getViewBindingFactory() = ControllerCheckBoxBindingFactory
 
-    override fun bind(holder : GenericViewHolder<ControllerCheckboxItemBinding>, position : Int) {
-        holder.binding.textTitle.isGone = title.isEmpty()
-        holder.binding.textTitle.text = title
-        holder.binding.textSubtitle.isGone = summary.isEmpty()
-        holder.binding.textSubtitle.text = summary
-        holder.binding.checkbox.isChecked = checked
-        holder.itemView.setOnClickListener {
+    override fun bind(binding : ControllerCheckboxItemBinding, position : Int) {
+        binding.textTitle.isGone = title.isEmpty()
+        binding.textTitle.text = title
+        binding.textSubtitle.isGone = summary.isEmpty()
+        binding.textSubtitle.text = summary
+        binding.checkbox.isChecked = checked
+        binding.root.setOnClickListener {
             checked = !checked
             onCheckedChange.invoke(this, position)
         }

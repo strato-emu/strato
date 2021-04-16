@@ -24,13 +24,9 @@ import androidx.core.view.size
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.chip.Chip
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import emu.skyline.adapter.AppViewItem
-import emu.skyline.adapter.GenericAdapter
-import emu.skyline.adapter.HeaderViewItem
-import emu.skyline.adapter.LayoutType
+import emu.skyline.adapter.*
 import emu.skyline.data.AppItem
 import emu.skyline.data.DataItem
 import emu.skyline.data.HeaderItem
@@ -46,7 +42,7 @@ import kotlin.math.roundToInt
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     companion object {
-        private val formatOrder = arrayOf(RomFormat.NSP, RomFormat.XCI, RomFormat.NRO, RomFormat.NSO, RomFormat.NCA)
+        private val formatOrder = listOf(RomFormat.NSP, RomFormat.XCI, RomFormat.NRO, RomFormat.NSO, RomFormat.NCA)
     }
 
     private val binding by lazy { MainActivityBinding.inflate(layoutInflater) }
@@ -107,6 +103,18 @@ class MainActivity : AppCompatActivity() {
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
+        adapter.apply {
+            setHeaderItems(listOf(HeaderRomFilterItem(formatOrder, if (settings.filter == 0) null else formatOrder[settings.filter - 1]) { romFormat ->
+                settings.filter = romFormat?.let { formatOrder.indexOf(romFormat) + 1 } ?: 0
+                formatFilter = romFormat
+                populateAdapter()
+            }))
+
+            setOnFilterPublishedListener {
+                binding.appList.post { binding.appList.smoothScrollToPosition(0) }
+            }
+        }
+
         setupAppList()
 
         binding.swipeRefreshLayout.apply {
@@ -115,21 +123,6 @@ class MainActivity : AppCompatActivity() {
             post { setDistanceToTriggerSync((binding.swipeRefreshLayout.height / 2.5f).roundToInt()) }
             setOnRefreshListener { loadRoms(false) }
         }
-
-        for (format in formatOrder) {
-            binding.chipGroup.addView(Chip(this, null, R.attr.chipChoiceStyle).apply { text = format.name })
-        }
-        binding.chipGroup.setOnCheckedChangeListener { group, checkedId ->
-            for (i in 0 until group.childCount) {
-                if (group.getChildAt(i).id == checkedId) {
-                    settings.filter = i
-                    formatFilter = if (i == 0) null else formatOrder[i - 1]
-                    populateAdapter()
-                    break
-                }
-            }
-        }
-        binding.chipGroup.check(binding.chipGroup.getChildAt(settings.filter).id)
 
         viewModel.stateData.observe(this, ::handleState)
         loadRoms(!settings.refreshRequired)
@@ -170,7 +163,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            if (layoutParams.spanSize == gridLayoutManager.spanCount) outRect.right = padding
+            if (layoutParams.spanSize == gridLayoutManager.spanCount) {
+                outRect.left = 0
+                outRect.right = 0
+            }
         }
     }
 
@@ -241,7 +237,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getDataItems() = mutableListOf<DataItem>().apply {
         appEntries?.let { entries ->
-            val formats = formatFilter?.let { arrayOf(it) } ?: formatOrder
+            val formats = formatFilter?.let { listOf(it) } ?: formatOrder
             for (format in formats) {
                 entries[format]?.let {
                     add(HeaderItem(format.name))

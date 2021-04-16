@@ -23,17 +23,17 @@ open class ControllerViewItem(var content : String = "", var subContent : String
 
     override fun getViewBindingFactory() = ControllerBindingFactory
 
-    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
+    override fun bind(binding : ControllerItemBinding, position : Int) {
         this.position = position
-        holder.binding.textTitle.apply {
+        binding.textTitle.apply {
             isGone = content.isEmpty()
             text = content
         }
-        holder.binding.textSubtitle.apply {
+        binding.textSubtitle.apply {
             isGone = subContent.isEmpty()
             text = subContent
         }
-        onClick?.let { onClick -> holder.itemView.setOnClickListener { onClick.invoke() } }
+        onClick?.let { onClick -> binding.root.setOnClickListener { onClick.invoke() } }
     }
 
     fun update() = adapter?.notifyItemChanged(position)

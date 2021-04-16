@@ -1,5 +1,6 @@
 package emu.skyline
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
@@ -16,12 +17,13 @@ class RomProvider @Inject constructor(@ApplicationContext private val context : 
     /**
      * This adds all files in [directory] with [extension] as an entry using [RomFile] to load metadata
      */
+    @SuppressLint("DefaultLocale")
     private fun addEntries(fileFormats : Map<String, RomFormat>, directory : DocumentFile, entries : HashMap<RomFormat, ArrayList<AppEntry>>) {
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
                 addEntries(fileFormats, file, entries)
             } else {
-                fileFormats[file.name?.substringAfterLast(".")]?.let { romFormat ->
+                fileFormats[file.name?.substringAfterLast(".")?.toLowerCase()]?.let { romFormat->
                     entries.getOrPut(romFormat, { arrayListOf() }).add(RomFile(context, romFormat, file.uri).appEntry)
                 }
             }
@@ -29,8 +31,8 @@ class RomProvider @Inject constructor(@ApplicationContext private val context : 
     }
 
     fun loadRoms(searchLocation : Uri) = DocumentFile.fromTreeUri(context, searchLocation)!!.let { documentFile ->
-        val entries = hashMapOf<RomFormat, ArrayList<AppEntry>>()
-        addEntries(mapOf("nro" to NRO, "nso" to NSO, "nca" to NCA, "nsp" to NSP, "xci" to XCI), documentFile, entries)
-        entries
+        hashMapOf<RomFormat, ArrayList<AppEntry>>().apply {
+            addEntries(mapOf("nro" to NRO, "nso" to NSO, "nca" to NCA, "nsp" to NSP, "xci" to XCI), documentFile, this)
+        }
     }
 }

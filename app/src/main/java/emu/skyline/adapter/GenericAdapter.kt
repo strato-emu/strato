@@ -16,6 +16,8 @@ import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.JaroWinkler
 import java.util.*
 
+typealias OnFilterPublishedListener = () -> Unit
+
 /**
  * Can handle any view types with [GenericListItem] implemented, [GenericListItem] are differentiated by the return value of [GenericListItem.getViewBindingFactory]
  */
@@ -29,6 +31,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
     }
 
     private val asyncListDiffer = AsyncListDiffer(this, DIFFER)
+    private val headerItems = mutableListOf<GenericListItem<out ViewBinding>>()
     private val allItems = mutableListOf<GenericListItem<out ViewBinding>>()
     val currentItems : List<GenericListItem<in ViewBinding>> get() = asyncListDiffer.currentList
 
@@ -36,12 +39,14 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
 
     private val viewTypesMapping = mutableMapOf<ViewBindingFactory, Int>()
 
+    private var onFilterPublishedListener : OnFilterPublishedListener? = null
+
     override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) = GenericViewHolder(viewTypesMapping.filterValues { it == viewType }.keys.single().createBinding(parent))
 
     override fun onBindViewHolder(holder : GenericViewHolder<ViewBinding>, position : Int) {
         currentItems[position].apply {
             adapter = this@GenericAdapter
-            bind(holder, position)
+            bind(holder.binding, position)
         }
     }
 
@@ -49,10 +54,20 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
 
     override fun getItemViewType(position : Int) = viewTypesMapping.getOrPut(currentItems[position].getViewBindingFactory()) { viewTypesMapping.size }
 
+    fun setHeaderItems(items : List<GenericListItem<*>>) {
+        headerItems.clear()
+        headerItems.addAll(items)
+        filter.filter(currentSearchTerm)
+    }
+
     fun setItems(items : List<GenericListItem<*>>) {
         allItems.clear()
         allItems.addAll(items)
         filter.filter(currentSearchTerm)
+    }
+
+    fun setOnFilterPublishedListener(listener : OnFilterPublishedListener) {
+        onFilterPublishedListener = listener
     }
 
     /**
@@ -84,13 +99,11 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
         /**
          * This performs filtering on the items in [allItems] based on similarity to [term]
          */
-        override fun performFiltering(term : CharSequence) : FilterResults {
-            val results = FilterResults()
-            currentSearchTerm = (term as String).toLowerCase(Locale.getDefault())
+        override fun performFiltering(term : CharSequence) = (term as String).toLowerCase(Locale.getDefault()).let { lowerCaseTerm ->
+            currentSearchTerm = lowerCaseTerm
 
-            if (term.isEmpty()) {
-                results.values = allItems.toMutableList()
-                results.count = allItems.size
+            with(if (term.isEmpty()) {
+                allItems.toMutableList()
             } else {
                 val filterData = mutableListOf<GenericListItem<*>>()
 
@@ -100,10 +113,13 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
                 for (result in topResults)
                     if (result.score >= avgScore) filterData.add(result.item)
 
-                results.values = filterData
-                results.count = filterData.size
+                filterData
+            }) {
+                FilterResults().apply {
+                    values = headerItems + this@with
+                    count = headerItems.size + size
+                }
             }
-            return results
         }
 
         /**
@@ -112,6 +128,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
         override fun publishResults(charSequence : CharSequence, results : FilterResults) {
             @Suppress("UNCHECKED_CAST")
             asyncListDiffer.submitList(results.values as List<GenericListItem<ViewBinding>>)
+            onFilterPublishedListener?.invoke()
         }
     }
 }
