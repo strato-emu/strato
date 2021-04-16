@@ -67,7 +67,7 @@ namespace skyline::kernel::type {
             munmap(kernel.ptr, kernel.size);
 
         if (state.process && guest.Valid()) {
-           mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // As this is the destructor, we cannot throw on this failing
+            mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // As this is the destructor, we cannot throw on this failing
             state.process->memory.InsertChunk(ChunkDescriptor{
                 .ptr = guest.ptr,
                 .size = guest.size,

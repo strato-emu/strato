@@ -36,11 +36,11 @@ namespace skyline::service::hosbinder {
          */
         Result GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-        SERVICE_DECL(
-            SFUNC(0x0, IHOSBinderDriver, TransactParcel),
-            SFUNC(0x1, IHOSBinderDriver, AdjustRefcount),
-            SFUNC(0x2, IHOSBinderDriver, GetNativeHandle),
-            SFUNC(0x3, IHOSBinderDriver, TransactParcel)
-        )
+      SERVICE_DECL(
+          SFUNC(0x0, IHOSBinderDriver, TransactParcel),
+          SFUNC(0x1, IHOSBinderDriver, AdjustRefcount),
+          SFUNC(0x2, IHOSBinderDriver, GetNativeHandle),
+          SFUNC(0x3, IHOSBinderDriver, TransactParcel)
+      )
     };
 }

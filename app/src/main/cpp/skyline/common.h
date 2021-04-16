@@ -119,11 +119,6 @@ namespace skyline {
     };
 
     namespace constant {
-        // Display
-        constexpr u16 HandheldResolutionW{1280}; //!< The width component of the handheld resolution
-        constexpr u16 HandheldResolutionH{720}; //!< The height component of the handheld resolution
-        constexpr u16 DockedResolutionW{1920}; //!< The width component of the docked resolution
-        constexpr u16 DockedResolutionH{1080}; //!< The height component of the docked resolution
         // Time
         constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
         constexpr u64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
@@ -191,7 +186,7 @@ namespace skyline {
          * @brief A way to implicitly convert a pointer to uintptr_t and leave it unaffected if it isn't a pointer
          */
         template<typename T>
-        T PointerValue(T item) {
+        constexpr T PointerValue(T item) {
             return item;
         }
 
@@ -204,7 +199,7 @@ namespace skyline {
          * @brief A way to implicitly convert an integral to a pointer, if the return type is a pointer
          */
         template<typename Return, typename T>
-        Return ValuePointer(T item) {
+        constexpr Return ValuePointer(T item) {
             if constexpr (std::is_pointer<Return>::value)
                 return reinterpret_cast<Return>(item);
             else

@@ -50,15 +50,51 @@ namespace skyline::service {
         }
 
         /**
+         * @return A pointer to an optional flattenable from the top of data, nullptr will be returned if the object doesn't exist
+         */
+        template<typename ValueType>
+        ValueType* PopOptionalFlattenable() {
+            bool hasObject{static_cast<bool>(Pop<u32>())};
+            if (hasObject) {
+                auto size{Pop<u64>()};
+                if (size != sizeof(ValueType))
+                    throw exception("Popping flattenable of size 0x{:X} with type size 0x{:X}", size, sizeof(ValueType));
+                return &Pop<ValueType>();
+            } else {
+                return nullptr;
+            }
+        }
+
+        /**
          * @brief Writes a value to the Parcel
          */
         template<typename ValueType>
         void Push(const ValueType &value) {
-            data.reserve(data.size() + sizeof(ValueType));
-            auto item{reinterpret_cast<const u8 *>(&value)};
-            for (size_t index{}; sizeof(ValueType) > index; index++) {
-                data.push_back(*item);
-                item++;
+            auto offset{data.size()};
+            data.resize(offset + sizeof(ValueType));
+            *(reinterpret_cast<ValueType*>(data.data() + offset)) = value;
+        }
+
+        /**
+         * @brief Writes a 32-bit boolean flag denoting if an object exists alongside the object if it exists
+         */
+        template<typename ObjectType>
+        void PushOptionalFlattenable(ObjectType *pointer) {
+            Push<u32>(pointer != nullptr);
+            if (pointer) {
+                Push<u32>(sizeof(ObjectType)); // Object Size
+                Push<u32>(0); // FD Count
+                Push(*pointer);
+            }
+        }
+
+        template<typename ObjectType>
+        void PushOptionalFlattenable(std::optional<ObjectType> object) {
+            Push<u32>(object.has_value());
+            if (object) {
+                Push<u32>(sizeof(ObjectType));
+                Push<u32>(0);
+                Push(*object);
             }
         }
 
@@ -67,12 +103,9 @@ namespace skyline::service {
          */
         template<typename ObjectType>
         void PushObject(const ObjectType &object) {
-            objects.reserve(objects.size() + sizeof(ObjectType));
-            auto item{reinterpret_cast<const u8 *>(&object)};
-            for (size_t index{}; sizeof(ObjectType) > index; index++) {
-                objects.push_back(*object);
-                item++;
-            }
+            auto offset{objects.size()};
+            objects.resize(offset + sizeof(ObjectType));
+            *(reinterpret_cast<ObjectType*>(objects.data() + offset)) = object;
         }
 
         /**

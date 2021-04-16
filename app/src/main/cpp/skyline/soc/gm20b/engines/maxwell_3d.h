@@ -33,7 +33,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         /**
          * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def#L478
          */
-#pragma pack(push, 1)
+        #pragma pack(push, 1)
         union Registers {
             std::array<u32, RegisterCount> raw;
 
@@ -552,7 +552,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
         };
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
-#pragma pack(pop)
+        #pragma pack(pop)
 
         Registers registers{};
         Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register

@@ -54,11 +54,15 @@ namespace skyline::service::am {
 
     Result ICommonStateGetter::GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (operationMode == OperationMode::Handheld) {
-            response.Push<u32>(constant::HandheldResolutionW);
-            response.Push<u32>(constant::HandheldResolutionH);
+            constexpr u16 HandheldResolutionW{1280};
+            constexpr u16 HandheldResolutionH{720};
+            response.Push<u32>(HandheldResolutionW);
+            response.Push<u32>(HandheldResolutionH);
         } else if (operationMode == OperationMode::Docked) {
-            response.Push<u32>(constant::DockedResolutionW);
-            response.Push<u32>(constant::DockedResolutionH);
+            constexpr u16 DockedResolutionW{1920};
+            constexpr u16 DockedResolutionH{1080};
+            response.Push<u32>(DockedResolutionW);
+            response.Push<u32>(DockedResolutionH);
         }
         return {};
     }

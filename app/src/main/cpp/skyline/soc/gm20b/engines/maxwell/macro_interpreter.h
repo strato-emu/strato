@@ -13,7 +13,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
      */
     class MacroInterpreter {
       private:
-#pragma pack(push, 1)
+        #pragma pack(push, 1)
         union Opcode {
             u32 raw;
 
@@ -89,8 +89,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 }
             } bitfield;
         };
-#pragma pack(pop)
         static_assert(sizeof(Opcode) == sizeof(u32));
+        #pragma pack(pop)
 
         /**
          * @brief Metadata about the Maxwell 3D method to be called in 'Send'

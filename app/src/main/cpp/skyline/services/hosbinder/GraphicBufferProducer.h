@@ -1,49 +1,55 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2005 The Android Open Source Project
+// Copyright © 2019-2020 Ryujinx Team and Contributors
 
 #pragma once
 
 #include <services/common/parcel.h>
+#include "android_types.h"
+#include "native_window.h"
 
 namespace skyline::gpu {
     class Texture;
 }
 
-namespace skyline::service::hosbinder {
-    /**
-     * @brief A descriptor for the surfaceflinger graphics buffer
-     * @url https://github.com/reswitched/libtransistor/blob/0f0c36227842c344d163922fc98ee76229e9f0ee/lib/display/graphic_buffer_queue.c#L66
-     */
-    struct GbpBuffer {
-        u32 magic; //!< The magic of the graphics buffer: 0x47424652
-        u32 width; //!< The width of the buffer
-        u32 height; //!< The height of the buffer
-        u32 stride; //!< The stride of the buffer
-        u32 format; //!< The format of the buffer, this corresponds to AHardwareBuffer_Format
-        u32 usage; //!< The usage flags for the buffer
-        u32 _pad0_;
-        u32 index; //!< The index of the buffer
-        u32 _pad1_[3];
-        u32 nvmapId; //!< The ID of the buffer in regards to /dev/nvmap
-        u32 _pad2_[8];
-        u32 size; //!< The size of the buffer
-        u32 _pad3_[8];
-        u32 nvmapHandle; //!< The handle of the buffer in regards to /dev/nvmap
-        u32 offset; //!< The offset of the pixel data in the GPU Buffer
-        u32 _pad4_;
-        u32 blockHeightLog2; //!< The log2 of the block height
-        u32 _pad5_[58];
+#define ENUM_CASE(key)   \
+    case ENUM_TYPE::key: \
+    return #key
+
+#define ENUM_STRING(name, cases)                        \
+    constexpr const char *ToString(name value) {        \
+        using ENUM_TYPE = name;                         \
+        switch (value) {                                \
+            cases                                       \
+            default:                                    \
+                return "Unknown";                       \
+        };                                              \
     };
 
+namespace skyline::service::hosbinder {
     /**
-     * @brief A wrapper over GbpBuffer which contains additional state that we track for a buffer
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferSlot.h;l=52-91
      */
-    class Buffer {
-      public:
-        std::shared_ptr<gpu::Texture> texture;
-        GbpBuffer gbpBuffer;
+    enum class BufferState {
+        Free,
+        Dequeued,
+        Queued,
+        Acquired,
+    };
 
-        Buffer(const GbpBuffer &gbpBuffer, std::shared_ptr<gpu::Texture> texture);
+    ENUM_STRING(BufferState, ENUM_CASE(Free);ENUM_CASE(Dequeued);ENUM_CASE(Queued);ENUM_CASE(Acquired);
+    );
+
+    /**
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferSlot.h;l=32-138
+     */
+    struct BufferSlot {
+        BufferState state{BufferState::Free};
+        u64 frameNumber{}; //!< The amount of frames that have been queued using this slot
+        bool wasBufferRequested{}; //!< If GraphicBufferProducer::RequestBuffer has been called with this buffer
+        std::shared_ptr<gpu::Texture> texture{};
+        std::unique_ptr<GraphicBuffer> graphicBuffer{};
     };
 
     /**
@@ -65,80 +71,123 @@ namespace skyline::service::hosbinder {
     };
 
     /**
-     * @brief IGraphicBufferProducer is responsible for presenting buffers to the display as well as compositing and frame pacing
-     * @url https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp
+     * @brief An endpoint for the GraphicBufferProducer interface, it approximately implements BufferQueueProducer but also implements the functionality of interfaces called into by it such as GraphicBufferConsumer, Gralloc and so on
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/IGraphicBufferProducer.cpp
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueCore.cpp
      */
     class GraphicBufferProducer {
       private:
         const DeviceState &state;
-        std::vector<std::shared_ptr<Buffer>> queue; //!< A vector of shared pointers to all the queued buffers
+        std::mutex mutex; //!< Synchronizes access to the buffer queue
+        constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16
+        std::array<BufferSlot, MaxSlotCount> queue;
+        u8 activeSlotCount{2}; //!< The amount of slots in the queue that can be used
+        u8 hasBufferCount{}; //!< The amount of slots with buffers attached in the queue
+        u32 defaultWidth{1}; //!< The assumed width of a buffer if none is supplied in DequeueBuffer
+        u32 defaultHeight{1}; //!< The assumed height of a buffer if none is supplied in DequeueBuffer
+        AndroidPixelFormat defaultFormat{AndroidPixelFormat::RGBA8888}; //!< The assumed format of a buffer if none is supplied in DequeueBuffer
+        NativeWindowApi connectedApi{NativeWindowApi::None}; //!< The API that the producer is currently connected to
 
         /**
-         * @brief Request for the GbpBuffer of a buffer
+         * @return The amount of buffers which have been queued onto the consumer
          */
-        void RequestBuffer(Parcel &in, Parcel &out);
+        u8 GetPendingBufferCount();
 
         /**
-         * @brief Try to dequeue a free graphics buffer that has been consumed
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=67-80;
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=35-40
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=50-73
          */
-        void DequeueBuffer(Parcel &in, Parcel &out);
+        AndroidStatus RequestBuffer(i32 slot, GraphicBuffer *&buffer);
 
         /**
-         * @brief Queue a buffer to be presented
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=104-170
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=59-97
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=251-388
          */
-        void QueueBuffer(Parcel &in, Parcel &out);
+        AndroidStatus DequeueBuffer(bool async, u32 width, u32 height, AndroidPixelFormat format, u32 usage, i32 &slot, std::optional<AndroidFence> &fence);
 
         /**
-         * @brief Remove a previously queued buffer
+         * @note Nintendo has added an additional field for swap interval which sets the swap interval of the compositor
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=236-349
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=109-125
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=512-691
          */
-        void CancelBuffer(Parcel &in);
+        AndroidStatus QueueBuffer(i32 slot, i64 timestamp, bool isAutoTimestamp, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, NativeWindowTransform stickyTransform, bool async, u32 swapInterval, const AndroidFence &fence, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount);
 
         /**
-         * @brief Query a few attributes of the graphic buffers
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=351-359
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=127-132
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=693-720
          */
-        void Connect(Parcel &out);
+        void CancelBuffer(i32 slot, const AndroidFence &fence);
 
         /**
-         * @brief Attach a GPU buffer to a graphics buffer
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=361-367
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=134-136
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=722-766
          */
-        void SetPreallocatedBuffer(Parcel &in);
+        AndroidStatus Query(NativeWindowQuery query, u32 &out);
+
+        /**
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=369-405
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=138-148
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=768-831
+         */
+        AndroidStatus Connect(NativeWindowApi api, bool producerControlledByApp, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount);
+
+        /**
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=407-426
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=150-158
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=833-890
+         */
+        AndroidStatus Disconnect(NativeWindowApi api);
+
+        /**
+         * @brief Similar to AttachBuffer but the slot is explicitly specified and the producer defaults are set based off it
+         * @note This is an HOS-specific addition to GraphicBufferProducer, it exists so that all allocation of buffers is handled by the client to avoid any shared/transfer memory from the client to loan memory for the buffers which would be quite complicated
+         */
+        AndroidStatus SetPreallocatedBuffer(i32 slot, const GraphicBuffer &graphicBuffer);
 
       public:
         DisplayId displayId{DisplayId::Null}; //!< The ID of this display
         LayerStatus layerStatus{LayerStatus::Uninitialized}; //!< The status of the single layer the display has
 
         /**
-         * @brief The functions called by TransactParcel for android.gui.IGraphicBufferProducer
-         * @refitem https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#35
+         * @brief The transactions supported by android.gui.IGraphicBufferProducer
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/IGraphicBufferProducer.cpp;l=35-49
          */
         enum class TransactionCode : u32 {
-            RequestBuffer = 1, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#281
-            SetBufferCount = 2, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#293
-            DequeueBuffer = 3, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#300
-            DetachBuffer = 4, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#318
-            DetachNextBuffer = 5, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#325
-            AttachBuffer = 6, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#343
-            QueueBuffer = 7, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#353
-            CancelBuffer = 8, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#364
-            Query = 9, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#372
-            Connect = 10, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#381
-            Disconnect = 11, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#396
-            SetSidebandStream = 12, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#403
-            AllocateBuffers = 13, //!< https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#413
-            SetPreallocatedBuffer = 14, //!< No source on this but it's used to set a existing buffer according to libtransistor and libnx
+            RequestBuffer = 1,
+            SetBufferCount = 2,
+            DequeueBuffer = 3,
+            DetachBuffer = 4,
+            DetachNextBuffer = 5,
+            AttachBuffer = 6,
+            QueueBuffer = 7,
+            CancelBuffer = 8,
+            Query = 9,
+            Connect = 10,
+            Disconnect = 11,
+            SetSidebandStream = 12,
+            AllocateBuffers = 13,
+            SetPreallocatedBuffer = 14, //!< A transaction specific to HOS, see the implementation for a description of its functionality
         };
 
         GraphicBufferProducer(const DeviceState &state);
 
         /**
          * @brief The handler for Binder IPC transactions with IGraphicBufferProducer
-         * @url https://android.googlesource.com/platform/frameworks/native/+/8dc5539/libs/gui/IGraphicBufferProducer.cpp#277
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/IGraphicBufferProducer.cpp;l=277-426
          */
         void OnTransact(TransactionCode code, Parcel &in, Parcel &out);
 
         /**
          * @brief Sets displayId to a specific display type
-         * @param name The name of the display
          * @note displayId has to be DisplayId::Null or this will throw an exception
          */
         void SetDisplay(const std::string &name);
@@ -151,3 +200,5 @@ namespace skyline::service::hosbinder {
 
     extern std::weak_ptr<GraphicBufferProducer> producer; //!< A globally shared instance of the GraphicsBufferProducer
 }
+
+#undef ENUM_CASE

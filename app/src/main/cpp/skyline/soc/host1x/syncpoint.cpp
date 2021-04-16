@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2020 Ryujinx Team and Contributors
 
 #include "syncpoint.h"
 
@@ -38,13 +39,15 @@ namespace skyline::soc::host1x {
     }
 
     bool Syncpoint::Wait(u32 threshold, std::chrono::steady_clock::duration timeout) {
+        if (value >= threshold)
+            return true;
+
         std::mutex mtx;
         std::condition_variable cv;
         bool flag{};
 
         if (timeout == std::chrono::steady_clock::duration::max())
             timeout = std::chrono::seconds(1);
-
         if (!RegisterWaiter(threshold, [&cv, &mtx, &flag] {
             std::unique_lock lock(mtx);
             flag = true;

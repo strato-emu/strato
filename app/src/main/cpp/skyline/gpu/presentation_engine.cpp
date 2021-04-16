@@ -3,7 +3,7 @@
 
 #include <android/native_window_jni.h>
 #include <gpu.h>
-#include "jvm.h"
+#include <jvm.h>
 #include "presentation_engine.h"
 
 extern skyline::i32 Fps;
@@ -22,7 +22,30 @@ namespace skyline::gpu {
             env->DeleteGlobalRef(surface);
     }
 
-    void PresentationEngine::UpdateSwapchain(u32 imageCount, vk::Format imageFormat, vk::Extent2D imageExtent) {
+    service::hosbinder::NativeWindowTransform GetAndroidTransform(vk::SurfaceTransformFlagBitsKHR transform) {
+        using NativeWindowTransform = service::hosbinder::NativeWindowTransform;
+        switch (transform) {
+            case vk::SurfaceTransformFlagBitsKHR::eIdentity:
+            case vk::SurfaceTransformFlagBitsKHR::eInherit:
+                return NativeWindowTransform::Identity;
+            case vk::SurfaceTransformFlagBitsKHR::eRotate90:
+                return NativeWindowTransform::Rotate90;
+            case vk::SurfaceTransformFlagBitsKHR::eRotate180:
+                return NativeWindowTransform::Rotate180;
+            case vk::SurfaceTransformFlagBitsKHR::eRotate270:
+                return NativeWindowTransform::Rotate270;
+            case vk::SurfaceTransformFlagBitsKHR::eHorizontalMirror:
+                return NativeWindowTransform::MirrorHorizontal;
+            case vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90:
+                return NativeWindowTransform::MirrorHorizontalRotate90;
+            case vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate180:
+                return NativeWindowTransform::MirrorVertical;
+            case vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270:
+                return NativeWindowTransform::MirrorVerticalRotate90;
+        }
+    }
+
+    void PresentationEngine::UpdateSwapchain(u16 imageCount, vk::Format imageFormat, vk::Extent2D imageExtent) {
         if (!imageCount)
             return;
 
@@ -35,6 +58,8 @@ namespace skyline::gpu {
         constexpr vk::ImageUsageFlags presentUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
         if ((capabilities.supportedUsageFlags & presentUsage) != presentUsage)
             throw exception("Swapchain doesn't support image usage '{}': {}", vk::to_string(presentUsage), vk::to_string(capabilities.supportedUsageFlags));
+
+        transformHint = GetAndroidTransform(capabilities.currentTransform);
 
         vkSwapchain = vk::raii::SwapchainKHR(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
@@ -59,7 +84,7 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::UpdateSurface(jobject newSurface) {
-        std::lock_guard lock(mutex);
+        std::lock_guard guard(mutex);
 
         auto env{state.jvm->GetEnv()};
         if (!env->IsSameObject(surface, nullptr)) {
@@ -85,25 +110,44 @@ namespace skyline::gpu {
     }
 
     std::shared_ptr<Texture> PresentationEngine::CreatePresentationTexture(const std::shared_ptr<GuestTexture> &texture, u32 slot) {
-        std::unique_lock lock(mutex);
+        std::lock_guard guard(mutex);
         if (swapchain.imageCount <= slot)
-            UpdateSwapchain(slot + 1, texture->format.vkFormat, texture->dimensions);
+            UpdateSwapchain(std::max(slot + 1, 2U), texture->format.vkFormat, texture->dimensions);
         return texture->InitializeTexture(vk::raii::Image(gpu.vkDevice, vkSwapchain->getImages().at(slot)));
     }
 
-    u32 PresentationEngine::GetFreeTexture() {
+    service::hosbinder::AndroidStatus PresentationEngine::GetFreeTexture(bool async, i32 &slot) {
+        using AndroidStatus = service::hosbinder::AndroidStatus;
+
         std::unique_lock lock(mutex);
-        auto nextImage{vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max())};
-        if (nextImage.first == vk::Result::eErrorSurfaceLostKHR || nextImage.first == vk::Result::eSuboptimalKHR) {
-            surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
-            return GetFreeTexture();
+        if (swapchain.dequeuedCount < swapchain.imageCount) {
+            swapchain.dequeuedCount++;
+
+            vk::raii::Fence fence(state.gpu->vkDevice, vk::FenceCreateInfo{});
+            auto timeout{async ? 0ULL : std::numeric_limits<u64>::max()}; // We cannot block for a buffer to be retrieved in async mode
+            auto nextImage{vkSwapchain->acquireNextImage(timeout, {}, *fence)};
+            if (nextImage.first == vk::Result::eTimeout) {
+                return AndroidStatus::WouldBlock;
+            } else if (nextImage.first == vk::Result::eErrorSurfaceLostKHR || nextImage.first == vk::Result::eSuboptimalKHR) {
+                surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+                return GetFreeTexture(async, slot);
+            }
+
+            gpu.vkDevice.waitForFences(*fence, true, std::numeric_limits<u64>::max());
+
+            slot = nextImage.second;
+            return AndroidStatus::Ok;
         }
-        return nextImage.second;
+        return AndroidStatus::Busy;
     }
 
-    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture) {
+    void PresentationEngine::Present(i32 slot) {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+
+        if (--swapchain.dequeuedCount < 0) [[unlikely]] {
+            throw exception("Swapchain has been presented more times than images from it have been acquired: {} (Image Count: {})", swapchain.dequeuedCount, swapchain.imageCount);
+        }
 
         vsyncEvent->Signal();
 
@@ -118,5 +162,13 @@ namespace skyline::gpu {
         } else {
             frameTimestamp = util::GetTimeNs();
         }
+    }
+
+    service::hosbinder::NativeWindowTransform PresentationEngine::GetTransformHint() {
+        std::unique_lock lock(mutex);
+        surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+        if (!transformHint)
+            transformHint = GetAndroidTransform(gpu.vkPhysicalDevice.getSurfaceCapabilitiesKHR(**vkSurface).currentTransform);
+        return *transformHint;
     }
 }

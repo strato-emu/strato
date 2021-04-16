@@ -18,7 +18,7 @@ namespace skyline::soc::gm20b::engine {
         /**
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L65
          */
-#pragma pack(push, 1)
+        #pragma pack(push, 1)
         union Registers {
             std::array<u32, RegisterCount> raw;
 
@@ -162,7 +162,7 @@ namespace skyline::soc::gm20b::engine {
             };
         } registers{};
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
-#pragma pack(pop)
+        #pragma pack(pop)
 
       public:
         GPFIFO(const DeviceState &state) : Engine(state) {}

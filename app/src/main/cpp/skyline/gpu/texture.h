@@ -94,9 +94,9 @@ namespace skyline::gpu {
          * @note Refer to Chapter 20.1 of the Tegra X1 TRM for information
          */
         enum class TileMode {
-            Linear, //!< This is a purely linear texture
-            Pitch,  //!< This is a pitch-linear texture
-            Block,  //!< This is a 16Bx2 block-linear texture
+            Linear, //!< All pixels are arranged linearly
+            Pitch,  //!< All pixels are arranged linearly but rows aligned to the pitch
+            Block,  //!< All pixels are arranged into blocks and swizzled in a Z-order curve to optimize for spacial locality
         };
 
         /**

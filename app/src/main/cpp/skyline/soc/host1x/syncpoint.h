@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2020 Ryujinx Team and Contributors
 
 #pragma once
 
@@ -45,7 +46,7 @@ namespace skyline::soc::host1x {
 
         /**
          * @brief Waits for the syncpoint to reach given threshold
-         * @return false if the timeout was reached, otherwise true
+         * @return If the wait was successful (true) or timed out (false)
          */
         bool Wait(u32 threshold, std::chrono::steady_clock::duration timeout);
     };
