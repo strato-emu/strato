@@ -7,6 +7,7 @@ package emu.skyline
 
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
@@ -29,6 +30,10 @@ class SettingsActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->
+            if (!isInTouchMode) binding.titlebar.appBarLayout.setExpanded(false)
+        }
 
         supportFragmentManager
             .beginTransaction()

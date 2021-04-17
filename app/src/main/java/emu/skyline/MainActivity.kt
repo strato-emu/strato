@@ -203,10 +203,10 @@ class MainActivity : AppCompatActivity() {
                             // Return candidate when span index matches
                             if (currentSpanIndex == (candidate.layoutParams as LayoutParams).spanIndex) return candidate
                         }
-                        if (nextFocus == null) {
-                            binding.appBarLayout.setExpanded(false) // End of list, hide app bar, so bottom row is fully visible
-                            binding.appList.smoothScrollToPosition(adapter.itemCount)
-                        }
+                        nextFocus?.let { if ((it.layoutParams as LayoutParams).spanIndex == currentSpanIndex) return nextFocus }
+
+                        binding.appBarLayout.setExpanded(false) // End of list, hide app bar, so bottom row is fully visible
+                        binding.appList.smoothScrollToPosition(adapter.itemCount)
                     }
                 }
 
@@ -214,6 +214,7 @@ class MainActivity : AppCompatActivity() {
                     if (nextFocus?.isFocusable != true) {
                         binding.searchBar.requestFocus()
                         binding.appBarLayout.setExpanded(true)
+                        binding.appList.smoothScrollToPosition(0)
                         return null
                     }
                 }
@@ -249,7 +250,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleState(state : MainState) = when (state) {
         MainState.Loading -> {
-            binding.refreshIcon.animate().rotationBy(-180f)
+            binding.refreshIcon.apply { animate().rotation(rotation - 180f) }
             binding.swipeRefreshLayout.isRefreshing = true
         }
 
