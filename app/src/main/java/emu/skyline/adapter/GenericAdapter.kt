@@ -32,7 +32,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
 
     private val asyncListDiffer = AsyncListDiffer(this, DIFFER)
     private val headerItems = mutableListOf<GenericListItem<out ViewBinding>>()
-    private val allItems = mutableListOf<GenericListItem<out ViewBinding>>()
+    val allItems = mutableListOf<GenericListItem<out ViewBinding>>()
     val currentItems : List<GenericListItem<in ViewBinding>> get() = asyncListDiffer.currentList
 
     var currentSearchTerm = ""

@@ -26,14 +26,15 @@ import kotlin.math.abs
  * @param item This is used to hold the [ControllerButtonViewItem] between instances
  */
 class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null) : BottomSheetDialogFragment() {
-    private lateinit var binding : ButtonDialogBinding
+    private var _binding : ButtonDialogBinding? = null
+    private val binding get() = _binding!!
 
     private val inputManager by lazy { requireContext().getInputManager() }
 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = ButtonDialogBinding.inflate(inflater).also { binding = it }.root
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = ButtonDialogBinding.inflate(inflater).also { _binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible
@@ -238,5 +239,10 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
         } else {
             dismiss()
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

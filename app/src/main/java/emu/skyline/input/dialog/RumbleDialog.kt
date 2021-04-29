@@ -26,14 +26,15 @@ import emu.skyline.input.ControllerActivity
  * @param item This is used to hold the [ControllerGeneralViewItem] between instances
  */
 class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewItem? = null) : BottomSheetDialogFragment() {
-    private lateinit var binding : RumbleDialogBinding
+    private var _binding : RumbleDialogBinding? = null
+    private val binding get() = _binding!!
 
     private val inputManager by lazy { requireContext().getInputManager() }
 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = RumbleDialogBinding.inflate(inflater).also { binding = it }.root
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = RumbleDialogBinding.inflate(inflater).also { _binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible
@@ -138,5 +139,10 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
         } else {
             dismiss()
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

@@ -42,7 +42,8 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         Stick(R.string.stick_preview);
     }
 
-    private lateinit var binding : StickDialogBinding
+    private var _binding : StickDialogBinding? = null
+    private val binding get() = _binding!!
 
     /**
      * This is the current stage of the dialog
@@ -69,7 +70,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = StickDialogBinding.inflate(inflater).also { binding = it }.root
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = StickDialogBinding.inflate(inflater).also { _binding = it }.root
 
     /**
      * This expands the bottom sheet so that it's fully visible
@@ -95,12 +96,12 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         stageAnimation?.let { handler.removeCallbacks(it) }
 
         binding.stickContainer.animate()
-                .scaleX(1f).scaleY(1f)
-                .alpha(1f)
-                .translationY(0f).translationX(0f)
-                .rotationX(0f)
-                .rotationY(0f)
-                .start()
+            .scaleX(1f).scaleY(1f)
+            .alpha(1f)
+            .translationY(0f).translationX(0f)
+            .rotationX(0f)
+            .rotationY(0f)
+            .start()
 
         when (stage) {
             DialogStage.Button -> {
@@ -606,5 +607,10 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         } else {
             dismiss()
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

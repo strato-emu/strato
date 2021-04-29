@@ -299,7 +299,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
 
         var layoutTypeChanged = false
-        for (appViewItem in adapter.currentItems.filterIsInstance(AppViewItem::class.java)) {
+        for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {
             if (layoutType != appViewItem.layoutType) {
                 appViewItem.layoutType = layoutType
                 layoutTypeChanged = true
