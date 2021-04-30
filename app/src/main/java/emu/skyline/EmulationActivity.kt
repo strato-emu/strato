@@ -218,7 +218,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         // Hide on screen controls when first controller is not set
         binding.onScreenControllerView.apply {
-            isGone = inputManager.controllers[0]!!.type == ControllerType.None || !settings.onScreenControl
+            inputManager.controllers[0]!!.type.let {
+                controllerType = it
+                isGone = it == ControllerType.None || !settings.onScreenControl
+            }
             setOnButtonStateChangedListener(::onButtonStateChanged)
             setOnStickStateChangedListener(::onStickStateChanged)
             recenterSticks = settings.onScreenControlRecenterSticks
@@ -414,14 +417,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) = setButtonState(0, buttonId.value(), state.state)
 
-    private fun onStickStateChanged(buttonId : ButtonId, position : PointF) {
-        val stickId = when (buttonId) {
-            ButtonId.LeftStick -> StickId.Left
-
-            ButtonId.RightStick -> StickId.Right
-
-            else -> error("Invalid button ID")
-        }
+    private fun onStickStateChanged(stickId : StickId, position : PointF) {
         setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
         setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted, since drawing starts from top left
     }

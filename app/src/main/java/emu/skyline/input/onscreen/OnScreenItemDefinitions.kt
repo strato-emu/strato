@@ -12,25 +12,27 @@ import androidx.core.graphics.minus
 import emu.skyline.R
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonId.*
+import emu.skyline.input.StickId
+import emu.skyline.input.StickId.*
 import emu.skyline.utils.add
 import emu.skyline.utils.multiply
 import kotlin.math.roundToInt
 
 open class CircularButton(
-        onScreenControllerView : OnScreenControllerView,
-        buttonId : ButtonId,
-        defaultRelativeX : Float,
-        defaultRelativeY : Float,
-        defaultRelativeRadiusToX : Float,
-        drawableId : Int = R.drawable.ic_button
+    onScreenControllerView : OnScreenControllerView,
+    buttonId : ButtonId,
+    defaultRelativeX : Float,
+    defaultRelativeY : Float,
+    defaultRelativeRadiusToX : Float,
+    drawableId : Int = R.drawable.ic_button
 ) : OnScreenButton(
-        onScreenControllerView,
-        buttonId,
-        defaultRelativeX,
-        defaultRelativeY,
-        defaultRelativeRadiusToX * 2f,
-        defaultRelativeRadiusToX * CONFIGURED_ASPECT_RATIO * 2f,
-        drawableId
+    onScreenControllerView,
+    buttonId,
+    defaultRelativeX,
+    defaultRelativeY,
+    defaultRelativeRadiusToX * 2f,
+    defaultRelativeRadiusToX * CONFIGURED_ASPECT_RATIO * 2f,
+    drawableId
 ) {
     val radius get() = itemWidth / 2f
 
@@ -49,18 +51,18 @@ open class CircularButton(
 }
 
 class JoystickButton(
-        onScreenControllerView : OnScreenControllerView,
-        buttonId : ButtonId,
-        defaultRelativeX : Float,
-        defaultRelativeY : Float,
-        defaultRelativeRadiusToX : Float
+    onScreenControllerView : OnScreenControllerView,
+    val stickId : StickId,
+    defaultRelativeX : Float,
+    defaultRelativeY : Float,
+    defaultRelativeRadiusToX : Float
 ) : CircularButton(
-        onScreenControllerView,
-        buttonId,
-        defaultRelativeX,
-        defaultRelativeY,
-        defaultRelativeRadiusToX,
-        R.drawable.ic_button
+    onScreenControllerView,
+    stickId.button,
+    defaultRelativeX,
+    defaultRelativeY,
+    defaultRelativeRadiusToX,
+    R.drawable.ic_button
 ) {
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
@@ -155,21 +157,21 @@ class JoystickButton(
 }
 
 open class RectangularButton(
-        onScreenControllerView : OnScreenControllerView,
-        buttonId : ButtonId,
-        defaultRelativeX : Float,
-        defaultRelativeY : Float,
-        defaultRelativeWidth : Float,
-        defaultRelativeHeight : Float,
-        drawableId : Int = R.drawable.ic_rectangular_button
+    onScreenControllerView : OnScreenControllerView,
+    buttonId : ButtonId,
+    defaultRelativeX : Float,
+    defaultRelativeY : Float,
+    defaultRelativeWidth : Float,
+    defaultRelativeHeight : Float,
+    drawableId : Int = R.drawable.ic_rectangular_button
 ) : OnScreenButton(
-        onScreenControllerView,
-        buttonId,
-        defaultRelativeX,
-        defaultRelativeY,
-        defaultRelativeWidth,
-        defaultRelativeHeight,
-        drawableId
+    onScreenControllerView,
+    buttonId,
+    defaultRelativeX,
+    defaultRelativeY,
+    defaultRelativeWidth,
+    defaultRelativeHeight,
+    drawableId
 ) {
     override fun isTouched(x : Float, y : Float) = currentBounds.contains(x.roundToInt(), y.roundToInt())
 
@@ -183,26 +185,26 @@ open class RectangularButton(
 }
 
 class TriggerButton(
-        onScreenControllerView : OnScreenControllerView,
-        buttonId : ButtonId,
-        defaultRelativeX : Float,
-        defaultRelativeY : Float,
-        defaultRelativeWidth : Float,
-        defaultRelativeHeight : Float
+    onScreenControllerView : OnScreenControllerView,
+    buttonId : ButtonId,
+    defaultRelativeX : Float,
+    defaultRelativeY : Float,
+    defaultRelativeWidth : Float,
+    defaultRelativeHeight : Float
 ) : RectangularButton(
-        onScreenControllerView,
-        buttonId,
-        defaultRelativeX,
-        defaultRelativeY,
-        defaultRelativeWidth,
-        defaultRelativeHeight,
-        when (buttonId) {
-            ZL -> R.drawable.ic_trigger_button_left
+    onScreenControllerView,
+    buttonId,
+    defaultRelativeX,
+    defaultRelativeY,
+    defaultRelativeWidth,
+    defaultRelativeHeight,
+    when (buttonId) {
+        ZL -> R.drawable.ic_trigger_button_left
 
-            ZR -> R.drawable.ic_trigger_button_right
+        ZR -> R.drawable.ic_trigger_button_right
 
-            else -> error("Unsupported trigger button")
-        }
+        else -> error("Unsupported trigger button")
+    }
 )
 
 class Controls(onScreenControllerView : OnScreenControllerView) {
@@ -229,14 +231,14 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     val buttonPairs = circularButtonPairs + triggerButtonPairs
 
     val circularButtons = circularButtonPairs.flatten() + listOf(
-            CircularButton(onScreenControllerView, Plus, 0.57f, 0.75f, 0.025f),
-            CircularButton(onScreenControllerView, Minus, 0.43f, 0.75f, 0.025f),
-            CircularButton(onScreenControllerView, Menu, 0.5f, 0.75f, 0.025f)
+        CircularButton(onScreenControllerView, Plus, 0.57f, 0.75f, 0.025f),
+        CircularButton(onScreenControllerView, Minus, 0.43f, 0.75f, 0.025f),
+        CircularButton(onScreenControllerView, Menu, 0.5f, 0.75f, 0.025f)
     )
 
     val joysticks = listOf(
-            JoystickButton(onScreenControllerView, LeftStick, 0.1f, 0.8f, 0.05f),
-            JoystickButton(onScreenControllerView, RightStick, 0.75f, 0.6f, 0.05f)
+        JoystickButton(onScreenControllerView, Left, 0.1f, 0.8f, 0.05f),
+        JoystickButton(onScreenControllerView, Right, 0.75f, 0.6f, 0.05f)
     )
 
     val rectangularButtons = listOf(buttonL, buttonR)
