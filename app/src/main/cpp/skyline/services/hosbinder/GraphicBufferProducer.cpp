@@ -5,7 +5,7 @@
 
 #include <android/hardware_buffer.h>
 #include <gpu.h>
-#include <gpu/format.h>
+#include <gpu/texture/format.h>
 #include <soc.h>
 #include <common/settings.h>
 #include <services/nvdrv/driver.h>
@@ -137,9 +137,14 @@ namespace skyline::service::hosbinder {
             throw exception("Any non-identity sticky transform is not supported: '{}' ({:#b})", ToString(stickyTransform), static_cast<u32>(stickyTransform));
 
         fence.Wait(state.soc->host1x);
-        buffer.texture->SynchronizeHost();
-        state.gpu->presentation.Present(slot);
-        state.gpu->presentation.bufferEvent->Signal();
+
+        {
+            std::scoped_lock textureLock(*buffer.texture);
+            buffer.texture->SynchronizeHost();
+            buffer.texture->WaitOnFence();
+            state.gpu->presentation.Present(slot);
+            state.gpu->presentation.bufferEvent->Signal();
+        }
 
         width = defaultWidth;
         height = defaultHeight;
@@ -345,14 +350,14 @@ namespace skyline::service::hosbinder {
 
         gpu::texture::TileMode tileMode;
         gpu::texture::TileConfig tileConfig;
-        if (surface.layout != NvSurfaceLayout::Blocklinear) {
+        if (surface.layout == NvSurfaceLayout::Blocklinear) {
             tileMode = gpu::texture::TileMode::Block;
             tileConfig = {
                 .surfaceWidth = static_cast<u16>(surface.width),
                 .blockHeight = static_cast<u8>(1U << surface.blockHeightLog2),
                 .blockDepth = 1,
             };
-        } else if (surface.layout != NvSurfaceLayout::Pitch) {
+        } else if (surface.layout == NvSurfaceLayout::Pitch) {
             tileMode = gpu::texture::TileMode::Pitch;
             tileConfig = {
                 .pitch = surface.pitch,
@@ -408,12 +413,13 @@ namespace skyline::service::hosbinder {
                 auto queueBufferInputSize{in.Pop<u64>()};
                 if (queueBufferInputSize != QueueBufferInputSize)
                     throw exception("The size of QueueBufferInput in the Parcel (0x{:X}) doesn't match the expected size (0x{:X})", queueBufferInputSize, QueueBufferInputSize);
-                QueueBuffer(slot, in.Pop<i64>(), in.Pop<u32>(), in.Pop<AndroidRect>(), in.Pop<NativeWindowScalingMode>(), in.Pop<NativeWindowTransform>(), in.Pop<NativeWindowTransform>(), in.Pop<u32>(), in.Pop<u32>(), in.Pop<AndroidFence>(), width, height, transformHint, pendingBufferCount);
+                auto result{QueueBuffer(slot, in.Pop<i64>(), in.Pop<u32>(), in.Pop<AndroidRect>(), in.Pop<NativeWindowScalingMode>(), in.Pop<NativeWindowTransform>(), in.Pop<NativeWindowTransform>(), in.Pop<u32>(), in.Pop<u32>(), in.Pop<AndroidFence>(), width, height, transformHint, pendingBufferCount)};
 
                 out.Push(width);
                 out.Push(height);
                 out.Push(transformHint);
                 out.Push(pendingBufferCount);
+                out.Push(result);
                 break;
             }
 

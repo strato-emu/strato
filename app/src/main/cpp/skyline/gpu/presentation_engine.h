@@ -5,9 +5,8 @@
 
 #include <common/trace.h>
 #include <kernel/types/KEvent.h>
-#include <services/hosbinder/native_window.h>
-#include <services/hosbinder/android_types.h>
-#include "texture.h"
+#include <services/hosbinder/GraphicBufferProducer.h>
+#include "texture/texture.h"
 
 struct ANativeWindow;
 
@@ -18,25 +17,35 @@ namespace skyline::gpu {
     class PresentationEngine {
       private:
         const DeviceState &state;
-        const GPU &gpu;
+        GPU &gpu;
+
         std::mutex mutex; //!< Synchronizes access to the surface objects
         std::condition_variable surfaceCondition; //!< Allows us to efficiently wait for Vulkan surface to be initialized
-        jobject surface{}; //!< The Surface object backing the ANativeWindow
+        jobject jSurface{}; //!< The Java Surface object backing the ANativeWindow
 
         std::optional<vk::raii::SurfaceKHR> vkSurface; //!< The Vulkan Surface object that is backed by ANativeWindow
-        std::optional<service::hosbinder::NativeWindowTransform> transformHint; //!< The optimal transform for the application to render as
+        vk::SurfaceCapabilitiesKHR vkSurfaceCapabilities; //!< The capabilities of the current Vulkan Surface
+
         std::optional<vk::raii::SwapchainKHR> vkSwapchain; //!< The Vulkan swapchain and the properties associated with it
         struct SwapchainContext {
-            u16 imageCount{};
-            i32 dequeuedCount{};
+            std::array<std::shared_ptr<Texture>, service::hosbinder::GraphicBufferProducer::MaxSlotCount> textures{};
+            std::array<VkImage, service::hosbinder::GraphicBufferProducer::MaxSlotCount> vkImages{VK_NULL_HANDLE};
+            u8 imageCount{};
+            i8 dequeuedCount{};
             vk::Format imageFormat{};
             vk::Extent2D imageExtent{};
+
+            static_assert(std::numeric_limits<decltype(imageCount)>::max() >= service::hosbinder::GraphicBufferProducer::MaxSlotCount);
+            static_assert(std::numeric_limits<decltype(dequeuedCount)>::max() >= service::hosbinder::GraphicBufferProducer::MaxSlotCount);
         } swapchain; //!< The properties of the currently created swapchain
 
         u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
-        void UpdateSwapchain(u16 imageCount, vk::Format imageFormat, vk::Extent2D imageExtent);
+        /**
+         * @note 'PresentationEngine::mutex' **must** be locked prior to calling this
+         */
+        void UpdateSwapchain(u16 imageCount, vk::Format imageFormat, vk::Extent2D imageExtent, bool newSurface = false);
 
       public:
         texture::Dimensions resolution{};
@@ -44,7 +53,7 @@ namespace skyline::gpu {
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Signalled every time a frame is drawn
         std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< Signalled every time a buffer is freed
 
-        PresentationEngine(const DeviceState &state, const GPU& gpu);
+        PresentationEngine(const DeviceState &state, GPU &gpu);
 
         ~PresentationEngine();
 
@@ -56,18 +65,18 @@ namespace skyline::gpu {
         /**
          * @brief Creates a Texture object from a GuestTexture as a part of the Vulkan swapchain
          */
-        std::shared_ptr<Texture> CreatePresentationTexture(const std::shared_ptr<GuestTexture> &texture, u32 slot);
+        std::shared_ptr<Texture> CreatePresentationTexture(const std::shared_ptr<GuestTexture> &texture, u8 slot);
 
         /**
          * @param async If to return immediately when a texture is not available
          * @param slot The slot the freed texture is in is written into this, it is untouched if there's an error
          */
-        service::hosbinder::AndroidStatus GetFreeTexture(bool async, i32& slot);
+        service::hosbinder::AndroidStatus GetFreeTexture(bool async, i32 &slot);
 
         /**
          * @brief Send a texture from a slot to the presentation queue to be displayed
          */
-        void Present(i32 slot);
+        void Present(u32 slot);
 
         /**
          * @return A transform that the application should render with to elide costly transforms later

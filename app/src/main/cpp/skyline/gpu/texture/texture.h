@@ -3,8 +3,7 @@
 
 #pragma once
 
-#include <common.h>
-#include <vulkan/vulkan_raii.hpp>
+#include <gpu/fence_cycle.h>
 
 namespace skyline::gpu {
     namespace texture {
@@ -111,7 +110,7 @@ namespace skyline::gpu {
             u32 pitch; //!< The pitch of the texture if it's pitch linear
         };
 
-        enum class SwizzleChannel {
+        enum class SwizzleChannel : u8 {
             Zero, //!< Write 0 to the channel
             One, //!< Write 1 to the channel
             Red, //!< Red color channel
@@ -125,6 +124,32 @@ namespace skyline::gpu {
             SwizzleChannel green{SwizzleChannel::Green}; //!< Swizzle for the green channel
             SwizzleChannel blue{SwizzleChannel::Blue}; //!< Swizzle for the blue channel
             SwizzleChannel alpha{SwizzleChannel::Alpha}; //!< Swizzle for the alpha channel
+
+            constexpr operator vk::ComponentMapping() {
+                auto swizzleConvert{[](SwizzleChannel channel) {
+                    switch (channel) {
+                        case SwizzleChannel::Zero:
+                            return vk::ComponentSwizzle::eZero;
+                        case SwizzleChannel::One:
+                            return vk::ComponentSwizzle::eOne;
+                        case SwizzleChannel::Red:
+                            return vk::ComponentSwizzle::eR;
+                        case SwizzleChannel::Green:
+                            return vk::ComponentSwizzle::eG;
+                        case SwizzleChannel::Blue:
+                            return vk::ComponentSwizzle::eB;
+                        case SwizzleChannel::Alpha:
+                            return vk::ComponentSwizzle::eA;
+                    }
+                }};
+
+                return vk::ComponentMapping{
+                    .r = swizzleConvert(red),
+                    .g = swizzleConvert(green),
+                    .b = swizzleConvert(blue),
+                    .a = swizzleConvert(alpha),
+                };
+            }
         };
     }
 
@@ -154,29 +179,101 @@ namespace skyline::gpu {
 
         /**
          * @brief Creates a corresponding host texture object for this guest texture
-         * @param backing The Vulkan Image that is used as the backing on the host
+         * @param backing The Vulkan Image that is used as the backing on the host, its lifetime is not managed by the host texture object
+         * @param tiling The tiling used by the image on host, this is the same as guest by default
+         * @param layout The initial layout of the Vulkan Image, this is used for efficient layout management
          * @param format The format of the host texture (Defaults to the format of the guest texture)
          * @param dimensions The dimensions of the host texture (Defaults to the dimensions of the host texture)
          * @param swizzle The channel swizzle of the host texture (Defaults to no channel swizzling)
          * @return A shared pointer to the host texture object
          * @note There can only be one host texture for a corresponding guest texture
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
+
+        /**
+         * @note As a RAII object is used here, the lifetime of the backing is handled by the host texture
+         */
+        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
     };
 
     /**
      * @brief A texture which is backed by host constructs while being synchronized with the underlying guest texture
+     * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
     class Texture {
-      public:
-        vk::raii::Image backing; //!< The object that holds a host copy of the guest texture
-        std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing
-        texture::Dimensions dimensions;
-        texture::Format format;
-        texture::Swizzle swizzle;
+      private:
+        GPU &gpu;
+        std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing
+        std::condition_variable backingCondition; //!< Signalled when a valid backing has been swapped in
+        using BackingType = std::variant<vk::Image, vk::raii::Image>;
+        BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
+        std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
+        vk::ImageLayout layout;
+
+        /**
+         * @note The handle returned is nullable and the appropriate precautions should be taken
+         */
+        constexpr vk::Image GetBacking() {
+            return std::visit(VariantVisitor{
+                [](vk::Image image) { return image; },
+                [](const vk::raii::Image &image) { return *image; },
+            }, backing);
+        }
 
       public:
-        Texture(vk::raii::Image &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, texture::Swizzle swizzle);
+        std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing and not nullable
+        texture::Dimensions dimensions;
+        texture::Format format;
+        vk::ImageTiling tiling;
+        vk::ComponentMapping mapping;
+
+        Texture(GPU &gpu, BackingType &&backing, vk::ImageLayout layout, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, vk::ImageTiling tiling, vk::ComponentMapping mapping);
+
+        /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         */
+        void lock() {
+            mutex.lock();
+        }
+
+        /**
+         * @brief Relinquishes an existing lock on the texture by the calling thread
+         */
+        void unlock() {
+            mutex.unlock();
+        }
+
+        /**
+         * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
+         */
+        bool try_lock() {
+            return mutex.try_lock();
+        }
+
+        /**
+         * @brief Waits on the texture backing to be a valid non-null Vulkan image
+         * @return If the mutex could be unlocked during the function
+         * @note The texture **must** be locked prior to calling this
+         */
+        bool WaitOnBacking();
+
+        /**
+         * @brief Waits on a fence cycle if it exists till it's signalled and resets it after
+         * @note The texture **must** be locked prior to calling this
+         */
+        void WaitOnFence();
+
+        /**
+         * @note All memory residing in the current backing is not copied to the new backing, it must be handled externally
+         * @note The texture **must** be locked prior to calling this
+         */
+        void SwapBacking(BackingType &&backing, vk::ImageLayout layout = vk::ImageLayout::eUndefined);
+
+        /**
+         * @brief Transitions the backing to the supplied layout, if the backing already is in this layout then this does nothing
+         * @note The texture **must** be locked prior to calling this
+         */
+        void TransitionLayout(vk::ImageLayout layout);
 
         /**
          * @brief Convert this texture to the specified tiling mode
@@ -202,11 +299,13 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
+         * @note The texture **must** be locked prior to calling this
          */
         void SynchronizeHost();
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
+         * @note The texture **must** be locked prior to calling this
          */
         void SynchronizeGuest();
     };

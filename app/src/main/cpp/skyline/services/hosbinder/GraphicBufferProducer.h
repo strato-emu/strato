@@ -80,10 +80,12 @@ namespace skyline::service::hosbinder {
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueCore.cpp
      */
     class GraphicBufferProducer {
+      public:
+        constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16 (https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueDefs.h;l=29)
+
       private:
         const DeviceState &state;
         std::mutex mutex; //!< Synchronizes access to the buffer queue
-        constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16
         std::array<BufferSlot, MaxSlotCount> queue;
         u8 activeSlotCount{2}; //!< The amount of slots in the queue that can be used
         u8 hasBufferCount{}; //!< The amount of slots with buffers attached in the queue

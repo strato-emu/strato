@@ -90,8 +90,8 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
         ${source_DIR}/skyline/gpu/command_scheduler.cpp
+        ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
-        ${source_DIR}/skyline/gpu/texture.cpp
         ${source_DIR}/skyline/soc/gmmu.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
         ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp

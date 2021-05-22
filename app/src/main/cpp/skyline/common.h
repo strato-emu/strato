@@ -21,6 +21,7 @@
 #include <sstream>
 #include <memory>
 #include <compare>
+#include <variant>
 #include <sys/mman.h>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -443,6 +444,13 @@ namespace skyline {
     span(Container &) -> span<typename Container::value_type>;
     template<typename Container>
     span(const Container &) -> span<const typename Container::value_type>;
+
+    /**
+     * @brief A deduction guide for overloads required for std::visit with std::variant
+     */
+    template<class... Ts>
+    struct VariantVisitor : Ts ... { using Ts::operator()...; };
+    template<class... Ts> VariantVisitor(Ts...) -> VariantVisitor<Ts...>;
 
     /**
      * @brief A wrapper around writing logs into a log file and logcat using Android Log APIs

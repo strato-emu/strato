@@ -183,6 +183,6 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        state.logger->Verbose("Output: Raw Size: {}, Command ID: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
+        state.logger->Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
     }
 }
