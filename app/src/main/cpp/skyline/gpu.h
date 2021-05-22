@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "gpu/memory_manager.h"
+#include "gpu/command_scheduler.h"
 #include "gpu/presentation_engine.h"
 
 namespace skyline::gpu {
@@ -22,14 +24,19 @@ namespace skyline::gpu {
         static vk::raii::Device CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration);
 
       public:
-        vk::raii::Context vkContext; //!< An overarching context for Vulkan with
-        vk::raii::Instance vkInstance; //!< An instance of Vulkan with all application context
-        vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into DebugCallback
-        vk::raii::PhysicalDevice vkPhysicalDevice; //!< The underlying physical Vulkan device from which we derieve our logical device
-        typeof(vk::DeviceQueueCreateInfo::queueCount) vkQueueFamilyIndex{}; //!< The index of the family the queue is from
-        vk::raii::Device vkDevice; //!< The logical Vulkan device which we want to render using
+        static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
+
+        vk::raii::Context vkContext;
+        vk::raii::Instance vkInstance;
+        vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into 'GPU::DebugCallback'
+        vk::raii::PhysicalDevice vkPhysicalDevice;
+        typeof(vk::DeviceQueueCreateInfo::queueCount) vkQueueFamilyIndex{};
+        vk::raii::Device vkDevice;
+        std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations
 
+        memory::MemoryManager memory;
+        CommandScheduler scheduler;
         PresentationEngine presentation;
 
         GPU(const DeviceState &state);

@@ -10,10 +10,10 @@ namespace skyline::gpu {
             .pApplicationName = "Skyline",
             .applicationVersion = state.jvm->GetVersionCode(), // Get the application version from JNI
             .pEngineName = "FTX1", // "Fast Tegra X1"
-            .apiVersion = VK_API_VERSION_1_1,
+            .apiVersion = VkApiVersion,
         };
 
-        #ifdef NDEBUG
+        #ifndef NDEBUG
         constexpr std::array<const char *, 0> requiredLayers{};
         #else
         constexpr std::array<const char *, 1> requiredLayers{
@@ -39,18 +39,11 @@ namespace skyline::gpu {
                 throw exception("Cannot find Vulkan layer: \"{}\"", requiredLayer);
         }
 
-        #ifdef NDEBUG
-        constexpr std::array<const char*, 2> requiredInstanceExtensions{
-            VK_KHR_SURFACE_EXTENSION_NAME,
-            VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-        };
-        #else
-        constexpr std::array<const char *, 3> requiredInstanceExtensions{
+        constexpr std::array<const char*, 3> requiredInstanceExtensions{
             VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
         };
-        #endif
 
         auto instanceExtensions{context.enumerateInstanceExtensionProperties()};
         if (state.logger->configLevel >= Logger::LogLevel::Debug) {
@@ -161,5 +154,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), presentation(state, *this) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this) {}
 }

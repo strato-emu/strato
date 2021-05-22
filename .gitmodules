@@ -25,3 +25,6 @@
 [submodule "app/libraries/vkhpp"]
 	path = app/libraries/vkhpp
 	url = https://github.com/KhronosGroup/Vulkan-Hpp
+[submodule "app/libraries/vkma"]
+	path = app/libraries/vkma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
