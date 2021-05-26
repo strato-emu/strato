@@ -80,7 +80,7 @@ namespace skyline::service::nvdrv::device {
          * @brief Sets the timeslice of the channel
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_TIMESLICE)
          */
-        NvStatus SetTimeslice(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer);
+        NvStatus SetTimeslice(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
 
         /**
          * @brief Sets the user specific data
@@ -100,6 +100,7 @@ namespace skyline::service::nvdrv::device {
             NVFUNC(0x480D, NvHostChannel, SetPriority),
             NVFUNC(0x481A, NvHostChannel, AllocGpfifoEx2),
             NVFUNC(0x481B, NvHostChannel, SubmitGpfifo), // Our SubmitGpfifo implementation also handles SubmitGpfifoEx
+            NVFUNC(0x481D, NvHostChannel, SetTimeslice),
             NVFUNC(0x4714, NvHostChannel, SetUserData)
         )
     };

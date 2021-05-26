@@ -119,7 +119,8 @@ namespace skyline::service::nvdrv::device {
         return NvStatus::Success;
     }
 
-    NvStatus NvHostChannel::SetTimeslice(IoctlType type, std::span<u8> buffer, std::span<u8> inlineBuffer) {
+    NvStatus NvHostChannel::SetTimeslice(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
+        timeslice = buffer.as<u32>();
         return NvStatus::Success;
     }
 
