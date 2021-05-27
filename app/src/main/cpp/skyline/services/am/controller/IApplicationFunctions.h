@@ -43,7 +43,7 @@ namespace skyline::service::am {
         Result NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Returns a UUID, however what it refers to is currently unknown
+         * @brief Returns a V5 UUID generated from a seed in control.nacp and a device specific seed
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetPseudoDeviceId
          */
         Result GetPseudoDeviceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

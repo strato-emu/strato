@@ -16,6 +16,11 @@ namespace skyline {
         static UUID GenerateUuidV4();
 
         /**
+         * @brief Generates a version 5 UUID from the given SHA1
+         */
+        static UUID GenerateUuidV5(const std::array<u8, 20> sha1);
+
+        /**
          * @brief Checks if a UUID is an invalid nil UUID
          */
         bool Valid() {

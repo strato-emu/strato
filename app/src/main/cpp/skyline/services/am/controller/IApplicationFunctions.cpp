@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/uuid.h>
+#include <mbedtls/sha1.h>
+#include <loader/loader.h>
 #include <kernel/types/KProcess.h>
 #include <services/account/IAccountServiceForApplication.h>
 #include <services/am/storage/IStorage.h>
@@ -39,8 +42,15 @@ namespace skyline::service::am {
     }
 
     Result IApplicationFunctions::GetPseudoDeviceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u64>(0L);
-        response.Push<u64>(0L);
+        auto seedForPseudoDeviceId{state.loader->nacp->nacpContents.seedForPseudoDeviceId};
+        std::array<u8, 20> hashBuf{};
+
+        // On HOS the seed from control.ncap is hashed together with the device specific device ID seed,
+        // for us it's enough to just hash the seed from control.nacp as it provides the same guarantees.
+        if (int err{mbedtls_sha1_ret(seedForPseudoDeviceId.data(), seedForPseudoDeviceId.size(), hashBuf.data())}; err < 0)
+            throw exception("Failed to hash device ID, err: {}", err);
+
+        response.Push<UUID>(UUID::GenerateUuidV5(hashBuf));
         return {};
     }
 

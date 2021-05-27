@@ -74,4 +74,18 @@ namespace skyline {
 
         return uuid.Swap();
     }
+
+    UUID UUID::GenerateUuidV5(const std::array<u8, 20> sha1) {
+        constexpr u8 reserved{0x1}; // RFC4122 variant
+        constexpr u8 version{0x5}; // v4 UUIDs are generated using SHA1 hashes
+
+        UuidLayout uuid;
+        std::memcpy(&uuid, sha1.data(), sizeof(UuidLayout));
+
+        // Set format bits
+        uuid.reserved = reserved;
+        uuid.version = version;
+
+        return uuid.Swap();
+    }
 }

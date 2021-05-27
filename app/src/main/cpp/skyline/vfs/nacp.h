@@ -26,7 +26,9 @@ namespace skyline::vfs {
             std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
             u8 _pad0_[0x78];
             u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
-            u8 _pad1_[0xF80];
+            u8 _pad1_[0x78];
+            std::array<u8, 8> seedForPseudoDeviceId; //!< Seed that is combined with the device seed for generating the pseudo-device ID
+            u8 _pad2_[0xF00];
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
