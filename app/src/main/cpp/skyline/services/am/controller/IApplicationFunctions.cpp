@@ -62,6 +62,47 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result IApplicationFunctions::InitializeApplicationCopyrightFrameBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        i32 width{request.Pop<i32>()};
+        i32 height{request.Pop<i32>()};
+        u64 transferMemorySize{request.Pop<u64>()};
+
+        constexpr i32 MaximumFbWidth{1280};
+        constexpr i32 MaximumFbHeight{720};
+        constexpr u64 RequiredFbAlignment{0x40000};
+
+        if (width > MaximumFbWidth || height > MaximumFbHeight || !util::IsAligned(transferMemorySize, RequiredFbAlignment))
+            return result::InvalidParameters;
+
+        state.logger->Debug("Dimensions: ({}, {}) Transfer Memory Size: {}", width, height, transferMemorySize);
+
+        return {};
+    }
+
+    Result IApplicationFunctions::SetApplicationCopyrightImage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        i32 x{request.Pop<i32>()};
+        i32 y{request.Pop<i32>()};
+        i32 width{request.Pop<i32>()};
+        i32 height{request.Pop<i32>()};
+
+        enum class WindowOriginMode : i32 {
+            LowerLeft,
+            UpperLeft
+        } originMode = request.Pop<WindowOriginMode>();
+
+        if (y < 0 || x < 0 || width < 1 || height < 1)
+            return result::InvalidParameters;
+
+        state.logger->Debug("Position: ({}, {}) Dimensions: ({}, {}) Origin mode: {}", x, y, width, height, static_cast<i32>(originMode));
+        return {};
+    }
+
+    Result IApplicationFunctions::SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        u8 visiblity{request.Pop<u8>()};
+        state.logger->Debug("Visiblity: {}", visiblity);
+        return {};
+    }
+
     Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(gpuErrorEvent)};
         state.logger->Debug("GPU Error Event Handle: 0x{:X}", handle);
