@@ -58,6 +58,13 @@ namespace skyline::service::am {
         return {};
     }
 
+
+    Result ISelfController::GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        // TODO: Properly handle this after we implement game suspending
+        response.Push<u64>(0);
+        return {};
+    }
+
     Result ISelfController::GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(accumulatedSuspendedTickChangedEvent)};
         state.logger->Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);

@@ -73,7 +73,13 @@ namespace skyline::service::am {
         Result CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Returns a handle to the system sleep time change KEvent
+         * @brief Returns how long the process was suspended for in ticks
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickValue
+         */
+        Result GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Returns a handle to a KEvent that is signalled when the accumulated suspend tick value changes
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickChangedEvent
          */
         Result GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -88,7 +94,8 @@ namespace skyline::service::am {
             SFUNC(0xE, ISelfController, SetRestartMessageEnabled),
             SFUNC(0x10, ISelfController, SetOutOfFocusSuspendingEnabled),
             SFUNC(0x28, ISelfController, CreateManagedDisplayLayer),
-            SFUNC(0x5B, ISelfController, GetLibraryAppletLaunchableEvent)
+            SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
+            SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent)
         )
     };
 }
