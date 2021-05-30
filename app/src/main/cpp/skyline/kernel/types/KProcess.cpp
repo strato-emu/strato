@@ -110,6 +110,9 @@ namespace skyline::kernel::type {
         try {
             owner = GetHandle<KThread>(ownerHandle);
         } catch (const std::out_of_range &) {
+            if (*mutex != (ownerHandle | HandleWaitersBit))
+                return result::InvalidCurrentMemory;
+
             return result::InvalidHandle;
         }
 
