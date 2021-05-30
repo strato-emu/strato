@@ -231,16 +231,25 @@ namespace skyline::kernel::type {
     }
 
     void KThread::ArmPreemptionTimer(std::chrono::nanoseconds timeToFire) {
-        struct itimerspec spec{.it_value = {
-            .tv_nsec = std::min(timeToFire.count(), static_cast<long long>(constant::NsInSecond)),
-            .tv_sec = std::max(std::chrono::duration_cast<std::chrono::seconds>(timeToFire).count() - 1, 0LL),
-        }};
-        timer_settime(preemptionTimer, 0, &spec, nullptr);
-        isPreempted = true;
+        std::unique_lock lock(statusMutex);
+        statusCondition.wait(lock, [this]() { return ready || killed; });
+        if (!killed && running) {
+            struct itimerspec spec{.it_value = {
+                .tv_nsec = std::min(timeToFire.count(), static_cast<long long>(constant::NsInSecond)),
+                .tv_sec = std::max(std::chrono::duration_cast<std::chrono::seconds>(timeToFire).count() - 1, 0LL),
+            }};
+            timer_settime(preemptionTimer, 0, &spec, nullptr);
+            isPreempted = true;
+        }
     }
 
     void KThread::DisarmPreemptionTimer() {
-        if (isPreempted) {
+        if (!isPreempted)
+            return;
+
+        std::unique_lock lock(statusMutex);
+        statusCondition.wait(lock, [this]() { return ready || killed; });
+        if (!killed && running) {
             struct itimerspec spec{};
             timer_settime(preemptionTimer, 0, &spec, nullptr);
             isPreempted = false;
