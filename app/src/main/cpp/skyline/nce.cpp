@@ -34,7 +34,7 @@ namespace skyline::nce {
             }
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->ErrorNoPrefix("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
+                state.logger->ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
