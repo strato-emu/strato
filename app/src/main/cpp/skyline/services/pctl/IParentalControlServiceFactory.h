@@ -15,7 +15,7 @@ namespace skyline::service::pctl {
         IParentalControlServiceFactory(const DeviceState &state, ServiceManager &manager);
 
         /**
-         * @brief Creates and initializes an IParentalControlService instance that can be used to read parental control configuration
+         * @brief Creates and initializes (if 0x0) an IParentalControlService instance that can be used to read parental control configuration
          */
         Result CreateService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 

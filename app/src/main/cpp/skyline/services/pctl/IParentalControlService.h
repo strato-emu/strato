@@ -13,5 +13,14 @@ namespace skyline::service::pctl {
     class IParentalControlService : public BaseService {
       public:
         IParentalControlService(const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @brief Initialises the parental control service instance
+         */
+        Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x1, IParentalControlService, Initialize)
+        )
     };
 }
