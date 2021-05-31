@@ -46,10 +46,10 @@ namespace skyline::loader {
         executable.ro.offset = header.ro.memoryOffset;
 
         executable.data.contents = GetSegment(backing, header.data, header.flags.dataCompressed ? header.dataCompressedSize : 0);
-        executable.data.contents.resize(util::AlignUp(executable.data.contents.size(), PAGE_SIZE));
         executable.data.offset = header.data.memoryOffset;
 
-        executable.bssSize = util::AlignUp(header.bssSize, PAGE_SIZE);
+        // Data and BSS are aligned together
+        executable.bssSize = util::AlignUp(executable.data.contents.size() + header.bssSize, PAGE_SIZE) - executable.data.contents.size();
 
         if (header.dynsym.offset + header.dynsym.size <= header.ro.decompressedSize && header.dynstr.offset + header.dynstr.size <= header.ro.decompressedSize) {
             executable.dynsym = {header.dynsym.offset, header.dynsym.size};
