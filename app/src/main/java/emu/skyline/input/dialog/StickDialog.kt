@@ -106,7 +106,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
         when (stage) {
             DialogStage.Button -> {
                 stageAnimation = Runnable {
-                    if (stage != DialogStage.Button || animationStop)
+                    if (!isAdded || stage != DialogStage.Button || animationStop)
                         return@Runnable
 
                     binding.stickContainer.animate().scaleX(0.85f).scaleY(0.85f).alpha(1f).withEndAction {
@@ -114,7 +114,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             return@withEndAction
 
                         val runnable = Runnable {
-                            if (stage != DialogStage.Button || animationStop)
+                            if (!isAdded || stage != DialogStage.Button || animationStop)
                                 return@Runnable
 
                             binding.stickContainer.animate().scaleX(1f).scaleY(1f).alpha(0.85f).withEndAction {
@@ -136,7 +136,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                 val polarity = if (stage == DialogStage.YMinus) 1 else -1
 
                 stageAnimation = Runnable {
-                    if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
+                    if (!isAdded || (stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                         return@Runnable
 
                     binding.stickContainer.animate().setDuration(300).translationY(dipToPixels(15f) * polarity).rotationX(27f * polarity).alpha(1f).withEndAction {
@@ -144,7 +144,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             return@withEndAction
 
                         val runnable = Runnable {
-                            if ((stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
+                            if (!isAdded || (stage != DialogStage.YPlus && stage != DialogStage.YMinus) || animationStop)
                                 return@Runnable
 
                             binding.stickContainer.animate().setDuration(250).translationY(0f).rotationX(0f).alpha(0.85f).withEndAction {
@@ -166,7 +166,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                 val polarity = if (stage == DialogStage.XPlus) 1 else -1
 
                 stageAnimation = Runnable {
-                    if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
+                    if (!isAdded || (stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                         return@Runnable
 
                     binding.stickContainer.animate().setDuration(300).translationX(dipToPixels(16.5f) * polarity).rotationY(27f * polarity).alpha(1f).withEndAction {
@@ -174,7 +174,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                             return@withEndAction
 
                         val runnable = Runnable {
-                            if ((stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
+                            if (!isAdded || (stage != DialogStage.XPlus && stage != DialogStage.XMinus) || animationStop)
                                 return@Runnable
 
                             binding.stickContainer.animate().setDuration(250).translationX(0f).rotationY(0f).alpha(0.85f).withEndAction {
