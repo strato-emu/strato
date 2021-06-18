@@ -45,12 +45,18 @@ namespace skyline::service::hosbinder {
     /**
      * @brief Nvidia and Nintendo's Android fence implementation, this significantly differs from the Android implementation (All FDs are inlined as integers rather than explicitly passed as FDs) but is a direct replacement
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/ui/Fence.h
+     * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/ui/Fence.cpp
      */
     struct AndroidFence {
         u32 fenceCount{}; //!< The amount of active fences in the array
         std::array<nvdrv::Fence, 4> fences{}; //!< Nvidia's Android fence can hold a maximum of 4 fence FDs
 
-        AndroidFence() : fenceCount(0) {}
+        static constexpr u32 InvalidFenceId{0xFFFFFFFF}; //!< A magic value for the syncpoint ID of invalid fences (https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/ui/Fence.h;l=61)
+
+        /**
+         * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/ui/Fence.cpp;l=34-36
+         */
+        AndroidFence() : fenceCount(0), fences({InvalidFenceId}) {}
 
         /**
          * @brief Wait on all native fences in this Android fence till they're signalled
@@ -59,8 +65,8 @@ namespace skyline::service::hosbinder {
             if (fenceCount > fences.size())
                 throw exception("Wait has larger fence count ({}) than storage size ({})", fenceCount, fences.size());
             for (auto it{fences.begin()}, end{fences.begin() + fenceCount}; it < end; it++)
-                if (!host1x.syncpoints.at(it->id).Wait(it->value, std::chrono::steady_clock::duration::max()))
-                    throw exception("Waiting on native fence #{} (Host1X Syncpoint: {}) has timed out", std::distance(fences.begin(), it), it->id);
+                if (it->id != InvalidFenceId)
+                    host1x.syncpoints.at(it->id).Wait(it->value, std::chrono::steady_clock::duration::max());
         }
     };
 

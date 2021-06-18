@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include <services/common/parcel.h>
 #include "android_types.h"
 #include "native_window.h"
@@ -80,12 +81,10 @@ namespace skyline::service::hosbinder {
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueCore.cpp
      */
     class GraphicBufferProducer {
-      public:
-        constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16 (https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueDefs.h;l=29)
-
       private:
         const DeviceState &state;
         std::mutex mutex; //!< Synchronizes access to the buffer queue
+        constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16 (https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueDefs.h;l=29)
         std::array<BufferSlot, MaxSlotCount> queue;
         u8 activeSlotCount{2}; //!< The amount of slots in the queue that can be used
         u8 hasBufferCount{}; //!< The amount of slots with buffers attached in the queue
@@ -93,6 +92,7 @@ namespace skyline::service::hosbinder {
         u32 defaultHeight{1}; //!< The assumed height of a buffer if none is supplied in DequeueBuffer
         AndroidPixelFormat defaultFormat{AndroidPixelFormat::RGBA8888}; //!< The assumed format of a buffer if none is supplied in DequeueBuffer
         NativeWindowApi connectedApi{NativeWindowApi::None}; //!< The API that the producer is currently connected to
+        u64 frameNumber{}; //!< The amount of frames that have been presented so far
 
         /**
          * @return The amount of buffers which have been queued onto the consumer
@@ -156,6 +156,7 @@ namespace skyline::service::hosbinder {
         AndroidStatus SetPreallocatedBuffer(i32 slot, const GraphicBuffer &graphicBuffer);
 
       public:
+        std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< Signalled every time a buffer in the queue is freed
         DisplayId displayId{DisplayId::Null}; //!< The ID of this display
         LayerStatus layerStatus{LayerStatus::Uninitialized}; //!< The status of the single layer the display has
 

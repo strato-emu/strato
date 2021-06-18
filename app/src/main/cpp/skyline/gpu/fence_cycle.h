@@ -123,8 +123,8 @@ namespace skyline::gpu {
                     }
                 }
 
-                const auto& first{*dependencies.begin()};
-                const auto& last{*dependencies.end()};
+                const auto &first{*dependencies.begin()};
+                const auto &last{*dependencies.end()};
                 std::shared_ptr<FenceCycleDependency> next{std::atomic_load_explicit(&list, std::memory_order_consume)};
                 do {
                     last->next = next;

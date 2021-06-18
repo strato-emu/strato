@@ -7,7 +7,7 @@
 
 namespace skyline::service::visrv {
     /**
-     * @brief This is used to access the display
+     * @brief This is used by applications to access the display
      * @url https://switchbrew.org/wiki/Display_services#IApplicationDisplayService
      */
     class IApplicationDisplayService : public IDisplayService {

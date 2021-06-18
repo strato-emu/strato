@@ -47,6 +47,7 @@ namespace skyline::soc::host1x {
         /**
          * @brief Waits for the syncpoint to reach given threshold
          * @return If the wait was successful (true) or timed out (false)
+         * @note Guaranteed to succeed when 'steady_clock::duration::max()' is used
          */
         bool Wait(u32 threshold, std::chrono::steady_clock::duration timeout);
     };

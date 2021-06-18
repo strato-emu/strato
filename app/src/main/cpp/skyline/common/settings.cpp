@@ -16,9 +16,9 @@ namespace skyline {
         #define PREF_ELEM(name, memberName, rhs) std::make_pair(std::string(name), [](Settings &settings, const pugi::xml_node &element) { settings.memberName = rhs; })
 
         std::tuple preferences{
-            PREF_ELEM("operation_mode", operationMode, element.attribute("value").as_bool()),
-            PREF_ELEM("username_value", username, element.text().as_string()),
             PREF_ELEM("log_level", logLevel, static_cast<Logger::LogLevel>(element.text().as_uint(static_cast<unsigned int>(Logger::LogLevel::Info)))),
+            PREF_ELEM("username_value", username, element.text().as_string()),
+            PREF_ELEM("operation_mode", operationMode, element.attribute("value").as_bool()),
         };
 
         #undef PREF_ELEM

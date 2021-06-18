@@ -40,7 +40,7 @@ namespace skyline::service::hosbinder {
     }
 
     Result IHOSBinderDriver::GetNativeHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        KHandle handle{state.process->InsertItem(state.gpu->presentation.bufferEvent)};
+        KHandle handle{state.process->InsertItem(producer->bufferEvent)};
         state.logger->Debug("Display Buffer Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 

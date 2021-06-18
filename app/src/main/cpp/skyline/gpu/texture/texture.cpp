@@ -7,27 +7,74 @@
 #include "texture.h"
 
 namespace skyline::gpu {
-    GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
+    GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format &format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
 
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::Image backing, std::optional<vk::ImageTiling> tiling, vk::ImageLayout pLayout, std::optional<texture::Format> pFormat, std::optional<texture::Dimensions> pDimensions, texture::Swizzle swizzle) {
+    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::Image backing, texture::Dimensions pDimensions, const texture::Format &pFormat, std::optional<vk::ImageTiling> tiling, vk::ImageLayout layout, texture::Swizzle swizzle) {
         if (!host.expired())
             throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(*state.gpu, backing, pLayout, shared_from_this(), pDimensions ? *pDimensions : dimensions, pFormat ? *pFormat : format, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
+        auto sharedHost{std::make_shared<Texture>(*state.gpu, backing, shared_from_this(), pDimensions ? pDimensions : dimensions, pFormat ? pFormat : format, layout, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
         host = sharedHost;
         return sharedHost;
     }
 
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling, vk::ImageLayout pLayout, std::optional<texture::Format> pFormat, std::optional<texture::Dimensions> pDimensions, texture::Swizzle swizzle) {
+    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling, vk::ImageLayout layout, const texture::Format &pFormat, texture::Dimensions pDimensions, texture::Swizzle swizzle) {
         if (!host.expired())
             throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(*state.gpu, std::move(backing), pLayout, shared_from_this(), pDimensions ? *pDimensions : dimensions, pFormat ? *pFormat : format, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
+        auto sharedHost{std::make_shared<Texture>(*state.gpu, std::move(backing), shared_from_this(), pDimensions ? pDimensions : dimensions, pFormat ? pFormat : format, layout, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
         host = sharedHost;
         return sharedHost;
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, vk::ImageLayout layout, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), backing(std::move(backing)), layout(layout), guest(std::move(guest)), dimensions(dimensions), format(format), tiling(tiling), mapping(mapping) {
+    std::shared_ptr<Texture> GuestTexture::CreateTexture(vk::ImageUsageFlags usage, std::optional<vk::ImageTiling> pTiling, vk::ImageLayout initialLayout, const texture::Format &pFormat, texture::Dimensions pDimensions, texture::Swizzle swizzle) {
+        if (!host.expired())
+            throw exception("Trying to create multiple Texture objects from a single GuestTexture");
+
+        pDimensions = pDimensions ? pDimensions : dimensions;
+        const auto &lFormat{pFormat ? pFormat : format};
+        auto tiling{pTiling ? *pTiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear};
+        vk::ImageCreateInfo imageCreateInfo{
+            .imageType = pDimensions.GetType(),
+            .format = lFormat,
+            .extent = pDimensions,
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = tiling,
+            .usage = usage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+            .sharingMode = vk::SharingMode::eExclusive,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &state.gpu->vkQueueFamilyIndex,
+            .initialLayout = initialLayout,
+        };
+
+        auto sharedHost{std::make_shared<Texture>(*state.gpu, tiling != vk::ImageTiling::eLinear ? state.gpu->memory.AllocateImage(imageCreateInfo) : state.gpu->memory.AllocateMappedImage(imageCreateInfo), shared_from_this(), pDimensions, lFormat, initialLayout, tiling, swizzle)};
+        host = sharedHost;
+        return sharedHost;
+    }
+
+    Texture::Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), backing(std::move(backing)), layout(layout), guest(std::move(guest)), dimensions(dimensions), format(format), tiling(tiling), mapping(mapping) {
         if (GetBacking())
             SynchronizeHost();
+    }
+
+    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), backing(std::move(backing)), guest(nullptr), dimensions(dimensions), format(format), layout(layout), tiling(tiling), mapping(mapping) {}
+
+    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), guest(nullptr), dimensions(dimensions), format(format), layout(initialLayout), tiling(tiling), mapping(mapping) {
+        vk::ImageCreateInfo imageCreateInfo{
+            .imageType = dimensions.GetType(),
+            .format = format,
+            .extent = dimensions,
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = tiling,
+            .usage = usage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+            .sharingMode = vk::SharingMode::eExclusive,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
+            .initialLayout = initialLayout,
+        };
+        backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
     }
 
     bool Texture::WaitOnBacking() {
@@ -83,13 +130,23 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost() {
+        if (!guest)
+            throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
+
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
         auto pointer{guest->pointer};
         auto size{format.GetSize(dimensions)};
 
-        auto stagingBuffer{[&]() {
-            if (tiling == vk::ImageTiling::eOptimal) {
-                return gpu.memory.AllocateStagingBuffer(size);
+        u8 *bufferData;
+        auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
+            if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
+                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+                bufferData = stagingBuffer->data();
+                return stagingBuffer;
+            } else if (tiling == vk::ImageTiling::eLinear) {
+                bufferData = std::get<memory::Image>(backing).data();
+                WaitOnFence();
+                return nullptr;
             } else {
                 throw exception("Guest -> Host synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
             }
@@ -112,7 +169,7 @@ namespace skyline::gpu {
             auto gobYOffset{robWidthBytes * gobHeight}; // The offset of the next Y-axis GOB from the current one in linear space
 
             auto inputSector{pointer}; // The address of the input sector
-            auto outputRob{stagingBuffer->data()}; // The address of the output block
+            auto outputRob{bufferData}; // The address of the output block
 
             for (u32 rob{}, y{}, paddingY{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
                 auto outputBlock{outputRob}; // We iterate through a block independently of the ROB
@@ -141,7 +198,7 @@ namespace skyline::gpu {
             auto sizeStride{guest->format.GetSize(guest->tileConfig.pitch, 1)}; // The size of a single stride of pixel data
 
             auto inputLine{pointer}; // The address of the input line
-            auto outputLine{stagingBuffer->data()}; // The address of the output line
+            auto outputLine{bufferData}; // The address of the output line
 
             for (u32 line{}; line < dimensions.height; line++) {
                 std::memcpy(outputLine, inputLine, sizeLine);
@@ -149,18 +206,113 @@ namespace skyline::gpu {
                 outputLine += sizeLine;
             }
         } else if (guest->tileMode == texture::TileMode::Linear) {
-            std::memcpy(stagingBuffer->data(), pointer, size);
+            std::memcpy(bufferData, pointer, size);
         }
 
-        if (WaitOnBacking() && size != format.GetSize(dimensions))
-            throw exception("Backing properties changing during sync is not supported");
+        if (stagingBuffer) {
+            if (WaitOnBacking() && size != format.GetSize(dimensions))
+                throw exception("Backing properties changing during sync is not supported");
+            WaitOnFence();
+
+            cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+                auto image{GetBacking()};
+                if (layout != vk::ImageLayout::eTransferDstOptimal) {
+                    commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = image,
+                        .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                        .oldLayout = layout,
+                        .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = {
+                            .aspectMask = vk::ImageAspectFlagBits::eColor,
+                            .levelCount = 1,
+                            .layerCount = 1,
+                        },
+                    });
+
+                    if (layout == vk::ImageLayout::eUndefined)
+                        layout = vk::ImageLayout::eTransferDstOptimal;
+                }
+
+                commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, vk::ImageLayout::eTransferDstOptimal, vk::BufferImageCopy{
+                    .imageExtent = dimensions,
+                    .imageSubresource = {
+                        .aspectMask = vk::ImageAspectFlagBits::eColor,
+                        .layerCount = 1,
+                    },
+                });
+
+                if (layout != vk::ImageLayout::eTransferDstOptimal)
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = image,
+                        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+                        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                        .newLayout = layout,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = {
+                            .aspectMask = vk::ImageAspectFlagBits::eColor,
+                            .levelCount = 1,
+                            .layerCount = 1,
+                        },
+                    });
+            });
+
+            cycle->AttachObject(stagingBuffer);
+        }
+    }
+
+    void Texture::SynchronizeGuest() {
+        if (!guest)
+            throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
+
+        WaitOnBacking();
         WaitOnFence();
 
+        TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
+        // TODO: Write Host -> Guest Synchronization
+    }
+
+    void Texture::CopyFrom(std::shared_ptr<Texture> source) {
+        WaitOnBacking();
+        WaitOnFence();
+
+        source->WaitOnBacking();
+        source->WaitOnFence();
+
+        if (source->layout == vk::ImageLayout::eUndefined)
+            throw exception("Cannot copy from image with undefined layout");
+        else if (source->dimensions != dimensions)
+            throw exception("Cannot copy from image with different dimensions");
+        else if (source->format != format)
+            throw exception("Cannot copy from image with different format");
+
         cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
-            auto image{GetBacking()};
+            auto sourceBacking{source->GetBacking()};
+            if (source->layout != vk::ImageLayout::eTransferSrcOptimal) {
+                commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                    .image = sourceBacking,
+                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                    .oldLayout = source->layout,
+                    .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .subresourceRange = {
+                        .aspectMask = vk::ImageAspectFlagBits::eColor,
+                        .levelCount = 1,
+                        .layerCount = 1,
+                    },
+                });
+            }
+
+            auto destinationBacking{GetBacking()};
             if (layout != vk::ImageLayout::eTransferDstOptimal) {
                 commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = image,
+                    .image = destinationBacking,
                     .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
                     .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
                     .oldLayout = layout,
@@ -178,17 +330,21 @@ namespace skyline::gpu {
                     layout = vk::ImageLayout::eTransferDstOptimal;
             }
 
-            commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, vk::ImageLayout::eTransferDstOptimal, vk::BufferImageCopy{
-                .imageExtent = dimensions,
-                .imageSubresource = {
+            commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
+                .srcSubresource = {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
                     .layerCount = 1,
                 },
+                .dstSubresource = {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .layerCount = 1,
+                },
+                .extent = dimensions,
             });
 
             if (layout != vk::ImageLayout::eTransferDstOptimal)
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = image,
+                    .image = destinationBacking,
                     .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
                     .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
                     .oldLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -201,16 +357,23 @@ namespace skyline::gpu {
                         .layerCount = 1,
                     },
                 });
+
+            if (layout != vk::ImageLayout::eTransferSrcOptimal)
+                commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                    .image = sourceBacking,
+                    .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+                    .dstAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                    .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+                    .newLayout = source->layout,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .subresourceRange = {
+                        .aspectMask = vk::ImageAspectFlagBits::eColor,
+                        .levelCount = 1,
+                        .layerCount = 1,
+                    },
+                });
         });
-
-        cycle->AttachObject(stagingBuffer);
-    }
-
-    void Texture::SynchronizeGuest() {
-        WaitOnBacking();
-        WaitOnFence();
-
-        TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
-        // TODO: Write Host -> Guest Synchronization
+        cycle->AttachObject(source);
     }
 }

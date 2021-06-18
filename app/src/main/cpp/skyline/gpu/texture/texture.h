@@ -14,13 +14,19 @@ namespace skyline::gpu {
 
             constexpr Dimensions() : width(0), height(0), depth(0) {}
 
+            constexpr Dimensions(u32 width) : width(width), height(1), depth(1) {}
+
             constexpr Dimensions(u32 width, u32 height) : width(width), height(height), depth(1) {}
 
             constexpr Dimensions(u32 width, u32 height, u32 depth) : width(width), height(height), depth(depth) {}
 
+            constexpr Dimensions(vk::Extent2D extent) : Dimensions(extent.width, extent.height) {}
+
+            constexpr Dimensions(vk::Extent3D extent) : Dimensions(extent.width, extent.height, extent.depth) {}
+
             auto operator<=>(const Dimensions &) const = default;
 
-            vk::ImageType GetType() {
+            constexpr vk::ImageType GetType() const {
                 if (depth)
                     return vk::ImageType::e3D;
                 else if (width)
@@ -29,19 +35,26 @@ namespace skyline::gpu {
                     return vk::ImageType::e1D;
             }
 
-            operator vk::Extent2D() {
+            constexpr operator vk::Extent2D() const {
                 return vk::Extent2D{
                     .width = width,
                     .height = height,
                 };
             }
 
-            operator vk::Extent3D() {
+            constexpr operator vk::Extent3D() const {
                 return vk::Extent3D{
                     .width = width,
                     .height = height,
                     .depth = depth,
                 };
+            }
+
+            /**
+             * @return If the dimensions are valid and don't equate to zero
+             */
+            constexpr operator bool() const {
+                return width && height && depth;
             }
         };
 
@@ -49,12 +62,12 @@ namespace skyline::gpu {
          * @note Blocks refers to the atomic unit of a compressed format (IE: The minimum amount of data that can be decompressed)
          */
         struct Format {
-            u8 bpb; //!< Bytes Per Block, this is used instead of bytes per pixel as that might not be a whole number for compressed formats
-            u16 blockHeight; //!< The height of a block in pixels
-            u16 blockWidth; //!< The width of a block in pixels
-            vk::Format vkFormat;
+            u8 bpb{}; //!< Bytes Per Block, this is used instead of bytes per pixel as that might not be a whole number for compressed formats
+            u16 blockHeight{}; //!< The height of a block in pixels
+            u16 blockWidth{}; //!< The width of a block in pixels
+            vk::Format vkFormat{vk::Format::eUndefined};
 
-            constexpr bool IsCompressed() {
+            constexpr bool IsCompressed() const {
                 return (blockHeight != 1) || (blockWidth != 1);
             }
 
@@ -64,26 +77,30 @@ namespace skyline::gpu {
              * @param depth The depth of the texture in layers
              * @return The size of the texture in bytes
              */
-            constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) {
+            constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) const {
                 return (((width / blockWidth) * (height / blockHeight)) * bpb) * depth;
             }
 
-            constexpr size_t GetSize(Dimensions dimensions) {
+            constexpr size_t GetSize(Dimensions dimensions) const {
                 return GetSize(dimensions.width, dimensions.height, dimensions.depth);
             }
 
-            constexpr bool operator==(const Format &format) {
+            constexpr bool operator==(const Format &format) const {
                 return vkFormat == format.vkFormat;
             }
 
-            constexpr bool operator!=(const Format &format) {
+            constexpr bool operator!=(const Format &format) const {
                 return vkFormat != format.vkFormat;
+            }
+
+            constexpr operator vk::Format() const {
+                return vkFormat;
             }
 
             /**
              * @return If this format is actually valid or not
              */
-            constexpr operator bool() {
+            constexpr operator bool() const {
                 return bpb;
             }
         };
@@ -171,7 +188,7 @@ namespace skyline::gpu {
         texture::TileMode tileMode;
         texture::TileConfig tileConfig;
 
-        GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, texture::Format format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
+        GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format& format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
 
         constexpr size_t Size() {
             return format.GetSize(dimensions);
@@ -180,32 +197,39 @@ namespace skyline::gpu {
         /**
          * @brief Creates a corresponding host texture object for this guest texture
          * @param backing The Vulkan Image that is used as the backing on the host, its lifetime is not managed by the host texture object
+         * @param dimensions The dimensions of the host texture (Defaults to the dimensions of the host texture)
+         * @param format The format of the host texture (Defaults to the format of the guest texture)
          * @param tiling The tiling used by the image on host, this is the same as guest by default
          * @param layout The initial layout of the Vulkan Image, this is used for efficient layout management
-         * @param format The format of the host texture (Defaults to the format of the guest texture)
-         * @param dimensions The dimensions of the host texture (Defaults to the dimensions of the host texture)
          * @param swizzle The channel swizzle of the host texture (Defaults to no channel swizzling)
          * @return A shared pointer to the host texture object
          * @note There can only be one host texture for a corresponding guest texture
+         * @note If any of the supplied parameters do not match up with the backing then it's undefined behavior
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, texture::Dimensions dimensions = {}, const texture::Format& format = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, texture::Swizzle swizzle = {});
 
         /**
          * @note As a RAII object is used here, the lifetime of the backing is handled by the host texture
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, std::optional<texture::Format> format = std::nullopt, std::optional<texture::Dimensions> dimensions = std::nullopt, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, const texture::Format& format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
+
+        /**
+         * @brief Similar to InitializeTexture but creation of the backing and allocation of memory for the backing is automatically performed by the function
+         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
+         */
+        std::shared_ptr<Texture> CreateTexture(vk::ImageUsageFlags usage = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, const texture::Format& format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
     };
 
     /**
      * @brief A texture which is backed by host constructs while being synchronized with the underlying guest texture
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class Texture {
+    class Texture : public FenceCycleDependency {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing
         std::condition_variable backingCondition; //!< Signalled when a valid backing has been swapped in
-        using BackingType = std::variant<vk::Image, vk::raii::Image>;
+        using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
         std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
         vk::ImageLayout layout;
@@ -217,17 +241,26 @@ namespace skyline::gpu {
             return std::visit(VariantVisitor{
                 [](vk::Image image) { return image; },
                 [](const vk::raii::Image &image) { return *image; },
+                [](const memory::Image &image) { return image.vkImage; },
             }, backing);
         }
 
       public:
-        std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing and not nullable
+        std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing
         texture::Dimensions dimensions;
         texture::Format format;
         vk::ImageTiling tiling;
         vk::ComponentMapping mapping;
 
-        Texture(GPU &gpu, BackingType &&backing, vk::ImageLayout layout, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, texture::Format format, vk::ImageTiling tiling, vk::ComponentMapping mapping);
+        Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping);
+
+        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping = {});
+
+        /**
+         * @brief Creates and allocates memory for the backing to creates a texture object wrapping it
+         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
+         */
+        Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::ComponentMapping mapping = {});
 
         /**
          * @brief Acquires an exclusive lock on the texture for the calling thread
@@ -300,13 +333,20 @@ namespace skyline::gpu {
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
          * @note The texture **must** be locked prior to calling this
+         * @note The guest texture should not be null prior to calling this
          */
         void SynchronizeHost();
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
          * @note The texture **must** be locked prior to calling this
+         * @note The guest texture should not be null prior to calling this
          */
         void SynchronizeGuest();
+
+        /**
+         * @brief Copies the contents of the supplied source texture into the current texture
+         */
+        void CopyFrom(std::shared_ptr<Texture> source);
     };
 }

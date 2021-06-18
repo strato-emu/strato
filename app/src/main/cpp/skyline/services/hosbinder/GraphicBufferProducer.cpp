@@ -14,7 +14,7 @@
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state) {}
+    GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)) {}
 
     u8 GraphicBufferProducer::GetPendingBufferCount() {
         u8 count{};
@@ -45,36 +45,53 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         }
 
-        constexpr i32 invalidGraphicBufferSlot{-1}; //!< https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h;l=61
-        slot = invalidGraphicBufferSlot;
+        constexpr i32 InvalidGraphicBufferSlot{-1}; //!< https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h;l=61
+        slot = InvalidGraphicBufferSlot;
 
         std::lock_guard guard(mutex);
-        auto result{state.gpu->presentation.GetFreeTexture(async, slot)};
-        if (result != AndroidStatus::Ok) [[unlikely]] {
-            if (result == AndroidStatus::Busy)
-                state.logger->Warn("No free buffers to dequeue");
-            return result;
+        auto buffer{queue.end()};
+        while (true) {
+            size_t dequeuedSlotCount{};
+            for (auto it{queue.begin()}; it != queue.end(); it++) {
+                // We want to select the oldest slot that's free to use as we'd want all slots to be used
+                // If we go linearly then we have a higher preference for selecting the former slots and being out of order
+                if (it->state == BufferState::Free && it->texture) {
+                    if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
+                        buffer = it;
+                    else if (it->state == BufferState::Dequeued)
+                        dequeuedSlotCount++;
+                }
+            }
+
+            if (buffer != queue.end()) {
+                slot = std::distance(queue.begin(), buffer);
+                break;
+            } else if (async) {
+                return AndroidStatus::WouldBlock;
+            } else if (dequeuedSlotCount == queue.size()) {
+                state.logger->Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+                return AndroidStatus::InvalidOperation;
+            }
         }
 
         width = width ? width : defaultWidth;
         height = height ? height : defaultHeight;
         format = (format != AndroidPixelFormat::None) ? format : defaultFormat;
 
-        auto &buffer{queue.at(slot)};
-        if (!buffer.graphicBuffer) {
+        if (!buffer->graphicBuffer) {
             // Horizon OS doesn't ever allocate memory for the buffers on the GraphicBufferProducer end
             // All buffers must be preallocated on the client application and attached to an Android buffer using SetPreallocatedBuffer
             return AndroidStatus::NoMemory;
         }
-        auto &surface{buffer.graphicBuffer->graphicHandle.surfaces.front()};
-        if (buffer.graphicBuffer->format != format || surface.width != width || surface.height != height || (buffer.graphicBuffer->usage & usage) != usage) {
-            state.logger->Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer.graphicBuffer->format), usage, buffer.graphicBuffer->usage);
+        auto &surface{buffer->graphicBuffer->graphicHandle.surfaces.front()};
+        if (buffer->graphicBuffer->format != format || surface.width != width || surface.height != height || (buffer->graphicBuffer->usage & usage) != usage) {
+            state.logger->Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer->graphicBuffer->format), usage, buffer->graphicBuffer->usage);
             // Nintendo doesn't deallocate the slot which was picked in here and reallocate it as a compatible buffer
             // This is related to the comment above, Nintendo only allocates buffers on the client side
             return AndroidStatus::NoInit;
         }
 
-        buffer.state = BufferState::Dequeued;
+        buffer->state = BufferState::Dequeued;
         fence = AndroidFence{}; // We just let the presentation engine return a buffer which is ready to be written into, there is no need for further synchronization
 
         state.logger->Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
@@ -106,7 +123,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         } else if (!buffer.wasBufferRequested) [[unlikely]] {
             state.logger->Warn("#{} was queued prior to being requested", slot);
-            return AndroidStatus::BadValue;
+            buffer.wasBufferRequested = true; // Switch ignores this and doesn't return an error, certain homebrew ends up depending on this behavior
         }
 
         auto graphicBuffer{*buffer.graphicBuffer};
@@ -139,12 +156,15 @@ namespace skyline::service::hosbinder {
         fence.Wait(state.soc->host1x);
 
         {
-            std::scoped_lock textureLock(*buffer.texture);
-            buffer.texture->SynchronizeHost();
-            buffer.texture->WaitOnFence();
-            state.gpu->presentation.Present(slot);
-            state.gpu->presentation.bufferEvent->Signal();
+            auto &texture{buffer.texture};
+            std::scoped_lock textureLock(*texture);
+            texture->SynchronizeHost();
+            state.gpu->presentation.Present(texture, ++frameNumber);
         }
+
+        buffer.frameNumber = frameNumber;
+        buffer.state = BufferState::Free;
+        bufferEvent->Signal();
 
         width = defaultWidth;
         height = defaultHeight;
@@ -169,11 +189,10 @@ namespace skyline::service::hosbinder {
         }
 
         fence.Wait(state.soc->host1x);
-        state.gpu->presentation.Present(slot); // We use a present as a way to free the buffer so that it can be acquired in dequeueBuffer again
 
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
-        state.gpu->presentation.bufferEvent->Signal();
+        bufferEvent->Signal();
 
         state.logger->Debug("#{}", slot);
     }
@@ -349,7 +368,7 @@ namespace skyline::service::hosbinder {
             throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvBuffer->size, surface.offset, surface.offset + surface.size);
 
         gpu::texture::TileMode tileMode;
-        gpu::texture::TileConfig tileConfig;
+        gpu::texture::TileConfig tileConfig{};
         if (surface.layout == NvSurfaceLayout::Blocklinear) {
             tileMode = gpu::texture::TileMode::Block;
             tileConfig = {
@@ -373,11 +392,11 @@ namespace skyline::service::hosbinder {
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
         buffer.graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
-        buffer.texture = state.gpu->presentation.CreatePresentationTexture(texture, slot);
+        buffer.texture = texture->CreateTexture({}, vk::ImageTiling::eLinear, vk::ImageLayout::eGeneral);
 
         activeSlotCount = hasBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
 
-        state.gpu->presentation.bufferEvent->Signal();
+        bufferEvent->Signal();
 
         state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;

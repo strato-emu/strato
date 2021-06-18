@@ -46,8 +46,6 @@ namespace skyline::soc::host1x {
         std::condition_variable cv;
         bool flag{};
 
-        if (timeout == std::chrono::steady_clock::duration::max())
-            timeout = std::chrono::seconds(1);
         if (!RegisterWaiter(threshold, [&cv, &mtx, &flag] {
             std::unique_lock lock(mtx);
             flag = true;
@@ -58,7 +56,12 @@ namespace skyline::soc::host1x {
         }
 
         std::unique_lock lock(mtx);
-        return cv.wait_for(lock, timeout, [&flag] { return flag; });
+        if (timeout == std::chrono::steady_clock::duration::max()) {
+            cv.wait(lock, [&flag] { return flag; });
+            return true;
+        } else {
+            return cv.wait_for(lock, timeout, [&flag] { return flag; });
+        }
     }
 }
 

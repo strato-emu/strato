@@ -2,15 +2,18 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <android/native_window_jni.h>
-#include <gpu.h>
+#include <android/choreographer.h>
+#include <common/settings.h>
 #include <jvm.h>
+#include <gpu.h>
 #include "presentation_engine.h"
+#include "texture/format.h"
 
 extern skyline::i32 Fps;
 extern skyline::i32 FrameTime;
 
 namespace skyline::gpu {
-    PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu) : state(state), gpu(gpu), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()) {
+    PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu) : state(state), gpu(gpu), acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()), choreographerThread(&PresentationEngine::ChoreographerThread, this), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
@@ -20,6 +23,26 @@ namespace skyline::gpu {
         auto env{state.jvm->GetEnv()};
         if (!env->IsSameObject(jSurface, nullptr))
             env->DeleteGlobalRef(jSurface);
+
+        if (choreographerThread.joinable()) {
+            if (choreographerLooper)
+                ALooper_wake(choreographerLooper);
+            choreographerThread.join();
+        }
+    }
+
+    /**
+     * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_framecallback
+     */
+    void ChoreographerCallback(long frameTimeNanos, kernel::type::KEvent* vsyncEvent) {
+        vsyncEvent->Signal();
+        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent);
+    }
+
+    void PresentationEngine::ChoreographerThread() {
+        choreographerLooper = ALooper_prepare(0);
+        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent.get());
+        ALooper_pollAll(-1, nullptr, nullptr, nullptr);
     }
 
     service::hosbinder::NativeWindowTransform GetAndroidTransform(vk::SurfaceTransformFlagBitsKHR transform) {
@@ -45,58 +68,55 @@ namespace skyline::gpu {
         }
     }
 
-    void PresentationEngine::UpdateSwapchain(u16 imageCount, vk::Format imageFormat, vk::Extent2D imageExtent, bool newSurface) {
-        if (!imageCount)
-            return;
-        else if (imageCount > service::hosbinder::GraphicBufferProducer::MaxSlotCount)
-            throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", imageCount, service::hosbinder::GraphicBufferProducer::MaxSlotCount);
+    void PresentationEngine::UpdateSwapchain(texture::Format format, texture::Dimensions extent) {
+        auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, state.settings->forceTripleBuffering ? 3U : 0U)};
+        if (minImageCount > MaxSlotCount)
+            throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", minImageCount, MaxSlotCount);
 
         const auto &capabilities{vkSurfaceCapabilities};
-        if (imageCount < capabilities.minImageCount || (capabilities.maxImageCount && imageCount > capabilities.maxImageCount))
-            throw exception("Cannot update swapchain to accomodate image count: {} ({}-{})", imageCount, capabilities.minImageCount, capabilities.maxImageCount);
-        if (capabilities.minImageExtent.height > imageExtent.height || capabilities.minImageExtent.width > imageExtent.width || capabilities.maxImageExtent.height < imageExtent.height || capabilities.maxImageExtent.width < imageExtent.width)
-            throw exception("Cannot update swapchain to accomodate image extent: {}x{} ({}x{}-{}x{})", imageExtent.width, imageExtent.height, capabilities.minImageExtent.width, capabilities.minImageExtent.height, capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+        if (minImageCount < capabilities.minImageCount || (capabilities.maxImageCount && minImageCount > capabilities.maxImageCount))
+            throw exception("Cannot update swapchain to accomodate image count: {} ({}-{})", minImageCount, capabilities.minImageCount, capabilities.maxImageCount);
+        else if (capabilities.minImageExtent.height > extent.height || capabilities.minImageExtent.width > extent.width || capabilities.maxImageExtent.height < extent.height || capabilities.maxImageExtent.width < extent.width)
+            throw exception("Cannot update swapchain to accomodate image extent: {}x{} ({}x{}-{}x{})", extent.width, extent.height, capabilities.minImageExtent.width, capabilities.minImageExtent.height, capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
-        if (swapchain.imageFormat != imageFormat || newSurface) {
+        if (swapchainFormat != format) {
             auto formats{gpu.vkPhysicalDevice.getSurfaceFormatsKHR(**vkSurface)};
-            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{imageFormat, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
-                throw exception("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(imageFormat), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
+            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{format, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
+                throw exception("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(format), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
         }
 
         constexpr vk::ImageUsageFlags presentUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
         if ((capabilities.supportedUsageFlags & presentUsage) != presentUsage)
             throw exception("Swapchain doesn't support image usage '{}': {}", vk::to_string(presentUsage), vk::to_string(capabilities.supportedUsageFlags));
 
-        vkSwapchain = vk::raii::SwapchainKHR(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
+        vkSwapchain.emplace(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
-            .minImageCount = imageCount,
-            .imageFormat = imageFormat,
+            .minImageCount = minImageCount,
+            .imageFormat = format,
             .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
-            .imageExtent = imageExtent,
+            .imageExtent = extent,
             .imageArrayLayers = 1,
             .imageUsage = presentUsage,
             .imageSharingMode = vk::SharingMode::eExclusive,
             .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eInherit,
-            .presentMode = vk::PresentModeKHR::eFifo,
-            .clipped = false,
-            .oldSwapchain = vkSwapchain ? **vkSwapchain : vk::SwapchainKHR{},
+            .presentMode = vk::PresentModeKHR::eMailbox,
+            .clipped = true,
         });
 
         auto vkImages{vkSwapchain->getImages()};
-        for (u16 slot{}; slot < imageCount; slot++) {
-            auto &vkImage{vkImages[slot]};
-            swapchain.vkImages[slot] = vkImage;
-            auto &image{swapchain.textures[slot]};
-            if (image) {
-                std::scoped_lock lock(*image);
-                image->SwapBacking(vkImage);
-                image->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
-                image->SynchronizeHost(); // Synchronize the new host backing with guest memory
-            }
+        if (vkImages.size() > MaxSlotCount)
+            throw exception("Swapchain has higher image count ({}) than maximum slot count ({})", minImageCount, MaxSlotCount);
+
+        for (size_t index{}; index < vkImages.size(); index++) {
+            auto &slot{slots[index]};
+            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format::GetFormat(format), vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal);
+            slot->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
         }
-        swapchain.imageCount = imageCount;
-        swapchain.imageFormat = imageFormat;
-        swapchain.imageExtent = imageExtent;
+        for (size_t index{vkImages.size()}; index < MaxSlotCount; index++)
+            slots[index] = {};
+
+        swapchainFormat = format;
+        swapchainExtent = extent;
     }
 
     void PresentationEngine::UpdateSurface(jobject newSurface) {
@@ -110,18 +130,7 @@ namespace skyline::gpu {
         if (!env->IsSameObject(newSurface, nullptr))
             jSurface = env->NewGlobalRef(newSurface);
 
-        if (vkSwapchain) {
-            for (u16 slot{}; slot < swapchain.imageCount; slot++) {
-                auto &image{swapchain.textures[slot]};
-                if (image) {
-                    std::scoped_lock lock(*image);
-                    image->SynchronizeGuest(); // Synchronize host backing to guest memory prior to being destroyed
-                    image->SwapBacking(nullptr);
-                }
-            }
-            swapchain.vkImages = {};
-            vkSwapchain.reset();
-        }
+        vkSwapchain.reset();
 
         if (jSurface) {
             vkSurface.emplace(gpu.vkInstance, vk::AndroidSurfaceCreateInfoKHR{
@@ -131,7 +140,8 @@ namespace skyline::gpu {
                 throw exception("Vulkan Queue doesn't support presentation with surface");
             vkSurfaceCapabilities = gpu.vkPhysicalDevice.getSurfaceCapabilitiesKHR(**vkSurface);
 
-            UpdateSwapchain(swapchain.imageCount, swapchain.imageFormat, swapchain.imageExtent, true);
+            if (swapchainExtent && swapchainFormat)
+                UpdateSwapchain(swapchainFormat, swapchainExtent);
 
             surfaceCondition.notify_all();
         } else {
@@ -139,59 +149,31 @@ namespace skyline::gpu {
         }
     }
 
-    std::shared_ptr<Texture> PresentationEngine::CreatePresentationTexture(const std::shared_ptr<GuestTexture> &texture, u8 slot) {
-        std::lock_guard guard(mutex);
-        if (swapchain.imageCount <= slot && slot + 1 >= vkSurfaceCapabilities.minImageCount)
-            UpdateSwapchain(slot + 1, texture->format.vkFormat, texture->dimensions);
-        auto host{texture->InitializeTexture(swapchain.vkImages.at(slot), vk::ImageTiling::eOptimal)};
-        swapchain.textures[slot] = host;
-        return host;
-    }
-
-    service::hosbinder::AndroidStatus PresentationEngine::GetFreeTexture(bool async, i32 &slot) {
-        using AndroidStatus = service::hosbinder::AndroidStatus;
-
+    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, u64 presentId) {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
-        if (swapchain.dequeuedCount < swapchain.imageCount) {
-            static vk::raii::Fence fence(gpu.vkDevice, vk::FenceCreateInfo{});
-            auto timeout{async ? 0ULL : std::numeric_limits<u64>::max()}; // We cannot block for a buffer to be retrieved in async mode
-            auto nextImage{vkSwapchain->acquireNextImage(timeout, {}, *fence)};
-            if (nextImage.first == vk::Result::eSuccess) {
-                swapchain.dequeuedCount++;
-                while (gpu.vkDevice.waitForFences(*fence, true, std::numeric_limits<u64>::max()) == vk::Result::eTimeout);
-                slot = nextImage.second;
-                return AndroidStatus::Ok;
-            } else if (nextImage.first == vk::Result::eNotReady || nextImage.first == vk::Result::eTimeout) {
-                return AndroidStatus::WouldBlock;
-            } else if (nextImage.first == vk::Result::eSuboptimalKHR) {
+
+        if (texture->format != swapchainFormat || texture->dimensions != swapchainExtent)
+            UpdateSwapchain(texture->format, texture->dimensions);
+
+        std::pair<vk::Result, u32> nextImage;
+        while ((nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence)).first != vk::Result::eSuccess) [[unlikely]]
+            if (nextImage.first == vk::Result::eSuboptimalKHR)
                 surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
-                return GetFreeTexture(async, slot);
-            } else {
-                throw exception("VkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
-            }
-        }
-        return AndroidStatus::Busy;
-    }
+            else
+                throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
+        while (gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max()) == vk::Result::eTimeout);
 
-    void PresentationEngine::Present(u32 slot) {
-        std::unique_lock lock(mutex);
-        surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
-
-        if (--swapchain.dequeuedCount < 0) [[unlikely]] {
-            throw exception("Swapchain has been presented more times than images from it have been acquired: {} (Image Count: {})", swapchain.dequeuedCount, swapchain.imageCount);
-        }
+        slots.at(nextImage.second)->CopyFrom(texture);
 
         {
             std::lock_guard queueLock(gpu.queueMutex);
             static_cast<void>(gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
                 .swapchainCount = 1,
                 .pSwapchains = &**vkSwapchain,
-                .pImageIndices = &slot,
+                .pImageIndices = &nextImage.second,
             })); // We explicitly discard the result here as suboptimal images are expected when the game doesn't respect the transform hint
         }
-
-        vsyncEvent->Signal();
 
         if (frameTimestamp) {
             auto now{util::GetTimeNs()};
