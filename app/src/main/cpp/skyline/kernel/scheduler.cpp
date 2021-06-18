@@ -258,6 +258,9 @@ namespace skyline::kernel {
         std::unique_lock coreLock(core->mutex);
 
         auto currentIt{std::find(core->queue.begin(), core->queue.end(), thread)}, nextIt{std::next(currentIt)};
+        if (currentIt == core->queue.end())
+            return;
+
         if (currentIt == core->queue.begin()) {
             // Alternatively, if it's currently running then we'd just want to yield if there's a higher priority thread to run instead
             if (nextIt != core->queue.end() && (*nextIt)->priority < thread->priority) {
@@ -272,7 +275,7 @@ namespace skyline::kernel {
                 // If the thread no longer needs to be preempted due to its new priority then disarm its preemption timer
                 thread->DisarmPreemptionTimer();
             }
-        } else if (currentIt != core->queue.end() && (thread->priority < (*std::prev(currentIt))->priority || (nextIt != core->queue.end() && thread->priority > (*nextIt)->priority))) {
+        } else if (thread->priority < (*std::prev(currentIt))->priority || (nextIt != core->queue.end() && thread->priority > (*nextIt)->priority)) {
             // If the thread is in the queue and it's position is affected by the priority change then need to remove and re-insert the thread
             core->queue.erase(currentIt);
 
