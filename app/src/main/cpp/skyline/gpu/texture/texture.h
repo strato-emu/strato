@@ -188,7 +188,7 @@ namespace skyline::gpu {
         texture::TileMode tileMode;
         texture::TileConfig tileConfig;
 
-        GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format& format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
+        GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format &format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
 
         constexpr size_t Size() {
             return format.GetSize(dimensions);
@@ -206,18 +206,18 @@ namespace skyline::gpu {
          * @note There can only be one host texture for a corresponding guest texture
          * @note If any of the supplied parameters do not match up with the backing then it's undefined behavior
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, texture::Dimensions dimensions = {}, const texture::Format& format = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, texture::Dimensions dimensions = {}, const texture::Format &format = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, texture::Swizzle swizzle = {});
 
         /**
          * @note As a RAII object is used here, the lifetime of the backing is handled by the host texture
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, const texture::Format& format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, const texture::Format &format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
 
         /**
          * @brief Similar to InitializeTexture but creation of the backing and allocation of memory for the backing is automatically performed by the function
          * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
          */
-        std::shared_ptr<Texture> CreateTexture(vk::ImageUsageFlags usage = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, const texture::Format& format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
+        std::shared_ptr<Texture> CreateTexture(vk::ImageUsageFlags usage = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, const texture::Format &format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
     };
 
     /**
@@ -252,15 +252,15 @@ namespace skyline::gpu {
         vk::ImageTiling tiling;
         vk::ComponentMapping mapping;
 
-        Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping);
+        Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping);
 
-        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping = {});
+        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping = {});
 
         /**
          * @brief Creates and allocates memory for the backing to creates a texture object wrapping it
          * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
          */
-        Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format& format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::ComponentMapping mapping = {});
+        Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::ComponentMapping mapping = {});
 
         /**
          * @brief Acquires an exclusive lock on the texture for the calling thread

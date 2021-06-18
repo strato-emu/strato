@@ -17,7 +17,7 @@ namespace skyline {
          */
         class SyncpointEvent {
           private:
-            u64 waiterId{};
+            soc::host1x::Syncpoint::WaiterHandle waiterHandle{};
 
             void Signal();
 

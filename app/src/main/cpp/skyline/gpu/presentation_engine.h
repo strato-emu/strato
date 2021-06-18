@@ -32,14 +32,14 @@ namespace skyline::gpu {
         texture::Format swapchainFormat{}; //!< The image format of the textures in the current swapchain
         texture::Dimensions swapchainExtent{}; //!< The extent of images in the current swapchain
 
-        static constexpr size_t MaxSlotCount{6}; //!< The maximum amount of queue slots, this affects the amount of images that can be in the swapchain
-        std::array<std::shared_ptr<Texture>, MaxSlotCount> slots; //!< The backing for storing all slots and sorted in the same order as supplied by the Vulkan swapchain
+        static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
+        std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
 
         u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
         std::thread choreographerThread; //!< A thread for signalling the V-Sync event using AChoreographer
-        ALooper* choreographerLooper{}; //!< The looper object associated with the Choreographer thread
+        ALooper *choreographerLooper{}; //!< The looper object associated with the Choreographer thread
 
         /**
          * @brief The entry point for the the Choreographer thread, the function runs ALooper on the thread

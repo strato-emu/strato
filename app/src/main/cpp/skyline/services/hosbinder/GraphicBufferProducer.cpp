@@ -50,28 +50,32 @@ namespace skyline::service::hosbinder {
 
         std::lock_guard guard(mutex);
         auto buffer{queue.end()};
-        while (true) {
-            size_t dequeuedSlotCount{};
-            for (auto it{queue.begin()}; it != queue.end(); it++) {
-                // We want to select the oldest slot that's free to use as we'd want all slots to be used
-                // If we go linearly then we have a higher preference for selecting the former slots and being out of order
-                if (it->state == BufferState::Free && it->texture) {
-                    if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
-                        buffer = it;
-                    else if (it->state == BufferState::Dequeued)
-                        dequeuedSlotCount++;
-                }
+        size_t dequeuedSlotCount{};
+        for (auto it{queue.begin()}; it != queue.end(); it++) {
+            // We want to select the oldest slot that's free to use as we'd want all slots to be used
+            // If we go linearly then we have a higher preference for selecting the former slots and being out of order
+            if (it->state == BufferState::Free && it->texture) {
+                if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
+                    buffer = it;
+            } else if (it->state == BufferState::Dequeued) {
+                dequeuedSlotCount++;
             }
+        }
 
-            if (buffer != queue.end()) {
-                slot = std::distance(queue.begin(), buffer);
-                break;
-            } else if (async) {
-                return AndroidStatus::WouldBlock;
-            } else if (dequeuedSlotCount == queue.size()) {
-                state.logger->Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
-                return AndroidStatus::InvalidOperation;
-            }
+        if (buffer != queue.end()) {
+            slot = std::distance(queue.begin(), buffer);
+        } else if (async) {
+            return AndroidStatus::WouldBlock;
+        } else if (dequeuedSlotCount == queue.size()) {
+            state.logger->Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+            return AndroidStatus::InvalidOperation;
+        } else {
+            size_t index{};
+            std::string bufferString;
+            for (auto& bufferSlot : queue)
+                bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), static_cast<bool>(bufferSlot.graphicBuffer), bufferSlot.frameNumber);
+            state.logger->Warn("Cannot find any free buffers to dequeue:{}", bufferString);
+            return AndroidStatus::InvalidOperation;
         }
 
         width = width ? width : defaultWidth;
@@ -392,7 +396,7 @@ namespace skyline::service::hosbinder {
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
         buffer.graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
-        buffer.texture = texture->CreateTexture({}, vk::ImageTiling::eLinear, vk::ImageLayout::eGeneral);
+        buffer.texture = texture->CreateTexture({}, vk::ImageTiling::eLinear);
 
         activeSlotCount = hasBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
 

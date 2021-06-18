@@ -49,7 +49,8 @@ namespace skyline::service::nvdrv::device {
     void SyncpointEvent::Cancel(soc::host1x::Host1X &host1x) {
         std::lock_guard lock(mutex);
 
-        host1x.syncpoints.at(fence.id).DeregisterWaiter(waiterId);
+        host1x.syncpoints.at(fence.id).DeregisterWaiter(waiterHandle);
+        waiterHandle = {};
         Signal();
         event->ResetSignal();
     }
@@ -59,7 +60,7 @@ namespace skyline::service::nvdrv::device {
 
         fence = pFence;
         state = State::Waiting;
-        waiterId = host1x.syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
+        waiterHandle = host1x.syncpoints.at(fence.id).RegisterWaiter(fence.value, [this] { Signal(); });
     }
 
     NvHostCtrl::NvHostCtrl(const DeviceState &state) : NvDevice(state) {}

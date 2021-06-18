@@ -14,33 +14,43 @@ namespace skyline::soc::host1x {
      */
     class Syncpoint {
       private:
+        std::atomic<u32> value{}; //!< An atomically-incrementing counter at the core of a syncpoint
+
+        std::mutex mutex; //!< Synchronizes insertions and deletions of waiters alongside locking the increment condition
+        std::condition_variable incrementCondition; //!< Signalled on every increment to the syncpoint
+
         struct Waiter {
             u32 threshold; //!< The syncpoint value to wait on to be reached
             std::function<void()> callback; //!< The callback to do after the wait has ended
-        };
 
-        std::mutex waiterLock; //!< Synchronizes insertions and deletions of waiters
-        std::map<u64, Waiter> waiterMap;
-        u64 nextWaiterId{1};
+            Waiter(u32 threshold, std::function<void()> callback) : threshold(threshold), callback(std::move(callback)) {}
+        };
+        std::list<Waiter> waiters; //!< A linked list of all waiters, it's sorted in ascending order by threshold
 
       public:
-        std::atomic<u32> value{};
+        /**
+         * @return The value of the syncpoint, retrieved in an atomically safe manner
+         */
+        constexpr u32 Load() {
+            return value.load(std::memory_order_acquire);
+        }
+
+        using WaiterHandle = decltype(waiters)::iterator; //!< Aliasing an iterator to a Waiter as an opaque handle
 
         /**
          * @brief Registers a new waiter with a callback that will be called when the syncpoint reaches the target threshold
          * @note The callback will be called immediately if the syncpoint has already reached the given threshold
-         * @return A persistent identifier that can be used to refer to the waiter, or 0 if the threshold has already been reached
+         * @return A handle that can be used to deregister the waiter, its boolean operator will evaluate to false if the threshold has already been reached
          */
-        u64 RegisterWaiter(u32 threshold, const std::function<void()> &callback);
+        WaiterHandle RegisterWaiter(u32 threshold, const std::function<void()> &callback);
 
         /**
-         * @brief Removes a waiter given by 'id' from the pending waiter map
+         * @note If the supplied handle is invalid then the function will do nothing
          */
-        void DeregisterWaiter(u64 id);
+        void DeregisterWaiter(WaiterHandle waiter);
 
         /**
-         * @brief Increments the syncpoint by 1
-         * @return The new value of the syncpoint
+         * @return The new value of the syncpoint after the increment
          */
         u32 Increment();
 

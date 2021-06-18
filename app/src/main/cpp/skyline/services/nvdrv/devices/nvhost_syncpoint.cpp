@@ -71,7 +71,7 @@ namespace skyline::service::nvdrv {
         if (!syncpoints.at(id).reserved)
             throw exception("Cannot update an unreserved syncpoint!");
 
-        syncpoints.at(id).counterMin = state.soc->host1x.syncpoints.at(id).value.load();
+        syncpoints.at(id).counterMin = state.soc->host1x.syncpoints.at(id).Load();
         return syncpoints.at(id).counterMin;
     }
 }

@@ -12,7 +12,7 @@ namespace skyline::gpu::format {
     constexpr Format RGB565Unorm{sizeof(u8) * 2, 1, 1, vk::Format::eR5G6B5UnormPack16}; //!< Red channel: 5-bit, Green channel: 6-bit, Blue channel: 5-bit
 
     /**
-     * @brief Converts a format from Vulkan to a Skyline format
+     * @brief Converts a Vulkan format to a Skyline format
      */
     constexpr const Format &GetFormat(vk::Format format) {
         switch (format) {

@@ -34,7 +34,7 @@ namespace skyline::gpu {
     /**
      * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_framecallback
      */
-    void ChoreographerCallback(long frameTimeNanos, kernel::type::KEvent* vsyncEvent) {
+    void ChoreographerCallback(long frameTimeNanos, kernel::type::KEvent *vsyncEvent) {
         vsyncEvent->Signal();
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent);
     }
@@ -42,7 +42,7 @@ namespace skyline::gpu {
     void PresentationEngine::ChoreographerThread() {
         choreographerLooper = ALooper_prepare(0);
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent.get());
-        ALooper_pollAll(-1, nullptr, nullptr, nullptr);
+        ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
     }
 
     service::hosbinder::NativeWindowTransform GetAndroidTransform(vk::SurfaceTransformFlagBitsKHR transform) {
@@ -70,8 +70,8 @@ namespace skyline::gpu {
 
     void PresentationEngine::UpdateSwapchain(texture::Format format, texture::Dimensions extent) {
         auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, state.settings->forceTripleBuffering ? 3U : 0U)};
-        if (minImageCount > MaxSlotCount)
-            throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", minImageCount, MaxSlotCount);
+        if (minImageCount > MaxSwapchainImageCount)
+            throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
 
         const auto &capabilities{vkSurfaceCapabilities};
         if (minImageCount < capabilities.minImageCount || (capabilities.maxImageCount && minImageCount > capabilities.maxImageCount))
@@ -104,16 +104,17 @@ namespace skyline::gpu {
         });
 
         auto vkImages{vkSwapchain->getImages()};
-        if (vkImages.size() > MaxSlotCount)
-            throw exception("Swapchain has higher image count ({}) than maximum slot count ({})", minImageCount, MaxSlotCount);
+        if (vkImages.size() > MaxSwapchainImageCount)
+            throw exception("Swapchain has higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
 
         for (size_t index{}; index < vkImages.size(); index++) {
-            auto &slot{slots[index]};
+            auto &slot{images[index]};
             slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format::GetFormat(format), vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal);
             slot->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
         }
-        for (size_t index{vkImages.size()}; index < MaxSlotCount; index++)
-            slots[index] = {};
+        for (size_t index{vkImages.size()}; index < MaxSwapchainImageCount; index++)
+            // We need to clear all the slots which aren't filled, keeping around stale slots could lead to issues
+            images[index] = {};
 
         swapchainFormat = format;
         swapchainExtent = extent;
@@ -157,14 +158,15 @@ namespace skyline::gpu {
             UpdateSwapchain(texture->format, texture->dimensions);
 
         std::pair<vk::Result, u32> nextImage;
-        while ((nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence)).first != vk::Result::eSuccess) [[unlikely]]
+        while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence), nextImage.first != vk::Result::eSuccess) [[unlikely]] {
             if (nextImage.first == vk::Result::eSuboptimalKHR)
                 surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
             else
                 throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
-        while (gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max()) == vk::Result::eTimeout);
+        }
 
-        slots.at(nextImage.second)->CopyFrom(texture);
+        static_cast<void>(gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max()));
+        images.at(nextImage.second)->CopyFrom(texture);
 
         {
             std::lock_guard queueLock(gpu.queueMutex);

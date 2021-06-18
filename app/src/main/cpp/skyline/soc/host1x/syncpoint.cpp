@@ -5,62 +5,60 @@
 #include "syncpoint.h"
 
 namespace skyline::soc::host1x {
-    u64 Syncpoint::RegisterWaiter(u32 threshold, const std::function<void()> &callback) {
-        if (value >= threshold) {
+    Syncpoint::WaiterHandle Syncpoint::RegisterWaiter(u32 threshold, const std::function<void()> &callback) {
+        if (value.load(std::memory_order_acquire) >= threshold) {
+            // (Fast path) We don't need to wait on the mutex and can just get away with atomics
             callback();
-            return 0;
+            return {};
         }
 
-        std::lock_guard guard(waiterLock);
-        waiterMap.emplace(nextWaiterId, Waiter{threshold, callback});
+        std::scoped_lock lock(mutex);
+        if (value.load(std::memory_order_acquire) >= threshold) {
+            callback();
+            return {};
+        }
 
-        return nextWaiterId++;
+        auto it{waiters.begin()};
+        while (it != waiters.end() && threshold >= it->threshold)
+            it++;
+        return waiters.emplace(it, threshold, callback);
     }
 
-    void Syncpoint::DeregisterWaiter(u64 id) {
-        std::lock_guard guard(waiterLock);
-        waiterMap.erase(id);
+    void Syncpoint::DeregisterWaiter(WaiterHandle waiter) {
+        std::scoped_lock lock(mutex);
+        // We want to ensure the iterator still exists prior to erasing it
+        // Otherwise, if an invalid iterator was passed in then it could lead to UB
+        // It is important to avoid UB in that case since the deregister isn't called from a locked context
+        for (auto it{waiters.begin()}; it != waiters.end(); it++)
+            if (it == waiter)
+                waiters.erase(it);
     }
 
     u32 Syncpoint::Increment() {
-        value++;
+        auto readValue{value.fetch_add(1, std::memory_order_acq_rel)}; // We don't want to constantly do redundant atomic loads
 
-        std::lock_guard guard(waiterLock);
-        std::erase_if(waiterMap, [this](const auto &entry) {
-            if (value >= entry.second.threshold) {
-                entry.second.callback();
-                return true;
-            } else {
-                return false;
-            }
-        });
+        std::lock_guard lock(mutex);
+        auto it{waiters.begin()};
+        while (it != waiters.end() && readValue >= it->threshold)
+            it++->callback();
+        waiters.erase(waiters.begin(), it);
 
-        return value;
+        incrementCondition.notify_all();
+
+        return readValue;
     }
 
     bool Syncpoint::Wait(u32 threshold, std::chrono::steady_clock::duration timeout) {
-        if (value >= threshold)
-            return true;
+        if (value.load(std::memory_order_acquire) >= threshold)
+            // (Fast Path) We don't need to wait on the mutex and can just get away with atomics
+            return {};
 
-        std::mutex mtx;
-        std::condition_variable cv;
-        bool flag{};
-
-        if (!RegisterWaiter(threshold, [&cv, &mtx, &flag] {
-            std::unique_lock lock(mtx);
-            flag = true;
-            lock.unlock();
-            cv.notify_all();
-        })) {
-            return true;
-        }
-
-        std::unique_lock lock(mtx);
+        std::unique_lock lock(mutex);
         if (timeout == std::chrono::steady_clock::duration::max()) {
-            cv.wait(lock, [&flag] { return flag; });
+            incrementCondition.wait(lock, [&] { return value.load(std::memory_order_relaxed) >= threshold; });
             return true;
         } else {
-            return cv.wait_for(lock, timeout, [&flag] { return flag; });
+            return incrementCondition.wait_for(lock, timeout, [&] { return value.load(std::memory_order_relaxed) >= threshold; });
         }
     }
 }

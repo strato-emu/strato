@@ -140,12 +140,14 @@ namespace skyline::gpu {
         u8 *bufferData;
         auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
             if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
+                // We need a staging buffer for all optimal copies (Since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
                 auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
                 bufferData = stagingBuffer->data();
                 return stagingBuffer;
             } else if (tiling == vk::ImageTiling::eLinear) {
+                // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly into it rather than a staging buffer
                 bufferData = std::get<memory::Image>(backing).data();
-                WaitOnFence();
+                WaitOnFence(); // We need to wait on fence here since we are mutating the texture directly after, the wait can be deferred till the copy when a staging buffer is used
                 return nullptr;
             } else {
                 throw exception("Guest -> Host synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));

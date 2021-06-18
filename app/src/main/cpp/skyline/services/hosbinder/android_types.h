@@ -55,6 +55,7 @@ namespace skyline::service::hosbinder {
 
         /**
          * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/ui/Fence.cpp;l=34-36
+         * @note Only initializing the first fence is intentional and matches Nvidia's AndroidFence implementation
          */
         AndroidFence() : fenceCount(0), fences({InvalidFenceId}) {}
 

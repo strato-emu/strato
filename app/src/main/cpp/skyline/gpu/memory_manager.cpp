@@ -15,7 +15,7 @@ namespace skyline::gpu::memory {
 
     StagingBuffer::~StagingBuffer() {
         if (vmaAllocator && vmaAllocation && vkBuffer)
-        vmaDestroyBuffer(vmaAllocator, vkBuffer, vmaAllocation);
+            vmaDestroyBuffer(vmaAllocator, vkBuffer, vmaAllocation);
     }
 
     Image::~Image() {
