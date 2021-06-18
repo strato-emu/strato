@@ -244,7 +244,7 @@ namespace skyline::kernel::type {
     }
 
     void KThread::DisarmPreemptionTimer() {
-        if (!isPreempted)
+        if (!isPreempted) [[unlikely]]
             return;
 
         std::unique_lock lock(statusMutex);
