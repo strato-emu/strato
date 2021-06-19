@@ -224,7 +224,7 @@ namespace skyline::gpu {
      * @brief A texture which is backed by host constructs while being synchronized with the underlying guest texture
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class Texture : public FenceCycleDependency {
+    class Texture : public std::enable_shared_from_this<Texture>, public FenceCycleDependency {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing

@@ -35,4 +35,6 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
     var logLevel by sharedPreferences(context, "3")
 
     var filter by sharedPreferences(context, 0)
+
+    var maxRefreshRate by sharedPreferences(context, false)
 }

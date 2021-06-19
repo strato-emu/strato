@@ -19,6 +19,8 @@ namespace skyline {
             PREF_ELEM("log_level", logLevel, static_cast<Logger::LogLevel>(element.text().as_uint(static_cast<unsigned int>(Logger::LogLevel::Info)))),
             PREF_ELEM("username_value", username, element.text().as_string()),
             PREF_ELEM("operation_mode", operationMode, element.attribute("value").as_bool()),
+            PREF_ELEM("force_triple_buffering", forceTripleBuffering, element.attribute("value").as_bool()),
+            PREF_ELEM("disable_frame_throttling", disableFrameThrottling, element.attribute("value").as_bool()),
         };
 
         #undef PREF_ELEM

@@ -1,90 +1,105 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-            android:key="category_emulator"
-            android:title="@string/emulator">
+        android:key="category_emulator"
+        android:title="@string/emulator">
         <emu.skyline.preference.FolderPickerPreference
-                app:key="search_location"
-                app:title="@string/search_location" />
+            app:key="search_location"
+            app:title="@string/search_location" />
         <emu.skyline.preference.ThemePreference
-                android:defaultValue="2"
-                android:entries="@array/app_theme"
-                android:entryValues="@array/app_theme_val"
-                app:key="app_theme"
-                app:title="@string/theme"
-                app:useSimpleSummaryProvider="true" />
+            android:defaultValue="2"
+            android:entries="@array/app_theme"
+            android:entryValues="@array/app_theme_val"
+            app:key="app_theme"
+            app:title="@string/theme"
+            app:useSimpleSummaryProvider="true" />
         <ListPreference
-                android:defaultValue="1"
-                android:entries="@array/layout_type"
-                android:entryValues="@array/layout_type_val"
-                app:key="layout_type"
-                app:title="@string/layout_type"
-                app:useSimpleSummaryProvider="true" />
+            android:defaultValue="1"
+            android:entries="@array/layout_type"
+            android:entryValues="@array/layout_type_val"
+            app:key="layout_type"
+            app:title="@string/layout_type"
+            app:useSimpleSummaryProvider="true" />
         <CheckBoxPreference
-                android:defaultValue="false"
-                android:summaryOff="@string/select_action_desc_off"
-                android:summaryOn="@string/select_action_desc_on"
-                app:key="select_action"
-                app:title="@string/select_action" />
+            android:defaultValue="false"
+            android:summaryOff="@string/select_action_desc_off"
+            android:summaryOn="@string/select_action_desc_on"
+            app:key="select_action"
+            app:title="@string/select_action" />
         <CheckBoxPreference
-                android:defaultValue="false"
-                android:summaryOff="@string/perf_stats_desc_off"
-                android:summaryOn="@string/perf_stats_desc_on"
-                app:key="perf_stats"
-                app:title="@string/perf_stats" />
+            android:defaultValue="false"
+            android:summaryOff="@string/perf_stats_desc_off"
+            android:summaryOn="@string/perf_stats_desc_on"
+            app:key="perf_stats"
+            app:title="@string/perf_stats" />
         <ListPreference
-                android:defaultValue="2"
-                android:entries="@array/log_level"
-                android:entryValues="@array/log_level_val"
-                app:key="log_level"
-                app:title="@string/log_level"
-                app:useSimpleSummaryProvider="true" />
+            android:defaultValue="2"
+            android:entries="@array/log_level"
+            android:entryValues="@array/log_level_val"
+            app:key="log_level"
+            app:title="@string/log_level"
+            app:useSimpleSummaryProvider="true" />
         <CheckBoxPreference
-                android:defaultValue="false"
-                android:summaryOff="@string/log_compact_desc_off"
-                android:summaryOn="@string/log_compact_desc_on"
-                app:key="log_compact"
-                app:title="@string/log_compact" />
+            android:defaultValue="false"
+            android:summaryOff="@string/log_compact_desc_off"
+            android:summaryOn="@string/log_compact_desc_on"
+            app:key="log_compact"
+            app:title="@string/log_compact" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_keys"
+        android:title="@string/keys">
+        <emu.skyline.preference.KeyPickerPreference
+            app:key="prod_keys"
+            app:title="@string/prod_keys"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.KeyPickerPreference
+            app:key="title_keys"
+            app:title="@string/title_keys"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_system"
+        android:title="@string/system">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/handheld_enabled"
+            android:summaryOn="@string/docked_enabled"
+            app:key="operation_mode"
+            app:title="@string/use_docked" />
         <emu.skyline.preference.CustomEditTextPreference
-                android:defaultValue="@string/username_default"
-                app:key="username_value"
-                app:limit="31"
-                app:title="@string/username" />
+            android:defaultValue="@string/username_default"
+            app:key="username_value"
+            app:limit="31"
+            app:title="@string/username" />
     </PreferenceCategory>
     <PreferenceCategory
-            android:key="category_keys"
-            android:title="@string/keys">
-        <emu.skyline.preference.KeyPickerPreference
-                app:key="prod_keys"
-                app:title="@string/prod_keys"
-                app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.KeyPickerPreference
-                app:key="title_keys"
-                app:title="@string/title_keys"
-                app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
-    <PreferenceCategory
-            android:key="category_system"
-            android:title="@string/system">
+        android:key="category_presentation"
+        android:title="@string/display">
         <CheckBoxPreference
-                android:defaultValue="true"
-                android:summaryOff="@string/handheld_enabled"
-                android:summaryOn="@string/docked_enabled"
-                app:key="operation_mode"
-                app:title="@string/use_docked" />
+            android:defaultValue="true"
+            android:summaryOff="@string/triple_buffering_disabled"
+            android:summaryOn="@string/triple_buffering_enabled"
+            app:key="force_triple_buffering"
+            app:title="@string/force_triple_buffering" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="force_triple_buffering"
+            android:summaryOff="@string/disable_frame_throttling_disabled"
+            android:summaryOn="@string/disable_frame_throttling_enabled"
+            app:key="disable_frame_throttling"
+            app:title="@string/disable_frame_throttling" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/max_refresh_rate_disabled"
+            android:summaryOn="@string/max_refresh_rate_enabled"
+            app:key="max_refresh_rate"
+            app:title="@string/max_refresh_rate" />
     </PreferenceCategory>
     <PreferenceCategory
-            android:key="category_input"
-            android:title="@string/input"
-            app:initialExpandedChildrenCount="4">
-        <!--
-        <CheckBoxPreference
-                android:defaultValue="true"
-                android:summaryOff="@string/osc_not_shown"
-                android:summaryOn="@string/osc_shown"
-                app:key="show_osc"
-                app:title="@string/show_osc" />
-        -->
+        android:key="category_input"
+        android:title="@string/input"
+        app:initialExpandedChildrenCount="4">
         <emu.skyline.preference.ControllerPreference index="0" />
         <emu.skyline.preference.ControllerPreference index="1" />
         <emu.skyline.preference.ControllerPreference index="2" />
@@ -95,73 +110,73 @@
         <emu.skyline.preference.ControllerPreference index="7" />
     </PreferenceCategory>
     <PreferenceCategory
-            android:key="category_licenses"
-            android:title="@string/licenses"
-            app:initialExpandedChildrenCount="3">
+        android:key="category_licenses"
+        android:title="@string/licenses"
+        app:initialExpandedChildrenCount="3">
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/mpl2_license"
-                libraryUrl="https://github.com/skyline-emu/skyline"
-                app:summary="@string/skyline_license_description"
-                app:title="@string/app_name" />
+            libraryLicense="@string/mpl2_license"
+            libraryUrl="https://github.com/skyline-emu/skyline"
+            app:summary="@string/skyline_license_description"
+            app:title="@string/app_name" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/fmtlib_license"
-                libraryUrl="https://github.com/fmtlib/fmt"
-                app:summary="@string/fmtlib_description"
-                app:title="@string/fmtlib" />
+            libraryLicense="@string/fmtlib_license"
+            libraryUrl="https://github.com/fmtlib/fmt"
+            app:summary="@string/fmtlib_description"
+            app:title="@string/fmtlib" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://github.com/google/oboe"
-                app:summary="@string/oboe_description"
-                app:title="@string/oboe" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://github.com/google/oboe"
+            app:summary="@string/oboe_description"
+            app:title="@string/oboe" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
-                app:summary="@string/vkhpp_description"
-                app:title="@string/vkhpp" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
+            app:summary="@string/vkhpp_description"
+            app:title="@string/vkhpp" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/zlib_license"
-                libraryUrl="https://github.com/leethomason/tinyxml2"
-                app:summary="@string/txml2_description"
-                app:title="@string/txml2" />
+            libraryLicense="@string/zlib_license"
+            libraryUrl="https://github.com/leethomason/tinyxml2"
+            app:summary="@string/txml2_description"
+            app:title="@string/txml2" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://github.com/tdebatty/java-string-similarity"
-                app:summary="@string/jssim_description"
-                app:title="@string/jssim" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://github.com/tdebatty/java-string-similarity"
+            app:summary="@string/jssim_description"
+            app:title="@string/jssim" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://developer.android.com/jetpack/androidx"
-                app:summary="@string/andx_description"
-                app:title="@string/andx" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://developer.android.com/jetpack/androidx"
+            app:summary="@string/andx_description"
+            app:title="@string/andx" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://github.com/material-components/material-components-android"
-                app:summary="@string/amat_description"
-                app:title="@string/amat" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://github.com/material-components/material-components-android"
+            app:summary="@string/amat_description"
+            app:title="@string/amat" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
-                app:summary="@string/ktstd_description"
-                app:title="@string/ktstd" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
+            app:summary="@string/ktstd_description"
+            app:title="@string/ktstd" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://material.io/resources/icons"
-                app:summary="@string/mtico_description"
-                app:title="@string/mtico" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://material.io/resources/icons"
+            app:summary="@string/mtico_description"
+            app:title="@string/mtico" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://fonts.google.com/specimen/Open+Sans"
-                app:summary="@string/open_sans_description"
-                app:title="@string/open_sans" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://fonts.google.com/specimen/Open+Sans"
+            app:summary="@string/open_sans_description"
+            app:title="@string/open_sans" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/apache2_license"
-                libraryUrl="https://fonts.google.com/specimen/Roboto"
-                app:summary="@string/roboto_description"
-                app:title="@string/roboto" />
+            libraryLicense="@string/apache2_license"
+            libraryUrl="https://fonts.google.com/specimen/Roboto"
+            app:summary="@string/roboto_description"
+            app:title="@string/roboto" />
         <emu.skyline.preference.LicensePreference
-                libraryLicense="@string/sil_open_font_license"
-                libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
-                app:summary="@string/source_sans_pro_description"
-                app:title="@string/source_sans_pro" />
+            libraryLicense="@string/sil_open_font_license"
+            libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
+            app:summary="@string/source_sans_pro_description"
+            app:title="@string/source_sans_pro" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

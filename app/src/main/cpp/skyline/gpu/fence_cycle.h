@@ -114,35 +114,20 @@ namespace skyline::gpu {
          */
         void AttachObjects(std::initializer_list<std::shared_ptr<FenceCycleDependency>> dependencies) {
             if (!signalled.test(std::memory_order_consume)) {
-                {
-                    auto it{dependencies.begin()};
-                    while (it != dependencies.end()) {
-                        auto next{std::next(it)};
+                auto it{dependencies.begin()}, next{std::next(it)};
+                if (it != dependencies.end()) {
+                    while (next != dependencies.end()) {
                         (*it)->next = *next;
                         it = next;
+                        next = std::next(next);
                     }
                 }
-
-                const auto &first{*dependencies.begin()};
-                const auto &last{*dependencies.end()};
-                std::shared_ptr<FenceCycleDependency> next{std::atomic_load_explicit(&list, std::memory_order_consume)};
-                do {
-                    last->next = next;
-                    if (!next && signalled.test(std::memory_order_consume)) {
-                        std::shared_ptr<FenceCycleDependency> current{first};
-                        while (current) {
-                            next.swap(first->next);
-                            current.swap(next);
-                            next.reset();
-                        }
-                        return;
-                    }
-                } while (std::atomic_compare_exchange_strong(&list, &next, first));
+                AttachObject(*dependencies.begin());
             }
         }
 
         template<typename... Dependencies>
-        void AttachObjects(Dependencies... dependencies) {
+        void AttachObjects(Dependencies &&... dependencies) {
             AttachObjects(std::initializer_list<std::shared_ptr<FenceCycleDependency>>{std::forward<Dependencies>(dependencies)...});
         }
     };

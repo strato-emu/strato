@@ -262,8 +262,7 @@ namespace skyline::gpu {
                         },
                     });
             });
-
-            cycle->AttachObject(stagingBuffer);
+            cycle->AttachObjects(stagingBuffer, shared_from_this());
         }
     }
 
@@ -376,6 +375,6 @@ namespace skyline::gpu {
                     },
                 });
         });
-        cycle->AttachObject(source);
+        cycle->AttachObjects(source, shared_from_this());
     }
 }

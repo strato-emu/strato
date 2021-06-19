@@ -69,7 +69,7 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::UpdateSwapchain(texture::Format format, texture::Dimensions extent) {
-        auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, state.settings->forceTripleBuffering ? 3U : 0U)};
+        auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, state.settings->forceTripleBuffering ? 3U : 2U)};
         if (minImageCount > MaxSwapchainImageCount)
             throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
 
@@ -99,13 +99,14 @@ namespace skyline::gpu {
             .imageUsage = presentUsage,
             .imageSharingMode = vk::SharingMode::eExclusive,
             .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eInherit,
-            .presentMode = vk::PresentModeKHR::eMailbox,
+            .presentMode = state.settings->disableFrameThrottling ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo,
             .clipped = true,
         });
 
         auto vkImages{vkSwapchain->getImages()};
         if (vkImages.size() > MaxSwapchainImageCount)
             throw exception("Swapchain has higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
+        state.logger->Error("Buffer Count: {}", vkImages.size());
 
         for (size_t index{}; index < vkImages.size(); index++) {
             auto &slot{images[index]};
