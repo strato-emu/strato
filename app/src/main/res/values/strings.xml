@@ -5,8 +5,11 @@
     <string name="error">An error has occurred</string>
     <!-- Toolbar Main -->
     <string name="settings">Settings</string>
-    <string name="log">Logger</string>
+    <string name="share_logs">Share Logs</string>
     <string name="refresh">Refresh</string>
+    <!-- Toolbar - Share Logs -->
+    <string name="log_share_prompt">Share log file</string>
+    <string name="logs_not_found">No logs were created during the last run</string>
     <!-- Main -->
     <string name="all">All</string>
     <string name="metadata_missing">Metadata Missing</string>
@@ -18,13 +21,6 @@
     <string name="invalid_file">Invalid file</string>
     <string name="missing_title_key">Missing title key</string>
     <string name="incomplete_prod_keys">Incomplete production keys</string>
-    <!-- Toolbar Logger -->
-    <string name="clear">Clear</string>
-    <string name="share">Share</string>
-    <!-- Logger -->
-    <string name="file_missing">The log file was not found</string>
-    <string name="upload_logs">The logs are being uploaded</string>
-    <string name="cleared">The logs have been cleared</string>
     <!-- Settings - Emulator -->
     <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
@@ -56,8 +52,8 @@
     <!-- Settings - Display -->
     <string name="display">Display</string>
     <string name="force_triple_buffering">Force Triple Buffering</string>
-    <string name="triple_buffering_enabled">Utilize at least 3 swapchain buffers (Higher FPS with higher input lag)</string>
-    <string name="triple_buffering_disabled">Utilize at least 2 swapchain buffers (Lower FPS with lower input lag)</string>
+    <string name="triple_buffering_enabled">Utilize at least three swapchain buffers (Higher FPS but more input lag)</string>
+    <string name="triple_buffering_disabled">Utilize at least two swapchain buffers (Lower FPS but less input lag)</string>
     <string name="disable_frame_throttling">Disable Frame Throttling</string>
     <string name="disable_frame_throttling_enabled">Game is allowed to submit frames as fast as possible (Only for benchmarking)</string>
     <string name="disable_frame_throttling_disabled">Only allow the game to submit frames at the display refresh rate</string>

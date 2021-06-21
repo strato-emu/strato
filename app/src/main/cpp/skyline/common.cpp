@@ -11,14 +11,14 @@
 #include "kernel/types/KThread.h"
 
 namespace skyline {
-    Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel) {
+    Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel), start(util::GetTimeNs() / constant::NsInMillisecond) {
         logFile.open(path, std::ios::trunc);
         UpdateTag();
-        WriteHeader("Logging started");
+        Write(LogLevel::Info, "Logging started");
     }
 
     Logger::~Logger() {
-        WriteHeader("Logging ended");
+        Write(LogLevel::Info, "Logging ended");
         logFile.flush();
     }
 
@@ -33,13 +33,6 @@ namespace skyline {
         logTag = std::string("emu-cpp-") + threadName;
     }
 
-    void Logger::WriteHeader(const std::string &str) {
-        __android_log_write(ANDROID_LOG_INFO, "emu-cpp", str.c_str());
-
-        std::lock_guard guard(mutex);
-        logFile << "\0360\035" << str << '\n';
-    }
-
     void Logger::Write(LogLevel level, const std::string &str) {
         constexpr std::array<char, 5> levelCharacter{'E', 'W', 'I', 'D', 'V'}; // The LogLevel as written out to a file
         constexpr std::array<int, 5> levelAlog{ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO, ANDROID_LOG_DEBUG, ANDROID_LOG_VERBOSE}; // This corresponds to LogLevel and provides its equivalent for NDK Logging
@@ -50,7 +43,7 @@ namespace skyline {
         __android_log_write(levelAlog[static_cast<u8>(level)], logTag.c_str(), str.c_str());
 
         std::lock_guard guard(mutex);
-        logFile << "\0361\035" << levelCharacter[static_cast<u8>(level)] << '\035' << threadName << '\035' << str << '\n'; // We use RS (\036) and GS (\035) as our delimiters
+        logFile << '\036' << levelCharacter[static_cast<u8>(level)] << '\035' << std::dec << (util::GetTimeNs() / constant::NsInMillisecond) - start << '\035' << threadName << '\035' << str << '\n'; // We use RS (\036) and GS (\035) as our delimiters
     }
 
     DeviceState::DeviceState(kernel::OS *os, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger)

@@ -375,7 +375,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                             is AxisGuestEvent -> {
                                 value = guestEvent.value(value)
                                 value = if (polarity) abs(value) else -abs(value)
-                                value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value // TODO: Test this
+                                value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value
 
                                 setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (value * Short.MAX_VALUE).toInt())
                             }

@@ -27,14 +27,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="emu.skyline.LogActivity"
-            android:label="@string/log"
-            android:parentActivityName="emu.skyline.MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.MainActivity" />
-        </activity>
-        <activity
             android:name="emu.skyline.SettingsActivity"
             android:exported="true"
             android:label="@string/settings"
@@ -101,5 +93,15 @@
                     tools:ignore="AppLinkUrlError" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="skyline.emu.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
     </application>
 </manifest>

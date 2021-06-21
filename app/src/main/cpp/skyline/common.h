@@ -122,6 +122,7 @@ namespace skyline {
     namespace constant {
         // Time
         constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
+        constexpr u64 NsInMillisecond{1000000}; //!< The amount of nanoseconds in a millisecond
         constexpr u64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
     }
 
@@ -457,8 +458,9 @@ namespace skyline {
      */
     class Logger {
       private:
-        std::ofstream logFile; //!< An output stream to the log file
         std::mutex mutex; //!< Synchronizes all output I/O to ensure there are no races
+        std::ofstream logFile; //!< An output stream to the log file
+        u64 start; //!< A timestamp in milliseconds for when the logger was started, this is used as the base for all log timestamps
 
       public:
         enum class LogLevel {
@@ -486,11 +488,6 @@ namespace skyline {
          * @brief Update the tag in log messages with a new thread name
          */
         static void UpdateTag();
-
-        /**
-         * @brief Writes a header, should only be used for emulation starting and ending
-         */
-        void WriteHeader(const std::string &str);
 
         void Write(LogLevel level, const std::string &str);
 

@@ -53,7 +53,7 @@
                     android:layout_gravity="center_vertical"
                     android:layout_marginEnd="4dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/log"
+                    android:contentDescription="@string/share_logs"
                     android:padding="5dp"
                     app:layout_constraintBottom_toBottomOf="@id/sub_text"
                     app:layout_constraintEnd_toStartOf="@id/settings_icon"

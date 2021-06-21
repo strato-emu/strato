@@ -16,6 +16,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isInvisible
@@ -35,6 +36,7 @@ import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.utils.Settings
+import emu.skyline.utils.toFile
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -120,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         binding.swipeRefreshLayout.apply {
             setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.BLACK) })
             setColorSchemeColors(obtainStyledAttributes(intArrayOf(R.attr.colorAccent)).use { it.getColor(0, Color.BLACK) })
-            post { setDistanceToTriggerSync((binding.swipeRefreshLayout.height / 2.5f).roundToInt()) }
+            post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
             setOnRefreshListener { loadRoms(false) }
         }
 
@@ -128,7 +130,17 @@ class MainActivity : AppCompatActivity() {
         loadRoms(!settings.refreshRequired)
 
         binding.searchBar.apply {
-            binding.logIcon.setOnClickListener { startActivity(Intent(context, LogActivity::class.java)) }
+            binding.logIcon.setOnClickListener {
+                val file = applicationContext.filesDir.resolve("skyline.log")
+                if (file.length() != 0L) {
+                    val intent = Intent(Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this@MainActivity, "skyline.emu.fileprovider", file))
+                    startActivity(Intent.createChooser(intent, getString(R.string.log_share_prompt)))
+                } else {
+                    Snackbar.make(this@MainActivity.findViewById(android.R.id.content), getString(R.string.logs_not_found), Snackbar.LENGTH_SHORT).show()
+                }
+            }
             binding.settingsIcon.setOnClickListener { settingsCallback.launch(Intent(context, SettingsActivity::class.java)) }
             binding.refreshIcon.setOnClickListener { loadRoms(false) }
             addTextChangedListener(afterTextChanged = { editable ->
