@@ -3,11 +3,9 @@
 // Copyright © 2005 The Android Open Source Project
 // Copyright © 2019-2020 Ryujinx Team and Contributors
 
-#include <android/hardware_buffer.h>
 #include <gpu.h>
 #include <gpu/texture/format.h>
 #include <soc.h>
-#include <common/settings.h>
 #include <services/nvdrv/driver.h>
 #include <services/nvdrv/devices/nvmap.h>
 #include <services/common/fence.h>
@@ -163,10 +161,11 @@ namespace skyline::service::hosbinder {
             auto &texture{buffer.texture};
             std::scoped_lock textureLock(*texture);
             texture->SynchronizeHost();
-            state.gpu->presentation.Present(texture, ++frameNumber);
+            u64 frameId;
+            state.gpu->presentation.Present(texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
         }
 
-        buffer.frameNumber = frameNumber;
+        buffer.frameNumber = ++frameNumber;
         buffer.state = BufferState::Free;
         bufferEvent->Signal();
 

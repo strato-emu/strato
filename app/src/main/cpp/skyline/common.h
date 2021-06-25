@@ -371,7 +371,7 @@ namespace skyline {
          * @param nullTerminated If true and the string is null-terminated, a view of it will be returned (not including the null terminator itself), otherwise the entire span will be returned as a string view
          */
         constexpr std::string_view as_string(bool nullTerminated = false) {
-            return std::string_view(reinterpret_cast<char *>(span::data()), nullTerminated ? (std::find(span::begin(), span::end(), 0) - span::begin()) : span::size_bytes());
+            return std::string_view(reinterpret_cast<const char *>(span::data()), nullTerminated ? (std::find(span::begin(), span::end(), 0) - span::begin()) : span::size_bytes());
         }
 
         template<typename Out, size_t OutExtent = std::dynamic_extent>

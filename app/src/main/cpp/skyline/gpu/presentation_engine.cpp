@@ -4,15 +4,21 @@
 #include <android/native_window_jni.h>
 #include <android/choreographer.h>
 #include <common/settings.h>
+#include <common/signal.h>
 #include <jvm.h>
 #include <gpu.h>
+#include <loader/loader.h>
+#include <kernel/types/KProcess.h>
 #include "presentation_engine.h"
+#include "native_window.h"
 #include "texture/format.h"
 
 extern skyline::i32 Fps;
 extern skyline::i32 FrameTime;
 
 namespace skyline::gpu {
+    using namespace service::hosbinder;
+
     PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu) : state(state), gpu(gpu), acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()), choreographerThread(&PresentationEngine::ChoreographerThread, this), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
@@ -31,22 +37,44 @@ namespace skyline::gpu {
         }
     }
 
-    /**
-     * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_framecallback
-     */
-    void ChoreographerCallback(long frameTimeNanos, kernel::type::KEvent *vsyncEvent) {
-        vsyncEvent->Signal();
-        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent);
+    void PresentationEngine::ChoreographerCallback(long frameTimeNanos, PresentationEngine *engine) {
+        u64 cycleLength{frameTimeNanos - engine->lastChoreographerTime};
+        if (std::abs(static_cast<i64>(cycleLength - engine->refreshCycleDuration)) > (constant::NsInMillisecond / 2))
+            if (engine->window)
+                engine->window->perform(engine->window, NATIVE_WINDOW_GET_REFRESH_CYCLE_DURATION, &engine->refreshCycleDuration);
+            else
+                engine->refreshCycleDuration = cycleLength;
+
+        engine->lastChoreographerTime = frameTimeNanos;
+        engine->vsyncEvent->Signal();
+
+        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), engine);
     }
 
     void PresentationEngine::ChoreographerThread() {
-        choreographerLooper = ALooper_prepare(0);
-        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), vsyncEvent.get());
-        ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
+        pthread_setname_np(pthread_self(), "Skyline-Choreographer");
+        try {
+            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
+            choreographerLooper = ALooper_prepare(0);
+            AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), this);
+            ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
+        } catch (const signal::SignalException &e) {
+            state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            if (state.process)
+                state.process->Kill(false);
+            else
+                std::rethrow_exception(std::current_exception());
+        } catch (const std::exception &e) {
+            state.logger->Error(e.what());
+            if (state.process)
+                state.process->Kill(false);
+            else
+                std::rethrow_exception(std::current_exception());
+        }
     }
 
-    service::hosbinder::NativeWindowTransform GetAndroidTransform(vk::SurfaceTransformFlagBitsKHR transform) {
-        using NativeWindowTransform = service::hosbinder::NativeWindowTransform;
+    NativeWindowTransform GetAndroidTransform(vk::SurfaceTransformFlagBitsKHR transform) {
+        using NativeWindowTransform = NativeWindowTransform;
         switch (transform) {
             case vk::SurfaceTransformFlagBitsKHR::eIdentity:
             case vk::SurfaceTransformFlagBitsKHR::eInherit:
@@ -106,7 +134,6 @@ namespace skyline::gpu {
         auto vkImages{vkSwapchain->getImages()};
         if (vkImages.size() > MaxSwapchainImageCount)
             throw exception("Swapchain has higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
-        state.logger->Error("Buffer Count: {}", vkImages.size());
 
         for (size_t index{}; index < vkImages.size(); index++) {
             auto &slot{images[index]};
@@ -135,8 +162,9 @@ namespace skyline::gpu {
         vkSwapchain.reset();
 
         if (jSurface) {
+            window = ANativeWindow_fromSurface(env, jSurface);
             vkSurface.emplace(gpu.vkInstance, vk::AndroidSurfaceCreateInfoKHR{
-                .window = ANativeWindow_fromSurface(env, jSurface),
+                .window = window,
             });
             if (!gpu.vkPhysicalDevice.getSurfaceSupportKHR(gpu.vkQueueFamilyIndex, **vkSurface))
                 throw exception("Vulkan Queue doesn't support presentation with surface");
@@ -145,18 +173,50 @@ namespace skyline::gpu {
             if (swapchainExtent && swapchainFormat)
                 UpdateSwapchain(swapchainFormat, swapchainExtent);
 
+            if (window->common.magic != AndroidNativeWindowMagic)
+                throw exception("ANativeWindow* has unexpected magic: {} instead of {}", span(&window->common.magic, 1).as_string(true), span<const u8>(reinterpret_cast<const u8 *>(&AndroidNativeWindowMagic), sizeof(u32)).as_string(true));
+            if (window->common.version != sizeof(ANativeWindow))
+                throw exception("ANativeWindow* has unexpected version: {} instead of {}", window->common.version, sizeof(ANativeWindow));
+
+            if (windowCrop)
+                window->perform(window, NATIVE_WINDOW_SET_CROP, &windowCrop);
+            if (windowScalingMode != NativeWindowScalingMode::ScaleToWindow)
+                window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(windowScalingMode));
+
+            window->perform(window, NATIVE_WINDOW_ENABLE_FRAME_TIMESTAMPS, true);
+
             surfaceCondition.notify_all();
         } else {
             vkSurface.reset();
+            window = nullptr;
         }
     }
 
-    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, u64 presentId) {
+    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, u64 timestamp, u64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, u64 &frameId) {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
         if (texture->format != swapchainFormat || texture->dimensions != swapchainExtent)
             UpdateSwapchain(texture->format, texture->dimensions);
+
+        int result;
+        if (crop && crop != windowCrop) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_CROP, &crop)))
+                throw exception("Setting the layer crop to ({}-{})x({}-{}) failed with {}", crop.left, crop.right, crop.top, crop.bottom, result);
+            windowCrop = crop;
+        }
+
+        if (scalingMode != NativeWindowScalingMode::Freeze && windowScalingMode != scalingMode) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(scalingMode))))
+                throw exception("Setting the layer scaling mode to '{}' failed with {}", ToString(scalingMode), result);
+            windowScalingMode = scalingMode;
+        }
+
+        if (transform != windowTransform) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(transform))))
+                throw exception("Setting the buffer transform to '{}' failed with {}", ToString(transform), result);
+            windowTransform = transform;
+        }
 
         std::pair<vk::Result, u32> nextImage;
         while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence), nextImage.first != vk::Result::eSuccess) [[unlikely]] {
@@ -166,16 +226,47 @@ namespace skyline::gpu {
                 throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
         }
 
-        static_cast<void>(gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max()));
+        std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
         images.at(nextImage.second)->CopyFrom(texture);
+
+        if (timestamp) {
+            // If the timestamp is specified, we need to convert it from the util::GetTimeNs base to the CLOCK_MONOTONIC one
+            // We do so by getting an offset from the current time in nanoseconds and then adding it to the current time in CLOCK_MONOTONIC
+            // Note: It's important we do this right before present as going past the timestamp could lead to fewer Binder IPC calls
+            auto current{util::GetTimeNs()};
+            if (current < timestamp) {
+                timespec time;
+                if (clock_gettime(CLOCK_MONOTONIC, &time))
+                    throw exception("Failed to clock_gettime with '{}'", strerror(errno));
+                timestamp = ((time.tv_sec * constant::NsInSecond) + time.tv_nsec) + (timestamp - current);
+            } else {
+                timestamp = 0;
+            }
+        }
+
+        if (swapInterval > 1)
+            // If we have a swap interval above 1 we have to adjust the timestamp to emulate the swap interval
+            timestamp = std::max(timestamp, lastChoreographerTime + (refreshCycleDuration * swapInterval * 2));
+
+        auto lastTimestamp{std::exchange(windowLastTimestamp, timestamp)};
+        if (!timestamp && lastTimestamp)
+            // We need to nullify the timestamp if it transitioned from being specified (non-zero) to unspecified (zero)
+            timestamp = NativeWindowTimestampAuto;
+
+        if (timestamp)
+            if (window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp))
+                throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
+
+        if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
+            throw exception("Retrieving the next frame's ID failed with {}", result);
 
         {
             std::lock_guard queueLock(gpu.queueMutex);
-            static_cast<void>(gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
+            std::ignore = gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
                 .swapchainCount = 1,
                 .pSwapchains = &**vkSwapchain,
                 .pImageIndices = &nextImage.second,
-            })); // We explicitly discard the result here as suboptimal images are expected when the game doesn't respect the transform hint
+            }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
         }
 
         if (frameTimestamp) {
@@ -191,7 +282,7 @@ namespace skyline::gpu {
         }
     }
 
-    service::hosbinder::NativeWindowTransform PresentationEngine::GetTransformHint() {
+    NativeWindowTransform PresentationEngine::GetTransformHint() {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
         return GetAndroidTransform(vkSurfaceCapabilities.currentTransform);

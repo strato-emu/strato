@@ -81,6 +81,15 @@ namespace skyline::service::hosbinder {
         u32 top;
         u32 right;
         u32 bottom;
+
+        /**
+         * @return If the rectangle had any defined bounds
+         */
+        constexpr operator bool() {
+            return left || top || right || bottom;
+        }
+
+        auto operator<=>(const AndroidRect &) const = default;
     };
 
     /**

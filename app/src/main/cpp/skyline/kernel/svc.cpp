@@ -718,7 +718,6 @@ namespace skyline::kernel::svc {
         }
 
         state.logger->Debug("Locking 0x{:X}", mutex);
-        TRACE_EVENT_FMT("kernel", "MutexLock 0x{:X}", mutex);
 
         KHandle ownerHandle{state.ctx->gpr.w0};
         KHandle requesterHandle{state.ctx->gpr.w2};
@@ -740,8 +739,6 @@ namespace skyline::kernel::svc {
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
-
-        TRACE_EVENT_FMT("kernel", "MutexUnlock 0x{:X}", mutex);
 
         state.logger->Debug("Unlocking 0x{:X}", mutex);
         state.process->MutexUnlock(mutex);
