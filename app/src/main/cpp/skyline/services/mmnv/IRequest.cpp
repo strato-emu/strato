@@ -126,10 +126,9 @@ namespace skyline::service::mmnv {
 
     Result IRequest::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u32 id{request.Pop<u32>()};
-        u32 freqHz{request.Pop<u32>()};
 
         std::lock_guard lock(requestsMutex);
-        if (id >= requests.size()) {
+        if (id < requests.size()) {
             auto &req{requests[id]};
             if (req) {
                 state.logger->Debug("Get frequency for request {}: {} Hz", id, req->freqHz);
