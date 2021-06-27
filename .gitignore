@@ -51,6 +51,7 @@ build/
 .idea/caches
 .idea/assetWizardSettings.xml
 .idea/runConfigurations.xml
+.idea/deploymentTargetDropDown.xml
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml

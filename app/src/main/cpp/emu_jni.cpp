@@ -19,15 +19,17 @@
 #include "skyline/input.h"
 #include "skyline/kernel/types/KProcess.h"
 
-skyline::i32 Fps;
-skyline::i32 FrameTime;
+jint Fps; //!< An approximation of the amount of frames being submitted every second
+jfloat AverageFrametimeMs; //!< The average time it takes for a frame to be rendered and presented in milliseconds
+jfloat AverageFrametimeDeviationMs; //!< The average deviation of the average frametimes in milliseconds
+
 std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
 // https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=43;drc=master;bpv=1;bpt=1
 static std::string GetTimeZoneName() {
-    const char* nameEnv = getenv("TZ");
+    const char *nameEnv = getenv("TZ");
     if (nameEnv)
         return std::string(nameEnv);
 
@@ -52,7 +54,7 @@ static std::string GetTimeZoneName() {
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring, jobject assetManager) {
     skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
-    Fps = FrameTime = 0;
+    Fps = AverageFrametimeMs = AverageFrametimeDeviationMs = 0;
 
     pthread_setname_np(pthread_self(), "EmuMain");
 
@@ -133,10 +135,15 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceSt
         fpsField = env->GetFieldID(clazz, "fps", "I");
     env->SetIntField(thiz, fpsField, Fps);
 
-    static jfieldID frametimeField{};
-    if (!frametimeField)
-        frametimeField = env->GetFieldID(clazz, "frametime", "F");
-    env->SetFloatField(thiz, frametimeField, static_cast<float>(FrameTime) / 100);
+    static jfieldID averageFrametimeField{};
+    if (!averageFrametimeField)
+        averageFrametimeField = env->GetFieldID(clazz, "averageFrametime", "F");
+    env->SetFloatField(thiz, averageFrametimeField, AverageFrametimeMs);
+
+    static jfieldID averageFrametimeDeviationField{};
+    if (!averageFrametimeDeviationField)
+        averageFrametimeDeviationField = env->GetFieldID(clazz, "averageFrametimeDeviation", "F");
+    env->SetFloatField(thiz, averageFrametimeDeviationField, AverageFrametimeDeviationMs);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {

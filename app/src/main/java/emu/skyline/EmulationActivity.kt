@@ -86,7 +86,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun setSurface(surface : Surface?) : Boolean
 
     var fps : Int = 0
-    var frametime : Float = 0.0f
+    var averageFrametime : Float = 0.0f
+    var averageFrametimeDeviation : Float = 0.0f
 
     /**
      * Writes the current performance statistics into [fps] and [frametime] fields
@@ -204,7 +205,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 postDelayed(object : Runnable {
                     override fun run() {
                         updatePerformanceStatistics()
-                        text = "$fps FPS\n${frametime}ms"
+                        text = "$fps FPS\n${"%.1f".format(averageFrametime)}±${"%.2f".format(averageFrametimeDeviation)}ms"
                         postDelayed(this, 250)
                     }
                 }, 250)

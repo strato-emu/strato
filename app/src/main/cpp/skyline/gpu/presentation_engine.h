@@ -40,7 +40,9 @@ namespace skyline::gpu {
         static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
         std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
 
-        u64 frameTimestamp{}; //!< The timestamp of the last frame being shown
+        u64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds
+        u64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds
+        u64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
         std::thread choreographerThread; //!< A thread for signalling the V-Sync event using AChoreographer

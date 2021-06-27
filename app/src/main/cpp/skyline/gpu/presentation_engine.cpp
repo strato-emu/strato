@@ -13,8 +13,9 @@
 #include "native_window.h"
 #include "texture/format.h"
 
-extern skyline::i32 Fps;
-extern skyline::i32 FrameTime;
+extern jint Fps;
+extern jfloat AverageFrametimeMs;
+extern jfloat AverageFrametimeDeviationMs;
 
 namespace skyline::gpu {
     using namespace service::hosbinder;
@@ -39,11 +40,12 @@ namespace skyline::gpu {
 
     void PresentationEngine::ChoreographerCallback(long frameTimeNanos, PresentationEngine *engine) {
         u64 cycleLength{frameTimeNanos - engine->lastChoreographerTime};
-        if (std::abs(static_cast<i64>(cycleLength - engine->refreshCycleDuration)) > (constant::NsInMillisecond / 2))
+        if (std::abs(static_cast<i64>(cycleLength - engine->refreshCycleDuration)) > (constant::NsInMillisecond / 2)) {
             if (engine->window)
                 engine->window->perform(engine->window, NATIVE_WINDOW_GET_REFRESH_CYCLE_DURATION, &engine->refreshCycleDuration);
             else
                 engine->refreshCycleDuration = cycleLength;
+        }
 
         engine->lastChoreographerTime = frameTimeNanos;
         engine->vsyncEvent->Signal();
@@ -271,8 +273,17 @@ namespace skyline::gpu {
 
         if (frameTimestamp) {
             auto now{util::GetTimeNs()};
-            FrameTime = static_cast<u32>((now - frameTimestamp) / 10000); // frametime / 100 is the real ms value, this is to retain the first two decimals
-            Fps = static_cast<u16>(constant::NsInSecond / (now - frameTimestamp));
+            auto sampleWeight{swapInterval ? constant::NsInSecond / (refreshCycleDuration * swapInterval) : 10}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
+
+            u64 currentFrametime{now - frameTimestamp};
+            averageFrametimeNs = (((sampleWeight - 1) * averageFrametimeNs) / sampleWeight) + (currentFrametime / sampleWeight);
+            AverageFrametimeMs = static_cast<jfloat>(averageFrametimeNs) / constant::NsInMillisecond;
+
+            i64 currentFrametimeDeviation{std::abs(static_cast<i64>(averageFrametimeNs - currentFrametime))};
+            averageFrametimeDeviationNs = (((sampleWeight - 1) * averageFrametimeDeviationNs) / sampleWeight) + (currentFrametimeDeviation / sampleWeight);
+            AverageFrametimeDeviationMs = static_cast<jfloat>(averageFrametimeDeviationNs) / constant::NsInMillisecond;
+
+            Fps = std::round(static_cast<float>(constant::NsInSecond) / averageFrametimeNs);
 
             TRACE_EVENT_INSTANT("gpu", "Present", presentationTrack, "FrameTimeNs", now - frameTimestamp, "Fps", Fps);
 
