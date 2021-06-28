@@ -17,11 +17,11 @@ namespace skyline::soc::host1x {
         std::atomic<u32> value{}; //!< An atomically-incrementing counter at the core of a syncpoint
 
         std::mutex mutex; //!< Synchronizes insertions and deletions of waiters alongside locking the increment condition
-        std::condition_variable incrementCondition; //!< Signalled on every increment to the syncpoint
+        std::condition_variable incrementCondition; //!< Signalled on thresholds for waiters which are tied to Wait(...)
 
         struct Waiter {
             u32 threshold; //!< The syncpoint value to wait on to be reached
-            std::function<void()> callback; //!< The callback to do after the wait has ended
+            std::function<void()> callback; //!< The callback to do after the wait has ended, refers to cvar signal when nullptr
 
             Waiter(u32 threshold, std::function<void()> callback) : threshold(threshold), callback(std::move(callback)) {}
         };

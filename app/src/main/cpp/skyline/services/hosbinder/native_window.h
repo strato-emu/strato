@@ -4,9 +4,7 @@
 
 #pragma once
 
-#define ENUM_CASE(name, key) \
-    case name::key:          \
-    return #key
+#include <common/macros.h>
 
 namespace skyline::service::hosbinder {
     /**
@@ -20,17 +18,13 @@ namespace skyline::service::hosbinder {
         Camera = 4,
     };
 
-    constexpr const char *ToString(NativeWindowApi api) {
-        switch (api) {
-            ENUM_CASE(NativeWindowApi, None);
-            ENUM_CASE(NativeWindowApi, EGL);
-            ENUM_CASE(NativeWindowApi, CPU);
-            ENUM_CASE(NativeWindowApi, Media);
-            ENUM_CASE(NativeWindowApi, Camera);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NativeWindowApi, {
+        ENUM_CASE(None);
+        ENUM_CASE(EGL);
+        ENUM_CASE(CPU);
+        ENUM_CASE(Media);
+        ENUM_CASE(Camera);
+    });
 
     /**
      * @note A few combinations of transforms that are not in the NATIVE_WINDOW_TRANSFORM enum were added to assist with conversion to/from Vulkan transforms
@@ -48,21 +42,17 @@ namespace skyline::service::hosbinder {
         InvertDisplay = 0b1000,
     };
 
-    constexpr const char *ToString(NativeWindowTransform transform) {
-        switch (transform) {
-            ENUM_CASE(NativeWindowTransform, Identity);
-            ENUM_CASE(NativeWindowTransform, MirrorHorizontal);
-            ENUM_CASE(NativeWindowTransform, MirrorVertical);
-            ENUM_CASE(NativeWindowTransform, Rotate90);
-            ENUM_CASE(NativeWindowTransform, Rotate180);
-            ENUM_CASE(NativeWindowTransform, Rotate270);
-            ENUM_CASE(NativeWindowTransform, MirrorHorizontalRotate90);
-            ENUM_CASE(NativeWindowTransform, MirrorVerticalRotate90);
-            ENUM_CASE(NativeWindowTransform, InvertDisplay);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NativeWindowTransform, {
+        ENUM_CASE(Identity);
+        ENUM_CASE(MirrorHorizontal);
+        ENUM_CASE(MirrorVertical);
+        ENUM_CASE(Rotate90);
+        ENUM_CASE(Rotate180);
+        ENUM_CASE(Rotate270);
+        ENUM_CASE(MirrorHorizontalRotate90);
+        ENUM_CASE(MirrorVerticalRotate90);
+        ENUM_CASE(InvertDisplay);
+    });
 
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:system/core/include/system/window.h;l=338-354
@@ -74,16 +64,12 @@ namespace skyline::service::hosbinder {
         NoScaleCrop = 3,
     };
 
-    constexpr const char *ToString(NativeWindowScalingMode scalingMode) {
-        switch (scalingMode) {
-            ENUM_CASE(NativeWindowScalingMode, Freeze);
-            ENUM_CASE(NativeWindowScalingMode, ScaleToWindow);
-            ENUM_CASE(NativeWindowScalingMode, ScaleCrop);
-            ENUM_CASE(NativeWindowScalingMode, NoScaleCrop);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NativeWindowScalingMode, {
+        ENUM_CASE(Freeze);
+        ENUM_CASE(ScaleToWindow);
+        ENUM_CASE(ScaleCrop);
+        ENUM_CASE(NoScaleCrop);
+    });
 
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:system/core/include/system/window.h;l=127-265
@@ -104,24 +90,19 @@ namespace skyline::service::hosbinder {
         MaxBufferCount = 12, //!< A custom query for HOS which returns the maximum number of buffers that can be allocated at once
     };
 
-    constexpr const char *ToString(NativeWindowQuery query) {
-        switch (query) {
-            ENUM_CASE(NativeWindowQuery, Width);
-            ENUM_CASE(NativeWindowQuery, Height);
-            ENUM_CASE(NativeWindowQuery, Format);
-            ENUM_CASE(NativeWindowQuery, MinUndequeuedBuffers);
-            ENUM_CASE(NativeWindowQuery, QueuesToWindowComposer);
-            ENUM_CASE(NativeWindowQuery, ConcreteType);
-            ENUM_CASE(NativeWindowQuery, DefaultWidth);
-            ENUM_CASE(NativeWindowQuery, DefaultHeight);
-            ENUM_CASE(NativeWindowQuery, TransformHint);
-            ENUM_CASE(NativeWindowQuery, ConsumerRunningBehind);
-            ENUM_CASE(NativeWindowQuery, ConsumerUsageBits);
-            ENUM_CASE(NativeWindowQuery, StickyTransform);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NativeWindowQuery, {
+        ENUM_CASE(Width);
+        ENUM_CASE(Height);
+        ENUM_CASE(Format);
+        ENUM_CASE(MinUndequeuedBuffers);
+        ENUM_CASE(QueuesToWindowComposer);
+        ENUM_CASE(ConcreteType);
+        ENUM_CASE(DefaultWidth);
+        ENUM_CASE(DefaultHeight);
+        ENUM_CASE(TransformHint);
+        ENUM_CASE(ConsumerRunningBehind);
+        ENUM_CASE(ConsumerUsageBits);
+        ENUM_CASE(StickyTransform);
+        ENUM_CASE(MaxBufferCount);
+    });
 }
-
-#undef ENUM_CASE

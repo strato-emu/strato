@@ -6,12 +6,9 @@
 #pragma once
 
 #include <common.h>
+#include <common/macros.h>
 #include <soc/host1x.h>
 #include <services/common/fence.h>
-
-#define ENUM_CASE(name, key) \
-    case name::key:          \
-    return #key
 
 namespace skyline::service::hosbinder {
     /**
@@ -113,26 +110,22 @@ namespace skyline::service::hosbinder {
         sRGBX8888 = 13, //! 4x8-bit sRGB + 0
     };
 
-    constexpr const char *ToString(AndroidPixelFormat format) {
-        switch (format) {
-            ENUM_CASE(AndroidPixelFormat, None);
-            ENUM_CASE(AndroidPixelFormat, Custom);
-            ENUM_CASE(AndroidPixelFormat, Translucent);
-            ENUM_CASE(AndroidPixelFormat, Transparent);
-            ENUM_CASE(AndroidPixelFormat, Opaque);
-            ENUM_CASE(AndroidPixelFormat, RGBA8888);
-            ENUM_CASE(AndroidPixelFormat, RGBX8888);
-            ENUM_CASE(AndroidPixelFormat, RGB888);
-            ENUM_CASE(AndroidPixelFormat, RGB565);
-            ENUM_CASE(AndroidPixelFormat, BGRA8888);
-            ENUM_CASE(AndroidPixelFormat, RGBA5551);
-            ENUM_CASE(AndroidPixelFormat, RGBA4444);
-            ENUM_CASE(AndroidPixelFormat, sRGBA8888);
-            ENUM_CASE(AndroidPixelFormat, sRGBX8888);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(AndroidPixelFormat, {
+        ENUM_CASE(None);
+        ENUM_CASE(Custom);
+        ENUM_CASE(Translucent);
+        ENUM_CASE(Transparent);
+        ENUM_CASE(Opaque);
+        ENUM_CASE(RGBA8888);
+        ENUM_CASE(RGBX8888);
+        ENUM_CASE(RGB888);
+        ENUM_CASE(RGB565);
+        ENUM_CASE(BGRA8888);
+        ENUM_CASE(RGBA5551);
+        ENUM_CASE(RGBA4444);
+        ENUM_CASE(sRGBA8888);
+        ENUM_CASE(sRGBX8888);
+    })
 
     /**
      * @brief The layout of the surface's pixels in GPU memory
@@ -143,15 +136,11 @@ namespace skyline::service::hosbinder {
         Blocklinear = 0x3, //!< A generic block layout which is further defined by it's kind
     };
 
-    constexpr const char *ToString(NvSurfaceLayout layout) {
-        switch (layout) {
-            ENUM_CASE(NvSurfaceLayout, Pitch);
-            ENUM_CASE(NvSurfaceLayout, Tiled);
-            ENUM_CASE(NvSurfaceLayout, Blocklinear);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NvSurfaceLayout, {
+        ENUM_CASE(Pitch);
+        ENUM_CASE(Tiled);
+        ENUM_CASE(Blocklinear);
+    })
 
     /**
      * @brief The kind of tiling used to arrange pixels in a blocklinear surface
@@ -170,14 +159,10 @@ namespace skyline::service::hosbinder {
         Interlaced, //!< Odd and even rows are updated in an alternating pattern
     };
 
-    constexpr const char *ToString(NvDisplayScanFormat format) {
-        switch (format) {
-            ENUM_CASE(NvDisplayScanFormat, Progressive);
-            ENUM_CASE(NvDisplayScanFormat, Interlaced);
-            default:
-                return "Unknown";
-        }
-    }
+    ENUM_STRING(NvDisplayScanFormat, {
+        ENUM_CASE(Progressive);
+        ENUM_CASE(Interlaced);
+    })
 
     #pragma pack(push, 1)
 
@@ -246,5 +231,3 @@ namespace skyline::service::hosbinder {
 
     #pragma pack(pop)
 }
-
-#undef ENUM_CASE

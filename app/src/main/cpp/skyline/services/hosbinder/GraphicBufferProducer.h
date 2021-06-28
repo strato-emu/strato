@@ -14,20 +14,6 @@ namespace skyline::gpu {
     class Texture;
 }
 
-#define ENUM_CASE(key)   \
-    case ENUM_TYPE::key: \
-    return #key
-
-#define ENUM_STRING(name, cases)                        \
-    constexpr const char *ToString(name value) {        \
-        using ENUM_TYPE = name;                         \
-        switch (value) {                                \
-            cases                                       \
-            default:                                    \
-                return "Unknown";                       \
-        };                                              \
-    };
-
 namespace skyline::service::hosbinder {
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferSlot.h;l=52-91
@@ -39,8 +25,12 @@ namespace skyline::service::hosbinder {
         Acquired,
     };
 
-    ENUM_STRING(BufferState, ENUM_CASE(Free);ENUM_CASE(Dequeued);ENUM_CASE(Queued);ENUM_CASE(Acquired);
-    );
+    ENUM_STRING(BufferState, {
+        ENUM_CASE(Free);
+        ENUM_CASE(Dequeued);
+        ENUM_CASE(Queued);
+        ENUM_CASE(Acquired);
+    })
 
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferSlot.h;l=32-138
@@ -203,5 +193,3 @@ namespace skyline::service::hosbinder {
 
     extern std::weak_ptr<GraphicBufferProducer> producer; //!< A globally shared instance of the GraphicsBufferProducer
 }
-
-#undef ENUM_CASE
