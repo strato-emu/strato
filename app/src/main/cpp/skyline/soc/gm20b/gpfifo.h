@@ -73,56 +73,6 @@ namespace skyline::soc::gm20b {
     static_assert(sizeof(GpEntry) == sizeof(u64));
 
     /**
-     * @brief A single pushbuffer method header that describes a compressed method sequence
-     * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_ram.ref.txt#L850
-     * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L179
-     */
-    union PushBufferMethodHeader {
-        u32 raw;
-
-        enum class TertOp : u8 {
-            Grp0IncMethod = 0,
-            Grp0SetSubDevMask = 1,
-            Grp0StoreSubDevMask = 2,
-            Grp0UseSubDevMask = 3,
-            Grp2NonIncMethod = 0,
-        };
-
-        enum class SecOp : u8 {
-            Grp0UseTert = 0,
-            IncMethod = 1,
-            Grp2UseTert = 2,
-            NonIncMethod = 3,
-            ImmdDataMethod = 4,
-            OneInc = 5,
-            Reserved6 = 6,
-            EndPbSegment = 7,
-        };
-
-        u16 methodAddress : 12;
-        struct {
-            u8 _pad0_ : 4;
-            u16 subDeviceMask : 12;
-        };
-
-        struct {
-            u16 _pad1_ : 13;
-            u8 methodSubChannel : 3;
-            union {
-                TertOp tertOp : 3;
-                u16 methodCount : 13;
-                u16 immdData : 13;
-            };
-        };
-
-        struct {
-            u32 _pad2_ : 29;
-            SecOp secOp : 3;
-        };
-    };
-    static_assert(sizeof(PushBufferMethodHeader) == sizeof(u32));
-
-    /**
      * @brief The GPFIFO class handles creating pushbuffers from GP entries and then processing them
      * @note This class doesn't perfectly map to any particular hardware component on the X1, it does a mix of the GPU Host PBDMA (With  and handling the GPFIFO entries
      * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_pbdma.ref.txt#L62
@@ -138,7 +88,7 @@ namespace skyline::soc::gm20b {
         /**
          * @brief Sends a method call to the GPU hardware
          */
-        void Send(MethodParams params);
+        void Send(u32 method, u32 argument, u32 subchannel, bool lastCall);
 
         /**
          * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed

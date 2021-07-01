@@ -17,7 +17,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         std::array<size_t, 0x80> macroPositions{}; //!< The positions of each individual macro in macro memory, there can be a maximum of 0x80 macros at any one time
 
         struct {
-            u32 index;
+            i32 index;
             std::vector<u32> arguments;
         } macroInvocation{}; //!< Data for a macro that is pending execution
 
@@ -557,7 +557,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         Registers registers{};
         Registers shadowRegisters{}; //!< The shadow registers, their function is controlled by the 'shadowRamControl' register
 
-        std::array<u32, 0x10000> macroCode{}; //!< This stores GPU macros, the 256KiB size is from Ryujinx
+        std::array<u32, 0x2000> macroCode{}; //!< This stores GPU macros, writes to it will wraparound on overflow
 
         Maxwell3D(const DeviceState &state);
 
@@ -566,6 +566,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
          */
         void ResetRegs();
 
-        void CallMethod(MethodParams params) override;
+        void CallMethod(u32 method, u32 argument, bool lastCall);
     };
 }

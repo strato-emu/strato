@@ -72,48 +72,62 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         registers.viewportTransformEnable = true;
     }
 
-    void Maxwell3D::CallMethod(MethodParams params) {
-        state.logger->Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", params.method, params.argument);
+    void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
+        state.logger->Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         // Methods that are greater than the register size are for macro control
-        if (params.method > RegisterCount) {
-            if (!(params.method & 1))
-                macroInvocation.index = ((params.method - RegisterCount) >> 1) % macroPositions.size();
+        if (method > RegisterCount) [[unlikely]] {
+            // Starting a new macro at index 'method - RegisterCount'
+            if (!(method & 1)) {
+                if (macroInvocation.index != -1) {
+                    // Flush the current macro as we are switching to another one
+                    macroInterpreter.Execute(macroPositions[macroInvocation.index], macroInvocation.arguments);
+                    macroInvocation.arguments.clear();
+                }
 
-            macroInvocation.arguments.push_back(params.argument);
-
-            // Macros are always executed on the last method call in a pushbuffer entry
-            if (params.lastCall) {
-                macroInterpreter.Execute(macroPositions[macroInvocation.index], macroInvocation.arguments);
-
-                macroInvocation.arguments.clear();
-                macroInvocation.index = 0;
+                // Setup for the new macro index
+                macroInvocation.index = ((method - RegisterCount) >> 1) % macroPositions.size();
             }
+
+            macroInvocation.arguments.emplace_back(argument);
+
+            // Flush macro after all of the data in the method call has been sent
+            if (lastCall && macroInvocation.index != -1) {
+                macroInterpreter.Execute(macroPositions[macroInvocation.index], macroInvocation.arguments);
+                macroInvocation.arguments.clear();
+                macroInvocation.index = -1;
+            }
+
+            // Bail out early
             return;
         }
 
-        registers.raw[params.method] = params.argument;
+        registers.raw[method] = argument;
 
         if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodTrack || shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodTrackWithFilter)
-            shadowRegisters.raw[params.method] = params.argument;
+            shadowRegisters.raw[method] = argument;
         else if (shadowRegisters.mme.shadowRamControl == Registers::MmeShadowRamControl::MethodReplay)
-            params.argument = shadowRegisters.raw[params.method];
+            argument = shadowRegisters.raw[method];
 
-        switch (params.method) {
+        switch (method) {
             case MAXWELL3D_OFFSET(mme.instructionRamLoad):
                 if (registers.mme.instructionRamPointer >= macroCode.size())
                     throw exception("Macro memory is full!");
 
-                macroCode[registers.mme.instructionRamPointer++] = params.argument;
+                macroCode[registers.mme.instructionRamPointer++] = argument;
+
+                // Wraparound writes
+                registers.mme.instructionRamPointer %= macroCode.size();
+
                 break;
             case MAXWELL3D_OFFSET(mme.startAddressRamLoad):
                 if (registers.mme.startAddressRamPointer >= macroPositions.size())
                     throw exception("Maximum amount of macros reached!");
 
-                macroPositions[registers.mme.startAddressRamPointer++] = params.argument;
+                macroPositions[registers.mme.startAddressRamPointer++] = argument;
                 break;
             case MAXWELL3D_OFFSET(mme.shadowRamControl):
-                shadowRegisters.mme.shadowRamControl = static_cast<Registers::MmeShadowRamControl>(params.argument);
+                shadowRegisters.mme.shadowRamControl = static_cast<Registers::MmeShadowRamControl>(argument);
                 break;
             case MAXWELL3D_OFFSET(syncpointAction):
                 state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(registers.syncpointAction.id));
@@ -134,6 +148,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 break;
             case MAXWELL3D_OFFSET(firmwareCall[4]):
                 registers.raw[0xD00] = 1;
+                break;
+            default:
                 break;
         }
     }

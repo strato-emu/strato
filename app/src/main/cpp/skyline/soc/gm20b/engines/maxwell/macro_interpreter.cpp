@@ -193,7 +193,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     FORCE_INLINE void MacroInterpreter::Send(u32 pArgument) {
-        maxwell3D.CallMethod(MethodParams{methodAddress.address, pArgument, 0, true});
+        maxwell3D.CallMethod(methodAddress.address, pArgument, true);
         methodAddress.address += methodAddress.increment;
     }
 
