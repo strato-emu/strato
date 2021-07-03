@@ -218,11 +218,16 @@ namespace skyline {
 
             /**
              * @brief Returns a std::string_view from the payload
-             * @param size The length of the string (0 means the string is null terminated)
+             * @param size The length of the string (0 should only be used with nullTerminated and automatically determines size)
+             * @param nullTerminated If the returned view should only encapsulate a null terminated substring
              */
-            std::string_view PopString(size_t size = 0) {
-                auto view{size ? std::string_view(reinterpret_cast<const char *>(payloadOffset), size) : std::string_view(reinterpret_cast<const char *>(payloadOffset))};
-                payloadOffset += view.length();
+            std::string_view PopString(size_t size = 0, bool nullTerminated = true) {
+                size = size ? size : cmdArgSz - reinterpret_cast<u64>(payloadOffset);
+                auto view{span(payloadOffset, size).as_string(nullTerminated)};
+                if (nullTerminated)
+                    payloadOffset += size;
+                else
+                    payloadOffset += view.length();
                 return view;
             }
 

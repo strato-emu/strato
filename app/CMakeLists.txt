@@ -121,7 +121,6 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/vfs/ticket.cpp
         ${source_DIR}/skyline/services/serviceman.cpp
         ${source_DIR}/skyline/services/base_service.cpp
-        ${source_DIR}/skyline/services/common/parcel.cpp
         ${source_DIR}/skyline/services/sm/IUserInterface.cpp
         ${source_DIR}/skyline/services/fatalsrv/IService.cpp
         ${source_DIR}/skyline/services/audio/IAudioOutManager.cpp
@@ -182,12 +181,13 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_channel.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_as_gpu.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost_syncpoint.cpp
+        ${source_DIR}/skyline/services/hosbinder/parcel.cpp
         ${source_DIR}/skyline/services/hosbinder/IHOSBinderDriver.cpp
         ${source_DIR}/skyline/services/hosbinder/GraphicBufferProducer.cpp
         ${source_DIR}/skyline/services/visrv/IDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IApplicationDisplayService.cpp
         ${source_DIR}/skyline/services/visrv/IManagerDisplayService.cpp
-        ${source_DIR}/skyline/services/visrv/IManagerRootService.cpp
+        ${source_DIR}/skyline/services/visrv/IRootService.cpp
         ${source_DIR}/skyline/services/visrv/ISystemDisplayService.cpp
         ${source_DIR}/skyline/services/pl/IPlatformServiceManager.cpp
         ${source_DIR}/skyline/services/aocsrv/IAddOnContentManager.cpp

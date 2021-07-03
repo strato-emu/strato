@@ -3,7 +3,7 @@
 
 #include "parcel.h"
 
-namespace skyline::service {
+namespace skyline::service::hosbinder {
     Parcel::Parcel(span<u8> buffer, const DeviceState &state, bool hasToken) : state(state) {
         header = buffer.as<ParcelHeader>();
 

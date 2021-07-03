@@ -21,13 +21,6 @@ namespace skyline::service {
         std::unordered_map<ServiceName, std::shared_ptr<BaseService>> serviceMap; //!< A mapping from a Service to the underlying object
         std::mutex mutex; //!< Synchronizes concurrent access to services to prevent crashes
 
-        /**
-         * @brief Creates an instance of the service if it doesn't already exist, otherwise returns an existing instance
-         * @param name The name of the service to create
-         * @return A shared pointer to an instance of the service
-         */
-        std::shared_ptr<BaseService> CreateService(ServiceName name);
-
       public:
         std::shared_ptr<BaseService> smUserInterface; //!< Used by applications to open connections to services
         std::shared_ptr<GlobalServiceState> globalServiceState;
@@ -58,19 +51,13 @@ namespace skyline::service {
         }
 
         /**
-         * @param serviceType The type of the service
-         * @tparam The class of the service
-         * @return A shared pointer to an instance of the service
-         * @note This only works for services created with `NewService` as sub-interfaces used with `RegisterService` can have multiple instances
+         * @brief Creates an instance of the service if it doesn't already exist, otherwise returns an existing instance
          */
-        template<typename Type>
-        std::shared_ptr<Type> GetService(ServiceName name) {
-            return std::static_pointer_cast<Type>(serviceMap.at(name));
-        }
+        std::shared_ptr<BaseService> CreateOrGetService(ServiceName name);
 
         template<typename Type>
-        constexpr std::shared_ptr<Type> GetService(std::string_view name) {
-            return GetService<Type>(util::MakeMagic<ServiceName>(name));
+        constexpr std::shared_ptr<Type> CreateOrGetService(std::string_view name) {
+            return std::static_pointer_cast<Type>(CreateOrGetService(util::MakeMagic<ServiceName>(name)));
         }
 
         /**

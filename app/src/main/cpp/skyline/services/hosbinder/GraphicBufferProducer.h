@@ -6,7 +6,7 @@
 #pragma once
 
 #include <kernel/types/KEvent.h>
-#include <services/common/parcel.h>
+#include "parcel.h"
 #include "android_types.h"
 #include "native_window.h"
 
@@ -41,24 +41,6 @@ namespace skyline::service::hosbinder {
         bool wasBufferRequested{}; //!< If GraphicBufferProducer::RequestBuffer has been called with this buffer
         std::shared_ptr<gpu::Texture> texture{};
         std::unique_ptr<GraphicBuffer> graphicBuffer{};
-    };
-
-    /**
-     * @brief An enumeration of all the possible display IDs
-     * @url https://switchbrew.org/wiki/Display_services#DisplayName
-     */
-    enum class DisplayId : u64 {
-        Default, //!< Refers to the default display used by most applications
-        External, //!< Refers to an external display
-        Edid, //!< Refers to an external display with EDID capabilities
-        Internal, //!< Refers to the the internal display
-        Null, //!< Refers to the null display which is used for discarding data
-    };
-
-    enum class LayerStatus {
-        Uninitialized, //!< The layer hasn't been initialized
-        Stray, //!< The layer has been initialized as a stray layer
-        Managed, //!< The layer has been initialized as a managed layer
     };
 
     /**
@@ -147,8 +129,6 @@ namespace skyline::service::hosbinder {
 
       public:
         std::shared_ptr<kernel::type::KEvent> bufferEvent; //!< Signalled every time a buffer in the queue is freed
-        DisplayId displayId{DisplayId::Null}; //!< The ID of this display
-        LayerStatus layerStatus{LayerStatus::Uninitialized}; //!< The status of the single layer the display has
 
         /**
          * @brief The transactions supported by android.gui.IGraphicBufferProducer
@@ -178,18 +158,5 @@ namespace skyline::service::hosbinder {
          * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/IGraphicBufferProducer.cpp;l=277-426
          */
         void OnTransact(TransactionCode code, Parcel &in, Parcel &out);
-
-        /**
-         * @brief Sets displayId to a specific display type
-         * @note displayId has to be DisplayId::Null or this will throw an exception
-         */
-        void SetDisplay(const std::string &name);
-
-        /**
-         * @brief Closes the display by setting displayId to DisplayId::Null
-         */
-        void CloseDisplay();
     };
-
-    extern std::weak_ptr<GraphicBufferProducer> producer; //!< A globally shared instance of the GraphicsBufferProducer
 }

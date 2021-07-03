@@ -2,11 +2,11 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
-#include <services/hosbinder/GraphicBufferProducer.h>
+#include <services/hosbinder/IHOSBinderDriver.h>
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)), hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")), BaseService(state, manager) {}
 
     Result ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
@@ -47,17 +47,11 @@ namespace skyline::service::am {
     }
 
     Result ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.logger->Debug("Creating Managed Layer on Default Display");
-
-        auto producer{hosbinder::producer.lock()};
-        if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
-            throw exception("The application is creating more than one layer");
-        producer->layerStatus = hosbinder::LayerStatus::Managed;
-
-        response.Push<u64>(0);
+        auto layerId{hosbinder->CreateLayer(hosbinder::DisplayId::Default)};
+        state.logger->Debug("Creating Managed Layer #{} on 'Default' Display", layerId);
+        response.Push(layerId);
         return {};
     }
-
 
     Result ISelfController::GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // TODO: Properly handle this after we implement game suspending

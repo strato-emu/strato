@@ -1,35 +1,27 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <services/hosbinder/GraphicBufferProducer.h>
+#include <services/hosbinder/IHOSBinderDriver.h>
 #include "IManagerDisplayService.h"
 
 namespace skyline::service::visrv {
     IManagerDisplayService::IManagerDisplayService(const DeviceState &state, ServiceManager &manager) : IDisplayService(state, manager) {}
 
     Result IManagerDisplayService::CreateManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        request.Skip<u32>();
-        auto displayId{request.Pop<u64>()};
-        state.logger->Debug("Creating Managed Layer on Display: {}", displayId);
+        request.Skip<u64>(); // VI Layer flags
+        auto displayId{request.Pop<hosbinder::DisplayId>()};
 
-        auto producer{hosbinder::producer.lock()};
-        if (producer->layerStatus != hosbinder::LayerStatus::Uninitialized)
-            throw exception("The application is creating more than one layer");
-        producer->layerStatus = hosbinder::LayerStatus::Managed;
+        auto layerId{hosbinder->CreateLayer(displayId)};
+        state.logger->Debug("Creating Managed Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
+        response.Push(layerId);
 
-        response.Push<u64>(0); // There's only one layer
         return {};
     }
 
     Result IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Destroying Managed Layer: {}", layerId);
-
-        auto producer{hosbinder::producer.lock()};
-        if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
-            state.logger->Warn("The application is destroying an uninitialized layer");
-        producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
-
+        state.logger->Debug("Destroying Managed Layer #{}", layerId);
+        hosbinder->DestroyLayer(layerId);
         return {};
     }
 

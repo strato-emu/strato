@@ -18,6 +18,9 @@
 #include "services/timesrv/core.h"
 #include "fssrv/IFileSystemProxy.h"
 #include "services/nvdrv/INvDrvServices.h"
+#include "hosbinder/IHOSBinderDriver.h"
+#include "visrv/IApplicationRootService.h"
+#include "visrv/ISystemRootService.h"
 #include "visrv/IManagerRootService.h"
 #include "pl/IPlatformServiceManager.h"
 #include "aocsrv/IAddOnContentManager.h"
@@ -35,7 +38,7 @@
 
 #define SERVICE_CASE(class, name, ...) \
     case util::MakeMagic<ServiceName>(name): { \
-            std::shared_ptr<BaseService> serviceObject = std::make_shared<class>(state, *this __VA_OPT__(,) __VA_ARGS__); \
+            std::shared_ptr<BaseService> serviceObject{std::make_shared<class>(state, *this, ##__VA_ARGS__)}; \
             serviceMap[util::MakeMagic<ServiceName>(name)] = serviceObject; \
             return serviceObject; \
         }
@@ -49,7 +52,7 @@ namespace skyline::service {
 
     ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)), globalServiceState(std::make_shared<GlobalServiceState>(state)) {}
 
-    std::shared_ptr<BaseService> ServiceManager::CreateService(ServiceName name) {
+    std::shared_ptr<BaseService> ServiceManager::CreateOrGetService(ServiceName name) {
         auto serviceIter{serviceMap.find(name)};
         if (serviceIter != serviceMap.end())
             return (*serviceIter).second;
@@ -74,9 +77,10 @@ namespace skyline::service {
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:s")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:t")
+            SERVICE_CASE(hosbinder::IHOSBinderDriver, "dispdrv")
+            SERVICE_CASE(visrv::IApplicationRootService, "vi:u")
+            SERVICE_CASE(visrv::ISystemRootService, "vi:s")
             SERVICE_CASE(visrv::IManagerRootService, "vi:m")
-            SERVICE_CASE(visrv::IManagerRootService, "vi:u")
-            SERVICE_CASE(visrv::IManagerRootService, "vi:s")
             SERVICE_CASE(pl::IPlatformServiceManager, "pl:u")
             SERVICE_CASE(aocsrv::IAddOnContentManager, "aoc:u")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl")
@@ -100,7 +104,7 @@ namespace skyline::service {
 
     std::shared_ptr<BaseService> ServiceManager::NewService(ServiceName name, type::KSession &session, ipc::IpcResponse &response) {
         std::lock_guard serviceGuard(mutex);
-        auto serviceObject{CreateService(name)};
+        auto serviceObject{CreateOrGetService(name)};
         KHandle handle{};
         if (session.isDomain) {
             session.domains.push_back(serviceObject);

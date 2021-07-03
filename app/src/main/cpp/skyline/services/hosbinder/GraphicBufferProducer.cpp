@@ -70,7 +70,7 @@ namespace skyline::service::hosbinder {
         } else {
             size_t index{};
             std::string bufferString;
-            for (auto& bufferSlot : queue)
+            for (auto &bufferSlot : queue)
                 bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), static_cast<bool>(bufferSlot.graphicBuffer), bufferSlot.frameNumber);
             state.logger->Warn("Cannot find any free buffers to dequeue:{}", bufferString);
             return AndroidStatus::InvalidOperation;
@@ -489,31 +489,4 @@ namespace skyline::service::hosbinder {
                 throw exception("An unimplemented transaction was called: {}", static_cast<u32>(code));
         }
     }
-
-    static frz::unordered_map<frz::string, DisplayId, 5> DisplayTypeMap{
-        {"Default", DisplayId::Default},
-        {"External", DisplayId::External},
-        {"Edid", DisplayId::Edid},
-        {"Internal", DisplayId::Internal},
-        {"Null", DisplayId::Null},
-    };
-
-    void GraphicBufferProducer::SetDisplay(const std::string &name) {
-        try {
-            if (displayId == DisplayId::Null)
-                displayId = DisplayTypeMap.at(frz::string(name.data(), name.size()));
-            else
-                throw exception("Trying to change display type from non-null type");
-        } catch (const std::out_of_range &) {
-            throw exception("The display with name: '{}' doesn't exist", name);
-        }
-    }
-
-    void GraphicBufferProducer::CloseDisplay() {
-        if (displayId == DisplayId::Null)
-            state.logger->Warn("Trying to close uninitiated display");
-        displayId = DisplayId::Null;
-    }
-
-    std::weak_ptr<GraphicBufferProducer> producer{};
 }

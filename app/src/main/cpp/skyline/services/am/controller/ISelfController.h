@@ -5,6 +5,10 @@
 
 #include <services/serviceman.h>
 
+namespace skyline::service::hosbinder {
+    class IHOSBinderDriver;
+}
+
 namespace skyline::service::am {
     /**
      * @brief This has functions relating to an application's own current status
@@ -14,6 +18,7 @@ namespace skyline::service::am {
       private:
         std::shared_ptr<kernel::type::KEvent> libraryAppletLaunchableEvent; //!< This KEvent is triggered when the library applet is launchable
         std::shared_ptr<kernel::type::KEvent> accumulatedSuspendedTickChangedEvent; //!< This KEvent is triggered when the time the system has spent in suspend is updated
+        std::shared_ptr<hosbinder::IHOSBinderDriver> hosbinder; //!< IHOSBinder service for managed display layers
 
       public:
         ISelfController(const DeviceState &state, ServiceManager &manager);

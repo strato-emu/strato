@@ -5,7 +5,7 @@
 
 #include <kernel/ipc.h>
 
-namespace skyline::service {
+namespace skyline::service::hosbinder {
     /**
      * @brief This allows easy access and efficient serialization of an Android Parcel object
      * @url https://switchbrew.org/wiki/Display_services#Parcel

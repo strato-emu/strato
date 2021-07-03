@@ -3,7 +3,11 @@
 
 #pragma once
 
-#include <services/serviceman.h>
+#include <services/base_service.h>
+
+namespace skyline::service::hosbinder {
+    class IHOSBinderDriver;
+}
 
 namespace skyline::service::visrv {
     /**
@@ -11,18 +15,7 @@ namespace skyline::service::visrv {
      */
     class IDisplayService : public BaseService {
       protected:
-        /**
-         * @brief This is the parcel used in OpenLayer/CreateStrayLayer
-         */
-        struct LayerParcel {
-            u32 type; //!< The type of the layer
-            u32 pid; //!< The PID that the layer belongs to
-            u32 bufferId; //!< The buffer ID of the layer
-            u32 _pad0_[3];
-            u8 string[0x8]; //!< "dispdrv"
-            u64 _pad1_;
-        };
-        static_assert(sizeof(LayerParcel) == 0x28);
+        std::shared_ptr<hosbinder::IHOSBinderDriver> hosbinder; //!< The IHOSBinder relayed via this display class
 
       public:
         IDisplayService(const DeviceState &state, ServiceManager &manager);

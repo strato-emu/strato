@@ -1,46 +1,33 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <services/hosbinder/GraphicBufferProducer.h>
+#include <services/serviceman.h>
+#include <services/hosbinder/IHOSBinderDriver.h>
 #include "IDisplayService.h"
 
 namespace skyline::service::visrv {
-    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
+    IDisplayService::IDisplayService(const DeviceState &state, ServiceManager &manager) : hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")), BaseService(state, manager) {}
 
     Result IDisplayService::CreateStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        request.Skip<u64>();
-        auto displayId{request.Pop<u64>()};
+        request.Skip<u64>(); // VI Layer flags
+        auto displayId{request.Pop<hosbinder::DisplayId>()};
 
-        state.logger->Debug("Creating Stray Layer on Display: {}", displayId);
+        auto layerId{hosbinder->CreateLayer(displayId)};
+        response.Push(layerId);
 
-        auto producer{hosbinder::producer.lock()};
-        if (producer->layerStatus == hosbinder::LayerStatus::Stray)
-            throw exception("The application is creating more than one stray layer");
-        producer->layerStatus = hosbinder::LayerStatus::Stray;
+        state.logger->Debug("Creating Stray Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
 
-        response.Push<u64>(0); // There's only one layer
-
-        Parcel parcel(state);
-        LayerParcel data{
-            .type = 0x2,
-            .pid = 0,
-            .bufferId = 0, // As we only have one layer and buffer
-            .string = "dispdrv"
-        };
-        parcel.Push(data);
-
+        auto parcel{hosbinder->OpenLayer(displayId, layerId)};
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
+
         return {};
     }
 
     Result IDisplayService::DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Destroying Stray Layer: {}", layerId);
+        state.logger->Debug("Destroying Stray Layer #{}", layerId);
 
-        auto producer{hosbinder::producer.lock()};
-        if (producer->layerStatus == hosbinder::LayerStatus::Uninitialized)
-            state.logger->Warn("The application is destroying an uninitialized layer");
-        producer->layerStatus = hosbinder::LayerStatus::Uninitialized;
+        hosbinder->CloseLayer(layerId);
 
         return {};
     }

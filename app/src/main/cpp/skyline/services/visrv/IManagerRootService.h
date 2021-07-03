@@ -3,26 +3,18 @@
 
 #pragma once
 
-#include <gpu.h>
-#include <services/serviceman.h>
+#include "IRootService.h"
 
 namespace skyline::service::visrv {
     /**
-     * @brief This service is used to get an handle to #IApplicationDisplayService
      * @url https://switchbrew.org/wiki/Display_services#vi:m
      */
-    class IManagerRootService : public BaseService {
+    class IManagerRootService : public IRootService {
       public:
-        IManagerRootService(const DeviceState &state, ServiceManager &manager);
+        IManagerRootService(const DeviceState &state, ServiceManager &manager) : IRootService(state, manager, PrivilegeLevel::Manager) {}
 
-        /**
-         * @brief Returns an handle to #IApplicationDisplayService
-         * @url https://switchbrew.org/wiki/Display_services#GetDisplayService
-         */
-        Result GetDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-
-        SERVICE_DECL(
-            SFUNC(0x2, IManagerRootService, GetDisplayService)
-        )
+      SERVICE_DECL(
+          SFUNC_BASE(0x2, IManagerRootService, IRootService, GetDisplayService)
+      )
     };
 }
