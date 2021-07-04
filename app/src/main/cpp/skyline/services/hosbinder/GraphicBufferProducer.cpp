@@ -23,7 +23,7 @@ namespace skyline::service::hosbinder {
     }
 
     AndroidStatus GraphicBufferProducer::RequestBuffer(i32 slot, GraphicBuffer *&buffer) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
             state.logger->Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
@@ -37,6 +37,45 @@ namespace skyline::service::hosbinder {
         return AndroidStatus::Ok;
     }
 
+    AndroidStatus GraphicBufferProducer::SetBufferCount(i32 count) {
+        std::scoped_lock lock(mutex);
+        if (count >= MaxSlotCount) [[unlikely]] {
+            state.logger->Warn("Setting buffer count too high: {} (Max: {})", count, MaxSlotCount);
+            return AndroidStatus::BadValue;
+        }
+
+        for (auto it{queue.begin()}; it != queue.end(); it++) {
+            if (it->state == BufferState::Dequeued) {
+                state.logger->Warn("Cannot set buffer count as #{} is dequeued", std::distance(queue.begin(), it));
+                return AndroidStatus::BadValue;
+            }
+        }
+
+        if (!count) {
+            activeSlotCount = 0;
+            bufferEvent->Signal();
+            return AndroidStatus::Ok;
+        }
+
+        // We don't check minBufferSlots here since it's effectively hardcoded to 0 on HOS (See NativeWindowQuery::MinUndequeuedBuffers)
+
+        // HOS only resets all the buffers if there's no preallocated buffers, it simply sets the active buffer count otherwise
+        if (preallocatedBufferCount == 0) {
+            for (auto &slot : queue) {
+                slot.state = BufferState::Free;
+                slot.frameNumber = std::numeric_limits<u32>::max();
+                slot.graphicBuffer = nullptr;
+            }
+        } else if (preallocatedBufferCount < count) {
+            state.logger->Warn("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
+        }
+
+        activeSlotCount = count;
+        bufferEvent->Signal();
+
+        return AndroidStatus::Ok;
+    }
+
     AndroidStatus GraphicBufferProducer::DequeueBuffer(bool async, u32 width, u32 height, AndroidPixelFormat format, u32 usage, i32 &slot, std::optional<AndroidFence> &fence) {
         if ((width && !height) || (!width && height)) {
             state.logger->Warn("Dimensions {}x{} should be uniformly zero or non-zero", width, height);
@@ -46,13 +85,16 @@ namespace skyline::service::hosbinder {
         constexpr i32 InvalidGraphicBufferSlot{-1}; //!< https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h;l=61
         slot = InvalidGraphicBufferSlot;
 
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
+        // We don't need a loop here since the consumer is blocking and instantly frees all buffers
+        // If a valid slot is not found on the first iteration then it would be stuck in an infloop
+        // As a result of this, we simply warn and return InvalidOperation to the guest
         auto buffer{queue.end()};
         size_t dequeuedSlotCount{};
-        for (auto it{queue.begin()}; it != queue.end(); it++) {
+        for (auto it{queue.begin()}; it != std::min(queue.begin() + activeSlotCount, queue.end()); it++) {
             // We want to select the oldest slot that's free to use as we'd want all slots to be used
             // If we go linearly then we have a higher preference for selecting the former slots and being out of order
-            if (it->state == BufferState::Free && it->texture) {
+            if (it->state == BufferState::Free) {
                 if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
                     buffer = it;
             } else if (it->state == BufferState::Dequeued) {
@@ -100,6 +142,104 @@ namespace skyline::service::hosbinder {
         return AndroidStatus::Ok;
     }
 
+    AndroidStatus GraphicBufferProducer::DetachBuffer(i32 slot) {
+        std::scoped_lock lock(mutex);
+        if (slot < 0 || slot >= queue.size()) [[unlikely]] {
+            state.logger->Warn("#{} was out of range", slot);
+            return AndroidStatus::BadValue;
+        }
+
+        auto &bufferSlot{queue[slot]};
+        if (bufferSlot.state != BufferState::Dequeued) [[unlikely]] {
+            state.logger->Warn("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
+            return AndroidStatus::BadValue;
+        } else if (!bufferSlot.wasBufferRequested) [[unlikely]] {
+            state.logger->Warn("#{} was detached prior to being requested", slot);
+            return AndroidStatus::BadValue;
+        }
+
+        bufferSlot.state = BufferState::Free;
+        bufferSlot.frameNumber = std::numeric_limits<u32>::max();
+        bufferSlot.graphicBuffer = nullptr;
+
+        bufferEvent->Signal();
+
+        state.logger->Debug("#{}", slot);
+        return AndroidStatus::Ok;
+    }
+
+    AndroidStatus GraphicBufferProducer::DetachNextBuffer(std::optional<GraphicBuffer> &graphicBuffer, std::optional<AndroidFence> &fence) {
+        std::scoped_lock lock(mutex);
+        auto bufferSlot{queue.end()};
+        for (auto it{queue.begin()}; it != queue.end(); it++) {
+            if (it->state == BufferState::Free && it->graphicBuffer) {
+                if (bufferSlot == queue.end() || it->frameNumber < bufferSlot->frameNumber)
+                    bufferSlot = it;
+            }
+        }
+
+        if (bufferSlot == queue.end())
+            return AndroidStatus::NoMemory;
+
+        bufferSlot->state = BufferState::Free;
+        bufferSlot->frameNumber = std::numeric_limits<u32>::max();
+        graphicBuffer = *std::exchange(bufferSlot->graphicBuffer, nullptr);
+        fence = AndroidFence{};
+
+        bufferEvent->Signal();
+
+        state.logger->Debug("#{}", std::distance(queue.begin(), bufferSlot));
+        return AndroidStatus::Ok;
+    }
+
+    AndroidStatus GraphicBufferProducer::AttachBuffer(i32 &slot, const GraphicBuffer &graphicBuffer) {
+        std::scoped_lock lock(mutex);
+        auto bufferSlot{queue.end()};
+        for (auto it{queue.begin()}; it != queue.end(); it++) {
+            if (it->state == BufferState::Free) {
+                if (bufferSlot == queue.end() || it->frameNumber < bufferSlot->frameNumber)
+                    bufferSlot = it;
+            }
+        }
+
+        if (bufferSlot == queue.end()) {
+            state.logger->Warn("Could not find any free slots to attach the graphic buffer to");
+            return AndroidStatus::NoMemory;
+        }
+
+        if (graphicBuffer.magic != GraphicBuffer::Magic)
+            throw exception("Unexpected GraphicBuffer magic: 0x{} (Expected: 0x{})", graphicBuffer.magic, GraphicBuffer::Magic);
+        else if (graphicBuffer.intCount != sizeof(NvGraphicHandle) / sizeof(u32))
+            throw exception("Unexpected GraphicBuffer native_handle integer count: 0x{} (Expected: 0x{})", graphicBuffer.intCount, sizeof(NvGraphicHandle));
+
+        auto &handle{graphicBuffer.graphicHandle};
+        if (handle.magic != NvGraphicHandle::Magic)
+            throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
+        else if (handle.surfaceCount < 1)
+            throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
+        else if (handle.surfaceCount > 1)
+            throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
+
+        auto &surface{graphicBuffer.graphicHandle.surfaces.at(0)};
+        if (surface.scanFormat != NvDisplayScanFormat::Progressive)
+            throw exception("Non-Progressive surfaces are not supported: {}", ToString(surface.scanFormat));
+        else if (surface.layout == NvSurfaceLayout::Tiled)
+            throw exception("Legacy 16Bx16 tiled surfaces are not supported");
+
+        bufferSlot->state = BufferState::Dequeued;
+        bufferSlot->wasBufferRequested = true;
+        bufferSlot->isPreallocated = false;
+        bufferSlot->graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
+
+        slot = std::distance(queue.begin(), bufferSlot);
+
+        preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
+        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
+
+        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+        return AndroidStatus::Ok;
+    }
+
     AndroidStatus GraphicBufferProducer::QueueBuffer(i32 slot, i64 timestamp, bool isAutoTimestamp, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, NativeWindowTransform stickyTransform, bool async, u32 swapInterval, const AndroidFence &fence, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount) {
         switch (scalingMode) {
             case NativeWindowScalingMode::Freeze:
@@ -113,7 +253,7 @@ namespace skyline::service::hosbinder {
                 return AndroidStatus::BadValue;
         }
 
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
             state.logger->Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
@@ -132,6 +272,80 @@ namespace skyline::service::hosbinder {
         if (graphicBuffer.width < (crop.right - crop.left) || graphicBuffer.height < (crop.bottom - crop.top)) [[unlikely]] {
             state.logger->Warn("Crop was out of range for surface buffer: ({}-{})x({}-{}) > {}x{}", crop.left, crop.right, crop.top, crop.bottom, graphicBuffer.width, graphicBuffer.height);
             return AndroidStatus::BadValue;
+        }
+
+        if (!buffer.texture) [[unlikely]] {
+            // We lazily create a texture if one isn't present at queue time, this allows us to look up the texture in the texture cache
+            // If we deterministically know that the texture is written by the CPU then we can allocate a CPU-shared host texture for fast uploads
+            gpu::texture::Format format;
+            switch (graphicBuffer.format) {
+                case AndroidPixelFormat::RGBA8888:
+                case AndroidPixelFormat::RGBX8888:
+                    format = gpu::format::RGBA8888Unorm;
+                    break;
+
+                case AndroidPixelFormat::RGB565:
+                    format = gpu::format::RGB565Unorm;
+                    break;
+
+                default:
+                    throw exception("Unknown format in buffer: '{}' ({})", ToString(graphicBuffer.format), static_cast<u32>(graphicBuffer.format));
+            }
+
+            auto &handle{graphicBuffer.graphicHandle};
+            if (handle.magic != NvGraphicHandle::Magic)
+                throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
+            else if (handle.surfaceCount < 1)
+                throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
+            else if (handle.surfaceCount > 1)
+                throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
+
+            auto &surface{graphicBuffer.graphicHandle.surfaces.at(0)};
+            if (surface.scanFormat != NvDisplayScanFormat::Progressive)
+                throw exception("Non-Progressive surfaces are not supported: {}", ToString(surface.scanFormat));
+
+            std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
+            {
+                auto driver{nvdrv::driver.lock()};
+                auto nvmap{driver->nvMap.lock()};
+                if (surface.nvmapHandle) {
+                    nvBuffer = nvmap->GetObject(surface.nvmapHandle);
+                } else {
+                    std::shared_lock nvmapLock(nvmap->mapMutex);
+                    for (const auto &object : nvmap->maps) {
+                        if (object->id == handle.nvmapId) {
+                            nvBuffer = object;
+                            break;
+                        }
+                    }
+                    if (!nvBuffer)
+                        throw exception("A QueueBuffer request has an invalid NvMap Handle ({}) and ID ({})", surface.nvmapHandle, handle.nvmapId);
+                }
+            }
+
+            if (surface.size > (nvBuffer->size - surface.offset))
+                throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvBuffer->size, surface.offset, surface.offset + surface.size);
+
+            gpu::texture::TileMode tileMode;
+            gpu::texture::TileConfig tileConfig{};
+            if (surface.layout == NvSurfaceLayout::Blocklinear) {
+                tileMode = gpu::texture::TileMode::Block;
+                tileConfig = {
+                    .surfaceWidth = static_cast<u16>(surface.width),
+                    .blockHeight = static_cast<u8>(1U << surface.blockHeightLog2),
+                    .blockDepth = 1,
+                };
+            } else if (surface.layout == NvSurfaceLayout::Pitch) {
+                tileMode = gpu::texture::TileMode::Pitch;
+                tileConfig = {
+                    .pitch = surface.pitch,
+                };
+            } else if (surface.layout == NvSurfaceLayout::Tiled) {
+                throw exception("Legacy 16Bx16 tiled surfaces are not supported");
+            }
+
+            auto guestTexture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->ptr + surface.offset, gpu::texture::Dimensions(surface.width, surface.height), format, tileMode, tileConfig)};
+            buffer.texture = guestTexture->CreateTexture({}, vk::ImageTiling::eLinear);
         }
 
         switch (transform) {
@@ -179,7 +393,7 @@ namespace skyline::service::hosbinder {
     }
 
     void GraphicBufferProducer::CancelBuffer(i32 slot, const AndroidFence &fence) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
             state.logger->Warn("#{} was out of range", slot);
             return;
@@ -201,7 +415,7 @@ namespace skyline::service::hosbinder {
     }
 
     AndroidStatus GraphicBufferProducer::Query(NativeWindowQuery query, u32 &out) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
         switch (query) {
             case NativeWindowQuery::Width:
                 out = defaultWidth;
@@ -250,7 +464,7 @@ namespace skyline::service::hosbinder {
     }
 
     AndroidStatus GraphicBufferProducer::Connect(NativeWindowApi api, bool producerControlledByApp, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
         if (connectedApi != NativeWindowApi::None) [[unlikely]] {
             state.logger->Warn("Already connected to API '{}' while connection to '{}' is requested", ToString(connectedApi), ToString(api));
             return AndroidStatus::BadValue;
@@ -279,7 +493,7 @@ namespace skyline::service::hosbinder {
     }
 
     AndroidStatus GraphicBufferProducer::Disconnect(NativeWindowApi api) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock lock(mutex);
 
         switch (api) {
             case NativeWindowApi::EGL:
@@ -309,99 +523,51 @@ namespace skyline::service::hosbinder {
         return AndroidStatus::Ok;
     }
 
-    AndroidStatus GraphicBufferProducer::SetPreallocatedBuffer(i32 slot, const GraphicBuffer &graphicBuffer) {
-        std::lock_guard guard(mutex);
+    AndroidStatus GraphicBufferProducer::SetPreallocatedBuffer(i32 slot, const GraphicBuffer *graphicBuffer) {
+        std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= MaxSlotCount) [[unlikely]] {
             state.logger->Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
-        if (graphicBuffer.magic != GraphicBuffer::Magic)
-            throw exception("Unexpected GraphicBuffer magic: 0x{} (Expected: 0x{})", graphicBuffer.magic, GraphicBuffer::Magic);
-        else if (graphicBuffer.intCount != sizeof(NvGraphicHandle) / sizeof(u32))
-            throw exception("Unexpected GraphicBuffer native_handle integer count: 0x{} (Expected: 0x{})", graphicBuffer.intCount, sizeof(NvGraphicHandle));
-
-        gpu::texture::Format format;
-        switch (graphicBuffer.format) {
-            case AndroidPixelFormat::RGBA8888:
-            case AndroidPixelFormat::RGBX8888:
-                format = gpu::format::RGBA8888Unorm;
-                break;
-
-            case AndroidPixelFormat::RGB565:
-                format = gpu::format::RGB565Unorm;
-                break;
-
-            default:
-                throw exception("Unknown format in buffer: '{}' ({})", ToString(graphicBuffer.format), static_cast<u32>(graphicBuffer.format));
-        }
-
-        auto &handle{graphicBuffer.graphicHandle};
-        if (handle.magic != NvGraphicHandle::Magic)
-            throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
-        else if (handle.surfaceCount < 1)
-            throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
-        else if (handle.surfaceCount > 1)
-            throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
-
-        auto &surface{graphicBuffer.graphicHandle.surfaces.at(0)};
-        if (surface.scanFormat != NvDisplayScanFormat::Progressive)
-            throw exception("Non-Progressive surfaces are not supported: {}", ToString(surface.scanFormat));
-
-        std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
-        {
-            auto driver{nvdrv::driver.lock()};
-            auto nvmap{driver->nvMap.lock()};
-            if (surface.nvmapHandle) {
-                nvBuffer = nvmap->GetObject(surface.nvmapHandle);
-            } else {
-                std::shared_lock nvmapLock(nvmap->mapMutex);
-                for (const auto &object : nvmap->maps) {
-                    if (object->id == handle.nvmapId) {
-                        nvBuffer = object;
-                        break;
-                    }
-                }
-                if (!nvBuffer)
-                    throw exception("A QueueBuffer request has an invalid NvMap Handle ({}) and ID ({})", surface.nvmapHandle, handle.nvmapId);
-            }
-        }
-
-        if (surface.size > (nvBuffer->size - surface.offset))
-            throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvBuffer->size, surface.offset, surface.offset + surface.size);
-
-        gpu::texture::TileMode tileMode;
-        gpu::texture::TileConfig tileConfig{};
-        if (surface.layout == NvSurfaceLayout::Blocklinear) {
-            tileMode = gpu::texture::TileMode::Block;
-            tileConfig = {
-                .surfaceWidth = static_cast<u16>(surface.width),
-                .blockHeight = static_cast<u8>(1U << surface.blockHeightLog2),
-                .blockDepth = 1,
-            };
-        } else if (surface.layout == NvSurfaceLayout::Pitch) {
-            tileMode = gpu::texture::TileMode::Pitch;
-            tileConfig = {
-                .pitch = surface.pitch,
-            };
-        } else if (surface.layout == NvSurfaceLayout::Tiled) {
-            throw exception("Legacy 16Bx16 tiled surfaces are not supported");
-        }
-
-        auto texture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->ptr + surface.offset, gpu::texture::Dimensions(surface.width, surface.height), format, tileMode, tileConfig)};
-
         auto &buffer{queue[slot]};
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
-        buffer.graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
-        buffer.texture = texture->CreateTexture({}, vk::ImageTiling::eLinear);
+        buffer.isPreallocated = static_cast<bool>(graphicBuffer);
+        buffer.graphicBuffer = graphicBuffer ? std::make_unique<GraphicBuffer>(*graphicBuffer) : nullptr;
+        buffer.texture = {};
 
-        activeSlotCount = hasBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
+        if (graphicBuffer) {
+            if (graphicBuffer->magic != GraphicBuffer::Magic)
+                throw exception("Unexpected GraphicBuffer magic: 0x{} (Expected: 0x{})", graphicBuffer->magic, GraphicBuffer::Magic);
+            else if (graphicBuffer->intCount != sizeof(NvGraphicHandle) / sizeof(u32))
+                throw exception("Unexpected GraphicBuffer native_handle integer count: 0x{} (Expected: 0x{})", graphicBuffer->intCount, sizeof(NvGraphicHandle));
+
+            auto &handle{graphicBuffer->graphicHandle};
+            if (handle.magic != NvGraphicHandle::Magic)
+                throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
+            else if (handle.surfaceCount < 1)
+                throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
+            else if (handle.surfaceCount > 1)
+                throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
+
+            auto &surface{graphicBuffer->graphicHandle.surfaces.at(0)};
+            if (surface.scanFormat != NvDisplayScanFormat::Progressive)
+                throw exception("Non-Progressive surfaces are not supported: {}", ToString(surface.scanFormat));
+            else if (surface.layout == NvSurfaceLayout::Tiled)
+                throw exception("Legacy 16Bx16 tiled surfaces are not supported");
+
+            state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer->format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+        } else {
+            state.logger->Debug("#{} - No GraphicBuffer", slot);
+        }
+
+        preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
+        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
 
         bufferEvent->Signal();
 
-        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
     }
 
@@ -415,12 +581,42 @@ namespace skyline::service::hosbinder {
                 break;
             }
 
+            case TransactionCode::SetBufferCount: {
+                auto result{SetBufferCount(in.Pop<i32>())};
+                out.Push(result);
+                break;
+            }
+
             case TransactionCode::DequeueBuffer: {
                 i32 slot{};
                 std::optional<AndroidFence> fence{};
                 auto result{DequeueBuffer(in.Pop<u32>(), in.Pop<u32>(), in.Pop<u32>(), in.Pop<AndroidPixelFormat>(), in.Pop<u32>(), slot, fence)};
                 out.Push(slot);
                 out.PushOptionalFlattenable(fence);
+                out.Push(result);
+                break;
+            }
+
+            case TransactionCode::DetachBuffer: {
+                auto result{DetachBuffer(in.Pop<i32>())};
+                out.Push(result);
+                break;
+            }
+
+            case TransactionCode::DetachNextBuffer: {
+                std::optional<GraphicBuffer> graphicBuffer{};
+                std::optional<AndroidFence> fence{};
+                auto result{DetachNextBuffer(graphicBuffer, fence)};
+                out.PushOptionalFlattenable(graphicBuffer);
+                out.PushOptionalFlattenable(fence);
+                out.Push(result);
+                break;
+            }
+
+            case TransactionCode::AttachBuffer: {
+                i32 slotOut{};
+                auto result{AttachBuffer(slotOut, in.Pop<GraphicBuffer>())};
+                out.Push(slotOut);
                 out.Push(result);
                 break;
             }
@@ -481,7 +677,8 @@ namespace skyline::service::hosbinder {
             }
 
             case TransactionCode::SetPreallocatedBuffer: {
-                SetPreallocatedBuffer(in.Pop<i32>(), *in.PopOptionalFlattenable<GraphicBuffer>());
+                auto result{SetPreallocatedBuffer(in.Pop<i32>(), in.PopOptionalFlattenable<GraphicBuffer>())};
+                out.Push(result);
                 break;
             }
 
