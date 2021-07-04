@@ -508,6 +508,35 @@ namespace skyline::kernel::svc {
         }
     }
 
+    void UnmapSharedMemory(const DeviceState &state) {
+        try {
+            auto object{state.process->GetHandle<type::KSharedMemory>(state.ctx->gpr.w0)};
+            auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+
+            if (!util::PageAligned(pointer)) {
+                state.ctx->gpr.w0 = result::InvalidAddress;
+                state.logger->Warn("'pointer' not page aligned: 0x{:X}", pointer);
+                return;
+            }
+
+            size_t size{state.ctx->gpr.x2};
+            if (!util::PageAligned(size)) {
+                state.ctx->gpr.w0 = result::InvalidSize;
+                state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+                return;
+            }
+
+            state.logger->Debug("Unmapping shared memory at 0x{:X} - 0x{:X} (0x{:X} bytes)", pointer, pointer + size, size);
+
+            object->Unmap(pointer, size);
+
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::out_of_range &) {
+            state.logger->Warn("'handle' invalid: 0x{:X}", static_cast<u32>(state.ctx->gpr.w0));
+            state.ctx->gpr.w0 = result::InvalidHandle;
+        }
+    }
+
     void CreateTransferMemory(const DeviceState &state) {
         auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
         if (!util::PageAligned(pointer)) {

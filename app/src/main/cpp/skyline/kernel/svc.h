@@ -103,10 +103,16 @@ namespace skyline::kernel::svc {
     void ClearEvent(const DeviceState &state);
 
     /**
-     * @brief Maps the block supplied by the handle
+     * @brief Maps shared memory into a memory region
      * @url https://switchbrew.org/wiki/SVC#MapSharedMemory
      */
     void MapSharedMemory(const DeviceState &state);
+
+    /**
+     * @brief Unmaps shared memory which has been mapped
+     * @url https://switchbrew.org/wiki/SVC#UnmapSharedMemory
+     */
+    void UnmapSharedMemory(const DeviceState &state);
 
     /**
      * @brief Returns a handle to a KSharedMemory object
@@ -269,7 +275,7 @@ namespace skyline::kernel::svc {
         SVC_NONE, // 0x11
         SVC_ENTRY(ClearEvent), // 0x12
         SVC_ENTRY(MapSharedMemory), // 0x13
-        SVC_NONE, // 0x14
+        SVC_ENTRY(UnmapSharedMemory), // 0x14
         SVC_ENTRY(CreateTransferMemory), // 0x15
         SVC_ENTRY(CloseHandle), // 0x16
         SVC_ENTRY(ResetSignal), // 0x17

@@ -33,11 +33,11 @@ namespace skyline::service::pl {
         constexpr u32 SharedFontMagic{0x36F81A1E}; //!< The encrypted magic for a single font in the shared font data
         constexpr u32 SharedFontKey{SharedFontMagic ^ SharedFontResult}; //!< The XOR key for encrypting the font size
 
-        auto ptr{reinterpret_cast<u32 *>(fontSharedMem->kernel.ptr)};
+        auto ptr{reinterpret_cast<u32 *>(fontSharedMem->host.ptr)};
         for (auto &font : fontTable) {
             *ptr++ = SharedFontResult;
             *ptr++ = font.length ^ SharedFontKey;
-            font.offset = reinterpret_cast<u64>(ptr) - reinterpret_cast<u64>(fontSharedMem->kernel.ptr);
+            font.offset = reinterpret_cast<u64>(ptr) - reinterpret_cast<u64>(fontSharedMem->host.ptr);
 
             std::memcpy(ptr, font.data, font.length);
             ptr = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(ptr) + font.length);

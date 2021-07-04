@@ -216,7 +216,7 @@ namespace skyline::kernel {
             auto &front{core.queue.front()};
             if (front != thread)
                 front->scheduleCondition.notify_one(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
-        } else if (!thread->forceYield) [[unlikely]] {
+        } else if (!thread->forceYield) {
             throw exception("T{} called Rotate while not being in C{}'s queue", thread->id, thread->coreId);
         }
 

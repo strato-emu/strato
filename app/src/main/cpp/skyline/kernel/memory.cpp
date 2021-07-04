@@ -62,7 +62,7 @@ namespace skyline::kernel {
             throw exception("Cannot find a suitable carveout for the guest address space");
 
         auto result{mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)};
-        if (result == MAP_FAILED) [[unlikely]]
+        if (result == MAP_FAILED)
             throw exception("Failed to mmap guest address space: {}", strerror(errno));
 
         chunks = {

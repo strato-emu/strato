@@ -22,7 +22,7 @@ namespace skyline::kernel::type {
             constexpr bool Valid() {
                 return ptr && size;
             }
-        } kernel, guest{};
+        } host, guest{}; //!< We keep two mirrors of the underlying shared memory for guest access and host access, the host mirror is persistently mapped and should be used by anything accessing the memory on the host
 
         KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 
@@ -30,6 +30,11 @@ namespace skyline::kernel::type {
          * @note 'ptr' needs to be in guest-reserved address space
          */
         u8 *Map(u8 *ptr, u64 size, memory::Permission permission);
+
+        /**
+         * @note 'ptr' needs to be in guest-reserved address space
+         */
+        void Unmap(u8 *ptr, u64 size);
 
         span<u8> Get() override {
             return span(guest.ptr, guest.size);
