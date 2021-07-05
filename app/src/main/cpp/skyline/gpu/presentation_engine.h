@@ -23,7 +23,7 @@ namespace skyline::gpu {
         std::mutex mutex; //!< Synchronizes access to the surface objects
         std::condition_variable surfaceCondition; //!< Allows us to efficiently wait for Vulkan surface to be initialized
         jobject jSurface{}; //!< The Java Surface object backing the ANativeWindow
-        ANativeWindow* window{}; //!< A pointer to an Android Native Window which is the surface we draw to
+        ANativeWindow *window{}; //!< A pointer to an Android Native Window which is the surface we draw to
         service::hosbinder::AndroidRect windowCrop{}; //!< A rectangle with the bounds of the current crop performed on the image prior to presentation
         service::hosbinder::NativeWindowScalingMode windowScalingMode{service::hosbinder::NativeWindowScalingMode::ScaleToWindow}; //!< The mode in which the cropped image is scaled up to the surface
         service::hosbinder::NativeWindowTransform windowTransform{}; //!< The transformation performed on the image prior to presentation
@@ -87,7 +87,7 @@ namespace skyline::gpu {
          * @param frameId The ID of this frame for correlating it with presentation timing readouts
          * @note The texture **must** be locked prior to calling this
          */
-        void Present(const std::shared_ptr<Texture> &texture, u64 timestamp, u64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, u64& frameId);
+        void Present(const std::shared_ptr<Texture> &texture, u64 timestamp, u64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, u64 &frameId);
 
         /**
          * @return A transform that the application should render with to elide costly transforms later

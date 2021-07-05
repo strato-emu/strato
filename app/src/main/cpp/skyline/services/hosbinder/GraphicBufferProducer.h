@@ -112,7 +112,7 @@ namespace skyline::service::hosbinder {
          * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueProducer.h;l=106-107
          * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp;l=466-510
          */
-        AndroidStatus AttachBuffer(i32& slot, const GraphicBuffer &graphicBuffer);
+        AndroidStatus AttachBuffer(i32 &slot, const GraphicBuffer &graphicBuffer);
 
         /**
          * @note Nintendo has added an additional field for swap interval which sets the swap interval of the compositor

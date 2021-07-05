@@ -9,12 +9,12 @@ namespace skyline::service::visrv {
     /**
      * @url https://switchbrew.org/wiki/Display_services#vi:u
      */
-    class IApplicationRootService : public IRootService  {
+    class IApplicationRootService : public IRootService {
       public:
         IApplicationRootService(const DeviceState &state, ServiceManager &manager) : IRootService(state, manager, PrivilegeLevel::Application) {}
 
-        SERVICE_DECL(
-            SFUNC_BASE(0x0, IApplicationRootService, IRootService, GetDisplayService)
-        )
+      SERVICE_DECL(
+          SFUNC_BASE(0x0, IApplicationRootService, IRootService, GetDisplayService)
+      )
     };
 }

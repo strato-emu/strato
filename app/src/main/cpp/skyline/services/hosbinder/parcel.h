@@ -53,7 +53,7 @@ namespace skyline::service::hosbinder {
          * @return A pointer to an optional flattenable from the top of data, nullptr will be returned if the object doesn't exist
          */
         template<typename ValueType>
-        ValueType* PopOptionalFlattenable() {
+        ValueType *PopOptionalFlattenable() {
             bool hasObject{static_cast<bool>(Pop<u32>())};
             if (hasObject) {
                 auto size{Pop<u64>()};
@@ -72,7 +72,7 @@ namespace skyline::service::hosbinder {
         void Push(const ValueType &value) {
             auto offset{data.size()};
             data.resize(offset + sizeof(ValueType));
-            *(reinterpret_cast<ValueType*>(data.data() + offset)) = value;
+            *(reinterpret_cast<ValueType *>(data.data() + offset)) = value;
         }
 
         /**
@@ -105,7 +105,7 @@ namespace skyline::service::hosbinder {
         void PushObject(const ObjectType &object) {
             auto offset{objects.size()};
             objects.resize(offset + sizeof(ObjectType));
-            *(reinterpret_cast<ObjectType*>(objects.data() + offset)) = object;
+            *(reinterpret_cast<ObjectType *>(objects.data() + offset)) = object;
         }
 
         /**

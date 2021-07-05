@@ -364,10 +364,23 @@ namespace skyline::service::hosbinder {
                 throw exception("Application attempting to perform unknown transformation: {:#b}", static_cast<u32>(transform));
         }
 
-        if (stickyTransform != NativeWindowTransform::Identity)
-            // We do not support sticky transforms as they are only used by the LEGACY camera mode
-            // Note: This is used on HOS to signal that the frame number should be returned but it's unimplemented
-            throw exception("Any non-identity sticky transform is not supported: '{}' ({:#b})", ToString(stickyTransform), static_cast<u32>(stickyTransform));
+        switch (stickyTransform) {
+            // Note: Sticky transforms are a legacy feature and aren't implemented in HOS nor the Android version it is based on, they are effectively inert
+            // Certain games will still pass in values for sticky transforms (even if they don't do anything), we should not assert on these and verify their validity
+            case NativeWindowTransform::Identity:
+            case NativeWindowTransform::MirrorHorizontal:
+            case NativeWindowTransform::MirrorVertical:
+            case NativeWindowTransform::Rotate90:
+            case NativeWindowTransform::Rotate180:
+            case NativeWindowTransform::Rotate270:
+            case NativeWindowTransform::MirrorHorizontalRotate90:
+            case NativeWindowTransform::MirrorVerticalRotate90:
+            case NativeWindowTransform::InvertDisplay:
+                break;
+
+            default:
+                throw exception("Application attempting to perform unknown sticky transformation: {:#b}", static_cast<u32>(stickyTransform));
+        }
 
         fence.Wait(state.soc->host1x);
 
