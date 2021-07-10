@@ -4,6 +4,8 @@
 
 #pragma once
 
+/* A collection of various types from AOSP that allow us to access private APIs for Native Window which we utilize for emulating the guest SF more accurately */
+
 /**
  * @url https://cs.android.com/android/platform/superproject/+/android11-release:frameworks/native/libs/nativebase/include/nativebase/nativebase.h;l=29;drc=cb496acbe593326e8d5d563847067d02b2df40ec
  */

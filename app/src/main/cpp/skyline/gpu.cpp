@@ -30,16 +30,13 @@ namespace skyline::gpu {
         }
 
         for (const auto &requiredLayer : requiredLayers) {
-            if (![&] {
-                for (const auto &instanceLayer : instanceLayers)
-                    if (std::string_view(instanceLayer.layerName) == std::string_view(requiredLayer))
-                        return true;
-                return false;
-            }())
+            if (!std::any_of(instanceLayers.begin(), instanceLayers.end(), [&](const vk::LayerProperties &instanceLayer) {
+                return std::string_view(instanceLayer.layerName) == std::string_view(requiredLayer);
+            }))
                 throw exception("Cannot find Vulkan layer: \"{}\"", requiredLayer);
         }
 
-        constexpr std::array<const char*, 3> requiredInstanceExtensions{
+        constexpr std::array<const char *, 3> requiredInstanceExtensions{
             VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
@@ -54,12 +51,9 @@ namespace skyline::gpu {
         }
 
         for (const auto &requiredExtension : requiredInstanceExtensions) {
-            if (![&] {
-                for (const auto &instanceExtension : instanceExtensions)
-                    if (std::string_view(instanceExtension.extensionName) == std::string_view(requiredExtension))
-                        return true;
-                return false;
-            }())
+            if (!std::any_of(instanceExtensions.begin(), instanceExtensions.end(), [&](const vk::ExtensionProperties &instanceExtension) {
+                return std::string_view(instanceExtension.extensionName) == std::string_view(requiredExtension);
+            }))
                 throw exception("Cannot find Vulkan instance extension: \"{}\"", requiredExtension);
         }
 
@@ -106,17 +100,14 @@ namespace skyline::gpu {
         };
         auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
         for (const auto &requiredExtension : requiredDeviceExtensions) {
-            if (![&] {
-                for (const auto &deviceExtension : deviceExtensions)
-                    if (std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension))
-                        return true;
-                return false;
-            }())
+            if (!std::any_of(deviceExtensions.begin(), deviceExtensions.end(), [&](const vk::ExtensionProperties &deviceExtension) {
+                return std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension);
+            }))
                 throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension);
         }
 
         auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
-        float queuePriority{1.f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
+        float queuePriority{1.0f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
         vk::DeviceQueueCreateInfo queue{[&] {
             typeof(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
             for (const auto &queueFamily : queueFamilies) {
@@ -133,17 +124,17 @@ namespace skyline::gpu {
             throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
         }()};
 
-        if (state.logger->configLevel >= Logger::LogLevel::Debug) {
+        if (state.logger->configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
             for (const auto &extension : deviceExtensions)
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
-            typeof(vk::DeviceQueueCreateInfo::queueFamilyIndex) familyIndex{};
+            u32 familyIndex{};
             for (const auto &queueFamily : queueFamilies)
                 queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
-            state.logger->Debug("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
+            state.logger->Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
         }
 
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{

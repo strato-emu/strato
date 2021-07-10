@@ -70,7 +70,7 @@ namespace skyline::service::hosbinder {
         /**
          * @return The amount of buffers which have been queued onto the consumer
          */
-        u8 GetPendingBufferCount();
+        u32 GetPendingBufferCount();
 
         /**
          * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/IGraphicBufferProducer.h;l=67-80;

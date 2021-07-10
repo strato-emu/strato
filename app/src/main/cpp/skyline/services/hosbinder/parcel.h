@@ -54,7 +54,7 @@ namespace skyline::service::hosbinder {
          */
         template<typename ValueType>
         ValueType *PopOptionalFlattenable() {
-            bool hasObject{static_cast<bool>(Pop<u32>())};
+            bool hasObject{Pop<u32>() != 0};
             if (hasObject) {
                 auto size{Pop<u64>()};
                 if (size != sizeof(ValueType))
@@ -65,14 +65,11 @@ namespace skyline::service::hosbinder {
             }
         }
 
-        /**
-         * @brief Writes a value to the Parcel
-         */
         template<typename ValueType>
         void Push(const ValueType &value) {
             auto offset{data.size()};
             data.resize(offset + sizeof(ValueType));
-            *(reinterpret_cast<ValueType *>(data.data() + offset)) = value;
+            std::memcpy(data.data() + offset, &value, sizeof(ValueType));
         }
 
         /**
@@ -98,20 +95,16 @@ namespace skyline::service::hosbinder {
             }
         }
 
-        /**
-         * @brief Writes an object to the Parcel
-         */
         template<typename ObjectType>
         void PushObject(const ObjectType &object) {
             auto offset{objects.size()};
             objects.resize(offset + sizeof(ObjectType));
-            *(reinterpret_cast<ObjectType *>(objects.data() + offset)) = object;
+            std::memcpy(objects.data() + offset, &object, sizeof(ObjectType));
         }
 
         /**
-         * @brief Writes the Parcel object out
-         * @param buffer The buffer to write the Parcel object to
-         * @return The total size of the message
+         * @param buffer The buffer to write the flattened Parcel into
+         * @return The total size of the Parcel
          */
         u64 WriteParcel(span<u8> buffer);
     };

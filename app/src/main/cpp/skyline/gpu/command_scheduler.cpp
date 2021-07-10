@@ -5,7 +5,7 @@
 #include "command_scheduler.h"
 
 namespace skyline::gpu {
-    CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool) : active(true), device(device), commandBuffer(device, commandBuffer, pool), fence(device, vk::FenceCreateInfo{}), cycle(std::make_shared<FenceCycle>(device, *fence)) {}
+    CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool) : device(device), commandBuffer(device, commandBuffer, pool), fence(device, vk::FenceCreateInfo{}), cycle(std::make_shared<FenceCycle>(device, *fence)) {}
 
     bool CommandScheduler::CommandBufferSlot::AllocateIfFree(CommandScheduler::CommandBufferSlot &slot) {
         if (slot.active.test_and_set(std::memory_order_acq_rel)) {
@@ -44,7 +44,7 @@ namespace skyline::gpu {
     }
 
     void CommandScheduler::SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, vk::Fence fence) {
-        std::lock_guard lock(gpu.queueMutex);
+        std::scoped_lock lock(gpu.queueMutex);
         gpu.vkQueue.submit(vk::SubmitInfo{
             .commandBufferCount = 1,
             .pCommandBuffers = &*commandBuffer,

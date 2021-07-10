@@ -33,16 +33,14 @@ namespace skyline::service::hosbinder {
     class IHOSBinderDriver : public BaseService {
       private:
         DisplayId displayId{DisplayId::Null}; //!< The ID of the display that the layer is connected to
-        constexpr static u64 DefaultLayerId{1}; //!< The VI ID of the default (and only) layer in our surface stack
-        constexpr static u32 DefaultBinderLayerHandle{1}; //!< The handle as assigned by SurfaceFlinger of the default layer
+
         constexpr static i32 InitialStrongReferenceCount{std::numeric_limits<i32>::min()}; //!< Initial value for the strong reference count, weak references will keep the object alive till the strong reference count is first mutated
         i32 layerStrongReferenceCount; //!< The amount of strong references to the layer object
-        i32 layerWeakReferenceCount; //!< The amount of weak references to the layer object
+        i32 layerWeakReferenceCount; //!< The amount of weak references to the layer object, these only matter when there are no strong references
+
+        constexpr static u64 DefaultLayerId{1}; //!< The VI ID of the default (and only) layer in our surface stack
+        constexpr static u32 DefaultBinderLayerHandle{1}; //!< The handle as assigned by SurfaceFlinger of the default layer
         std::optional<GraphicBufferProducer> layer; //!< The IGraphicBufferProducer backing the layer (NativeWindow)
-
-        void AddWeakLayerReference(u32 count = 1) {
-
-        }
 
       public:
         IHOSBinderDriver(const DeviceState &state, ServiceManager &manager);

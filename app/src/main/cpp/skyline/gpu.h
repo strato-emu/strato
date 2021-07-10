@@ -30,7 +30,7 @@ namespace skyline::gpu {
         vk::raii::Instance vkInstance;
         vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into 'GPU::DebugCallback'
         vk::raii::PhysicalDevice vkPhysicalDevice;
-        typeof(vk::DeviceQueueCreateInfo::queueCount) vkQueueFamilyIndex{};
+        u32 vkQueueFamilyIndex{};
         vk::raii::Device vkDevice;
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations

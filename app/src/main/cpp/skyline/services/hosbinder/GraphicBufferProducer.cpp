@@ -14,8 +14,8 @@
 namespace skyline::service::hosbinder {
     GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)) {}
 
-    u8 GraphicBufferProducer::GetPendingBufferCount() {
-        u8 count{};
+    u32 GraphicBufferProducer::GetPendingBufferCount() {
+        u32 count{};
         for (auto it{queue.begin()}, end{it + activeSlotCount}; it < end; it++)
             if (it->state == BufferState::Queued)
                 count++;
@@ -113,7 +113,7 @@ namespace skyline::service::hosbinder {
             size_t index{};
             std::string bufferString;
             for (auto &bufferSlot : queue)
-                bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), static_cast<bool>(bufferSlot.graphicBuffer), bufferSlot.frameNumber);
+                bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), bufferSlot.graphicBuffer != nullptr, bufferSlot.frameNumber);
             state.logger->Warn("Cannot find any free buffers to dequeue:{}", bufferString);
             return AndroidStatus::InvalidOperation;
         }
@@ -210,11 +210,11 @@ namespace skyline::service::hosbinder {
         if (graphicBuffer.magic != GraphicBuffer::Magic)
             throw exception("Unexpected GraphicBuffer magic: 0x{} (Expected: 0x{})", graphicBuffer.magic, GraphicBuffer::Magic);
         else if (graphicBuffer.intCount != sizeof(NvGraphicHandle) / sizeof(u32))
-            throw exception("Unexpected GraphicBuffer native_handle integer count: 0x{} (Expected: 0x{})", graphicBuffer.intCount, sizeof(NvGraphicHandle));
+            throw exception("Unexpected GraphicBuffer native_handle integer count: 0x{} (Expected: 0x{})", graphicBuffer.intCount, sizeof(NvGraphicHandle) / sizeof(u32));
 
         auto &handle{graphicBuffer.graphicHandle};
         if (handle.magic != NvGraphicHandle::Magic)
-            throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
+            throw exception("Unexpected NvGraphicHandle magic: {}", handle.magic);
         else if (handle.surfaceCount < 1)
             throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
         else if (handle.surfaceCount > 1)
@@ -234,7 +234,7 @@ namespace skyline::service::hosbinder {
         slot = std::distance(queue.begin(), bufferSlot);
 
         preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
-        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
+        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; });
 
         state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
@@ -547,7 +547,7 @@ namespace skyline::service::hosbinder {
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
-        buffer.isPreallocated = static_cast<bool>(graphicBuffer);
+        buffer.isPreallocated = graphicBuffer != nullptr;
         buffer.graphicBuffer = graphicBuffer ? std::make_unique<GraphicBuffer>(*graphicBuffer) : nullptr;
         buffer.texture = {};
 
@@ -577,7 +577,7 @@ namespace skyline::service::hosbinder {
         }
 
         preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
-        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return static_cast<bool>(slot.graphicBuffer); });
+        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; });
 
         bufferEvent->Signal();
 
@@ -668,7 +668,7 @@ namespace skyline::service::hosbinder {
             }
 
             case TransactionCode::Connect: {
-                auto hasProducerListener{static_cast<bool>(in.Pop<u32>())};
+                bool hasProducerListener{in.Pop<u32>() != 0};
                 if (hasProducerListener)
                     throw exception("Callbacks using IProducerListener are not supported");
 

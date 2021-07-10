@@ -140,7 +140,7 @@ namespace skyline::gpu {
         u8 *bufferData;
         auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
             if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-                // We need a staging buffer for all optimal copies (Since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
+                // We need a staging buffer for all optimal copies (since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
                 auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
                 bufferData = stagingBuffer->data();
                 return stagingBuffer;
@@ -156,19 +156,19 @@ namespace skyline::gpu {
 
         if (guest->tileMode == texture::TileMode::Block) {
             // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
-            constexpr u8 sectorWidth{16}; // The width of a sector in bytes
-            constexpr u8 sectorHeight{2}; // The height of a sector in lines
-            constexpr u8 gobWidth{64}; // The width of a GOB in bytes
-            constexpr u8 gobHeight{8}; // The height of a GOB in lines
+            constexpr u8 SectorWidth{16}; // The width of a sector in bytes
+            constexpr u8 SectorHeight{2}; // The height of a sector in lines
+            constexpr u8 GobWidth{64}; // The width of a GOB in bytes
+            constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
             auto blockHeight{guest->tileConfig.blockHeight}; // The height of the blocks in GOBs
-            auto robHeight{gobHeight * blockHeight}; // The height of a single ROB (Row of Blocks) in lines
+            auto robHeight{GobHeight * blockHeight}; // The height of a single ROB (Row of Blocks) in lines
             auto surfaceHeight{dimensions.height / guest->format.blockHeight}; // The height of the surface in lines
             auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; // The height of the surface in ROBs (Row Of Blocks)
-            auto robWidthBytes{util::AlignUp((guest->tileConfig.surfaceWidth / guest->format.blockWidth) * guest->format.bpb, gobWidth)}; // The width of a ROB in bytes
-            auto robWidthBlocks{robWidthBytes / gobWidth}; // The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
+            auto robWidthBytes{util::AlignUp((guest->tileConfig.surfaceWidth / guest->format.blockWidth) * guest->format.bpb, GobWidth)}; // The width of a ROB in bytes
+            auto robWidthBlocks{robWidthBytes / GobWidth}; // The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
             auto robBytes{robWidthBytes * robHeight}; // The size of a ROB in bytes
-            auto gobYOffset{robWidthBytes * gobHeight}; // The offset of the next Y-axis GOB from the current one in linear space
+            auto gobYOffset{robWidthBytes * GobHeight}; // The offset of the next Y-axis GOB from the current one in linear space
 
             auto inputSector{pointer}; // The address of the input sector
             auto outputRob{bufferData}; // The address of the output block
@@ -178,22 +178,22 @@ namespace skyline::gpu {
                 for (u32 block{}; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` Blocks
                     auto outputGob{outputBlock}; // We iterate through a GOB independently of the block
                     for (u32 gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
-                        for (u32 index{}; index < sectorWidth * sectorHeight; index++) { // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
+                        for (u32 index{}; index < SectorWidth * SectorHeight; index++) { // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
                             u32 xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
                             u32 yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
-                            std::memcpy(outputGob + (yT * robWidthBytes) + xT, inputSector, sectorWidth);
-                            inputSector += sectorWidth; // `sectorWidth` bytes are of sequential image data
+                            std::memcpy(outputGob + (yT * robWidthBytes) + xT, inputSector, SectorWidth);
+                            inputSector += SectorWidth; // `sectorWidth` bytes are of sequential image data
                         }
                         outputGob += gobYOffset; // Increment the output GOB to the next Y-axis GOB
                     }
                     inputSector += paddingY; // Increment the input sector to the next sector
-                    outputBlock += gobWidth; // Increment the output block to the next block (As Block Width = 1 GOB Width)
+                    outputBlock += GobWidth; // Increment the output block to the next block (As Block Width = 1 GOB Width)
                 }
                 outputRob += robBytes; // Increment the output block to the next ROB
 
                 y += robHeight; // Increment the Y position to the next ROB
-                blockHeight = static_cast<u8>(std::min(static_cast<u32>(blockHeight), (surfaceHeight - y) / gobHeight)); // Calculate the amount of Y GOBs which aren't padding
-                paddingY = (guest->tileConfig.blockHeight - blockHeight) * (sectorWidth * sectorWidth * sectorHeight); // Calculate the amount of padding between contiguous sectors
+                blockHeight = static_cast<u8>(std::min(static_cast<u32>(blockHeight), (surfaceHeight - y) / GobHeight)); // Calculate the amount of Y GOBs which aren't padding
+                paddingY = (guest->tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight); // Calculate the amount of padding between contiguous sectors
             }
         } else if (guest->tileMode == texture::TileMode::Pitch) {
             auto sizeLine{guest->format.GetSize(dimensions.width, 1)}; // The size of a single line of pixel data

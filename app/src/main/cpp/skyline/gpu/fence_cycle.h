@@ -116,10 +116,9 @@ namespace skyline::gpu {
             if (!signalled.test(std::memory_order_consume)) {
                 auto it{dependencies.begin()}, next{std::next(it)};
                 if (it != dependencies.end()) {
-                    while (next != dependencies.end()) {
+                    for (; next != dependencies.end(); next++) {
                         (*it)->next = *next;
                         it = next;
-                        next = std::next(next);
                     }
                 }
                 AttachObject(*dependencies.begin());

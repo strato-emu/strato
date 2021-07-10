@@ -15,7 +15,7 @@ namespace skyline::gpu {
          * @brief A wrapper around a command buffer which tracks its state to avoid concurrent usage
          */
         struct CommandBufferSlot {
-            std::atomic_flag active; //!< If the command buffer is currently being recorded to
+            std::atomic_flag active{true}; //!< If the command buffer is currently being recorded to
             const vk::raii::Device &device;
             vk::raii::CommandBuffer commandBuffer;
             vk::raii::Fence fence; //!< A fence used for tracking all submits of a buffer

@@ -38,19 +38,22 @@ namespace skyline::gpu {
         }
     }
 
-    void PresentationEngine::ChoreographerCallback(long frameTimeNanos, PresentationEngine *engine) {
-        u64 cycleLength{frameTimeNanos - engine->lastChoreographerTime};
-        if (std::abs(static_cast<i64>(cycleLength - engine->refreshCycleDuration)) > (constant::NsInMillisecond / 2)) {
+    void PresentationEngine::ChoreographerCallback(int64_t frameTimeNanos, PresentationEngine *engine) {
+        // If the duration of this cycle deviates by ±0.5ms from the current refresh cycle duration then we reevaluate it
+        i64 cycleLength{frameTimeNanos - engine->lastChoreographerTime};
+        if (std::abs(cycleLength - engine->refreshCycleDuration) > (constant::NsInMillisecond / 2)) {
             if (engine->window)
                 engine->window->perform(engine->window, NATIVE_WINDOW_GET_REFRESH_CYCLE_DURATION, &engine->refreshCycleDuration);
             else
                 engine->refreshCycleDuration = cycleLength;
         }
 
+        // Record the current cycle's timestamp and signal the V-Sync event to notify the game that a frame has been displayed
         engine->lastChoreographerTime = frameTimeNanos;
         engine->vsyncEvent->Signal();
 
-        AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), engine);
+        // Post the frame callback to be triggered on the next display refresh
+        AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), engine);
     }
 
     void PresentationEngine::ChoreographerThread() {
@@ -58,7 +61,7 @@ namespace skyline::gpu {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             choreographerLooper = ALooper_prepare(0);
-            AChoreographer_postFrameCallback(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), this);
+            AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), this);
             ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
         } catch (const signal::SignalException &e) {
             state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
@@ -180,12 +183,15 @@ namespace skyline::gpu {
             if (window->common.version != sizeof(ANativeWindow))
                 throw exception("ANativeWindow* has unexpected version: {} instead of {}", window->common.version, sizeof(ANativeWindow));
 
-            if (windowCrop)
-                window->perform(window, NATIVE_WINDOW_SET_CROP, &windowCrop);
-            if (windowScalingMode != NativeWindowScalingMode::ScaleToWindow)
-                window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(windowScalingMode));
+            int result;
+            if (windowCrop && (result = window->perform(window, NATIVE_WINDOW_SET_CROP, &windowCrop)))
+                throw exception("Setting the layer crop to ({}-{})x({}-{}) failed with {}", windowCrop.left, windowCrop.right, windowCrop.top, windowCrop.bottom, result);
 
-            window->perform(window, NATIVE_WINDOW_ENABLE_FRAME_TIMESTAMPS, true);
+            if (windowScalingMode != NativeWindowScalingMode::ScaleToWindow && (result = window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(windowScalingMode))))
+                throw exception("Setting the layer scaling mode to '{}' failed with {}", ToString(windowScalingMode), result);
+
+            if ((result = window->perform(window, NATIVE_WINDOW_ENABLE_FRAME_TIMESTAMPS, true)))
+                throw exception("Enabling frame timestamps failed with {}", result);
 
             surfaceCondition.notify_all();
         } else {
@@ -272,15 +278,19 @@ namespace skyline::gpu {
         }
 
         if (frameTimestamp) {
-            auto now{util::GetTimeNs()};
+            i64 now{static_cast<i64>(util::GetTimeNs())};
             auto sampleWeight{swapInterval ? constant::NsInSecond / (refreshCycleDuration * swapInterval) : 10}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
 
-            u64 currentFrametime{now - frameTimestamp};
-            averageFrametimeNs = (((sampleWeight - 1) * averageFrametimeNs) / sampleWeight) + (currentFrametime / sampleWeight);
+            auto weightedAverage{[](auto weight, auto previousAverage, auto current) {
+                return (((weight - 1) * previousAverage) + current) / weight;
+            }}; //!< Modified moving average (https://en.wikipedia.org/wiki/Moving_average#Modified_moving_average)
+
+            i64 currentFrametime{now - frameTimestamp};
+            averageFrametimeNs = weightedAverage(sampleWeight, averageFrametimeNs, currentFrametime);
             AverageFrametimeMs = static_cast<jfloat>(averageFrametimeNs) / constant::NsInMillisecond;
 
-            i64 currentFrametimeDeviation{std::abs(static_cast<i64>(averageFrametimeNs - currentFrametime))};
-            averageFrametimeDeviationNs = (((sampleWeight - 1) * averageFrametimeDeviationNs) / sampleWeight) + (currentFrametimeDeviation / sampleWeight);
+            i64 currentFrametimeDeviation{std::abs(averageFrametimeNs - currentFrametime)};
+            averageFrametimeDeviationNs = weightedAverage(sampleWeight, averageFrametimeDeviationNs, currentFrametimeDeviation);
             AverageFrametimeDeviationMs = static_cast<jfloat>(averageFrametimeDeviationNs) / constant::NsInMillisecond;
 
             Fps = std::round(static_cast<float>(constant::NsInSecond) / averageFrametimeNs);

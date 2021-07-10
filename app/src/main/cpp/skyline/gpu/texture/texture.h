@@ -264,6 +264,7 @@ namespace skyline::gpu {
 
         /**
          * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
          */
         void lock() {
             mutex.lock();
@@ -271,6 +272,7 @@ namespace skyline::gpu {
 
         /**
          * @brief Relinquishes an existing lock on the texture by the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
          */
         void unlock() {
             mutex.unlock();
@@ -278,6 +280,7 @@ namespace skyline::gpu {
 
         /**
          * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
+         * @note Naming is in accordance to the Lockable named requirement
          */
         bool try_lock() {
             return mutex.try_lock();

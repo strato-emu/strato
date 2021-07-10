@@ -21,9 +21,9 @@ namespace skyline::gpu {
         GPU &gpu;
 
         std::mutex mutex; //!< Synchronizes access to the surface objects
-        std::condition_variable surfaceCondition; //!< Allows us to efficiently wait for Vulkan surface to be initialized
+        std::condition_variable surfaceCondition; //!< Signalled when a valid Vulkan surface is available
         jobject jSurface{}; //!< The Java Surface object backing the ANativeWindow
-        ANativeWindow *window{}; //!< A pointer to an Android Native Window which is the surface we draw to
+        ANativeWindow *window{}; //!< The backing Android Native Window for the surface we draw to, we keep this around to access private APIs not exposed via Vulkan
         service::hosbinder::AndroidRect windowCrop{}; //!< A rectangle with the bounds of the current crop performed on the image prior to presentation
         service::hosbinder::NativeWindowScalingMode windowScalingMode{service::hosbinder::NativeWindowScalingMode::ScaleToWindow}; //!< The mode in which the cropped image is scaled up to the surface
         service::hosbinder::NativeWindowTransform windowTransform{}; //!< The transformation performed on the image prior to presentation
@@ -40,23 +40,23 @@ namespace skyline::gpu {
         static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
         std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
 
-        u64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds
-        u64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds
-        u64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
+        i64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds
+        i64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds
+        i64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
-        std::thread choreographerThread; //!< A thread for signalling the V-Sync event using AChoreographer
-        ALooper *choreographerLooper{}; //!< The looper object associated with the Choreographer thread
-        u64 lastChoreographerTime{}; //!< The timestamp of the last invocation of Choreographer::doFrame
-        u64 refreshCycleDuration{}; //!< The duration of a single refresh cycle for the display in nanoseconds
+        std::thread choreographerThread; //!< A thread for signalling the V-Sync event and measure the refresh cycle duration using AChoreographer
+        ALooper *choreographerLooper{};
+        i64 lastChoreographerTime{}; //!< The timestamp of the last invocation of Choreographer::doFrame
+        i64 refreshCycleDuration{}; //!< The duration of a single refresh cycle for the display in nanoseconds
 
         /**
-         * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_framecallback
+         * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_postframecallback64
          */
-        static void ChoreographerCallback(long frameTimeNanos, PresentationEngine *engine);
+        static void ChoreographerCallback(int64_t frameTimeNanos, PresentationEngine *engine);
 
         /**
-         * @brief The entry point for the the Choreographer thread, the function runs ALooper on the thread
+         * @brief The entry point for the the Choreographer thread, sets up the AChoreographer callback then runs ALooper on the thread
          */
         void ChoreographerThread();
 

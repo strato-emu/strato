@@ -37,7 +37,7 @@ namespace skyline::service::hosbinder {
             throw exception("Adjusting Binder object reference count for unknown object: #{}", binderHandle);
 
         auto value{request.Pop<i32>()};
-        bool isStrong{static_cast<bool>(request.Pop<u32>())};
+        bool isStrong{request.Pop<u32>() != 0};
         if (isStrong) {
             if (layerStrongReferenceCount != InitialStrongReferenceCount)
                 layerStrongReferenceCount += value;
