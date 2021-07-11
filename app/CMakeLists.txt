@@ -53,7 +53,11 @@ include_directories("libraries/pugixml/src")
 include_directories("libraries/frozen/include")
 
 # MbedTLS
-find_package(mbedtls REQUIRED CONFIG)
+set(ENABLE_TESTING OFF CACHE BOOL "Build mbed TLS tests." FORCE)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "Build mbed TLS programs." FORCE)
+set(UNSAFE_BUILD ON CACHE BOOL "Allow unsafe builds. These builds ARE NOT SECURE." FORCE)
+add_subdirectory("libraries/mbedtls")
+include_directories("libraries/mbedtls/include")
 
 # Perfetto SDK
 include_directories(libraries/perfetto/sdk)
@@ -213,5 +217,5 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/mmnv/IRequest.cpp
         )
 # target_precompile_headers(skyline PRIVATE ${source_DIR}/skyline/common.h) # PCH will currently break Intellisense
-target_link_libraries(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedtls::mbedcrypto)
+target_link_libraries(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field)

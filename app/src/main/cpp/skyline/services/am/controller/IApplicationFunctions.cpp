@@ -47,7 +47,7 @@ namespace skyline::service::am {
 
         // On HOS the seed from control.ncap is hashed together with the device specific device ID seed
         // for us it's enough to just hash the seed from control.nacp as it provides the same guarantees
-        if (int err{mbedtls_sha1_ret(seedForPseudoDeviceId.data(), seedForPseudoDeviceId.size(), hashBuf.data())}; err < 0)
+        if (int err{mbedtls_sha1(seedForPseudoDeviceId.data(), seedForPseudoDeviceId.size(), hashBuf.data())}; err < 0)
             throw exception("Failed to hash device ID, err: {}", err);
 
         response.Push<UUID>(UUID::GenerateUuidV5(hashBuf));

@@ -28,3 +28,6 @@
 [submodule "app/libraries/vkma"]
 	path = app/libraries/vkma
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "app/libraries/mbedtls"]
+	path = app/libraries/mbedtls
+	url = https://github.com/ARMmbed/mbedtls
