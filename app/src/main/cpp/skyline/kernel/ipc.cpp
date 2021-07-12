@@ -12,8 +12,6 @@ namespace skyline::kernel::ipc {
         header = reinterpret_cast<CommandHeader *>(pointer);
         pointer += sizeof(CommandHeader);
 
-        size_t cBufferLengthSize{util::AlignUp(((header->cFlag == BufferCFlag::None) ? 0 : ((header->cFlag > BufferCFlag::SingleDescriptor) ? (static_cast<u8>(header->cFlag) - 2) : 1)) * sizeof(u16), sizeof(u32))};
-
         if (header->handleDesc) {
             handleDesc = reinterpret_cast<HandleDescriptor *>(pointer);
             pointer += sizeof(HandleDescriptor) + (handleDesc->sendPid ? sizeof(u64) : 0);
@@ -64,6 +62,8 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(BufferDescriptorABW);
         }
 
+        auto bufCPointer{pointer + header->rawSize * sizeof(u32)};
+
         auto offset{pointer - tls}; // We calculate the relative offset as the absolute one might differ
         auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
         pointer += padding;
@@ -88,8 +88,7 @@ namespace skyline::kernel::ipc {
             pointer += sizeof(PayloadHeader);
 
             cmdArg = pointer;
-            cmdArgSz = (header->rawSize * sizeof(u32)) - (constant::IpcPaddingSum + sizeof(PayloadHeader)) - cBufferLengthSize;
-            pointer += cmdArgSz;
+            cmdArgSz = header->rawSize * sizeof(u32);
         }
 
         payloadOffset = cmdArg;
@@ -97,22 +96,21 @@ namespace skyline::kernel::ipc {
         if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
             state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
 
-        pointer += constant::IpcPaddingSum - padding + cBufferLengthSize;
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
-            auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
+            auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
             if (bufC->address) {
                 outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
                 state.logger->Verbose("Buf C: 0x{:X}, 0x{:X}", bufC->Pointer(), static_cast<u16>(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index{}; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
-                auto bufC{reinterpret_cast<BufferDescriptorC *>(pointer)};
+                auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
                 if (bufC->address) {
                     outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
                     state.logger->Verbose("Buf C #{}: 0x{:X}, 0x{:X}", index, bufC->Pointer(), static_cast<u16>(bufC->size));
                 }
-                pointer += sizeof(BufferDescriptorC);
+                bufCPointer += sizeof(BufferDescriptorC);
             }
         }
 
