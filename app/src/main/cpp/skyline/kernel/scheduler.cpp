@@ -147,8 +147,11 @@ namespace skyline::kernel {
 
         auto wakeFunction{[&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
+                lock.unlock(); // If the core migration mutex is locked by a thread seeking the core mutex, it'll result in a deadlock
                 std::lock_guard migrationLock(thread->coreMigrationMutex);
-                MigrateToCore(thread, core, &cores.at(thread->idealCore), lock);
+                lock.lock();
+                if (!thread->affinityMask.test(thread->coreId)) // We need to retest in case the thread was migrated while the core was unlocked
+                    MigrateToCore(thread, core, &cores.at(thread->idealCore), lock);
             }
             return !core->queue.empty() && core->queue.front() == thread;
         }};
@@ -260,7 +263,7 @@ namespace skyline::kernel {
         auto currentIt{std::find(core->queue.begin(), core->queue.end(), thread)}, nextIt{std::next(currentIt)};
         if (currentIt == core->queue.end()) {
             return;
-	} else if (currentIt == core->queue.begin()) {
+        } else if (currentIt == core->queue.begin()) {
             // Alternatively, if it's currently running then we'd just want to yield if there's a higher priority thread to run instead
             if (nextIt != core->queue.end() && (*nextIt)->priority < thread->priority) {
                 if (!thread->pendingYield) {
