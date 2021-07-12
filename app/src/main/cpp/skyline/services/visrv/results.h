@@ -6,5 +6,6 @@
 #include <common.h>
 
 namespace skyline::service::visrv::result {
+    constexpr Result InvalidArgument(114, 1);
     constexpr Result IllegalOperation(114, 6);
 }

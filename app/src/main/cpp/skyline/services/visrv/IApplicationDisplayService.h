@@ -15,6 +15,17 @@ namespace skyline::service::visrv {
       private:
         PrivilegeLevel level;
 
+        /**
+         * @brief Specifies the method to scale up the layer content to its bounds
+         */
+        enum class ScalingMode {
+            Freeze = 0,
+            ScaleToLayer = 1,
+            ScaleAndCrop = 2,
+            None = 3,
+            PreserveAspectRatio = 4,
+        };
+
       public:
         IApplicationDisplayService(const DeviceState &state, ServiceManager &manager, PrivilegeLevel level);
 
@@ -71,6 +82,11 @@ namespace skyline::service::visrv {
          * @url https://switchbrew.org/wiki/Display_services#SetLayerScalingMode
          */
         Result SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Converts an arbitrary scaling mode to a VI scaling mode
+         */
+        Result ConvertScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Returns a handle to a KEvent which is triggered every time a frame is drawn

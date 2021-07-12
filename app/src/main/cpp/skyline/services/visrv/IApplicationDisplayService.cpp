@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2019 Ryujinx Team and Contributors
 
 #include <gpu.h>
 #include <kernel/types/KProcess.h>
@@ -83,6 +84,29 @@ namespace skyline::service::visrv {
         KHandle handle{state.process->InsertItem(state.gpu->presentation.vsyncEvent)};
         state.logger->Debug("V-Sync Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
+        return {};
+    }
+
+    Result IApplicationDisplayService::ConvertScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        u32 inScalingMode{request.Pop<u32>()};
+
+        std::array<ScalingMode, 5> scalingModeLut{
+            ScalingMode::None,
+            ScalingMode::Freeze,
+            ScalingMode::ScaleToLayer,
+            ScalingMode::ScaleAndCrop,
+            ScalingMode::PreserveAspectRatio,
+        };
+
+        if (scalingModeLut.size() <= inScalingMode)
+            return result::InvalidArgument;
+
+        auto scalingMode{scalingModeLut[inScalingMode]};
+        if (scalingMode != ScalingMode::ScaleToLayer && scalingMode != ScalingMode::PreserveAspectRatio)
+            return result::IllegalOperation;
+
+        response.Push(scalingMode);
+
         return {};
     }
 }
