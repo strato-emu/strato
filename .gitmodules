@@ -31,3 +31,6 @@
 [submodule "app/libraries/mbedtls"]
 	path = app/libraries/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "app/libraries/opus"]
+	path = app/libraries/opus
+	url = https://github.com/xiph/opus
