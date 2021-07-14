@@ -40,8 +40,6 @@ namespace skyline::service {
          * @param serviceObject An instance of the service
          * @param session The session object of the command
          * @param response The response object to write the handle or virtual handle to
-         * @param submodule If the registered service is a submodule or not
-         * @param name The name of the service to register if it's not a submodule - it will be added to the service map
          */
         void RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response);
 

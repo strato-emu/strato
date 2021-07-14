@@ -11,6 +11,7 @@
 #include "am/IAllSystemAppletProxiesService.h"
 #include "audio/IAudioOutManager.h"
 #include "audio/IAudioRendererManager.h"
+#include "codec/IHardwareOpusDecoderManager.h"
 #include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
@@ -66,6 +67,7 @@ namespace skyline::service {
             SERVICE_CASE(am::IAllSystemAppletProxiesService, "appletAE")
             SERVICE_CASE(audio::IAudioOutManager, "audout:u")
             SERVICE_CASE(audio::IAudioRendererManager, "audren:u")
+            SERVICE_CASE(codec::IHardwareOpusDecoderManager, "hwopus")
             SERVICE_CASE(hid::IHidServer, "hid")
             SERVICE_CASE(timesrv::IStaticService, "time:s", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemPermissions) // Both of these would be registered after TimeServiceManager::Setup normally but we call that in the GlobalServiceState constructor so can just list them here directly
             SERVICE_CASE(timesrv::IStaticService, "time:su", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemUpdatePermissions)

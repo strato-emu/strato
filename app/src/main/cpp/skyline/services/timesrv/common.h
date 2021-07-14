@@ -35,6 +35,10 @@ namespace skyline::service::timesrv {
             return ns;
         }
 
+        constexpr i64 Microseconds() const {
+            return ns / static_cast<i64>(skyline::constant::NsInMicrosecond);
+        }
+
         constexpr i64 Seconds() const {
             return ns / static_cast<i64>(skyline::constant::NsInSecond);
         }

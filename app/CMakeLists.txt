@@ -161,6 +161,8 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/storage/IStorage.cpp
         ${source_DIR}/skyline/services/am/storage/IStorageAccessor.cpp
         ${source_DIR}/skyline/services/am/applet/ILibraryAppletAccessor.cpp
+        ${source_DIR}/skyline/services/codec/IHardwareOpusDecoder.cpp
+        ${source_DIR}/skyline/services/codec/IHardwareOpusDecoderManager.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
         ${source_DIR}/skyline/services/hid/IAppletResource.cpp
         ${source_DIR}/skyline/services/hid/IActiveVibrationDeviceList.cpp
