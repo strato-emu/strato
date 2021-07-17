@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <common.h>
 
 namespace skyline::vfs {
@@ -82,7 +83,7 @@ namespace skyline::vfs {
         /**
          * @brief Implicit casting for reading into spans of different types
          */
-        template<typename T, typename std::enable_if<!std::is_same_v<T, u8>, bool>::type = true>
+        template<typename T> requires (!std::same_as<T, u8>)
         size_t Read(span <T> output, size_t offset = 0) {
             return Read(output.template cast<u8>(), offset);
         }
