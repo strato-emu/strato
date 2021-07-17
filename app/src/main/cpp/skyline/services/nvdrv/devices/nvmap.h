@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// SPDX-License-Identifier: MIT OR MPL-2.0
+// Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #pragma once
 
@@ -7,91 +7,60 @@
 
 namespace skyline::service::nvdrv::device {
     /**
-     * @brief NvMap (/dev/nvmap) is used to map certain CPU memory as GPU memory (https://switchbrew.org/wiki/NV_services)
+     * @brief NvMap (/dev/nvmap) is used to keep track of buffers and map them onto the SMMU (https://switchbrew.org/wiki/NV_services)
      * @url https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h
      */
     class NvMap : public NvDevice {
       public:
-        /**
-         * @brief NvMapObject is used to hold the state of held objects
-         */
-        struct NvMapObject {
-            u32 id;
-            u32 size;
-            u8 *ptr{};
-            u32 flags{}; //!< The flag of the memory (0 = Read Only, 1 = Read-Write)
-            u32 align{};
-            u32 heapMask{}; //!< This is set during Alloc and returned during Param
-            u8 kind{}; //!< This is same as heapMask
+        using NvMapCore = core::NvMap;
 
-            enum class Status {
-                Created, //!< The object has been created but memory has not been allocated
-                Allocated //!< The object has been allocated
-            } status{Status::Created}; //!< This holds the status of the object
-
-            NvMapObject(u32 id, u32 size);
+        enum class HandleParameterType : u32 {
+            Size = 1,
+            Alignment = 2,
+            Base = 3,
+            Heap = 4,
+            Kind = 5,
+            IsSharedMemMapped = 6
         };
 
-        std::shared_mutex mapMutex; //!< Synchronizes mutations and accesses of the mappings
-        std::vector<std::shared_ptr<NvMapObject>> maps;
-
-        u32 idIndex{1}; //!< This is used to keep track of the next ID to allocate
-
-        NvMap(const DeviceState &state);
-
-        std::shared_ptr<NvMapObject> GetObject(u32 handle) {
-            if (handle-- == 0)
-                throw std::out_of_range("0 is an invalid nvmap handle");
-            std::shared_lock lock(mapMutex);
-            auto &object{maps.at(handle)};
-            if (!object)
-                throw std::out_of_range("A freed nvmap handle was requested");
-            return object;
-        }
+        NvMap(const DeviceState &state, Core &core, const SessionContext &ctx);
 
         /**
-         * @brief Creates an NvMapObject and returns an handle to it
+         * @brief Creates an nvmap handle for the given size
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_CREATE
          */
-        NvStatus Create(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult Create(In<u32> size, Out<NvMapCore::Handle::Id> handle);
 
         /**
-         * @brief Returns the handle of an NvMapObject from its ID
+         * @brief Creates a new ref to the handle of the given ID
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FROM_ID
          */
-        NvStatus FromId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult FromId(In<NvMapCore::Handle::Id> id, Out<NvMapCore::Handle::Id> handle);
 
         /**
-         * @brief Allocates memory for an NvMapObject
+         * @brief Adds the given backing memory to the nvmap handle
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC
          */
-        NvStatus Alloc(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address);
 
         /**
-         * @brief Frees previously allocated memory
+         * @brief Attempts to free a handle and unpin it from SMMU memory
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE
          */
-        NvStatus Free(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult Free(In<NvMapCore::Handle::Id> handle, Out<u64> address, Out<u32> size, Out<NvMapCore::Handle::Flags> flags);
 
         /**
-         * @brief Returns a particular parameter from an NvMapObject
+         * @brief Returns info about a property of the nvmap handle
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_PARAM
          */
-        NvStatus Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult Param(In<NvMapCore::Handle::Id> handle, In<HandleParameterType> param, Out<u32> result);
 
         /**
-         * @brief Returns the ID of an NvMapObject from its handle
+         * @brief Returns a global ID for the given nvmap handle
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_GET_ID
          */
-        NvStatus GetId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer);
+        PosixResult GetId(Out<NvMapCore::Handle::Id> id, In<NvMapCore::Handle::Id> handle);
 
-        NVDEVICE_DECL(
-            NVFUNC(0x0101, NvMap, Create),
-            NVFUNC(0x0103, NvMap, FromId),
-            NVFUNC(0x0104, NvMap, Alloc),
-            NVFUNC(0x0105, NvMap, Free),
-            NVFUNC(0x0109, NvMap, Param),
-            NVFUNC(0x010E, NvMap, GetId)
-        )
+        PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) override;
     };
 }

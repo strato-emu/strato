@@ -1,172 +1,134 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// SPDX-License-Identifier: MIT OR MPL-2.0
+// Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <services/nvdrv/devices/deserialisation/deserialisation.h>
+#include <services/nvdrv/core/nvmap.h>
 #include "nvmap.h"
 
 namespace skyline::service::nvdrv::device {
-    NvMap::NvMapObject::NvMapObject(u32 id, u32 size) : id(id), size(size) {}
+    NvMap::NvMap(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
 
-    NvMap::NvMap(const DeviceState &state) : NvDevice(state) {}
-
-    NvStatus NvMap::Create(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        struct Data {
-            u32 size;   // In
-            u32 handle; // Out
-        } &data = buffer.as<Data>();
-
-        std::unique_lock lock(mapMutex);
-        maps.push_back(std::make_shared<NvMapObject>(idIndex++, data.size));
-        data.handle = maps.size();
-
-        state.logger->Debug("Size: 0x{:X} -> Handle: 0x{:X}", data.size, data.handle);
-        return NvStatus::Success;
-    }
-
-    NvStatus NvMap::FromId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        struct Data {
-            u32 id;     // In
-            u32 handle; // Out
-        } &data = buffer.as<Data>();
-
-        std::shared_lock lock(mapMutex);
-        for (auto it{maps.begin()}; it < maps.end(); it++) {
-            if ((*it)->id == data.id) {
-                data.handle = (it - maps.begin()) + 1;
-                state.logger->Debug("ID: 0x{:X} -> Handle: 0x{:X}", data.id, data.handle);
-                return NvStatus::Success;
-            }
+    PosixResult NvMap::Create(In<u32> size, Out<NvMapCore::Handle::Id> handle) {
+        auto h{core.nvMap.CreateHandle(util::AlignUp(size, PAGE_SIZE))};
+        if (h) {
+            (*h)->origSize = size; // Orig size is the unaligned size
+            handle = (*h)->id;
         }
 
-        state.logger->Warn("Handle not found for ID: 0x{:X}", data.id);
-        return NvStatus::BadValue;
+        return h;
     }
 
-    NvStatus NvMap::Alloc(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        struct Data {
-            u32 handle;   // In
-            u32 heapMask; // In
-            u32 flags;    // In
-            u32 align;    // In
-            u8 kind;      // In
-            u8 _pad0_[7];
-            u8 *ptr;      // InOut
-        } &data = buffer.as<Data>();
+    PosixResult NvMap::FromId(In<NvMapCore::Handle::Id> id, Out<NvMapCore::Handle::Id> handle) {
+        // Handles and IDs are always the same value in nvmap however IDs can be used globally given the right permissions.
+        // Since we don't plan on ever supporting multiprocess we can skip implementing handle refs and so this function
+        // just does simple validation and passes through the handle id.
+        if (!id) [[unlikely]]
+            return PosixResult::InvalidArgument;
 
-        try {
-            auto object{GetObject(data.handle)};
-            object->heapMask = data.heapMask;
-            object->flags = data.flags;
-            object->align = data.align;
-            object->kind = data.kind;
-            object->ptr = data.ptr;
-            object->status = NvMapObject::Status::Allocated;
+        auto h{core.nvMap.GetHandle(id)};
+        if (!h) [[unlikely]]
+            return PosixResult::InvalidArgument;
 
-            state.logger->Debug("Handle: 0x{:X}, HeapMask: 0x{:X}, Flags: {}, Align: 0x{:X}, Kind: {}, Pointer: 0x{:X}", data.handle, data.heapMask, data.flags, data.align, data.kind, data.ptr);
-            return NvStatus::Success;
-        } catch (const std::out_of_range &) {
-            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
-            return NvStatus::BadParameter;
+        return h->Duplicate(ctx.internalSession);
+    }
+
+    PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address) {
+        if (!handle) [[unlikely]]
+            return PosixResult::InvalidArgument;
+
+        if (!std::ispow2(align)) [[unlikely]]
+            return PosixResult::InvalidArgument;
+
+        // Force page size alignment at a minimum
+        if (align < PAGE_SIZE) [[unlikely]]
+            align = PAGE_SIZE;
+
+        auto h{core.nvMap.GetHandle(handle)};
+        if (!h) [[unlikely]]
+            return PosixResult::InvalidArgument;
+
+        return h->Alloc(flags, align, kind, address);
+    }
+
+    PosixResult NvMap::Free(In<NvMapCore::Handle::Id> handle, Out<u64> address, Out<u32> size, Out<NvMapCore::Handle::Flags> flags) {
+        if (!handle) [[unlikely]]
+            return PosixResult::Success;
+
+        if (auto freeInfo{core.nvMap.FreeHandle(handle, ctx.internalSession)}) {
+            address = freeInfo->address;
+            size = static_cast<u32>(freeInfo->size);
+            flags = NvMapCore::Handle::Flags{ .mapUncached = freeInfo->wasUncached };
         }
+
+        return PosixResult::Success;
     }
 
-    NvStatus NvMap::Free(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        struct Data {
-            u32 handle;   // In
-            u32 _pad0_;
-            u8 *ptr;      // Out
-            u32 size;     // Out
-            u32 flags;    // Out
-        } &data = buffer.as<Data>();
+    PosixResult NvMap::Param(In<NvMapCore::Handle::Id> handle, In<HandleParameterType> param, Out<u32> result) {
+        if (!handle)
+            return PosixResult::InvalidArgument;
 
-        std::unique_lock lock(mapMutex);
-        try {
-            auto &object{maps.at(data.handle - 1)};
-            if (object.use_count() > 1) {
-                data.ptr = object->ptr;
-                data.flags = 0x0;
-            } else {
-                data.ptr = nullptr;
-                data.flags = 0x1; // Not free yet
-            }
+        auto h{core.nvMap.GetHandle(handle)};
+        if (!h) [[unlikely]]
+            return PosixResult::InvalidArgument;
 
-            data.size = object->size;
-            object = nullptr;
+        switch (param) {
+            case HandleParameterType::Size:
+                result = h->origSize;
+                return PosixResult::Success;
+            case HandleParameterType::Alignment:
+                result = h->align;
+                return PosixResult::Success;
+            case HandleParameterType::Base:
+                result = -static_cast<i32>(PosixResult::InvalidArgument);
+                return PosixResult::Success;
+            case HandleParameterType::Heap:
+                if (h->allocated)
+                    result = 0x40000000;
+                else
+                    result = 0;
 
-            state.logger->Debug("Handle: 0x{:X} -> Pointer: 0x{:X}, Size: 0x{:X}, Flags: 0x{:X}", data.handle, data.ptr, data.size, data.flags);
-            return NvStatus::Success;
-        } catch (const std::out_of_range &) {
-            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
-            return NvStatus::BadParameter;
+                return PosixResult::Success;
+            case HandleParameterType::Kind:
+                result = h->kind;
+                return PosixResult::Success;
+            case HandleParameterType::IsSharedMemMapped:
+                result = h->isSharedMemMapped;
+                return PosixResult::Success;
+            default:
+                return PosixResult::InvalidArgument;
         }
     }
 
-    NvStatus NvMap::Param(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        // https://android.googlesource.com/kernel/tegra/+/refs/heads/android-tegra-flounder-3.10-marshmallow/include/linux/nvmap.h#102
-        enum class Parameter : u32 {
-            Size = 1,
-            Alignment = 2,
-            Base = 3,
-            HeapMask = 4,
-            Kind = 5,
-            Compr = 6,
-        };
+    PosixResult NvMap::GetId(Out<NvMapCore::Handle::Id> id, In<NvMapCore::Handle::Id> handle) {
+        // See the comment in FromId for extra info on this function
+        if (!handle) [[unlikely]]
+            return PosixResult::InvalidArgument;
 
-        struct Data {
-            u32 handle;          // In
-            Parameter parameter; // In
-            u32 result;          // Out
-        } &data = buffer.as<Data>();
+        auto h{core.nvMap.GetHandle(handle)};
+        if (!h) [[unlikely]]
+            return PosixResult::NotPermitted; // This will always return EPERM irrespective of if the handle exists or not
 
-        try {
-            auto object{GetObject(data.handle)};
-
-            switch (data.parameter) {
-                case Parameter::Size:
-                    data.result = object->size;
-                    break;
-
-                case Parameter::Alignment:
-                    data.result = object->align;
-                    break;
-
-                case Parameter::HeapMask:
-                    data.result = object->heapMask;
-                    break;
-
-                case Parameter::Kind:
-                    data.result = object->kind;
-                    break;
-
-                case Parameter::Compr:
-                    data.result = 0;
-                    break;
-
-                default:
-                    state.logger->Warn("Parameter not implemented: 0x{:X}", data.parameter);
-                    return NvStatus::NotImplemented;
-            }
-
-            state.logger->Debug("Handle: 0x{:X}, Parameter: {} -> Result: 0x{:X}", data.handle, data.parameter, data.result);
-            return NvStatus::Success;
-        } catch (const std::out_of_range &) {
-            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
-            return NvStatus::BadParameter;
-        }
+        id = h->id;
+        return PosixResult::Success;
     }
 
-    NvStatus NvMap::GetId(IoctlType type, span<u8> buffer, span<u8> inlineBuffer) {
-        struct Data {
-            u32 id;     // Out
-            u32 handle; // In
-        } &data = buffer.as<Data>();
+#include "deserialisation/macro_def.h"
+    static constexpr u32 NvMapMagic{1};
 
-        try {
-            data.id = GetObject(data.handle)->id;
-            state.logger->Debug("Handle: 0x{:X} -> ID: 0x{:X}", data.handle, data.id);
-            return NvStatus::Success;
-        } catch (const std::out_of_range &) {
-            state.logger->Warn("Invalid NvMap handle: 0x{:X}", data.handle);
-            return NvStatus::BadParameter;
-        }
-    }
+    IOCTL_HANDLER_FUNC(NvMap, ({
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0x1),
+                        Create, ARGS(In<u32>, Out<NvMapCore::Handle::Id>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0x3),
+                        FromId, ARGS(In<NvMapCore::Handle::Id>, Out<NvMapCore::Handle::Id>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x20), MAGIC(NvMapMagic), FUNC(0x4),
+                        Alloc,  ARGS(In<NvMapCore::Handle::Id>, In<u32>, In<NvMapCore::Handle::Flags>, InOut<u32>, In<u8>, Pad<u8, 0x7>, In<u64>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(NvMapMagic), FUNC(0x5),
+                        Free,   ARGS(In<NvMapCore::Handle::Id>, Pad<u32>, Out<u64>, Out<u32>, Out<NvMapCore::Handle::Flags>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0xC),  MAGIC(NvMapMagic), FUNC(0x9),
+                        Param,  ARGS(In<NvMapCore::Handle::Id>, In<HandleParameterType>, Out<u32>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0xE),
+                        GetId,  ARGS(Out<NvMapCore::Handle::Id>, In<NvMapCore::Handle::Id>))
+    }))
+#include "deserialisation/macro_undef.h"
 }
+
