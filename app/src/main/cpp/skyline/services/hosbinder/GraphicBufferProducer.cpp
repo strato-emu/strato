@@ -6,13 +6,18 @@
 #include <gpu.h>
 #include <gpu/texture/format.h>
 #include <soc.h>
-#include <services/nvdrv/driver.h>
 #include <services/nvdrv/devices/nvmap.h>
 #include <services/common/fence.h>
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state) : state(state), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)) {}
+    GraphicBufferProducer::GraphicBufferProducer(const DeviceState &state, nvdrv::core::NvMap &nvMap) : state(state), bufferEvent(std::make_shared<kernel::type::KEvent>(state, true)), nvMap(nvMap) {}
+
+    void GraphicBufferProducer::FreeGraphicBufferNvMap(GraphicBuffer &buffer) {
+        auto surface{buffer.graphicHandle.surfaces.at(0)};
+        u32 nvMapHandleId{surface.nvmapHandle ? surface.nvmapHandle : buffer.graphicHandle.nvmapId};
+        nvMap.FreeHandle(nvMapHandleId, true);
+    }
 
     u32 GraphicBufferProducer::GetPendingBufferCount() {
         u32 count{};
@@ -64,6 +69,12 @@ namespace skyline::service::hosbinder {
             for (auto &slot : queue) {
                 slot.state = BufferState::Free;
                 slot.frameNumber = std::numeric_limits<u32>::max();
+
+                if (slot.texture) {
+                    slot.texture = {};
+                    FreeGraphicBufferNvMap(*slot.graphicBuffer);
+                }
+
                 slot.graphicBuffer = nullptr;
             }
         } else if (preallocatedBufferCount < count) {
@@ -160,6 +171,12 @@ namespace skyline::service::hosbinder {
 
         bufferSlot.state = BufferState::Free;
         bufferSlot.frameNumber = std::numeric_limits<u32>::max();
+
+        if (bufferSlot.texture) {
+            bufferSlot.texture = {};
+            FreeGraphicBufferNvMap(*bufferSlot.graphicBuffer);
+        }
+
         bufferSlot.graphicBuffer = nullptr;
 
         bufferEvent->Signal();
@@ -183,6 +200,12 @@ namespace skyline::service::hosbinder {
 
         bufferSlot->state = BufferState::Free;
         bufferSlot->frameNumber = std::numeric_limits<u32>::max();
+
+        if (bufferSlot->texture) {
+            bufferSlot->texture = {};
+            FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
+        }
+
         graphicBuffer = *std::exchange(bufferSlot->graphicBuffer, nullptr);
         fence = AndroidFence{};
 
@@ -200,6 +223,11 @@ namespace skyline::service::hosbinder {
                 if (bufferSlot == queue.end() || it->frameNumber < bufferSlot->frameNumber)
                     bufferSlot = it;
             }
+        }
+
+        if (bufferSlot->texture) {
+            bufferSlot->texture = {};
+            FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
         }
 
         if (bufferSlot == queue.end()) {
@@ -304,27 +332,13 @@ namespace skyline::service::hosbinder {
             if (surface.scanFormat != NvDisplayScanFormat::Progressive)
                 throw exception("Non-Progressive surfaces are not supported: {}", ToString(surface.scanFormat));
 
-            std::shared_ptr<nvdrv::device::NvMap::NvMapObject> nvBuffer{};
-            {
-                auto driver{nvdrv::driver.lock()};
-                auto nvmap{driver->nvMap.lock()};
-                if (surface.nvmapHandle) {
-                    nvBuffer = nvmap->GetObject(surface.nvmapHandle);
-                } else {
-                    std::shared_lock nvmapLock(nvmap->mapMutex);
-                    for (const auto &object : nvmap->maps) {
-                        if (object->id == handle.nvmapId) {
-                            nvBuffer = object;
-                            break;
-                        }
-                    }
-                    if (!nvBuffer)
-                        throw exception("A QueueBuffer request has an invalid NvMap Handle ({}) and ID ({})", surface.nvmapHandle, handle.nvmapId);
-                }
-            }
+            // Duplicate the handle so it can't be freed by the guest
+            auto nvMapHandleObj{nvMap.GetHandle(surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId)};
+            if (auto err{nvMapHandleObj->Duplicate(true)}; err != PosixResult::Success)
+                throw exception("Failed to duplicate graphic buffer NvMap handle: {}!", static_cast<i32>(err));
 
-            if (surface.size > (nvBuffer->size - surface.offset))
-                throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvBuffer->size, surface.offset, surface.offset + surface.size);
+            if (surface.size > (nvMapHandleObj->origSize - surface.offset))
+                throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvMapHandleObj->origSize, surface.offset, surface.offset + surface.size);
 
             gpu::texture::TileMode tileMode;
             gpu::texture::TileConfig tileConfig{};
@@ -344,7 +358,7 @@ namespace skyline::service::hosbinder {
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
             }
 
-            auto guestTexture{std::make_shared<gpu::GuestTexture>(state, nvBuffer->ptr + surface.offset, gpu::texture::Dimensions(surface.width, surface.height), format, tileMode, tileConfig)};
+            auto guestTexture{std::make_shared<gpu::GuestTexture>(state, nvMapHandleObj->GetPointer() + surface.offset, gpu::texture::Dimensions(surface.width, surface.height), format, tileMode, tileConfig)};
             buffer.texture = guestTexture->CreateTexture({}, vk::ImageTiling::eLinear);
         }
 
@@ -529,6 +543,12 @@ namespace skyline::service::hosbinder {
         for (auto &slot : queue) {
             slot.state = BufferState::Free;
             slot.frameNumber = std::numeric_limits<u32>::max();
+
+            if (slot.texture) {
+                slot.texture = {};
+                FreeGraphicBufferNvMap(*slot.graphicBuffer);
+            }
+
             slot.graphicBuffer = nullptr;
         }
 
@@ -544,12 +564,16 @@ namespace skyline::service::hosbinder {
         }
 
         auto &buffer{queue[slot]};
+        if (buffer.texture) {
+            buffer.texture = {};
+            FreeGraphicBufferNvMap(*buffer.graphicBuffer);
+        }
+
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
         buffer.isPreallocated = graphicBuffer != nullptr;
         buffer.graphicBuffer = graphicBuffer ? std::make_unique<GraphicBuffer>(*graphicBuffer) : nullptr;
-        buffer.texture = {};
 
         if (graphicBuffer) {
             if (graphicBuffer->magic != GraphicBuffer::Magic)

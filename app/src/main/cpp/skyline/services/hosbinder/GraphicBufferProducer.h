@@ -14,6 +14,10 @@ namespace skyline::gpu {
     class Texture;
 }
 
+namespace skyline::service::nvdrv::core {
+    class NvMap;
+}
+
 namespace skyline::service::hosbinder {
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferSlot.h;l=52-91
@@ -66,6 +70,9 @@ namespace skyline::service::hosbinder {
         AndroidPixelFormat defaultFormat{AndroidPixelFormat::RGBA8888}; //!< The assumed format of a buffer if none is supplied in DequeueBuffer
         NativeWindowApi connectedApi{NativeWindowApi::None}; //!< The API that the producer is currently connected to
         u64 frameNumber{}; //!< The amount of frames that have been presented so far
+        nvdrv::core::NvMap &nvMap;
+
+        void FreeGraphicBufferNvMap(GraphicBuffer &buffer);
 
         /**
          * @return The amount of buffers which have been queued onto the consumer
@@ -180,7 +187,7 @@ namespace skyline::service::hosbinder {
             SetPreallocatedBuffer = 14, //!< A transaction specific to HOS, see the implementation for a description of its functionality
         };
 
-        GraphicBufferProducer(const DeviceState &state);
+        GraphicBufferProducer(const DeviceState &state, nvdrv::core::NvMap &nvmap);
 
         /**
          * @brief The handler for Binder IPC transactions with IGraphicBufferProducer

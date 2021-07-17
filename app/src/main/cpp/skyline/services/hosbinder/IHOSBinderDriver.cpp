@@ -7,7 +7,7 @@
 #include "GraphicBufferProducer.h"
 
 namespace skyline::service::hosbinder {
-    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
+    IHOSBinderDriver::IHOSBinderDriver(const DeviceState &state, ServiceManager &manager, nvdrv::core::NvMap &nvMap) : BaseService(state, manager), nvMap(nvMap) {}
 
     Result IHOSBinderDriver::TransactParcel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // We opted for just supporting a single layer and display as it's what basically all games use and wasting cycles on it is pointless
@@ -122,7 +122,7 @@ namespace skyline::service::hosbinder {
 
         layerStrongReferenceCount = InitialStrongReferenceCount;
         layerWeakReferenceCount = 0;
-        layer.emplace(state);
+        layer.emplace(state, nvMap);
 
         return DefaultLayerId;
     }

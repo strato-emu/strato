@@ -42,8 +42,10 @@ namespace skyline::service::hosbinder {
         constexpr static u32 DefaultBinderLayerHandle{1}; //!< The handle as assigned by SurfaceFlinger of the default layer
         std::optional<GraphicBufferProducer> layer; //!< The IGraphicBufferProducer backing the layer (NativeWindow)
 
+        nvdrv::core::NvMap &nvMap;
+
       public:
-        IHOSBinderDriver(const DeviceState &state, ServiceManager &manager);
+        IHOSBinderDriver(const DeviceState &state, ServiceManager &manager, nvdrv::core::NvMap &nvMap);
 
         /**
          * @brief Emulates the transaction of parcels between a IGraphicBufferProducer and the application
