@@ -18,7 +18,8 @@
 #include "glue/IStaticService.h"
 #include "services/timesrv/core.h"
 #include "fssrv/IFileSystemProxy.h"
-#include "services/nvdrv/INvDrvServices.h"
+#include "nvdrv/INvDrvServices.h"
+#include "nvdrv/driver.h"
 #include "hosbinder/IHOSBinderDriver.h"
 #include "visrv/IApplicationRootService.h"
 #include "visrv/ISystemRootService.h"
@@ -48,8 +49,9 @@
 namespace skyline::service {
     struct GlobalServiceState {
         timesrv::core::TimeServiceObject timesrv;
+        nvdrv::Driver nvdrv;
 
-        explicit GlobalServiceState(const DeviceState &state) : timesrv(state) {}
+        explicit GlobalServiceState(const DeviceState &state) : timesrv(state), nvdrv(state) {}
     };
 
     ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)), globalServiceState(std::make_shared<GlobalServiceState>(state)) {}
@@ -76,11 +78,8 @@ namespace skyline::service {
             SERVICE_CASE(glue::IStaticService, "time:r", globalServiceState->timesrv.managerServer.GetStaticServiceAsRepair(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceRepairPermissions)
             SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetStaticServiceAsUser(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceUserPermissions)
             SERVICE_CASE(fssrv::IFileSystemProxy, "fsp-srv")
-            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv")
-            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a")
-            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:s")
-            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:t")
-            SERVICE_CASE(hosbinder::IHOSBinderDriver, "dispdrv")
+            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv", globalServiceState->nvdrv, nvdrv::ApplicationSessionPermissions)
+            SERVICE_CASE(hosbinder::IHOSBinderDriver, "dispdrv", globalServiceState->nvdrv.core.nvMap)
             SERVICE_CASE(visrv::IApplicationRootService, "vi:u")
             SERVICE_CASE(visrv::ISystemRootService, "vi:s")
             SERVICE_CASE(visrv::IManagerRootService, "vi:m")

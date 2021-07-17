@@ -1,76 +1,45 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #pragma once
 
-#include "devices/nvhost_syncpoint.h"
-
-#define NVDEVICE_LIST                                              \
-    NVDEVICE(NvHostCtrl,    nvHostCtrl,    "/dev/nvhost-ctrl")     \
-    NVDEVICE(NvHostChannel, nvHostGpu,     "/dev/nvhost-gpu")      \
-    NVDEVICE(NvHostChannel, nvHostNvdec,   "/dev/nvhost-nvdec")    \
-    NVDEVICE(NvHostChannel, nvHostVic,     "/dev/nvhost-vic")      \
-    NVDEVICE(NvMap,         nvMap,         "/dev/nvmap")           \
-    NVDEVICE(NvHostAsGpu,   nvHostAsGpu,   "/dev/nvhost-as-gpu")   \
-    NVDEVICE(NvHostCtrlGpu, nvHostCtrlGpu, "/dev/nvhost-ctrl-gpu")
+#include <common.h>
+#include "types.h"
+#include "devices/nvdevice.h"
+#include "core/core.h"
 
 namespace skyline::service::nvdrv {
-    namespace device {
-        class NvDevice;
-
-        #define NVDEVICE(type, name, path) class type;
-        NVDEVICE_LIST
-        #undef NVDEVICE
-    }
-
-    /**
-     * @brief nvnflinger:dispdrv or nns::hosbinder::IHOSBinderDriver is responsible for writing buffers to the display
-     */
     class Driver {
       private:
         const DeviceState &state;
-        std::vector<std::shared_ptr<device::NvDevice>> devices; //!< A vector of shared pointers to NvDevice object that correspond to FDs
-        u32 fdIndex{}; //!< The next file descriptor to assign
+        std::unordered_map<FileDescriptor, std::unique_ptr<device::NvDevice>> devices;
 
       public:
-        NvHostSyncpoint hostSyncpoint;
-
-        #define NVDEVICE(type, name, path) std::weak_ptr<device::type> name;
-        NVDEVICE_LIST
-        #undef NVDEVICE
+        Core core; //!< The core global state object of nvdrv that is accessed by devices
 
         Driver(const DeviceState &state);
 
         /**
-         * @brief Open a specific device and return a FD
-         * @param path The path of the device to open an FD to
-         * @return The file descriptor to the device
+         * @brief Creates a new device as specified by path
+         * @param path The /dev path that corresponds to the device
+         * @param fd The fd that will be used to refer to the device
+         * @param ctx The context to be attached to the device
          */
-        u32 OpenDevice(std::string_view path);
+        NvResult OpenDevice(std::string_view path, FileDescriptor fd, const SessionContext &ctx);
 
         /**
-         * @brief Returns a particular device with a specific FD
-         * @param fd The file descriptor to retrieve
-         * @return A shared pointer to the device
+         * @brief Calls an IOCTL on the device specified by `fd`
          */
-        std::shared_ptr<device::NvDevice> GetDevice(u32 fd);
+        NvResult Ioctl(u32 fd, IoctlDescriptor cmd, span<u8> buffer);
 
         /**
-         * @brief Returns a particular device with a specific FD
-         * @tparam objectClass The class of the device to return
-         * @param fd The file descriptor to retrieve
-         * @return A shared pointer to the device
+         * @brief Queries a KEvent for the given `eventId` for the device specified by `fd`
          */
-        template<typename objectClass>
-        std::shared_ptr<objectClass> GetDevice(u32 fd) {
-            return std::static_pointer_cast<objectClass>(GetDevice(fd));
-        }
+        std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 fd, u32 eventId);
 
         /**
-         * @brief Closes the specified device with its file descriptor
+         * @brief Closes the device specified by `fd`
          */
         void CloseDevice(u32 fd);
     };
-
-    extern std::weak_ptr<Driver> driver; //!< A globally shared instance of the Driver
 }
