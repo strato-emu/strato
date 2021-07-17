@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
-
+// Copyright © 2019-2020 Ryujinx Team and Contributors
 
 #include <soc.h>
-#include "nvhost_syncpoint.h"
+#include "syncpoint_manager.h"
 
-namespace skyline::service::nvdrv {
-    NvHostSyncpoint::NvHostSyncpoint(const DeviceState &state) : state(state) {
+namespace skyline::service::nvdrv::core {
+    SyncpointManager::SyncpointManager(const DeviceState &state) : state(state) {
         constexpr u32 VBlank0SyncpointId{26};
         constexpr u32 VBlank1SyncpointId{27};
 
@@ -17,7 +17,7 @@ namespace skyline::service::nvdrv {
         ReserveSyncpoint(VBlank1SyncpointId, true);
     }
 
-    u32 NvHostSyncpoint::ReserveSyncpoint(u32 id, bool clientManaged) {
+    u32 SyncpointManager::ReserveSyncpoint(u32 id, bool clientManaged) {
         if (syncpoints.at(id).reserved)
             throw exception("Requested syncpoint is in use");
 
@@ -27,7 +27,7 @@ namespace skyline::service::nvdrv {
         return id;
     }
 
-    u32 NvHostSyncpoint::FindFreeSyncpoint() {
+    u32 SyncpointManager::FindFreeSyncpoint() {
         for (u32 i{1}; i < syncpoints.size(); i++)
             if (!syncpoints[i].reserved)
                 return i;
@@ -35,12 +35,12 @@ namespace skyline::service::nvdrv {
         throw exception("Failed to find a free syncpoint!");
     }
 
-    u32 NvHostSyncpoint::AllocateSyncpoint(bool clientManaged) {
+    u32 SyncpointManager::AllocateSyncpoint(bool clientManaged) {
         std::lock_guard lock(reservationLock);
         return ReserveSyncpoint(FindFreeSyncpoint(), clientManaged);
     }
 
-    bool NvHostSyncpoint::HasSyncpointExpired(u32 id, u32 threshold) {
+    bool SyncpointManager::HasSyncpointExpired(u32 id, u32 threshold) {
         const SyncpointInfo &syncpoint{syncpoints.at(id)};
 
         if (!syncpoint.reserved)
@@ -53,25 +53,35 @@ namespace skyline::service::nvdrv {
             return (syncpoint.counterMax - threshold) >= (syncpoint.counterMin - threshold);
     }
 
-    u32 NvHostSyncpoint::IncrementSyncpointMaxExt(u32 id, u32 amount) {
+    u32 SyncpointManager::IncrementSyncpointMaxExt(u32 id, u32 amount) {
         if (!syncpoints.at(id).reserved)
             throw exception("Cannot increment an unreserved syncpoint!");
 
         return syncpoints.at(id).counterMax += amount;
     }
 
-    u32 NvHostSyncpoint::ReadSyncpointMinValue(u32 id) {
+    u32 SyncpointManager::ReadSyncpointMinValue(u32 id) {
         if (!syncpoints.at(id).reserved)
             throw exception("Cannot read an unreserved syncpoint!");
 
         return syncpoints.at(id).counterMin;
     }
 
-    u32 NvHostSyncpoint::UpdateMin(u32 id) {
+    u32 SyncpointManager::UpdateMin(u32 id) {
         if (!syncpoints.at(id).reserved)
             throw exception("Cannot update an unreserved syncpoint!");
 
         syncpoints.at(id).counterMin = state.soc->host1x.syncpoints.at(id).Load();
         return syncpoints.at(id).counterMin;
+    }
+
+    Fence SyncpointManager::GetSyncpointFence(u32 id) {
+        if (!syncpoints.at(id).reserved)
+            throw exception("Cannot access an unreserved syncpoint!");
+
+        return {
+            .id = id,
+            .threshold = syncpoints.at(id).counterMax
+        };
     }
 }

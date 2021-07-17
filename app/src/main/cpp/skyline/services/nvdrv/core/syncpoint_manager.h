@@ -1,18 +1,20 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2019-2020 Ryujinx Team and Contributors
 
 #pragma once
 
 #include <soc/host1x.h>
+#include <services/common/fence.h>
 
-namespace skyline::service::nvdrv {
+namespace skyline::service::nvdrv::core {
     /**
-     * @brief NvHostSyncpoint handles allocating and accessing host1x syncpoints, these are cached versions of the HW syncpoints which are intermittently synced
+     * @brief SyncpointManager handles allocating and accessing host1x syncpoints, these are cached versions of the HW syncpoints which are intermittently synced
      * @note Refer to Chapter 14 of the Tegra X1 TRM for an exhaustive overview of them
      * @url https://http.download.nvidia.com/tegra-public-appnotes/host1x.html
      * @url https://github.com/Jetson-TX1-AndroidTV/android_kernel_jetson_tx1_hdmi_primary/blob/jetson-tx1/drivers/video/tegra/host/nvhost_syncpt.c
      */
-    class NvHostSyncpoint {
+    class SyncpointManager {
       private:
         struct SyncpointInfo {
             std::atomic<u32> counterMin; //!< The least value the syncpoint can be (The value it was when it was last synchronized with host1x)
@@ -36,7 +38,7 @@ namespace skyline::service::nvdrv {
         u32 FindFreeSyncpoint();
 
       public:
-        NvHostSyncpoint(const DeviceState &state);
+        SyncpointManager(const DeviceState &state);
 
         /**
          * @brief Finds a free syncpoint and reserves it
@@ -48,6 +50,10 @@ namespace skyline::service::nvdrv {
          * @url https://github.com/Jetson-TX1-AndroidTV/android_kernel_jetson_tx1_hdmi_primary/blob/8f74a72394efb871cb3f886a3de2998cd7ff2990/drivers/gpu/host1x/syncpt.c#L259
          */
         bool HasSyncpointExpired(u32 id, u32 threshold);
+
+        bool IsFenceSignalled(Fence fence) {
+            return HasSyncpointExpired(fence.id, fence.threshold);
+        }
 
         /**
          * @brief Atomically increments the maximum value of a syncpoint by the given amount
@@ -65,5 +71,10 @@ namespace skyline::service::nvdrv {
          * @return The new minimum value of the syncpoint
          */
         u32 UpdateMin(u32 id);
+
+        /**
+         * @return A fence that will be signalled once this syncpoint hits it's maximum value
+         */
+        Fence GetSyncpointFence(u32 id);
     };
 }
