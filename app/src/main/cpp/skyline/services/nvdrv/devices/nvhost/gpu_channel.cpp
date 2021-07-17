@@ -23,7 +23,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::SubmitGpfifo(In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence, span<soc::gm20b::GpEntry> gpEntries) {
-        if (numEntries != gpEntries.size())
+        if (numEntries > gpEntries.size())
             throw exception("GpEntry size mismatch!");
 
         if (flags.fenceWait) {
@@ -34,7 +34,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
-        state.soc->gm20b.gpfifo.Push(gpEntries);
+        state.soc->gm20b.gpfifo.Push(gpEntries.subspan(0, numEntries));
 
         fence.id = channelSyncpoint;
 
@@ -47,6 +47,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         flags.raw = 0;
 
         return PosixResult::Success;
+    }
+
+    PosixResult GpuChannel::SubmitGpfifo2(span<u8> inlineBuffer, In<u64> userAddress, In<u32> numEntries, InOut<GpuChannel::SubmitGpfifoFlags> flags, InOut<Fence> fence) {
+        return SubmitGpfifo(userAddress, numEntries, flags, fence, inlineBuffer.cast<soc::gm20b::GpEntry>());
     }
 
     PosixResult GpuChannel::AllocObjCtx(In<u32> classId, In<u32> flags, Out<u64> objId) {
@@ -128,6 +132,11 @@ namespace skyline::service::nvdrv::device::nvhost {
     }), ({
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(GpuChannelMagic), FUNC(0x8),
                                  SubmitGpfifo, ARGS(In<u64>, In<u32>, InOut<SubmitGpfifoFlags>, InOut<Fence>, AutoSizeSpan<soc::gm20b::GpEntry>))
+    }))
+
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl2, GpuChannel, ({
+        INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(GpuChannelMagic), FUNC(0x1B),
+                               SubmitGpfifo2, ARGS(In<u64>, In<u32>, InOut<SubmitGpfifoFlags>, InOut<Fence>))
     }))
 #include <services/nvdrv/devices/deserialisation/macro_undef.h>
 }

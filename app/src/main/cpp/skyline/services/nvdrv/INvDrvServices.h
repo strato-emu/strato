@@ -63,13 +63,13 @@ namespace skyline::service::nvdrv {
          * @brief Perform an IOCTL on the specified FD with an extra input buffer
          * @url https://switchbrew.org/wiki/NV_services#Ioctl2
          */
-     //   Result Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Perform an IOCTL on the specified FD with an extra output buffer
          * @url https://switchbrew.org/wiki/NV_services#Ioctl3
          */
-     //   Result Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Enables the graphics firmware memory margin
@@ -84,7 +84,8 @@ namespace skyline::service::nvdrv {
             SFUNC(0x3, INvDrvServices, Initialize),
             SFUNC(0x4, INvDrvServices, QueryEvent),
             SFUNC(0x8, INvDrvServices, SetAruid),
-
+            SFUNC(0xB, INvDrvServices, Ioctl2),
+            SFUNC(0xC, INvDrvServices, Ioctl3),
             SFUNC(0xD, INvDrvServices, SetGraphicsFirmwareMemoryMarginEnabled)
         )
     };

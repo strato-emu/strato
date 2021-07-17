@@ -40,9 +40,13 @@ namespace skyline::service::nvdrv::device {
 
         virtual PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) = 0;
 
-        virtual PosixResult Ioctl2(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineOutput) { return PosixResult::NotSupported; }
+        virtual PosixResult Ioctl2(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineOutput) {
+            return PosixResult::InappropriateIoctlForDevice;
+        }
 
-        virtual PosixResult Ioctl3(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineInput) { return PosixResult::NotSupported; }
+        virtual PosixResult Ioctl3(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineInput) {
+            return PosixResult::InappropriateIoctlForDevice;
+        }
 
         virtual std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 eventId) {
             return nullptr;

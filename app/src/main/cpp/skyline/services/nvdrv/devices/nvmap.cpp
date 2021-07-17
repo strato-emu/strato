@@ -13,6 +13,7 @@ namespace skyline::service::nvdrv::device {
         if (h) {
             (*h)->origSize = size; // Orig size is the unaligned size
             handle = (*h)->id;
+            state.logger->Debug("handle: {}, size: 0x{:X}", (*h)->id, size);
         }
 
         return h;
@@ -46,6 +47,8 @@ namespace skyline::service::nvdrv::device {
         auto h{core.nvMap.GetHandle(handle)};
         if (!h) [[unlikely]]
             return PosixResult::InvalidArgument;
+
+        state.logger->Debug("handle: {}, flags: ( mapUncached: {}, keepUncachedAfterFree: {} ), align: 0x{:X}, kind: {}, address: 0x{:X}", handle, flags.mapUncached, flags.keepUncachedAfterFree, align, kind, address);
 
         return h->Alloc(flags, align, kind, address);
     }

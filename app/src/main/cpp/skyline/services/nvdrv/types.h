@@ -90,4 +90,7 @@ namespace skyline::service::nvdrv {
         AccessDenied = 0x30010,
         IoctlFailed = 0x3000F
     };
+
+    template<typename ValueType>
+    using NvResultValue = ResultValue<ValueType, NvResult>;
 }

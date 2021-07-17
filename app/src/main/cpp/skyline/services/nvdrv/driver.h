@@ -33,6 +33,16 @@ namespace skyline::service::nvdrv {
         NvResult Ioctl(u32 fd, IoctlDescriptor cmd, span<u8> buffer);
 
         /**
+         * @brief Calls an IOCTL on the device specified by `fd` using the given inline input buffer
+         */
+        NvResult Ioctl2(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer);
+
+        /**
+         * @brief Calls an IOCTL on the device specified by `fd` using the given inline output buffer
+         */
+        NvResult Ioctl3(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer);
+
+        /**
          * @brief Queries a KEvent for the given `eventId` for the device specified by `fd`
          */
         std::shared_ptr<kernel::type::KEvent> QueryEvent(u32 fd, u32 eventId);

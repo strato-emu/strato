@@ -58,6 +58,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         PosixResult SubmitGpfifo(In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence, span<soc::gm20b::GpEntry> gpEntries);
 
         /**
+         * @brief Ioctl2 variant of SubmitGpfifo
+         */
+        PosixResult SubmitGpfifo2(span<u8> inlineBuffer, In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence);
+
+        /**
          * @brief Allocates a graphic context object
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_ALLOC_OBJ_CTX
          */
@@ -108,5 +113,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId) override;
 
         PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) override;
+
+        PosixResult Ioctl2(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) override;
     };
 }

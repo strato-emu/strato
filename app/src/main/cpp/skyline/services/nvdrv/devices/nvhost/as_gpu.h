@@ -86,6 +86,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         PosixResult GetVaRegions(In<u64> bufAddr, InOut<u32> bufSize, Out<std::array<VaRegion, 2>> vaRegions);
 
         /**
+         * @brief Ioctl3 variant of GetVaRegions
+         */
+        PosixResult GetVaRegions3(span<u8> inlineBuffer, In<u64> bufAddr, InOut<u32> bufSize, Out<std::array<VaRegion, 2>> vaRegions);
+
+        /**
          * @brief Allocates this address space with the given parameters
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_AS_EX
          */
@@ -98,5 +103,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         PosixResult Remap(span<RemapEntry> entries);
 
         PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) override;
+
+        PosixResult Ioctl3(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) override;
     };
 }

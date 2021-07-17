@@ -6,7 +6,13 @@
 #include "driver.h"
 #include "devices/nvdevice.h"
 
-#define NVRESULT(x) [&response](NvResult err) { response.Push<NvResult>(err); return Result{}; }(x)
+#define NVRESULT(x) [&response, this](NvResult err) {     \
+        if (err != NvResult::Success)                     \
+            state.logger->Debug("IOCTL Failed: {}", err); \
+                                                          \
+        response.Push<NvResult>(err);                     \
+        return Result{};                                  \
+    } (x)
 
 namespace skyline::service::nvdrv {
     INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager, Driver &driver, const SessionPermissions &perms) : BaseService(state, manager), driver(driver), ctx(SessionContext{.perms = perms}) {}
@@ -29,29 +35,34 @@ namespace skyline::service::nvdrv {
         return NVRESULT(NvResult::Success);
     }
 
-    Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd{request.Pop<FileDescriptor>()};
-        auto ioctl{request.Pop<IoctlDescriptor>()};
-
-        auto inBuf{request.inputBuf.at(0)};
-        auto outBuf{request.outputBuf.at(0)};
-
+    static NvResultValue<span<u8>> GetMainIoctlBuffer(IoctlDescriptor ioctl, span<u8> inBuf, span<u8> outBuf) {
         if (ioctl.in && inBuf.size() < ioctl.size)
-            return NVRESULT(NvResult::InvalidSize);
+            return NvResult::InvalidSize;
 
         if (ioctl.out && outBuf.size() < ioctl.size)
-            return NVRESULT(NvResult::InvalidSize);
+            return NvResult::InvalidSize;
 
         if (ioctl.in && ioctl.out) {
             if (outBuf.size() < inBuf.size())
-                return NVRESULT(NvResult::InvalidSize);
+                return NvResult::InvalidSize;
 
             // Copy in buf to out buf for inout ioctls to avoid needing to pass around two buffers everywhere
             if (outBuf.data() != inBuf.data())
                 outBuf.copy_from(inBuf, ioctl.size);
         }
 
-        return NVRESULT(driver.Ioctl(fd, ioctl, ioctl.out ? outBuf : inBuf));
+        return ioctl.out ? outBuf : inBuf;
+    }
+
+    Result INvDrvServices::Ioctl(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto fd{request.Pop<FileDescriptor>()};
+        auto ioctl{request.Pop<IoctlDescriptor>()};
+
+        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        if (!buf)
+            return NVRESULT(buf);
+        else
+            return NVRESULT(driver.Ioctl(fd, ioctl, *buf));
     }
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -83,6 +94,34 @@ namespace skyline::service::nvdrv {
         } else {
             return NVRESULT(NvResult::BadValue);
         }
+    }
+
+    Result INvDrvServices::Ioctl2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto fd{request.Pop<FileDescriptor>()};
+        auto ioctl{request.Pop<IoctlDescriptor>()};
+
+        // The inline buffer is technically not required
+        auto inlineBuf{request.inputBuf.size() > 1 ? request.inputBuf.at(1) : span<u8>{}};
+
+        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        if (!buf)
+            return NVRESULT(buf);
+        else
+            return NVRESULT(driver.Ioctl2(fd, ioctl, *buf, inlineBuf));
+    }
+
+    Result INvDrvServices::Ioctl3(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto fd{request.Pop<FileDescriptor>()};
+        auto ioctl{request.Pop<IoctlDescriptor>()};
+
+        // The inline buffer is technically not required
+        auto inlineBuf{request.outputBuf.size() > 1 ? request.outputBuf.at(1) : span<u8>{}};
+
+        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        if (!buf)
+            return NVRESULT(buf);
+        else
+            return NVRESULT(driver.Ioctl3(fd, ioctl, *buf, inlineBuf));
     }
 
     Result INvDrvServices::SetAruid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

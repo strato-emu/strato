@@ -54,6 +54,8 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, InOut<u32> pageSize, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset) {
+        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, pageSize: 0x{:X}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}", flags.fixed, flags.remap, kind, handle, pageSize, bufferOffset, mappingSize, offset);
+
         if (flags.remap) {
             auto region{regionMap.lower_bound(offset)};
             if (region == regionMap.end()) {
@@ -95,7 +97,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (offset == 0) {
             state.logger->Warn("Failed to map GPU address space region!");
             return PosixResult::InvalidArgument;
+
         }
+
+        state.logger->Debug("Mapped to 0x{:X}", offset);
 
         regionMap[offset] = {cpuPtr, size, flags.fixed};
 
@@ -105,6 +110,10 @@ namespace skyline::service::nvdrv::device::nvhost {
     PosixResult AsGpu::GetVaRegions(In<u64> bufAddr, InOut<u32> bufSize, Out<std::array<VaRegion, 2>> vaRegions) {
         // TODO: impl when we move allocator to nvdrv
         return PosixResult::Success;
+    }
+
+    PosixResult AsGpu::GetVaRegions3(span<u8> inlineBufer, In<u64> bufAddr, InOut<u32> bufSize, Out<std::array<VaRegion, 2>> vaRegions) {
+        return GetVaRegions(bufAddr, bufSize, vaRegions);
     }
 
     PosixResult  AsGpu::AllocAsEx(In<u32> bigPageSize, In<FileDescriptor> asFd, In<u32> flags, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit) {
@@ -151,6 +160,11 @@ namespace skyline::service::nvdrv::device::nvhost {
     }), ({
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(AsGpuMagic), FUNC(0x14),
                                  Remap, ARGS(AutoSizeSpan<RemapEntry>))
+    }))
+
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, AsGpu, ({
+        INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x40), MAGIC(AsGpuMagic), FUNC(0x8),
+                               GetVaRegions3, ARGS(In<u64>, InOut<u32>, Pad<u32>, Out<std::array<VaRegion, 2>>))
     }))
 #include <services/nvdrv/devices/deserialisation/macro_undef.h>
 }

@@ -26,9 +26,22 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult CtrlGpu::GetTpcMasks(In<u32> bufSize, Out<u64> maskBuf) {
-        // TODO
-        maskBuf = 0x3;
+    PosixResult CtrlGpu::GetCharacteristics3(span<u8> inlineBuffer, InOut<u64> size, In<u64> userAddress, Out<GpuCharacteristics> characteristics) {
+        inlineBuffer.as<GpuCharacteristics>() = {};
+        return GetCharacteristics(size, userAddress, characteristics);
+    }
+
+    PosixResult CtrlGpu::GetTpcMasks(In<u32> bufSize, Out<u32> mask) {
+        if (bufSize)
+            mask = 0x3;
+
+        return PosixResult::Success;
+    }
+
+    PosixResult CtrlGpu::GetTpcMasks3(span<u8> inlineBuffer, In<u32> bufSize, Out<u32> mask) {
+        if (bufSize)
+            mask = inlineBuffer.as<u32>() = 0x3;
+
         return PosixResult::Success;
     }
 
@@ -60,7 +73,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         IOCTL_CASE_ARGS(INOUT, SIZE(0xB0), MAGIC(CtrlGpuMagic), FUNC(0x5),
                         GetCharacteristics, ARGS(InOut<u64>, In<u64>, Out<GpuCharacteristics>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(CtrlGpuMagic), FUNC(0x6),
-                        GetTpcMasks,        ARGS(In<u32>, Pad<u32, 3>, Out<u64>))
+                        GetTpcMasks,        ARGS(In<u32>, Pad<u32, 3>, Out<u32>))
         IOCTL_CASE_ARGS(OUT,   SIZE(0x8),  MAGIC(CtrlGpuMagic), FUNC(0x14),
                         GetActiveSlotMask,  ARGS(Out<u32>, Out<u32>))
     }))

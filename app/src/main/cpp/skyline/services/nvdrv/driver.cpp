@@ -95,11 +95,34 @@ namespace skyline::service::nvdrv {
         }
 
     }
+
     NvResult Driver::Ioctl(u32 fd, IoctlDescriptor cmd, span<u8> buffer) {
+        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+
         try {
             return ConvertResult(devices.at(fd)->Ioctl(cmd, buffer));
         } catch (const std::out_of_range &) {
-            throw exception("GetDevice was called with invalid file descriptor: 0x{:X}", fd);
+            throw exception("Ioctl was called with invalid file descriptor: 0x{:X}", fd);
+        }
+    }
+
+    NvResult Driver::Ioctl2(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
+        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+
+        try {
+            return ConvertResult(devices.at(fd)->Ioctl2(cmd, buffer, inlineBuffer));
+        } catch (const std::out_of_range &) {
+            throw exception("Ioctl2 was called with invalid file descriptor: 0x{:X}", fd);
+        }
+    }
+
+    NvResult Driver::Ioctl3(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
+        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+
+        try {
+            return ConvertResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer));
+        } catch (const std::out_of_range &) {
+            throw exception("Ioctl3 was called with invalid file descriptor: 0x{:X}", fd);
         }
     }
 
@@ -112,6 +135,8 @@ namespace skyline::service::nvdrv {
     }
 
     std::shared_ptr<kernel::type::KEvent> Driver::QueryEvent(u32 fd, u32 eventId) {
+        state.logger->Debug("fd: {}, eventId: 0x{:X}, device: {}", fd, eventId, devices.at(fd)->GetName());
+
         try {
             return devices.at(fd)->QueryEvent(eventId);
         } catch (const std::exception &) {

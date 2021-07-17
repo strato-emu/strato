@@ -94,10 +94,20 @@ namespace skyline::service::nvdrv::device::nvhost {
         PosixResult GetCharacteristics(InOut<u64> size, In<u64> userAddress, Out<GpuCharacteristics> characteristics);
 
         /**
+         * @brief Ioctl3 variant of GetTpcMasks
+         */
+        PosixResult GetCharacteristics3(span<u8> inlineBuffer, InOut<u64> size, In<u64> userAddress, Out<GpuCharacteristics> characteristics);
+
+        /**
          * @brief Returns the TPC mask value for each GPC
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_TPC_MASKS
          */
-        PosixResult GetTpcMasks(In<u32> bufSize, Out<u64> maskBuf);
+        PosixResult GetTpcMasks(In<u32> bufSize, Out<u32> mask);
+
+        /**
+         * @brief Ioctl3 variant of GetTpcMasks
+         */
+        PosixResult GetTpcMasks3(span<u8> inlineBuffer, In<u32> bufSize, Out<u32> mask);
 
         /**
          * @brief Returns the mask value for a ZBC slot
