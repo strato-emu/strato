@@ -474,7 +474,8 @@ namespace skyline::kernel::svc {
 
     void MapSharedMemory(const DeviceState &state) {
         try {
-            auto object{state.process->GetHandle<type::KSharedMemory>(state.ctx->gpr.w0)};
+            KHandle handle{state.ctx->gpr.w0};
+            auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
             auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
             if (!util::PageAligned(pointer)) {
@@ -497,7 +498,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            state.logger->Debug("Mapping shared memory at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+            state.logger->Debug("Mapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", handle, pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
             object->Map(pointer, size, permission);
 
@@ -510,7 +511,8 @@ namespace skyline::kernel::svc {
 
     void UnmapSharedMemory(const DeviceState &state) {
         try {
-            auto object{state.process->GetHandle<type::KSharedMemory>(state.ctx->gpr.w0)};
+            KHandle handle{state.ctx->gpr.w0};
+            auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
             auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
             if (!util::PageAligned(pointer)) {
@@ -526,7 +528,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            state.logger->Debug("Unmapping shared memory at 0x{:X} - 0x{:X} (0x{:X} bytes)", pointer, pointer + size, size);
+            state.logger->Debug("Unmapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes)", handle, pointer, pointer + size, size);
 
             object->Unmap(pointer, size);
 
@@ -559,8 +561,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto tmem{state.process->NewHandle<type::KTransferMemory>(pointer, size, permission)};
-        state.logger->Debug("Creating transfer memory at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+        auto tmem{state.process->NewHandle<type::KTransferMemory>(pointer, size, permission, permission.raw ? memory::states::TransferMemory : memory::states::TransferMemoryIsolated)};
+        state.logger->Debug("Creating transfer memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", tmem.handle, pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
         state.ctx->gpr.w0 = Result{};
         state.ctx->gpr.w1 = tmem.handle;

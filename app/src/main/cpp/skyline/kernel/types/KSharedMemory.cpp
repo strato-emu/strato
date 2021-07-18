@@ -38,6 +38,9 @@ namespace skyline::kernel::type {
             .size = size,
             .permission = permission,
             .state = memoryState,
+            .attributes = memory::MemoryAttribute{
+                .isBorrowed = objectType == KType::KTransferMemory,
+            },
         });
 
         return guest.ptr;
@@ -76,22 +79,48 @@ namespace skyline::kernel::type {
                 .size = size,
                 .permission = permission,
                 .state = memoryState,
+                .attributes = memory::MemoryAttribute{
+                    .isBorrowed = objectType == KType::KTransferMemory,
+                },
             });
         }
     }
 
     KSharedMemory::~KSharedMemory() {
+        if (state.process && guest.Valid()) {
+            if (objectType != KType::KTransferMemory) {
+                mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // It doesn't particularly matter if this fails as it shouldn't really affect anything
+                state.process->memory.InsertChunk(ChunkDescriptor{
+                    .ptr = guest.ptr,
+                    .size = guest.size,
+                    .state = memory::states::Unmapped,
+                });
+            } else {
+                // KTransferMemory remaps the region with R/W permissions during destruction
+                constexpr memory::Permission UnborrowPermission{true, true, false};
+
+                if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED)
+                    // It is likely that these exceptions will end up as asserts as the destructor is implicitly noexcept but we want to be notified about these not working so that's fine as it can be discovered in the debugger
+                    throw exception("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
+                else if (!host.Valid())
+                    throw exception("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
+
+                std::memcpy(guest.ptr, host.ptr, host.size);
+
+                state.process->memory.InsertChunk(ChunkDescriptor{
+                    .ptr = guest.ptr,
+                    .size = guest.size,
+                    .permission = UnborrowPermission,
+                    .state = memoryState,
+                    .attributes = memory::MemoryAttribute{
+                        .isBorrowed = false,
+                    }
+                });
+            }
+        }
+
         if (host.Valid())
             munmap(host.ptr, host.size);
-
-        if (state.process && guest.Valid()) {
-            mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // As this is the destructor, we cannot throw on this failing
-            state.process->memory.InsertChunk(ChunkDescriptor{
-                .ptr = guest.ptr,
-                .size = guest.size,
-                .state = memory::states::Unmapped,
-            });
-        }
 
         close(fd);
     }
