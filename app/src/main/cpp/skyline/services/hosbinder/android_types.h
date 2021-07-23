@@ -188,7 +188,7 @@ namespace skyline::service::hosbinder {
     static_assert(sizeof(NvSurface) == 0x58);
 
     /**
-     * @brief The integers of the native_handle used by Nvidia to marshall the surfaces in this buffer
+     * @brief The format of the native_handle integers used by Nvidia to marshall the surface metadata of the GraphicBuffer
      */
     struct NvGraphicHandle {
         constexpr static u32 Magic{0xDAFFCAFF};
@@ -199,7 +199,7 @@ namespace skyline::service::hosbinder {
         u32 ownerPid; //!< Same as the upper 32-bits of the ID in the GraphicBuffer (0x2F)
         u32 type;
         u32 usage; //!< The Gralloc usage flags, same as GraphicBuffer
-        u32 format; //!< The internal format of the buffer
+        AndroidPixelFormat format; //!< The internal format of the buffer
         u32 externalFormat; //!< The external format that's exposed by Gralloc
         u32 stride;
         u32 size; //!< The size of the buffer in bytes
@@ -213,6 +213,7 @@ namespace skyline::service::hosbinder {
     /**
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/ui/GraphicBuffer.h
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/ui/GraphicBuffer.cpp;l=266-301
+     * @note None of the values from here should really be used aside from Gralloc usage, the ones in NvGraphicHandle take precedence
      */
     struct GraphicBuffer {
         constexpr static u32 Magic{'GBFR'}; //!< The magic is in little-endian, we do not need to use 'util::MakeMagic'

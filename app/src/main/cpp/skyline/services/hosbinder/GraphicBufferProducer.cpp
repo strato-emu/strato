@@ -138,8 +138,9 @@ namespace skyline::service::hosbinder {
             // All buffers must be preallocated on the client application and attached to an Android buffer using SetPreallocatedBuffer
             return AndroidStatus::NoMemory;
         }
-        auto &surface{buffer->graphicBuffer->graphicHandle.surfaces.front()};
-        if (buffer->graphicBuffer->format != format || surface.width != width || surface.height != height || (buffer->graphicBuffer->usage & usage) != usage) {
+        auto &handle{buffer->graphicBuffer->graphicHandle};
+        auto &surface{handle.surfaces.front()};
+        if (handle.format != format || surface.width != width || surface.height != height || (buffer->graphicBuffer->usage & usage) != usage) {
             state.logger->Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer->graphicBuffer->format), usage, buffer->graphicBuffer->usage);
             // Nintendo doesn't deallocate the slot which was picked in here and reallocate it as a compatible buffer
             // This is related to the comment above, Nintendo only allocates buffers on the client side
@@ -264,7 +265,7 @@ namespace skyline::service::hosbinder {
         preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
         activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; });
 
-        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
     }
 
@@ -305,8 +306,17 @@ namespace skyline::service::hosbinder {
         if (!buffer.texture) [[unlikely]] {
             // We lazily create a texture if one isn't present at queue time, this allows us to look up the texture in the texture cache
             // If we deterministically know that the texture is written by the CPU then we can allocate a CPU-shared host texture for fast uploads
+
+            auto &handle{graphicBuffer.graphicHandle};
+            if (handle.magic != NvGraphicHandle::Magic)
+                throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
+            else if (handle.surfaceCount < 1)
+                throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
+            else if (handle.surfaceCount > 1)
+                throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
+
             gpu::texture::Format format;
-            switch (graphicBuffer.format) {
+            switch (handle.format) {
                 case AndroidPixelFormat::RGBA8888:
                 case AndroidPixelFormat::RGBX8888:
                     format = gpu::format::RGBA8888Unorm;
@@ -317,16 +327,8 @@ namespace skyline::service::hosbinder {
                     break;
 
                 default:
-                    throw exception("Unknown format in buffer: '{}' ({})", ToString(graphicBuffer.format), static_cast<u32>(graphicBuffer.format));
+                    throw exception("Unknown format in buffer: '{}' ({})", ToString(handle.format), static_cast<u32>(handle.format));
             }
-
-            auto &handle{graphicBuffer.graphicHandle};
-            if (handle.magic != NvGraphicHandle::Magic)
-                throw exception("Unexpected NvGraphicHandle magic: {}", handle.surfaceCount);
-            else if (handle.surfaceCount < 1)
-                throw exception("At least one surface is required in a buffer: {}", handle.surfaceCount);
-            else if (handle.surfaceCount > 1)
-                throw exception("Multi-planar surfaces are not supported: {}", handle.surfaceCount);
 
             auto &surface{graphicBuffer.graphicHandle.surfaces.at(0)};
             if (surface.scanFormat != NvDisplayScanFormat::Progressive)
@@ -595,7 +597,7 @@ namespace skyline::service::hosbinder {
             else if (surface.layout == NvSurfaceLayout::Tiled)
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
 
-            state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(graphicBuffer->format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+            state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         } else {
             state.logger->Debug("#{} - No GraphicBuffer", slot);
         }
