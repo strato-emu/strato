@@ -10,7 +10,7 @@ namespace skyline {
 
     namespace constant {
         constexpr size_t OldLanguageCodeListSize{15}; //!< The size of the pre 4.0.0 language code list
-        constexpr size_t NewLanguageCodeListSize{17}; //!< The size of the post 4.0.0 language code list
+        constexpr size_t NewLanguageCodeListSize{18}; //!< The size of the post 10.1.0 language code list (was 17 between 4.0.0 - 10.1.0)
     }
 
     namespace languages {
@@ -32,6 +32,7 @@ namespace skyline {
             util::MakeMagic<LanguageCode>("es-419"),
             util::MakeMagic<LanguageCode>("zh-Hans"),
             util::MakeMagic<LanguageCode>("zh-Hant"),
+            util::MakeMagic<LanguageCode>("pt-BR"),
         };
 
         constexpr LanguageCode GetLanguageCode(SystemLanguage language) {
