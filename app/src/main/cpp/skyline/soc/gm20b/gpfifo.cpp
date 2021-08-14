@@ -56,7 +56,7 @@ namespace skyline::soc::gm20b {
         }
 
         pushBufferData.resize(gpEntry.size);
-        state.soc->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
+        state.soc->gm20b.gmmu.Read<u32>(pushBufferData, gpEntry.Address());
 
         for (auto entry{pushBufferData.begin()}; entry != pushBufferData.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
@@ -88,8 +88,7 @@ namespace skyline::soc::gm20b {
                     return;
 
                 default:
-                    state.logger->Warn("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
-                    break;
+                    throw exception("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
             }
         }
     }
@@ -106,7 +105,7 @@ namespace skyline::soc::gm20b {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             pushBuffers->Process([this](GpEntry gpEntry) {
-                state.logger->Debug("Processing pushbuffer: 0x{:X}", gpEntry.Address());
+                state.logger->Warn("Processing pushbuffer: 0x{:X}", gpEntry.Address());
                 Process(gpEntry);
             });
         } catch (const signal::SignalException &e) {

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <common/address_space.h>
+
 #include <services/nvdrv/devices/nvdevice.h>
 
 namespace skyline::service::nvdrv::device::nvhost {
@@ -12,18 +14,64 @@ namespace skyline::service::nvdrv::device::nvhost {
      */
     class AsGpu : public NvDevice {
       private:
-        struct AddressSpaceRegion {
+        struct Mapping {
             u8 *ptr;
+            u64 offset;
             u64 size;
             bool fixed;
+            bool bigPage; // Only valid if fixed == false
+            bool sparseAlloc;
+
+            Mapping(u8 *ptr, u64 offset, u64 size, bool fixed, bool bigPage, bool sparseAlloc) : ptr(ptr),
+                offset(offset),
+                size(size),
+                fixed(fixed),
+                bigPage(bigPage),
+                sparseAlloc(sparseAlloc) {}
         };
 
-        std::map<u64, AddressSpaceRegion> regionMap; //!< This maps the base addresses of mapped buffers to their total sizes and mapping type, this is needed as what was originally a single buffer may have been split into multiple GPU side buffers with the remap flag.
+        struct Allocation {
+            u64 size;
+            std::list<std::shared_ptr<Mapping>> mappings;
+            u32 pageSize;
+            bool sparse;
+        };
+
+        std::map<u64, std::shared_ptr<Mapping>> mappingMap; //!< This maps the base addresses of mapped buffers to their total sizes and mapping type, this is needed as what was originally a single buffer may have been split into multiple GPU side buffers with the remap flag.
+
+        std::map<u64, Allocation> allocationMap;
+
+
+        struct VM {
+            static constexpr u32 PageSize{0x1000};
+            static constexpr u32 PageSizeBits{std::countr_zero(PageSize)};
+
+            static constexpr u32 SupportedBigPageSizes{0x30000};
+            static constexpr u32 DefaultBigPageSize{0x20000};
+            u32 bigPageSize{DefaultBigPageSize};
+            u32 bigPageSizeBits{std::countr_zero(DefaultBigPageSize)};
+
+            static constexpr u32 VaStartShift{10};
+            static constexpr u64 DefaultVaSplit{1ULL << 34};
+            static constexpr u64 DefaultVaRange{1ULL << 37};
+            u64 vaRangeStart{DefaultBigPageSize << VaStartShift};
+            u64 vaRangeSplit{DefaultVaSplit};
+            u64 vaRangeEnd{DefaultVaRange};
+
+            using Allocator = FlatAllocator<u32, 0, 32>;
+
+            std::unique_ptr<Allocator> bigPageAllocator{};
+            std::unique_ptr<Allocator> smallPageAllocator{};
+
+            bool initialised{};
+        } vm;
+
 
       public:
         struct MappingFlags {
             bool fixed : 1;
-            u8 _pad0_ : 7;
+            bool sparse : 1;
+            u8 _pad0_ : 6;
             bool remap : 1;
             u32 _pad1_ : 23;
         };
@@ -77,7 +125,7 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Maps a region into this address space with extra parameters
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_MAP_BUFFER_EX
          */
-        PosixResult MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, InOut<u32> pageSize, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset);
+        PosixResult MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset);
 
         /**
          * @brief Returns info about the address space and its page sizes
@@ -94,7 +142,7 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Allocates this address space with the given parameters
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_AS_EX
          */
-        PosixResult AllocAsEx(In<u32> bigPageSize, In<FileDescriptor> asFd, In<u32> flags, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit);
+        PosixResult AllocAsEx(In<u32> flags, In<FileDescriptor> asFd, In<u32> bigPageSize, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit);
 
         /**
          * @brief Remaps a region of the GPU address space

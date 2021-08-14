@@ -62,7 +62,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         }
     }
 
-#include <services/nvdrv/devices/deserialisation/macro_def.h>
+#include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 CtrlGpuMagic{0x47};
 
     IOCTL_HANDLER_FUNC(CtrlGpu, ({
@@ -77,5 +77,5 @@ namespace skyline::service::nvdrv::device::nvhost {
         IOCTL_CASE_ARGS(OUT,   SIZE(0x8),  MAGIC(CtrlGpuMagic), FUNC(0x14),
                         GetActiveSlotMask,  ARGS(Out<u32>, Out<u32>))
     }))
-#include <services/nvdrv/devices/deserialisation/macro_undef.h>
+#include <services/nvdrv/devices/deserialisation/macro_undef.inc>
 }

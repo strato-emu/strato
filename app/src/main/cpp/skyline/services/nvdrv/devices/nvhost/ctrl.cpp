@@ -234,7 +234,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         return nullptr;
     }
 
-#include <services/nvdrv/devices/deserialisation/macro_def.h>
+#include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 CtrlMagic{0};
 
     IOCTL_HANDLER_FUNC(Ctrl, ({
@@ -254,5 +254,5 @@ namespace skyline::service::nvdrv::device::nvhost {
         IOCTL_CASE_RESULT(INOUT, SIZE(0x183), MAGIC(CtrlMagic), FUNC(0x1B),
                           PosixResult::InvalidArgument) // GetConfig isn't available in production
     }))
-#include <services/nvdrv/devices/deserialisation/macro_undef.h>
+#include <services/nvdrv/devices/deserialisation/macro_undef.inc>
 }

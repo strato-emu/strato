@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <soc/gmmu.h>
+#include <common/address_space.h>
 #include <soc/gm20b/engines/maxwell_3d.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d {

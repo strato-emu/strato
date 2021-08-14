@@ -104,7 +104,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         }
     }
 
-#include <services/nvdrv/devices/deserialisation/macro_def.h>
+#include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 GpuChannelUserMagic{0x47};
     static constexpr u32 GpuChannelMagic{0x48};
 
@@ -138,5 +138,5 @@ namespace skyline::service::nvdrv::device::nvhost {
         INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(GpuChannelMagic), FUNC(0x1B),
                                SubmitGpfifo2, ARGS(In<u64>, In<u32>, InOut<SubmitGpfifoFlags>, InOut<Fence>))
     }))
-#include <services/nvdrv/devices/deserialisation/macro_undef.h>
+#include <services/nvdrv/devices/deserialisation/macro_undef.inc>
 }

@@ -13,6 +13,7 @@ namespace skyline::service {
         Busy = 16, // EBUSY
         InvalidArgument = 22, // EINVAL
         InappropriateIoctlForDevice = 25, // ENOTTY
+        FunctionNotImplemented = 38, // ENOSYS
         NotSupported = 95, // EOPNOTSUPP, ENOTSUP
         TimedOut = 110, // ETIMEDOUT
 

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/trace.h>
 #include <common.h>
 
 namespace skyline {
@@ -51,10 +52,15 @@ namespace skyline {
          */
         template<typename F>
         [[noreturn]] void Process(F function) {
+            TRACE_EVENT_BEGIN("containers", "CircularQueue::Process");
+
             while (true) {
                 if (start == end) {
                     std::unique_lock lock(productionMutex);
+
+                    TRACE_EVENT_END("containers");
                     produceCondition.wait(lock, [this]() { return start != end; });
+                    TRACE_EVENT_BEGIN("containers", "CircularQueue::Process");
                 }
 
                 while (start != end) {

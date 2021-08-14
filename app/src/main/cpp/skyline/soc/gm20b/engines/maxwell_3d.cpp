@@ -157,7 +157,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         switch (registers.semaphore.info.structureSize) {
             case Registers::SemaphoreInfo::StructureSize::OneWord:
-                state.soc->gmmu.Write<u32>(static_cast<u32>(result), registers.semaphore.address.Pack());
+                state.soc->gm20b.gmmu.Write<u32>(registers.semaphore.address.Pack(), static_cast<u32>(result));
                 break;
             case Registers::SemaphoreInfo::StructureSize::FourWords: {
                 // Convert the current nanosecond time to GPU ticks
@@ -167,7 +167,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u64 nsTime{util::GetTimeNs()};
                 u64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                state.soc->gmmu.Write<FourWordResult>(FourWordResult{result, timestamp}, registers.semaphore.address.Pack());
+                state.soc->gm20b.gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(), FourWordResult{result, timestamp});
                 break;
             }
         }
