@@ -64,7 +64,8 @@ namespace skyline::loader {
         }
 
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
-        auto loadInfo{LoadExecutable(process, state, executable, 0, nacp->applicationName.empty() ? "main.nro" : nacp->applicationName + ".nro")};
+        auto applicationName{nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage())};
+        auto loadInfo{LoadExecutable(process, state, executable, 0, applicationName.empty() ? "main.nro" : applicationName + ".nro")};
         state.process->memory.InitializeRegions(loadInfo.base, loadInfo.size);
 
         return loadInfo.entry;

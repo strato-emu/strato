@@ -11,7 +11,7 @@
 #include "skyline/loader/nsp.h"
 #include "skyline/jvm.h"
 
-extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring) {
+extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
     skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
 
     auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
@@ -53,8 +53,12 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
     jfieldID rawIconField{env->GetFieldID(clazz, "rawIcon", "[B")};
 
     if (loader->nacp) {
-        env->SetObjectField(thiz, applicationNameField, env->NewStringUTF(loader->nacp->applicationName.c_str()));
-        env->SetObjectField(thiz, applicationAuthorField, env->NewStringUTF(loader->nacp->applicationPublisher.c_str()));
+        auto language{skyline::languages::GetApplicationLanguage(static_cast<skyline::languages::SystemLanguage>(systemLanguage))};
+        if ((1 << static_cast<skyline::u32>(language) & loader->nacp->supportedTitleLanguages) == 0)
+            language = loader->nacp->GetFirstSupportedTitleLanguage();
+
+        env->SetObjectField(thiz, applicationNameField, env->NewStringUTF(loader->nacp->GetApplicationName(language).c_str()));
+        env->SetObjectField(thiz, applicationAuthorField, env->NewStringUTF(loader->nacp->GetApplicationPublisher(language).c_str()));
 
         auto icon{loader->GetIcon()};
         jbyteArray iconByteArray{env->NewByteArray(icon.size())};

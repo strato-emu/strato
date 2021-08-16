@@ -103,7 +103,7 @@ data class AppEntry(var name : String, var author : String?, var icon : Bitmap?,
 /**
  * This class is used as interface between libskyline and Kotlin for loaders
  */
-internal class RomFile(context : Context, format : RomFormat, uri : Uri) {
+internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemLanguage : Int) {
     /**
      * @note This field is filled in by native code
      */
@@ -130,7 +130,7 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri) {
         System.loadLibrary("skyline")
 
         context.contentResolver.openFileDescriptor(uri, "r")!!.use {
-            result = LoaderResult.get(populate(format.ordinal, it.fd, context.filesDir.canonicalPath + "/"))
+            result = LoaderResult.get(populate(format.ordinal, it.fd, context.filesDir.canonicalPath + "/", systemLanguage))
         }
 
         appEntry = applicationName?.let { name ->
@@ -149,5 +149,5 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri) {
      * @param appFilesPath Path to internal app data storage, needed to read imported keys
      * @return A pointer to the newly allocated object, or 0 if the ROM is invalid
      */
-    private external fun populate(format : Int, romFd : Int, appFilesPath : String) : Int
+    private external fun populate(format : Int, romFd : Int, appFilesPath : String, systemLanguage : Int) : Int
 }

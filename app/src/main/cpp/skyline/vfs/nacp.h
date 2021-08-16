@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/languages.h>
 #include "backing.h"
 
 namespace skyline::vfs {
@@ -24,17 +25,24 @@ namespace skyline::vfs {
       public:
         struct NacpData {
             std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
-            u8 _pad0_[0x78];
-            u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
+            u8 _pad0_[0x2C];
+            u32 supportedLanguageFlag; //!< A bitmask containing the game's supported languages
             u8 _pad1_[0x78];
+            u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
+            u8 _pad2_[0x48];
             std::array<u8, 8> seedForPseudoDeviceId; //!< Seed that is combined with the device seed for generating the pseudo-device ID
-            u8 _pad2_[0xF00];
+            u8 _pad3_[0xF00];
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
         NACP(const std::shared_ptr<vfs::Backing> &backing);
 
-        std::string applicationName; //!< The name of the application in the currently selected language
-        std::string applicationPublisher; //!< The publisher of the application in the currently selected language
+        languages::ApplicationLanguage GetFirstSupportedTitleLanguage();
+
+        std::string GetApplicationName(languages::ApplicationLanguage language);
+
+        std::string GetApplicationPublisher(languages::ApplicationLanguage language);
+
+        u32 supportedTitleLanguages{0};
     };
 }
