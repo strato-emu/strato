@@ -32,6 +32,7 @@
 #include "nfp/IUserManager.h"
 #include "nifm/IStaticService.h"
 #include "socket/bsd/IClient.h"
+#include "spl/IRandomInterface.h"
 #include "ssl/ISslService.h"
 #include "prepo/IPrepoService.h"
 #include "mmnv/IRequest.h"
@@ -95,6 +96,7 @@ namespace skyline::service {
             SERVICE_CASE(nfp::IUserManager, "nfp:user")
             SERVICE_CASE(nifm::IStaticService, "nifm:u")
             SERVICE_CASE(socket::IClient, "bsd:u")
+            SERVICE_CASE(spl::IRandomInterface, "csrng")
             SERVICE_CASE(ssl::ISslService, "ssl")
             SERVICE_CASE(prepo::IPrepoService, "prepo:u")
             SERVICE_CASE(mmnv::IRequest, "mm:u")

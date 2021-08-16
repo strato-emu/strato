@@ -217,6 +217,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nifm/IGeneralService.cpp
         ${source_DIR}/skyline/services/nifm/IRequest.cpp
         ${source_DIR}/skyline/services/socket/bsd/IClient.cpp
+        ${source_DIR}/skyline/services/spl/IRandomInterface.cpp
         ${source_DIR}/skyline/services/ssl/ISslService.cpp
         ${source_DIR}/skyline/services/ssl/ISslContext.cpp
         ${source_DIR}/skyline/services/prepo/IPrepoService.cpp

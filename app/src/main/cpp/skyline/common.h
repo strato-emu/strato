@@ -22,6 +22,7 @@
 #include <memory>
 #include <compare>
 #include <variant>
+#include <random>
 #include <sys/mman.h>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -337,6 +338,21 @@ namespace skyline {
          */
         constexpr std::size_t Hash(std::string_view view) {
             return frz::elsa<frz::string>{}(frz::string(view.data(), view.size()), 0);
+        }
+
+        namespace detail {
+            static thread_local std::mt19937_64 generator{GetTimeTicks()};
+        }
+
+        /**
+         * @brief Fills an array with random data from a Mersenne Twister pseudo-random generator
+         * @note The generator is seeded with the the current time in ticks
+         */
+        template<typename T> requires (std::is_integral_v<T>)
+        void FillRandomBytes(std::span<T> in) {
+            std::independent_bits_engine<std::mt19937_64, std::numeric_limits<T>::digits, T> gen(detail::generator);
+
+            std::generate(in.begin(), in.end(), gen);
         }
     }
 
