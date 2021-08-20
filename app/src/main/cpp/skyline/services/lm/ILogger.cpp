@@ -112,8 +112,11 @@ namespace skyline::service::lm {
             message << logMessage.thread << ':';
         if (logMessage.time)
             message << logMessage.time << "s:";
-        if (!logMessage.message.empty())
+        if (!logMessage.message.empty()) {
+            if (logMessage.message.ends_with('\n'))
+                logMessage.message.remove_suffix(1);
             message << ' ' << logMessage.message;
+        }
         if (logMessage.dropCount)
             message << " (Dropped Messages: " << logMessage.time << ')';
 

@@ -198,11 +198,11 @@ namespace skyline {
             PayloadHeader *payload{};
             u8 *cmdArg{}; //!< A pointer to the data payload
             u64 cmdArgSz{}; //!< The size of the data payload
-            std::vector<KHandle> copyHandles; //!< The handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
-            std::vector<KHandle> moveHandles; //!< The handles that should be moved from the server to the client process rather than copied
-            std::vector<KHandle> domainObjects;
-            std::vector<span<u8>> inputBuf;
-            std::vector<span<u8>> outputBuf;
+            boost::container::small_vector<KHandle, 2> copyHandles; //!< The handles that should be copied from the server to the client process (The difference is just to match application expectations, there is no real difference b/w copying and moving handles)
+            boost::container::small_vector<KHandle, 2> moveHandles; //!< The handles that should be moved from the server to the client process rather than copied
+            boost::container::small_vector<KHandle, 2> domainObjects;
+            boost::container::small_vector<span<u8>, 3> inputBuf;
+            boost::container::small_vector<span<u8>, 3> outputBuf;
 
             IpcRequest(bool isDomain, const DeviceState &state);
 
@@ -251,9 +251,9 @@ namespace skyline {
 
           public:
             Result errorCode{}; //!< The error code to respond with, it's 0 (Success) by default
-            std::vector<KHandle> copyHandles;
-            std::vector<KHandle> moveHandles;
-            std::vector<KHandle> domainObjects;
+            boost::container::small_vector<KHandle, 2> copyHandles;
+            boost::container::small_vector<KHandle, 2> moveHandles;
+            boost::container::small_vector<KHandle, 2> domainObjects;
 
             IpcResponse(const DeviceState &state);
 

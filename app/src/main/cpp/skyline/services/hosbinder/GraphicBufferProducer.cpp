@@ -98,7 +98,7 @@ namespace skyline::service::hosbinder {
 
         std::scoped_lock lock(mutex);
         // We don't need a loop here since the consumer is blocking and instantly frees all buffers
-        // If a valid slot is not found on the first iteration then it would be stuck in an infloop
+        // If a valid slot is not found on the first iteration then it would be stuck in an infinite loop
         // As a result of this, we simply warn and return InvalidOperation to the guest
         auto buffer{queue.end()};
         size_t dequeuedSlotCount{};
@@ -114,7 +114,7 @@ namespace skyline::service::hosbinder {
         }
 
         if (buffer != queue.end()) {
-            slot = std::distance(queue.begin(), buffer);
+            slot = static_cast<i32>(std::distance(queue.begin(), buffer));
         } else if (async) {
             return AndroidStatus::WouldBlock;
         } else if (dequeuedSlotCount == queue.size()) {

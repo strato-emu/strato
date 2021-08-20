@@ -279,7 +279,7 @@ namespace skyline::gpu {
 
         if (frameTimestamp) {
             i64 now{static_cast<i64>(util::GetTimeNs())};
-            auto sampleWeight{swapInterval ? constant::NsInSecond / (refreshCycleDuration * swapInterval) : 10}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
+            i64 sampleWeight{static_cast<i64>(swapInterval ? constant::NsInSecond / (refreshCycleDuration * swapInterval) : 10)}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
 
             auto weightedAverage{[](auto weight, auto previousAverage, auto current) {
                 return (((weight - 1) * previousAverage) + current) / weight;
@@ -293,13 +293,13 @@ namespace skyline::gpu {
             averageFrametimeDeviationNs = weightedAverage(sampleWeight, averageFrametimeDeviationNs, currentFrametimeDeviation);
             AverageFrametimeDeviationMs = static_cast<jfloat>(averageFrametimeDeviationNs) / constant::NsInMillisecond;
 
-            Fps = std::round(static_cast<float>(constant::NsInSecond) / averageFrametimeNs);
+            Fps = static_cast<jint>(std::round(static_cast<float>(constant::NsInSecond) / static_cast<float>(averageFrametimeNs)));
 
             TRACE_EVENT_INSTANT("gpu", "Present", presentationTrack, "FrameTimeNs", now - frameTimestamp, "Fps", Fps);
 
             frameTimestamp = now;
         } else {
-            frameTimestamp = util::GetTimeNs();
+            frameTimestamp = static_cast<i64>(util::GetTimeNs());
         }
     }
 
