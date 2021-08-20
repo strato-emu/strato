@@ -7,66 +7,48 @@
 #include "texture.h"
 
 namespace skyline::gpu {
-    GuestTexture::GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format &format, texture::TileMode tiling, texture::TileConfig layout) : state(state), pointer(pointer), dimensions(dimensions), format(format), tileMode(tiling), tileConfig(layout) {}
-
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::Image backing, texture::Dimensions pDimensions, const texture::Format &pFormat, std::optional<vk::ImageTiling> tiling, vk::ImageLayout layout, texture::Swizzle swizzle) {
-        if (!host.expired())
-            throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(*state.gpu, backing, shared_from_this(), pDimensions ? pDimensions : dimensions, pFormat ? pFormat : format, layout, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
-        host = sharedHost;
-        return sharedHost;
-    }
-
-    std::shared_ptr<Texture> GuestTexture::InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling, vk::ImageLayout layout, const texture::Format &pFormat, texture::Dimensions pDimensions, texture::Swizzle swizzle) {
-        if (!host.expired())
-            throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-        auto sharedHost{std::make_shared<Texture>(*state.gpu, std::move(backing), shared_from_this(), pDimensions ? pDimensions : dimensions, pFormat ? pFormat : format, layout, tiling ? *tiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear, swizzle)};
-        host = sharedHost;
-        return sharedHost;
-    }
-
-    std::shared_ptr<Texture> GuestTexture::CreateTexture(vk::ImageUsageFlags usage, std::optional<vk::ImageTiling> pTiling, vk::ImageLayout initialLayout, const texture::Format &pFormat, texture::Dimensions pDimensions, texture::Swizzle swizzle) {
-        if (!host.expired())
-            throw exception("Trying to create multiple Texture objects from a single GuestTexture");
-
-        pDimensions = pDimensions ? pDimensions : dimensions;
-        const auto &lFormat{pFormat ? pFormat : format};
-        auto tiling{pTiling ? *pTiling : (tileMode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear};
-        vk::ImageCreateInfo imageCreateInfo{
-            .imageType = pDimensions.GetType(),
-            .format = lFormat,
-            .extent = pDimensions,
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = vk::SampleCountFlagBits::e1,
-            .tiling = tiling,
-            .usage = usage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
-            .sharingMode = vk::SharingMode::eExclusive,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &state.gpu->vkQueueFamilyIndex,
-            .initialLayout = initialLayout,
-        };
-
-        auto sharedHost{std::make_shared<Texture>(*state.gpu, tiling != vk::ImageTiling::eLinear ? state.gpu->memory.AllocateImage(imageCreateInfo) : state.gpu->memory.AllocateMappedImage(imageCreateInfo), shared_from_this(), pDimensions, lFormat, initialLayout, tiling, swizzle)};
-        host = sharedHost;
-        return sharedHost;
-    }
-
-    Texture::Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), backing(std::move(backing)), layout(layout), guest(std::move(guest)), dimensions(dimensions), format(format), tiling(tiling), mapping(mapping) {
+    Texture::Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), backing(std::move(backing)), layout(layout), guest(std::move(guest)), dimensions(dimensions), format(format), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {
         if (GetBacking())
             SynchronizeHost();
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), backing(std::move(backing)), guest(nullptr), dimensions(dimensions), format(format), layout(layout), tiling(tiling), mapping(mapping) {}
+    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), backing(std::move(backing)), dimensions(dimensions), format(format), layout(layout), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {}
 
-    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vk::ComponentMapping mapping) : gpu(gpu), guest(nullptr), dimensions(dimensions), format(format), layout(initialLayout), tiling(tiling), mapping(mapping) {
+    Texture::Texture(GPU &pGpu, GuestTexture pGuest)
+        : gpu(pGpu),
+          guest(std::move(pGuest)),
+          dimensions(guest->dimensions),
+          format(guest->format),
+          layout(vk::ImageLayout::eGeneral),
+          tiling((guest->tileConfig.mode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear),
+          mipLevels(1),
+          layerCount(guest->layerCount),
+          sampleCount(vk::SampleCountFlagBits::e1) {
+        vk::ImageCreateInfo imageCreateInfo{
+            .imageType = guest->dimensions.GetType(),
+            .format = *guest->format,
+            .extent = guest->dimensions,
+            .mipLevels = 1,
+            .arrayLayers = guest->layerCount,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = tiling,
+            .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+            .sharingMode = vk::SharingMode::eExclusive,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
+            .initialLayout = layout,
+        };
+        backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
+    }
+
+    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), dimensions(dimensions), format(format), layout(initialLayout), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {
         vk::ImageCreateInfo imageCreateInfo{
             .imageType = dimensions.GetType(),
-            .format = format,
+            .format = *format,
             .extent = dimensions,
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = vk::SampleCountFlagBits::e1,
+            .mipLevels = mipLevels,
+            .arrayLayers = layerCount,
+            .samples = sampleCount,
             .tiling = tiling,
             .usage = usage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
             .sharingMode = vk::SharingMode::eExclusive,
@@ -132,10 +114,14 @@ namespace skyline::gpu {
     void Texture::SynchronizeHost() {
         if (!guest)
             throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
+        else if (guest->mappings.size() != 1)
+            throw exception("Synchronization of non-contigious textures is not supported");
+        else if (guest->dimensions != dimensions)
+            throw exception("Guest and host dimensions being different is not supported currently");
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
-        auto pointer{guest->pointer};
-        auto size{format.GetSize(dimensions)};
+        auto pointer{guest->mappings[0].data()};
+        auto size{format->GetSize(dimensions)};
 
         u8 *bufferData;
         auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
@@ -154,24 +140,24 @@ namespace skyline::gpu {
             }
         }()};
 
-        if (guest->tileMode == texture::TileMode::Block) {
+        if (guest->tileConfig.mode == texture::TileMode::Block) {
             // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
             constexpr u8 SectorWidth{16}; // The width of a sector in bytes
             constexpr u8 SectorHeight{2}; // The height of a sector in lines
             constexpr u8 GobWidth{64}; // The width of a GOB in bytes
             constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
-            auto blockHeight{guest->tileConfig.blockHeight}; // The height of the blocks in GOBs
-            auto robHeight{GobHeight * blockHeight}; // The height of a single ROB (Row of Blocks) in lines
-            auto surfaceHeight{dimensions.height / guest->format.blockHeight}; // The height of the surface in lines
-            auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; // The height of the surface in ROBs (Row Of Blocks)
-            auto robWidthBytes{util::AlignUp((guest->tileConfig.surfaceWidth / guest->format.blockWidth) * guest->format.bpb, GobWidth)}; // The width of a ROB in bytes
-            auto robWidthBlocks{robWidthBytes / GobWidth}; // The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
-            auto robBytes{robWidthBytes * robHeight}; // The size of a ROB in bytes
-            auto gobYOffset{robWidthBytes * GobHeight}; // The offset of the next Y-axis GOB from the current one in linear space
+            auto blockHeight{guest->tileConfig.blockHeight}; //!< The height of the blocks in GOBs
+            auto robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
+            auto surfaceHeight{guest->dimensions.height / guest->format->blockHeight}; //!< The height of the surface in lines
+            auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
+            auto robWidthBytes{util::AlignUp((guest->dimensions.width / guest->format->blockWidth) * guest->format->bpb, GobWidth)}; //!< The width of a ROB in bytes
+            auto robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
+            auto robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
+            auto gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
 
-            auto inputSector{pointer}; // The address of the input sector
-            auto outputRob{bufferData}; // The address of the output block
+            auto inputSector{pointer}; //!< The address of the input sector
+            auto outputRob{bufferData}; //!< The address of the output block
 
             for (u32 rob{}, y{}, paddingY{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
                 auto outputBlock{outputRob}; // We iterate through a block independently of the ROB
@@ -195,24 +181,24 @@ namespace skyline::gpu {
                 blockHeight = static_cast<u8>(std::min(static_cast<u32>(blockHeight), (surfaceHeight - y) / GobHeight)); // Calculate the amount of Y GOBs which aren't padding
                 paddingY = (guest->tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight); // Calculate the amount of padding between contiguous sectors
             }
-        } else if (guest->tileMode == texture::TileMode::Pitch) {
-            auto sizeLine{guest->format.GetSize(dimensions.width, 1)}; // The size of a single line of pixel data
-            auto sizeStride{guest->format.GetSize(guest->tileConfig.pitch, 1)}; // The size of a single stride of pixel data
+        } else if (guest->tileConfig.mode == texture::TileMode::Pitch) {
+            auto sizeLine{guest->format->GetSize(guest->dimensions.width, 1)}; //!< The size of a single line of pixel data
+            auto sizeStride{guest->format->GetSize(guest->tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
 
-            auto inputLine{pointer}; // The address of the input line
-            auto outputLine{bufferData}; // The address of the output line
+            auto inputLine{pointer}; //!< The address of the input line
+            auto outputLine{bufferData}; //!< The address of the output line
 
-            for (u32 line{}; line < dimensions.height; line++) {
+            for (u32 line{}; line < guest->dimensions.height; line++) {
                 std::memcpy(outputLine, inputLine, sizeLine);
                 inputLine += sizeStride;
                 outputLine += sizeLine;
             }
-        } else if (guest->tileMode == texture::TileMode::Linear) {
+        } else if (guest->tileConfig.mode == texture::TileMode::Linear) {
             std::memcpy(bufferData, pointer, size);
         }
 
         if (stagingBuffer) {
-            if (WaitOnBacking() && size != format.GetSize(dimensions))
+            if (WaitOnBacking() && size != format->GetSize(dimensions))
                 throw exception("Backing properties changing during sync is not supported");
             WaitOnFence();
 
@@ -269,6 +255,8 @@ namespace skyline::gpu {
     void Texture::SynchronizeGuest() {
         if (!guest)
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
+        else if (guest->mappings.size() != 1)
+            throw exception("Synchronization of non-contigious textures is not supported");
 
         WaitOnBacking();
         WaitOnFence();
@@ -277,7 +265,7 @@ namespace skyline::gpu {
         // TODO: Write Host -> Guest Synchronization
     }
 
-    void Texture::CopyFrom(std::shared_ptr<Texture> source) {
+    void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
         WaitOnBacking();
         WaitOnFence();
 
@@ -302,11 +290,7 @@ namespace skyline::gpu {
                     .newLayout = vk::ImageLayout::eTransferSrcOptimal,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .levelCount = 1,
-                        .layerCount = 1,
-                    },
+                    .subresourceRange = subresource,
                 });
             }
 
@@ -320,28 +304,25 @@ namespace skyline::gpu {
                     .newLayout = vk::ImageLayout::eTransferDstOptimal,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .levelCount = 1,
-                        .layerCount = 1,
-                    },
+                    .subresourceRange = subresource,
                 });
 
                 if (layout == vk::ImageLayout::eUndefined)
                     layout = vk::ImageLayout::eTransferDstOptimal;
             }
 
-            commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
-                .srcSubresource = {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .layerCount = 1,
-                },
-                .dstSubresource = {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .layerCount = 1,
-                },
-                .extent = dimensions,
-            });
+            vk::ImageSubresourceLayers subresourceLayers{
+                .aspectMask = subresource.aspectMask,
+                .mipLevel = subresource.baseMipLevel,
+                .baseArrayLayer = subresource.baseArrayLayer,
+                .layerCount = subresource.layerCount == VK_REMAINING_ARRAY_LAYERS ? layerCount - subresource.baseArrayLayer : subresource.layerCount,
+            };
+            for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? mipLevels - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
+                commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
+                    .srcSubresource = subresourceLayers,
+                    .dstSubresource = subresourceLayers,
+                    .extent = dimensions,
+                });
 
             if (layout != vk::ImageLayout::eTransferDstOptimal)
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
@@ -352,11 +333,7 @@ namespace skyline::gpu {
                     .newLayout = layout,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .levelCount = 1,
-                        .layerCount = 1,
-                    },
+                    .subresourceRange = subresource,
                 });
 
             if (layout != vk::ImageLayout::eTransferSrcOptimal)
@@ -368,13 +345,38 @@ namespace skyline::gpu {
                     .newLayout = source->layout,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .levelCount = 1,
-                        .layerCount = 1,
-                    },
+                    .subresourceRange = subresource,
                 });
         });
-        cycle->AttachObjects(source, shared_from_this());
+        cycle->AttachObjects(std::move(source), shared_from_this());
+    }
+
+    TextureView::TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : backing(std::move(backing)), type(type), format(format), mapping(mapping), range(range) {}
+
+    vk::ImageView TextureView::GetView() {
+        /*
+        if (view)
+            return **view;
+
+        auto viewType{[&]() {
+            switch (backing->dimensions.GetType()) {
+                case vk::ImageType::e1D:
+                    return range.layerCount > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
+                case vk::ImageType::e2D:
+                    return range.layerCount > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+                case vk::ImageType::e3D:
+                    return vk::ImageViewType::e3D;
+            }
+        }()};
+
+        return *view.emplace(backing->gpu.vkDevice, vk::ImageViewCreateInfo{
+            .image = backing->GetBacking(),
+            .viewType = vk::ImageViewType::eCube,
+            .format = format ? *format : *backing->format,
+            .components = mapping,
+            .subresourceRange = range,
+        });
+         */
+        throw exception("TODO: TextureView::GetView");
     }
 }

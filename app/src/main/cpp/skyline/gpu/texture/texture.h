@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpu/fence_cycle.h>
+#include <gpu/memory_manager.h>
 
 namespace skyline::gpu {
     namespace texture {
@@ -27,9 +27,9 @@ namespace skyline::gpu {
             auto operator<=>(const Dimensions &) const = default;
 
             constexpr vk::ImageType GetType() const {
-                if (depth)
+                if (depth > 1)
                     return vk::ImageType::e3D;
-                else if (width)
+                else if (height > 1)
                     return vk::ImageType::e2D;
                 else
                     return vk::ImageType::e1D;
@@ -61,11 +61,12 @@ namespace skyline::gpu {
         /**
          * @note Blocks refers to the atomic unit of a compressed format (IE: The minimum amount of data that can be decompressed)
          */
-        struct Format {
+        struct FormatBase {
             u8 bpb{}; //!< Bytes Per Block, this is used instead of bytes per pixel as that might not be a whole number for compressed formats
             u16 blockHeight{}; //!< The height of a block in pixels
             u16 blockWidth{}; //!< The width of a block in pixels
             vk::Format vkFormat{vk::Format::eUndefined};
+            vk::ImageAspectFlags vkAspect{vk::ImageAspectFlagBits::eColor};
 
             constexpr bool IsCompressed() const {
                 return (blockHeight != 1) || (blockWidth != 1);
@@ -85,11 +86,11 @@ namespace skyline::gpu {
                 return GetSize(dimensions.width, dimensions.height, dimensions.depth);
             }
 
-            constexpr bool operator==(const Format &format) const {
+            constexpr bool operator==(const FormatBase &format) const {
                 return vkFormat == format.vkFormat;
             }
 
-            constexpr bool operator!=(const Format &format) const {
+            constexpr bool operator!=(const FormatBase &format) const {
                 return vkFormat != format.vkFormat;
             }
 
@@ -102,6 +103,38 @@ namespace skyline::gpu {
              */
             constexpr operator bool() const {
                 return bpb;
+            }
+
+            /**
+             * @return If the supplied format is texel-layout compatible with the current format
+             */
+            constexpr bool IsCompatible(const FormatBase &other) const {
+                return bpb == other.bpb && blockHeight == other.blockHeight && blockWidth == other.blockWidth;
+            }
+        };
+
+        /**
+         * @brief A wrapper around a pointer to underlying format metadata to prevent redundant copies
+         */
+        class Format {
+          private:
+            const FormatBase *base;
+
+          public:
+            constexpr Format(const FormatBase &base) : base(&base) {}
+
+            constexpr Format() : base(nullptr) {}
+
+            constexpr const FormatBase *operator->() const {
+                return base;
+            }
+
+            constexpr const FormatBase &operator*() const {
+                return *base;
+            }
+
+            constexpr operator bool() const {
+                return base;
             }
         };
 
@@ -118,13 +151,26 @@ namespace skyline::gpu {
         /**
          * @brief The parameters of the tiling mode, covered in Table 76 in the Tegra X1 TRM
          */
-        union TileConfig {
-            struct {
-                u8 blockHeight; //!< The height of the blocks in GOBs
-                u8 blockDepth;  //!< The depth of the blocks in GOBs
-                u16 surfaceWidth;  //!< The width of a surface in samples
+        struct TileConfig {
+            TileMode mode;
+            union {
+                struct {
+                    u8 blockHeight; //!< The height of the blocks in GOBs
+                    u8 blockDepth;  //!< The depth of the blocks in GOBs
+                };
+                u32 pitch; //!< The pitch of the texture if it's pitch linear
             };
-            u32 pitch; //!< The pitch of the texture if it's pitch linear
+
+            constexpr bool operator==(const TileConfig &other) const {
+                if (mode == other.mode)
+                    if (mode == TileMode::Linear)
+                        return true;
+                    else if (mode == TileMode::Pitch)
+                        return pitch == other.pitch;
+                    else if (mode == TileMode::Block)
+                        return blockHeight == other.blockHeight && blockDepth == other.blockDepth;
+                return false;
+            }
         };
 
         enum class SwizzleChannel : u8 {
@@ -168,56 +214,73 @@ namespace skyline::gpu {
                 };
             }
         };
+
+        /**
+         * @brief The type of a texture to determine the access patterns for it
+         * @note This is effectively the Tegra X1 texture types with the 1DBuffer + 2DNoMipmap removed as those are handled elsewhere
+         * @note We explicitly utilize Vulkan types here as it provides the most efficient conversion while not exposing Vulkan to the outer API
+         */
+        enum class TextureType {
+            e1D = VK_IMAGE_VIEW_TYPE_1D,
+            e2D = VK_IMAGE_VIEW_TYPE_2D,
+            e3D = VK_IMAGE_VIEW_TYPE_3D,
+            eCube = VK_IMAGE_VIEW_TYPE_CUBE,
+            e1DArray = VK_IMAGE_VIEW_TYPE_1D_ARRAY,
+            e2DArray = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+            eCubeArray = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+        };
     }
 
     class Texture;
     class PresentationEngine; //!< A forward declaration of PresentationEngine as we require it to be able to create a Texture object
 
     /**
-     * @brief A texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
+     * @brief A descriptor for a texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
      */
-    class GuestTexture : public std::enable_shared_from_this<GuestTexture> {
-      private:
-        const DeviceState &state;
+    struct GuestTexture {
+        using Mappings = boost::container::small_vector<span < u8>, 3>;
 
-      public:
-        u8 *pointer; //!< The address of the texture in guest memory
-        std::weak_ptr<Texture> host; //!< A host texture (if any) that was created from this guest texture
+        Mappings mappings; //!< Spans to CPU memory for the underlying data backing this texture
         texture::Dimensions dimensions;
         texture::Format format;
-        texture::TileMode tileMode;
         texture::TileConfig tileConfig;
+        texture::TextureType type;
+        u16 baseArrayLayer;
+        u16 layerCount;
+        u32 layerStride; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available
 
-        GuestTexture(const DeviceState &state, u8 *pointer, texture::Dimensions dimensions, const texture::Format &format, texture::TileMode tileMode = texture::TileMode::Linear, texture::TileConfig tileConfig = {});
+        GuestTexture() {}
 
-        constexpr size_t Size() {
-            return format.GetSize(dimensions);
-        }
+        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(mappings), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
+
+        GuestTexture(span <u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(1, mapping), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
+    };
+
+    class TextureManager;
+
+    /**
+     * @brief A view into a specific subresource of a Texture
+     */
+    class TextureView {
+      private:
+        vk::raii::ImageView *view{};
+
+      public:
+        std::shared_ptr<Texture> backing;
+        vk::ImageViewType type;
+        texture::Format format;
+        vk::ComponentMapping mapping;
+        vk::ImageSubresourceRange range;
 
         /**
-         * @brief Creates a corresponding host texture object for this guest texture
-         * @param backing The Vulkan Image that is used as the backing on the host, its lifetime is not managed by the host texture object
-         * @param dimensions The dimensions of the host texture (Defaults to the dimensions of the host texture)
-         * @param format The format of the host texture (Defaults to the format of the guest texture)
-         * @param tiling The tiling used by the image on host, this is the same as guest by default
-         * @param layout The initial layout of the Vulkan Image, this is used for efficient layout management
-         * @param swizzle The channel swizzle of the host texture (Defaults to no channel swizzling)
-         * @return A shared pointer to the host texture object
-         * @note There can only be one host texture for a corresponding guest texture
-         * @note If any of the supplied parameters do not match up with the backing then it's undefined behavior
+         * @param format A compatible format for the texture view (Defaults to the format of the backing texture)
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::Image backing, texture::Dimensions dimensions = {}, const texture::Format &format = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, texture::Swizzle swizzle = {});
+        TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format = {}, vk::ComponentMapping mapping = {});
 
         /**
-         * @note As a RAII object is used here, the lifetime of the backing is handled by the host texture
+         * @return A Vulkan Image View that corresponds to the properties of this view
          */
-        std::shared_ptr<Texture> InitializeTexture(vk::raii::Image &&backing, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout layout = vk::ImageLayout::eUndefined, const texture::Format &format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
-
-        /**
-         * @brief Similar to InitializeTexture but creation of the backing and allocation of memory for the backing is automatically performed by the function
-         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
-         */
-        std::shared_ptr<Texture> CreateTexture(vk::ImageUsageFlags usage = {}, std::optional<vk::ImageTiling> tiling = std::nullopt, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, const texture::Format &format = {}, texture::Dimensions dimensions = {}, texture::Swizzle swizzle = {});
+        vk::ImageView GetView();
     };
 
     /**
@@ -232,7 +295,30 @@ namespace skyline::gpu {
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
         std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
+
+        friend TextureManager;
+
+      public:
+        std::optional<GuestTexture> guest;
+        texture::Dimensions dimensions;
+        texture::Format format;
         vk::ImageLayout layout;
+        vk::ImageTiling tiling;
+        u32 mipLevels;
+        u32 layerCount; //!< The amount of array layers in the image, utilized for efficient binding (Not to be confused with the depth or faces in a cubemap)
+        vk::SampleCountFlagBits sampleCount;
+
+        Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+
+        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+
+        Texture(GPU &gpu, GuestTexture guest);
+
+        /**
+         * @brief Creates and allocates memory for the backing to creates a texture object wrapping it
+         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
+         */
+        Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
         /**
          * @note The handle returned is nullable and the appropriate precautions should be taken
@@ -244,23 +330,6 @@ namespace skyline::gpu {
                 [](const memory::Image &image) { return image.vkImage; },
             }, backing);
         }
-
-      public:
-        std::shared_ptr<GuestTexture> guest; //!< The guest texture from which this was created, it's required for syncing
-        texture::Dimensions dimensions;
-        texture::Format format;
-        vk::ImageTiling tiling;
-        vk::ComponentMapping mapping;
-
-        Texture(GPU &gpu, BackingType &&backing, std::shared_ptr<GuestTexture> guest, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping);
-
-        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ComponentMapping mapping = {});
-
-        /**
-         * @brief Creates and allocates memory for the backing to creates a texture object wrapping it
-         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
-         */
-        Texture(GPU &gpu, texture::Dimensions dimensions, const texture::Format &format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::ComponentMapping mapping = {});
 
         /**
          * @brief Acquires an exclusive lock on the texture for the calling thread
@@ -312,26 +381,9 @@ namespace skyline::gpu {
         void TransitionLayout(vk::ImageLayout layout);
 
         /**
-         * @brief Convert this texture to the specified tiling mode
-         * @param tileMode The tiling mode to convert it to
-         * @param tileConfig The configuration for the tiling mode (Can be default argument for Linear)
-         */
-        void ConvertTileMode(texture::TileMode tileMode, texture::TileConfig tileConfig = {});
-
-        /**
-         * @brief Converts the texture dimensions to the specified ones (As long as they are within the GuestTexture's range)
-         */
-        void SetDimensions(texture::Dimensions dimensions);
-
-        /**
          * @brief Converts the texture to have the specified format
          */
         void SetFormat(texture::Format format);
-
-        /**
-         * @brief Change the texture channel swizzle to the specified one
-         */
-        void SetSwizzle(texture::Swizzle swizzle);
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
@@ -350,6 +402,10 @@ namespace skyline::gpu {
         /**
          * @brief Copies the contents of the supplied source texture into the current texture
          */
-        void CopyFrom(std::shared_ptr<Texture> source);
+        void CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource = vk::ImageSubresourceRange{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .levelCount = VK_REMAINING_MIP_LEVELS,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        });
     };
 }

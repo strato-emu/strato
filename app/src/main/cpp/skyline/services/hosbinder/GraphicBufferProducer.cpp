@@ -69,12 +69,8 @@ namespace skyline::service::hosbinder {
             for (auto &slot : queue) {
                 slot.state = BufferState::Free;
                 slot.frameNumber = std::numeric_limits<u32>::max();
-
-                if (slot.texture) {
-                    slot.texture = {};
+                if (std::exchange(slot.texture, {}))
                     FreeGraphicBufferNvMap(*slot.graphicBuffer);
-                }
-
                 slot.graphicBuffer = nullptr;
             }
         } else if (preallocatedBufferCount < count) {
@@ -172,12 +168,8 @@ namespace skyline::service::hosbinder {
 
         bufferSlot.state = BufferState::Free;
         bufferSlot.frameNumber = std::numeric_limits<u32>::max();
-
-        if (bufferSlot.texture) {
-            bufferSlot.texture = {};
+        if (std::exchange(bufferSlot.texture, {}))
             FreeGraphicBufferNvMap(*bufferSlot.graphicBuffer);
-        }
-
         bufferSlot.graphicBuffer = nullptr;
 
         bufferEvent->Signal();
@@ -201,12 +193,8 @@ namespace skyline::service::hosbinder {
 
         bufferSlot->state = BufferState::Free;
         bufferSlot->frameNumber = std::numeric_limits<u32>::max();
-
-        if (bufferSlot->texture) {
-            bufferSlot->texture = {};
+        if (std::exchange(bufferSlot->texture, {}))
             FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
-        }
-
         graphicBuffer = *std::exchange(bufferSlot->graphicBuffer, nullptr);
         fence = AndroidFence{};
 
@@ -224,11 +212,6 @@ namespace skyline::service::hosbinder {
                 if (bufferSlot == queue.end() || it->frameNumber < bufferSlot->frameNumber)
                     bufferSlot = it;
             }
-        }
-
-        if (bufferSlot->texture) {
-            bufferSlot->texture = {};
-            FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
         }
 
         if (bufferSlot == queue.end()) {
@@ -258,6 +241,8 @@ namespace skyline::service::hosbinder {
         bufferSlot->state = BufferState::Dequeued;
         bufferSlot->wasBufferRequested = true;
         bufferSlot->isPreallocated = false;
+        if (std::exchange(bufferSlot->texture, {}))
+            FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
         bufferSlot->graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
 
         slot = std::distance(queue.begin(), bufferSlot);
@@ -342,26 +327,24 @@ namespace skyline::service::hosbinder {
             if (surface.size > (nvMapHandleObj->origSize - surface.offset))
                 throw exception("Surface doesn't fit into NvMap mapping of size 0x{:X} when mapped at 0x{:X} -> 0x{:X}", nvMapHandleObj->origSize, surface.offset, surface.offset + surface.size);
 
-            gpu::texture::TileMode tileMode;
             gpu::texture::TileConfig tileConfig{};
             if (surface.layout == NvSurfaceLayout::Blocklinear) {
-                tileMode = gpu::texture::TileMode::Block;
                 tileConfig = {
-                    .surfaceWidth = static_cast<u16>(surface.width),
+                    .mode = gpu::texture::TileMode::Block,
                     .blockHeight = static_cast<u8>(1U << surface.blockHeightLog2),
                     .blockDepth = 1,
                 };
             } else if (surface.layout == NvSurfaceLayout::Pitch) {
-                tileMode = gpu::texture::TileMode::Pitch;
                 tileConfig = {
+                    .mode = gpu::texture::TileMode::Pitch,
                     .pitch = surface.pitch,
                 };
             } else if (surface.layout == NvSurfaceLayout::Tiled) {
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
             }
 
-            auto guestTexture{std::make_shared<gpu::GuestTexture>(state, nvMapHandleObj->GetPointer() + surface.offset, gpu::texture::Dimensions(surface.width, surface.height), format, tileMode, tileConfig)};
-            buffer.texture = guestTexture->CreateTexture({}, vk::ImageTiling::eLinear);
+            gpu::GuestTexture guestTexture(span<u8>(nvMapHandleObj->GetPointer() + surface.offset, surface.size), gpu::texture::Dimensions(surface.width, surface.height), format, tileConfig, gpu::texture::TextureType::e2D);
+            buffer.texture = state.gpu->texture.FindOrCreate(guestTexture).backing;
         }
 
         switch (transform) {
@@ -545,12 +528,8 @@ namespace skyline::service::hosbinder {
         for (auto &slot : queue) {
             slot.state = BufferState::Free;
             slot.frameNumber = std::numeric_limits<u32>::max();
-
-            if (slot.texture) {
-                slot.texture = {};
+            if (std::exchange(slot.texture, {}))
                 FreeGraphicBufferNvMap(*slot.graphicBuffer);
-            }
-
             slot.graphicBuffer = nullptr;
         }
 
@@ -566,14 +545,11 @@ namespace skyline::service::hosbinder {
         }
 
         auto &buffer{queue[slot]};
-        if (buffer.texture) {
-            buffer.texture = {};
-            FreeGraphicBufferNvMap(*buffer.graphicBuffer);
-        }
-
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
+        if (std::exchange(buffer.texture, {}))
+            FreeGraphicBufferNvMap(*buffer.graphicBuffer);
         buffer.isPreallocated = graphicBuffer != nullptr;
         buffer.graphicBuffer = graphicBuffer ? std::make_unique<GraphicBuffer>(*graphicBuffer) : nullptr;
 

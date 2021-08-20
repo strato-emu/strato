@@ -121,6 +121,6 @@ namespace skyline::gpu::memory {
         VmaAllocationInfo allocationInfo;
         ThrowOnFail(vmaCreateImage(vmaAllocator, &static_cast<const VkImageCreateInfo &>(createInfo), &allocationCreateInfo, &image, &allocation, &allocationInfo));
 
-        return Image(reinterpret_cast<u8 *>(allocationInfo.pMappedData), vmaAllocator, image, allocation);
+        return Image(vmaAllocator, image, allocation);
     }
 }

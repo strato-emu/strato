@@ -145,5 +145,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this) {}
 }

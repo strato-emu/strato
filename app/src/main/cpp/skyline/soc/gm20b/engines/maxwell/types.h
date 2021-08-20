@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2018-2020 fincs (https://github.com/devkitPro/deko3d)
 
 #pragma once
 
@@ -27,6 +28,44 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         MethodPassthrough = 2, //!< Does nothing, no write tracking or hooking
         MethodReplay = 3, //!< Replays older tracked writes for any new writes to registers, discarding the contents of the new write
     };
+
+    constexpr static size_t RenderTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
+
+    /**
+     * @brief The target image's metadata for any rendering operations
+     * @note Any render target with ColorFormat::None as their format are effectively disabled
+     */
+    struct RenderTarget {
+        Address address;
+        u32 width;
+        u32 height;
+
+        enum class ColorFormat : u32 {
+            None = 0x0,
+            R8G8B8A8Unorm = 0xD5,
+        } format;
+
+        struct TileMode {
+            u8 blockWidthLog2 : 4; //!< The width of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
+            u8 blockHeightLog2 : 4; //!< The height of a block in GOBs with log2 encoding
+            u8 blockDepthLog2 : 4; //!< The depth of a block in GOBs with log2 encoding
+            bool isLinear : 1;
+            u8 _pad0_ : 3;
+            bool is3d : 1;
+            u16 _pad1_ : 15;
+        } tileMode;
+
+        struct ArrayMode {
+            u16 layerCount;
+            bool volume : 1;
+            u16 _pad_ : 15;
+        } arrayMode;
+
+        u32 layerStrideLsr2; //!< The length of the stride of a layer shifted right by 2 bits
+        u32 baseLayer;
+        u32 _pad_[0x7];
+    };
+    static_assert(sizeof(RenderTarget) == (0x10 * sizeof(u32)));
 
     constexpr static size_t ViewportCount{16}; //!< Amount of viewports on Maxwell 3D, array size for any per-viewport parameter such as transform, scissors, etc
 
@@ -120,7 +159,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             u16 minimum; //!< The lower bound of the masked region in a dimension
             u16 maximum; //!< The higher bound of the masked region in a dimension
         } horizontal, vertical;
-        u32 next;
+        u32 _pad_;
     };
     static_assert(sizeof(Scissor) == (0x4 * sizeof(u32)));
 
@@ -167,6 +206,45 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         };
     };
     static_assert(sizeof(VertexAttribute) == sizeof(u32));
+
+    /**
+     * @brief A descriptor that controls how the RenderTarget array (at 0x200) will be interpreted
+     */
+    struct RenderTargetControl {
+        u8 count : 4; //!< The amount of active render targets, doesn't necessarily mean bound
+        u8 map0 : 3; //!< The index of the render target that maps to slot 0
+        u8 map1 : 3;
+        u8 map2 : 3;
+        u8 map3 : 3;
+        u8 map4 : 3;
+        u8 map5 : 3;
+        u8 map6 : 3;
+        u8 map7 : 3;
+
+        size_t Map(size_t index) {
+            switch (index) {
+                case 0:
+                    return map0;
+                case 1:
+                    return map1;
+                case 2:
+                    return map2;
+                case 3:
+                    return map3;
+                case 4:
+                    return map4;
+                case 5:
+                    return map5;
+                case 6:
+                    return map6;
+                case 7:
+                    return map7;
+                default:
+                    throw exception("Invalid RT index is being mapped: {}", index);
+            }
+        }
+    };
+    static_assert(sizeof(RenderTargetControl) == sizeof(u32));
 
     enum class CompareOp : u32 {
         Never = 1,
@@ -291,6 +369,22 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         };
     };
     static_assert(sizeof(ColorWriteMask) == sizeof(u32));
+
+    /**
+     * @brief A method call which causes a layer of an RT to be cleared with a channel mask
+     */
+    struct ClearBuffers {
+        bool depth : 1; //!< If the depth channel should be cleared
+        bool stencil : 1;
+        bool red : 1;
+        bool green : 1;
+        bool blue : 1;
+        bool alpha : 1;
+        u8 renderTargetId : 4; //!< The ID of the render target to clear
+        u16 layerId : 11; //!< The index of the layer of the render target to clear
+        u16 _pad_ : 10;
+    };
+    static_assert(sizeof(ClearBuffers) == sizeof(u32));
 
     struct SemaphoreInfo {
         enum class Op : u8 {

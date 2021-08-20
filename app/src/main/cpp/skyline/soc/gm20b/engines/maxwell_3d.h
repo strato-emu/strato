@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2018-2020 fincs (https://github.com/devkitPro/deko3d)
 
 #pragma once
 
 #include <gpu/context/graphics_context.h>
 #include "engine.h"
 #include "maxwell/macro_interpreter.h"
-
-#define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
-#define MAXWELL3D_STRUCT_OFFSET(field, member) U32_OFFSET(Registers, field) + offsetof(typeof(Registers::field), member)
-#define MAXWELL3D_ARRAY_OFFSET(field, index) U32_OFFSET(Registers, field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
-#define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(typeof(Registers::field[0]), member)
-#define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(typeof(Registers::field[0].member), submember)
 
 namespace skyline::gpu::context {
     class GraphicsContext;
@@ -78,10 +73,16 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 u32 _pad3_[0x2C]; // 0xB3
                 u32 rasterizerEnable; // 0xDF
-                u32 _pad4_[0x1A0]; // 0xE0
+                u32 _pad4_[0x120]; // 0xE0
+                std::array<type::RenderTarget, type::RenderTargetCount> renderTargets; // 0x200
                 std::array<type::ViewportTransform, type::ViewportCount> viewportTransforms; // 0x280
                 std::array<type::Viewport, type::ViewportCount> viewports; // 0x300
-                u32 _pad5_[0x2B]; // 0x340
+                u32 _pad5_[0x20]; // 0x340
+
+                std::array<u32, 4> clearColorValue; // 0x360
+                u32 clearDepthValue; // 0x364
+
+                u32 _pad5_1_[0x6]; // 0x365
 
                 struct {
                     type::PolygonMode front; // 0x36B
@@ -89,9 +90,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 } polygonMode;
 
                 u32 _pad6_[0x13]; // 0x36D
-
                 std::array<type::Scissor, type::ViewportCount> scissors; // 0x380
-
                 u32 _pad6_1_[0x15]; // 0x3C0
 
                 struct {
@@ -104,7 +103,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u32 rtSeparateFragData; // 0x3EB
                 u32 _pad8_[0x6C]; // 0x3EC
                 std::array<type::VertexAttribute, 0x20> vertexAttributeState; // 0x458
-                u32 _pad9_[0x4B]; // 0x478
+                u32 _pad9_[0xF]; // 0x478
+                type::RenderTargetControl renderTargetControl; // 0x487
+                u32 _pad9_1_[0x3B]; // 0x488
                 type::CompareOp depthTestFunc; // 0x4C3
                 float alphaTestRef; // 0x4C4
                 type::CompareOp alphaTestFunc; // 0x4C5
@@ -217,8 +218,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u32 pixelCentreImage; // 0x649
                 u32 _pad21_; // 0x64A
                 u32 viewportTransformEnable; // 0x64B
-                u32 _pad22_[0x34]; // 0x64A
-                std::array<type::ColorWriteMask, 8> colorMask; // 0x680 For each render target
+                u32 _pad22_[0x28]; // 0x64C
+                type::ClearBuffers clearBuffers; // 0x674
+                u32 _pad22_1_[0xB]; // 0x675
+                std::array<type::ColorWriteMask, type::RenderTargetCount> colorMask; // 0x680
                 u32 _pad23_[0x38]; // 0x688
 
                 struct {
@@ -228,12 +231,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 } semaphore;
 
                 u32 _pad24_[0xBC]; // 0x6C4
-                std::array<type::Blend, 8> independentBlend; // 0x780 For each render target
+                std::array<type::Blend, type::RenderTargetCount> independentBlend; // 0x780
                 u32 _pad25_[0x100]; // 0x7C0
                 u32 firmwareCall[0x20]; // 0x8C0
             };
         };
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
+        static_assert(U32_OFFSET(Registers, firmwareCall) == 0x8C0);
         #pragma pack(pop)
 
         Registers registers{};

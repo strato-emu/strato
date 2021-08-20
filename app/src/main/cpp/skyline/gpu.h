@@ -6,6 +6,7 @@
 #include "gpu/memory_manager.h"
 #include "gpu/command_scheduler.h"
 #include "gpu/presentation_engine.h"
+#include "gpu/texture_manager.h"
 
 namespace skyline::gpu {
     /**
@@ -38,6 +39,8 @@ namespace skyline::gpu {
         memory::MemoryManager memory;
         CommandScheduler scheduler;
         PresentationEngine presentation;
+
+        TextureManager texture;
 
         GPU(const DeviceState &state);
     };

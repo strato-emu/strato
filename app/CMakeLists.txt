@@ -101,6 +101,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
+        ${source_DIR}/skyline/gpu/texture_manager.cpp
         ${source_DIR}/skyline/gpu/command_scheduler.cpp
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp

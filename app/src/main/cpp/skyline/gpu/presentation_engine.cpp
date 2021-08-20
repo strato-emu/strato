@@ -114,8 +114,8 @@ namespace skyline::gpu {
 
         if (swapchainFormat != format) {
             auto formats{gpu.vkPhysicalDevice.getSurfaceFormatsKHR(**vkSurface)};
-            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{format, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
-                throw exception("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(format), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
+            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{*format, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
+                throw exception("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(*format), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
         }
 
         constexpr vk::ImageUsageFlags presentUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
@@ -125,7 +125,7 @@ namespace skyline::gpu {
         vkSwapchain.emplace(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
             .minImageCount = minImageCount,
-            .imageFormat = format,
+            .imageFormat = *format,
             .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
             .imageExtent = extent,
             .imageArrayLayers = 1,
@@ -142,7 +142,7 @@ namespace skyline::gpu {
 
         for (size_t index{}; index < vkImages.size(); index++) {
             auto &slot{images[index]};
-            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format::GetFormat(format), vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal);
+            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format, vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal);
             slot->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
         }
         for (size_t index{vkImages.size()}; index < MaxSwapchainImageCount; index++)
@@ -235,7 +235,11 @@ namespace skyline::gpu {
         }
 
         std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
-        images.at(nextImage.second)->CopyFrom(texture);
+        images.at(nextImage.second)->CopyFrom(texture, vk::ImageSubresourceRange{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .levelCount = 1,
+            .layerCount = 1,
+        });
 
         if (timestamp) {
             // If the timestamp is specified, we need to convert it from the util::GetTimeNs base to the CLOCK_MONOTONIC one
