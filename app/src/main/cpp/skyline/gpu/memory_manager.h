@@ -31,6 +31,7 @@ namespace skyline::gpu::memory {
 
     /**
      * @brief A Vulkan image which VMA allocates and manages the backing memory for
+     * @note Any images created with VMA_ALLOCATION_CREATE_MAPPED_BIT must not be utilized with this since it'll unconditionally unmap when a pointer is present which is illegal when an image was created with that flag as unmapping will be automatically performed on image deletion
      */
     struct Image {
       private:

@@ -110,6 +110,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/maxwell_3d.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/maxwell/macro_interpreter.cpp
+        ${source_DIR}/skyline/soc/gm20b/gmmu.cpp
         ${source_DIR}/skyline/input/npad.cpp
         ${source_DIR}/skyline/input/npad_device.cpp
         ${source_DIR}/skyline/input/touch.cpp

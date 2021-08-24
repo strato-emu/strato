@@ -21,23 +21,26 @@ namespace skyline::gpu {
         // 4.2) If they aren't, we delete them from the map
         // 5) Create a new texture and insert it in the map then return it
 
+        std::scoped_lock lock(mutex);
         std::shared_ptr<Texture> match{};
         auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping)}, hostMapping{mappingEnd};
-        while (hostMapping != textures.begin() && std::prev(hostMapping)->end() > guestMapping.begin()) {
+        while (hostMapping != textures.begin() && (--hostMapping)->end() > guestMapping.begin()) {
             auto &hostMappings{hostMapping->texture->guest->mappings};
+            if (!hostMapping->contains(guestMapping))
+                continue;
 
             // We need to check that all corresponding mappings in the candidate texture and the guest texture match up
             // Only the start of the first matched mapping and the end of the last mapping can not match up as this is the case for views
             auto firstHostMapping{hostMapping->iterator};
             auto lastGuestMapping{guestTexture.mappings.back()};
             auto lastHostMapping{std::find_if(firstHostMapping, hostMappings.end(), [&lastGuestMapping](const span<u8> &it) {
-                return lastGuestMapping.begin() >= it.begin() && lastGuestMapping.size() <= it.size();
-            })};
+                return lastGuestMapping.begin() > it.begin() && lastGuestMapping.end() > it.end();
+            })}; //!< A past-the-end iterator for the last host mapping, the final valid mapping is prior to this iterator
             bool mappingMatch{std::equal(firstHostMapping, lastHostMapping, guestTexture.mappings.begin(), guestTexture.mappings.end(), [](const span<u8> &lhs, const span<u8> &rhs) {
                 return lhs.end() == rhs.end(); // We check end() here to implicitly ignore any offset from the first mapping
             })};
 
-            if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && lastHostMapping == std::prev(hostMappings.end()) && lastGuestMapping.end() == lastHostMapping->end()) {
+            if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && lastHostMapping == hostMappings.end() && lastGuestMapping.end() == std::prev(lastHostMapping)->end()) {
                 // We've gotten a perfect 1:1 match for *all* mappings from the start to end, we just need to check for compatibility aside from this
                 auto &matchGuestTexture{*hostMapping->texture->guest};
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && matchGuestTexture.dimensions == guestTexture.dimensions && matchGuestTexture.tileConfig == guestTexture.tileConfig) {

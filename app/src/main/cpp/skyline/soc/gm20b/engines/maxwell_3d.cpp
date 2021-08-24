@@ -6,7 +6,7 @@
 #include <soc.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
-    Maxwell3D::Maxwell3D(const DeviceState &state) : Engine(state), macroInterpreter(*this), context(*state.gpu) {
+    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu) {
         ResetRegs();
     }
 
@@ -104,161 +104,182 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             return;
         }
 
-        registers.raw[method] = argument;
-
-        if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrack || shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrackWithFilter)
-            shadowRegisters.raw[method] = argument;
-        else if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodReplay)
-            argument = shadowRegisters.raw[method];
-
         #define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
-        #define MAXWELL3D_STRUCT_OFFSET(field, member) U32_OFFSET(Registers, field) + offsetof(typeof(Registers::field), member)
+        #define MAXWELL3D_STRUCT_OFFSET(field, member) U32_OFFSET(Registers, field) + U32_OFFSET(typeof(Registers::field), member)
         #define MAXWELL3D_ARRAY_OFFSET(field, index) U32_OFFSET(Registers, field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
         #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(typeof(Registers::field[0]), member)
         #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(typeof(Registers::field[0].member), submember)
 
-        switch (method) {
-            case MAXWELL3D_OFFSET(mme.instructionRamLoad):
-                if (registers.mme.instructionRamPointer >= macroCode.size())
-                    throw exception("Macro memory is full!");
+        #define MAXWELL3D_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: { \
+            auto fieldName{util::BitCast<typeof(registers.fieldAccessor)>(argument)};  \
+            content                                                                           \
+            return;                                                                           \
+        }
+        #define MAXWELL3D_CASE(field, content) MAXWELL3D_CASE_BASE(field, field, MAXWELL3D_OFFSET(field), content)
+        #define MAXWELL3D_STRUCT_CASE(field, member, content) MAXWELL3D_CASE_BASE(member, field.member, MAXWELL3D_STRUCT_OFFSET(field, member), content)
+        #define MAXWELL3D_ARRAY_CASE(field, index, content) MAXWELL3D_CASE_BASE(field, field[index], MAXWELL3D_ARRAY_OFFSET(field, index), content)
+        #define MAXWELL3D_ARRAY_STRUCT_CASE(field, index, member, content) MAXWELL3D_CASE_BASE(member, field[index].member, MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member), content)
+        #define MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(field, index, member, submember, content) MAXWELL3D_CASE_BASE(submember, field[index].member.submember, MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember), content)
 
-                macroCode[registers.mme.instructionRamPointer++] = argument;
+        if (method != MAXWELL3D_OFFSET(mme.shadowRamControl)) {
+            if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrack || shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrackWithFilter)
+                shadowRegisters.raw[method] = argument;
+            else if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodReplay)
+                argument = shadowRegisters.raw[method];
+        }
 
-                // Wraparound writes
-                registers.mme.instructionRamPointer %= macroCode.size();
+        bool redundant{registers.raw[method] == argument};
+        registers.raw[method] = argument;
 
-                break;
+        if (!redundant) {
+            switch (method) {
+                MAXWELL3D_STRUCT_CASE(mme, shadowRamControl, {
+                    shadowRegisters.mme.shadowRamControl = shadowRamControl;
+                })
 
-            case MAXWELL3D_OFFSET(mme.startAddressRamLoad):
-                if (registers.mme.startAddressRamPointer >= macroPositions.size())
-                    throw exception("Maximum amount of macros reached!");
-
-                macroPositions[registers.mme.startAddressRamPointer++] = argument;
-                break;
-
-            case MAXWELL3D_OFFSET(mme.shadowRamControl):
-                shadowRegisters.mme.shadowRamControl = static_cast<type::MmeShadowRamControl>(argument);
-                break;
-
-            case MAXWELL3D_OFFSET(syncpointAction):
-                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(registers.syncpointAction.id));
-                state.soc->host1x.syncpoints.at(registers.syncpointAction.id).Increment();
-                break;
-
-                #define RENDER_TARGET_ARRAY(z, index, data)                                 \
-            case MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(renderTargets, index, address, high): \
-                context.SetRenderTargetAddressHigh(index, argument);                 \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(renderTargets, index, address, low):  \
-                context.SetRenderTargetAddressLow(index, argument);                  \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, width):                \
-                context.SetRenderTargetAddressWidth(index, argument);                \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, height):               \
-                context.SetRenderTargetAddressHeight(index, argument);               \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, format):               \
-                context.SetRenderTargetAddressFormat(index,                                 \
-                        static_cast<type::RenderTarget::ColorFormat>(argument));     \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, tileMode):             \
-                context.SetRenderTargetTileMode(index,                                      \
-                       *reinterpret_cast<type::RenderTarget::TileMode*>(&argument)); \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, arrayMode):            \
-                context.SetRenderTargetArrayMode(index,                                     \
-                      *reinterpret_cast<type::RenderTarget::ArrayMode*>(&argument)); \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, layerStrideLsr2):      \
-                context.SetRenderTargetLayerStride(index, argument);                 \
-                break;                                                                      \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(renderTargets, index, baseLayer):            \
-                context.SetRenderTargetBaseLayer(index, argument);                   \
-                break;
+                #define RENDER_TARGET_ARRAY(z, index, data)                               \
+                MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, high, { \
+                    context.SetRenderTargetAddressHigh(index, high);                      \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, low, {  \
+                    context.SetRenderTargetAddressLow(index, low);                        \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, width, {                \
+                    context.SetRenderTargetWidth(index, width);                           \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, height, {               \
+                    context.SetRenderTargetHeight(index, height);                         \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, format, {               \
+                    context.SetRenderTargetFormat(index, format);                         \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, tileMode, {             \
+                    context.SetRenderTargetTileMode(index, tileMode);                     \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, arrayMode, {            \
+                    context.SetRenderTargetArrayMode(index, arrayMode);                   \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, layerStrideLsr2, {      \
+                    context.SetRenderTargetLayerStride(index, layerStrideLsr2);           \
+                })                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, baseLayer, {            \
+                    context.SetRenderTargetBaseLayer(index, baseLayer);                   \
+                })
 
                 BOOST_PP_REPEAT(8, RENDER_TARGET_ARRAY, 0)
                 static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
                 #undef RENDER_TARGET_ARRAY
 
-                #define VIEWPORT_TRANSFORM_CALLBACKS(z, index, data)                                                                               \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, scaleX):                                                        \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, translateX):                                                    \
-                context.SetViewportX(index, registers.viewportTransforms[index].scaleX, registers.viewportTransforms[index].translateX);  \
-                break;                                                                                                                    \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, scaleY):                                                        \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, translateY):                                                    \
-                context.SetViewportY(index, registers.viewportTransforms[index].scaleY, registers.viewportTransforms[index].translateY);  \
-                break;                                                                                                                    \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, scaleZ):                                                        \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(viewportTransforms, index, translateZ):                                                    \
-                context.SetViewportZ(index, registers.viewportTransforms[index].scaleY, registers.viewportTransforms[index].translateY);  \
-                break;
+                #define VIEWPORT_TRANSFORM_CALLBACKS(z, index, data)                                      \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                          \
+                    context.SetViewportX(index, scaleX, registers.viewportTransforms[index].translateX);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, translateX, {                      \
+                    context.SetViewportX(index, registers.viewportTransforms[index].scaleX, translateX);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleY, {                          \
+                    context.SetViewportY(index, scaleY, registers.viewportTransforms[index].translateY);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, translateY, {                      \
+                    context.SetViewportY(index, registers.viewportTransforms[index].scaleY, translateY);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleZ, {                          \
+                    context.SetViewportZ(index, scaleZ, registers.viewportTransforms[index].translateZ);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, translateZ, {                      \
+                    context.SetViewportZ(index, registers.viewportTransforms[index].scaleZ, translateZ);  \
+                })
 
                 BOOST_PP_REPEAT(16, VIEWPORT_TRANSFORM_CALLBACKS, 0)
                 static_assert(type::ViewportCount == 16 && type::ViewportCount < BOOST_PP_LIMIT_REPEAT);
                 #undef VIEWPORT_TRANSFORM_CALLBACKS
 
-                #define COLOR_CLEAR_CALLBACKS(z, index, data)          \
-            case MAXWELL3D_ARRAY_OFFSET(clearColorValue, index):       \
-                context.UpdateClearColorValue(index, argument); \
-                break;
+                #define COLOR_CLEAR_CALLBACKS(z, index, data)              \
+                MAXWELL3D_ARRAY_CASE(clearColorValue, index, {             \
+                    context.UpdateClearColorValue(index, clearColorValue); \
+                })
 
                 BOOST_PP_REPEAT(4, COLOR_CLEAR_CALLBACKS, 0)
                 static_assert(4 < BOOST_PP_LIMIT_REPEAT);
                 #undef COLOR_CLEAR_CALLBACKS
 
-                #define SCISSOR_CALLBACKS(z, index, data)                                                                \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(scissors, index, enable):                                                 \
-                context.SetScissor(index, argument ? registers.scissors[index] : std::optional<type::Scissor>{});        \
-                break;                                                                                                   \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(scissors, index, horizontal):                                             \
-                context.SetScissorHorizontal(index, registers.scissors[index].horizontal);                               \
-                break;                                                                                                   \
-            case MAXWELL3D_ARRAY_STRUCT_OFFSET(scissors, index, vertical):                                               \
-                context.SetScissorVertical(index, registers.scissors[index].vertical);                                   \
-                break;
+                #define SCISSOR_CALLBACKS(z, index, data)                                                           \
+                MAXWELL3D_ARRAY_STRUCT_CASE(scissors, index, enable, {                                              \
+                    context.SetScissor(index, enable ? registers.scissors[index] : std::optional<type::Scissor>{}); \
+                })                                                                                                  \
+                MAXWELL3D_ARRAY_STRUCT_CASE(scissors, index, horizontal, {                                          \
+                    context.SetScissorHorizontal(index, horizontal);                                                \
+                })                                                                                                  \
+                MAXWELL3D_ARRAY_STRUCT_CASE(scissors, index, vertical, {                                            \
+                    context.SetScissorVertical(index, vertical);                                                    \
+                })
 
                 BOOST_PP_REPEAT(16, SCISSOR_CALLBACKS, 0)
                 static_assert(type::ViewportCount == 16 && type::ViewportCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SCISSOR_CALLBACKS
 
-            case MAXWELL3D_OFFSET(renderTargetControl):
-                context.UpdateRenderTargetControl(registers.renderTargetControl);
-                break;
+                MAXWELL3D_CASE(renderTargetControl, {
+                    context.UpdateRenderTargetControl(registers.renderTargetControl);
+                })
+            }
+        }
 
-            case MAXWELL3D_OFFSET(clearBuffers):
+        switch (method) {
+            MAXWELL3D_STRUCT_CASE(mme, instructionRamLoad, {
+                if (registers.mme.instructionRamPointer >= macroCode.size())
+                    throw exception("Macro memory is full!");
+
+                macroCode[registers.mme.instructionRamPointer++] = instructionRamLoad;
+
+                // Wraparound writes
+                registers.mme.instructionRamPointer %= macroCode.size();
+            })
+
+            MAXWELL3D_STRUCT_CASE(mme, startAddressRamLoad, {
+                if (registers.mme.startAddressRamPointer >= macroPositions.size())
+                    throw exception("Maximum amount of macros reached!");
+
+                macroPositions[registers.mme.startAddressRamPointer++] = startAddressRamLoad;
+            })
+
+            MAXWELL3D_CASE(syncpointAction, {
+                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
+                state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
+            })
+
+            MAXWELL3D_CASE(clearBuffers, {
                 context.ClearBuffers(registers.clearBuffers);
-                break;
+            })
 
-            case MAXWELL3D_OFFSET(semaphore.info):
-                switch (registers.semaphore.info.op) {
+            MAXWELL3D_STRUCT_CASE(semaphore, info, {
+                switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
                         WriteSemaphoreResult(registers.semaphore.payload);
                         break;
 
                     case type::SemaphoreInfo::Op::Counter: {
-                        switch (registers.semaphore.info.counterType) {
+                        switch (info.counterType) {
                             case type::SemaphoreInfo::CounterType::Zero:
                                 WriteSemaphoreResult(0);
                                 break;
 
                             default:
-                                state.logger->Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(registers.semaphore.info.counterType));
+                                state.logger->Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
                                 break;
                         }
                         break;
                     }
 
                     default:
-                        state.logger->Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(registers.semaphore.info.op));
+                        state.logger->Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(info.op));
                         break;
                 }
-                break;
+            })
 
-            case MAXWELL3D_OFFSET(firmwareCall[4]):
+            MAXWELL3D_ARRAY_CASE(firmwareCall, 4, {
                 registers.raw[0xD00] = 1;
-                break;
+            })
+
             default:
                 break;
         }
@@ -268,6 +289,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         #undef MAXWELL3D_ARRAY_OFFSET
         #undef MAXWELL3D_ARRAY_STRUCT_OFFSET
         #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET
+
+        #undef MAXWELL3D_CASE_BASE
+        #undef MAXWELL3D_CASE
+        #undef MAXWELL3D_STRUCT_CASE
+        #undef MAXWELL3D_ARRAY_CASE
+        #undef MAXWELL3D_ARRAY_STRUCT_CASE
+        #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE
     }
 
     void Maxwell3D::WriteSemaphoreResult(u64 result) {

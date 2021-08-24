@@ -27,10 +27,6 @@ namespace skyline::gpu {
         std::mutex mutex; //!< Synchronizes access to the texture mappings
         std::vector<TextureMapping> textures; //!< A sorted vector of all texture mappings
 
-        bool IsSizeCompatible(texture::Dimensions lhsDimension, texture::TileConfig lhsConfig, texture::Dimensions rhsDimension, texture::TileConfig rhsConfig) {
-            return lhsDimension == rhsDimension && lhsConfig == rhsConfig;
-        }
-
       public:
         TextureManager(GPU &gpu);
 

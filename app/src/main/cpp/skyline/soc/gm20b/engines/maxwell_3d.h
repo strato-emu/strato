@@ -8,10 +8,6 @@
 #include "engine.h"
 #include "maxwell/macro_interpreter.h"
 
-namespace skyline::gpu::context {
-    class GraphicsContext;
-}
-
 namespace skyline::soc::gm20b::engine::maxwell3d {
     /**
      * @brief The Maxwell 3D engine handles processing 3D graphics
@@ -245,7 +241,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
 
-        Maxwell3D(const DeviceState &state);
+        Maxwell3D(const DeviceState &state, GMMU &gmmu);
 
         /**
          * @brief Resets the Maxwell 3D registers to their default values

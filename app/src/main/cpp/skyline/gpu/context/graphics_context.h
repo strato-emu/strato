@@ -6,6 +6,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <gpu.h>
 #include <gpu/texture/format.h>
+#include <soc/gm20b/gmmu.h>
 #include <soc/gm20b/engines/maxwell/types.h>
 
 namespace skyline::gpu::context {
@@ -18,18 +19,23 @@ namespace skyline::gpu::context {
     class GraphicsContext {
       private:
         GPU &gpu;
+        soc::gm20b::GMMU &gmmu;
 
         struct RenderTarget {
             bool disabled{}; //!< If this RT has been disabled and will be an unbound attachment instead
             union {
                 u64 gpuAddress;
                 struct {
-                    u32 gpuAddressHigh;
                     u32 gpuAddressLow;
+                    u32 gpuAddressHigh;
                 };
             };
             GuestTexture guest;
             std::optional<TextureView> view;
+
+            RenderTarget() {
+                guest.dimensions = texture::Dimensions(1, 1, 1); // We want the depth to be 1 by default (It cannot be set by the application)
+            }
         };
 
         std::array<RenderTarget, maxwell3d::RenderTargetCount> renderTargets{}; //!< The target textures to render into as color attachments
@@ -44,7 +50,7 @@ namespace skyline::gpu::context {
 
 
       public:
-        GraphicsContext(GPU &gpu) : gpu(gpu) {
+        GraphicsContext(GPU &gpu, soc::gm20b::GMMU &gmmu) : gpu(gpu), gmmu(gmmu) {
             scissors.fill(DefaultScissor);
         }
 
@@ -64,19 +70,19 @@ namespace skyline::gpu::context {
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetAddressWidth(size_t index, u32 value) {
+        void SetRenderTargetWidth(size_t index, u32 value) {
             auto &renderTarget{renderTargets.at(index)};
             renderTarget.guest.dimensions.width = value;
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetAddressHeight(size_t index, u32 value) {
+        void SetRenderTargetHeight(size_t index, u32 value) {
             auto &renderTarget{renderTargets.at(index)};
             renderTarget.guest.dimensions.height = value;
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetAddressFormat(size_t index, maxwell3d::RenderTarget::ColorFormat format) {
+        void SetRenderTargetFormat(size_t index, maxwell3d::RenderTarget::ColorFormat format) {
             auto &renderTarget{renderTargets.at(index)};
             renderTarget.guest.format = [&]() -> texture::Format {
                 switch (format) {
@@ -137,8 +143,9 @@ namespace skyline::gpu::context {
                 return &*renderTarget.view;
 
             if (renderTarget.guest.mappings.empty()) {
-                // TODO: Fill in mappings
-                return nullptr;
+                auto size{std::max<u64>(renderTarget.guest.layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer), renderTarget.guest.format->GetSize(renderTarget.guest.dimensions))};
+                auto mappings{gmmu.TranslateRange(renderTarget.gpuAddress, size)};
+                renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
 
             return &*(renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest));

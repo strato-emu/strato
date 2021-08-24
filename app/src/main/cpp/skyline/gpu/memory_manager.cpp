@@ -111,7 +111,6 @@ namespace skyline::gpu::memory {
 
     Image MemoryManager::AllocateMappedImage(const vk::ImageCreateInfo &createInfo) {
         VmaAllocationCreateInfo allocationCreateInfo{
-            .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage = VMA_MEMORY_USAGE_UNKNOWN,
             .memoryTypeBits = static_cast<u32>(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eDeviceLocal),
         };

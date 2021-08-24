@@ -372,6 +372,14 @@ namespace skyline {
         void FillRandomBytes(T &object) {
             FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::type *>(&object), IntegerFor<T>::count));
         }
+
+        /**
+         * @brief A temporary shim for C++ 20's bit_cast to make transitioning to it easier
+         */
+        template<typename To, typename From>
+        To BitCast(const From& from) {
+            return *reinterpret_cast<const To*>(&from);
+        }
     }
 
     /**
@@ -443,7 +451,7 @@ namespace skyline {
          * @return If a supplied span is located entirely inside this span and is effectively a subspan
          */
         constexpr bool contains(const span<T, Extent>& other) const {
-            return this->begin() >= other.begin() && this->size() <= other.size();
+            return this->begin() <= other.begin() && this->end() >= other.end();
         }
 
         /** Comparision operators for equality and binary searches **/

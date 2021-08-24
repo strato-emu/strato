@@ -12,7 +12,7 @@ namespace skyline {
 }
 
 namespace skyline::service::nvdrv::device::nvhost {
-    using GMMU = soc::gm20b::GM20B::GMMU;
+    using GMMU = soc::gm20b::GMMU;
 
     AsGpu::AsGpu(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
 
@@ -320,7 +320,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             }
 
             if (!entry.handle) {
-                state.soc->gm20b.gmmu.Map(virtAddr, soc::gm20b::GM20B::GMMU::SparsePlaceholderAddress(), size, {true});
+                state.soc->gm20b.gmmu.Map(virtAddr, soc::gm20b::GMMU::SparsePlaceholderAddress(), size, {true});
             } else {
                 auto h{core.nvMap.GetHandle(entry.handle)};
                 if (!h)

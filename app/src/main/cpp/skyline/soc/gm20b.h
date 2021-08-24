@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <common/address_space.h>
 #include "gm20b/engines/maxwell_3d.h"
 #include "gm20b/gpfifo.h"
+#include "gm20b/gmmu.h"
 
 namespace skyline::soc::gm20b {
     /**
@@ -14,16 +14,13 @@ namespace skyline::soc::gm20b {
      */
     class GM20B {
       public:
-        static constexpr u8 AddressSpaceBits{40}; //!< The width of the GMMU AS
-        using GMMU = FlatMemoryManager<u64, 0, AddressSpaceBits>;
-
+        GMMU gmmu;
         engine::Engine fermi2D;
         engine::maxwell3d::Maxwell3D maxwell3D;
         engine::Engine maxwellCompute;
         engine::Engine maxwellDma;
         engine::Engine keplerMemory;
         GPFIFO gpfifo;
-        GMMU gmmu;
 
         GM20B(const DeviceState &state);
     };
