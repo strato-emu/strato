@@ -56,16 +56,9 @@ namespace skyline {
         constexpr u8 reserved{0x1}; // RFC4122 variant
         constexpr u8 version{0x4}; // v4 UUIDs are generated entirely from random numbers
 
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-
-        std::uniform_int_distribution<u64> dist;
-
         // Create an initial random UUID
-        UuidLayout uuid{
-            .low = dist(gen),
-            .high = dist(gen),
-        };
+        UuidLayout uuid;
+        util::FillRandomBytes(span(&uuid, 1).cast<u64>());
 
         // Set format bits
         uuid.reserved = reserved;
