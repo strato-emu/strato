@@ -9,8 +9,10 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
+import emu.skyline.preference.IntegerListPreference
 
 class SettingsActivity : AppCompatActivity() {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
@@ -45,12 +47,30 @@ class SettingsActivity : AppCompatActivity() {
      * This fragment is used to display all of the preferences
      */
     class PreferenceFragment : PreferenceFragmentCompat() {
+        companion object {
+            private const val DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
+        }
 
         /**
          * This constructs the preferences from [R.xml.preferences]
          */
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
+        }
+
+        override fun onDisplayPreferenceDialog(preference : Preference?) {
+            if (preference is IntegerListPreference) {
+                // check if dialog is already showing
+                if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null) {
+                    return
+                }
+
+                val f = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
+                f.setTargetFragment(this, 0)
+                f.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
+            } else {
+                super.onDisplayPreferenceDialog(preference)
+            }
         }
     }
 

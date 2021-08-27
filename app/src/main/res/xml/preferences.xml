@@ -72,7 +72,7 @@
             app:key="username_value"
             app:limit="31"
             app:title="@string/username" />
-        <ListPreference
+        <emu.skyline.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/system_languages"
             android:entryValues="@array/system_lang_values"
