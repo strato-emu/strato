@@ -34,7 +34,12 @@ namespace skyline::service::am {
     }
 
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push(languages::GetLanguageCode(state.os->systemLanguage));
+        auto desiredLanguage{languages::GetApplicationLanguage(state.os->systemLanguage)};
+
+        if ((1 << static_cast<u32>(desiredLanguage) & state.loader->nacp->nacpContents.supportedLanguageFlag) == 0)
+            desiredLanguage = state.loader->nacp->GetFirstSupportedLanguage();
+
+        response.Push(languages::GetLanguageCode(languages::GetSystemLanguage(desiredLanguage)));
         return {};
     }
 

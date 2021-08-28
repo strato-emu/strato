@@ -21,6 +21,10 @@ namespace skyline::vfs {
         return static_cast<languages::ApplicationLanguage>(std::countr_zero(supportedTitleLanguages));
     }
 
+    languages::ApplicationLanguage NACP::GetFirstSupportedLanguage() {
+        return static_cast<languages::ApplicationLanguage>(std::countr_zero(nacpContents.supportedLanguageFlag));
+    }
+
     std::string NACP::GetApplicationName(languages::ApplicationLanguage language) {
         auto applicationName{span(nacpContents.titleEntries.at(static_cast<size_t>(language)).applicationName)};
         return std::string(applicationName.as_string(true));
