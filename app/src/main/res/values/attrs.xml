@@ -4,4 +4,18 @@
         <attr name="limit" format="integer" />
     </declare-styleable>
     <attr name="chipChoiceStyle" format="reference" />
+    <declare-styleable name="IntegerListPreference">
+        <!-- The human-readable array to present as a list. Each entry must have a corresponding
+             index in entryValues. -->
+        <attr format="reference" name="entries"/>
+        <attr name="android:entries"/>
+        <!-- The array to find the value to save for a preference when an entry from
+             entries is selected. If a user clicks on the second item in entries, the
+             second item in this array will be saved to the preference. -->
+        <attr format="reference" name="entryValues"/>
+        <attr name="android:entryValues"/>
+        <!-- Whether the preference should automatically set its summary to the value saved for the
+             preference, and update the summary when the value is changed. Defaults to false. -->
+        <attr format="boolean" name="useSimpleSummaryProvider"/>
+    </declare-styleable>
 </resources>

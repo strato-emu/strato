@@ -38,5 +38,5 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
 
     var maxRefreshRate by sharedPreferences(context, false)
 
-    var systemLanguage by sharedPreferences(context, "1")
+    var systemLanguage by sharedPreferences(context, 1)
 }

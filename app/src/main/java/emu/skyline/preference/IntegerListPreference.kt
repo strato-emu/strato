@@ -5,7 +5,6 @@
 
 package emu.skyline.preference
 
-import java.lang.Exception
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
@@ -22,6 +21,7 @@ import androidx.core.content.res.TypedArrayUtils
 import androidx.preference.R
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceDialogFragmentCompat
+import emu.skyline.R as sR
 
 /**
  * A Preference that displays a list of entries as a dialog.
@@ -68,30 +68,29 @@ class IntegerListPreference @JvmOverloads constructor(
 
     init {
         val res : Resources = context.resources
-        val entryValuesId = attrs!!.getAttributeResourceValue("http://schemas.android.com/apk/res/android", "entryValues", 0)
 
-        var a = context.obtainStyledAttributes(
-            attrs, R.styleable.ListPreference, defStyleAttr, defStyleRes
+        val a = context.obtainStyledAttributes(
+            attrs, sR.styleable.IntegerListPreference, defStyleAttr, defStyleRes
         )
+
         entries = TypedArrayUtils.getTextArray(
-            a, R.styleable.ListPreference_entries,
-            R.styleable.ListPreference_android_entries
+            a, sR.styleable.IntegerListPreference_entries,
+            sR.styleable.IntegerListPreference_android_entries
         )
-        entryValues = try { res.getIntArray(entryValuesId) } catch (e : Exception) { null }
+
+        val entryValuesId = TypedArrayUtils.getResourceId(
+            a, sR.styleable.IntegerListPreference_android_entryValues,
+            sR.styleable.IntegerListPreference_android_entryValues, 0
+        )
+        entryValues = if (entryValuesId != 0) res.getIntArray(entryValuesId) else null
+
         if (TypedArrayUtils.getBoolean(
-                a, R.styleable.ListPreference_useSimpleSummaryProvider,
-                R.styleable.ListPreference_useSimpleSummaryProvider, false
+                a, sR.styleable.IntegerListPreference_useSimpleSummaryProvider,
+                sR.styleable.IntegerListPreference_useSimpleSummaryProvider, false
             )
         ) {
             summaryProvider = SimpleSummaryProvider.instance
         }
-        a.recycle()
-
-        //Retrieve the Preference summary attribute since it's private in the Preference class.
-        a = context.obtainStyledAttributes(
-            attrs,
-            R.styleable.Preference, defStyleAttr, defStyleRes
-        )
         a.recycle()
     }
 
