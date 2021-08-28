@@ -4,13 +4,15 @@
 #include <common/uuid.h>
 #include <mbedtls/sha1.h>
 #include <loader/loader.h>
+#include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/account/IAccountServiceForApplication.h>
 #include <services/am/storage/IStorage.h>
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager)
+        : gpuErrorEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
 
     Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
@@ -32,7 +34,7 @@ namespace skyline::service::am {
     }
 
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push(util::MakeMagic<u64>("en-US"));
+        response.Push(languages::GetLanguageCode(state.os->systemLanguage));
         return {};
     }
 

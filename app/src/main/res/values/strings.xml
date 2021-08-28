@@ -43,6 +43,7 @@
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="username">Username</string>
     <string name="username_default">@string/app_name</string>
+    <string name="system_language">System language</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys</string>
     <string name="prod_keys">Production Keys</string>

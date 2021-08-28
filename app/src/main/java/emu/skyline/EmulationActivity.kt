@@ -70,7 +70,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * @param appFilesPath The full path to the app files directory
      * @param assetManager The asset manager used for accessing app assets
      */
-    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, appFilesPath : String, assetManager : AssetManager)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, language : Int, appFilesPath : String, assetManager : AssetManager)
 
     /**
      * @return If it successfully caused the [emulationThread] to gracefully stop
@@ -173,7 +173,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
-            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), applicationContext.filesDir.canonicalPath + "/", assets)
+            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), Integer.parseInt(settings.systemLanguage), applicationContext.filesDir.canonicalPath + "/", assets)
             if (shouldFinish)
                 runOnUiThread {
                     emulationThread.join()

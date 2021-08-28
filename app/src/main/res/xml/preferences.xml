@@ -72,6 +72,13 @@
             app:key="username_value"
             app:limit="31"
             app:title="@string/username" />
+        <ListPreference
+            android:defaultValue="1"
+            android:entries="@array/system_languages"
+            android:entryValues="@array/system_lang_values"
+            app:key="system_language"
+            app:title="@string/system_language"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_presentation"

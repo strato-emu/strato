@@ -8,6 +8,7 @@
 #include <android/asset_manager_jni.h>
 #include <sys/system_properties.h>
 #include "skyline/common.h"
+#include "skyline/common/languages.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
 #include "skyline/common/trace.h"
@@ -52,7 +53,16 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(JNIEnv *env, jobject instance, jstring romUriJstring, jint romType, jint romFd, jint preferenceFd, jstring appFilesPathJstring, jobject assetManager) {
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
+    JNIEnv *env, jobject instance,
+    jstring romUriJstring,
+    jint romType,
+    jint romFd,
+    jint preferenceFd,
+    jint systemLanguage,
+    jstring appFilesPathJstring,
+    jobject assetManager
+) {
     skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
     Fps = AverageFrametimeMs = AverageFrametimeDeviationMs = 0;
 
@@ -74,7 +84,16 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     perfetto::TrackEvent::Register();
 
     try {
-        auto os{std::make_shared<skyline::kernel::OS>(jvmManager, logger, settings, std::string(appFilesPath), GetTimeZoneName(), std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager)))};
+        auto os{
+            std::make_shared<skyline::kernel::OS>(
+                jvmManager,
+                logger,
+                settings,
+                std::string(appFilesPath),
+                GetTimeZoneName(),
+                static_cast<skyline::languages::SystemLanguage>(systemLanguage),
+                std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
+            )};
         OsWeak = os;
         GpuWeak = os->state.gpu;
         InputWeak = os->state.input;

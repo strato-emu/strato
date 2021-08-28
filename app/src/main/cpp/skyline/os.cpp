@@ -13,7 +13,21 @@
 #include "os.h"
 
 namespace skyline::kernel {
-    OS::OS(std::shared_ptr<JvmManager> &jvmManager, std::shared_ptr<Logger> &logger, std::shared_ptr<Settings> &settings, std::string appFilesPath, std::string deviceTimeZone, std::shared_ptr<vfs::FileSystem> assetFileSystem) : state(this, jvmManager, settings, logger), appFilesPath(std::move(appFilesPath)), deviceTimeZone(std::move(deviceTimeZone)), assetFileSystem(std::move(assetFileSystem)), serviceManager(state) {}
+    OS::OS(
+        std::shared_ptr<JvmManager> &jvmManager,
+        std::shared_ptr<Logger> &logger,
+        std::shared_ptr<Settings> &settings,
+        std::string appFilesPath,
+        std::string deviceTimeZone,
+        languages::SystemLanguage systemLanguage,
+        std::shared_ptr<vfs::FileSystem> assetFileSystem
+    )
+        : state(this, jvmManager, settings, logger),
+          appFilesPath(std::move(appFilesPath)),
+          deviceTimeZone(std::move(deviceTimeZone)),
+          assetFileSystem(std::move(assetFileSystem)),
+          serviceManager(state),
+          systemLanguage(systemLanguage) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
