@@ -22,6 +22,7 @@ import androidx.preference.R
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceDialogFragmentCompat
 import emu.skyline.R as sR
+import emu.skyline.di.getSettings
 
 /**
  * A Preference that displays a list of entries as a dialog.
@@ -65,6 +66,7 @@ class IntegerListPreference @JvmOverloads constructor(
         }
 
     private var isValueSet = false
+    val refreshRequired : Boolean
 
     init {
         val res : Resources = context.resources
@@ -91,6 +93,12 @@ class IntegerListPreference @JvmOverloads constructor(
         ) {
             summaryProvider = SimpleSummaryProvider.instance
         }
+
+        refreshRequired = TypedArrayUtils.getBoolean(
+            a, sR.styleable.IntegerListPreference_refreshRequired,
+            sR.styleable.IntegerListPreference_refreshRequired, false
+        )
+
         a.recycle()
     }
 
@@ -274,7 +282,11 @@ class IntegerListPreference @JvmOverloads constructor(
             builder.setSingleChoiceItems(
                 entries, clickedDialogEntryIndex
             ) { dialog, which ->
-                clickedDialogEntryIndex = which
+                if (clickedDialogEntryIndex != which) {
+                    clickedDialogEntryIndex = which
+                    if (listPreference.refreshRequired)
+                        context?.getSettings()?.refreshRequired = true
+                }
 
                 // Clicking on an item simulates the positive button click, and dismisses
                 // the dialog.

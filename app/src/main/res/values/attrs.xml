@@ -17,5 +17,7 @@
         <!-- Whether the preference should automatically set its summary to the value saved for the
              preference, and update the summary when the value is changed. Defaults to false. -->
         <attr format="boolean" name="useSimpleSummaryProvider"/>
+        <!-- Whether the preference should request a game list refresh or not. Defaults to false. -->
+        <attr format="boolean" name="refreshRequired"/>
     </declare-styleable>
 </resources>
