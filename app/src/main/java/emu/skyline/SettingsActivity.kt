@@ -60,10 +60,9 @@ class SettingsActivity : AppCompatActivity() {
 
         override fun onDisplayPreferenceDialog(preference : Preference?) {
             if (preference is IntegerListPreference) {
-                // check if dialog is already showing
-                if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null) {
+                // Check if dialog is already showing
+                if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null)
                     return
-                }
 
                 val f = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
                 f.setTargetFragment(this, 0)

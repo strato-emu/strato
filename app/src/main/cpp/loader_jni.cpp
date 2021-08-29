@@ -54,7 +54,7 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
 
     if (loader->nacp) {
         auto language{skyline::languages::GetApplicationLanguage(static_cast<skyline::languages::SystemLanguage>(systemLanguage))};
-        if ((1 << static_cast<skyline::u32>(language) & loader->nacp->supportedTitleLanguages) == 0)
+        if (((1 << static_cast<skyline::u32>(language)) & loader->nacp->supportedTitleLanguages) == 0)
             language = loader->nacp->GetFirstSupportedTitleLanguage();
 
         env->SetObjectField(thiz, applicationNameField, env->NewStringUTF(loader->nacp->GetApplicationName(language).c_str()));

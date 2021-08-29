@@ -54,7 +54,8 @@ static std::string GetTimeZoneName() {
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
-    JNIEnv *env, jobject instance,
+    JNIEnv *env,
+    jobject instance,
     jstring romUriJstring,
     jint romType,
     jint romFd,
@@ -84,8 +85,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     perfetto::TrackEvent::Register();
 
     try {
-        auto os{
-            std::make_shared<skyline::kernel::OS>(
+        auto os{std::make_shared<skyline::kernel::OS>(
                 jvmManager,
                 logger,
                 settings,

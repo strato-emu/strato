@@ -11,8 +11,7 @@
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager)
-        : gpuErrorEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
 
     Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
@@ -36,7 +35,8 @@ namespace skyline::service::am {
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto desiredLanguage{languages::GetApplicationLanguage(state.os->systemLanguage)};
 
-        if ((1 << static_cast<u32>(desiredLanguage) & state.loader->nacp->nacpContents.supportedLanguageFlag) == 0)
+        // In the future we might want to trigger an UI dialog if the user selected languages is not available, for now it will use the first available
+        if (((1 << static_cast<u32>(desiredLanguage)) & state.loader->nacp->nacpContents.supportedLanguageFlag) == 0)
             desiredLanguage = state.loader->nacp->GetFirstSupportedLanguage();
 
         response.Push(languages::GetLanguageCode(languages::GetSystemLanguage(desiredLanguage)));
