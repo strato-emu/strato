@@ -340,6 +340,20 @@ namespace skyline {
             return frz::elsa<frz::string>{}(frz::string(view.data(), view.size()), 0);
         }
 
+        /**
+         * @brief Selects the largest possible integer type for representing an object alongside providing the size of the object in terms of the underlying type
+         */
+        template<class T>
+        struct IntegerFor {
+            using type = std::conditional_t<sizeof(T) % sizeof(u64) == 0, u64,
+                std::conditional_t<sizeof(T) % sizeof(u32) == 0, u32,
+                    std::conditional_t<sizeof(T) % sizeof(u16) == 0, u16, u8>
+                >
+            >;
+
+            static constexpr size_t count{sizeof(T) / sizeof(type)};
+        };
+
         namespace detail {
             static thread_local std::mt19937_64 generator{GetTimeTicks()};
         }
@@ -353,6 +367,11 @@ namespace skyline {
             std::independent_bits_engine<std::mt19937_64, std::numeric_limits<T>::digits, T> gen(detail::generator);
 
             std::generate(in.begin(), in.end(), gen);
+        }
+
+        template<class T> requires (!std::is_integral_v<T> && std::is_trivially_copyable_v<T>)
+        void FillRandomBytes(T &object) {
+            FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::type *>(&object), IntegerFor<T>::count));
         }
     }
 

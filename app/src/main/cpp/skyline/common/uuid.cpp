@@ -58,7 +58,7 @@ namespace skyline {
 
         // Create an initial random UUID
         UuidLayout uuid;
-        util::FillRandomBytes(span(&uuid, 1).cast<u64>());
+        util::FillRandomBytes(uuid);
 
         // Set format bits
         uuid.reserved = reserved;
