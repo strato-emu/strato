@@ -10,8 +10,10 @@ namespace skyline::gpu::format {
     using vkf = vk::Format;
     using vka = vk::ImageAspectFlagBits;
 
-    constexpr Format RGBA8888Unorm{sizeof(u8) * 4, 1, 1, vkf::eR8G8B8A8Unorm, vka::eColor}; //!< 8-bits per channel 4-channel pixels
-    constexpr Format RGB565Unorm{sizeof(u8) * 2, 1, 1, vkf::eR5G6B5UnormPack16, vka::eColor}; //!< Red channel: 5-bit, Green channel: 6-bit, Blue channel: 5-bit
+    constexpr Format R8G8B8A8Unorm{sizeof(u32), 1, 1, vkf::eR8G8B8A8Unorm, vka::eColor};
+    constexpr Format R5G6B5Unorm{sizeof(u16), 1, 1, vkf::eR5G6B5UnormPack16, vka::eColor};
+    constexpr Format A2B10G10R10Unorm{sizeof(u32), 1, 1, vkf::eA2B10G10R10UnormPack32, vka::eColor};
+    constexpr Format A8B8G8R8Srgb{sizeof(u32), 1, 1, vkf::eA8B8G8R8SrgbPack32, vka::eColor};
 
     /**
      * @brief Converts a Vulkan format to a Skyline format
@@ -19,9 +21,13 @@ namespace skyline::gpu::format {
     constexpr gpu::texture::Format GetFormat(vk::Format format) {
         switch (format) {
             case vk::Format::eR8G8B8A8Unorm:
-                return RGBA8888Unorm;
+                return R8G8B8A8Unorm;
             case vk::Format::eR5G6B5UnormPack16:
-                return RGB565Unorm;
+                return R5G6B5Unorm;
+            case vk::Format::eA2B10G10R10UnormPack32:
+                return A2B10G10R10Unorm;
+            case vk::Format::eA8B8G8R8SrgbPack32:
+                return A8B8G8R8Srgb;
             default:
                 throw exception("Vulkan format not supported: '{}'", vk::to_string(format));
         }

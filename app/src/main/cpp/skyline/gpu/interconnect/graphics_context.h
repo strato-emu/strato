@@ -3,13 +3,12 @@
 
 #pragma once
 
-#include <vulkan/vulkan_raii.hpp>
-#include <gpu.h>
 #include <gpu/texture/format.h>
 #include <soc/gm20b/gmmu.h>
 #include <soc/gm20b/engines/maxwell/types.h>
+#include "command_executor.h"
 
-namespace skyline::gpu::context {
+namespace skyline::gpu::interconnect {
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
 
     /**
@@ -20,6 +19,7 @@ namespace skyline::gpu::context {
       private:
         GPU &gpu;
         soc::gm20b::GMMU &gmmu;
+        gpu::interconnect::CommandExecutor &executor;
 
         struct RenderTarget {
             bool disabled{}; //!< If this RT has been disabled and will be an unbound attachment instead
@@ -50,7 +50,7 @@ namespace skyline::gpu::context {
 
 
       public:
-        GraphicsContext(GPU &gpu, soc::gm20b::GMMU &gmmu) : gpu(gpu), gmmu(gmmu) {
+        GraphicsContext(GPU &gpu, soc::gm20b::GMMU &gmmu, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), gmmu(gmmu), executor(executor) {
             scissors.fill(DefaultScissor);
         }
 
@@ -88,8 +88,12 @@ namespace skyline::gpu::context {
                 switch (format) {
                     case maxwell3d::RenderTarget::ColorFormat::None:
                         return {};
+                    case maxwell3d::RenderTarget::ColorFormat::A2B10G10R10Unorm:
+                        return format::A2B10G10R10Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::R8G8B8A8Unorm:
-                        return format::RGBA8888Unorm;
+                        return format::R8G8B8A8Unorm;
+                    case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Srgb:
+                        return format::A8B8G8R8Srgb;
                     default:
                         throw exception("Cannot translate the supplied RT format: 0x{:X}", static_cast<u32>(format));
                 }
@@ -148,7 +152,8 @@ namespace skyline::gpu::context {
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
 
-            return &*(renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest));
+            renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest);
+            return &renderTarget.view.value();
         }
 
         void UpdateRenderTargetControl(maxwell3d::RenderTargetControl control) {
@@ -186,10 +191,34 @@ namespace skyline::gpu::context {
         }
 
         void ClearBuffers(maxwell3d::ClearBuffers clear) {
-            auto renderTarget{GetRenderTarget(renderTargetControl.Map(clear.renderTargetId))};
-            if (renderTarget) {
-                std::lock_guard lock(*renderTarget->backing);
-                // TODO: Clear the buffer
+            auto renderTargetIndex{renderTargetControl[clear.renderTargetId]};
+            auto renderTargetPointer{GetRenderTarget(renderTargetIndex)};
+            if (renderTargetPointer) {
+                auto renderTarget{*renderTargetPointer};
+                std::lock_guard lock(*renderTarget.backing);
+
+                vk::ImageAspectFlags aspect{};
+                if (clear.depth)
+                    aspect |= vk::ImageAspectFlagBits::eDepth;
+                if (clear.stencil)
+                    aspect |= vk::ImageAspectFlagBits::eStencil;
+                if (clear.red || clear.green || clear.blue || clear.alpha)
+                    aspect |= vk::ImageAspectFlagBits::eColor;
+                aspect &= renderTarget.format->vkAspect;
+
+                executor.AddSubpass([aspect = aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor = scissors.at(renderTargetIndex)](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+                    commandBuffer.clearAttachments(vk::ClearAttachment{
+                        .aspectMask = aspect,
+                        .colorAttachment = 0,
+                        .clearValue = clearColorValue,
+                    }, vk::ClearRect{
+                        .rect = scissor,
+                        .baseArrayLayer = layerId,
+                        .layerCount = 1,
+                    });
+                }, vk::Rect2D{
+                    .extent = renderTarget.backing->dimensions,
+                }, {}, {renderTarget});
             }
         }
 
@@ -198,22 +227,22 @@ namespace skyline::gpu::context {
         void SetScissor(size_t index, std::optional<maxwell3d::Scissor> scissor) {
             scissors.at(index) = scissor ? vk::Rect2D{
                 .offset.x = scissor->horizontal.minimum,
-                .extent.width = scissor->horizontal.maximum,
+                .extent.width = static_cast<u32>(scissor->horizontal.maximum - scissor->horizontal.minimum),
                 .offset.y = scissor->vertical.minimum,
-                .extent.height = scissor->horizontal.maximum,
+                .extent.height = static_cast<u32>(scissor->horizontal.maximum - scissor->vertical.minimum),
             } : DefaultScissor;
         }
 
         void SetScissorHorizontal(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
             auto &scissor{scissors.at(index)};
             scissor.offset.x = bounds.minimum;
-            scissor.extent.width = bounds.maximum;
+            scissor.extent.width = bounds.maximum - bounds.minimum;
         }
 
         void SetScissorVertical(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
             auto &scissor{scissors.at(index)};
             scissor.offset.y = bounds.minimum;
-            scissor.extent.height = bounds.maximum;
+            scissor.extent.height = bounds.maximum - bounds.minimum;
         }
     };
 }

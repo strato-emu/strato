@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <gpu/context/graphics_context.h>
+#include <gpu/interconnect/graphics_context.h>
 #include "engine.h"
 #include "maxwell/macro_interpreter.h"
 
@@ -23,7 +23,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         MacroInterpreter macroInterpreter;
 
-        gpu::context::GraphicsContext context;
+        gpu::interconnect::GraphicsContext context;
 
         /**
          * @brief Writes back a semaphore result to the guest with an auto-generated timestamp (if required)
@@ -241,7 +241,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
 
-        Maxwell3D(const DeviceState &state, GMMU &gmmu);
+        Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor& executor);
 
         /**
          * @brief Resets the Maxwell 3D registers to their default values

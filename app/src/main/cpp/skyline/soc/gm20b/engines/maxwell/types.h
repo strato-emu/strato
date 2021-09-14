@@ -42,7 +42,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
 
         enum class ColorFormat : u32 {
             None = 0x0,
+            A2B10G10R10Unorm = 0xD1,
             R8G8B8A8Unorm = 0xD5,
+            A8B8G8R8Srgb = 0xD6,
         } format;
 
         struct TileMode {
@@ -221,7 +223,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u8 map6 : 3;
         u8 map7 : 3;
 
-        size_t Map(size_t index) {
+        size_t operator[](size_t index) {
             switch (index) {
                 case 0:
                     return map0;

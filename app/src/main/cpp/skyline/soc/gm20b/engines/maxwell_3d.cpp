@@ -6,7 +6,7 @@
 #include <soc.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
-    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu) {
+    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor& executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu, executor) {
         ResetRegs();
     }
 
@@ -245,6 +245,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             MAXWELL3D_CASE(syncpointAction, {
                 state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
+                state.soc->gm20b.executor.Execute();
             })
 
             MAXWELL3D_CASE(clearBuffers, {

@@ -304,11 +304,11 @@ namespace skyline::service::hosbinder {
             switch (handle.format) {
                 case AndroidPixelFormat::RGBA8888:
                 case AndroidPixelFormat::RGBX8888:
-                    format = gpu::format::RGBA8888Unorm;
+                    format = gpu::format::R8G8B8A8Unorm;
                     break;
 
                 case AndroidPixelFormat::RGB565:
-                    format = gpu::format::RGB565Unorm;
+                    format = gpu::format::R5G6B5Unorm;
                     break;
 
                 default:
@@ -386,7 +386,7 @@ namespace skyline::service::hosbinder {
         {
             auto &texture{buffer.texture};
             std::scoped_lock textureLock(*texture);
-            texture->SynchronizeHost();
+            // texture->SynchronizeHost();
             u64 frameId;
             state.gpu->presentation.Present(texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
         }

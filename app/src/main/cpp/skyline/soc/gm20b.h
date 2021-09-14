@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpu/interconnect/command_executor.h>
 #include "gm20b/engines/maxwell_3d.h"
 #include "gm20b/gpfifo.h"
 #include "gm20b/gmmu.h"
@@ -15,6 +16,7 @@ namespace skyline::soc::gm20b {
     class GM20B {
       public:
         GMMU gmmu;
+        gpu::interconnect::CommandExecutor executor;
         engine::Engine fermi2D;
         engine::maxwell3d::Maxwell3D maxwell3D;
         engine::Engine maxwellCompute;
