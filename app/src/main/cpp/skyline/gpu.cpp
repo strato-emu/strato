@@ -13,7 +13,7 @@ namespace skyline::gpu {
             .apiVersion = VkApiVersion,
         };
 
-        #ifndef NDEBUG
+        #ifdef NDEBUG
         constexpr std::array<const char *, 0> requiredLayers{};
         #else
         constexpr std::array<const char *, 1> requiredLayers{
@@ -82,7 +82,33 @@ namespace skyline::gpu {
             Logger::LogLevel::Error, // VK_DEBUG_REPORT_ERROR_BIT_EXT
             Logger::LogLevel::Debug, // VK_DEBUG_REPORT_DEBUG_BIT_EXT
         };
+
+        #define IGNORE_VALIDATION(string) \
+        case util::Hash(string):          \
+            if(string == type)            \
+                return VK_FALSE;          \
+            else                          \
+                break
+
+        #define DEBUG_VALIDATION(string) \
+        case util::Hash(string):         \
+            if(string == type)           \
+                __builtin_debugtrap();   \
+            break
+
+        std::string_view type(message);
+        auto first{type.find_first_of('[') + 2};
+        type = type.substr(first, type.find_first_of(']', first) - 4);
+
+        switch (util::Hash(type)) {
+            IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
+            IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain"); // Same as SwapchainPreTransform
+        }
+
+        #undef IGNORE_TYPE
+
         logger->Write(severityLookup.at(std::countr_zero(static_cast<u32>(flags))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
+
         return VK_FALSE;
     }
 

@@ -171,9 +171,9 @@ namespace skyline::nce {
             /* Replace Skyline TLS with host TLS */
             *patch++ = 0xD53BD041; // MRS X1, TPIDR_EL0
             *patch++ = 0xF9415022; // LDR X2, [X1, #0x2A0] (ThreadContext::hostTpidrEl0)
+            *patch++ = 0xD51BD042; // MSR TPIDR_EL0, X2
 
             /* Replace guest stack with host stack */
-            *patch++ = 0xD51BD042; // MSR TPIDR_EL0, X2
             *patch++ = 0x910003E2; // MOV X2, SP
             *patch++ = 0xF9415423; // LDR X3, [X1, #0x2A8] (ThreadContext::hostSp)
             *patch++ = 0x9100007F; // MOV SP, X3

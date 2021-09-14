@@ -7,19 +7,38 @@
 #include "texture.h"
 
 namespace skyline::gpu {
-    Texture::Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), backing(std::move(backing)), layout(layout), guest(std::move(guest)), dimensions(dimensions), format(format), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {
+    Texture::Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
+        : gpu(gpu),
+          backing(std::move(backing)),
+          layout(layout),
+          guest(std::move(guest)),
+          dimensions(dimensions),
+          format(format),
+          tiling(tiling),
+          mipLevels(mipLevels),
+          layerCount(layerCount),
+          sampleCount(sampleCount) {
         if (GetBacking())
             SynchronizeHost();
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), backing(std::move(backing)), dimensions(dimensions), format(format), layout(layout), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {}
+    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
+        : gpu(gpu),
+          backing(std::move(backing)),
+          dimensions(dimensions),
+          format(format),
+          layout(layout),
+          tiling(tiling),
+          mipLevels(mipLevels),
+          layerCount(layerCount),
+          sampleCount(sampleCount) {}
 
     Texture::Texture(GPU &pGpu, GuestTexture pGuest)
         : gpu(pGpu),
           guest(std::move(pGuest)),
           dimensions(guest->dimensions),
           format(guest->format),
-          layout(vk::ImageLayout::eGeneral),
+          layout(vk::ImageLayout::eUndefined),
           tiling((guest->tileConfig.mode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear),
           mipLevels(1),
           layerCount(guest->layerCount),
@@ -39,9 +58,18 @@ namespace skyline::gpu {
             .initialLayout = layout,
         };
         backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
+        TransitionLayout(vk::ImageLayout::eGeneral);
     }
 
-    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount) : gpu(gpu), dimensions(dimensions), format(format), layout(initialLayout), tiling(tiling), mipLevels(mipLevels), layerCount(layerCount), sampleCount(sampleCount) {
+    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
+        : gpu(gpu),
+          dimensions(dimensions),
+          format(format),
+          layout(initialLayout == vk::ImageLayout::ePreinitialized ? vk::ImageLayout::ePreinitialized : vk::ImageLayout::eUndefined),
+          tiling(tiling),
+          mipLevels(mipLevels),
+          layerCount(layerCount),
+          sampleCount(sampleCount) {
         vk::ImageCreateInfo imageCreateInfo{
             .imageType = dimensions.GetType(),
             .format = *format,
@@ -54,9 +82,11 @@ namespace skyline::gpu {
             .sharingMode = vk::SharingMode::eExclusive,
             .queueFamilyIndexCount = 1,
             .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
-            .initialLayout = initialLayout,
+            .initialLayout = layout,
         };
         backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
+        if (initialLayout != layout)
+            TransitionLayout(initialLayout);
     }
 
     bool Texture::WaitOnBacking() {
@@ -354,7 +384,6 @@ namespace skyline::gpu {
     TextureView::TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : backing(std::move(backing)), type(type), format(format), mapping(mapping), range(range) {}
 
     vk::ImageView TextureView::GetView() {
-        /*
         if (view)
             return **view;
 
@@ -369,14 +398,21 @@ namespace skyline::gpu {
             }
         }()};
 
-        return *view.emplace(backing->gpu.vkDevice, vk::ImageViewCreateInfo{
+        vk::ImageViewCreateInfo createInfo{
             .image = backing->GetBacking(),
-            .viewType = vk::ImageViewType::eCube,
+            .viewType = viewType,
             .format = format ? *format : *backing->format,
             .components = mapping,
             .subresourceRange = range,
-        });
-         */
-        throw exception("TODO: TextureView::GetView");
+        };
+
+        auto &views{backing->views};
+        auto iterator{std::find_if(views.begin(), views.end(), [&](const std::pair<vk::ImageViewCreateInfo, vk::raii::ImageView> &item) {
+            return item.first == createInfo;
+        })};
+        if (iterator != views.end())
+            return *iterator->second;
+
+        return *views.emplace_back(createInfo, vk::raii::ImageView(backing->gpu.vkDevice, createInfo)).second;
     }
 }

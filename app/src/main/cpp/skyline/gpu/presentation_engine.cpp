@@ -190,6 +190,9 @@ namespace skyline::gpu {
             if (windowScalingMode != NativeWindowScalingMode::ScaleToWindow && (result = window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(windowScalingMode))))
                 throw exception("Setting the layer scaling mode to '{}' failed with {}", ToString(windowScalingMode), result);
 
+            if (windowTransform != NativeWindowTransform::Identity && (result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(windowTransform))))
+                throw exception("Setting the buffer transform to '{}' failed with {}", ToString(windowTransform), result);
+
             if ((result = window->perform(window, NATIVE_WINDOW_ENABLE_FRAME_TIMESTAMPS, true)))
                 throw exception("Enabling frame timestamps failed with {}", result);
 
@@ -225,6 +228,8 @@ namespace skyline::gpu {
                 throw exception("Setting the buffer transform to '{}' failed with {}", ToString(transform), result);
             windowTransform = transform;
         }
+
+        gpu.vkDevice.resetFences(*acquireFence);
 
         std::pair<vk::Result, u32> nextImage;
         while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence), nextImage.first != vk::Result::eSuccess) [[unlikely]] {

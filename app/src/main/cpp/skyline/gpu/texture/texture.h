@@ -115,6 +115,7 @@ namespace skyline::gpu {
 
         /**
          * @brief A wrapper around a pointer to underlying format metadata to prevent redundant copies
+         * @note The equality operators **do not** compare equality for pointers but for the underlying formats while considering nullability
          */
         class Format {
           private:
@@ -131,6 +132,14 @@ namespace skyline::gpu {
 
             constexpr const FormatBase &operator*() const {
                 return *base;
+            }
+
+            constexpr bool operator==(const Format &format) const {
+                return base && format.base ? (*base) == (*format.base) : base == format.base;
+            }
+
+            constexpr bool operator!=(const Format &format) const {
+                return base && format.base ? (*base) != (*format.base) : base != format.base;
             }
 
             constexpr operator bool() const {
@@ -281,6 +290,10 @@ namespace skyline::gpu {
          * @return A Vulkan Image View that corresponds to the properties of this view
          */
         vk::ImageView GetView();
+
+        bool operator==(const TextureView &rhs) {
+            return backing == rhs.backing && type == rhs.type && format == rhs.format && mapping == rhs.mapping && range == rhs.range;
+        }
     };
 
     /**
@@ -294,11 +307,14 @@ namespace skyline::gpu {
         std::condition_variable backingCondition; //!< Signalled when a valid backing has been swapped in
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
-        std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
+
+        std::vector<std::pair<vk::ImageViewCreateInfo, vk::raii::ImageView>> views; //!< VkImageView(s) that have been constructed from this Texture, utilized for caching
 
         friend TextureManager;
+        friend TextureView;
 
       public:
+        std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
         std::optional<GuestTexture> guest;
         texture::Dimensions dimensions;
         texture::Format format;
