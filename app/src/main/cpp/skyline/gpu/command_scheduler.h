@@ -41,7 +41,7 @@ namespace skyline::gpu {
             constexpr ActiveCommandBuffer(CommandBufferSlot &slot) : slot(slot) {}
 
             ~ActiveCommandBuffer() {
-                slot.active.clear();
+                slot.active.clear(std::memory_order_release);
             }
 
             vk::Fence GetFence() {
@@ -92,6 +92,20 @@ namespace skyline::gpu {
             commandBuffer->end();
             SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
             return commandBuffer.GetFenceCycle();
+        }
+
+        /**
+         * @note Same as Submit but with FenceCycle as an argument rather than return value
+         */
+        template<typename RecordFunction>
+        void SubmitWithCycle(RecordFunction recordFunction) {
+            auto commandBuffer{AllocateCommandBuffer()};
+            commandBuffer->begin(vk::CommandBufferBeginInfo{
+                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+            });
+            recordFunction(*commandBuffer, commandBuffer.GetFenceCycle());
+            commandBuffer->end();
+            SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
         }
     };
 }

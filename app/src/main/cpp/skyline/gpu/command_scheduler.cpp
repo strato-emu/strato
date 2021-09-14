@@ -8,8 +8,9 @@ namespace skyline::gpu {
     CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool) : device(device), commandBuffer(device, commandBuffer, pool), fence(device, vk::FenceCreateInfo{}), cycle(std::make_shared<FenceCycle>(device, *fence)) {}
 
     bool CommandScheduler::CommandBufferSlot::AllocateIfFree(CommandScheduler::CommandBufferSlot &slot) {
-        if (slot.active.test_and_set(std::memory_order_acq_rel)) {
+        if (!slot.active.test_and_set(std::memory_order_acq_rel)) {
             if (slot.cycle->Poll()) {
+                slot.commandBuffer.reset();
                 slot.cycle = std::make_shared<FenceCycle>(slot.device, *slot.fence);
                 return true;
             } else {
@@ -25,11 +26,12 @@ namespace skyline::gpu {
     }) {}
 
     CommandScheduler::ActiveCommandBuffer CommandScheduler::AllocateCommandBuffer() {
+        std::scoped_lock lock(mutex);
         auto slot{std::find_if(commandBuffers.begin(), commandBuffers.end(), CommandBufferSlot::AllocateIfFree)};
+        auto slotId{std::distance(commandBuffers.begin(), slot)};
         if (slot != commandBuffers.end())
             return ActiveCommandBuffer(*slot);
 
-        std::scoped_lock lock(mutex);
         vk::CommandBuffer commandBuffer;
         vk::CommandBufferAllocateInfo commandBufferAllocateInfo{
             .commandPool = *vkCommandPool,

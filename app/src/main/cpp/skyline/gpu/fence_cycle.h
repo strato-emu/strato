@@ -60,7 +60,7 @@ namespace skyline::gpu {
             if (signalled.test(std::memory_order_consume))
                 return;
             while (device.waitForFences(fence, false, std::numeric_limits<u64>::max()) != vk::Result::eSuccess);
-            if (signalled.test_and_set(std::memory_order_release))
+            if (!signalled.test_and_set(std::memory_order_release))
                 DestroyDependencies();
         }
 
@@ -72,7 +72,7 @@ namespace skyline::gpu {
             if (signalled.test(std::memory_order_consume))
                 return true;
             if (device.waitForFences(fence, false, timeout.count()) == vk::Result::eSuccess) {
-                if (signalled.test_and_set(std::memory_order_release))
+                if (!signalled.test_and_set(std::memory_order_release))
                     DestroyDependencies();
                 return true;
             } else {
@@ -86,8 +86,9 @@ namespace skyline::gpu {
         bool Poll() {
             if (signalled.test(std::memory_order_consume))
                 return true;
-            if ((*device).getFenceStatus(fence, *device.getDispatcher()) == vk::Result::eSuccess) {
-                if (signalled.test_and_set(std::memory_order_release))
+            auto status{(*device).getFenceStatus(fence, *device.getDispatcher())};
+            if (status == vk::Result::eSuccess) {
+                if (!signalled.test_and_set(std::memory_order_release))
                     DestroyDependencies();
                 return true;
             } else {
