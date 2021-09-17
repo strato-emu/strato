@@ -12,6 +12,8 @@ namespace skyline {
 }
 
 namespace skyline::service::nvdrv::device::nvhost {
+    using GMMU = soc::gm20b::GM20B::GMMU;
+
     AsGpu::AsGpu(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
 
     PosixResult AsGpu::BindChannel(In<FileDescriptor> channelFd) {
@@ -45,7 +47,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         u64 size{static_cast<u64>(pages) * static_cast<u64>(pageSize)};
 
         if (flags.sparse)
-            state.soc->gm20b.gmmu.Map(offset, soc::gm20b::GM20B::GMMU::SparsePlaceholderAddress(), size, true);
+            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), size, true);
 
         allocationMap[offset] = {
             .size = size,
@@ -74,8 +76,10 @@ namespace skyline::service::nvdrv::device::nvhost {
                 allocator->Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
             }
 
+            // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
+            // Only FreeSpace can unmap them fully
             if (mapping->sparseAlloc)
-                state.soc->gm20b.gmmu.Map(offset, soc::gm20b::GM20B::GMMU::SparsePlaceholderAddress(), mapping->size, true);
+                state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, true);
             else
                 state.soc->gm20b.gmmu.Unmap(offset, mapping->size);
 
@@ -93,6 +97,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}", flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
+        // Remaps a subregion of an existing mapping to a different PA
         if (flags.remap) {
             try {
                 auto mapping{mappingMap.at(offset)};
@@ -206,6 +211,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             vm.vaRangeStart = bigPageSize << VM::VaStartShift;
         }
 
+        // If this is unspecified then default values should be used
         if (vaRangeStart) {
             vm.vaRangeStart = vaRangeStart;
             vm.vaRangeSplit = vaRangeSplit;

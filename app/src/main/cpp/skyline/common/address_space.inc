@@ -27,7 +27,7 @@ namespace skyline {
 
         auto blockEndSuccessor{std::lower_bound(blocks.begin(), blocks.end(), virtEnd)};
         if (blockEndSuccessor == blocks.begin())
-            throw exception("Unexpected Memory Manager state!");
+            throw exception("Trying to map a block before the VA start!");
 
         auto blockEndPredecessor{std::prev(blockEndSuccessor)};
 
@@ -36,7 +36,7 @@ namespace skyline {
             if (blockEndSuccessor->virt != virtEnd) {
                 PaType tailPhys{[&]() -> PaType {
                     if (!PaContigSplit || blockEndPredecessor->Unmapped())
-                        return blockEndPredecessor->phys; // Always propagate unmapped regions
+                        return blockEndPredecessor->phys; // Always propagate unmapped regions rather than calculating offset
                     else
                         return blockEndPredecessor->phys + virtEnd - blockEndPredecessor->virt;
                 }()};
@@ -70,14 +70,15 @@ namespace skyline {
         while (std::prev(blockStartSuccessor)->virt >= virt)
             std::advance(blockStartSuccessor, -1);
 
-        if (blockStartSuccessor->virt > virtEnd)
-            throw exception("Unexpected Memory Manager state!");
-
-        if (blockStartSuccessor->virt == virtEnd) {
+        // Check that the start successor is either the end block or something in between
+        if (blockStartSuccessor->virt > virtEnd) {
+            throw exception("Unsorted block in AS map!");
+        } else if (blockStartSuccessor->virt == virtEnd) {
             // We need to create a new block as there are none spare that we would overwrite
             blocks.insert(blockStartSuccessor, Block(virt, phys, flag));
             return;
         } else {
+            // Reuse a block that would otherwise be overwritten as a start block
             blockStartSuccessor->virt = virt;
             blockStartSuccessor->phys = phys;
             blockStartSuccessor->flag = flag;
@@ -85,7 +86,7 @@ namespace skyline {
             // Erase overwritten blocks
             if (auto eraseStart{std::next(blockStartSuccessor)}; blockStartSuccessor != blockEndPredecessor) {
                 if (eraseStart == blockEndPredecessor)
-                    __builtin_trap();
+                    throw exception("Trying to erase the end block of a newly mapped region!");
 
                 blocks.erase(eraseStart, blockEndPredecessor);
             }
@@ -98,11 +99,11 @@ namespace skyline {
         VaType virtEnd{virt + size};
 
         if (virtEnd > vaLimit)
-            throw exception("Trying to map a block past the VA limit!");
+            throw exception("Trying to unmap a block past the VA limit!");
 
         auto blockEndSuccessor{std::lower_bound(blocks.begin(), blocks.end(), virtEnd)};
         if (blockEndSuccessor == blocks.begin())
-            throw exception("Unexpected Memory Manager state!");
+            throw exception("Trying to unmap a block before the VA start!");
 
         auto blockEndPredecessor{std::prev(blockEndSuccessor)};
 
@@ -113,7 +114,7 @@ namespace skyline {
             return iter;
         }};
 
-        auto eraseBlocksWithEndUnmapped{[&] (auto unmappedEnd) {
+        auto eraseBlocksWithEndUnmapped{[&](auto unmappedEnd) {
             auto blockStartPredecessor{walkBackToPredecessor(unmappedEnd)};
             auto blockStartSuccessor{std::next(blockStartPredecessor)};
 
@@ -130,7 +131,7 @@ namespace skyline {
 
             // We can't have two unmapped regions after each other
             if (eraseEnd == blockStartSuccessor || (blockStartPredecessor->Unmapped() && eraseEnd->Unmapped()))
-                throw exception("Unexpected Memory Manager state!");
+                throw exception("Multiple contiguous unmapped regions are unsupported!");
 
             blocks.erase(blockStartSuccessor, eraseEnd);
         }};
@@ -149,7 +150,7 @@ namespace skyline {
             throw exception("Unexpected Memory Manager state!");
         } else if (blockEndSuccessor->virt != virtEnd) {
             // If one block is directly in front then we don't have to add a tail
-            
+
             // The previous block is mapped so we will need to add a tail with an offset
             PaType tailPhys{[&]() {
                 if constexpr (PaContigSplit)
@@ -172,10 +173,9 @@ namespace skyline {
         auto blockStartPredecessor{walkBackToPredecessor(blockEndPredecessor)};
         auto blockStartSuccessor{std::next(blockStartPredecessor)};
 
-        if (blockStartSuccessor->virt > virtEnd)
-            throw exception("Unexpected Memory Manager state!");
-
-        if (blockStartSuccessor->virt == virtEnd) {
+        if (blockStartSuccessor->virt > virtEnd) {
+            throw exception("Unsorted block in AS map!");
+        } else if (blockStartSuccessor->virt == virtEnd) {
             // There are no blocks between the start and the end that would let us skip inserting a new one for head
 
             // The previous block is may be unmapped, if so we don't need to insert any unmaps after it
@@ -192,7 +192,7 @@ namespace skyline {
             // Erase overwritten blocks, skipping the first one as we have written the unmapped start block there
             if (auto eraseStart{std::next(blockStartSuccessor)}; blockStartSuccessor != blockEndPredecessor) {
                 if (eraseStart == blockEndPredecessor)
-                    __builtin_trap();
+                    throw exception("Unexpected Memory Manager state!");
 
                 blocks.erase(eraseStart, blockEndPredecessor);
             }
@@ -225,6 +225,7 @@ namespace skyline {
         u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
         VaType blockReadSize{std::min(successor->virt - virt, size)};
 
+        // Reads may span across multiple individual blocks
         while (size) {
             if (predecessor->phys == nullptr) {
                 if (predecessor->flag) // Sparse mapping
@@ -262,6 +263,7 @@ namespace skyline {
         u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
         VaType blockWriteSize{std::min(successor->virt - virt, size)};
 
+        // Writes may span across multiple individual blocks
         while (size) {
             if (predecessor->phys == nullptr) {
                 if (!predecessor->flag) // Sparse mappings allow unmapped writes
@@ -292,15 +294,17 @@ namespace skyline {
         VaType allocStart{UnmappedVa};
         VaType allocEnd{currentLinearAllocEnd + size};
 
+        // Avoid searching backwards in the address space if possible
         if (allocEnd >= currentLinearAllocEnd && allocEnd <= this->vaLimit) {
             auto allocEndSuccessor{std::lower_bound(this->blocks.begin(), this->blocks.end(), allocEnd)};
             if (allocEndSuccessor == this->blocks.begin())
-                throw exception("Unexpected allocator state!");
+                throw exception("First block in AS map is invalid!");
 
             auto allocEndPredecessor{std::prev(allocEndSuccessor)};
             if (allocEndPredecessor->virt <= currentLinearAllocEnd) {
                 allocStart = currentLinearAllocEnd;
             } else {
+                // Skip over fixed any mappings in front of us
                 while (allocEndSuccessor != this->blocks.end()) {
                     if (allocEndSuccessor->virt - allocEndPredecessor->virt < size || allocEndPredecessor->Mapped() ) {
                         allocStart = allocEndPredecessor->virt;
@@ -309,6 +313,7 @@ namespace skyline {
 
                     allocEndPredecessor = allocEndSuccessor++;
 
+                    // Use the VA limit to calculate if we can fit in the final block since it has no successor
                     if (allocEndSuccessor == this->blocks.end()) {
                         allocEnd = allocEndPredecessor->virt + size;
 
