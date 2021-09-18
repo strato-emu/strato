@@ -15,14 +15,23 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::SetNvmapFd(In<core::NvMap::Handle::Id> id) {
+        state.logger->Debug("id: {}", id);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetTimeout(In<u32> timeout) {
+        state.logger->Debug("timeout: {}", timeout);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SubmitGpfifo(In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence, span<soc::gm20b::GpEntry> gpEntries) {
+        state.logger->Debug("userAddress: 0x{:X}, numEntries: {},"
+                            "flags ( fenceWait: {}, fenceIncrement: {}, hwFormat: {}, suppressWfi: {}, incrementWithValue: {}),"
+                            "fence ( id: {}, threshold: {} )",
+                            userAddress, numEntries,
+                            +flags.fenceWait, +flags.fenceIncrement, +flags.hwFormat, +flags.suppressWfi, +flags.incrementWithValue,
+                            fence.id, fence.threshold);
+
         if (numEntries > gpEntries.size())
             throw exception("GpEntry size mismatch!");
 
@@ -54,22 +63,27 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::AllocObjCtx(In<u32> classId, In<u32> flags, Out<u64> objId) {
+        state.logger->Debug("classId: 0x{:X}, flags: 0x{:X}", classId, flags);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::ZcullBind(In<u64> gpuVa, In<u32> mode) {
+        state.logger->Debug("gpuVa: 0x{:X}, mode: {}", gpuVa, mode);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetErrorNotifier(In<u64> offset, In<u64> size, In<u32> mem) {
+        state.logger->Debug("offset: 0x{:X}, size: 0x{:X}, mem: 0x{:X}", offset, size, mem);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetPriority(In<u32> priority) {
+        state.logger->Debug("priority: {}", priority);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::AllocGpfifoEx2(In<u32> numEntries, In<u32> numJobs, In<u32> flags, Out<Fence> fence) {
+        state.logger->Debug("numEntries: {}, numJobs: {}, flags: 0x{:X}", numEntries, numJobs, flags);
         state.soc->gm20b.gpfifo.Initialize(numEntries);
 
         fence = core.syncpointManager.GetSyncpointFence(channelSyncpoint);
@@ -78,10 +92,12 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::SetTimeslice(In<u32> timeslice) {
+        state.logger->Debug("timeslice: {}", timeslice);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetUserData(In<u64> userData) {
+        state.logger->Debug("userData: 0x{:X}", userData);
         channelUserData = userData;
         return PosixResult::Success;
     }

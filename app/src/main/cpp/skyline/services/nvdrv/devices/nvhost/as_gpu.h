@@ -38,9 +38,8 @@ namespace skyline::service::nvdrv::device::nvhost {
         };
 
         std::map<u64, std::shared_ptr<Mapping>> mappingMap; //!< This maps the base addresses of mapped buffers to their total sizes and mapping type, this is needed as what was originally a single buffer may have been split into multiple GPU side buffers with the remap flag.
-
-        std::map<u64, Allocation> allocationMap;
-
+        std::map<u64, Allocation> allocationMap; //!< Holds allocations created by AllocSpace from which fixed buffers can be mapped into
+        std::mutex mutex; //!< Locks all AS operations
 
         struct VM {
             static constexpr u32 PageSize{0x1000};
@@ -66,6 +65,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             bool initialised{};
         } vm;
 
+        void FreeMappingLocked(u64 offset);
 
       public:
         struct MappingFlags {

@@ -22,7 +22,13 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::AllocSpace(In<u32> pages, In<u32> pageSize, In<MappingFlags> flags, InOut<u64> offset) {
-        state.logger->Debug("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}", pages, pageSize, flags.fixed, flags.sparse, offset);
+        state.logger->Debug("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}",
+                            pages, pageSize, flags.fixed, flags.sparse, offset);
+
+        std::scoped_lock lock(mutex);
+
+        if (!vm.initialised)
+            return PosixResult::InvalidArgument;
 
         if (pageSize != VM::PageSize && pageSize != vm.bigPageSize)
             return PosixResult::InvalidArgument;
@@ -44,7 +50,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         else
             offset = static_cast<u64>(allocator->Allocate(pages)) << pageSizeBits;
 
-        u64 size{static_cast<u64>(pages) * static_cast<u64>(pageSize)};
+        u64 size{static_cast<u64>(pages) * pageSize};
 
         if (flags.sparse)
             state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), size, true);
@@ -58,13 +64,66 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
+    void AsGpu::FreeMappingLocked(u64 offset) {
+        auto mapping{mappingMap.at(offset)};
+
+        if (!mapping->fixed) {
+            auto &allocator{mapping->bigPage ? vm.bigPageAllocator : vm.smallPageAllocator};
+            u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
+
+            allocator->Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
+        }
+
+        // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
+        // Only FreeSpace can unmap them fully
+        if (mapping->sparseAlloc)
+            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, true);
+        else
+            state.soc->gm20b.gmmu.Unmap(offset, mapping->size);
+
+        mappingMap.erase(offset);
+    }
+
     PosixResult AsGpu::FreeSpace(In<u64> offset, In<u32> pages, In<u32> pageSize) {
-        // TODO: implement after UNMAP
+        state.logger->Debug("offset: 0x{:X}, pages: 0x{:X}, pageSize: 0x{:X}", offset, pages, pageSize);
+
+        std::scoped_lock lock(mutex);
+
+        if (!vm.initialised)
+            return PosixResult::InvalidArgument;
+
+        try {
+            auto allocation{allocationMap[offset]};
+
+            if (allocation.pageSize != pageSize || allocation.size != (static_cast<u64>(pages) * pageSize))
+                return PosixResult::InvalidArgument;
+
+            for (const auto &mapping : allocation.mappings)
+                FreeMapping(mapping->offset);
+
+            // Unset sparse flag if required
+            if (allocation.sparse)
+                state.soc->gm20b.gmmu.Unmap(offset, allocation.size);
+
+            auto &allocator{pageSize == VM::PageSize ? vm.smallPageAllocator : vm.bigPageAllocator};
+            u32 pageSizeBits{pageSize == VM::PageSize ? VM::PageSizeBits : vm.bigPageSizeBits};
+
+            allocator->Free(offset >> pageSizeBits, allocation.size >> pageSizeBits);
+            allocationMap.erase(offset);
+        } catch (const std::out_of_range &e) {
+            return PosixResult::InvalidArgument;
+        }
+
         return PosixResult::Success;
     }
 
     PosixResult AsGpu::UnmapBuffer(In<u64> offset) {
         state.logger->Debug("offset: 0x{:X}", offset);
+
+        std::scoped_lock lock(mutex);
+
+        if (!vm.initialised)
+            return PosixResult::InvalidArgument;
 
         try {
             auto mapping{mappingMap.at(offset)};
@@ -92,10 +151,12 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset) {
+        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}", flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
+
+        std::scoped_lock lock(mutex);
+
         if (!vm.initialised)
             return PosixResult::InvalidArgument;
-
-        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}", flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
         // Remaps a subregion of an existing mapping to a different PA
         if (flags.remap) {
@@ -164,6 +225,8 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::GetVaRegions(In<u64> bufAddr, InOut<u32> bufSize, Out<std::array<VaRegion, 2>> vaRegions) {
+        std::scoped_lock lock(mutex);
+
         if (!vm.initialised)
             return PosixResult::InvalidArgument;
 
@@ -188,6 +251,8 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::AllocAsEx(In<u32> flags, In<FileDescriptor> asFd, In<u32> bigPageSize, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit) {
+        std::scoped_lock lock(mutex);
+
         if (vm.initialised)
             throw exception("Cannot initialise an address space twice!");
 
@@ -232,6 +297,11 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::Remap(span<RemapEntry> entries) {
+        std::scoped_lock lock(mutex);
+
+        if (!vm.initialised)
+            return PosixResult::InvalidArgument;
+
         for (const auto &entry : entries) {
             u64 virtAddr{static_cast<u64>(entry.asOffsetBigPages) << vm.bigPageSizeBits};
             u64 size{static_cast<u64>(entry.bigPages) << vm.bigPageSizeBits};
