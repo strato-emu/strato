@@ -23,11 +23,11 @@ namespace skyline {
         VaType virtEnd{virt + size};
 
         if (virtEnd > vaLimit)
-            throw exception("Trying to map a block past the VA limit!");
+            throw exception("Trying to map a block past the VA limit: virtEnd: 0x{:X}, vaLimit: 0x{:X}", virtEnd, vaLimit);
 
         auto blockEndSuccessor{std::lower_bound(blocks.begin(), blocks.end(), virtEnd)};
         if (blockEndSuccessor == blocks.begin())
-            throw exception("Trying to map a block before the VA start!");
+            throw exception("Trying to map a block before the VA start: virtEnd: 0x{:X}", virtEnd);
 
         auto blockEndPredecessor{std::prev(blockEndSuccessor)};
 
@@ -68,11 +68,11 @@ namespace skyline {
 
         // Walk the block vector to find the start successor as this is more efficient than another binary search in most scenarios
         while (std::prev(blockStartSuccessor)->virt >= virt)
-            std::advance(blockStartSuccessor, -1);
+            blockStartSuccessor--;
 
         // Check that the start successor is either the end block or something in between
         if (blockStartSuccessor->virt > virtEnd) {
-            throw exception("Unsorted block in AS map!");
+            throw exception("Unsorted block in AS map: virt: 0x{:X}", blockStartSuccessor->virt);
         } else if (blockStartSuccessor->virt == virtEnd) {
             // We need to create a new block as there are none spare that we would overwrite
             blocks.insert(blockStartSuccessor, Block(virt, phys, flag));
@@ -99,17 +99,17 @@ namespace skyline {
         VaType virtEnd{virt + size};
 
         if (virtEnd > vaLimit)
-            throw exception("Trying to unmap a block past the VA limit!");
+            throw exception("Trying to map a block past the VA limit: virtEnd: 0x{:X}, vaLimit: 0x{:X}", virtEnd, vaLimit);
 
         auto blockEndSuccessor{std::lower_bound(blocks.begin(), blocks.end(), virtEnd)};
         if (blockEndSuccessor == blocks.begin())
-            throw exception("Trying to unmap a block before the VA start!");
+            throw exception("Trying to unmap a block before the VA start: virtEnd: 0x{:X}", virtEnd);
 
         auto blockEndPredecessor{std::prev(blockEndSuccessor)};
 
         auto walkBackToPredecessor{[&](auto iter) {
             while (iter->virt >= virt)
-                std::advance(iter, -1);
+                iter--;
 
             return iter;
         }};
@@ -174,7 +174,7 @@ namespace skyline {
         auto blockStartSuccessor{std::next(blockStartPredecessor)};
 
         if (blockStartSuccessor->virt > virtEnd) {
-            throw exception("Unsorted block in AS map!");
+            throw exception("Unsorted block in AS map: virt: 0x{:X}", blockStartSuccessor->virt);
         } else if (blockStartSuccessor->virt == virtEnd) {
             // There are no blocks between the start and the end that would let us skip inserting a new one for head
 
@@ -192,21 +192,11 @@ namespace skyline {
             // Erase overwritten blocks, skipping the first one as we have written the unmapped start block there
             if (auto eraseStart{std::next(blockStartSuccessor)}; blockStartSuccessor != blockEndPredecessor) {
                 if (eraseStart == blockEndPredecessor)
-                    throw exception("Unexpected Memory Manager state!");
+                    throw exception("Trying to erase the end block of a newly unmapped region!");
 
                 blocks.erase(eraseStart, blockEndPredecessor);
             }
         }
-    }
-
-    MAP_MEMBER(void)::Map(VaType virt, PaType phys, VaType size, bool flag) {
-        std::scoped_lock lock(blockMutex);
-        MapLocked(virt, phys, size, flag);
-    }
-
-    MAP_MEMBER(void)::Unmap(VaType virt, VaType size) {
-        std::scoped_lock lock(blockMutex);
-        UnmapLocked(virt, size);
     }
 
     MM_MEMBER(void)::Read(u8 *destination, VaType virt, VaType size) {
@@ -231,7 +221,7 @@ namespace skyline {
                 if (predecessor->flag) // Sparse mapping
                     std::memset(destination, 0, blockReadSize);
                 else
-                    throw exception("Page fault at: 0x{:X}", predecessor->virt);
+                    throw exception("Page fault at 0x{:X}", predecessor->virt);
             } else {
                 std::memcpy(destination, blockPhys, blockReadSize);
             }
@@ -267,7 +257,7 @@ namespace skyline {
         while (size) {
             if (predecessor->phys == nullptr) {
                 if (!predecessor->flag) // Sparse mappings allow unmapped writes
-                    throw exception("Page fault at: 0x{:X}", predecessor->virt);
+                    throw exception("Page fault at 0x{:X}", predecessor->virt);
             } else {
                 std::memcpy(blockPhys, source, blockWriteSize);
             }
@@ -350,10 +340,10 @@ namespace skyline {
     }
 
     ALLOC_MEMBER(void)::AllocateFixed(VaType virt, VaType size) {
-        this->MapLocked(virt, true, size);
+        this->Map(virt, true, size);
     }
 
     ALLOC_MEMBER(void)::Free(VaType virt, VaType size) {
-        this->UnmapLocked(virt, size);
+        this->Unmap(virt, size);
     }
 }

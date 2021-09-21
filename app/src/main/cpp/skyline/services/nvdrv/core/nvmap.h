@@ -89,8 +89,6 @@ namespace skyline::service::nvdrv::core {
         bool TryRemoveHandle(const std::shared_ptr<Handle> &h);
 
       public:
-        NvMap(const DeviceState &state);
-
         /**
          * @brief Encapsulates the result of a FreeHandle operation
          */
@@ -99,6 +97,8 @@ namespace skyline::service::nvdrv::core {
             u64 size; //!< Page-aligned handle size
             bool wasUncached; //!< If the handle was allocated as uncached
         };
+
+        NvMap(const DeviceState &state);
 
         /**
          * @brief Creates an unallocated handle of the given size
@@ -109,7 +109,7 @@ namespace skyline::service::nvdrv::core {
 
         /**
          * @brief Tries to free a handle and remove a single dupe
-         * If a handle has no dupes left and has no other users a FreeInfo struct will be returned describing the prior state of the handle.
+         * @note If a handle has no dupes left and has no other users a FreeInfo struct will be returned describing the prior state of the handle
          */
         std::optional<FreeInfo> FreeHandle(Handle::Id handle, bool internalSession);
     };

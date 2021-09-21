@@ -35,8 +35,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
       private:
         /**
-         * @brief Syncpoint Events are used to expose fences to the userspace, they can be waited on using an IOCTL
-         * or be converted into a native HOS KEvent object that can be waited on just like any other KEvent on the guest
+         * @brief Syncpoint Events are used to expose fences to the userspace, they can be waited on using an IOCTL or be converted into a native HOS KEvent object that can be waited on just like any other KEvent on the guest
          */
         class SyncpointEvent {
           private:
@@ -81,7 +80,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::array<std::unique_ptr<SyncpointEvent>, SyncpointEventCount> syncpointEvents{};
 
         /**
-         * @brief Finds a free syncpoint event for the given syncpoint id
+         * @brief Finds a free syncpoint event for the given syncpoint ID
          * @note syncpointEventMutex MUST be locked when calling this
          * @return The free event slot
          */

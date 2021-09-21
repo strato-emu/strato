@@ -84,8 +84,6 @@ namespace skyline {
 
     /**
      * @brief A wrapper around std::optional that also stores a HOS result code
-     * @tparam ValueType The object type to hold
-     * @tparam ResultType The result type to hold
      */
     template<typename ValueType, typename ResultType = Result>
     class ResultValue {

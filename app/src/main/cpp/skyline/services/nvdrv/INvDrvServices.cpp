@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <numeric>
 #include <kernel/types/KProcess.h>
 #include "INvDrvServices.h"
 #include "driver.h"
@@ -18,7 +19,7 @@ namespace skyline::service::nvdrv {
     INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager, Driver &driver, const SessionPermissions &perms) : BaseService(state, manager), driver(driver), ctx(SessionContext{.perms = perms}) {}
 
     Result INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr FileDescriptor SessionFdLimit{sizeof(u64) * 2 * 8}; //!< Nvdrv uses two 64 bit variables to store a bitset
+        constexpr FileDescriptor SessionFdLimit{std::numeric_limits<u64>::digits * 2}; //!< Nvdrv uses two 64 bit variables to store a bitset
 
         auto path{request.inputBuf.at(0).as_string(true)};
         if (path.empty() || nextFdIndex == SessionFdLimit) {
@@ -100,7 +101,7 @@ namespace skyline::service::nvdrv {
         auto fd{request.Pop<FileDescriptor>()};
         auto ioctl{request.Pop<IoctlDescriptor>()};
 
-        // The inline buffer is technically not required
+        // Inline buffer is optional
         auto inlineBuf{request.inputBuf.size() > 1 ? request.inputBuf.at(1) : span<u8>{}};
 
         auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
@@ -114,7 +115,7 @@ namespace skyline::service::nvdrv {
         auto fd{request.Pop<FileDescriptor>()};
         auto ioctl{request.Pop<IoctlDescriptor>()};
 
-        // The inline buffer is technically not required
+        // Inline buffer is optional
         auto inlineBuf{request.outputBuf.size() > 1 ? request.outputBuf.at(1) : span<u8>{}};
 
         auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};

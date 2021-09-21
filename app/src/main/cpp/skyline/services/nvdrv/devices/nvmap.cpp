@@ -9,30 +9,29 @@ namespace skyline::service::nvdrv::device {
     NvMap::NvMap(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
 
     PosixResult NvMap::Create(In<u32> size, Out<NvMapCore::Handle::Id> handle) {
-        auto h{core.nvMap.CreateHandle(util::AlignUp(size, PAGE_SIZE))};
-        if (h) {
-            (*h)->origSize = size; // Orig size is the unaligned size
-            handle = (*h)->id;
-            state.logger->Debug("handle: {}, size: 0x{:X}", (*h)->id, size);
+        auto handleDesc{core.nvMap.CreateHandle(util::AlignUp(size, PAGE_SIZE))};
+        if (handleDesc) {
+            (*handleDesc)->origSize = size; // Orig size is the unaligned size
+            handle = (*handleDesc)->id;
+            state.logger->Debug("handle: {}, size: 0x{:X}", (*handleDesc)->id, size);
         }
 
-        return h;
+        return handleDesc;
     }
 
     PosixResult NvMap::FromId(In<NvMapCore::Handle::Id> id, Out<NvMapCore::Handle::Id> handle) {
         state.logger->Debug("id: {}", id);
 
         // Handles and IDs are always the same value in nvmap however IDs can be used globally given the right permissions.
-        // Since we don't plan on ever supporting multiprocess we can skip implementing handle refs and so this function
-        // just does simple validation and passes through the handle id.
+        // Since we don't plan on ever supporting multiprocess we can skip implementing handle refs and so this function just does simple validation and passes through the handle id.
         if (!id) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        auto h{core.nvMap.GetHandle(id)};
-        if (!h) [[unlikely]]
+        auto handleDesc{core.nvMap.GetHandle(id)};
+        if (!handleDesc) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        return h->Duplicate(ctx.internalSession);
+        return handleDesc->Duplicate(ctx.internalSession);
     }
 
     PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address) {
@@ -48,11 +47,11 @@ namespace skyline::service::nvdrv::device {
         if (align < PAGE_SIZE) [[unlikely]]
             align = PAGE_SIZE;
 
-        auto h{core.nvMap.GetHandle(handle)};
-        if (!h) [[unlikely]]
+        auto handleDesc{core.nvMap.GetHandle(handle)};
+        if (!handleDesc) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        return h->Alloc(flags, align, kind, address);
+        return handleDesc->Alloc(flags, align, kind, address);
     }
 
     PosixResult NvMap::Free(In<NvMapCore::Handle::Id> handle, Out<u64> address, Out<u32> size, Out<NvMapCore::Handle::Flags> flags) {
@@ -78,32 +77,32 @@ namespace skyline::service::nvdrv::device {
         if (!handle)
             return PosixResult::InvalidArgument;
 
-        auto h{core.nvMap.GetHandle(handle)};
-        if (!h) [[unlikely]]
+        auto handleDesc{core.nvMap.GetHandle(handle)};
+        if (!handleDesc) [[unlikely]]
             return PosixResult::InvalidArgument;
 
         switch (param) {
             case HandleParameterType::Size:
-                result = h->origSize;
+                result = handleDesc->origSize;
                 return PosixResult::Success;
             case HandleParameterType::Alignment:
-                result = h->align;
+                result = handleDesc->align;
                 return PosixResult::Success;
             case HandleParameterType::Base:
                 result = -static_cast<i32>(PosixResult::InvalidArgument);
                 return PosixResult::Success;
             case HandleParameterType::Heap:
-                if (h->allocated)
+                if (handleDesc->allocated)
                     result = 0x40000000;
                 else
                     result = 0;
 
                 return PosixResult::Success;
             case HandleParameterType::Kind:
-                result = h->kind;
+                result = handleDesc->kind;
                 return PosixResult::Success;
             case HandleParameterType::IsSharedMemMapped:
-                result = h->isSharedMemMapped;
+                result = handleDesc->isSharedMemMapped;
                 return PosixResult::Success;
             default:
                 return PosixResult::InvalidArgument;
@@ -117,11 +116,11 @@ namespace skyline::service::nvdrv::device {
         if (!handle) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        auto h{core.nvMap.GetHandle(handle)};
-        if (!h) [[unlikely]]
+        auto handleDesc{core.nvMap.GetHandle(handle)};
+        if (!handleDesc) [[unlikely]]
             return PosixResult::NotPermitted; // This will always return EPERM irrespective of if the handle exists or not
 
-        id = h->id;
+        id = handleDesc->id;
         return PosixResult::Success;
     }
 

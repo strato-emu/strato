@@ -39,31 +39,7 @@ namespace skyline::service::nvdrv {
                 DEVICE_CASE("/dev/nvhost-ctrl-gpu", nvhost::CtrlGpu)
                 DEVICE_CASE("/dev/nvhost-gpu", nvhost::GpuChannel)
             );
-        }/*
-
-        if (ctx.perms.AccessVic) {
-            switch (pathHash) {
-                ENTRY("/dev/nvhost-vic", nvhost::Vic)
-                default:
-                    break;
-            }
         }
-
-        if (ctx.perms.AccessVideoDecoder) {
-            switch (pathHash) {
-                ENTRY("/dev/nvhost-nvdec", nvhost::NvDec)
-                default:
-                    break;
-            }
-        }
-
-        if (ctx.perms.AccessJpeg) {
-            switch (pathHash) {
-                ENTRY("/dev/nvhost-nvjpg", nvhost::NvJpg)
-                default:
-                    break;
-            }
-        }*/
 
         #undef DEVICE_CASE
         #undef DEVICE_SWITCH

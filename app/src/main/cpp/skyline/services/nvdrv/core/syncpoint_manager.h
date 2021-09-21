@@ -73,7 +73,7 @@ namespace skyline::service::nvdrv::core {
         u32 UpdateMin(u32 id);
 
         /**
-         * @return A fence that will be signalled once this syncpoint hits it's maximum value
+         * @return A fence that will be signalled once this syncpoint hits its maximum value
          */
         Fence GetSyncpointFence(u32 id);
     };

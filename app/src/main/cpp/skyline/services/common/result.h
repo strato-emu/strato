@@ -16,7 +16,6 @@ namespace skyline::service {
         FunctionNotImplemented = 38, // ENOSYS
         NotSupported = 95, // EOPNOTSUPP, ENOTSUP
         TimedOut = 110, // ETIMEDOUT
-
     };
 
     template<typename ValueType>

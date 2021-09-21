@@ -14,10 +14,10 @@ namespace skyline {
      * @brief FlatAddressSpaceMap provides a generic VA->PA mapping implementation using a sorted vector
      */
     template<typename VaType, VaType UnmappedVa, typename PaType, PaType UnmappedPa, bool PaContigSplit, size_t AddressSpaceBits> requires AddressSpaceValid<VaType, AddressSpaceBits>
-    class FlatAddressSpaceMap {
+    extern class FlatAddressSpaceMap {
       private:
         /**
-         * @brief Represents a block of memory in the AS
+         * @brief Represents a block of memory in the AS, the physical mapping is contiguous until another block with a different phys address is hit
          */
         struct Block {
             VaType virt{UnmappedVa}; //!< VA of the block
@@ -70,15 +70,15 @@ namespace skyline {
 
         FlatAddressSpaceMap() = default;
 
-        /**
-         * @brief Locked version of MapLocked
-         */
-        void Map(VaType virt, PaType phys, VaType size, bool flag = {});
+        void Map(VaType virt, PaType phys, VaType size, bool flag = {}) {
+            std::scoped_lock lock(blockMutex);
+            MapLocked(virt, phys, size, flag);
+        }
 
-        /**
-         * @brief Locked version of UnmapLocked
-         */
-        void Unmap(VaType virt, VaType size);
+        void Unmap(VaType virt, VaType size) {
+            std::scoped_lock lock(blockMutex);
+            UnmapLocked(virt, size);
+        }
     };
 
     /**

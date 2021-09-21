@@ -183,6 +183,8 @@ namespace skyline::signal {
             std::call_once(signalHandlerOnce[signal], [signal, &action]() {
                 struct sigaction oldAction;
                 Sigaction(signal, &action, &oldAction);
+                if (oldAction.sa_flags && oldAction.sa_flags != action.sa_flags)
+                    throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
 
                 DefaultSignalHandlers.at(signal).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
             });

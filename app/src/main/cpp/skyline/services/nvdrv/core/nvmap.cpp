@@ -21,7 +21,7 @@ namespace skyline::service::nvdrv::core {
         if (pAddress)
             flags.keepUncachedAfterFree = false;
         else
-            throw exception("Mapping nvmap handles without a cpu side address is unimplemented!");
+            throw exception("Mapping nvmap handles without a CPU side address is unimplemented!");
 
         size = util::AlignUp(size, PAGE_SIZE);
         alignedSize = util::AlignUp(size, align);
@@ -53,18 +53,18 @@ namespace skyline::service::nvdrv::core {
 
     NvMap::NvMap(const DeviceState &state) : state(state) {}
 
-    void NvMap::AddHandle(std::shared_ptr<Handle> handle) {
+    void NvMap::AddHandle(std::shared_ptr<Handle> handleDesc) {
         std::scoped_lock lock(handlesLock);
 
-        handles.emplace(handle->id, std::move(handle));
+        handles.emplace(handleDesc->id, std::move(handleDesc));
     }
 
-    bool NvMap::TryRemoveHandle(const std::shared_ptr<Handle> &h) {
+    bool NvMap::TryRemoveHandle(const std::shared_ptr<Handle> &handleDesc) {
         // No dupes left, we can remove from handle map
-        if (h->dupes == 0 && h->internalDupes == 0) {
+        if (handleDesc->dupes == 0 && handleDesc->internalDupes == 0) {
             std::scoped_lock lock(handlesLock);
 
-            auto it{handles.find(h->id)};
+            auto it{handles.find(handleDesc->id)};
             if (it != handles.end())
                 handles.erase(it);
 
@@ -79,10 +79,10 @@ namespace skyline::service::nvdrv::core {
             return PosixResult::InvalidArgument;
 
         u32 id{nextHandleId.fetch_add(HandleIdIncrement, std::memory_order_relaxed)};
-        auto h{std::make_shared<Handle>(size, id)};
-        AddHandle(h);
+        auto handleDesc{std::make_shared<Handle>(size, id)};
+        AddHandle(handleDesc);
 
-        return h;
+        return handleDesc;
     }
 
     std::shared_ptr<NvMap::Handle> NvMap::GetHandle(Handle::Id handle) {
@@ -100,34 +100,34 @@ namespace skyline::service::nvdrv::core {
         FreeInfo freeInfo;
 
         // We use a weak ptr here so we can tell when the handle has been freed and report that back to guest
-        if (auto h = hWeak.lock()) {
-            if (!h) [[unlikely]]
+        if (auto handleDesc = hWeak.lock()) {
+            if (!handleDesc) [[unlikely]]
                 return std::nullopt;
 
-            std::scoped_lock lock(h->mutex);
+            std::scoped_lock lock(handleDesc->mutex);
 
             if (internalSession) {
-                if (--h->internalDupes < 0)
+                if (--handleDesc->internalDupes < 0)
                     state.logger->Warn("Internal duplicate count inbalance detected!");
             } else {
-                if (--h->dupes < 0) {
+                if (--handleDesc->dupes < 0) {
                     state.logger->Warn("User duplicate count inbalance detected!");
-                } else if (h->dupes == 0) {
+                } else if (handleDesc->dupes == 0) {
                     // TODO: unpin
                 }
             }
 
             // Try to remove the shared ptr to the handle from the map, if nothing else is using the handle
             // then it will now be freed when `h` goes out of scope
-            if (TryRemoveHandle(h))
+            if (TryRemoveHandle(handleDesc))
                 state.logger->Debug("Removed nvmap handle: {}", handle);
             else
                 state.logger->Debug("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);
 
             freeInfo = {
-                .address = h->address,
-                .size = h->size,
-                .wasUncached = h->flags.mapUncached,
+                .address = handleDesc->address,
+                .size = handleDesc->size,
+                .wasUncached = handleDesc->flags.mapUncached,
             };
         } else {
             return std::nullopt;

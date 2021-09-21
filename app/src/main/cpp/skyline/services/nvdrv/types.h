@@ -9,9 +9,6 @@ namespace skyline::service::nvdrv {
     using FileDescriptor = i32;
     constexpr FileDescriptor InvalidFileDescriptor{-1};
 
-    /**
-     * @brief Holds the permissions for an nvdrv instance
-     */
     struct SessionPermissions {
         bool AccessGpu;
         bool AccessGpuDebug;
@@ -29,9 +26,6 @@ namespace skyline::service::nvdrv {
         bool ExportNvMapHandles;
     };
 
-    /**
-     * @brief Holds the per-session context for nvdrv
-     */
     struct SessionContext {
         SessionPermissions perms;
         bool internalSession;

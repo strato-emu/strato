@@ -53,7 +53,7 @@ namespace skyline::service::nvdrv::deserialisation {
                 return make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset));
             } else {
                 return std::tuple_cat(make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset)),
-                                      DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset));
+                                                     DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset));
             }
         }
     }

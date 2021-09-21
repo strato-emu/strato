@@ -99,7 +99,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 return PosixResult::InvalidArgument;
 
             for (const auto &mapping : allocation.mappings)
-                FreeMapping(mapping->offset);
+                FreeMappingLocked(mapping->offset);
 
             // Unset sparse flag if required
             if (allocation.sparse)
@@ -151,7 +151,8 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset) {
-        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}", flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
+        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
+                            flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
         std::scoped_lock lock(mutex);
 
