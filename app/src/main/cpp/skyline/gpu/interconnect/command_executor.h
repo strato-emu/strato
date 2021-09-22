@@ -17,6 +17,11 @@ namespace skyline::gpu::interconnect {
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderpassNode *renderpass{};
 
+        /**
+         * @return If a new renderpass was created by the function or the current one was reused as it was compatible
+         */
+        bool CreateRenderpass(vk::Rect2D renderArea);
+
       public:
         CommandExecutor(const DeviceState &state) : gpu(*state.gpu) {}
 
@@ -26,6 +31,15 @@ namespace skyline::gpu::interconnect {
          */
         void AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments = {}, std::vector<TextureView> colorAttachments = {}, std::optional<TextureView> depthStencilAttachment = {});
 
+        /**
+         * @brief Adds a subpass that clears the entirety of the specified attachment with a value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
+         * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
+         */
+        void AddClearSubpass(TextureView attachment, const vk::ClearColorValue& value);
+
+        /**
+         * @brief Execute all the nodes and submit the resulting command buffer to the GPU
+         */
         void Execute();
     };
 }

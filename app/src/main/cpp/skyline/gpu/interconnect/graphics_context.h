@@ -88,12 +88,30 @@ namespace skyline::gpu::interconnect {
                 switch (format) {
                     case maxwell3d::RenderTarget::ColorFormat::None:
                         return {};
+                    case maxwell3d::RenderTarget::ColorFormat::R32B32G32A32Float:
+                        return format::R32B32G32A32Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Float:
+                        return format::R16G16B16A16Float;
                     case maxwell3d::RenderTarget::ColorFormat::A2B10G10R10Unorm:
                         return format::A2B10G10R10Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::R8G8B8A8Unorm:
                         return format::R8G8B8A8Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Srgb:
                         return format::A8B8G8R8Srgb;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16Snorm:
+                        return format::R16G16Snorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16Float:
+                        return format::R16G16Float;
+                    case maxwell3d::RenderTarget::ColorFormat::B10G11R11Float:
+                        return format::B10G11R11Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R32Float:
+                        return format::R32Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R8G8Snorm:
+                        return format::R8G8Snorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16Float:
+                        return format::R16Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R8Unorm:
+                        return format::R8Unorm;
                     default:
                         throw exception("Cannot translate the supplied RT format: 0x{:X}", static_cast<u32>(format));
                 }
@@ -206,19 +224,33 @@ namespace skyline::gpu::interconnect {
                     aspect |= vk::ImageAspectFlagBits::eColor;
                 aspect &= renderTarget.format->vkAspect;
 
-                executor.AddSubpass([aspect = aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor = scissors.at(renderTargetIndex)](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
-                    commandBuffer.clearAttachments(vk::ClearAttachment{
-                        .aspectMask = aspect,
-                        .colorAttachment = 0,
-                        .clearValue = clearColorValue,
-                    }, vk::ClearRect{
-                        .rect = scissor,
-                        .baseArrayLayer = layerId,
-                        .layerCount = 1,
-                    });
-                }, vk::Rect2D{
-                    .extent = renderTarget.backing->dimensions,
-                }, {}, {renderTarget});
+                if (aspect == vk::ImageAspectFlags{})
+                    return;
+
+                auto scissor{scissors.at(renderTargetIndex)};
+                scissor.extent.width = std::min(renderTarget.backing->dimensions.width - scissor.offset.x, scissor.extent.width);
+                scissor.extent.height = std::min(renderTarget.backing->dimensions.height - scissor.offset.y, scissor.extent.height);
+
+                if (scissor.extent.width == 0 || scissor.extent.height == 0)
+                    return;
+
+                if (scissor.extent.width == renderTarget.backing->dimensions.width && scissor.extent.width == renderTarget.backing->dimensions.width && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
+                    executor.AddClearSubpass(renderTarget, clearColorValue);
+                } else {
+                    executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+                        commandBuffer.clearAttachments(vk::ClearAttachment{
+                            .aspectMask = aspect,
+                            .colorAttachment = 0,
+                            .clearValue = clearColorValue,
+                        }, vk::ClearRect{
+                            .rect = scissor,
+                            .baseArrayLayer = layerId,
+                            .layerCount = 1,
+                        });
+                    }, vk::Rect2D{
+                        .extent = renderTarget.backing->dimensions,
+                    }, {}, {renderTarget});
+                }
             }
         }
 

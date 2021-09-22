@@ -101,8 +101,9 @@ namespace skyline::gpu {
     }
 
     void Texture::WaitOnFence() {
-        if (cycle) {
-            cycle->Wait();
+        auto lCycle{cycle.lock()};
+        if (lCycle) {
+            lCycle->Wait();
             cycle.reset();
         }
     }
@@ -232,7 +233,7 @@ namespace skyline::gpu {
                 throw exception("Backing properties changing during sync is not supported");
             WaitOnFence();
 
-            cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+            auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 auto image{GetBacking()};
                 if (layout != vk::ImageLayout::eTransferDstOptimal) {
                     commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
@@ -277,8 +278,9 @@ namespace skyline::gpu {
                             .layerCount = 1,
                         },
                     });
-            });
-            cycle->AttachObjects(stagingBuffer, shared_from_this());
+            })};
+            lCycle->AttachObjects(stagingBuffer, shared_from_this());
+            cycle = lCycle;
         }
     }
 
@@ -309,7 +311,7 @@ namespace skyline::gpu {
         else if (source->format != format)
             throw exception("Cannot copy from image with different format");
 
-        cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+        auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
             auto sourceBacking{source->GetBacking()};
             if (source->layout != vk::ImageLayout::eTransferSrcOptimal) {
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
@@ -377,8 +379,9 @@ namespace skyline::gpu {
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .subresourceRange = subresource,
                 });
-        });
-        cycle->AttachObjects(std::move(source), shared_from_this());
+        })};
+        lCycle->AttachObjects(std::move(source), shared_from_this());
+        cycle = lCycle;
     }
 
     TextureView::TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : backing(std::move(backing)), type(type), format(format), mapping(mapping), range(range) {}

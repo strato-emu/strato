@@ -87,25 +87,30 @@ namespace skyline::gpu {
         case util::Hash(string):          \
             if(string == type)            \
                 return VK_FALSE;          \
-            else                          \
-                break
+            break
 
         #define DEBUG_VALIDATION(string) \
         case util::Hash(string):         \
             if(string == type)           \
-                __builtin_debugtrap();   \
+                raise(SIGTRAP);          \
             break
+        // Using __builtin_debugtrap() as opposed to raise(SIGTRAP) will result in the inability to continue
 
         std::string_view type(message);
-        auto first{type.find_first_of('[') + 2};
-        type = type.substr(first, type.find_first_of(']', first) - 4);
+        auto first{type.find('[')};
+        auto last{type.find(']', first)};
+        if (first != std::string_view::npos && last != std::string_view::npos) {
+            type = type.substr(first + 2, last != std::string_view::npos ? last - 4 : last);
+            std::string typeStr{type};
 
-        switch (util::Hash(type)) {
-            IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
-            IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain"); // Same as SwapchainPreTransform
+            switch (util::Hash(type)) {
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
+                IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain"); // Same as SwapchainPreTransform
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout"); // We utilize images as VK_IMAGE_LAYOUT_GENERAL rather than optimal layouts for operations
+            }
+
+            #undef IGNORE_TYPE
         }
-
-        #undef IGNORE_TYPE
 
         logger->Write(severityLookup.at(std::countr_zero(static_cast<u32>(flags))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
 

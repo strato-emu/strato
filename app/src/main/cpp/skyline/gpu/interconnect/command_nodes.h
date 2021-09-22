@@ -49,7 +49,17 @@ namespace skyline::gpu::interconnect::node {
         std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
         std::vector<vk::AttachmentReference> attachmentReferences;
-        std::vector<boost::container::small_vector<u32, 5>> preserveAttachmentReferences; //!< Any attachment that must be preserved to be utilized by a future subpass, these are stored per-subpass to ensure contiguity
+        std::vector<std::vector<u32>> preserveAttachmentReferences; //!< Any attachment that must be preserved to be utilized by a future subpass, these are stored per-subpass to ensure contiguity
+
+        constexpr static uintptr_t DepthStencilNull{std::numeric_limits<uintptr_t>::max()}; //!< A sentinel value to denote the lack of a depth stencil attachment in a VkSubpassDescription
+
+        /**
+         * @brief Rebases a pointer containing an offset relative to the beginning of a container
+         */
+        template<typename Container, typename T>
+        T *RebasePointer(const Container &container, const T *offset) {
+            return reinterpret_cast<T *>(reinterpret_cast<uintptr_t>(container.data()) + reinterpret_cast<uintptr_t>(offset));
+        }
 
       public:
         std::vector<vk::SubpassDescription> subpassDescriptions;
@@ -70,39 +80,81 @@ namespace skyline::gpu::interconnect::node {
             if (texture == textures.end())
                 textures.push_back(view.backing);
 
-            vk::AttachmentDescription attachmentDescription{
-                .format = *view.format,
-                .initialLayout = view.backing->layout,
-                .finalLayout = view.backing->layout,
-            };
-
             auto vkView{view.GetView()};
             auto attachment{std::find(attachments.begin(), attachments.end(), vkView)};
-            if (attachment == attachments.end() || attachmentDescriptions[std::distance(attachments.begin(), attachment)] != attachmentDescription) {
+            if (attachment == attachments.end()) {
                 // If we cannot find any matches for the specified attachment, we add it as a new one
                 attachments.push_back(vkView);
-                attachmentDescriptions.push_back(attachmentDescription);
+                attachmentDescriptions.push_back(vk::AttachmentDescription{
+                    .format = *view.format,
+                    .initialLayout = view.backing->layout,
+                    .finalLayout = view.backing->layout,
+                });
                 return attachments.size() - 1;
             } else {
                 // If we've got a match from a previous subpass, we need to preserve the attachment till the current subpass
                 auto attachmentIndex{std::distance(attachments.begin(), attachment)};
-                auto attachmentReferenceIt{std::find_if(attachmentReferences.begin(), attachmentReferences.end(), [&](const vk::AttachmentReference &reference) {
-                    return reference.attachment == attachmentIndex;
-                })};
 
-                auto attachmentReferenceOffset{std::distance(attachmentReferences.begin(), attachmentReferenceIt) * sizeof(vk::AttachmentReference)};
-                auto subpassDescriptionIt{std::find_if(subpassDescriptions.begin(), subpassDescriptions.end(), [&](const vk::SubpassDescription &description) {
-                    return reinterpret_cast<uintptr_t>(description.pDepthStencilAttachment) > attachmentReferenceOffset;
-                })};
+                auto it{subpassDescriptions.begin()};
+                for (; it != subpassDescriptions.end(); it++) {
+                    auto referenceBeginIt{attachmentReferences.begin()};
+                    referenceBeginIt += reinterpret_cast<uintptr_t>(it->pInputAttachments) / sizeof(vk::AttachmentReference);
 
-                for (ssize_t subpassIndex{std::distance(subpassDescriptions.begin(), subpassDescriptionIt)}; subpassIndex != subpassDescriptions.size(); subpassIndex++)
-                    preserveAttachmentReferences[subpassIndex].push_back(attachmentIndex);
+                    auto referenceEndIt{referenceBeginIt + it->inputAttachmentCount + it->colorAttachmentCount}; // We depend on all attachments being contiguous for a subpass, this will horribly break if that assumption is broken
+                    if (reinterpret_cast<uintptr_t>(it->pDepthStencilAttachment) != DepthStencilNull)
+                        referenceEndIt++;
 
-                return std::distance(attachments.begin(), attachment);
+                    if (std::find_if(referenceBeginIt, referenceEndIt, [&](const vk::AttachmentReference &reference) {
+                        return reference.attachment == attachmentIndex;
+                    }) != referenceEndIt)
+                        break; // The first subpass that utilizes the attachment we want to preserve
+                }
+
+                if (it == subpassDescriptions.end())
+                    throw exception("Cannot find corresponding subpass for attachment #{}", attachmentIndex);
+
+                auto lastUsageIt{it};
+                for (; it != subpassDescriptions.end(); it++) {
+                    auto referenceBeginIt{attachmentReferences.begin()};
+                    referenceBeginIt += reinterpret_cast<uintptr_t>(it->pInputAttachments) / sizeof(vk::AttachmentReference);
+
+                    auto referenceEndIt{referenceBeginIt + it->inputAttachmentCount + it->colorAttachmentCount};
+                    if (reinterpret_cast<uintptr_t>(it->pDepthStencilAttachment) != DepthStencilNull)
+                        referenceEndIt++;
+
+                    if (std::find_if(referenceBeginIt, referenceEndIt, [&](const vk::AttachmentReference &reference) {
+                        return reference.attachment == attachmentIndex;
+                    }) != referenceEndIt) {
+                        lastUsageIt = it;
+                        continue; // If a subpass uses an attachment then it doesn't need to be preserved
+                    }
+
+                    auto &subpassPreserveAttachments{preserveAttachmentReferences[std::distance(subpassDescriptions.begin(), it)]};
+                    if (std::find(subpassPreserveAttachments.begin(), subpassPreserveAttachments.end(), attachmentIndex) != subpassPreserveAttachments.end())
+                        subpassPreserveAttachments.push_back(attachmentIndex);
+                }
+
+                vk::SubpassDependency dependency{
+                    .srcSubpass = static_cast<u32>(std::distance(subpassDescriptions.begin(), lastUsageIt)),
+                    .dstSubpass = static_cast<uint32_t>(subpassDescriptions.size()), // We assume that the next subpass is using the attachment
+                    .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                    .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                    .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
+                    .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+                };
+
+                if (std::find(subpassDependencies.begin(), subpassDependencies.end(), dependency) == subpassDependencies.end())
+                    subpassDependencies.push_back(dependency);
+
+                return attachmentIndex;
             }
         }
 
-        void AddSubpass(std::vector<TextureView> &inputAttachments, std::vector<TextureView> &colorAttachments, std::optional<TextureView> &depthStencilAttachment) {
+        /**
+         * @brief Creates a subpass with the attachments bound in the specified order
+         */
+        void AddSubpass(span <TextureView> inputAttachments, span <TextureView> colorAttachments, TextureView *depthStencilAttachment) {
             attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
             auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
@@ -131,29 +183,57 @@ namespace skyline::gpu::interconnect::node {
 
             preserveAttachmentReferences.emplace_back(); // We need to create storage for any attachments that might need to preserved by this pass
 
-            // Note: We encode the offsets as the pointers due to vector pointer invalidation, the vector offset will be added to them prior to submission
+            // Note: We encode the offsets as the pointers due to vector pointer invalidation, RebasePointer(...) can be utilized to deduce the real pointer
             subpassDescriptions.push_back(vk::SubpassDescription{
                 .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
                 .inputAttachmentCount = static_cast<u32>(inputAttachments.size()),
                 .pInputAttachments = reinterpret_cast<vk::AttachmentReference *>(inputAttachmentsOffset),
                 .colorAttachmentCount = static_cast<u32>(colorAttachments.size()),
                 .pColorAttachments = reinterpret_cast<vk::AttachmentReference *>(colorAttachmentsOffset),
-                .pDepthStencilAttachment = reinterpret_cast<vk::AttachmentReference *>(depthStencilAttachment ? depthStencilAttachmentOffset : std::numeric_limits<uintptr_t>::max()),
+                .pDepthStencilAttachment = reinterpret_cast<vk::AttachmentReference *>(depthStencilAttachment ? depthStencilAttachmentOffset : DepthStencilNull),
             });
+        }
+
+        /**
+         * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_LOAD
+         * @param colorAttachment The index of the attachment in the attachments bound to the current subpass
+         * @return If the attachment could be cleared or not due to conflicts with other operations
+         * @note We require a subpass to be attached during this as the clear will not take place unless it's referenced by a subpass
+         */
+        bool ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value) {
+            auto attachmentReference{RebasePointer(attachmentReferences, subpassDescriptions.back().pColorAttachments) + colorAttachment};
+            auto attachmentIndex{attachmentReference->attachment};
+
+            for (const auto &reference : attachmentReferences)
+                if (reference.attachment == attachmentIndex && &reference != attachmentReference)
+                    return false;
+
+            auto &attachmentDescription{attachmentDescriptions.at(attachmentIndex)};
+            if (attachmentDescription.loadOp == vk::AttachmentLoadOp::eLoad) {
+                attachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
+
+                clearValues.resize(attachmentIndex + 1);
+                clearValues[attachmentIndex].color = value;
+
+                return true;
+            } else if (attachmentDescription.loadOp == vk::AttachmentLoadOp::eClear && clearValues[attachmentIndex].color.uint32 == value.uint32) {
+                return true;
+            }
+
+            return false;
         }
 
         void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
             storage->device = &gpu.vkDevice;
 
             auto preserveAttachmentIt{preserveAttachmentReferences.begin()};
-            auto attachmentReferenceOffset{reinterpret_cast<uintptr_t>(attachmentReferences.data())};
             for (auto &subpassDescription : subpassDescriptions) {
-                subpassDescription.pInputAttachments = reinterpret_cast<vk::AttachmentReference *>(attachmentReferenceOffset + reinterpret_cast<uintptr_t>(subpassDescription.pInputAttachments));
-                subpassDescription.pColorAttachments = reinterpret_cast<vk::AttachmentReference *>(attachmentReferenceOffset + reinterpret_cast<uintptr_t>(subpassDescription.pColorAttachments));
+                subpassDescription.pInputAttachments = RebasePointer(attachmentReferences, subpassDescription.pInputAttachments);
+                subpassDescription.pColorAttachments = RebasePointer(attachmentReferences, subpassDescription.pColorAttachments);
 
                 auto depthStencilAttachmentOffset{reinterpret_cast<uintptr_t>(subpassDescription.pDepthStencilAttachment)};
-                if (depthStencilAttachmentOffset != std::numeric_limits<uintptr_t>::max())
-                    subpassDescription.pDepthStencilAttachment = reinterpret_cast<vk::AttachmentReference *>(attachmentReferenceOffset + depthStencilAttachmentOffset);
+                if (depthStencilAttachmentOffset != DepthStencilNull)
+                    subpassDescription.pDepthStencilAttachment = RebasePointer(attachmentReferences, subpassDescription.pDepthStencilAttachment);
                 else
                     subpassDescription.pDepthStencilAttachment = nullptr;
 
@@ -165,7 +245,7 @@ namespace skyline::gpu::interconnect::node {
             for (auto &texture : storage->textures) {
                 texture->lock();
                 texture->WaitOnBacking();
-                if (texture->cycle != cycle)
+                if (texture->cycle.lock() != cycle)
                     texture->WaitOnFence();
             }
 
@@ -209,7 +289,7 @@ namespace skyline::gpu::interconnect::node {
     /**
      * @brief A FunctionNode which progresses to the next subpass prior to calling the function
      */
-    struct NextSubpassNode : FunctionNode {
+    struct NextSubpassNode : private FunctionNode {
         using FunctionNode::FunctionNode;
 
         void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {

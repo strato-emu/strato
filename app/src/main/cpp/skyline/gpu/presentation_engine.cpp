@@ -53,7 +53,7 @@ namespace skyline::gpu {
         engine->vsyncEvent->Signal();
 
         // Post the frame callback to be triggered on the next display refresh
-        AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), engine);
+        AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), engine);
     }
 
     void PresentationEngine::ChoreographerThread() {
@@ -61,7 +61,7 @@ namespace skyline::gpu {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             choreographerLooper = ALooper_prepare(0);
-            AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback>(&ChoreographerCallback), this);
+            AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), this);
             ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
         } catch (const signal::SignalException &e) {
             state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
@@ -122,6 +122,11 @@ namespace skyline::gpu {
         if ((capabilities.supportedUsageFlags & presentUsage) != presentUsage)
             throw exception("Swapchain doesn't support image usage '{}': {}", vk::to_string(presentUsage), vk::to_string(capabilities.supportedUsageFlags));
 
+        auto requestedMode{state.settings->disableFrameThrottling ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo};
+        auto modes{gpu.vkPhysicalDevice.getSurfacePresentModesKHR(**vkSurface)};
+        if (std::find(modes.begin(), modes.end(), requestedMode) == modes.end())
+            throw exception("Swapchain doesn't support present mode: {}", vk::to_string(requestedMode));
+
         vkSwapchain.emplace(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
             .minImageCount = minImageCount,
@@ -132,7 +137,7 @@ namespace skyline::gpu {
             .imageUsage = presentUsage,
             .imageSharingMode = vk::SharingMode::eExclusive,
             .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eInherit,
-            .presentMode = state.settings->disableFrameThrottling ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo,
+            .presentMode = requestedMode,
             .clipped = true,
         });
 

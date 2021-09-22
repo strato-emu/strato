@@ -398,6 +398,11 @@ namespace skyline {
         constexpr span(const std::span<T, Extent> &spn) : std::span<T, Extent>(spn) {}
 
         /**
+         * @brief A single-element constructor for a span
+         */
+        constexpr span(T &spn) : std::span<T, Extent>(&spn, 1) {}
+
+        /**
          * @brief We want to support implicitly casting from std::string_view -> span as it's just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
          */
         template<typename Traits>
