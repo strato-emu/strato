@@ -5,6 +5,7 @@
 
 #include <frozen/unordered_map.h>
 #include <common.h>
+#include <common/macros.h>
 
 namespace skyline {
     namespace constant {
@@ -13,121 +14,94 @@ namespace skyline {
     }
 
     namespace languages {
+        /**
+         * @brief The list of all languages. Entries parameters are language, language code, system language index, application language index and map which holds a macro used for filtering some application languages that don't have a direct corresponding system language
+         * @example #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) func(lang, code, sysIndex, appIndex, map) <br> LANGUAGES <br> #undef LANG_ENTRY
+         */
+        #define LANGUAGES                                                       \
+            LANG_ENTRY(Japanese, ja, 0, 2, MAP)                                 \
+            LANG_ENTRY(AmericanEnglish, en-us, 1, 0, MAP)                       \
+            LANG_ENTRY(French, fr, 2, 3, MAP)                                   \
+            LANG_ENTRY(German, de, 3, 4, MAP)                                   \
+            LANG_ENTRY(Italian, it, 4, 7, MAP)                                  \
+            LANG_ENTRY(Spanish, es, 5, 6, MAP)                                  \
+            LANG_ENTRY(Chinese, zh-CN, 6, 14, DONT_MAP)                         \
+            LANG_ENTRY(Korean, ko, 7, 12, MAP)                                  \
+            LANG_ENTRY(Dutch, nl, 8, 8, MAP)                                    \
+            LANG_ENTRY(Portuguese, pt, 9, 10, MAP)                              \
+            LANG_ENTRY(Russian, ru, 10, 11, MAP)                                \
+            LANG_ENTRY(Taiwanese, zh-TW, 11, 13, DONT_MAP)                      \
+            LANG_ENTRY(BritishEnglish, en-GB, 12, 1, MAP)                       \
+            LANG_ENTRY(CanadianFrench, fr-CA, 13, 9, MAP)                       \
+            LANG_ENTRY(LatinAmericanSpanish, es-419, 14, 5, MAP)                \
+            LANG_ENTRY(SimplifiedChinese, zh-Hans, 15, 14, MAP)                 \
+            LANG_ENTRY(TraditionalChinese, zh-Hant, 16, 13, MAP)                \
+            LANG_ENTRY(BrazilianPortuguese, pt-BR, 17, 10, DONT_MAP)
+
+        /**
+         * @brief Enumeration of system languages
+         * @url https://switchbrew.org/wiki/Settings_services#Language
+         */
         enum class SystemLanguage : u32 {
-            Japanese = 0,
-            AmericanEnglish,
-            French,
-            German,
-            Italian,
-            Spanish,
-            Chinese,
-            Korean,
-            Dutch,
-            Portuguese,
-            Russian,
-            Taiwanese,
-            BritishEnglish,
-            CanadianFrench,
-            LatinAmericanSpanish,
-            SimplifiedChinese,
-            TraditionalChinese,
-            BrazilianPortuguese,
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) lang = sysIndex,
+            LANGUAGES
+            #undef LANG_ENTRY
         };
 
+        #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) ENUM_CASE(lang);
+        ENUM_STRING(SystemLanguage, LANGUAGES)
+        #undef LANG_ENTRY
+
+        /**
+         * @brief Enumeration of application languages
+         * @url https://switchbrew.org/wiki/NACP#ApplicationTitle
+         */
         enum class ApplicationLanguage : u32 {
-            AmericanEnglish = 0,
-            BritishEnglish,
-            Japanese,
-            French,
-            German,
-            LatinAmericanSpanish,
-            Spanish,
-            Italian,
-            Dutch,
-            CanadianFrench,
-            Portuguese,
-            Russian,
-            Korean,
-            TraditionalChinese,
-            SimplifiedChinese,
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) lang = appIndex,
+            LANGUAGES
+            #undef LANG_ENTRY
         };
+
+        #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) map(lang);
+        #define MAP(key) ENUM_CASE(key)
+        #define DONT_MAP(key)
+        ENUM_STRING(ApplicationLanguage, LANGUAGES)
+        #undef LANG_ENTRY
+        #undef MAP
+        #undef DONT_MAP
 
         constexpr std::array<u64, constant::NewLanguageCodeListSize> LanguageCodeList{
-            util::MakeMagic<u64>("ja"),
-            util::MakeMagic<u64>("en-US"),
-            util::MakeMagic<u64>("fr"),
-            util::MakeMagic<u64>("de"),
-            util::MakeMagic<u64>("it"),
-            util::MakeMagic<u64>("es"),
-            util::MakeMagic<u64>("zh-CN"),
-            util::MakeMagic<u64>("ko"),
-            util::MakeMagic<u64>("nl"),
-            util::MakeMagic<u64>("pt"),
-            util::MakeMagic<u64>("ru"),
-            util::MakeMagic<u64>("zh-TW"),
-            util::MakeMagic<u64>("en-GB"),
-            util::MakeMagic<u64>("fr-CA"),
-            util::MakeMagic<u64>("es-419"),
-            util::MakeMagic<u64>("zh-Hans"),
-            util::MakeMagic<u64>("zh-Hant"),
-            util::MakeMagic<u64>("pt-BR"),
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) util::MakeMagic<u64>(#code),
+            LANGUAGES
+            #undef LANG_ENTRY
         };
 
         constexpr u64 GetLanguageCode(SystemLanguage language) {
             return LanguageCodeList.at(static_cast<size_t>(language));
         }
 
-        #define LANG_MAP_ENTRY(lang) {SystemLanguage::lang, ApplicationLanguage::lang}
-        #define LANG_MAP_ENTRY_CST(sysLang, appLang) {SystemLanguage::sysLang, ApplicationLanguage::appLang}
-        constexpr frz::unordered_map<SystemLanguage, ApplicationLanguage, constant::NewLanguageCodeListSize> SystemToAppMap{
-            LANG_MAP_ENTRY(Japanese),
-            LANG_MAP_ENTRY(AmericanEnglish),
-            LANG_MAP_ENTRY(French),
-            LANG_MAP_ENTRY(German),
-            LANG_MAP_ENTRY(Italian),
-            LANG_MAP_ENTRY(Spanish),
-            LANG_MAP_ENTRY_CST(Chinese, SimplifiedChinese),
-            LANG_MAP_ENTRY(Korean),
-            LANG_MAP_ENTRY(Dutch),
-            LANG_MAP_ENTRY(Portuguese),
-            LANG_MAP_ENTRY(Russian),
-            LANG_MAP_ENTRY_CST(Taiwanese, TraditionalChinese),
-            LANG_MAP_ENTRY(BritishEnglish),
-            LANG_MAP_ENTRY(CanadianFrench),
-            LANG_MAP_ENTRY(LatinAmericanSpanish),
-            LANG_MAP_ENTRY(SimplifiedChinese),
-            LANG_MAP_ENTRY(TraditionalChinese),
-            LANG_MAP_ENTRY_CST(BrazilianPortuguese, Portuguese),
-        };
-        #undef LANG_MAP_ENTRY
-        #undef LANG_MAP_ENTRY_CST
-
+        /**
+         * @brief Maps a system language to its corresponding application language
+         */
         constexpr ApplicationLanguage GetApplicationLanguage(SystemLanguage systemLanguage) {
-            return SystemToAppMap.at(systemLanguage);
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) ENUM_CASE_PAIR(lang, ApplicationLanguage::lang);
+            ENUM_SWITCH(SystemLanguage, systemLanguage, LANGUAGES, ApplicationLanguage::AmericanEnglish)
+            #undef LANG_ENTRY
         }
 
-        #define LANG_MAP_ENTRY_REVERSE(lang) {ApplicationLanguage::lang, SystemLanguage::lang}
-        constexpr frz::unordered_map<ApplicationLanguage, SystemLanguage, constant::OldLanguageCodeListSize> AppToSystemMap{
-            LANG_MAP_ENTRY_REVERSE(Japanese),
-            LANG_MAP_ENTRY_REVERSE(AmericanEnglish),
-            LANG_MAP_ENTRY_REVERSE(French),
-            LANG_MAP_ENTRY_REVERSE(German),
-            LANG_MAP_ENTRY_REVERSE(Italian),
-            LANG_MAP_ENTRY_REVERSE(Spanish),
-            LANG_MAP_ENTRY_REVERSE(Korean),
-            LANG_MAP_ENTRY_REVERSE(Dutch),
-            LANG_MAP_ENTRY_REVERSE(Portuguese),
-            LANG_MAP_ENTRY_REVERSE(Russian),
-            LANG_MAP_ENTRY_REVERSE(BritishEnglish),
-            LANG_MAP_ENTRY_REVERSE(CanadianFrench),
-            LANG_MAP_ENTRY_REVERSE(LatinAmericanSpanish),
-            LANG_MAP_ENTRY_REVERSE(SimplifiedChinese),
-            LANG_MAP_ENTRY_REVERSE(TraditionalChinese),
-        };
-        #undef LANG_MAP_ENTRY_REVERSE
-
+        /**
+         * @brief Maps an application language to its corresponding system language
+         */
         constexpr SystemLanguage GetSystemLanguage(ApplicationLanguage applicationLanguage) {
-            return AppToSystemMap.at(applicationLanguage);
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) map(lang, SystemLanguage::lang);
+            #define MAP(key, value) ENUM_CASE_PAIR(key, value)
+            #define DONT_MAP(key, value)
+            ENUM_SWITCH(ApplicationLanguage, applicationLanguage, LANGUAGES, SystemLanguage::AmericanEnglish)
+            #undef LANG_ENTRY
+            #undef MAP
+            #undef DONT_MAP
         }
+
+        #undef LANGUAGES
     }
 }

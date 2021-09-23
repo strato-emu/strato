@@ -35,6 +35,8 @@ namespace skyline::vfs {
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
+        u32 supportedTitleLanguages{0}; //<! A bitmask containing the available title entry languages and game icons
+
         NACP(const std::shared_ptr<vfs::Backing> &backing);
 
         languages::ApplicationLanguage GetFirstSupportedTitleLanguage();
@@ -44,7 +46,5 @@ namespace skyline::vfs {
         std::string GetApplicationName(languages::ApplicationLanguage language);
 
         std::string GetApplicationPublisher(languages::ApplicationLanguage language);
-
-        u32 supportedTitleLanguages{0};
     };
 }
