@@ -70,7 +70,7 @@ namespace skyline::loader {
       public:
         NroLoader(std::shared_ptr<vfs::Backing> backing);
 
-        std::vector<u8> GetIcon() override;
+        std::vector<u8> GetIcon(languages::ApplicationLanguage language) override;
 
         void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) override;
     };

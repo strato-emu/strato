@@ -57,19 +57,16 @@ namespace skyline::loader {
         return NcaLoader::LoadExeFs(this, programNca->exeFs, process, state);
     }
 
-    std::vector<u8> NspLoader::GetIcon() {
-        if (romFs == nullptr)
+    std::vector<u8> NspLoader::GetIcon(languages::ApplicationLanguage language) {
+        if (controlRomFs == nullptr)
             return std::vector<u8>();
 
-        auto root{controlRomFs->OpenDirectory("", {false, true})};
         std::shared_ptr<vfs::Backing> icon{};
 
-        // Use the first icon file available
-        for (const auto &entry : root->Read()) {
-            if (entry.name.rfind("icon") == 0) {
-                icon = controlRomFs->OpenFileUnchecked(entry.name);
-                break;
-            }
+        auto iconName{fmt::format("icon_{}.dat", languages::ToString(language))};
+        if (!(icon = controlRomFs->OpenFileUnchecked(iconName, {true, false, false}))) {
+            iconName = fmt::format("icon_{}.dat", languages::ToString(nacp->GetFirstSupportedTitleLanguage()));
+            icon = controlRomFs->OpenFileUnchecked(iconName, {true, false, false});
         }
 
         if (icon == nullptr)

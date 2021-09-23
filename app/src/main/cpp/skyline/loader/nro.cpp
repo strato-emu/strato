@@ -29,7 +29,7 @@ namespace skyline::loader {
         }
     }
 
-    std::vector<u8> NroLoader::GetIcon() {
+    std::vector<u8> NroLoader::GetIcon(languages::ApplicationLanguage language) {
         NroAssetSection &segmentHeader{assetHeader.icon};
         std::vector<u8> buffer(segmentHeader.size);
 
