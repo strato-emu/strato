@@ -8,7 +8,7 @@
 #include <android/asset_manager_jni.h>
 #include <sys/system_properties.h>
 #include "skyline/common.h"
-#include "skyline/common/languages.h"
+#include "skyline/common/language.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
 #include "skyline/common/trace.h"
@@ -91,7 +91,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
                 settings,
                 std::string(appFilesPath),
                 GetTimeZoneName(),
-                static_cast<skyline::languages::SystemLanguage>(systemLanguage),
+                static_cast<skyline::language::SystemLanguage>(systemLanguage),
                 std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
             )};
         OsWeak = os;

@@ -13,7 +13,7 @@ namespace skyline {
         constexpr size_t NewLanguageCodeListSize{18}; //!< The size of the post 10.1.0 language code list (was 17 between 4.0.0 - 10.1.0)
     }
 
-    namespace languages {
+    namespace language {
         /**
          * @brief The list of all languages. Entries parameters are language, language code, system language index, application language index and map which holds a macro used for filtering some application languages that don't have a direct corresponding system language
          * @example #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) func(lang, code, sysIndex, appIndex, map) <br> LANGUAGES <br> #undef LANG_ENTRY

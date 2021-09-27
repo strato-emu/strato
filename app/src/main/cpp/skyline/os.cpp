@@ -19,7 +19,7 @@ namespace skyline::kernel {
         std::shared_ptr<Settings> &settings,
         std::string appFilesPath,
         std::string deviceTimeZone,
-        languages::SystemLanguage systemLanguage,
+        language::SystemLanguage systemLanguage,
         std::shared_ptr<vfs::FileSystem> assetFileSystem
     ) : state(this, jvmManager, settings, logger),
         appFilesPath(std::move(appFilesPath)),

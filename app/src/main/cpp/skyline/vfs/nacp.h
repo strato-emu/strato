@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common/languages.h>
+#include <common/language.h>
 #include "backing.h"
 
 namespace skyline::vfs {
@@ -35,16 +35,16 @@ namespace skyline::vfs {
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
-        u32 supportedTitleLanguages{0}; //<! A bitmask containing the available title entry languages and game icons
+        u32 supportedTitleLanguages{}; //<! A bitmask containing the available title entry languages and game icons
 
         NACP(const std::shared_ptr<vfs::Backing> &backing);
 
-        languages::ApplicationLanguage GetFirstSupportedTitleLanguage();
+        language::ApplicationLanguage GetFirstSupportedTitleLanguage();
 
-        languages::ApplicationLanguage GetFirstSupportedLanguage();
+        language::ApplicationLanguage GetFirstSupportedLanguage();
 
-        std::string GetApplicationName(languages::ApplicationLanguage language);
+        std::string GetApplicationName(language::ApplicationLanguage language);
 
-        std::string GetApplicationPublisher(languages::ApplicationLanguage language);
+        std::string GetApplicationPublisher(language::ApplicationLanguage language);
     };
 }

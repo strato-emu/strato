@@ -53,7 +53,7 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
     jfieldID rawIconField{env->GetFieldID(clazz, "rawIcon", "[B")};
 
     if (loader->nacp) {
-        auto language{skyline::languages::GetApplicationLanguage(static_cast<skyline::languages::SystemLanguage>(systemLanguage))};
+        auto language{skyline::language::GetApplicationLanguage(static_cast<skyline::language::SystemLanguage>(systemLanguage))};
         if (((1 << static_cast<skyline::u32>(language)) & loader->nacp->supportedTitleLanguages) == 0)
             language = loader->nacp->GetFirstSupportedTitleLanguage();
 

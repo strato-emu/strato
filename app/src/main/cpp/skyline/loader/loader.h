@@ -87,7 +87,7 @@ namespace skyline::loader {
 
         virtual ~Loader() = default;
 
-        virtual std::vector<u8> GetIcon(languages::ApplicationLanguage language) {
+        virtual std::vector<u8> GetIcon(language::ApplicationLanguage language) {
             return std::vector<u8>();
         }
 

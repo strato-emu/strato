@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common/languages.h>
+#include <common/language.h>
 #include "vfs/filesystem.h"
 #include "loader/loader.h"
 #include "services/serviceman.h"
@@ -19,7 +19,7 @@ namespace skyline::kernel {
         std::string deviceTimeZone; //!< The timezone name (e.g. Europe/London)
         std::shared_ptr<vfs::FileSystem> assetFileSystem; //!< A filesystem to be used for accessing emulator assets (like tzdata)
         service::ServiceManager serviceManager;
-        languages::SystemLanguage systemLanguage;
+        language::SystemLanguage systemLanguage;
 
         /**
          * @param logger An instance of the Logger class
@@ -32,7 +32,7 @@ namespace skyline::kernel {
             std::shared_ptr<Settings> &settings,
             std::string appFilesPath,
             std::string deviceTimeZone,
-            languages::SystemLanguage systemLanguage,
+            language::SystemLanguage systemLanguage,
             std::shared_ptr<vfs::FileSystem> assetFileSystem
         );
 
