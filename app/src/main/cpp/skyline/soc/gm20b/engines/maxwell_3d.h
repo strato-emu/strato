@@ -17,7 +17,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         std::array<size_t, 0x80> macroPositions{}; //!< The positions of each individual macro in macro memory, there can be a maximum of 0x80 macros at any one time
 
         struct {
-            i32 index;
+            i32 index{-1};
             std::vector<u32> arguments;
         } macroInvocation{}; //!< Data for a macro that is pending execution
 

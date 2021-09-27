@@ -53,7 +53,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         u64 size{static_cast<u64>(pages) * pageSize};
 
         if (flags.sparse)
-            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), size, true);
+            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), size, {true});
 
         allocationMap[offset] = {
             .size = size,
@@ -77,7 +77,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
         // Only FreeSpace can unmap them fully
         if (mapping->sparseAlloc)
-            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, true);
+            state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, {true});
         else
             state.soc->gm20b.gmmu.Unmap(offset, mapping->size);
 
@@ -138,7 +138,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
             // Only FreeSpace can unmap them fully
             if (mapping->sparseAlloc)
-                state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, true);
+                state.soc->gm20b.gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, {true});
             else
                 state.soc->gm20b.gmmu.Unmap(offset, mapping->size);
 
@@ -320,7 +320,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             }
 
             if (!entry.handle) {
-                state.soc->gm20b.gmmu.Map(virtAddr, soc::gm20b::GM20B::GMMU::SparsePlaceholderAddress(), size, true);
+                state.soc->gm20b.gmmu.Map(virtAddr, soc::gm20b::GM20B::GMMU::SparsePlaceholderAddress(), size, {true});
             } else {
                 auto h{core.nvMap.GetHandle(entry.handle)};
                 if (!h)

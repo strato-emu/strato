@@ -13,7 +13,7 @@ namespace skyline::kernel::type {
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
-        host.ptr = reinterpret_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
+        host.ptr = static_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
         if (host.ptr == MAP_FAILED)
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -28,7 +28,7 @@ namespace skyline::kernel::type {
         if (guest.Valid())
             throw exception("Mapping KSharedMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
 
-        guest.ptr = reinterpret_cast<u8 *>(mmap(ptr, size, permission.Get(), MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
+        guest.ptr = static_cast<u8 *>(mmap(ptr, size, permission.Get(), MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
         if (guest.ptr == MAP_FAILED)
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
         guest.size = size;

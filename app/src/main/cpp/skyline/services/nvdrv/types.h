@@ -43,7 +43,7 @@ namespace skyline::service::nvdrv {
     };
 
     /**
-     * @brief An bitfield struct that unpacks an ioctl number, used as an alternative to Linux's macros
+     * @brief A bitfield struct that unpacks an ioctl number, used as an alternative to Linux's macros
      */
     union IoctlDescriptor {
         struct {

@@ -108,10 +108,10 @@ namespace skyline::service::nvdrv::core {
 
             if (internalSession) {
                 if (--handleDesc->internalDupes < 0)
-                    state.logger->Warn("Internal duplicate count inbalance detected!");
+                    state.logger->Warn("Internal duplicate count imbalance detected!");
             } else {
                 if (--handleDesc->dupes < 0) {
-                    state.logger->Warn("User duplicate count inbalance detected!");
+                    state.logger->Warn("User duplicate count imbalance detected!");
                 } else if (handleDesc->dupes == 0) {
                     // TODO: unpin
                 }
