@@ -8,6 +8,8 @@
 #include <common/macros.h>
 
 namespace skyline {
+    using LanguageCode = u64;
+
     namespace constant {
         constexpr size_t OldLanguageCodeListSize{15}; //!< The size of the pre 4.0.0 language code list
         constexpr size_t NewLanguageCodeListSize{18}; //!< The size of the post 10.1.0 language code list (was 17 between 4.0.0 - 10.1.0)
@@ -70,13 +72,13 @@ namespace skyline {
         #undef MAP
         #undef DONT_MAP
 
-        constexpr std::array<u64, constant::NewLanguageCodeListSize> LanguageCodeList{
-            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) util::MakeMagic<u64>(#code),
+        constexpr std::array<LanguageCode, constant::NewLanguageCodeListSize> LanguageCodeList{
+            #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) util::MakeMagic<LanguageCode>(#code),
             LANGUAGES
             #undef LANG_ENTRY
         };
 
-        constexpr u64 GetLanguageCode(SystemLanguage language) {
+        constexpr LanguageCode GetLanguageCode(SystemLanguage language) {
             return LanguageCodeList.at(static_cast<size_t>(language));
         }
 
