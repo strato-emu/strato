@@ -26,10 +26,10 @@ enum class ButtonId(val short : String? = null, val long : Int? = null) {
     ZR("ZR", string.right_trigger),
     Plus("+", string.plus_button),
     Minus("-", string.minus_button),
-    DpadLeft("◀", string.left),
-    DpadUp("▲", string.up),
-    DpadRight("▶", string.right),
-    DpadDown("▼", string.down),
+    DpadLeft("◀︎", string.left),
+    DpadUp("▲︎", string.up),
+    DpadRight("▶︎", string.right),
+    DpadDown("▼︎", string.down),
     LeftStickLeft,
     LeftStickUp,
     LeftStickRight,
@@ -42,7 +42,7 @@ enum class ButtonId(val short : String? = null, val long : Int? = null) {
     LeftSR("SR", string.right_shoulder),
     RightSL("SL", string.left_shoulder),
     RightSR("SR", string.right_shoulder),
-    Menu("⌂", string.emu_menu_button);
+    Menu("⌂︎", string.emu_menu_button);
 
     /**
      * This returns the value as setting the [ordinal]-th bit in a [Long]
