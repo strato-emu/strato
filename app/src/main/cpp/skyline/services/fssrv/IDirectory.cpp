@@ -25,7 +25,7 @@ namespace skyline::service::fssrv {
 
     Result IDirectory::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto entries{backing->Read()};
-        auto outputEntries{request.inputBuf.at(0).cast<DirectoryEntry>()};
+        auto outputEntries{request.outputBuf.at(0).cast<DirectoryEntry, std::dynamic_extent, true>()};
         size_t i{};
 
         for (; i < std::min(entries.size(), outputEntries.size()); i++) {

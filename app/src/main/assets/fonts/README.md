@@ -1,0 +1,4 @@
+#### Skyline FOSS Shared Fonts: (Credit to [FearlessTobi/yuzu_system_archives](https://github.com/FearlessTobi/yuzu_system_archives) for font choice)
+* [FontStandard](FontStandard.ttf), [FontKorean](FontKorean.ttf), [FontChineseSimplified](FontChineseSimplified.ttf) and [FontChineseTraditional](FontChineseTraditional.ttf) are using [Open Sans Regular](https://fonts.google.com/specimen/Open+Sans), which is licensed under [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+* [FontNintendoExtended](FontNintendoExtended.ttf) is using [Roboto](https://fonts.google.com/specimen/Roboto), which is licensed under [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+* [FontExtendedChineseSimplified](FontExtendedChineseSimplified.ttf) is using [Source Sans Pro](https://fonts.google.com/specimen/Source+Sans+Pro), which is licensed under [Open Font License](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)

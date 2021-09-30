@@ -49,6 +49,7 @@ namespace skyline::gpu {
         ALooper *choreographerLooper{};
         i64 lastChoreographerTime{}; //!< The timestamp of the last invocation of Choreographer::doFrame
         i64 refreshCycleDuration{}; //!< The duration of a single refresh cycle for the display in nanoseconds
+        bool choreographerStop{}; //!< If the Choreographer thread should stop on the next ALooper_wake()
 
         /**
          * @url https://developer.android.com/ndk/reference/group/choreographer#achoreographer_postframecallback64

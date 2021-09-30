@@ -92,7 +92,14 @@ namespace skyline::loader {
             size_t length{};
             std::unique_ptr<char, decltype(&std::free)> demangled{abi::__cxa_demangle(info.dli_sname, nullptr, &length, &status), std::free};
 
-            return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<uintptr_t>(pointer), (status == 0) ? std::string_view(demangled.get()) : info.dli_sname ? info.dli_sname : "Unresolved", info.dli_fname ? info.dli_fname : "Unresolved");
+            if (info.dli_sname && info.dli_fname)
+                return fmt::format("\n* 0x{:X} ({} from {})", reinterpret_cast<uintptr_t>(pointer), (status == 0) ? std::string_view(demangled.get()) : info.dli_sname, info.dli_fname);
+            else if (info.dli_sname)
+                return fmt::format("\n* 0x{:X} ({})", reinterpret_cast<uintptr_t>(pointer), (status == 0) ? std::string_view(demangled.get()) : info.dli_sname);
+            else if (info.dli_fname)
+                return fmt::format("\n* 0x{:X} (from {})", reinterpret_cast<uintptr_t>(pointer), info.dli_fname);
+            else
+                return fmt::format("\n* 0x{:X}", reinterpret_cast<uintptr_t>(pointer));
         } else {
             return fmt::format("\n* 0x{:X}", reinterpret_cast<uintptr_t>(pointer));
         }

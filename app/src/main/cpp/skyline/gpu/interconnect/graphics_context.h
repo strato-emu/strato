@@ -22,7 +22,7 @@ namespace skyline::gpu::interconnect {
         gpu::interconnect::CommandExecutor &executor;
 
         struct RenderTarget {
-            bool disabled{}; //!< If this RT has been disabled and will be an unbound attachment instead
+            bool disabled{true}; //!< If this RT has been disabled and will be an unbound attachment instead
             union {
                 u64 gpuAddress;
                 struct {
@@ -90,6 +90,10 @@ namespace skyline::gpu::interconnect {
                         return {};
                     case maxwell3d::RenderTarget::ColorFormat::R32B32G32A32Float:
                         return format::R32B32G32A32Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Unorm:
+                        return format::R16G16B16A16Unorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Uint:
+                        return format::R16G16B16A16Uint;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Float:
                         return format::R16G16B16A16Float;
                     case maxwell3d::RenderTarget::ColorFormat::A2B10G10R10Unorm:
@@ -98,6 +102,8 @@ namespace skyline::gpu::interconnect {
                         return format::R8G8B8A8Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Srgb:
                         return format::A8B8G8R8Srgb;
+                    case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Snorm:
+                        return format::A8B8G8R8Snorm;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16Snorm:
                         return format::R16G16Snorm;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16Float:
@@ -106,8 +112,12 @@ namespace skyline::gpu::interconnect {
                         return format::B10G11R11Float;
                     case maxwell3d::RenderTarget::ColorFormat::R32Float:
                         return format::R32Float;
+                    case maxwell3d::RenderTarget::ColorFormat::R8G8Unorm:
+                        return format::R8G8Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::R8G8Snorm:
                         return format::R8G8Snorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16Unorm:
+                        return format::R16Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::R16Float:
                         return format::R16Float;
                     case maxwell3d::RenderTarget::ColorFormat::R8Unorm:
@@ -234,8 +244,8 @@ namespace skyline::gpu::interconnect {
                 if (scissor.extent.width == 0 || scissor.extent.height == 0)
                     return;
 
-                if (scissor.extent.width == renderTarget.backing->dimensions.width && scissor.extent.width == renderTarget.backing->dimensions.width && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
-                    executor.AddClearSubpass(renderTarget, clearColorValue);
+                if (scissor.extent.width == renderTarget.backing->dimensions.width && scissor.extent.height == renderTarget.backing->dimensions.height && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
+                    executor.AddClearColorSubpass(renderTarget, clearColorValue);
                 } else {
                     executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                         commandBuffer.clearAttachments(vk::ClearAttachment{

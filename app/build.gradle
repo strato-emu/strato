@@ -50,6 +50,15 @@ android {
             debuggable true
             minifyEnabled false
             shrinkResources false
+
+            /* Vulkan Validation Layers */
+            sourceSets {
+                main {
+                    jniLibs {
+                        srcDir "$buildDir/generated/vulkan_layers"
+                    }
+                }
+            }
         }
     }
     buildFeatures {
@@ -68,17 +77,6 @@ android {
         cmake {
             version '3.18.1+'
             path "CMakeLists.txt"
-        }
-    }
-
-    /* Vulkan Validation Layers */
-    sourceSets {
-        debug {
-            main {
-                jniLibs {
-                    srcDir "$buildDir/generated/vulkan_layers"
-                }
-            }
         }
     }
 

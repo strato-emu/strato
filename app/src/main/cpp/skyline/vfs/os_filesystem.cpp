@@ -9,7 +9,7 @@
 #include "os_filesystem.h"
 
 namespace skyline::vfs {
-    OsFileSystem::OsFileSystem(const std::string &basePath) : FileSystem(), basePath(basePath) {
+    OsFileSystem::OsFileSystem(const std::string &basePath) : FileSystem(), basePath(basePath.ends_with('/') ? basePath : basePath + '/') {
         if (!DirectoryExists(basePath))
             if (!CreateDirectory(basePath, true))
                 throw exception("Error creating the OS filesystem backing directory");

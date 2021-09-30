@@ -425,9 +425,9 @@ namespace skyline {
             return std::string_view(reinterpret_cast<const char *>(span::data()), nullTerminated ? (std::find(span::begin(), span::end(), 0) - span::begin()) : span::size_bytes());
         }
 
-        template<typename Out, size_t OutExtent = std::dynamic_extent>
+        template<typename Out, size_t OutExtent = std::dynamic_extent, bool SkipAlignmentCheck = false>
         constexpr span<Out> cast() {
-            if (util::IsAligned(span::size_bytes(), sizeof(Out)))
+            if (SkipAlignmentCheck || util::IsAligned(span::size_bytes(), sizeof(Out)))
                 return span<Out, OutExtent>(reinterpret_cast<Out *>(span::data()), span::size_bytes() / sizeof(Out));
             throw exception("Span size not aligned with Out type size (0x{:X}/0x{:X})", span::size_bytes(), sizeof(Out));
         }

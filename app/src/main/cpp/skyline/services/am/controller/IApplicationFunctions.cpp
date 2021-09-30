@@ -17,11 +17,33 @@ namespace skyline::service::am {
         constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
         constexpr size_t LaunchParameterSize{0x88}; //!< The size of the launch parameter IStorage
 
-        auto storageService{std::make_shared<IStorage>(state, manager, LaunchParameterSize)};
+        enum class LaunchParameterKind : u32 {
+            UserChannel = 1,
+            PreselectedUser = 2,
+            Unknown = 3,
+        } launchParameterKind{request.Pop<LaunchParameterKind>()};
 
-        storageService->Push<u32>(LaunchParameterMagic);
-        storageService->Push<u32>(1);
-        storageService->Push(constant::DefaultUserId);
+        std::shared_ptr<IStorage> storageService;
+        switch (launchParameterKind) {
+            case LaunchParameterKind::UserChannel:
+                return result::NotAvailable;
+
+            case LaunchParameterKind::PreselectedUser: {
+                storageService = std::make_shared<IStorage>(state, manager, LaunchParameterSize);
+
+                storageService->Push<u32>(LaunchParameterMagic);
+                storageService->Push<u32>(1);
+                storageService->Push(constant::DefaultUserId);
+
+                break;
+            }
+
+            case LaunchParameterKind::Unknown:
+                throw exception("Popping 'Unknown' Launch Parameter: {}", static_cast<u32>(launchParameterKind));
+
+            default:
+                return result::InvalidInput;
+        }
 
         manager.RegisterService(storageService, session, response);
         return {};

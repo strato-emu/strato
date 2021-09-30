@@ -25,6 +25,7 @@
 #include "visrv/ISystemRootService.h"
 #include "visrv/IManagerRootService.h"
 #include "pl/IPlatformServiceManager.h"
+#include "pl/shared_font_core.h"
 #include "aocsrv/IAddOnContentManager.h"
 #include "pctl/IParentalControlServiceFactory.h"
 #include "lm/ILogService.h"
@@ -49,9 +50,10 @@
 namespace skyline::service {
     struct GlobalServiceState {
         timesrv::core::TimeServiceObject timesrv;
+        pl::SharedFontCore sharedFontCore;
         nvdrv::Driver nvdrv;
 
-        explicit GlobalServiceState(const DeviceState &state) : timesrv(state), nvdrv(state) {}
+        explicit GlobalServiceState(const DeviceState &state) : timesrv(state), sharedFontCore(state), nvdrv(state) {}
     };
 
     ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)), globalServiceState(std::make_shared<GlobalServiceState>(state)) {}
@@ -83,7 +85,7 @@ namespace skyline::service {
             SERVICE_CASE(visrv::IApplicationRootService, "vi:u")
             SERVICE_CASE(visrv::ISystemRootService, "vi:s")
             SERVICE_CASE(visrv::IManagerRootService, "vi:m")
-            SERVICE_CASE(pl::IPlatformServiceManager, "pl:u")
+            SERVICE_CASE(pl::IPlatformServiceManager, "pl:u", globalServiceState->sharedFontCore)
             SERVICE_CASE(aocsrv::IAddOnContentManager, "aoc:u")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:a")

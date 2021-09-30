@@ -6,7 +6,7 @@
 #include <soc.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
-    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor& executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu, executor) {
+    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor &executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu, executor) {
         ResetRegs();
     }
 

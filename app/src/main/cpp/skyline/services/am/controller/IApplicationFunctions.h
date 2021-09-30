@@ -8,6 +8,8 @@
 
 namespace skyline::service::am {
     namespace result {
+        constexpr Result NotAvailable(128, 2);
+        constexpr Result InvalidInput(128, 500);
         constexpr Result InvalidParameters(128, 506);
     }
 

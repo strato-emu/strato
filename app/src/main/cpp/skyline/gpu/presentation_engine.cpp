@@ -32,8 +32,10 @@ namespace skyline::gpu {
             env->DeleteGlobalRef(jSurface);
 
         if (choreographerThread.joinable()) {
-            if (choreographerLooper)
+            if (choreographerLooper) {
+                choreographerStop = true;
                 ALooper_wake(choreographerLooper);
+            }
             choreographerThread.join();
         }
     }
@@ -62,7 +64,7 @@ namespace skyline::gpu {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             choreographerLooper = ALooper_prepare(0);
             AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), this);
-            ALooper_pollAll(-1, nullptr, nullptr, nullptr); // Will block and process callbacks till ALooper_wake() is called
+            while (ALooper_pollAll(-1, nullptr, nullptr, nullptr) == ALOOPER_POLL_WAKE && !choreographerStop); // Will block and process callbacks till ALooper_wake() is called with choreographerStop set
         } catch (const signal::SignalException &e) {
             state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
@@ -275,9 +277,8 @@ namespace skyline::gpu {
             // We need to nullify the timestamp if it transitioned from being specified (non-zero) to unspecified (zero)
             timestamp = NativeWindowTimestampAuto;
 
-        if (timestamp)
-            if (window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp))
-                throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
+        if (timestamp && (result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp)))
+            throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
 
         if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
             throw exception("Retrieving the next frame's ID failed with {}", result);

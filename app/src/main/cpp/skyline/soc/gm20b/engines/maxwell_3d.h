@@ -95,7 +95,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     u32 compareMask; // 0x3D7
                 } stencilBackExtra;
 
-                u32 _pad7_[0x13]; // 0x3D8
+                u32 tiledCacheEnable; // 0x3D8
+                struct {
+                    u16 width;
+                    u16 height;
+                } tiledCacheSize; // 0x3D9
+
+                u32 _pad7_[0x11]; // 0x3DA
                 u32 rtSeparateFragData; // 0x3EB
                 u32 _pad8_[0x6C]; // 0x3EC
                 std::array<type::VertexAttribute, 0x20> vertexAttributeState; // 0x458
@@ -241,7 +247,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
 
-        Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor& executor);
+        Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor &executor);
 
         /**
          * @brief Resets the Maxwell 3D registers to their default values

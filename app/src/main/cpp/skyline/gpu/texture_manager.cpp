@@ -71,11 +71,9 @@ namespace skyline::gpu {
         textures.emplace(mappingEnd, TextureMapping{texture, it, guestMapping});
         while ((++it) != texture->guest->mappings.end()) {
             guestMapping = *it;
-            mappingEnd = hostMapping = std::upper_bound(textures.begin(), textures.end(), guestMapping);
-            while (hostMapping != textures.begin() && std::prev(hostMapping)->end() > guestMapping.begin()) {
-                // TODO: Delete textures not in texture pool
-            }
-            textures.emplace(mappingEnd, TextureMapping{texture, it, guestMapping});
+            auto mapping{std::upper_bound(textures.begin(), textures.end(), guestMapping)};
+            // TODO: Delete overlapping textures that aren't in texture pool
+            textures.emplace(mapping, TextureMapping{texture, it, guestMapping});
         }
 
         return TextureView(texture, static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{

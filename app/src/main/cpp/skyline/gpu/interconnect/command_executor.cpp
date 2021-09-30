@@ -28,7 +28,7 @@ namespace skyline::gpu::interconnect {
             nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>(), function);
     }
 
-    void CommandExecutor::AddClearSubpass(TextureView attachment, const vk::ClearColorValue &value) {
+    void CommandExecutor::AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue &value) {
         bool newRenderpass{CreateRenderpass(vk::Rect2D{
             .extent = attachment.backing->dimensions,
         })};
