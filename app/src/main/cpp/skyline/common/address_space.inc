@@ -140,7 +140,7 @@ namespace skyline {
             }()};
 
             // We can't have two unmapped regions after each other
-            if (eraseEnd == blockStartSuccessor || (blockStartPredecessor->Unmapped() && eraseEnd->Unmapped()))
+            if (eraseEnd != blocks.end() && (eraseEnd == blockStartSuccessor || (blockStartPredecessor->Unmapped() && eraseEnd->Unmapped())))
                 throw exception("Multiple contiguous unmapped regions are unsupported!");
 
             blocks.erase(blockStartSuccessor, eraseEnd);
