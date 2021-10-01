@@ -68,7 +68,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     IOCTL_HANDLER_FUNC(CtrlGpu, ({
         IOCTL_CASE_ARGS(OUT,   SIZE(0x4),  MAGIC(CtrlGpuMagic), FUNC(0x1),
                         ZCullGetCtxSize,    ARGS(Out<u32>))
-        IOCTL_CASE_ARGS(INOUT, SIZE(0x28), MAGIC(CtrlGpuMagic), FUNC(0x2),
+        IOCTL_CASE_ARGS(OUT,   SIZE(0x28), MAGIC(CtrlGpuMagic), FUNC(0x2),
                         ZCullGetInfo,       ARGS(Out<ZCullInfo>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0xB0), MAGIC(CtrlGpuMagic), FUNC(0x5),
                         GetCharacteristics, ARGS(InOut<u64>, In<u64>, Out<GpuCharacteristics>))

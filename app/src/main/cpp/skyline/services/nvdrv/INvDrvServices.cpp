@@ -59,7 +59,7 @@ namespace skyline::service::nvdrv {
         auto fd{request.Pop<FileDescriptor>()};
         auto ioctl{request.Pop<IoctlDescriptor>()};
 
-        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else
@@ -104,7 +104,7 @@ namespace skyline::service::nvdrv {
         // Inline buffer is optional
         auto inlineBuf{request.inputBuf.size() > 1 ? request.inputBuf.at(1) : span<u8>{}};
 
-        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else
@@ -118,7 +118,7 @@ namespace skyline::service::nvdrv {
         // Inline buffer is optional
         auto inlineBuf{request.outputBuf.size() > 1 ? request.outputBuf.at(1) : span<u8>{}};
 
-        auto buf{GetMainIoctlBuffer(ioctl, request.inputBuf.at(0), request.outputBuf.at(0))};
+        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else

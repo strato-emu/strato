@@ -31,7 +31,11 @@ namespace skyline::service::nvdrv::device {
         if (!handleDesc) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        return handleDesc->Duplicate(ctx.internalSession);
+        auto result{handleDesc->Duplicate(ctx.internalSession)};
+        if (result == PosixResult::Success)
+            handle = id;
+
+        return result;
     }
 
     PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address) {
