@@ -77,5 +77,12 @@ namespace skyline::service::nvdrv::device::nvhost {
         IOCTL_CASE_ARGS(OUT,   SIZE(0x8),  MAGIC(CtrlGpuMagic), FUNC(0x14),
                         GetActiveSlotMask,  ARGS(Out<u32>, Out<u32>))
     }))
+
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, CtrlGpu, ({
+        INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0xB0), MAGIC(CtrlGpuMagic), FUNC(0x5),
+                               GetCharacteristics3, ARGS(InOut<u64>, In<u64>, Out<GpuCharacteristics>))
+        INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(CtrlGpuMagic), FUNC(0x6),
+                               GetTpcMasks3,        ARGS(In<u32>, Pad<u32, 3>, Out<u32>))
+    }))
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>
 }

@@ -118,5 +118,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId) override;
 
         PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) override;
+
+        PosixResult Ioctl3(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) override;
     };
 }

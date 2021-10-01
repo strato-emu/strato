@@ -7,12 +7,12 @@
 #include "driver.h"
 #include "devices/nvdevice.h"
 
-#define NVRESULT(x) [&response, this](NvResult err) {     \
-        if (err != NvResult::Success)                     \
-            state.logger->Debug("IOCTL Failed: {}", err); \
-                                                          \
-        response.Push<NvResult>(err);                     \
-        return Result{};                                  \
+#define NVRESULT(x) [&response, this](NvResult err) {         \
+        if (err != NvResult::Success)                         \
+            state.logger->Debug("IOCTL Failed: 0x{:X}", err); \
+                                                              \
+        response.Push<NvResult>(err);                         \
+        return Result{};                                      \
     } (x)
 
 namespace skyline::service::nvdrv {
