@@ -31,14 +31,14 @@ namespace skyline::service::nvdrv {
         DEVICE_SWITCH(
             DEVICE_CASE("/dev/nvmap", NvMap)
             DEVICE_CASE("/dev/nvhost-ctrl", nvhost::Ctrl)
-        );
+        )
 
         if (ctx.perms.AccessGpu) {
             DEVICE_SWITCH(
                 DEVICE_CASE("/dev/nvhost-as-gpu", nvhost::AsGpu)
                 DEVICE_CASE("/dev/nvhost-ctrl-gpu", nvhost::CtrlGpu)
                 DEVICE_CASE("/dev/nvhost-gpu", nvhost::GpuChannel)
-            );
+            )
         }
 
         #undef DEVICE_CASE
@@ -78,7 +78,7 @@ namespace skyline::service::nvdrv {
         try {
             return ConvertResult(devices.at(fd)->Ioctl(cmd, buffer));
         } catch (const std::out_of_range &) {
-            throw exception("Ioctl was called with invalid file descriptor: 0x{:X}", fd);
+            throw exception("Ioctl was called with invalid file descriptor: {}", fd);
         }
     }
 
@@ -98,15 +98,15 @@ namespace skyline::service::nvdrv {
         try {
             return ConvertResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
-            throw exception("Ioctl3 was called with invalid file descriptor: 0x{:X}", fd);
+            throw exception("Ioctl3 was called with invalid file descriptor: {}", fd);
         }
     }
 
     void Driver::CloseDevice(u32 fd) {
         try {
-            devices.at(fd).reset();
+            devices.erase(fd);
         } catch (const std::out_of_range &) {
-            state.logger->Warn("Trying to close non-existent FD");
+            state.logger->Warn("Trying to close non-existent file descriptor: {}");
         }
     }
 
@@ -116,7 +116,7 @@ namespace skyline::service::nvdrv {
         try {
             return devices.at(fd)->QueryEvent(eventId);
         } catch (const std::exception &) {
-            throw exception("QueryEvent was called with invalid file descriptor: 0x{:X}", fd);
+            throw exception("QueryEvent was called with invalid file descriptor: {}", fd);
         }
     }
 }

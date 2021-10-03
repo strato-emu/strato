@@ -154,7 +154,7 @@ namespace skyline::soc::gm20b {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             pushBuffers->Process([this](GpEntry gpEntry) {
-                state.logger->Warn("Processing pushbuffer: 0x{:X}", gpEntry.Address());
+                state.logger->Debug("Processing pushbuffer: 0x{:X}", gpEntry.Address());
                 Process(gpEntry);
             });
         } catch (const signal::SignalException &e) {
