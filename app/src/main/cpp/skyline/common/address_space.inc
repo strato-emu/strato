@@ -48,6 +48,9 @@ namespace skyline {
                     blockEndPredecessor->virt = virtEnd;
                     blockEndPredecessor->phys = tailPhys;
                     blockEndPredecessor->extraInfo = blockEndPredecessor->extraInfo;
+
+                    // No longer predecessor anymore
+                    blockEndSuccessor = blockEndPredecessor--;
                 } else {
                     // Else insert a new one and we're done
                     blocks.insert(blockEndSuccessor, {Block(virt, phys, extraInfo), Block(virtEnd, tailPhys, blockEndPredecessor->extraInfo)});
@@ -62,6 +65,9 @@ namespace skyline {
             if (blockEndPredecessor != blocks.begin() && blockEndPredecessor->virt >= virt) {
                 // Move the unmapped block start backwards
                 blockEndPredecessor->virt = virtEnd;
+
+                // No longer predecessor anymore
+                blockEndSuccessor = blockEndPredecessor--;
             } else {
                 // Else insert a new one and we're done
                 blocks.insert(blockEndSuccessor, {Block(virt, phys, extraInfo), Block(virtEnd, UnmappedPa, {})});
@@ -72,7 +78,7 @@ namespace skyline {
             }
         }
 
-        auto blockStartSuccessor{blockEndPredecessor};
+        auto blockStartSuccessor{blockEndSuccessor};
 
         // Walk the block vector to find the start successor as this is more efficient than another binary search in most scenarios
         while (std::prev(blockStartSuccessor)->virt >= virt)
@@ -85,18 +91,14 @@ namespace skyline {
             // We need to create a new block as there are none spare that we would overwrite
             blocks.insert(blockStartSuccessor, Block(virt, phys, extraInfo));
         } else {
+            // Erase overwritten blocks
+            if (auto eraseStart{std::next(blockStartSuccessor)}; eraseStart != blockEndSuccessor)
+                blocks.erase(eraseStart, blockEndSuccessor);
+
             // Reuse a block that would otherwise be overwritten as a start block
             blockStartSuccessor->virt = virt;
             blockStartSuccessor->phys = phys;
             blockStartSuccessor->extraInfo = extraInfo;
-
-            // Erase overwritten blocks
-            if (auto eraseStart{std::next(blockStartSuccessor)}; blockStartSuccessor != blockEndPredecessor) {
-                if (eraseStart == blockEndPredecessor)
-                    throw exception("Trying to erase the end block of a newly mapped region!");
-
-                blocks.erase(eraseStart, blockEndPredecessor);
-            }
         }
 
         if (unmapCallback)
@@ -180,6 +182,9 @@ namespace skyline {
                 // If this block's start would be overlapped by the unmap then reuse it as a tail block
                 blockEndPredecessor->virt = virtEnd;
                 blockEndPredecessor->phys = tailPhys;
+
+                // No longer predecessor anymore
+                blockEndSuccessor = blockEndPredecessor--;
             } else {
                 blocks.insert(blockEndSuccessor, {Block(virt, UnmappedPa, {}), Block(virtEnd, tailPhys, blockEndPredecessor->extraInfo)});
                 if (unmapCallback)
@@ -190,7 +195,7 @@ namespace skyline {
         }
 
         // Walk the block vector to find the start predecessor as this is more efficient than another binary search in most scenarios
-        auto blockStartPredecessor{walkBackToPredecessor(blockEndPredecessor)};
+        auto blockStartPredecessor{walkBackToPredecessor(blockEndSuccessor)};
         auto blockStartSuccessor{std::next(blockStartPredecessor)};
 
         if (blockStartSuccessor->virt > virtEnd) {
@@ -205,17 +210,13 @@ namespace skyline {
             // If the previous block is unmapped
             blocks.erase(blockStartSuccessor, blockEndPredecessor);
         } else {
+            // Erase overwritten blocks, skipping the first one as we have written the unmapped start block there
+            if (auto eraseStart{std::next(blockStartSuccessor)}; eraseStart != blockEndSuccessor)
+                blocks.erase(eraseStart, blockEndSuccessor);
+
             // Add in the unmapped block header
             blockStartSuccessor->virt = virt;
             blockStartSuccessor->phys = UnmappedPa;
-
-            // Erase overwritten blocks, skipping the first one as we have written the unmapped start block there
-            if (auto eraseStart{std::next(blockStartSuccessor)}; blockStartSuccessor != blockEndPredecessor) {
-                if (eraseStart == blockEndPredecessor)
-                    throw exception("Trying to erase the end block of a newly unmapped region!");
-
-                blocks.erase(eraseStart, blockEndPredecessor);
-            }
         }
 
         if (unmapCallback)
