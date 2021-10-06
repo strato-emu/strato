@@ -54,6 +54,14 @@ namespace skyline::gpu {
         }
 
         /**
+         * @brief Signals this fence regardless of if the underlying fence has been signalled or not
+         */
+        void Cancel() {
+            if (!signalled.test_and_set(std::memory_order_release))
+                DestroyDependencies();
+        }
+
+        /**
          * @brief Wait on a fence cycle till it has been signalled
          */
         void Wait() {

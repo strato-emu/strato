@@ -5,8 +5,167 @@
 #include <common/trace.h>
 #include <kernel/types/KProcess.h>
 #include "texture.h"
+#include "copy.h"
 
 namespace skyline::gpu {
+    std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
+        if (!guest)
+            throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
+        else if (guest->mappings.size() != 1)
+            throw exception("Synchronization of non-contigious textures is not supported");
+        else if (guest->dimensions != dimensions)
+            throw exception("Guest and host dimensions being different is not supported currently");
+        else if (guest->mappings.size() > 1)
+            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
+
+        auto pointer{guest->mappings[0].data()};
+        auto size{format->GetSize(dimensions)};
+
+        WaitOnBacking();
+
+        u8 *bufferData;
+        auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
+            if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
+                // We need a staging buffer for all optimal copies (since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
+                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+                bufferData = stagingBuffer->data();
+                return stagingBuffer;
+            } else if (tiling == vk::ImageTiling::eLinear) {
+                // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly into it rather than a staging buffer
+                bufferData = std::get<memory::Image>(backing).data();
+                if (cycle.lock() != pCycle)
+                    WaitOnFence();
+                return nullptr;
+            } else {
+                throw exception("Guest -> Host synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
+            }
+        }()};
+
+        if (guest->tileConfig.mode == texture::TileMode::Block)
+            CopyBlockLinearToLinear(*guest, pointer, bufferData);
+        else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+            CopyPitchLinearToLinear(*guest, pointer, bufferData);
+        else if (guest->tileConfig.mode == texture::TileMode::Linear)
+            std::memcpy(bufferData, pointer, size);
+
+        if (stagingBuffer && cycle.lock() != pCycle)
+            WaitOnFence();
+
+        return stagingBuffer;
+    }
+
+    void Texture::CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
+        auto image{GetBacking()};
+        if (layout != vk::ImageLayout::eTransferDstOptimal) {
+            commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                .image = image,
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .oldLayout = layout,
+                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .subresourceRange = {
+                    .aspectMask = format->vkAspect,
+                    .levelCount = mipLevels,
+                    .layerCount = layerCount,
+                },
+            });
+
+            if (layout == vk::ImageLayout::eUndefined)
+                layout = vk::ImageLayout::eTransferDstOptimal;
+        }
+
+        commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, vk::ImageLayout::eTransferDstOptimal, vk::BufferImageCopy{
+            .imageExtent = dimensions,
+            .imageSubresource = {
+                .aspectMask = format->vkAspect,
+                .layerCount = layerCount,
+            },
+        });
+
+        if (layout != vk::ImageLayout::eTransferDstOptimal)
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                .image = image,
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                .newLayout = layout,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .subresourceRange = {
+                    .aspectMask = format->vkAspect,
+                    .levelCount = mipLevels,
+                    .layerCount = layerCount,
+                },
+            });
+    }
+
+    void Texture::CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
+        auto image{GetBacking()};
+        if (layout != vk::ImageLayout::eTransferSrcOptimal) {
+            commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                .image = image,
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                .oldLayout = layout,
+                .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .subresourceRange = {
+                    .aspectMask = format->vkAspect,
+                    .levelCount = mipLevels,
+                    .layerCount = layerCount,
+                },
+            });
+
+            if (layout == vk::ImageLayout::eUndefined)
+                layout = vk::ImageLayout::eTransferSrcOptimal;
+        }
+
+        commandBuffer.copyImageToBuffer(image, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer->vkBuffer, vk::BufferImageCopy{
+            .imageExtent = dimensions,
+            .imageSubresource = {
+                .aspectMask = format->vkAspect,
+                .layerCount = layerCount,
+            },
+        });
+
+        if (layout != vk::ImageLayout::eTransferSrcOptimal)
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                .image = image,
+                .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+                .newLayout = layout,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .subresourceRange = {
+                    .aspectMask = format->vkAspect,
+                    .levelCount = mipLevels,
+                    .layerCount = layerCount,
+                },
+            });
+    }
+
+    void Texture::CopyToGuest(u8 *hostBuffer) {
+        auto guestOutput{guest->mappings[0].data()};
+        auto size{format->GetSize(dimensions)};
+
+        if (guest->tileConfig.mode == texture::TileMode::Block)
+            CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
+        else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+            CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
+        else if (guest->tileConfig.mode == texture::TileMode::Linear)
+            std::memcpy(hostBuffer, guestOutput, format->GetSize(dimensions));
+    }
+
+    Texture::TextureBufferCopy::TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer) : texture(std::move(texture)), stagingBuffer(std::move(stagingBuffer)) {}
+
+    Texture::TextureBufferCopy::~TextureBufferCopy() {
+        texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
+    }
+
     Texture::Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
@@ -90,6 +249,8 @@ namespace skyline::gpu {
     }
 
     bool Texture::WaitOnBacking() {
+        TRACE_EVENT("gpu", "Texture::WaitOnBacking");
+
         if (GetBacking()) [[likely]] {
             return false;
         } else {
@@ -101,6 +262,8 @@ namespace skyline::gpu {
     }
 
     void Texture::WaitOnFence() {
+        TRACE_EVENT("gpu", "Texture::WaitOnFence");
+
         auto lCycle{cycle.lock()};
         if (lCycle) {
             lCycle->Wait();
@@ -121,6 +284,8 @@ namespace skyline::gpu {
         WaitOnBacking();
         WaitOnFence();
 
+        TRACE_EVENT("gpu", "Texture::TransitionLayout");
+
         if (layout != pLayout) {
             cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eBottomOfPipe, {}, {}, {}, vk::ImageMemoryBarrier{
@@ -132,9 +297,9 @@ namespace skyline::gpu {
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .subresourceRange = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .levelCount = 1,
-                        .layerCount = 1,
+                        .aspectMask = format->vkAspect,
+                        .levelCount = mipLevels,
+                        .layerCount = layerCount,
                     },
                 });
             });
@@ -143,144 +308,26 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost() {
-        if (!guest)
-            throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
-        else if (guest->mappings.size() != 1)
-            throw exception("Synchronization of non-contigious textures is not supported");
-        else if (guest->dimensions != dimensions)
-            throw exception("Guest and host dimensions being different is not supported currently");
-
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
-        auto pointer{guest->mappings[0].data()};
-        auto size{format->GetSize(dimensions)};
 
-        u8 *bufferData;
-        auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
-            if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-                // We need a staging buffer for all optimal copies (since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
-                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
-                bufferData = stagingBuffer->data();
-                return stagingBuffer;
-            } else if (tiling == vk::ImageTiling::eLinear) {
-                // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly into it rather than a staging buffer
-                bufferData = std::get<memory::Image>(backing).data();
-                WaitOnFence(); // We need to wait on fence here since we are mutating the texture directly after, the wait can be deferred till the copy when a staging buffer is used
-                return nullptr;
-            } else {
-                throw exception("Guest -> Host synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
-            }
-        }()};
-
-        if (guest->tileConfig.mode == texture::TileMode::Block) {
-            // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
-            constexpr u8 SectorWidth{16}; // The width of a sector in bytes
-            constexpr u8 SectorHeight{2}; // The height of a sector in lines
-            constexpr u8 GobWidth{64}; // The width of a GOB in bytes
-            constexpr u8 GobHeight{8}; // The height of a GOB in lines
-
-            auto blockHeight{guest->tileConfig.blockHeight}; //!< The height of the blocks in GOBs
-            auto robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
-            auto surfaceHeight{guest->dimensions.height / guest->format->blockHeight}; //!< The height of the surface in lines
-            auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
-            auto robWidthBytes{util::AlignUp((guest->dimensions.width / guest->format->blockWidth) * guest->format->bpb, GobWidth)}; //!< The width of a ROB in bytes
-            auto robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
-            auto robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
-            auto gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
-
-            auto inputSector{pointer}; //!< The address of the input sector
-            auto outputRob{bufferData}; //!< The address of the output block
-
-            for (u32 rob{}, y{}, paddingY{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs
-                auto outputBlock{outputRob}; // We iterate through a block independently of the ROB
-                for (u32 block{}; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` Blocks
-                    auto outputGob{outputBlock}; // We iterate through a GOB independently of the block
-                    for (u32 gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
-                        for (u32 index{}; index < SectorWidth * SectorHeight; index++) { // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
-                            u32 xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
-                            u32 yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
-                            std::memcpy(outputGob + (yT * robWidthBytes) + xT, inputSector, SectorWidth);
-                            inputSector += SectorWidth; // `sectorWidth` bytes are of sequential image data
-                        }
-                        outputGob += gobYOffset; // Increment the output GOB to the next Y-axis GOB
-                    }
-                    inputSector += paddingY; // Increment the input sector to the next sector
-                    outputBlock += GobWidth; // Increment the output block to the next block (As Block Width = 1 GOB Width)
-                }
-                outputRob += robBytes; // Increment the output block to the next ROB
-
-                y += robHeight; // Increment the Y position to the next ROB
-                blockHeight = static_cast<u8>(std::min(static_cast<u32>(blockHeight), (surfaceHeight - y) / GobHeight)); // Calculate the amount of Y GOBs which aren't padding
-                paddingY = (guest->tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight); // Calculate the amount of padding between contiguous sectors
-            }
-        } else if (guest->tileConfig.mode == texture::TileMode::Pitch) {
-            auto sizeLine{guest->format->GetSize(guest->dimensions.width, 1)}; //!< The size of a single line of pixel data
-            auto sizeStride{guest->format->GetSize(guest->tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
-
-            auto inputLine{pointer}; //!< The address of the input line
-            auto outputLine{bufferData}; //!< The address of the output line
-
-            for (u32 line{}; line < guest->dimensions.height; line++) {
-                std::memcpy(outputLine, inputLine, sizeLine);
-                inputLine += sizeStride;
-                outputLine += sizeLine;
-            }
-        } else if (guest->tileConfig.mode == texture::TileMode::Linear) {
-            std::memcpy(bufferData, pointer, size);
-        }
-
+        auto stagingBuffer{SynchronizeHostImpl(nullptr)};
         if (stagingBuffer) {
-            if (WaitOnBacking() && size != format->GetSize(dimensions))
-                throw exception("Backing properties changing during sync is not supported");
-            WaitOnFence();
-
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
-                auto image{GetBacking()};
-                if (layout != vk::ImageLayout::eTransferDstOptimal) {
-                    commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                        .image = image,
-                        .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                        .oldLayout = layout,
-                        .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .subresourceRange = {
-                            .aspectMask = vk::ImageAspectFlagBits::eColor,
-                            .levelCount = 1,
-                            .layerCount = 1,
-                        },
-                    });
-
-                    if (layout == vk::ImageLayout::eUndefined)
-                        layout = vk::ImageLayout::eTransferDstOptimal;
-                }
-
-                commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, vk::ImageLayout::eTransferDstOptimal, vk::BufferImageCopy{
-                    .imageExtent = dimensions,
-                    .imageSubresource = {
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .layerCount = 1,
-                    },
-                });
-
-                if (layout != vk::ImageLayout::eTransferDstOptimal)
-                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                        .image = image,
-                        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                        .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
-                        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                        .newLayout = layout,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .subresourceRange = {
-                            .aspectMask = vk::ImageAspectFlagBits::eColor,
-                            .levelCount = 1,
-                            .layerCount = 1,
-                        },
-                    });
+                CopyFromStagingBuffer(commandBuffer, stagingBuffer);
             })};
             lCycle->AttachObjects(stagingBuffer, shared_from_this());
             cycle = lCycle;
+        }
+    }
+
+    void Texture::SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
+        TRACE_EVENT("gpu", "Texture::SynchronizeHostWithBuffer");
+
+        auto stagingBuffer{SynchronizeHostImpl(pCycle)};
+        if (stagingBuffer) {
+            CopyFromStagingBuffer(commandBuffer, stagingBuffer);
+            pCycle->AttachObjects(stagingBuffer, shared_from_this());
+            cycle = pCycle;
         }
     }
 
@@ -289,12 +336,63 @@ namespace skyline::gpu {
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
         else if (guest->mappings.size() != 1)
             throw exception("Synchronization of non-contigious textures is not supported");
+        else if (layout == vk::ImageLayout::eUndefined)
+            return; // If the state of the host texture is undefined then so can the guest
+        else if (guest->mappings.size() > 1)
+            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
+
+        TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
 
         WaitOnBacking();
         WaitOnFence();
 
-        TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
-        // TODO: Write Host -> Guest Synchronization
+        if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
+            auto size{format->GetSize(dimensions)};
+            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+
+            auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+                CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
+            })};
+            lCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this(), stagingBuffer));
+            cycle = lCycle;
+        } else if (tiling == vk::ImageTiling::eLinear) {
+            // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly from it rather than using a staging buffer
+            CopyToGuest(std::get<memory::Image>(backing).data());
+        } else {
+            throw exception("Host -> Guest synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
+        }
+    }
+
+    void Texture::SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
+        if (!guest)
+            throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
+        else if (guest->mappings.size() != 1)
+            throw exception("Synchronization of non-contigious textures is not supported");
+        else if (layout == vk::ImageLayout::eUndefined)
+            return; // If the state of the host texture is undefined then so can the guest
+        else if (guest->mappings.size() > 1)
+            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
+
+        TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
+
+        WaitOnBacking();
+        if (cycle.lock() != pCycle)
+            WaitOnFence();
+
+        if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
+            auto size{format->GetSize(dimensions)};
+            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+
+            CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
+            pCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this(), stagingBuffer));
+            cycle = pCycle;
+        } else if (tiling == vk::ImageTiling::eLinear) {
+            CopyToGuest(std::get<memory::Image>(backing).data());
+            pCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this()));
+            cycle = pCycle;
+        } else {
+            throw exception("Host -> Guest synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
+        }
     }
 
     void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
@@ -310,6 +408,8 @@ namespace skyline::gpu {
             throw exception("Cannot copy from image with different dimensions");
         else if (source->format != format)
             throw exception("Cannot copy from image with different format");
+
+        TRACE_EVENT("gpu", "Texture::CopyFrom");
 
         auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
             auto sourceBacking{source->GetBacking()};

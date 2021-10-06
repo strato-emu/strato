@@ -85,27 +85,38 @@ namespace skyline::gpu {
         template<typename RecordFunction>
         std::shared_ptr<FenceCycle> Submit(RecordFunction recordFunction) {
             auto commandBuffer{AllocateCommandBuffer()};
-            commandBuffer->begin(vk::CommandBufferBeginInfo{
-                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-            });
-            recordFunction(*commandBuffer);
-            commandBuffer->end();
-            SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
-            return commandBuffer.GetFenceCycle();
+            try {
+                commandBuffer->begin(vk::CommandBufferBeginInfo{
+                    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+                });
+                recordFunction(*commandBuffer);
+                commandBuffer->end();
+                SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
+                return commandBuffer.GetFenceCycle();
+            } catch (...) {
+                commandBuffer.GetFenceCycle()->Cancel();
+                std::rethrow_exception(std::current_exception());
+            }
         }
 
         /**
          * @note Same as Submit but with FenceCycle as an argument rather than return value
          */
         template<typename RecordFunction>
-        void SubmitWithCycle(RecordFunction recordFunction) {
+        std::shared_ptr<FenceCycle> SubmitWithCycle(RecordFunction recordFunction) {
             auto commandBuffer{AllocateCommandBuffer()};
-            commandBuffer->begin(vk::CommandBufferBeginInfo{
-                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-            });
-            recordFunction(*commandBuffer, commandBuffer.GetFenceCycle());
-            commandBuffer->end();
-            SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
+            try {
+                commandBuffer->begin(vk::CommandBufferBeginInfo{
+                    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+                });
+                recordFunction(*commandBuffer, commandBuffer.GetFenceCycle());
+                commandBuffer->end();
+                SubmitCommandBuffer(*commandBuffer, commandBuffer.GetFence());
+                return commandBuffer.GetFenceCycle();
+            } catch (...) {
+                commandBuffer.GetFenceCycle()->Cancel();
+                std::rethrow_exception(std::current_exception());
+            }
         }
     };
 }

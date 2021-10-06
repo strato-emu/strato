@@ -59,6 +59,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             R16Unorm = 0xEE,
             R16Float = 0xF2,
             R8Unorm = 0xF3,
+            R8Snorm = 0xF4,
+            R8Sint = 0xF5,
+            R8Uint = 0xF6,
         } format;
 
         struct TileMode {

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <boost/container/stable_vector.hpp>
+#include <unordered_set>
 #include "command_nodes.h"
 
 namespace skyline::gpu::interconnect {
@@ -16,6 +17,7 @@ namespace skyline::gpu::interconnect {
         GPU &gpu;
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderpassNode *renderpass{};
+        std::unordered_set<Texture*> syncTextures; //!< All textures that need to be synced prior to and after execution
 
         /**
          * @return If a new renderpass was created by the function or the current one was reused as it was compatible

@@ -386,7 +386,7 @@ namespace skyline::service::hosbinder {
         {
             auto &texture{buffer.texture};
             std::scoped_lock textureLock(*texture);
-            // texture->SynchronizeHost();
+            texture->SynchronizeHost();
             u64 frameId;
             state.gpu->presentation.Present(texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
         }

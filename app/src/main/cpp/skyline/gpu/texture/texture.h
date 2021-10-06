@@ -248,7 +248,7 @@ namespace skyline::gpu {
      * @brief A descriptor for a texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
      */
     struct GuestTexture {
-        using Mappings = boost::container::small_vector<span < u8>, 3>;
+        using Mappings = boost::container::small_vector<span<u8>, 3>;
 
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this texture
         texture::Dimensions dimensions;
@@ -263,7 +263,7 @@ namespace skyline::gpu {
 
         GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(mappings), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
 
-        GuestTexture(span <u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(1, mapping), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
+        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(1, mapping), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
     };
 
     class TextureManager;
@@ -313,6 +313,40 @@ namespace skyline::gpu {
 
         friend TextureManager;
         friend TextureView;
+
+        /**
+         * @brief An implementation function for guest -> host texture synchronization, it allocates and copies data into a staging buffer or directly into a linear host texture
+         * @return If a staging buffer was required for the texture sync, it's returned filled with guest texture data and must be copied to the host texture by the callee
+         */
+        std::shared_ptr<memory::StagingBuffer> SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle);
+
+        /**
+         * @brief Records commands for copying data from a staging buffer to the texture's backing into the supplied command buffer
+         */
+        void CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer>& stagingBuffer);
+
+        /**
+         * @brief Records commands for copying data from the texture's backing to a staging buffer into the supplied command buffer
+         */
+        void CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer>& stagingBuffer);
+
+        /**
+         * @brief Copies data from the supplied host buffer into the guest texture
+         * @note The host buffer must be contain the entire image
+         */
+        void CopyToGuest(u8* hostBuffer);
+
+        /**
+         * @brief A FenceCycleDependency that copies the contents of a staging buffer or mapped image backing the texture to the guest texture
+         */
+        struct TextureBufferCopy : public FenceCycleDependency {
+            std::shared_ptr<Texture> texture;
+            std::shared_ptr<memory::StagingBuffer> stagingBuffer;
+
+            TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer = {});
+
+            ~TextureBufferCopy();
+        };
 
       public:
         std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
@@ -404,10 +438,20 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
+         * @param commandBuffer An optional command buffer that the command will be recorded into rather than creating one as necessary
+         * @note A command buffer **must** not be submitted if it is created just for the command as it can be more efficient to allocate one within the function as necessary which is done when one isn't passed in
          * @note The texture **must** be locked prior to calling this
-         * @note The guest texture should not be null prior to calling this
+         * @note The guest texture backing should exist prior to calling this
          */
         void SynchronizeHost();
+
+        /**
+         * @brief Same as SynchronizeHost but this records any commands into the supplied command buffer rather than creating one as necessary
+         * @note It is more efficient to call SynchronizeHost than allocating a command buffer purely for this function as it may conditionally not record any commands
+         * @note The texture **must** be locked prior to calling this
+         * @note The guest texture backing should exist prior to calling this
+         */
+        void SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
@@ -415,6 +459,14 @@ namespace skyline::gpu {
          * @note The guest texture should not be null prior to calling this
          */
         void SynchronizeGuest();
+
+        /**
+         * @brief Synchronizes the guest texture with the host texture after it has been modified
+         * @note It is more efficient to call SynchronizeHost than allocating a command buffer purely for this function as it may conditionally not record any commands
+         * @note The texture **must** be locked prior to calling this
+         * @note The guest texture should not be null prior to calling this
+         */
+        void SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
 
         /**
          * @brief Copies the contents of the supplied source texture into the current texture

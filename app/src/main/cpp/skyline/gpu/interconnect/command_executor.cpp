@@ -20,6 +20,10 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments, std::vector<TextureView> colorAttachments, std::optional<TextureView> depthStencilAttachment) {
+        for (const auto& attachments : {inputAttachments, colorAttachments})
+            for (const auto& attachment : attachments)
+                syncTextures.emplace(attachment.backing.get());
+
         bool newRenderpass{CreateRenderpass(renderArea)};
         renderpass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
         if (newRenderpass)
@@ -56,12 +60,17 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::Execute() {
         if (!nodes.empty()) {
+            TRACE_EVENT("gpu", "CommandExecutor::Execute");
+
             if (renderpass) {
                 nodes.emplace_back(std::in_place_type_t<node::RenderpassEndNode>());
                 renderpass = nullptr;
             }
 
             gpu.scheduler.SubmitWithCycle([this](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle) {
+                for (auto texture : syncTextures)
+                    texture->SynchronizeHostWithBuffer(commandBuffer, cycle);
+
                 using namespace node;
                 for (NodeVariant &node : nodes) {
                     std::visit(VariantVisitor{
@@ -71,9 +80,13 @@ namespace skyline::gpu::interconnect {
                         [&](RenderpassEndNode &node) { node(commandBuffer, cycle, gpu); },
                     }, node);
                 }
-            });
+
+                for (auto texture : syncTextures)
+                    texture->SynchronizeGuestWithBuffer(commandBuffer, cycle);
+            })->Wait();
 
             nodes.clear();
+            syncTextures.clear();
         }
     }
 }

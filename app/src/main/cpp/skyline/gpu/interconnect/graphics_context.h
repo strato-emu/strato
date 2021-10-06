@@ -122,6 +122,12 @@ namespace skyline::gpu::interconnect {
                         return format::R16Float;
                     case maxwell3d::RenderTarget::ColorFormat::R8Unorm:
                         return format::R8Unorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R8Snorm:
+                        return format::R8Snorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R8Sint:
+                        return format::R8Sint;
+                    case maxwell3d::RenderTarget::ColorFormat::R8Uint:
+                        return format::R8Uint;
                     default:
                         throw exception("Cannot translate the supplied RT format: 0x{:X}", static_cast<u32>(format));
                 }
