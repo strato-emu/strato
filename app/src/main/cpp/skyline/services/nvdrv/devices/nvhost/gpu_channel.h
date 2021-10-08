@@ -3,22 +3,31 @@
 
 #pragma once
 
-#include <soc/gm20b/gpfifo.h>
 #include <services/common/fence.h>
+#include <soc/gm20b/engines/maxwell_3d.h> // TODO: remove
+#include <soc/gm20b/channel.h>
 #include "services/nvdrv/devices/nvdevice.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
+    class AsGpu;
+
     /**
      * @brief nvhost::GpuChannel is used to create and submit commands to channels which are effectively GPU processes
      * @url https://switchbrew.org/wiki/NV_services#Channels
      */
     class GpuChannel : public NvDevice {
       private:
-        u32 channelSyncpoint{};
+        u32 channelSyncpoint{}; //!< The syncpoint for submissions allocated to this channel in `AllocGpfifo`
         u32 channelUserData{};
+        std::mutex channelMutex;
         std::shared_ptr<type::KEvent> smExceptionBreakpointIntReportEvent;
         std::shared_ptr<type::KEvent> smExceptionBreakpointPauseReportEvent;
         std::shared_ptr<type::KEvent> errorNotifierEvent;
+
+        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
+        std::unique_ptr<soc::gm20b::ChannelContext> channelCtx;
+
+        friend AsGpu;
 
       public:
         /**
@@ -37,7 +46,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 raw;
         };
 
-        GpuChannel(const DeviceState &state, Core &core, const SessionContext &ctx);
+        GpuChannel(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
          * @brief Sets the nvmap handle id to be used for channel submits (does nothing for GPU channels)

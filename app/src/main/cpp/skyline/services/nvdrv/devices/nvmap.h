@@ -23,7 +23,7 @@ namespace skyline::service::nvdrv::device {
             IsSharedMemMapped = 6
         };
 
-        NvMap(const DeviceState &state, Core &core, const SessionContext &ctx);
+        NvMap(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
          * @brief Creates an nvmap handle for the given size

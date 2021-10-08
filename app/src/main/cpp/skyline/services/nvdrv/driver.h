@@ -4,15 +4,26 @@
 #pragma once
 
 #include <common.h>
+#include <kernel/types/KEvent.h>
 #include "types.h"
-#include "devices/nvdevice.h"
 #include "core/core.h"
+#include "devices/nvdevice.h"
 
 namespace skyline::service::nvdrv {
+    namespace device {
+        namespace nvhost {
+            class AsGpu;
+        }
+    }
+
     class Driver {
       private:
         const DeviceState &state;
+
+        std::shared_mutex deviceMutex; //!< Protects access to `devices`
         std::unordered_map<FileDescriptor, std::unique_ptr<device::NvDevice>> devices;
+
+        friend device::nvhost::AsGpu; // For channel address space binding
 
       public:
         Core core; //!< The core global state object of nvdrv that is accessed by devices

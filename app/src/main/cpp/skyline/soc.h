@@ -4,7 +4,7 @@
 #pragma once
 
 #include "soc/host1x.h"
-#include "soc/gm20b.h"
+#include "soc/gm20b/gpfifo.h"
 
 namespace skyline::soc {
     /**
@@ -14,8 +14,7 @@ namespace skyline::soc {
     class SOC {
       public:
         host1x::Host1X host1x;
-        gm20b::GM20B gm20b;
 
-        SOC(const DeviceState &state) : gm20b(state) {}
+        SOC(const DeviceState &state) {}
     };
 }

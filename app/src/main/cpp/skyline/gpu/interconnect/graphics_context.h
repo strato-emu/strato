@@ -4,8 +4,10 @@
 #pragma once
 
 #include <gpu/texture/format.h>
+#include <soc/gm20b/channel.h>
 #include <soc/gm20b/gmmu.h>
 #include <soc/gm20b/engines/maxwell/types.h>
+
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
@@ -18,7 +20,7 @@ namespace skyline::gpu::interconnect {
     class GraphicsContext {
       private:
         GPU &gpu;
-        soc::gm20b::GMMU &gmmu;
+        soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
 
         struct RenderTarget {
@@ -50,7 +52,7 @@ namespace skyline::gpu::interconnect {
 
 
       public:
-        GraphicsContext(GPU &gpu, soc::gm20b::GMMU &gmmu, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), gmmu(gmmu), executor(executor) {
+        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
         }
 
@@ -182,7 +184,7 @@ namespace skyline::gpu::interconnect {
 
             if (renderTarget.guest.mappings.empty()) {
                 auto size{std::max<u64>(renderTarget.guest.layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer), renderTarget.guest.format->GetSize(renderTarget.guest.dimensions))};
-                auto mappings{gmmu.TranslateRange(renderTarget.gpuAddress, size)};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.gpuAddress, size)};
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
 

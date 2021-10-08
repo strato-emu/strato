@@ -5,8 +5,8 @@
 #include "ctrl_gpu.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    CtrlGpu::CtrlGpu(const DeviceState &state, Core &core, const SessionContext &ctx) :
-        NvDevice(state, core, ctx),
+    CtrlGpu::CtrlGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) :
+        NvDevice(state, driver, core, ctx),
         errorNotifierEvent(std::make_shared<type::KEvent>(state, false)),
         unknownEvent(std::make_shared<type::KEvent>(state, false)) {}
 

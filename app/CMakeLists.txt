@@ -103,12 +103,12 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
-        ${source_DIR}/skyline/soc/gm20b.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
+        ${source_DIR}/skyline/soc/gm20b/channel.cpp
         ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp
+        ${source_DIR}/skyline/soc/gm20b/gmmu.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/maxwell_3d.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/maxwell/macro_interpreter.cpp
-        ${source_DIR}/skyline/soc/gm20b/gmmu.cpp
         ${source_DIR}/skyline/input/npad.cpp
         ${source_DIR}/skyline/input/npad_device.cpp
         ${source_DIR}/skyline/input/touch.cpp

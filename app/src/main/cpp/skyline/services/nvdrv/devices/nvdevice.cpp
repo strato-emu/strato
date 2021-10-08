@@ -5,7 +5,11 @@
 #include "nvdevice.h"
 
 namespace skyline::service::nvdrv::device {
-    NvDevice::NvDevice(const DeviceState &state, Core &core, const SessionContext &ctx) : state(state), core(core), ctx(ctx) {}
+    NvDevice::NvDevice(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) :
+        state(state),
+        driver(driver),
+        core(core),
+        ctx(ctx) {}
 
     const std::string &NvDevice::GetName() {
         if (name.empty()) {

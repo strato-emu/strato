@@ -6,7 +6,7 @@
 #include "nvmap.h"
 
 namespace skyline::service::nvdrv::device {
-    NvMap::NvMap(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
+    NvMap::NvMap(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) : NvDevice(state, driver, core, ctx) {}
 
     PosixResult NvMap::Create(In<u32> size, Out<NvMapCore::Handle::Id> handle) {
         auto handleDesc{core.nvMap.CreateHandle(util::AlignUp(size, PAGE_SIZE))};

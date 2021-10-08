@@ -6,6 +6,7 @@
 #include <kernel/types/KProcess.h>
 #include <soc.h>
 #include <os.h>
+#include "engines/maxwell_3d.h"
 
 namespace skyline::soc::gm20b {
     /**
@@ -58,7 +59,14 @@ namespace skyline::soc::gm20b {
     };
     static_assert(sizeof(PushBufferMethodHeader) == sizeof(u32));
 
-    void GPFIFO::Send(u32 method, u32 argument, u32 subChannel, bool lastCall) {
+    ChannelGpfifo::ChannelGpfifo(const DeviceState &state, ChannelContext &channelCtx, size_t numEntries) :
+        state(state),
+        gpfifoEngine(state),
+        channelCtx(channelCtx),
+        gpEntries(numEntries),
+        thread(std::thread(&ChannelGpfifo::Run, this)) {}
+
+    void ChannelGpfifo::Send(u32 method, u32 argument, u32 subChannel, bool lastCall) {
         constexpr u32 ThreeDSubChannel{0};
         constexpr u32 ComputeSubChannel{1};
         constexpr u32 Inline2MemorySubChannel{2};
@@ -72,19 +80,19 @@ namespace skyline::soc::gm20b {
         } else {
             switch (subChannel) {
                 case ThreeDSubChannel:
-                    state.soc->gm20b.maxwell3D.CallMethod(method, argument, lastCall);
+                    channelCtx.maxwell3D->CallMethod(method, argument, lastCall);
                     break;
                 case ComputeSubChannel:
-                    state.soc->gm20b.maxwellCompute.CallMethod(method, argument, lastCall);
+                    channelCtx.maxwellCompute.CallMethod(method, argument, lastCall);
                     break;
                 case Inline2MemorySubChannel:
-                    state.soc->gm20b.keplerMemory.CallMethod(method, argument, lastCall);
+                    channelCtx.keplerMemory.CallMethod(method, argument, lastCall);
                     break;
                 case TwoDSubChannel:
-                    state.soc->gm20b.fermi2D.CallMethod(method, argument, lastCall);
+                    channelCtx.fermi2D.CallMethod(method, argument, lastCall);
                     break;
                 case CopySubChannel:
-                    state.soc->gm20b.maxwellDma.CallMethod(method, argument, lastCall);
+                    channelCtx.maxwellDma.CallMethod(method, argument, lastCall);
                     break;
                 default:
                     throw exception("Tried to call into a software subchannel: {}!", subChannel);
@@ -92,7 +100,7 @@ namespace skyline::soc::gm20b {
         }
     }
 
-    void GPFIFO::Process(GpEntry gpEntry) {
+    void ChannelGpfifo::Process(GpEntry gpEntry) {
         if (!gpEntry.size) {
             // This is a GPFIFO control entry, all control entries have a zero length and contain no pushbuffers
             switch (gpEntry.opcode) {
@@ -105,7 +113,7 @@ namespace skyline::soc::gm20b {
         }
 
         pushBufferData.resize(gpEntry.size);
-        state.soc->gm20b.gmmu.Read<u32>(pushBufferData, gpEntry.Address());
+        channelCtx.asCtx->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
 
         for (auto entry{pushBufferData.begin()}; entry != pushBufferData.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
@@ -142,18 +150,11 @@ namespace skyline::soc::gm20b {
         }
     }
 
-    void GPFIFO::Initialize(size_t numBuffers) {
-        if (pushBuffers)
-            throw exception("GPFIFO Initialization cannot be done multiple times");
-        pushBuffers.emplace(numBuffers);
-        thread = std::thread(&GPFIFO::Run, this);
-    }
-
-    void GPFIFO::Run() {
+    void ChannelGpfifo::Run() {
         pthread_setname_np(pthread_self(), "GPFIFO");
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
-            pushBuffers->Process([this](GpEntry gpEntry) {
+            gpEntries.Process([this](GpEntry gpEntry) {
                 state.logger->Debug("Processing pushbuffer: 0x{:X}", gpEntry.Address());
                 Process(gpEntry);
             });
@@ -170,11 +171,11 @@ namespace skyline::soc::gm20b {
         }
     }
 
-    void GPFIFO::Push(span<GpEntry> entries) {
-        pushBuffers->Append(entries);
+    void ChannelGpfifo::Push(span<GpEntry> entries) {
+        gpEntries.Append(entries);
     }
 
-    GPFIFO::~GPFIFO() {
+    ChannelGpfifo::~ChannelGpfifo() {
         if (thread.joinable()) {
             pthread_kill(thread.native_handle(), SIGINT);
             thread.join();

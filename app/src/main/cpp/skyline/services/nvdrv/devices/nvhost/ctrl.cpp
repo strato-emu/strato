@@ -34,7 +34,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             state == SyncpointEvent::State::Signalling;
     }
 
-    Ctrl::Ctrl(const DeviceState &state, Core &core, const SessionContext &ctx) : NvDevice(state, core, ctx) {}
+    Ctrl::Ctrl(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) : NvDevice(state, driver, core, ctx) {}
 
     u32 Ctrl::FindFreeSyncpointEvent(u32 syncpointId) {
         u32 eventSlot{SyncpointEventCount}; //!< Holds the slot of the last populated event in the event array

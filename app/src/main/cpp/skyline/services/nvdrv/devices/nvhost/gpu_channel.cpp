@@ -6,8 +6,8 @@
 #include "gpu_channel.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    GpuChannel::GpuChannel(const DeviceState &state, Core &core, const SessionContext &ctx) :
-        NvDevice(state, core, ctx),
+    GpuChannel::GpuChannel(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) :
+        NvDevice(state, driver, core, ctx),
         smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state, false)),
         smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state, false)),
         errorNotifierEvent(std::make_shared<type::KEvent>(state, false)) {
@@ -39,16 +39,20 @@ namespace skyline::service::nvdrv::device::nvhost {
             if (flags.incrementWithValue)
                 return PosixResult::InvalidArgument;
 
-            if (core.syncpointManager.IsFenceSignalled(fence))
+            if (!core.syncpointManager.IsFenceSignalled(fence))
                 throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
         }
 
-        state.soc->gm20b.gpfifo.Push(gpEntries.subspan(0, numEntries));
+        {
+            std::scoped_lock lock(channelMutex);
 
-        fence.id = channelSyncpoint;
+            channelCtx->gpfifo.Push(gpEntries.subspan(0, numEntries));
 
-        u32 increment{(flags.fenceIncrement ? 2 : 0) + (flags.incrementWithValue ? fence.threshold : 0)};
-        fence.threshold = core.syncpointManager.IncrementSyncpointMaxExt(channelSyncpoint, increment);
+            fence.id = channelSyncpoint;
+
+            u32 increment{(flags.fenceIncrement ? 2 : 0) + (flags.incrementWithValue ? fence.threshold : 0)};
+            fence.threshold = core.syncpointManager.IncrementSyncpointMaxExt(channelSyncpoint, increment);
+        }
 
         if (flags.fenceIncrement)
             throw exception("Incrementing a fence through SubmitGpfifo is unimplemented");
@@ -84,7 +88,19 @@ namespace skyline::service::nvdrv::device::nvhost {
 
     PosixResult GpuChannel::AllocGpfifoEx2(In<u32> numEntries, In<u32> numJobs, In<u32> flags, Out<Fence> fence) {
         state.logger->Debug("numEntries: {}, numJobs: {}, flags: 0x{:X}", numEntries, numJobs, flags);
-        state.soc->gm20b.gpfifo.Initialize(numEntries);
+
+        std::scoped_lock lock(channelMutex);
+        if (!asCtx) {
+            state.logger->Warn("Trying to allocate a channel without a bound address space");
+            return PosixResult::InvalidArgument;
+        }
+
+        if (channelCtx) {
+            state.logger->Warn("Trying to allocate a channel twice!");
+            return PosixResult::FileExists;
+        }
+
+        channelCtx = std::make_unique<soc::gm20b::ChannelContext>(state, asCtx, numEntries);
 
         fence = core.syncpointManager.GetSyncpointFence(channelSyncpoint);
 

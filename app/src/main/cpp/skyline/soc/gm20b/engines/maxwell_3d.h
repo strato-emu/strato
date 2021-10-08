@@ -8,6 +8,10 @@
 #include "engine.h"
 #include "maxwell/macro_interpreter.h"
 
+namespace skyline::soc::gm20b {
+    struct ChannelContext;
+}
+
 namespace skyline::soc::gm20b::engine::maxwell3d {
     /**
      * @brief The Maxwell 3D engine handles processing 3D graphics
@@ -245,9 +249,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         Registers registers{};
         Registers shadowRegisters{}; //!< A shadow-copy of the registers, their function is controlled by the 'shadowRamControl' register
 
+        ChannelContext &channelCtx;
+
         std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
 
-        Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor &executor);
+        Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
 
         /**
          * @brief Resets the Maxwell 3D registers to their default values

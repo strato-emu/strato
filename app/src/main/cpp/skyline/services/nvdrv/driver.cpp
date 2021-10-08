@@ -23,10 +23,13 @@ namespace skyline::service::nvdrv {
                     break;           \
             }
 
-        #define DEVICE_CASE(path, object) \
-            case util::Hash(path): \
-                devices.emplace(fd, std::make_unique<device::object>(state, core, ctx)); \
-                return NvResult::Success;
+        #define DEVICE_CASE(path, object)                                                           \
+            case util::Hash(path):                                                                  \
+                {                                                                                   \
+                    std::unique_lock lock(deviceMutex);                                             \
+                    devices.emplace(fd, std::make_unique<device::object>(state, *this, core, ctx)); \
+                    return NvResult::Success;                                                       \
+                }
 
         DEVICE_SWITCH(
             DEVICE_CASE("/dev/nvmap", NvMap)
@@ -69,13 +72,13 @@ namespace skyline::service::nvdrv {
             default:
                 throw exception("Unhandled POSIX result: {}!", static_cast<i32>(result));
         }
-
     }
 
     NvResult Driver::Ioctl(u32 fd, IoctlDescriptor cmd, span<u8> buffer) {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
+            std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl(cmd, buffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl was called with invalid file descriptor: {}", fd);
@@ -86,6 +89,7 @@ namespace skyline::service::nvdrv {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
+            std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl2(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl2 was called with invalid file descriptor: 0x{:X}", fd);
@@ -96,6 +100,7 @@ namespace skyline::service::nvdrv {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
+            std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl3 was called with invalid file descriptor: {}", fd);
@@ -104,6 +109,7 @@ namespace skyline::service::nvdrv {
 
     void Driver::CloseDevice(u32 fd) {
         try {
+            std::unique_lock lock(deviceMutex);
             devices.erase(fd);
         } catch (const std::out_of_range &) {
             state.logger->Warn("Trying to close non-existent file descriptor: {}");
@@ -114,6 +120,7 @@ namespace skyline::service::nvdrv {
         state.logger->Debug("fd: {}, eventId: 0x{:X}, device: {}", fd, eventId, devices.at(fd)->GetName());
 
         try {
+            std::shared_lock lock(deviceMutex);
             return devices.at(fd)->QueryEvent(eventId);
         } catch (const std::exception &) {
             throw exception("QueryEvent was called with invalid file descriptor: {}", fd);

@@ -10,8 +10,12 @@ namespace skyline::soc::gm20b {
 
     /**
      * @brief The GMMU (Graphics Memory Management Unit) class handles mapping between a Maxwell GPU virtual address space and an application's address space and is meant to roughly emulate the GMMU on the X1
-     * @note This is not accurate to the X1 as it would have an SMMU between the GMMU and physical memory but we don't emulate this abstraction at the moment
+     * @note This is not accurate to the X1 as it would have an SMMU between the GMMU and physical memory but we don't need to emulate this abstraction
      * @note The GMMU is implemented entirely as a template specialization over FlatMemoryManager
      */
     using GMMU = FlatMemoryManager<u64, 0, GmmuAddressSpaceBits>;
+
+    struct AddressSpaceContext {
+        GMMU gmmu;
+    };
 }

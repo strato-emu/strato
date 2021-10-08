@@ -3,10 +3,11 @@
 // Copyright © 2018-2020 fincs (https://github.com/devkitPro/deko3d)
 
 #include <boost/preprocessor/repeat.hpp>
+#include "maxwell_3d.h"
 #include <soc.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
-    Maxwell3D::Maxwell3D(const DeviceState &state, GMMU &gmmu, gpu::interconnect::CommandExecutor &executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, gmmu, executor) {
+    Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, channelCtx, executor), channelCtx(channelCtx) {
         ResetRegs();
     }
 
@@ -244,7 +245,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             MAXWELL3D_CASE(syncpointAction, {
                 state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
-                state.soc->gm20b.executor.Execute();
+                channelCtx.executor.Execute();
                 state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
             })
 
@@ -307,7 +308,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         switch (registers.semaphore.info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
-                state.soc->gm20b.gmmu.Write<u32>(registers.semaphore.address.Pack(), static_cast<u32>(result));
+                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore.address.Pack(), static_cast<u32>(result));
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
@@ -318,7 +319,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u64 nsTime{util::GetTimeNs()};
                 u64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                state.soc->gm20b.gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(), FourWordResult{result, timestamp});
+                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(), FourWordResult{result, timestamp});
                 break;
             }
         }

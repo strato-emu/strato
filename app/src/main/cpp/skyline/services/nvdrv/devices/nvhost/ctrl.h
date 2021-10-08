@@ -96,7 +96,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         PosixResult SyncpointFreeEventLocked(In<u32> slot);
 
       public:
-        Ctrl(const DeviceState &state, Core &core, const SessionContext &ctx);
+        Ctrl(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
          * @brief Clears a syncpoint event

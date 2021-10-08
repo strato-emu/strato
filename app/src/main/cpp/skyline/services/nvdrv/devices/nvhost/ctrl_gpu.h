@@ -73,7 +73,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 subregionCount{0x10};
         };
 
-        CtrlGpu(const DeviceState &state, Core &core, const SessionContext &ctx);
+        CtrlGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
          * @brief Returns the zcull context size

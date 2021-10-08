@@ -4,7 +4,7 @@
 #pragma once
 
 #include <common/address_space.h>
-
+#include <soc/gm20b/gmmu.h>
 #include <services/nvdrv/devices/nvdevice.h>
 
 namespace skyline::service::nvdrv::device::nvhost {
@@ -65,6 +65,8 @@ namespace skyline::service::nvdrv::device::nvhost {
             bool initialised{};
         } vm;
 
+        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
+
         void FreeMappingLocked(u64 offset);
 
       public:
@@ -95,7 +97,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         };
         static_assert(sizeof(RemapEntry) == 0x14);
 
-        AsGpu(const DeviceState &state, Core &core, const SessionContext &ctx);
+        AsGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
          * @brief Binds this address space to a channel

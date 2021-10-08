@@ -11,6 +11,10 @@
 
 #include "deserialisation/types.h"
 
+namespace skyline::service::nvdrv {
+    class Driver;
+}
+
 namespace skyline::service::nvdrv::device {
     using namespace kernel;
     using namespace deserialisation;
@@ -24,11 +28,12 @@ namespace skyline::service::nvdrv::device {
 
       protected:
         const DeviceState &state;
+        Driver &driver;
         Core &core;
         SessionContext ctx;
 
       public:
-        NvDevice(const DeviceState &state, Core &core, const SessionContext &ctx);
+        NvDevice(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         virtual ~NvDevice() = default;
 

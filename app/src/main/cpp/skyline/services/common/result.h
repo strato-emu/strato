@@ -11,6 +11,7 @@ namespace skyline::service {
         NotPermitted = 1, // EPERM
         TryAgain = 11, // EAGAIN
         Busy = 16, // EBUSY
+        FileExists = 17, // EEXIST
         InvalidArgument = 22, // EINVAL
         InappropriateIoctlForDevice = 25, // ENOTTY
         FunctionNotImplemented = 38, // ENOSYS
