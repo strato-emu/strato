@@ -6,11 +6,10 @@
 #include <services/common/fence.h>
 #include <soc/gm20b/engines/maxwell_3d.h> // TODO: remove
 #include <soc/gm20b/channel.h>
-#include "services/nvdrv/devices/nvdevice.h"
+#include <services/nvdrv/devices/nvdevice.h>
+#include "as_gpu.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    class AsGpu;
-
     /**
      * @brief nvhost::GpuChannel is used to create and submit commands to channels which are effectively GPU processes
      * @url https://switchbrew.org/wiki/NV_services#Channels
@@ -25,7 +24,13 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::shared_ptr<type::KEvent> errorNotifierEvent;
 
         std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
+        std::shared_ptr<AsGpu::VM::Allocator> asAllocator;
         std::unique_ptr<soc::gm20b::ChannelContext> channelCtx;
+
+
+        u64 pushBufferAddr{};
+        size_t pushBufferMemoryOffset{};
+        std::vector<u32> pushBufferMemory;
 
         friend AsGpu;
 

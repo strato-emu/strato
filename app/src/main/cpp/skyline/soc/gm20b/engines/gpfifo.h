@@ -5,6 +5,10 @@
 
 #include "engine.h"
 
+namespace skyline::soc::gm20b {
+    struct ChannelContext;
+}
+
 namespace skyline::soc::gm20b::engine {
     /**
     * @brief The GPFIFO engine handles managing macros and semaphores
@@ -93,24 +97,24 @@ namespace skyline::soc::gm20b::engine {
                     u16 nvClass : 16;
                     u8 engine : 5;
                     u16 _pad_ : 11;
-                } setObject;
+                } setObject; // 0x0
 
-                u32 illegal;
-                u32 nop;
-                u32 _pad0_;
+                u32 illegal; // 0x1
+                u32 nop; // 0x2
+                u32 _pad0_; // 0x3
 
                 struct {
                     struct {
                         u32 offsetUpper : 8;
                         u32 _pad0_ : 24;
-                    };
+                    }; // 0x4
 
                     struct {
                         u8 _pad1_ : 2;
                         u32 offsetLower : 30;
-                    };
+                    }; // 0x5
 
-                    u32 payload;
+                    u32 payload; // 0x6
 
                     struct {
                         SemaphoreOperation operation : 5;
@@ -123,54 +127,52 @@ namespace skyline::soc::gm20b::engine {
                         u8 _pad5_ : 2;
                         SemaphoreReduction reduction : 4;
                         SemaphoreFormat format : 1;
-                    };
+                    }; // 0x7
                 } semaphore;
 
-                u32 nonStallInterrupt;
-                u32 fbFlush;
-                u32 _pad1_[2];
-                u32 memOpC;
-                u32 memOpD;
-                u32 _pad2_[6];
-                u32 setReference;
-                u32 _pad3_[7];
+                u32 nonStallInterrupt; // 0x8
+                u32 fbFlush; // 0x9
+                u32 _pad1_[2]; // 0xA
+                u32 memOpC; // 0xC
+                u32 memOpD; // 0xD
+                u32 _pad2_[6]; // 0xE
+                u32 setReference; // 0x14
+                u32 _pad3_[7]; // 0x15
 
                 struct {
-                    u32 payload;
+                    u32 payload; // 0x1C
 
                     struct {
                         SyncpointOperation operation : 1;
                         u8 _pad0_ : 3;
-                        SyncpointWaitSwitch waitSwitch : 1;
+                        SyncpointWaitSwitch waitSwitch : 1; //!< If the PBDMA unit can switch to a different timeslice group (TSG) while waiting on a syncpoint
                         u8 _pad1_ : 3;
                         u16 index : 12;
                         u16 _pad2_ : 12;
-                    };
+                    } action; // 0x1D
                 } syncpoint;
 
                 struct {
                     WfiScope scope : 1;
                     u32 _pad_ : 31;
-                } wfi;
+                } wfi; // 0x1E
 
-                u32 crcCheck;
+                u32 crcCheck; // 0x1F
 
                 struct {
                     YieldOp op : 2;
                     u32 _pad_ : 30;
-                } yield;
+                } yield; // 0x20
             };
         } registers{};
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
         #pragma pack(pop)
 
+        ChannelContext &channelCtx;
+
       public:
-        GPFIFO(const DeviceState &state) : Engine(state) {}
+        GPFIFO(const DeviceState &state, ChannelContext &channelCtx);
 
-        void CallMethod(u32 method, u32 argument, bool lastCall) {
-            state.logger->Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
-
-            registers.raw[method] = argument;
-        };
+        void CallMethod(u32 method, u32 argument, bool lastCall);
     };
 }

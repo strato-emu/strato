@@ -76,12 +76,14 @@ namespace skyline {
 
         void Push(const Type &item) {
             std::unique_lock lock(productionMutex);
-            end = (end == reinterpret_cast<Type *>(vector.end().base()) - 1) ? reinterpret_cast<Type *>(vector.begin().base()) : end;
-            if (start == end + 1) {
+            auto next{end + 1};
+            next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+            if (next == start) {
                 std::unique_lock consumeLock(consumptionMutex);
-                consumeCondition.wait(consumeLock, [=]() { return start != end + 1; });
+                consumeCondition.wait(consumeLock, [=]() { return next != start; });
             }
-            *end = item;
+            *next = item;
+            end = next;
             produceCondition.notify_one();
         }
 

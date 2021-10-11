@@ -14,6 +14,57 @@ namespace skyline::service::nvdrv::device::nvhost {
         channelSyncpoint = core.syncpointManager.AllocateSyncpoint(false);
     }
 
+    static constexpr size_t SyncpointWaitCmdLen{4};
+    static void AddSyncpointWaitCmd(span<u32> mem, Fence fence) {
+        size_t offset{};
+
+        // gpfifo.regs.syncpoint.payload = fence.threshold
+        mem[offset++] = 0x2001001C;
+        mem[offset++] = fence.threshold;
+
+        /*
+         gpfifo.regs.syncpoint = {
+             .index = fence.id
+             .operation = SyncpointOperation::Wait
+             .waitSwitch = SyncpointWaitSwitch::En
+         }
+         Then wait is triggered
+        */
+        mem[offset++] = 0x2001001D;
+        mem[offset++] = (fence.id << 8) | 0x10;
+    }
+
+    static constexpr size_t SyncpointIncrCmdMaxLen{8};
+    static void AddSyncpointIncrCmd(span<u32> mem, Fence fence, bool wfi) {
+        size_t offset{};
+
+        if (wfi) {
+            // gpfifo.regs.wfi.scope = WfiScope::CurrentScgType
+            // Then WFI is triggered
+            mem[offset++] = 0x2001001E;
+            mem[offset++] = 0;
+        }
+
+
+        // gpfifo.regs.syncpoint.payload = 0
+        mem[offset++] = 0x2001001C;
+        mem[offset++] = 0;
+
+        /*
+         gpfifo.regs.syncpoint = {
+             .index = fence.id
+             .operation = SyncpointOperation::Incr
+         }
+         Then increment is triggered
+        */
+        mem[offset++] = 0x2001001D;
+        mem[offset++] = (fence.id << 8) | 0x1;
+
+        // Repeat twice, likely due to HW bugs
+        mem[offset++] = 0x2001001D;
+        mem[offset++] = (fence.id << 8) | 0x1;
+    }
+
     PosixResult GpuChannel::SetNvmapFd(In<core::NvMap::Handle::Id> id) {
         state.logger->Debug("id: {}", id);
         return PosixResult::Success;
@@ -35,27 +86,43 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (numEntries > gpEntries.size())
             throw exception("GpEntry size mismatch!");
 
+        std::scoped_lock lock(channelMutex);
+
         if (flags.fenceWait) {
             if (flags.incrementWithValue)
                 return PosixResult::InvalidArgument;
 
-            if (!core.syncpointManager.IsFenceSignalled(fence))
-                throw exception("Waiting on a fence through SubmitGpfifo is unimplemented");
+            if (!core.syncpointManager.IsFenceSignalled(fence)) {
+                // Wraparound
+                if (pushBufferMemoryOffset + SyncpointWaitCmdLen >= pushBufferMemory.size())
+                    pushBufferMemoryOffset = 0;
+
+                AddSyncpointWaitCmd(span(pushBufferMemory).subspan(pushBufferMemoryOffset, SyncpointWaitCmdLen), fence);
+                channelCtx->gpfifo.Push(soc::gm20b::GpEntry(pushBufferAddr + pushBufferMemoryOffset * sizeof(u32), SyncpointWaitCmdLen));
+
+                // Increment offset
+                pushBufferMemoryOffset += SyncpointWaitCmdLen;
+            }
         }
 
-        {
-            std::scoped_lock lock(channelMutex);
+        channelCtx->gpfifo.Push(gpEntries.subspan(0, numEntries));
 
-            channelCtx->gpfifo.Push(gpEntries.subspan(0, numEntries));
+        fence.id = channelSyncpoint;
 
-            fence.id = channelSyncpoint;
+        u32 increment{(flags.fenceIncrement ? 2 : 0) + (flags.incrementWithValue ? fence.threshold : 0)};
+        fence.threshold = core.syncpointManager.IncrementSyncpointMaxExt(channelSyncpoint, increment);
 
-            u32 increment{(flags.fenceIncrement ? 2 : 0) + (flags.incrementWithValue ? fence.threshold : 0)};
-            fence.threshold = core.syncpointManager.IncrementSyncpointMaxExt(channelSyncpoint, increment);
+        if (flags.fenceIncrement) {
+            // Wraparound
+            if (pushBufferMemoryOffset + SyncpointIncrCmdMaxLen >= pushBufferMemory.size())
+                pushBufferMemoryOffset = 0;
+
+            AddSyncpointIncrCmd(span(pushBufferMemory).subspan(pushBufferMemoryOffset, SyncpointIncrCmdMaxLen), fence, !flags.suppressWfi);
+            channelCtx->gpfifo.Push(soc::gm20b::GpEntry(pushBufferAddr + pushBufferMemoryOffset * sizeof(u32), SyncpointIncrCmdMaxLen));
+
+            // Increment offset
+            pushBufferMemoryOffset += SyncpointIncrCmdMaxLen;
         }
-
-        if (flags.fenceIncrement)
-            throw exception("Incrementing a fence through SubmitGpfifo is unimplemented");
 
         flags.raw = 0;
 
@@ -90,7 +157,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         state.logger->Debug("numEntries: {}, numJobs: {}, flags: 0x{:X}", numEntries, numJobs, flags);
 
         std::scoped_lock lock(channelMutex);
-        if (!asCtx) {
+        if (!asCtx || !asAllocator) {
             state.logger->Warn("Trying to allocate a channel without a bound address space");
             return PosixResult::InvalidArgument;
         }
@@ -103,6 +170,18 @@ namespace skyline::service::nvdrv::device::nvhost {
         channelCtx = std::make_unique<soc::gm20b::ChannelContext>(state, asCtx, numEntries);
 
         fence = core.syncpointManager.GetSyncpointFence(channelSyncpoint);
+
+        // Allocate space for one wait and incr for each entry, though we're not likely to hit this in practice
+        size_t pushBufferWords{numEntries * SyncpointIncrCmdMaxLen + numEntries * SyncpointWaitCmdLen};
+        size_t pushBufferSize{pushBufferWords * sizeof(u32)};
+
+        pushBufferMemory.resize(pushBufferWords);
+
+        // Allocate pages in the GPU AS
+        pushBufferAddr = static_cast<u64>(asAllocator->Allocate((pushBufferWords >> AsGpu::VM::PageSizeBits) + 1)) << AsGpu::VM::PageSizeBits;
+
+        // Map onto the GPU
+        asCtx->gmmu.Map(pushBufferAddr, reinterpret_cast<u8 *>(pushBufferMemory.data()), pushBufferSize);
 
         return PosixResult::Success;
     }

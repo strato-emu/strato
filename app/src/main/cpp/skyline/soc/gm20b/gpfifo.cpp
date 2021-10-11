@@ -61,7 +61,7 @@ namespace skyline::soc::gm20b {
 
     ChannelGpfifo::ChannelGpfifo(const DeviceState &state, ChannelContext &channelCtx, size_t numEntries) :
         state(state),
-        gpfifoEngine(state),
+        gpfifoEngine(state, channelCtx),
         channelCtx(channelCtx),
         gpEntries(numEntries),
         thread(std::thread(&ChannelGpfifo::Run, this)) {}
@@ -155,7 +155,7 @@ namespace skyline::soc::gm20b {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             gpEntries.Process([this](GpEntry gpEntry) {
-                state.logger->Debug("Processing pushbuffer: 0x{:X}", gpEntry.Address());
+                state.logger->Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
                 Process(gpEntry);
             });
         } catch (const signal::SignalException &e) {
@@ -173,6 +173,10 @@ namespace skyline::soc::gm20b {
 
     void ChannelGpfifo::Push(span<GpEntry> entries) {
         gpEntries.Append(entries);
+    }
+
+    void ChannelGpfifo::Push(GpEntry entry) {
+        gpEntries.Push(entry);
     }
 
     ChannelGpfifo::~ChannelGpfifo() {

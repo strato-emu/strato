@@ -8,6 +8,8 @@
 #include <services/nvdrv/devices/nvdevice.h>
 
 namespace skyline::service::nvdrv::device::nvhost {
+    class GpuChannel;
+
     /**
      * @brief nvhost::AsGpu (/dev/nvhost-as-gpu) is used to access a GPU virtual address space
      * @url https://switchbrew.org/wiki/NV_services#.2Fdev.2Fnvhost-as-gpu
@@ -59,13 +61,15 @@ namespace skyline::service::nvdrv::device::nvhost {
 
             using Allocator = FlatAllocator<u32, 0, 32>;
 
-            std::unique_ptr<Allocator> bigPageAllocator{};
-            std::unique_ptr<Allocator> smallPageAllocator{};
+            std::unique_ptr<Allocator> bigPageAllocator;
+            std::shared_ptr<Allocator> smallPageAllocator; // Shared as this is also used by nvhost::GpuChannel
 
             bool initialised{};
         } vm;
 
         std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
+
+        friend GpuChannel;
 
         void FreeMappingLocked(u64 offset);
 

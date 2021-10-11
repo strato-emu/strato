@@ -37,6 +37,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             }
             
             gpuCh.asCtx = asCtx;
+            gpuCh.asAllocator = vm.smallPageAllocator;
         } catch (const std::out_of_range &e) {
             state.logger->Warn("Attempting to bind AS to an invalid channel: {}", channelFd);
             return PosixResult::InvalidArgument;
@@ -62,17 +63,12 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         u32 pageSizeBits{pageSize == VM::PageSize ? VM::PageSizeBits : vm.bigPageSizeBits};
 
-        auto &allocator{[&] () -> auto & {
-            if (pageSize == VM::PageSize)
-                return vm.smallPageAllocator;
-            else
-                return vm.bigPageAllocator;
-        }()};
+        auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
 
         if (flags.fixed)
-            allocator->AllocateFixed(offset >> pageSizeBits, pages);
+            allocator.AllocateFixed(offset >> pageSizeBits, pages);
         else
-            offset = static_cast<u64>(allocator->Allocate(pages)) << pageSizeBits;
+            offset = static_cast<u64>(allocator.Allocate(pages)) << pageSizeBits;
 
         u64 size{static_cast<u64>(pages) * pageSize};
 
@@ -92,10 +88,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         auto mapping{mappingMap.at(offset)};
 
         if (!mapping->fixed) {
-            auto &allocator{mapping->bigPage ? vm.bigPageAllocator : vm.smallPageAllocator};
+            auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
             u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-            allocator->Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
+            allocator.Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
         }
 
         // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
@@ -129,10 +125,10 @@ namespace skyline::service::nvdrv::device::nvhost {
             if (allocation.sparse)
                 asCtx->gmmu.Unmap(offset, allocation.size);
 
-            auto &allocator{pageSize == VM::PageSize ? vm.smallPageAllocator : vm.bigPageAllocator};
+            auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
             u32 pageSizeBits{pageSize == VM::PageSize ? VM::PageSizeBits : vm.bigPageSizeBits};
 
-            allocator->Free(offset >> pageSizeBits, allocation.size >> pageSizeBits);
+            allocator.Free(offset >> pageSizeBits, allocation.size >> pageSizeBits);
             allocationMap.erase(offset);
         } catch (const std::out_of_range &e) {
             return PosixResult::InvalidArgument;
@@ -153,10 +149,10 @@ namespace skyline::service::nvdrv::device::nvhost {
             auto mapping{mappingMap.at(offset)};
 
             if (!mapping->fixed) {
-                auto &allocator{mapping->bigPage ? vm.bigPageAllocator : vm.smallPageAllocator};
+                auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
                 u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-                allocator->Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
+                allocator.Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
             }
 
             // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
@@ -233,11 +229,11 @@ namespace skyline::service::nvdrv::device::nvhost {
                     throw exception("Invalid handle alignment: 0x{:X}", h->align);
             }()};
 
-            auto &allocator{bigPage ? vm.bigPageAllocator : vm.smallPageAllocator};
+            auto &allocator{bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
             u32 pageSize{bigPage ? vm.bigPageSize : VM::PageSize};
             u32 pageSizeBits{bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-            offset = static_cast<u64>(allocator->Allocate(util::AlignUp(size, pageSize) >> pageSizeBits)) << pageSizeBits;
+            offset = static_cast<u64>(allocator.Allocate(util::AlignUp(size, pageSize) >> pageSizeBits)) << pageSizeBits;
             asCtx->gmmu.Map(offset, cpuPtr, size);
 
             auto mapping{std::make_shared<Mapping>(cpuPtr, offset, size, false, bigPage, false)};

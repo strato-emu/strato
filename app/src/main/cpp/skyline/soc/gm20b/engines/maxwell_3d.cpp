@@ -244,7 +244,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             MAXWELL3D_CASE(syncpointAction, {
-                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
+                state.logger->Debug("Increment syncpoint: {}", +syncpointAction.id);
                 channelCtx.executor.Execute();
                 state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
             })

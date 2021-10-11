@@ -21,7 +21,7 @@ namespace skyline::soc::gm20b {
         };
 
         union {
-            u32 entry0;
+            u32 entry0{};
 
             struct {
                 Fetch fetch : 1;
@@ -53,7 +53,7 @@ namespace skyline::soc::gm20b {
         };
 
         union {
-            u32 entry1;
+            u32 entry1{};
 
             struct {
                 union {
@@ -67,6 +67,12 @@ namespace skyline::soc::gm20b {
                 Sync sync : 1;
             };
         };
+
+        constexpr GpEntry(u64 gpuAddress, u32 pSize) {
+            getHi = static_cast<u8>(gpuAddress >> 32);
+            get = static_cast<u32>(gpuAddress >> 2);
+            size = pSize;
+        }
 
         constexpr u64 Address() const {
             return (static_cast<u64>(getHi) << 32) | (static_cast<u64>(get) << 2);
@@ -115,5 +121,10 @@ namespace skyline::soc::gm20b {
          * @brief Pushes a list of entries to the FIFO, these commands will be executed on calls to 'Step'
          */
         void Push(span<GpEntry> entries);
+
+        /**
+         * @brief Pushes a single entry to the FIFO, these commands will be executed on calls to 'Process'
+         */
+        void Push(GpEntry entries);
     };
 }
