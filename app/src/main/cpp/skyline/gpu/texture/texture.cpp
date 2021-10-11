@@ -484,6 +484,10 @@ namespace skyline::gpu {
         cycle = lCycle;
     }
 
+    Texture::~Texture() {
+        WaitOnFence();
+    }
+
     TextureView::TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : backing(std::move(backing)), type(type), format(format), mapping(mapping), range(range) {}
 
     vk::ImageView TextureView::GetView() {

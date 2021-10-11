@@ -24,6 +24,12 @@ namespace skyline::service::am {
         ISelfController(const DeviceState &state, ServiceManager &manager);
 
         /**
+         * @brief Exits the current applet
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#Exit
+         */
+        Result Exit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Function prevents the running application from being quit via the home button
          * @url https://switchbrew.org/wiki/Applet_Manager_services#LockExit
          */
@@ -90,6 +96,7 @@ namespace skyline::service::am {
         Result GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
+            SFUNC(0x0, ISelfController, Exit),
             SFUNC(0x1, ISelfController, LockExit),
             SFUNC(0x2, ISelfController, UnlockExit),
             SFUNC(0x9, ISelfController, GetLibraryAppletLaunchableEvent),

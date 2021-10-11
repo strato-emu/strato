@@ -92,3 +92,6 @@ lint/reports/
 
 # Discord plugin for IntelliJ IDEA
 .idea/discord.xml
+
+# Adreno Validation Layer
+libVkLayer_adreno.so

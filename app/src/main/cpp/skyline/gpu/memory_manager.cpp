@@ -78,7 +78,7 @@ namespace skyline::gpu::memory {
     std::shared_ptr<StagingBuffer> MemoryManager::AllocateStagingBuffer(vk::DeviceSize size) {
         vk::BufferCreateInfo bufferCreateInfo{
             .size = size,
-            .usage = vk::BufferUsageFlagBits::eTransferSrc,
+            .usage = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
             .sharingMode = vk::SharingMode::eExclusive,
             .queueFamilyIndexCount = 1,
             .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
@@ -112,7 +112,7 @@ namespace skyline::gpu::memory {
     Image MemoryManager::AllocateMappedImage(const vk::ImageCreateInfo &createInfo) {
         VmaAllocationCreateInfo allocationCreateInfo{
             .usage = VMA_MEMORY_USAGE_UNKNOWN,
-            .memoryTypeBits = static_cast<u32>(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eDeviceLocal),
+            .requiredFlags = static_cast<VkMemoryPropertyFlags>(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eDeviceLocal),
         };
 
         VkImage image;

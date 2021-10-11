@@ -8,7 +8,7 @@
 #include "gpu.h"
 #include "audio.h"
 #include "input.h"
-#include "kernel/types/KThread.h"
+#include "kernel/types/KProcess.h"
 
 namespace skyline {
     Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel), start(util::GetTimeNs() / constant::NsInMillisecond) {
@@ -55,5 +55,10 @@ namespace skyline {
         nce = std::make_shared<nce::NCE>(*this);
         scheduler = std::make_shared<kernel::Scheduler>(*this);
         input = std::make_shared<input::Input>(*this);
+    }
+
+    DeviceState::~DeviceState() {
+        if (process)
+            process->ClearHandleTable();
     }
 }

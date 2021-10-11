@@ -20,21 +20,20 @@ namespace skyline::gpu {
         return false;
     }
 
-    CommandScheduler::CommandScheduler(GPU &pGpu) : gpu(pGpu), vkCommandPool(pGpu.vkDevice, vk::CommandPoolCreateInfo{
+    CommandScheduler::CommandScheduler(GPU &pGpu) : gpu(pGpu), pool(std::ref(pGpu.vkDevice), vk::CommandPoolCreateInfo{
         .flags = vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
         .queueFamilyIndex = pGpu.vkQueueFamilyIndex,
     }) {}
 
     CommandScheduler::ActiveCommandBuffer CommandScheduler::AllocateCommandBuffer() {
-        std::scoped_lock lock(mutex);
-        auto slot{std::find_if(commandBuffers.begin(), commandBuffers.end(), CommandBufferSlot::AllocateIfFree)};
-        auto slotId{std::distance(commandBuffers.begin(), slot)};
-        if (slot != commandBuffers.end())
+        auto slot{std::find_if(pool->buffers.begin(), pool->buffers.end(), CommandBufferSlot::AllocateIfFree)};
+        auto slotId{std::distance(pool->buffers.begin(), slot)};
+        if (slot != pool->buffers.end())
             return ActiveCommandBuffer(*slot);
 
         vk::CommandBuffer commandBuffer;
         vk::CommandBufferAllocateInfo commandBufferAllocateInfo{
-            .commandPool = *vkCommandPool,
+            .commandPool = *pool->vkCommandPool,
             .level = vk::CommandBufferLevel::ePrimary,
             .commandBufferCount = 1,
         };
@@ -42,7 +41,7 @@ namespace skyline::gpu {
         auto result{(*gpu.vkDevice).allocateCommandBuffers(&commandBufferAllocateInfo, &commandBuffer, *gpu.vkDevice.getDispatcher())};
         if (result != vk::Result::eSuccess)
             vk::throwResultException(result, __builtin_FUNCTION());
-        return ActiveCommandBuffer(commandBuffers.emplace_back(gpu.vkDevice, commandBuffer, vkCommandPool));
+        return ActiveCommandBuffer(pool->buffers.emplace_back(gpu.vkDevice, commandBuffer, pool->vkCommandPool));
     }
 
     void CommandScheduler::SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, vk::Fence fence) {

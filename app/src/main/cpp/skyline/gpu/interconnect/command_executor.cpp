@@ -20,16 +20,18 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments, std::vector<TextureView> colorAttachments, std::optional<TextureView> depthStencilAttachment) {
-        for (const auto& attachments : {inputAttachments, colorAttachments})
-            for (const auto& attachment : attachments)
+        for (const auto &attachments : {inputAttachments, colorAttachments})
+            for (const auto &attachment : attachments)
                 syncTextures.emplace(attachment.backing.get());
+        if (depthStencilAttachment)
+            syncTextures.emplace(depthStencilAttachment->backing.get());
 
         bool newRenderpass{CreateRenderpass(renderArea)};
         renderpass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
         if (newRenderpass)
             nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
         else
-            nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>(), function);
+            nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue &value) {
@@ -38,7 +40,10 @@ namespace skyline::gpu::interconnect {
         })};
         renderpass->AddSubpass({}, attachment, nullptr);
 
-        if (!renderpass->ClearColorAttachment(0, value)) {
+        if (renderpass->ClearColorAttachment(0, value)) {
+            if (!newRenderpass)
+                nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
+        } else {
             auto function{[scissor = attachment.backing->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                 commandBuffer.clearAttachments(vk::ClearAttachment{
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -54,7 +59,7 @@ namespace skyline::gpu::interconnect {
             if (newRenderpass)
                 nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
             else
-                nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>(), function);
+                nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
         }
     }
 
@@ -73,12 +78,15 @@ namespace skyline::gpu::interconnect {
 
                 using namespace node;
                 for (NodeVariant &node : nodes) {
+                    #define NODE(name) [&](name& node) { node(commandBuffer, cycle, gpu); }
                     std::visit(VariantVisitor{
-                        [&](FunctionNode &node) { node(commandBuffer, cycle, gpu); },
-                        [&](RenderpassNode &node) { node(commandBuffer, cycle, gpu); },
-                        [&](NextSubpassNode &node) { node(commandBuffer, cycle, gpu); },
-                        [&](RenderpassEndNode &node) { node(commandBuffer, cycle, gpu); },
+                        NODE(FunctionNode),
+                        NODE(RenderpassNode),
+                        NODE(NextSubpassNode),
+                        NODE(NextSubpassFunctionNode),
+                        NODE(RenderpassEndNode),
                     }, node);
+                    #undef NODE
                 }
 
                 for (auto texture : syncTextures)

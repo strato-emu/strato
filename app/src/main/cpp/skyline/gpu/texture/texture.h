@@ -371,6 +371,8 @@ namespace skyline::gpu {
          */
         Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
+        ~Texture();
+
         /**
          * @note The handle returned is nullable and the appropriate precautions should be taken
          */

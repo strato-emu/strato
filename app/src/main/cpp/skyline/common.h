@@ -711,19 +711,21 @@ namespace skyline {
     struct DeviceState {
         DeviceState(kernel::OS *os, std::shared_ptr<JvmManager> jvmManager, std::shared_ptr<Settings> settings, std::shared_ptr<Logger> logger);
 
+        ~DeviceState();
+
         kernel::OS *os;
         std::shared_ptr<JvmManager> jvm;
         std::shared_ptr<Settings> settings;
         std::shared_ptr<Logger> logger;
         std::shared_ptr<loader::Loader> loader;
+        std::shared_ptr<kernel::type::KProcess> process{};
+        static thread_local inline std::shared_ptr<kernel::type::KThread> thread{}; //!< The KThread of the thread which accesses this object
+        static thread_local inline nce::ThreadContext *ctx{}; //!< The context of the guest thread for the corresponding host thread
         std::shared_ptr<gpu::GPU> gpu;
         std::shared_ptr<soc::SOC> soc;
         std::shared_ptr<audio::Audio> audio;
         std::shared_ptr<nce::NCE> nce;
         std::shared_ptr<kernel::Scheduler> scheduler;
-        std::shared_ptr<kernel::type::KProcess> process;
-        static thread_local inline std::shared_ptr<kernel::type::KThread> thread{}; //!< The KThread of the thread which accesses this object
-        static thread_local inline nce::ThreadContext *ctx{}; //!< The context of the guest thread for the corresponding host thread
         std::shared_ptr<input::Input> input;
     };
 }

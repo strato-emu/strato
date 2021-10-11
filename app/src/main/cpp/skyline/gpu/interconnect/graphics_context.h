@@ -32,6 +32,7 @@ namespace skyline::gpu::interconnect {
                     u32 gpuAddressHigh;
                 };
             };
+            u32 widthBytes; //!< The width in bytes for linear textures
             GuestTexture guest;
             std::optional<TextureView> view;
 
@@ -74,6 +75,9 @@ namespace skyline::gpu::interconnect {
 
         void SetRenderTargetWidth(size_t index, u32 value) {
             auto &renderTarget{renderTargets.at(index)};
+            renderTarget.widthBytes = value;
+            if (renderTarget.guest.tileConfig.mode == texture::TileMode::Linear && renderTarget.guest.format)
+                value /= renderTarget.guest.format->bpb; // Width is in bytes rather than format units for linear textures
             renderTarget.guest.dimensions.width = value;
             renderTarget.view.reset();
         }
@@ -134,6 +138,10 @@ namespace skyline::gpu::interconnect {
                         throw exception("Cannot translate the supplied RT format: 0x{:X}", static_cast<u32>(format));
                 }
             }();
+
+            if (renderTarget.guest.tileConfig.mode == texture::TileMode::Linear && renderTarget.guest.format)
+                renderTarget.guest.dimensions.width = renderTarget.widthBytes / renderTarget.guest.format->bpb;
+
             renderTarget.disabled = !renderTarget.guest.format;
             renderTarget.view.reset();
         }
@@ -142,8 +150,17 @@ namespace skyline::gpu::interconnect {
             auto &renderTarget{renderTargets.at(index)};
             auto &config{renderTarget.guest.tileConfig};
             if (mode.isLinear) {
+                if (config.mode != texture::TileMode::Linear && renderTarget.guest.format) {
+                    // Width is provided in bytes rather than format units for linear textures
+                    renderTarget.widthBytes = renderTarget.guest.dimensions.width;
+                    renderTarget.guest.dimensions.width /= renderTarget.guest.format->bpb;
+                }
+
                 config.mode = texture::TileMode::Linear;
             } else [[likely]] {
+                if (config.mode == texture::TileMode::Linear && renderTarget.guest.format)
+                    renderTarget.guest.dimensions.width = renderTarget.widthBytes;
+
                 config = texture::TileConfig{
                     .mode = texture::TileMode::Block,
                     .blockHeight = static_cast<u8>(1U << mode.blockHeightLog2),

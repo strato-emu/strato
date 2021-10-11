@@ -32,14 +32,8 @@ namespace skyline::kernel::type {
         if (all) {
             for (const auto &thread : threads)
                 thread->Kill(join);
-        } else {
-            std::shared_ptr<KThread> thread;
-            try {
-                thread = threads.at(0);
-            } catch (const std::out_of_range &) {
-                return;
-            }
-            thread->Kill(join);
+        } else if (!threads.empty()) {
+            threads[0]->Kill(join);
         }
     }
 
@@ -99,6 +93,11 @@ namespace skyline::kernel::type {
             }
         }
         return std::nullopt;
+    }
+
+    void KProcess::ClearHandleTable() {
+        std::shared_lock lock(handleMutex);
+        handles.clear();
     }
 
     constexpr u32 HandleWaitersBit{1UL << 30}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not

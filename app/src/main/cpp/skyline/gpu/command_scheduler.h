@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/thread_local.h>
 #include "fence_cycle.h"
 
 namespace skyline::gpu {
@@ -62,9 +63,19 @@ namespace skyline::gpu {
         };
 
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes mutations to the command pool due to allocations
-        vk::raii::CommandPool vkCommandPool;
-        std::list<CommandBufferSlot> commandBuffers;
+
+        /**
+         * @brief A command pool designed to be thread-local to respect external synchronization for all command buffers and the associated pool
+         * @note If we utilized a single global pool there would need to be a mutex around command buffer recording which would incur significant costs
+         */
+        struct CommandPool {
+            vk::raii::CommandPool vkCommandPool;
+            std::list<CommandBufferSlot> buffers;
+
+            template<typename... Args>
+            constexpr CommandPool(Args &&... args) : vkCommandPool(std::forward<Args>(args)...) {}
+        };
+        ThreadLocal<CommandPool> pool;
 
         /**
          * @brief Allocates an existing or new primary command buffer from the pool

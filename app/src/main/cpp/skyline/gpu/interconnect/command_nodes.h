@@ -287,9 +287,18 @@ namespace skyline::gpu::interconnect::node {
     };
 
     /**
+     * @brief A node which progresses to the next subpass during a renderpass
+     */
+    struct NextSubpassNode {
+        void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
+            commandBuffer.nextSubpass(vk::SubpassContents::eInline);
+        }
+    };
+
+    /**
      * @brief A FunctionNode which progresses to the next subpass prior to calling the function
      */
-    struct NextSubpassNode : private FunctionNode {
+    struct NextSubpassFunctionNode : private FunctionNode {
         using FunctionNode::FunctionNode;
 
         void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
@@ -307,5 +316,5 @@ namespace skyline::gpu::interconnect::node {
         }
     };
 
-    using NodeVariant = std::variant<FunctionNode, RenderpassNode, NextSubpassNode, RenderpassEndNode>; //!< A variant encompassing all command nodes types
+    using NodeVariant = std::variant<FunctionNode, RenderpassNode, NextSubpassNode, NextSubpassFunctionNode, RenderpassEndNode>; //!< A variant encompassing all command nodes types
 }

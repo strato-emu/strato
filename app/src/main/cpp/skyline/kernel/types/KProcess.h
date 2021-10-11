@@ -202,6 +202,12 @@ namespace skyline {
             }
 
             /**
+             * @brief Clear the process handle table
+             * @note A handle created prior to clearing must not be retrieved after this is run
+             */
+            void ClearHandleTable();
+
+            /**
              * @brief Locks the mutex at the specified address
              * @param ownerHandle The psuedo-handle of the current mutex owner
              * @param tag The handle of the thread which is requesting this lock
