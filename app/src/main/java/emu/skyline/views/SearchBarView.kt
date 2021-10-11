@@ -20,20 +20,6 @@ class SearchBarView @JvmOverloads constructor(context : Context, attrs : Attribu
         get() = binding.searchField.text
         set(value) = binding.searchField.setText(value)
 
-    fun startTitleAnimation() {
-        binding.motionLayout.progress = 0f
-        binding.motionLayout.transitionToEnd()
-        binding.searchField.apply {
-            setOnFocusChangeListener { v, hasFocus ->
-                if (hasFocus) {
-                    binding.motionLayout.progress = 1f
-                    context.getSystemService(InputMethodManager::class.java).showSoftInput(v, InputMethodManager.SHOW_IMPLICIT)
-                    onFocusChangeListener = null
-                }
-            }
-        }
-    }
-
     fun addTextChangedListener(
             beforeTextChanged : (
                     text : CharSequence?,

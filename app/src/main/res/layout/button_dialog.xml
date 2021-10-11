@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/button_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -50,11 +51,12 @@
             android:layout_alignTop="@id/button_icon"
             android:layout_alignEnd="@id/button_icon"
             android:layout_alignBottom="@id/button_icon"
-            android:alpha="0.25"
+            android:alpha="0.35"
             android:fontFamily="monospace"
             android:gravity="center"
             android:includeFontPadding="false"
-            android:textSize="27sp" />
+            android:textSize="26sp"
+            tools:text="A" />
 
     </RelativeLayout>
 

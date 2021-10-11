@@ -145,10 +145,6 @@ class MainActivity : AppCompatActivity() {
             addTextChangedListener(afterTextChanged = { editable ->
                 editable?.let { text -> adapter.filter.filter(text.toString()) }
             })
-            if (!viewModel.searchBarAnimated) {
-                viewModel.searchBarAnimated = true
-                post { startTitleAnimation() }
-            }
         }
 
         window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->

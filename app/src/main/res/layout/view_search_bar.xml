@@ -6,11 +6,10 @@
     android:layout_height="wrap_content"
     tools:parentTag="com.google.android.material.card.MaterialCardView">
 
-    <androidx.constraintlayout.motion.widget.MotionLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/motion_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutDescription="@xml/view_search_bar_xml_constraintlayout_scene"
         app:motionProgress="1"
         tools:motionDebug="SHOW_ALL">
 
@@ -19,13 +18,13 @@
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="16dp"
             android:contentDescription="@string/search"
+            app:srcCompat="@drawable/ic_search"
+            app:tint="?android:attr/textColorSecondary"
+            android:layout_marginStart="16dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_search"
-            app:tint="?android:attr/textColorSecondary" />
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <EditText
             android:id="@+id/search_field"
@@ -47,14 +46,5 @@
             app:layout_constraintStart_toEndOf="@id/search_icon"
             app:layout_constraintTop_toTopOf="parent"
             tools:ignore="LabelFor" />
-
-        <TextView
-            android:id="@+id/skyline_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:text="@string/app_name"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="18sp" />
-    </androidx.constraintlayout.motion.widget.MotionLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </merge>

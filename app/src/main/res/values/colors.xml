@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="logoBackground">#121212</color>
-    <color name="colorPrimary">#FFFF0000</color>
+    <color name="colorPrimary">#FF1E58F0</color>
     <color name="backgroundColor">@android:color/white</color>
     <color name="backgroundColorVariant">#F8F8F8</color>
 </resources>

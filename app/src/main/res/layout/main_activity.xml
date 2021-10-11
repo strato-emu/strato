@@ -77,31 +77,43 @@
                     app:tint="?android:attr/textColorSecondary" />
 
                 <ImageView
-                    android:id="@+id/title_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="30dp"
+                    android:id="@+id/logo"
+                    android:layout_width="36dp"
+                    android:layout_height="38dp"
                     android:layout_marginStart="16dp"
+                    android:paddingBottom="2dp"
+                    android:contentDescription="@string/app_name"
+                    app:layout_constraintBottom_toBottomOf="@+id/sub_text"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/title_text"
+                    app:srcCompat="@drawable/logo_skyline" />
+
+                <ImageView
+                    android:id="@+id/title_text"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
                     android:layout_marginTop="16dp"
+                    android:layout_marginStart="12dp"
                     android:layout_marginEnd="16dp"
+                    android:contentDescription="@string/app_name"
                     android:scaleType="fitStart"
-                    app:srcCompat="@drawable/skyline_text"
                     app:layout_constraintEnd_toStartOf="@id/refresh_icon"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toEndOf="@id/logo"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:contentDescription="@string/app_name" />
+                    app:srcCompat="@drawable/skyline_text"
+                    app:tint="?android:attr/textColorPrimary" />
 
                 <TextView
                     android:id="@+id/sub_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"
                     android:fontFamily="sans-serif-medium"
                     android:letterSpacing="0.1"
                     android:text="@string/emulator"
                     android:textAllCaps="true"
                     android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/title_text"
                     app:layout_constraintTop_toBottomOf="@id/title_text" />
 
                 <emu.skyline.views.SearchBarView

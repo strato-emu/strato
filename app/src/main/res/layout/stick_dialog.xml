@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/stick_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -48,7 +49,6 @@
             android:id="@+id/stick_circle_icon"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:alpha="0.4"
             android:contentDescription="@string/buttons"
             android:outlineProvider="bounds"
             android:src="@drawable/ic_button"
@@ -69,7 +69,6 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_margin="15dp"
-                android:alpha="0.4"
                 android:contentDescription="@string/buttons"
                 android:outlineProvider="bounds"
                 android:src="@drawable/ic_stick"
@@ -83,12 +82,13 @@
                 android:layout_alignTop="@id/stick_icon"
                 android:layout_alignEnd="@id/stick_icon"
                 android:layout_alignBottom="@id/stick_icon"
-                android:alpha="0.55"
+                android:alpha="0.6"
                 android:fontFamily="monospace"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textColor="@android:color/white"
-                android:textSize="27sp" />
+                android:textSize="26sp"
+                tools:text="R" />
 
         </RelativeLayout>
 

@@ -36,8 +36,6 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
     private val _stateData = MutableLiveData<MainState>()
     val stateData : LiveData<MainState> = _stateData
 
-    var searchBarAnimated = false
-
     /**
      * This refreshes the contents of the adapter by either trying to load cached adapter data or searches for them to recreate a list
      *
