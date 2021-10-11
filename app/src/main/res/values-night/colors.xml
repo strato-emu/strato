@@ -3,4 +3,5 @@
     <color name="colorPrimary">#FF4285F4</color>
     <color name="backgroundColor">#FF121212</color>
     <color name="backgroundColorVariant">#323232</color>
+    <color name="dialogSurface">#FF121213</color>
 </resources>

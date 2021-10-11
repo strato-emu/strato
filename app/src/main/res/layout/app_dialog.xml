@@ -17,9 +17,9 @@
         app:shapeAppearanceOverlay="@style/RoundedAppImage"
         tools:src="@drawable/default_icon" />
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_marginStart="16dp"
         android:orientation="vertical">
 
@@ -29,7 +29,9 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceListItem"
             android:textSize="18sp"
-            tools:text="Title" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:text="The Legend of Zelda: Breath of the Wild" />
 
         <TextView
             android:id="@+id/game_subtitle"
@@ -38,13 +40,17 @@
             android:textAppearance="?android:attr/textAppearanceListItemSecondary"
             android:textColor="@android:color/tertiary_text_light"
             android:textSize="14sp"
-            tools:text="Subtitle" />
+            app:layout_constraintTop_toBottomOf="@id/game_title"
+            app:layout_constraintStart_toStartOf="@id/game_title"
+            tools:text="Nintendo" />
 
         <com.google.android.flexbox.FlexboxLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
+            android:layout_gravity="start"
             android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="@id/game_title"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:flexWrap="wrap">
 
             <Button
@@ -68,5 +74,5 @@
                 android:text="@string/pin"
                 android:textColor="?attr/colorAccent" />
         </com.google.android.flexbox.FlexboxLayout>
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>
