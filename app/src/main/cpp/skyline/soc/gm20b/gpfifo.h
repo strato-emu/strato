@@ -87,6 +87,7 @@ namespace skyline::soc::gm20b {
      * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_pbdma.ref.txt#L62
      */
     class ChannelGpfifo {
+      private:
         const DeviceState &state;
         ChannelContext &channelCtx;
         engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
@@ -95,9 +96,30 @@ namespace skyline::soc::gm20b {
         std::vector<u32> pushBufferData; //!< Persistent vector storing pushbuffer data to avoid constant reallocations
 
         /**
+         * @brief Holds the required state in order to resume a method started from one call to `Process` in another
+         * @note This is needed as games (especially OpenGL ones) can split method entries over multiple GpEntries
+         */
+        struct MethodResumeState {
+            u32 remaining; //!< The number of entries left to handle until the method is finished
+            u32 address; //!< The method address in the GPU block specified by `subchannel` that is the target of the command
+            u8 subChannel;
+
+            /**
+             * @brief This is a simplified version of the full method type enum
+             */
+            enum class State : u8 {
+                NonInc,
+                Inc,
+                OneInc //!< Will be switched to NonInc after the first call
+            } state; //!< The type of method to resume
+        } resumeState{};
+
+
+        /**
          * @brief Sends a method call to the GPU hardware
          */
         void Send(u32 method, u32 argument, u32 subchannel, bool lastCall);
+
 
         /**
          * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed
@@ -118,7 +140,7 @@ namespace skyline::soc::gm20b {
         void Run();
 
         /**
-         * @brief Pushes a list of entries to the FIFO, these commands will be executed on calls to 'Step'
+         * @brief Pushes a list of entries to the FIFO, these commands will be executed on calls to 'Process'
          */
         void Push(span<GpEntry> entries);
 

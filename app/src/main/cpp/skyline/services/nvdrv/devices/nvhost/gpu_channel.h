@@ -23,14 +23,14 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::shared_ptr<type::KEvent> smExceptionBreakpointPauseReportEvent;
         std::shared_ptr<type::KEvent> errorNotifierEvent;
 
-        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
-        std::shared_ptr<AsGpu::VM::Allocator> asAllocator;
-        std::unique_ptr<soc::gm20b::ChannelContext> channelCtx;
+        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx; //!< The guest GPU AS context submits from this channel are bound to
+        std::shared_ptr<AsGpu::VM::Allocator> asAllocator; //!< The small page allocator context for the AS that's bound to this channel, used to allocate space for `pushBufferMemory`
+        std::unique_ptr<soc::gm20b::ChannelContext> channelCtx; //!< The entire guest GPU context specific to this channel
 
 
-        u64 pushBufferAddr{};
-        size_t pushBufferMemoryOffset{};
-        std::vector<u32> pushBufferMemory;
+        u64 pushBufferAddr{}; //!< The GPU address `pushBufferMemory` is mapped to
+        size_t pushBufferMemoryOffset{}; //!< The current offset for which to write new pushbuffer method data into for post-increment and pre-wait
+        std::vector<u32> pushBufferMemory; //!< Mapped into the guest GPU As and used to store method data for pre/post increment commands
 
         friend AsGpu;
 

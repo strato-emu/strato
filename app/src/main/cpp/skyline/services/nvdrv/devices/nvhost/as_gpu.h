@@ -62,12 +62,12 @@ namespace skyline::service::nvdrv::device::nvhost {
             using Allocator = FlatAllocator<u32, 0, 32>;
 
             std::unique_ptr<Allocator> bigPageAllocator;
-            std::shared_ptr<Allocator> smallPageAllocator; // Shared as this is also used by nvhost::GpuChannel
+            std::shared_ptr<Allocator> smallPageAllocator; //! Shared as this is also used by nvhost::GpuChannel
 
             bool initialised{};
         } vm;
 
-        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx;
+        std::shared_ptr<soc::gm20b::AddressSpaceContext> asCtx; //!< The guest GPU AS context that is associated with each particular instance
 
         friend GpuChannel;
 

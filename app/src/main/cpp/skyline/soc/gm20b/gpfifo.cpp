@@ -115,28 +115,92 @@ namespace skyline::soc::gm20b {
         pushBufferData.resize(gpEntry.size);
         channelCtx.asCtx->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
 
-        for (auto entry{pushBufferData.begin()}; entry != pushBufferData.end(); entry++) {
+        // There will be at least one entry here
+        auto entry{pushBufferData.begin()};
+
+        // Executes the current split method, returning once execution is finished or the current GpEntry has reached its end
+        auto resumeSplitMethod{[&](){
+            switch (resumeState.state) {
+                case MethodResumeState::State::Inc:
+                    while (entry != pushBufferData.end() && resumeState.remaining)
+                        Send(resumeState.address++, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+
+                    break;
+                case MethodResumeState::State::OneInc:
+                    Send(resumeState.address++, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+
+                    // After the first increment OneInc methods work the same as a NonInc method, this is needed so they can resume correctly if they are broken up by multiple GpEntries
+                    resumeState.state = MethodResumeState::State::NonInc;
+                    [[fallthrough]];
+                case MethodResumeState::State::NonInc:
+                    while (entry != pushBufferData.end() && resumeState.remaining)
+                        Send(resumeState.address, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+
+                    break;
+            }
+        }};
+
+        // We've a method from a previous GpEntry that needs resuming
+        if (resumeState.remaining)
+            resumeSplitMethod();
+
+        // Process more methods if the entries are still not all used up after handling resuming
+        for (; entry != pushBufferData.end(); entry++) {
             // An entry containing all zeroes is a NOP, skip over it
             if (*entry == 0)
                 continue;
 
             PushBufferMethodHeader methodHeader{.raw = *entry};
+
+            // Needed in order to check for methods split across multiple GpEntries
+            auto remainingEntries{std::distance(entry, pushBufferData.end()) - 1};
+
+            // Handles storing state and initial execution for methods that are split across multiple GpEntries
+            auto startSplitMethod{[&](auto methodState) {
+                resumeState = {
+                    .remaining = methodHeader.methodCount,
+                    .address = methodHeader.methodAddress,
+                    .subChannel = methodHeader.methodSubChannel,
+                    .state = methodState
+                };
+
+                // Skip over method header as `resumeSplitMethod` doesn't expect it to be there
+                entry++;
+
+                resumeSplitMethod();
+            }};
+
             switch (methodHeader.secOp) {
                 case PushBufferMethodHeader::SecOp::IncMethod:
-                    for (u32 i{}; i < methodHeader.methodCount; i++)
-                        Send(methodHeader.methodAddress + i, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
-                    break;
+                    if (remainingEntries >= methodHeader.methodCount) {
+                        for (u32 i{}; i < methodHeader.methodCount; i++)
+                            Send(methodHeader.methodAddress + i, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
 
+                        break;
+                    } else {
+                        startSplitMethod(MethodResumeState::State::Inc);
+                        return;
+                    }
                 case PushBufferMethodHeader::SecOp::NonIncMethod:
-                    for (u32 i{}; i < methodHeader.methodCount; i++)
-                        Send(methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
-                    break;
+                    if (remainingEntries >= methodHeader.methodCount) {
+                        for (u32 i{}; i < methodHeader.methodCount; i++)
+                            Send(methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
 
+                        break;
+                    } else {
+                        startSplitMethod(MethodResumeState::State::NonInc);
+                        return;
+                    }
                 case PushBufferMethodHeader::SecOp::OneInc:
-                    for (u32 i{}; i < methodHeader.methodCount; i++)
-                        Send(methodHeader.methodAddress + !!i, *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
-                    break;
+                    if (remainingEntries >= methodHeader.methodCount) {
+                        for (u32 i{}; i < methodHeader.methodCount; i++)
+                            Send(methodHeader.methodAddress + (i ? 1 : 0), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
 
+                        break;
+                    } else {
+                        startSplitMethod(MethodResumeState::State::OneInc);
+                        return;
+                    }
                 case PushBufferMethodHeader::SecOp::ImmdDataMethod:
                     Send(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true);
                     break;
@@ -154,6 +218,7 @@ namespace skyline::soc::gm20b {
         pthread_setname_np(pthread_self(), "GPFIFO");
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
+
             gpEntries.Process([this](GpEntry gpEntry) {
                 state.logger->Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
                 Process(gpEntry);
