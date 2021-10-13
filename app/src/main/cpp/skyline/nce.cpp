@@ -89,6 +89,32 @@ namespace skyline::nce {
 
             *tls = nullptr;
         } else { // If TLS wasn't restored then this occurred in host code
+            if (signal == SIGSEGV) {
+                static bool RunningUnderDebugger{[]() {
+                    std::ifstream status("/proc/self/status");
+                    constexpr std::string_view TracerPidTag = "TracerPid:";
+
+                    for (std::string line; std::getline(status, line); ) {
+                        if (line.starts_with(TracerPidTag)) {
+                            line = line.substr(TracerPidTag.size());
+
+                            for (char character : line)
+                                if (std::isspace(character))
+                                    continue;
+                                else
+                                    return character != '0';
+
+                            return false;
+                        }
+                    }
+
+                    return false;
+                }()};
+
+                if (RunningUnderDebugger)
+                    raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
+            }
+
             signal::ExceptionalSignalHandler(signal, info, ctx); //!< Delegate throwing a host exception to the exceptional signal handler
         }
     }

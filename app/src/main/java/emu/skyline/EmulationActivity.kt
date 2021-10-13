@@ -29,6 +29,12 @@ import kotlin.math.abs
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener {
     companion object {
         private val Tag = EmulationActivity::class.java.simpleName
+        val ReturnToMainTag = "returnToMain"
+
+        /**
+         * The Kotlin thread on which emulation code executes
+         */
+        private var emulationThread : Thread? = null
     }
 
     init {
@@ -43,15 +49,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var vibrators = HashMap<Int, Vibrator>()
 
     /**
-     * A boolean flag denoting if the emulation thread should call finish() or not
+     * If the emulation thread should call [returnToMain] or not
      */
     @Volatile
     private var shouldFinish : Boolean = true
 
     /**
-     * The Kotlin thread on which emulation code executes
+     * If the activity should return to [MainActivity] or just call [finishAndRemoveTask]
      */
-    private lateinit var emulationThread : Thread
+    var returnToMain : Boolean = false
 
     @Inject
     lateinit var settings : Settings
@@ -72,9 +78,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, language : Int, appFilesPath : String, assetManager : AssetManager)
 
     /**
-     * @return If it successfully caused the [emulationThread] to gracefully stop
+     * @param join If the function should only return after all the threads join or immediately
+     * @return If it successfully caused [emulationThread] to gracefully stop or do so asynchronously when not joined
      */
-    private external fun stopEmulation() : Boolean
+    private external fun stopEmulation(join : Boolean) : Boolean
 
     /**
      * This sets the surface object in libskyline to the provided value, emulation is halted if set to null
@@ -84,12 +91,17 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     private external fun setSurface(surface : Surface?) : Boolean
 
+    /**
+     * @param play If the audio should be playing or be stopped till it is resumed by calling this again
+     */
+    private external fun changeAudioStatus(play : Boolean)
+
     var fps : Int = 0
     var averageFrametime : Float = 0.0f
     var averageFrametimeDeviation : Float = 0.0f
 
     /**
-     * Writes the current performance statistics into [fps] and [frametime] fields
+     * Writes the current performance statistics into [fps], [averageFrametime] and [averageFrametimeDeviation] fields
      */
     private external fun updatePerformanceStatistics()
 
@@ -162,25 +174,55 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
-     * This executes the specified ROM
-     *
-     * @param rom The URI of the ROM to execute
+     * Return from emulation to either [MainActivity] or the activity on the back stack
      */
-    private fun executeApplication(rom : Uri) {
+    fun returnFromEmulation() {
+        if (shouldFinish) {
+            runOnUiThread {
+                if (shouldFinish) {
+                    shouldFinish = false
+                    if (returnToMain)
+                        startActivity(Intent(applicationContext, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                    finishAndRemoveTask()
+                }
+            }
+        }
+    }
+
+    /**
+     * @note Any caller has to handle the application potentially being restarted with the supplied intent
+     */
+    private fun executeApplication(intent : Intent) {
+        if (emulationThread?.isAlive == true) {
+            shouldFinish = false
+            if (stopEmulation(false))
+                emulationThread!!.join(250)
+
+            if (emulationThread!!.isAlive) {
+                finishAndRemoveTask()
+                startActivity(intent)
+                Runtime.getRuntime().exit(0)
+            }
+        }
+
+        shouldFinish = true
+        returnToMain = intent.getBooleanExtra(ReturnToMainTag, false)
+
+        val rom = intent.data!!
         val romType = getRomFormat(rom, contentResolver).ordinal
         val romFd = contentResolver.openFileDescriptor(rom, "r")!!
         val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
             executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), settings.systemLanguage, applicationContext.filesDir.canonicalPath + "/", assets)
-            if (shouldFinish)
-                runOnUiThread {
-                    emulationThread.join()
-                    finish()
-                }
+            returnFromEmulation()
         }
 
-        emulationThread.start()
+        emulationThread!!.start()
+    }
+
+    override fun onBackPressed() {
+        returnFromEmulation()
     }
 
     /**
@@ -235,11 +277,19 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             setOnClickListener { binding.onScreenControllerView.isInvisible = !binding.onScreenControllerView.isInvisible }
         }
 
-        executeApplication(intent.data!!)
+        executeApplication(intent!!)
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        changeAudioStatus(false)
     }
 
     override fun onResume() {
         super.onResume()
+
+        changeAudioStatus(true)
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
@@ -253,38 +303,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
-     * This is used to stop the currently executing ROM and replace it with the one specified in the new intent
+     * Stop the currently executing ROM and replace it with the one specified in the new intent
      */
     override fun onNewIntent(intent : Intent?) {
-        super.onNewIntent(intent)
-        shouldFinish = false
-
-        while (emulationThread.isAlive)
-            if (stopEmulation())
-                emulationThread.join()
-
-        vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
-
-        shouldFinish = true
-
-        executeApplication(intent?.data!!)
+        super.onNewIntent(intent!!)
+        setIntent(intent)
+        executeApplication(intent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         shouldFinish = false
 
-        while (emulationThread.isAlive)
-            if (stopEmulation())
-                emulationThread.join()
-
+        stopEmulation(false)
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
     }
 
     override fun surfaceCreated(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceCreated Holder: $holder")
-        while (emulationThread.isAlive)
+        while (emulationThread!!.isAlive)
             if (setSurface(holder.surface))
                 return
     }
@@ -298,7 +336,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceDestroyed Holder: $holder")
-        while (emulationThread.isAlive)
+        while (emulationThread!!.isAlive)
             if (setSurface(null))
                 return
     }

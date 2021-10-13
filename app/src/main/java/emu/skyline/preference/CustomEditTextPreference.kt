@@ -13,7 +13,7 @@ import androidx.preference.EditTextPreference
 import emu.skyline.R
 
 /**
- * This class adapts [EditTextPreference] so that it supports setting the value as the summary automatically. Also added useful attributes.
+ * This class adapts [EditTextPreference] so that it supports setting the value as the summary automatically and adds useful attributes
  */
 class CustomEditTextPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.editTextPreferenceStyle) : EditTextPreference(context, attrs, defStyleAttr) {
     init {

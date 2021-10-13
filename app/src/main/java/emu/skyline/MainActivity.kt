@@ -278,10 +278,11 @@ class MainActivity : AppCompatActivity() {
     private fun selectStartGame(appItem : AppItem) {
         if (binding.swipeRefreshLayout.isRefreshing) return
 
-        if (settings.selectAction)
+        if (settings.selectAction) {
             AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
-        else if (appItem.loaderResult == LoaderResult.Success)
-            startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri })
+        } else if (appItem.loaderResult == LoaderResult.Success) {
+            startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri; putExtra(EmulationActivity.ReturnToMainTag, true) })
+        }
     }
 
     private fun selectShowGameDialog(appItem : AppItem) {

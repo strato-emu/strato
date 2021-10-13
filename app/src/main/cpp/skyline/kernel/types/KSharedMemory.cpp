@@ -101,9 +101,9 @@ namespace skyline::kernel::type {
 
                 if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED)
                     // It is likely that these exceptions will end up as asserts as the destructor is implicitly noexcept but we want to be notified about these not working so that's fine as it can be discovered in the debugger
-                    throw exception("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
+                    state.logger->Warn("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
                 else if (!host.Valid())
-                    throw exception("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
+                    state.logger->Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
 
                 std::memcpy(guest.ptr, host.ptr, host.size);
 

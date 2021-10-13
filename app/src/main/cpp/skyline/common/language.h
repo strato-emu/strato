@@ -20,25 +20,25 @@ namespace skyline {
          * @brief The list of all languages. Entries parameters are language, language code, system language index, application language index and map which holds a macro used for filtering some application languages that don't have a direct corresponding system language
          * @example #define LANG_ENTRY(lang, code, sysIndex, appIndex, map) func(lang, code, sysIndex, appIndex, map) <br> LANGUAGES <br> #undef LANG_ENTRY
          */
-        #define LANGUAGES                                                       \
-            LANG_ENTRY(Japanese, ja, 0, 2, MAP)                                 \
-            LANG_ENTRY(AmericanEnglish, en-us, 1, 0, MAP)                       \
-            LANG_ENTRY(French, fr, 2, 3, MAP)                                   \
-            LANG_ENTRY(German, de, 3, 4, MAP)                                   \
-            LANG_ENTRY(Italian, it, 4, 7, MAP)                                  \
-            LANG_ENTRY(Spanish, es, 5, 6, MAP)                                  \
-            LANG_ENTRY(Chinese, zh-CN, 6, 14, DONT_MAP)                         \
-            LANG_ENTRY(Korean, ko, 7, 12, MAP)                                  \
-            LANG_ENTRY(Dutch, nl, 8, 8, MAP)                                    \
-            LANG_ENTRY(Portuguese, pt, 9, 10, MAP)                              \
-            LANG_ENTRY(Russian, ru, 10, 11, MAP)                                \
-            LANG_ENTRY(Taiwanese, zh-TW, 11, 13, DONT_MAP)                      \
-            LANG_ENTRY(BritishEnglish, en-GB, 12, 1, MAP)                       \
-            LANG_ENTRY(CanadianFrench, fr-CA, 13, 9, MAP)                       \
-            LANG_ENTRY(LatinAmericanSpanish, es-419, 14, 5, MAP)                \
-            LANG_ENTRY(SimplifiedChinese, zh-Hans, 15, 14, MAP)                 \
-            LANG_ENTRY(TraditionalChinese, zh-Hant, 16, 13, MAP)                \
-            LANG_ENTRY(BrazilianPortuguese, pt-BR, 17, 10, DONT_MAP)
+        #define LANGUAGES                                               \
+            LANG_ENTRY(Japanese,             ja,       0,  2, MAP)      \
+            LANG_ENTRY(AmericanEnglish,      en-us,    1,  0, MAP)      \
+            LANG_ENTRY(French,               fr,       2,  3, MAP)      \
+            LANG_ENTRY(German,               de,       3,  4, MAP)      \
+            LANG_ENTRY(Italian,              it,       4,  7, MAP)      \
+            LANG_ENTRY(Spanish,              es,       5,  6, MAP)      \
+            LANG_ENTRY(Chinese,              zh-CN,    6, 14, DONT_MAP) \
+            LANG_ENTRY(Korean,               ko,       7, 12, MAP)      \
+            LANG_ENTRY(Dutch,                nl,       8,  8, MAP)      \
+            LANG_ENTRY(Portuguese,           pt,       9, 10, MAP)      \
+            LANG_ENTRY(Russian,              ru,      10, 11, MAP)      \
+            LANG_ENTRY(Taiwanese,            zh-TW,   11, 13, DONT_MAP) \
+            LANG_ENTRY(BritishEnglish,       en-GB,   12,  1, MAP)      \
+            LANG_ENTRY(CanadianFrench,       fr-CA,   13,  9, MAP)      \
+            LANG_ENTRY(LatinAmericanSpanish, es-419,  14,  5, MAP)      \
+            LANG_ENTRY(SimplifiedChinese,    zh-Hans, 15, 14, MAP)      \
+            LANG_ENTRY(TraditionalChinese,   zh-Hant, 16, 13, MAP)      \
+            LANG_ENTRY(BrazilianPortuguese,  pt-BR,   17, 10, DONT_MAP)
 
         /**
          * @brief Enumeration of system languages

@@ -80,7 +80,7 @@ namespace skyline {
 
         pthread_key_t key;
         std::function<IntrustiveTypeNode *(ThreadLocal &)> constructor;
-        std::atomic<IntrustiveTypeNode *> list; //!< An atomic instrusive linked list of all instances of the object to call non-trivial destructors for the objects
+        std::atomic<IntrustiveTypeNode *> list{}; //!< An atomic instrusive linked list of all instances of the object to call non-trivial destructors for the objects
 
       public:
         template<typename... Args>

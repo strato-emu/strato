@@ -75,6 +75,7 @@
         <emu.skyline.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/system_languages"
+            android:entryValues="@array/system_languages_val"
             app:key="system_language"
             app:title="@string/system_language"
             app:refreshRequired="true"

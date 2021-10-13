@@ -17,6 +17,7 @@
 #include "skyline/os.h"
 #include "skyline/jvm.h"
 #include "skyline/gpu.h"
+#include "skyline/audio.h"
 #include "skyline/input.h"
 #include "skyline/kernel/types/KProcess.h"
 
@@ -26,6 +27,7 @@ jfloat AverageFrametimeDeviationMs; //!< The average deviation of the average fr
 
 std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
+std::weak_ptr<skyline::audio::Audio> AudioWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
 
 // https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=43;drc=master;bpv=1;bpt=1
@@ -86,16 +88,17 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         auto os{std::make_shared<skyline::kernel::OS>(
-                jvmManager,
-                logger,
-                settings,
-                std::string(appFilesPath),
-                GetTimeZoneName(),
-                static_cast<skyline::language::SystemLanguage>(systemLanguage),
-                std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
-            )};
+            jvmManager,
+            logger,
+            settings,
+            std::string(appFilesPath),
+            GetTimeZoneName(),
+            static_cast<skyline::language::SystemLanguage>(systemLanguage),
+            std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
+        )};
         OsWeak = os;
         GpuWeak = os->state.gpu;
+        AudioWeak = os->state.audio;
         InputWeak = os->state.input;
         jvmManager->InitializeControllers();
         env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
@@ -125,14 +128,14 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(romFd);
 }
 
-extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_stopEmulation(JNIEnv *, jobject) {
+extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_stopEmulation(JNIEnv *, jobject, jboolean join) {
     auto os{OsWeak.lock()};
     if (!os)
         return false;
     auto process{os->state.process};
     if (!process)
         return false;
-    process->Kill(true, false, true);
+    process->Kill(join, false, true);
     return true;
 }
 
@@ -142,6 +145,15 @@ extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_setSurface(JNIE
         return false;
     gpu->presentation.UpdateSurface(surface);
     return true;
+}
+
+extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_changeAudioStatus(JNIEnv *, jobject, jboolean play) {
+    auto audio{AudioWeak.lock()};
+    if (audio)
+        if (play)
+            audio->Resume();
+        else
+            audio->Pause();
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceStatistics(JNIEnv *env, jobject thiz) {

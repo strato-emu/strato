@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#pragma once
-
 #include <soc.h>
 #include <soc/gm20b/channel.h>
 #include "gpfifo.h"

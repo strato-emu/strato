@@ -16,6 +16,7 @@
     <style name="AppTheme" parent="BaseAppTheme">
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <style name="ToolbarTheme" parent="AppTheme">

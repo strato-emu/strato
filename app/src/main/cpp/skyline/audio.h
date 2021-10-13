@@ -21,6 +21,14 @@ namespace skyline::audio {
 
         ~Audio();
 
+        void Pause() {
+            outputStream->requestPause();
+        }
+
+        void Resume() {
+            outputStream->requestStart();
+        }
+
         /**
          * @brief Opens a new track that can be used to play sound
          * @param channelCount The amount channels that are present in the track
