@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         setupAppList()
 
         binding.swipeRefreshLayout.apply {
-            setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.BLACK) })
+            setProgressBackgroundColorSchemeColor(getColor(R.color.backgroundColorVariant))
             setColorSchemeColors(obtainStyledAttributes(intArrayOf(R.attr.colorAccent)).use { it.getColor(0, Color.BLACK) })
             post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
             setOnRefreshListener { loadRoms(false) }
@@ -150,6 +150,7 @@ class MainActivity : AppCompatActivity() {
                 post { startTitleAnimation() }
             }
         }
+
         window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->
             refreshIconVisible = !isInTouchMode
         }

@@ -77,8 +77,8 @@
             android:entries="@array/system_languages"
             android:entryValues="@array/system_languages_val"
             app:key="system_language"
-            app:title="@string/system_language"
             app:refreshRequired="true"
+            app:title="@string/system_language"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
@@ -120,71 +120,145 @@
     <PreferenceCategory
         android:key="category_licenses"
         android:title="@string/licenses"
-        app:initialExpandedChildrenCount="3">
+        app:initialExpandedChildrenCount="5">
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/mpl2_license"
-            libraryUrl="https://github.com/skyline-emu/skyline"
+            app:libraryCopyright="Copyright © 2019-2021 Skyline Team and Contributors (https://github.com/skyline-emu/)"
+            app:libraryLicense="@string/mpl2_license"
+            app:libraryUrl="https://github.com/skyline-emu/skyline"
             app:summary="@string/skyline_license_description"
             app:title="@string/app_name" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/fmtlib_license"
-            libraryUrl="https://github.com/fmtlib/fmt"
-            app:summary="@string/fmtlib_description"
-            app:title="@string/fmtlib" />
+            app:libraryCopyright="Copyright (c) Ryujinx Team and Contributors"
+            app:libraryLicense="@string/mit_license"
+            app:libraryUrl="https://github.com/Ryujinx/Ryujinx"
+            app:summary="@string/ryujinx_description"
+            app:title="Ryujinx" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://github.com/google/oboe"
-            app:summary="@string/oboe_description"
-            app:title="@string/oboe" />
-        <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
+            app:libraryCopyright="Copyright 2015-2020 The Khronos Group Inc."
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
             app:summary="@string/vkhpp_description"
-            app:title="@string/vkhpp" />
+            app:title="Vulkan-Hpp" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/zlib_license"
-            libraryUrl="https://github.com/leethomason/tinyxml2"
-            app:summary="@string/txml2_description"
-            app:title="@string/txml2" />
+            app:libraryCopyright="Copyright (c) 2017-2021 Advanced Micro Devices, Inc. All rights reserved."
+            app:libraryLicense="@string/mit_license"
+            app:libraryUrl="https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator"
+            app:summary="@string/vkma_description"
+            app:title="Vulkan Memory Allocator" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://github.com/tdebatty/java-string-similarity"
+            app:libraryCopyright="Copyright (c) 2015-2019 The Khronos Group Inc.\nCopyright (c) 2015-2019 Valve Corporation\nCopyright (c) 2015-2019 LunarG, Inc."
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/KhronosGroup/Vulkan-ValidationLayers"
+            app:summary="@string/khvkval_description"
+            app:title="Khronos Vulkan Validation Layer" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright 2021 The Android Open Source Project"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/google/oboe"
+            app:summary="@string/oboe_description"
+            app:title="Oboe" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright (c) 2017, The Android Open Source Project"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/google/perfetto"
+            app:summary="@string/perfetto_description"
+            app:title="Perfetto" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright © 2012 - present, Victor Zverovich"
+            app:libraryLicense="@string/libfmt_mit_license"
+            app:libraryUrl="https://github.com/fmtlib/fmt"
+            app:summary="@string/fmtlib_description"
+            app:title="{fmt}" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryLicense="@string/boost_software_license"
+            app:libraryUrl="https://www.boost.org"
+            app:summary="@string/boost_description"
+            app:title="Boost" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright 2016 QuarksLab"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/serge-sans-paille/frozen"
+            app:summary="@string/frozen_description"
+            app:title="Frozen" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright (c) 2006-2019 Arseny Kapoulkine"
+            app:libraryLicense="@string/mit_license"
+            app:libraryUrl="https://github.com/zeux/pugixml"
+            app:summary="@string/pugixml_description"
+            app:title="pugixml" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryLicense="@string/opus_bsd_3_clause_license"
+            app:libraryUrl="https://github.com/xiph/opus"
+            app:summary="@string/opus_description"
+            app:title="Opus Audio Codec" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright The Mbed TLS Contributors"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/ARMmbed/mbedtls"
+            app:summary="@string/mbedtls_description"
+            app:title="Mbed TLS" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright (c) 2011-2020, Yann Collet\nAll rights reserved."
+            app:libraryLicense="@string/bsd_2_clause_license"
+            app:libraryUrl="https://github.com/lz4/lz4"
+            app:summary="@string/lz4_description"
+            app:title="LZ4 Library" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright 1985, 1987, 1988 The Regents of the University of California.\nAll rights reserved."
+            app:libraryLicense="@string/bsd_3_clause_license"
+            app:libraryUrl="https://github.com/skyline-emu/tz"
+            app:summary="@string/tzcode_description"
+            app:title="tzcode" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright 2016 Thibault Debatty"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/tdebatty/java-string-similarity"
             app:summary="@string/jssim_description"
-            app:title="@string/jssim" />
+            app:title="Java String Similarity" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://developer.android.com/jetpack/androidx"
+            app:libraryCopyright="Copyright (C) 2021 The Android Open Source Project"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://developer.android.com/jetpack/androidx"
             app:summary="@string/andx_description"
-            app:title="@string/andx" />
+            app:title="AndroidX" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://github.com/material-components/material-components-android"
+            app:libraryCopyright="Copyright (C) 2021 The Android Open Source Project"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/material-components/material-components-android"
             app:summary="@string/amat_description"
-            app:title="@string/amat" />
+            app:title="Android Material Components" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
+            app:libraryCopyright="Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://kotlinlang.org/api/latest/jvm/stdlib"
             app:summary="@string/ktstd_description"
-            app:title="@string/ktstd" />
+            app:title="Kotlin Standard Library" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://material.io/resources/icons"
+            app:libraryCopyright="Copyright 2012-2021 The Dagger Authors"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://github.com/google/dagger"
+            app:summary="@string/dagger_description"
+            app:title="Dagger" />
+        <emu.skyline.preference.LicensePreference
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://material.io/resources/icons"
             app:summary="@string/mtico_description"
-            app:title="@string/mtico" />
+            app:title="Material Design Icons" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://fonts.google.com/specimen/Open+Sans"
+            app:libraryCopyright="Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://fonts.google.com/specimen/Open+Sans"
             app:summary="@string/open_sans_description"
-            app:title="@string/open_sans" />
+            app:title="Open Sans" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/apache2_license"
-            libraryUrl="https://fonts.google.com/specimen/Roboto"
+            app:libraryLicense="@string/apache2_license"
+            app:libraryUrl="https://fonts.google.com/specimen/Roboto"
             app:summary="@string/roboto_description"
-            app:title="@string/roboto" />
+            app:title="Roboto" />
         <emu.skyline.preference.LicensePreference
-            libraryLicense="@string/sil_open_font_license"
-            libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
+            app:libraryLicense="@string/sil_open_font_license"
+            app:libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
             app:summary="@string/source_sans_pro_description"
-            app:title="@string/source_sans_pro" />
+            app:title="Source Sans Pro" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

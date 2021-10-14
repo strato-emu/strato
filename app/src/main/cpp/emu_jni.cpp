@@ -120,10 +120,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     InputWeak.reset();
 
-    logger->InfoNoPrefix("Emulation has ended");
-
     auto end{std::chrono::steady_clock::now()};
-    logger->InfoNoPrefix("Done in: {} ms", (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    logger->Write(skyline::Logger::LogLevel::Info, fmt::format("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 
     close(romFd);
 }

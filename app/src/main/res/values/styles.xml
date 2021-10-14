@@ -7,7 +7,7 @@
     </style>
 
     <style name="ChipChoice.Material">
-        <item name="colorPrimary">@color/colorOnPrimary</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorOnPrimary">@color/colorPrimary</item>
     </style>
 

@@ -129,31 +129,30 @@
     <string name="misc_buttons">Miscellaneous Buttons</string>
     <!-- Licenses -->
     <string name="licenses">Licenses</string>
-    <string name="skyline_license_description">The license of Skyline (MPL 2.0)</string>
-    <string name="fmtlib">{fmt}</string>
-    <string name="fmtlib_description">We use libfmt for formatting strings (Custom License)</string>
-    <string name="oboe">oboe</string>
-    <string name="oboe_description">We use oboe for audio output during emulation (Apache License 2.0)</string>
-    <string name="vkhpp">Vulkan-Hpp</string>
-    <string name="vkhpp_description">We use Vulkan-Hpp for using Vulkan with a C++ API (Apache License 2.0)</string>
-    <string name="txml2">TinyXML2</string>
-    <string name="txml2_description">We use TinyXML2 for parsing the preference XML to retrieve settings from C++ (zLib License)</string>
-    <string name="jssim">java-string-similarity</string>
-    <string name="jssim_description">We use java-string-similarity to power our search functionality (Apache License 2.0)</string>
-    <string name="andx">AndroidX</string>
-    <string name="andx_description">We use AndroidX to have a consistent user-experience across Android versions (Apache License 2.0)</string>
-    <string name="amat">Android Material Components</string>
-    <string name="amat_description">We use Android Material Components to have a consistent material design UI (Apache License 2.0)</string>
-    <string name="ktstd">Kotlin Standard Library</string>
-    <string name="ktstd_description">We use Kotlin Standard Library for accessing convenience functions in Kotlin (Apache License 2.0)</string>
-    <string name="mtico">Material Design Icons</string>
-    <string name="mtico_description">We use Material Design Icons to have consistent iconography throughout the application (Apache License 2.0)</string>
-    <string name="open_sans">Open Sans</string>
-    <string name="open_sans_description">We use Open Sans as our FOSS shared font replacement for Latin, Korean and Chinese (Apache License 2.0)</string>
-    <string name="roboto">Roboto</string>
-    <string name="roboto_description">We use Roboto as our FOSS shared font replacement for Nintendo\'s extended character set (Apache License 2.0)</string>
-    <string name="source_sans_pro">Source Sans Pro</string>
-    <string name="source_sans_pro_description">We use Source Sans Pro as our FOSS shared font replacement for Extended Chinese (SIL Open Font License 1.1)</string>
+    <string name="skyline_license_description">Skyline is licensed under Mozilla Public License 2.0</string>
+    <string name="ryujinx_description">Ryujinx has been used for reference throughout the project due to their highly accurate implementations\n\n<b>Note: Skyline is not based on Ryujinx</b></string>
+    <string name="vkhpp_description">Vulkan-Hpp provides a C++ API for Vulkan</string>
+    <string name="vkma_description">Vulkan Memory Allocator provides a high-quality GPU memory allocator with UMA support</string>
+    <string name="khvkval_description">Khronos\'s Vulkan Validation Layer provides error-checking for Vulkan API calls in debug builds</string>
+    <string name="oboe_description">Oboe is used for high-performance audio output</string>
+    <string name="perfetto_description">Perfetto is used to profile and debug with detailed tracing</string>
+    <string name="fmtlib_description">{fmt} provides a modern C++ string formatting API</string>
+    <string name="boost_description">Boost provides high-quality implementations of containers and other convenience functions in C++</string>
+    <string name="frozen_description">Frozen provides compile-time immutable hash maps with a perfect hash function for faster lookups</string>
+    <string name="pugixml_description">pugixml is used to parse the preference XML to retrieve settings from C++</string>
+    <string name="opus_description">Opus Audio Codec provides a high-quality Opus decoder used to decode Opus-encoded audio provided by the guest</string>
+    <string name="mbedtls_description">Mbed TLS is used to decrypt AES-encrypted NCAs</string>
+    <string name="lz4_description">LZ4 is used to extract LZ4-compressed ELF sections from an NSO</string>
+    <string name="tzcode_description">tzcode provides a C API to access tzdb for time zone data</string>
+    <string name="jssim_description">Java String Similarity powers our search functionality</string>
+    <string name="andx_description">AndroidX provides a consistent user-experience across Android versions</string>
+    <string name="amat_description">Android Material Components provides a consistent Material Design UI</string>
+    <string name="ktstd_description">Kotlin Standard Library provides convenience functions in Kotlin</string>
+    <string name="dagger_description">Dagger provides a framework for compile-time dependency injection</string>
+    <string name="mtico_description">Material Design Icons provides consistent iconography throughout the application</string>
+    <string name="open_sans_description">Open Sans is used as our FOSS shared font replacement for Latin, Korean and Chinese</string>
+    <string name="roboto_description">Roboto is used as our FOSS shared font replacement for Nintendo\'s extended character set</string>
+    <string name="source_sans_pro_description">Source Sans Pro is used as our FOSS shared font replacement for Nintendo\'s extended Chinese character set</string>
     <!-- Misc -->
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>

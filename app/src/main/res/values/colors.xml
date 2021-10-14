@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">@color/cardview_light_background</color>
-    <color name="colorPrimaryVariant">@android:color/white</color>
-    <color name="colorOnPrimary">#FFFF0000</color>
+    <color name="colorPrimary">#FFFF0000</color>
+    <color name="backgroundColor">@android:color/white</color>
+    <color name="backgroundColorVariant">#F8F8F8</color>
 </resources>

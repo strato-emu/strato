@@ -8,13 +8,13 @@ package emu.skyline.preference
 import android.graphics.Rect
 import android.os.Bundle
 import android.view.*
-import androidx.fragment.app.DialogFragment
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.databinding.LicenseDialogBinding
 
 /**
- * This dialog is used to display the contents of a license for a particular project
+ * Dialog for displaying the contents of a license for a particular library
  */
-class LicenseDialog : DialogFragment() {
+class LicenseDialog : BottomSheetDialogFragment() {
     private lateinit var binding : LicenseDialogBinding
 
     /**
@@ -35,8 +35,12 @@ class LicenseDialog : DialogFragment() {
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.licenseUrl.text = requireArguments().getString("libraryUrl")
-        binding.licenseContent.text = getString(requireArguments().getInt("libraryLicense"))
+        binding.libraryTitle.text = requireArguments().getString(LicensePreference.LIBRARY_TITLE_ARG)
+        binding.libraryUrl.text = requireArguments().getString(LicensePreference.LIBRARY_URL_ARG)
+        binding.libraryCopyright.text = requireArguments().getString(LicensePreference.LIBRARY_COPYRIGHT_ARG)
+        if (binding.libraryCopyright.text.isEmpty())
+            binding.libraryCopyright.visibility = View.GONE
+        binding.licenseContent.text = getString(requireArguments().getInt(LicensePreference.LIBRARY_LICENSE_ARG))
 
         dialog?.setOnKeyListener { _, keyCode, event ->
             if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_UP) {

@@ -23,11 +23,18 @@ class LicensePreference @JvmOverloads constructor(context : Context?, attrs : At
     private val fragmentManager = (context as AppCompatActivity).supportFragmentManager
 
     companion object {
-        private const val LIBRARY_URL_ARG = "libraryUrl"
-        private const val LIBRARY_LICENSE_ARG = "libraryLicense"
+        const val LIBRARY_TITLE_ARG = "libraryTitle"
+        const val LIBRARY_URL_ARG = "libraryUrl"
+        const val LIBRARY_COPYRIGHT_ARG = "libraryCopyright"
+        const val LIBRARY_LICENSE_ARG = "libraryLicense"
 
         private val DIALOG_TAG = LicensePreference::class.java.simpleName
     }
+
+    /**
+     * The copyright notice of the library
+     */
+    private var libraryCopyright : String? = null
 
     /**
      * The URL of the library
@@ -43,7 +50,7 @@ class LicensePreference @JvmOverloads constructor(context : Context?, attrs : At
         for (i in 0 until attrs!!.attributeCount) {
             when (attrs.getAttributeName(i)) {
                 LIBRARY_URL_ARG -> libraryUrl = attrs.getAttributeValue(i)
-
+                LIBRARY_COPYRIGHT_ARG -> libraryCopyright = attrs.getAttributeValue(i)
                 LIBRARY_LICENSE_ARG -> libraryLicense = attrs.getAttributeValue(i).substring(1).toInt()
             }
         }
@@ -56,7 +63,9 @@ class LicensePreference @JvmOverloads constructor(context : Context?, attrs : At
         fragmentManager.findFragmentByTag(DIALOG_TAG) ?: run {
             LicenseDialog().apply {
                 arguments = Bundle().apply {
+                    putString(LIBRARY_TITLE_ARG, title.toString())
                     putString(LIBRARY_URL_ARG, libraryUrl)
+                    putString(LIBRARY_COPYRIGHT_ARG, libraryCopyright)
                     putInt(LIBRARY_LICENSE_ARG, libraryLicense)
                 }
             }.show(fragmentManager, DIALOG_TAG)
