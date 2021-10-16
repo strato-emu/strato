@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <nce.h>
 #include <kernel/types/KProcess.h>
 #include <services/hosbinder/IHOSBinderDriver.h>
 #include "ISelfController.h"
@@ -9,10 +10,7 @@ namespace skyline::service::am {
     ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)), hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")), BaseService(state, manager) {}
 
     Result ISelfController::Exit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (state.thread->id)
-            state.process->Kill(false);
-        std::longjmp(state.thread->originalCtx, true);
-        return {};
+        throw nce::NCE::ExitException(true);
     }
 
     Result ISelfController::LockExit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {

@@ -17,6 +17,21 @@ namespace skyline::nce {
         static void SvcHandler(u16 svcId, ThreadContext *ctx);
 
       public:
+        /**
+         * @brief An exception which causes the throwing thread to exit alongside all threads optionally
+         * @note Exiting must not be performed directly as it could leak temporary objects on the stack by not calling their destructors
+         */
+        struct ExitException : std::exception {
+            bool killAllThreads; //!< If to kill all threads or just the throwing thread
+
+            ExitException(bool killAllThreads = true);
+
+            virtual const char* what() const noexcept;
+        };
+
+        /**
+         * @brief Handles any signals in the NCE threads
+         */
         static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
 
         NCE(const DeviceState &state);

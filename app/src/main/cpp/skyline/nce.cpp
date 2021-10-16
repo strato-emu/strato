@@ -14,6 +14,12 @@
 #include "nce.h"
 
 namespace skyline::nce {
+    NCE::ExitException::ExitException(bool killAllThreads) : killAllThreads(killAllThreads) {}
+
+    const char *NCE::ExitException::what() const noexcept {
+        return killAllThreads ? "ExitProcess" : "ExitThread";
+    }
+
     void NCE::SvcHandler(u16 svcId, ThreadContext *ctx) {
         TRACE_EVENT_END("guest");
 
@@ -41,6 +47,12 @@ namespace skyline::nce {
                 }
             }
             abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
+            std::longjmp(state.thread->originalCtx, true);
+        } catch (const ExitException &e) {
+            if (e.killAllThreads && state.thread->id) {
+                signal::BlockSignal({SIGINT});
+                state.process->Kill(false);
+            }
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             if (svc)
@@ -94,7 +106,7 @@ namespace skyline::nce {
                     std::ifstream status("/proc/self/status");
                     constexpr std::string_view TracerPidTag = "TracerPid:";
 
-                    for (std::string line; std::getline(status, line); ) {
+                    for (std::string line; std::getline(status, line);) {
                         if (line.starts_with(TracerPidTag)) {
                             line = line.substr(TracerPidTag.size());
 

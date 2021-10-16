@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <os.h>
+#include <nce.h>
 #include <kernel/types/KProcess.h>
 #include <common/trace.h>
 #include <vfs/npdm.h>
@@ -218,9 +219,7 @@ namespace skyline::kernel::svc {
 
     void ExitProcess(const DeviceState &state) {
         state.logger->Debug("Exiting process");
-        if (state.thread->id)
-            state.process->Kill(false);
-        std::longjmp(state.thread->originalCtx, true);
+        throw nce::NCE::ExitException(true);
     }
 
     constexpr i32 IdealCoreDontCare{-1};
@@ -279,7 +278,7 @@ namespace skyline::kernel::svc {
 
     void ExitThread(const DeviceState &state) {
         state.logger->Debug("Exiting current thread");
-        std::longjmp(state.thread->originalCtx, true);
+        throw nce::NCE::ExitException(false);
     }
 
     void SleepThread(const DeviceState &state) {
