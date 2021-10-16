@@ -19,7 +19,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         while (Step());
     }
 
-    FORCE_INLINE bool MacroInterpreter::Step(Opcode *delayedOpcode) {
+    __attribute__((always_inline)) bool MacroInterpreter::Step(Opcode *delayedOpcode) {
         switch (opcode->operation) {
             case Opcode::Operation::AluRegister: {
                 u32 result{HandleAlu(opcode->aluOperation, registers[opcode->srcA], registers[opcode->srcB])};
@@ -116,7 +116,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         return true;
     }
 
-    FORCE_INLINE u32 MacroInterpreter::HandleAlu(Opcode::AluOperation operation, u32 srcA, u32 srcB) {
+    __attribute__((always_inline)) u32 MacroInterpreter::HandleAlu(Opcode::AluOperation operation, u32 srcA, u32 srcB) {
         switch (operation) {
             case Opcode::AluOperation::Add: {
                 u64 result{static_cast<u64>(srcA) + srcB};
@@ -155,7 +155,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         }
     }
 
-    FORCE_INLINE void MacroInterpreter::HandleAssignment(Opcode::AssignmentOperation operation, u8 reg, u32 result) {
+    __attribute__((always_inline)) void MacroInterpreter::HandleAssignment(Opcode::AssignmentOperation operation, u8 reg, u32 result) {
         switch (operation) {
             case Opcode::AssignmentOperation::IgnoreAndFetch:
                 WriteRegister(reg, *argument++);
@@ -192,12 +192,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         }
     }
 
-    FORCE_INLINE void MacroInterpreter::Send(u32 pArgument) {
+    __attribute__((always_inline)) void MacroInterpreter::Send(u32 pArgument) {
         maxwell3D.CallMethod(methodAddress.address, pArgument, true);
         methodAddress.address += methodAddress.increment;
     }
 
-    FORCE_INLINE void MacroInterpreter::WriteRegister(u8 reg, u32 value) {
+    __attribute__((always_inline)) void MacroInterpreter::WriteRegister(u8 reg, u32 value) {
         // Register 0 should always be zero so block writes to it
         if (reg == 0) [[unlikely]]
             return;

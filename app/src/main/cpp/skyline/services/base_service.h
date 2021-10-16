@@ -15,7 +15,7 @@ template<typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFun
 Result CallBaseFunction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {       \
     return (static_cast<BaseClass *>(this)->*BaseFunction)(session, request, response);                        \
 }                                                                                                              \
-SERVICE_DECL_AUTO(functions, frz::make_unordered_map({__VA_ARGS__}));                                          \
+SERVICE_DECL_AUTO(functions, frozen::make_unordered_map({__VA_ARGS__}));                                          \
 protected:                                                                                                     \
 ServiceFunctionDescriptor GetServiceFunction(u32 id) override {                                                \
     auto& function{functions.at(id)};                                                                          \

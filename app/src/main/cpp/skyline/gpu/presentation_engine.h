@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <jni.h>
 #include <android/looper.h>
 #include <common/trace.h>
 #include <kernel/types/KEvent.h>

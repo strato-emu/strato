@@ -4,6 +4,7 @@
 #pragma once
 
 #include <common.h>
+#include <sys/mman.h>
 
 namespace skyline {
     namespace memory {

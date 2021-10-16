@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <jni.h>
 #include "shared_mem.h"
 
 namespace skyline::input {

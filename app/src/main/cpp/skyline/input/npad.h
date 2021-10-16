@@ -11,7 +11,7 @@ namespace skyline::input {
      */
     struct GuestController {
         NpadControllerType type{};
-        i8 partnerIndex{constant::NullIndex}; //!< The index of a Joy-Con partner, if this has one
+        i8 partnerIndex{NpadDevice::NullIndex}; //!< The index of a Joy-Con partner, if this has one
         NpadDevice *device{nullptr}; //!< A pointer to the NpadDevice that all events from this are redirected to
     };
 

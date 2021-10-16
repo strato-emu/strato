@@ -353,13 +353,16 @@ namespace skyline::input {
         globalTimestamp++;
     }
 
+    constexpr jlong MsInSecond{1000}; //!< The amount of milliseconds in a single second of time
+    constexpr jint AmplitudeMax{std::numeric_limits<u8>::max()}; //!< The maximum amplitude for Android Vibration APIs
+
     struct VibrationInfo {
         jlong period;
         jint amplitude;
         jlong start;
         jlong end;
 
-        VibrationInfo(float frequency, float amplitude) : period(constant::MsInSecond / frequency), amplitude(amplitude), start(0), end(period) {}
+        VibrationInfo(float frequency, float amplitude) : period(MsInSecond / frequency), amplitude(amplitude), start(0), end(period) {}
     };
 
     template<size_t Size>
@@ -410,7 +413,7 @@ namespace skyline::input {
             timings[i] = time;
             totalTime += time;
 
-            amplitudes[i] = std::min(totalAmplitude, constant::AmplitudeMax);
+            amplitudes[i] = std::min(totalAmplitude, AmplitudeMax);
         }
 
         jvm->VibrateDevice(index, span(timings.begin(), timings.begin() + i), span(amplitudes.begin(), amplitudes.begin() + i));
@@ -418,8 +421,8 @@ namespace skyline::input {
 
     void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 index, const NpadVibrationValue &value) {
         std::array<VibrationInfo, 2> vibrations{
-            VibrationInfo{value.frequencyLow, value.amplitudeLow * (constant::AmplitudeMax / 2)},
-            {value.frequencyHigh, value.amplitudeHigh * (constant::AmplitudeMax / 2)},
+            VibrationInfo{value.frequencyLow, value.amplitudeLow * (AmplitudeMax / 2)},
+            {value.frequencyHigh, value.amplitudeHigh * (AmplitudeMax / 2)},
         };
         VibrateDevice(jvm, index, vibrations);
     }
@@ -448,12 +451,12 @@ namespace skyline::input {
         vibrationLeft = left;
         vibrationRight = right;
 
-        if (partnerIndex == constant::NullIndex) {
+        if (partnerIndex == NpadDevice::NullIndex) {
             std::array<VibrationInfo, 4> vibrations{
-                VibrationInfo{left.frequencyLow, left.amplitudeLow * (constant::AmplitudeMax / 4)},
-                {left.frequencyHigh, left.amplitudeHigh * (constant::AmplitudeMax / 4)},
-                {right.frequencyLow, right.amplitudeLow * (constant::AmplitudeMax / 4)},
-                {right.frequencyHigh, right.amplitudeHigh * (constant::AmplitudeMax / 4)},
+                VibrationInfo{left.frequencyLow, left.amplitudeLow * (AmplitudeMax / 4)},
+                {left.frequencyHigh, left.amplitudeHigh * (AmplitudeMax / 4)},
+                {right.frequencyLow, right.amplitudeLow * (AmplitudeMax / 4)},
+                {right.frequencyHigh, right.amplitudeHigh * (AmplitudeMax / 4)},
             };
             VibrateDevice<4>(manager.state.jvm, index, vibrations);
         } else {

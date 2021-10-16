@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: lint-result.html
-          path: app/build/reports/lint-results.html
+          path: app/build/reports/lint-results-debug.html
 
       - name: Android Assemble
         run: ./gradlew --stacktrace assemble
