@@ -38,8 +38,20 @@ namespace skyline::service::nvdrv {
         .AccessGpu = true,
         .AccessGpuDebug = true,
         .AccessVic = true,
+        .AccessVideoEncoder = true, // Enabled in 11.0.0+
         .AccessVideoDecoder = true,
         .ModifyGraphicsMargin = true
+    };
+
+    /**
+     * @brief Permissions that applets have when using the 'nvdrv:a' service
+     */
+    static constexpr SessionPermissions AppletSessionPermissions {
+        .AccessGpu = true,
+        .AccessVic = true,
+        .AccessVideoDecoder = true,
+        .AccessJpeg = true,
+        .DuplicateNvMapHandles = true
     };
 
     /**

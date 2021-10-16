@@ -81,6 +81,7 @@ namespace skyline::service {
             SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetStaticServiceAsUser(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceUserPermissions)
             SERVICE_CASE(fssrv::IFileSystemProxy, "fsp-srv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv", globalServiceState->nvdrv, nvdrv::ApplicationSessionPermissions)
+            SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a", globalServiceState->nvdrv, nvdrv::AppletSessionPermissions)
             SERVICE_CASE(hosbinder::IHOSBinderDriver, "dispdrv", globalServiceState->nvdrv.core.nvMap)
             SERVICE_CASE(visrv::IApplicationRootService, "vi:u")
             SERVICE_CASE(visrv::ISystemRootService, "vi:s")
