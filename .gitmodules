@@ -37,3 +37,4 @@
 [submodule "app/libraries/boost"]
 	path = app/libraries/boost
 	url = https://github.com/boostorg/boost.git
+	ignore = all
