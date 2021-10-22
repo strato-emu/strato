@@ -23,6 +23,7 @@ namespace skyline::service::nvdrv::core {
             bool reserved;               //!< If the syncpoint is reserved or not, not to be confused with a reserved value
         };
 
+
         const DeviceState &state;
         std::array<SyncpointInfo, soc::host1x::SyncpointCount> syncpoints{};
         std::mutex reservationLock;
@@ -39,6 +40,11 @@ namespace skyline::service::nvdrv::core {
 
       public:
         SyncpointManager(const DeviceState &state);
+
+        /**
+         * @brief Checks if the given syncpoint is both allocated and below the number of HW syncpoints
+         */
+        bool IsSyncpointAllocated(u32 id);
 
         /**
          * @brief Finds a free syncpoint and reserves it
