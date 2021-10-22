@@ -102,10 +102,11 @@ namespace skyline::nce {
             *tls = nullptr;
         } else { // If TLS wasn't restored then this occurred in host code
             if (signal == SIGSEGV) {
-                static bool RunningUnderDebugger{[]() {
-                    std::ifstream status("/proc/self/status");
-                    constexpr std::string_view TracerPidTag = "TracerPid:";
+                bool runningUnderDebugger{[]() {
+                    static std::ifstream status("/proc/self/status");
+                    status.seekg(0);
 
+                    constexpr std::string_view TracerPidTag = "TracerPid:";
                     for (std::string line; std::getline(status, line);) {
                         if (line.starts_with(TracerPidTag)) {
                             line = line.substr(TracerPidTag.size());
@@ -123,7 +124,7 @@ namespace skyline::nce {
                     return false;
                 }()};
 
-                if (RunningUnderDebugger)
+                if (runningUnderDebugger)
                     raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
             }
 

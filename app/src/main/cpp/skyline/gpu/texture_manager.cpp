@@ -51,9 +51,9 @@ namespace skyline::gpu {
                         .layerCount = texture->layerCount,
                     }, guestTexture.format);
                 }
-            } else if (mappingMatch) {
+            } /* else if (mappingMatch) {
                 // We've gotten a partial match with a certain subset of contiguous mappings matching, we need to check if this is a meaningful overlap
-                if (false) {
+                if (MeaningfulOverlap) {
                     // TODO: Layout Checks + Check match against Base Layer in TIC
                     auto &texture{hostMapping->texture};
                     return TextureView(texture, static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
@@ -62,7 +62,7 @@ namespace skyline::gpu {
                         .layerCount = texture->layerCount,
                     }, guestTexture.format);
                 }
-            }
+            } */
         }
 
         // Create a texture as we cannot find one that matches

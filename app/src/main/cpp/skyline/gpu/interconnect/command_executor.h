@@ -25,7 +25,7 @@ namespace skyline::gpu::interconnect {
         bool CreateRenderpass(vk::Rect2D renderArea);
 
       public:
-        CommandExecutor(const DeviceState &state) : gpu(*state.gpu) {}
+        CommandExecutor(const DeviceState &state);
 
         /**
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments

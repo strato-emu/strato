@@ -9,21 +9,21 @@ namespace skyline::gpu {
     /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
      */
-    void CopyBlockLinearToLinear(GuestTexture& guest, u8* guestInput, u8* linearOutput) {
+    void CopyBlockLinearToLinear(GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
         // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
         constexpr u8 SectorWidth{16}; // The width of a sector in bytes
         constexpr u8 SectorHeight{2}; // The height of a sector in lines
         constexpr u8 GobWidth{64}; // The width of a GOB in bytes
         constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
-        auto blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
-        auto robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
-        auto surfaceHeight{guest.dimensions.height / guest.format->blockHeight}; //!< The height of the surface in lines
-        auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
-        auto robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
-        auto robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
-        auto robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
-        auto gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
+        u32 blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
+        u32 robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
+        u32 surfaceHeight{guest.dimensions.height / guest.format->blockHeight}; //!< The height of the surface in lines
+        u32 surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
+        u32 robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
+        u32 robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
+        u32 robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
+        u32 gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
 
         auto inputSector{guestInput};
         auto outputRob{linearOutput};
@@ -51,24 +51,25 @@ namespace skyline::gpu {
             paddingY = (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight); // Calculate the amount of padding between contiguous sectors
         }
     }
+
     /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
      */
-    void CopyLinearToBlockLinear(GuestTexture& guest, u8* linearInput, u8* guestOutput) {
+    void CopyLinearToBlockLinear(GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
         // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
         constexpr u8 SectorWidth{16}; // The width of a sector in bytes
         constexpr u8 SectorHeight{2}; // The height of a sector in lines
         constexpr u8 GobWidth{64}; // The width of a GOB in bytes
         constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
-        auto blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
-        auto robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
-        auto surfaceHeight{guest.dimensions.height / guest.format->blockHeight}; //!< The height of the surface in lines
-        auto surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
-        auto robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
-        auto robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
-        auto robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
-        auto gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
+        u32 blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
+        u32 robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
+        u32 surfaceHeight{guest.dimensions.height / guest.format->blockHeight}; //!< The height of the surface in lines
+        u32 surfaceHeightRobs{util::AlignUp(surfaceHeight, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks)
+        u32 robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
+        u32 robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1)
+        u32 robBytes{robWidthBytes * robHeight}; //!< The size of a ROB in bytes
+        u32 gobYOffset{robWidthBytes * GobHeight}; //!< The offset of the next Y-axis GOB from the current one in linear space
 
         auto outputSector{guestOutput};
         auto inputRob{linearInput};
@@ -100,7 +101,7 @@ namespace skyline::gpu {
     /**
      * @brief Copies the contents of a pitch-linear guest texture to a linear output buffer
      */
-    void CopyPitchLinearToLinear(GuestTexture& guest, u8* guestInput, u8* linearOutput) {
+    void CopyPitchLinearToLinear(GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
         auto sizeStride{guest.format->GetSize(guest.tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
 
@@ -117,7 +118,7 @@ namespace skyline::gpu {
     /**
      * @brief Copies the contents of a linear buffer to a pitch-linear guest texture
      */
-    void CopyLinearToPitchLinear(GuestTexture& guest, u8* linearInput, u8* guestOutput) {
+    void CopyLinearToPitchLinear(GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
         auto sizeStride{guest.format->GetSize(guest.tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
 

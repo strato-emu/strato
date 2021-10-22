@@ -5,6 +5,8 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu) {}
+
     bool CommandExecutor::CreateRenderpass(vk::Rect2D renderArea) {
         if (renderpass && renderpass->renderArea != renderArea) {
             nodes.emplace_back(std::in_place_type_t<node::RenderpassEndNode>());

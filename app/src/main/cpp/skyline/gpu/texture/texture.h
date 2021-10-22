@@ -214,13 +214,17 @@ namespace skyline::gpu {
             };
 
             constexpr bool operator==(const TileConfig &other) const {
-                if (mode == other.mode)
-                    if (mode == TileMode::Linear)
-                        return true;
-                    else if (mode == TileMode::Pitch)
-                        return pitch == other.pitch;
-                    else if (mode == TileMode::Block)
-                        return blockHeight == other.blockHeight && blockDepth == other.blockDepth;
+                if (mode == other.mode) {
+                    switch (mode) {
+                        case TileMode::Linear:
+                            return true;
+                        case TileMode::Pitch:
+                            return pitch == other.pitch;
+                        case TileMode::Block:
+                            return blockHeight == other.blockHeight && blockDepth == other.blockDepth;
+                    }
+                }
+
                 return false;
             }
         };
@@ -248,7 +252,7 @@ namespace skyline::gpu {
      * @brief A descriptor for a texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
      */
     struct GuestTexture {
-        using Mappings = boost::container::small_vector<span<u8>, 3>;
+        using Mappings = boost::container::small_vector<span < u8>, 3>;
 
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this texture
         texture::Dimensions dimensions;
@@ -261,9 +265,25 @@ namespace skyline::gpu {
 
         GuestTexture() {}
 
-        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(mappings), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
+        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0)
+            : mappings(mappings),
+              dimensions(dimensions),
+              format(format),
+              tileConfig(tileConfig),
+              type(type),
+              baseArrayLayer(baseArrayLayer),
+              layerCount(layerCount),
+              layerStride(layerStride) {}
 
-        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0) : mappings(1, mapping), dimensions(dimensions), format(format), tileConfig(tileConfig), type(type), baseArrayLayer(baseArrayLayer), layerCount(layerCount), layerStride(layerStride) {}
+        GuestTexture(span <u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0)
+            : mappings(1, mapping),
+              dimensions(dimensions),
+              format(format),
+              tileConfig(tileConfig),
+              type(type),
+              baseArrayLayer(baseArrayLayer),
+              layerCount(layerCount),
+              layerStride(layerStride) {}
     };
 
     class TextureManager;
@@ -323,18 +343,18 @@ namespace skyline::gpu {
         /**
          * @brief Records commands for copying data from a staging buffer to the texture's backing into the supplied command buffer
          */
-        void CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer>& stagingBuffer);
+        void CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer);
 
         /**
          * @brief Records commands for copying data from the texture's backing to a staging buffer into the supplied command buffer
          */
-        void CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer>& stagingBuffer);
+        void CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer);
 
         /**
          * @brief Copies data from the supplied host buffer into the guest texture
          * @note The host buffer must be contain the entire image
          */
-        void CopyToGuest(u8* hostBuffer);
+        void CopyToGuest(u8 *hostBuffer);
 
         /**
          * @brief A FenceCycleDependency that copies the contents of a staging buffer or mapped image backing the texture to the guest texture

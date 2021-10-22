@@ -11,8 +11,6 @@ namespace skyline::gpu {
     std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
         if (!guest)
             throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
-        else if (guest->mappings.size() != 1)
-            throw exception("Synchronization of non-contigious textures is not supported");
         else if (guest->dimensions != dimensions)
             throw exception("Guest and host dimensions being different is not supported currently");
         else if (guest->mappings.size() > 1)
@@ -334,8 +332,6 @@ namespace skyline::gpu {
     void Texture::SynchronizeGuest() {
         if (!guest)
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
-        else if (guest->mappings.size() != 1)
-            throw exception("Synchronization of non-contigious textures is not supported");
         else if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
         else if (guest->mappings.size() > 1)
@@ -366,8 +362,6 @@ namespace skyline::gpu {
     void Texture::SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
         if (!guest)
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
-        else if (guest->mappings.size() != 1)
-            throw exception("Synchronization of non-contigious textures is not supported");
         else if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
         else if (guest->mappings.size() > 1)

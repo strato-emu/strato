@@ -24,8 +24,7 @@ namespace skyline {
       public:
         template<typename... Args>
         ThreadLocal(Args &&... args) : constructor([args...]() { return new Type(args...); }) {
-            int result;
-            if ((result = pthread_key_create(&key, nullptr)))
+            if (int result = pthread_key_create(&key, nullptr))
                 throw exception("Cannot create pthread_key: {}", strerror(result));
         }
 
@@ -34,9 +33,8 @@ namespace skyline {
             if (pointer)
                 return static_cast<Type *>(pointer);
 
-            int result;
             Type *object{constructor(*this)};
-            if ((result = pthread_setspecific(key, object)))
+            if (int result = pthread_setspecific(key, object))
                 throw exception("Cannot set pthread_key to constructed type: {}", strerror(result));
 
             return object;
@@ -89,8 +87,7 @@ namespace skyline {
                 static_cast<IntrustiveTypeNode *>(object)->~IntrustiveTypeNode();
             }};
 
-            int result;
-            if ((result = pthread_key_create(&key, destructor)))
+            if (int result = pthread_key_create(&key, destructor))
                 throw exception("Cannot create pthread_key: {}", strerror(result));
         }
 
@@ -99,9 +96,8 @@ namespace skyline {
             if (pointer)
                 return &static_cast<IntrustiveTypeNode *>(pointer)->object;
 
-            int result;
             IntrustiveTypeNode *node{constructor(*this)};
-            if ((result = pthread_setspecific(key, node)))
+            if (int result = pthread_setspecific(key, node))
                 throw exception("Cannot set pthread_key to constructed type: {}", strerror(result));
 
             auto next{list.load(std::memory_order_acquire)};

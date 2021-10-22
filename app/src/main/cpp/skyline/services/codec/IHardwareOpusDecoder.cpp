@@ -23,8 +23,7 @@ namespace skyline::service::codec {
         // We utilize the guest-supplied work buffer for allocating the OpusDecoder object into
         decoderState = reinterpret_cast<OpusDecoder *>(workBuffer->host.ptr);
 
-        int result{opus_decoder_init(decoderState, sampleRate, channelCount)};
-        if (result != OPUS_OK)
+        if (int result = opus_decoder_init(decoderState, sampleRate, channelCount) != OPUS_OK)
             throw OpusException(result);
     }
 

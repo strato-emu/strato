@@ -102,6 +102,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
+        ${source_DIR}/skyline/gpu/interconnect/command_nodes.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
         ${source_DIR}/skyline/soc/gm20b/channel.cpp
         ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp

@@ -85,13 +85,13 @@ namespace skyline::gpu {
 
         #define IGNORE_VALIDATION(string) \
         case util::Hash(string):          \
-            if(string == type)            \
+            if (string == type)           \
                 return VK_FALSE;          \
             break
 
         #define DEBUG_VALIDATION(string) \
         case util::Hash(string):         \
-            if(string == type)           \
+            if (string == type)          \
                 raise(SIGTRAP);          \
             break
         // Using __builtin_debugtrap() as opposed to raise(SIGTRAP) will result in the inability to continue
@@ -101,7 +101,6 @@ namespace skyline::gpu {
         auto last{type.find(']', first)};
         if (first != std::string_view::npos && last != std::string_view::npos) {
             type = type.substr(first + 2, last != std::string_view::npos ? last - 4 : last);
-            std::string typeStr{type};
 
             switch (util::Hash(type)) {
                 IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
