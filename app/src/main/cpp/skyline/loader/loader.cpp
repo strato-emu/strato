@@ -17,10 +17,10 @@ namespace skyline::loader {
         u64 roSize{executable.ro.contents.size()};
         u64 dataSize{executable.data.contents.size() + executable.bssSize};
 
-        if (!util::PageAligned(textSize) || !util::PageAligned(roSize) || !util::PageAligned(dataSize))
+        if (!util::IsPageAligned(textSize) || !util::IsPageAligned(roSize) || !util::IsPageAligned(dataSize))
             throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, roSize, dataSize);
 
-        if (!util::PageAligned(executable.text.offset) || !util::PageAligned(executable.ro.offset) || !util::PageAligned(executable.data.offset))
+        if (!util::IsPageAligned(executable.text.offset) || !util::IsPageAligned(executable.ro.offset) || !util::IsPageAligned(executable.data.offset))
             throw exception("LoadProcessData: Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
 
         auto patch{state.nce->GetPatchData(executable.text.contents)};

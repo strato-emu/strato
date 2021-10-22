@@ -32,14 +32,14 @@ namespace skyline::kernel::svc {
 
     void SetMemoryAttribute(const DeviceState &state) {
         auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
-        if (!util::PageAligned(pointer)) {
+        if (!util::IsPageAligned(pointer)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             state.logger->Warn("'pointer' not page aligned: 0x{:X}", pointer);
             return;
         }
 
         size_t size{state.ctx->gpr.x1};
-        if (!util::PageAligned(size)) {
+        if (!util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -83,13 +83,13 @@ namespace skyline::kernel::svc {
         auto source{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
         size_t size{state.ctx->gpr.x2};
 
-        if (!util::PageAligned(destination) || !util::PageAligned(source)) {
+        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             state.logger->Warn("Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        if (!util::PageAligned(size)) {
+        if (!util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -131,13 +131,13 @@ namespace skyline::kernel::svc {
         auto destination{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
         size_t size{state.ctx->gpr.x2};
 
-        if (!util::PageAligned(destination) || !util::PageAligned(source)) {
+        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             state.logger->Warn("Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
             return;
         }
 
-        if (!util::PageAligned(size)) {
+        if (!util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -477,14 +477,14 @@ namespace skyline::kernel::svc {
             auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
             auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
-            if (!util::PageAligned(pointer)) {
+            if (!util::IsPageAligned(pointer)) {
                 state.ctx->gpr.w0 = result::InvalidAddress;
                 state.logger->Warn("'pointer' not page aligned: 0x{:X}", pointer);
                 return;
             }
 
             size_t size{state.ctx->gpr.x2};
-            if (!util::PageAligned(size)) {
+            if (!util::IsPageAligned(size)) {
                 state.ctx->gpr.w0 = result::InvalidSize;
                 state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
                 return;
@@ -514,14 +514,14 @@ namespace skyline::kernel::svc {
             auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
             auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
-            if (!util::PageAligned(pointer)) {
+            if (!util::IsPageAligned(pointer)) {
                 state.ctx->gpr.w0 = result::InvalidAddress;
                 state.logger->Warn("'pointer' not page aligned: 0x{:X}", pointer);
                 return;
             }
 
             size_t size{state.ctx->gpr.x2};
-            if (!util::PageAligned(size)) {
+            if (!util::IsPageAligned(size)) {
                 state.ctx->gpr.w0 = result::InvalidSize;
                 state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
                 return;
@@ -540,14 +540,14 @@ namespace skyline::kernel::svc {
 
     void CreateTransferMemory(const DeviceState &state) {
         auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
-        if (!util::PageAligned(pointer)) {
+        if (!util::IsPageAligned(pointer)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             state.logger->Warn("'pointer' not page aligned: 0x{:X}", pointer);
             return;
         }
 
         size_t size{state.ctx->gpr.x2};
-        if (!util::PageAligned(size)) {
+        if (!util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.logger->Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
             return;
@@ -741,7 +741,7 @@ namespace skyline::kernel::svc {
 
     void ArbitrateLock(const DeviceState &state) {
         auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x1)};
-        if (!util::WordAligned(mutex)) {
+        if (!util::IsWordAligned(mutex)) {
             state.logger->Warn("'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
@@ -764,7 +764,7 @@ namespace skyline::kernel::svc {
 
     void ArbitrateUnlock(const DeviceState &state) {
         auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
-        if (!util::WordAligned(mutex)) {
+        if (!util::IsWordAligned(mutex)) {
             state.logger->Warn("'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
@@ -779,7 +779,7 @@ namespace skyline::kernel::svc {
 
     void WaitProcessWideKeyAtomic(const DeviceState &state) {
         auto mutex{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
-        if (!util::WordAligned(mutex)) {
+        if (!util::IsWordAligned(mutex)) {
             state.logger->Warn("'mutex' not word aligned: 0x{:X}", mutex);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
@@ -1016,12 +1016,12 @@ namespace skyline::kernel::svc {
         auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
         size_t size{state.ctx->gpr.x1};
 
-        if (!util::PageAligned(pointer)) {
+        if (!util::IsPageAligned(pointer)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
-        if (!size || !util::PageAligned(size)) {
+        if (!size || !util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             return;
         }
@@ -1040,12 +1040,12 @@ namespace skyline::kernel::svc {
         auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
         size_t size{state.ctx->gpr.x1};
 
-        if (!util::PageAligned(pointer)) {
+        if (!util::IsPageAligned(pointer)) {
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
-        if (!size || !util::PageAligned(size)) {
+        if (!size || !util::IsPageAligned(size)) {
             state.ctx->gpr.w0 = result::InvalidSize;
             return;
         }
@@ -1087,7 +1087,7 @@ namespace skyline::kernel::svc {
 
     void WaitForAddress(const DeviceState &state) {
         auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
-        if (!util::WordAligned(address)) [[unlikely]] {
+        if (!util::IsWordAligned(address)) [[unlikely]] {
             state.logger->Warn("'address' not word aligned: 0x{:X}", address);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
@@ -1149,7 +1149,7 @@ namespace skyline::kernel::svc {
 
     void SignalToAddress(const DeviceState &state) {
         auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
-        if (!util::WordAligned(address)) [[unlikely]] {
+        if (!util::IsWordAligned(address)) [[unlikely]] {
             state.logger->Warn("'address' not word aligned: 0x{:X}", address);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;

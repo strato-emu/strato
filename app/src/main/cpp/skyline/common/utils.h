@@ -55,6 +55,9 @@ namespace skyline::util {
             return item;
     }
 
+    template <typename T>
+    concept IsPointerOrIntegral = std::is_integral_v<T> || std::is_pointer_v<T>;
+
     /**
      * @return The value aligned up to the next multiple
      * @note The multiple needs to be a power of 2
@@ -78,6 +81,7 @@ namespace skyline::util {
      * @return If the address is aligned with the multiple
      */
     template<typename TypeVal, typename TypeMul>
+    requires (IsPointerOrIntegral<TypeVal> && IsPointerOrIntegral<TypeMul>)
     constexpr bool IsAligned(TypeVal value, TypeMul multiple) {
         if ((multiple & (multiple - 1)) == 0)
             return !(PointerValue(value) & (multiple - 1U));
@@ -85,19 +89,15 @@ namespace skyline::util {
             return (PointerValue(value) % multiple) == 0;
     }
 
-    /**
-     * @return If the value is page aligned
-     */
     template<typename TypeVal>
-    constexpr bool PageAligned(TypeVal value) {
+    requires IsPointerOrIntegral<TypeVal>
+    constexpr bool IsPageAligned(TypeVal value) {
         return IsAligned(value, PAGE_SIZE);
     }
 
-    /**
-     * @return If the value is word aligned
-     */
     template<typename TypeVal>
-    constexpr bool WordAligned(TypeVal value) {
+    requires IsPointerOrIntegral<TypeVal>
+    constexpr bool IsWordAligned(TypeVal value) {
         return IsAligned(value, WORD_BIT / 8);
     }
 
@@ -106,6 +106,7 @@ namespace skyline::util {
      * @return The magic of the supplied string
      */
     template<typename Type>
+    requires std::is_integral_v<Type>
     constexpr Type MakeMagic(std::string_view string) {
         Type object{};
         size_t offset{};
@@ -129,10 +130,10 @@ namespace skyline::util {
     }
 
     template<size_t Size>
-    constexpr std::array <u8, Size> HexStringToArray(std::string_view string) {
+    constexpr std::array<u8, Size> HexStringToArray(std::string_view string) {
         if (string.size() != Size * 2)
             throw exception("String size: {} (Expected {})", string.size(), Size);
-        std::array <u8, Size> result;
+        std::array<u8, Size> result;
         for (size_t i{}; i < Size; i++) {
             size_t index{i * 2};
             result[i] = (HexDigitToNibble(string[index]) << 4) | HexDigitToNibble(string[index + 1]);
@@ -141,6 +142,7 @@ namespace skyline::util {
     }
 
     template<typename Type>
+    requires std::is_integral_v<Type>
     constexpr Type HexStringToInt(std::string_view string) {
         if (string.size() > sizeof(Type) * 2)
             throw exception("String size larger than type: {} (sizeof(Type): {})", string.size(), sizeof(Type));
@@ -161,7 +163,7 @@ namespace skyline::util {
     }
 
     template<size_t N>
-    constexpr std::array <u8, N> SwapEndianness(std::array <u8, N> in) {
+    constexpr std::array<u8, N> SwapEndianness(std::array<u8, N> in) {
         std::reverse(in.begin(), in.end());
         return in;
     }
@@ -190,13 +192,13 @@ namespace skyline::util {
      */
     template<class T>
     struct IntegerFor {
-        using type = std::conditional_t<sizeof(T) % sizeof(u64) == 0, u64,
-            std::conditional_t<sizeof(T) % sizeof(u32) == 0, u32,
-                               std::conditional_t<sizeof(T) % sizeof(u16) == 0, u16, u8>
-            >
+        using Type = std::conditional_t<sizeof(T) % sizeof(u64) == 0, u64,
+                                        std::conditional_t<sizeof(T) % sizeof(u32) == 0, u32,
+                                                           std::conditional_t<sizeof(T) % sizeof(u16) == 0, u16, u8>
+                                        >
         >;
 
-        static constexpr size_t count{sizeof(T) / sizeof(type)};
+        static constexpr size_t Count{sizeof(T) / sizeof(Type)};
     };
 
     namespace detail {
@@ -207,22 +209,24 @@ namespace skyline::util {
      * @brief Fills an array with random data from a Mersenne Twister pseudo-random generator
      * @note The generator is seeded with the the current time in ticks
      */
-    template<typename T> requires (std::is_integral_v<T>)
+    template<typename T>
+    requires std::is_integral_v<T>
     void FillRandomBytes(std::span<T> in) {
         std::independent_bits_engine<std::mt19937_64, std::numeric_limits<T>::digits, T> gen(detail::generator);
         std::generate(in.begin(), in.end(), gen);
     }
 
-    template<class T> requires (!std::is_integral_v<T> && std::is_trivially_copyable_v<T>)
+    template<class T>
+    requires (!std::is_integral_v<T> && std::is_trivially_copyable_v<T>)
     void FillRandomBytes(T &object) {
-        FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::type *>(&object), IntegerFor<T>::count));
+        FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::Type *>(&object), IntegerFor<T>::Count));
     }
 
     /**
      * @brief A temporary shim for C++ 20's bit_cast to make transitioning to it easier
      */
     template<typename To, typename From>
-    To BitCast(const From& from) {
-        return *reinterpret_cast<const To*>(&from);
+    To BitCast(const From &from) {
+        return *reinterpret_cast<const To *>(&from);
     }
 }

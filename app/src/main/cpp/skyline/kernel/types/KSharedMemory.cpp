@@ -23,7 +23,7 @@ namespace skyline::kernel::type {
     u8 *KSharedMemory::Map(u8 *ptr, u64 size, memory::Permission permission) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::PageAligned(ptr) || !util::PageAligned(size))
+        if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
             throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
         if (guest.Valid())
             throw exception("Mapping KSharedMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
@@ -49,7 +49,7 @@ namespace skyline::kernel::type {
     void KSharedMemory::Unmap(u8 *ptr, u64 size) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::PageAligned(ptr) || !util::PageAligned(size))
+        if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
             throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
         if (guest.ptr != ptr && guest.size != size)
             throw exception("Unmapping KSharedMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
@@ -66,7 +66,7 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) {
-        if (ptr && !util::PageAligned(ptr))
+        if (ptr && !util::IsPageAligned(ptr))
             throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
 
         if (guest.Valid()) {
@@ -100,7 +100,6 @@ namespace skyline::kernel::type {
                 constexpr memory::Permission UnborrowPermission{true, true, false};
 
                 if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED)
-                    // It is likely that these exceptions will end up as asserts as the destructor is implicitly noexcept but we want to be notified about these not working so that's fine as it can be discovered in the debugger
                     state.logger->Warn("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
                 else if (!host.Valid())
                     state.logger->Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");

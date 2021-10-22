@@ -40,7 +40,7 @@ namespace skyline::vfs {
         meta = backing->Read<NpdmMeta>();
         if (meta.magic != MetaMagic)
             throw exception("NPDM Meta Magic isn't correct: 0x{:X} (\"META\" = 0x{:X})", meta.magic, MetaMagic);
-        if (!util::PageAligned(meta.mainThreadStackSize))
+        if (!util::IsPageAligned(meta.mainThreadStackSize))
             throw exception("NPDM Main Thread Stack isn't page aligned: 0x{:X}", meta.mainThreadStackSize);
 
         aci0 = meta.aci0.Read<NpdmAci0>(backing);

@@ -11,7 +11,7 @@ namespace skyline::kernel::type {
     KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memoryState(memState), KMemory(state, KType::KPrivateMemory) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::PageAligned(ptr) || !util::PageAligned(size))
+        if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
             throw exception("KPrivateMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
 
         if (mprotect(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC) < 0) // We only need to reprotect as the allocation has already been reserved by the MemoryManager
@@ -50,7 +50,7 @@ namespace skyline::kernel::type {
     void KPrivateMemory::Remap(u8 *nPtr, size_t nSize) {
         if (!state.process->memory.base.IsInside(nPtr) || !state.process->memory.base.IsInside(nPtr + nSize))
             throw exception("KPrivateMemory remapping isn't inside guest address space: 0x{:X} - 0x{:X}", nPtr, nPtr + nSize);
-        if (!util::PageAligned(nPtr) || !util::PageAligned(nSize))
+        if (!util::IsPageAligned(nPtr) || !util::IsPageAligned(nSize))
             throw exception("KPrivateMemory remapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", nPtr, nPtr + nSize, nSize);
 
         if (mprotect(ptr, size, PROT_NONE) < 0)
@@ -64,7 +64,7 @@ namespace skyline::kernel::type {
         pPtr = std::clamp(pPtr, ptr, ptr + size);
         pSize = std::min(pSize, static_cast<size_t>((ptr + size) - pPtr));
 
-        if (pPtr && !util::PageAligned(pPtr))
+        if (pPtr && !util::IsPageAligned(pPtr))
             throw exception("KPrivateMemory permission updated with a non-page-aligned address: 0x{:X}", pPtr);
 
         // If a static code region has been mapped as writable it needs to be changed to mutable
