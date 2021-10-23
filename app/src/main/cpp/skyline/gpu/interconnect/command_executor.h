@@ -16,13 +16,13 @@ namespace skyline::gpu::interconnect {
       private:
         GPU &gpu;
         boost::container::stable_vector<node::NodeVariant> nodes;
-        node::RenderpassNode *renderpass{};
+        node::RenderPassNode *renderPass{};
         std::unordered_set<Texture*> syncTextures; //!< All textures that need to be synced prior to and after execution
 
         /**
-         * @return If a new renderpass was created by the function or the current one was reused as it was compatible
+         * @return If a new render pass was created by the function or the current one was reused as it was compatible
          */
-        bool CreateRenderpass(vk::Rect2D renderArea);
+        bool CreateRenderPass(vk::Rect2D renderArea);
 
       public:
         CommandExecutor(const DeviceState &state);

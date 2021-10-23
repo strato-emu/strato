@@ -24,9 +24,9 @@ namespace skyline::gpu::interconnect::node {
     using FunctionNode = FunctionNodeBase<>;
 
     /**
-     * @brief Creates and begins a VkRenderpass alongside managing all resources bound to it and to the subpasses inside it
+     * @brief Creates and begins a VkRenderPass alongside managing all resources bound to it and to the subpasses inside it
      */
-    struct RenderpassNode {
+    struct RenderPassNode {
       private:
         /**
          * @brief Storage for all resources in the VkRenderPass that have their lifetimes bond to the completion fence
@@ -34,7 +34,7 @@ namespace skyline::gpu::interconnect::node {
         struct Storage : public FenceCycleDependency {
             vk::raii::Device *device{};
             vk::Framebuffer framebuffer{};
-            vk::RenderPass renderpass{};
+            vk::RenderPass renderPass{};
             std::vector<std::shared_ptr<Texture>> textures;
 
             ~Storage();
@@ -65,7 +65,7 @@ namespace skyline::gpu::interconnect::node {
         vk::Rect2D renderArea;
         std::vector<vk::ClearValue> clearValues;
 
-        RenderpassNode(vk::Rect2D renderArea) : storage(std::make_shared<Storage>()), renderArea(renderArea) {}
+        RenderPassNode(vk::Rect2D renderArea) : storage(std::make_shared<Storage>()), renderArea(renderArea) {}
 
         /**
          * @note Any preservation of attachments from previous subpasses is automatically handled by this
@@ -90,7 +90,7 @@ namespace skyline::gpu::interconnect::node {
     };
 
     /**
-     * @brief A node which progresses to the next subpass during a renderpass
+     * @brief A node which progresses to the next subpass during a render pass
      */
     struct NextSubpassNode {
         void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
@@ -111,13 +111,13 @@ namespace skyline::gpu::interconnect::node {
     };
 
     /**
-     * @brief Ends a VkRenderpass that would be created prior with RenderpassNode
+     * @brief Ends a VkRenderPass that would be created prior with RenderPassNode
      */
-    struct RenderpassEndNode {
+    struct RenderPassEndNode {
         void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
             commandBuffer.endRenderPass();
         }
     };
 
-    using NodeVariant = std::variant<FunctionNode, RenderpassNode, NextSubpassNode, NextSubpassFunctionNode, RenderpassEndNode>; //!< A variant encompassing all command nodes types
+    using NodeVariant = std::variant<FunctionNode, RenderPassNode, NextSubpassNode, NextSubpassFunctionNode, RenderPassEndNode>; //!< A variant encompassing all command nodes types
 }

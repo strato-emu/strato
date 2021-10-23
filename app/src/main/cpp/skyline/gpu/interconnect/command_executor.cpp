@@ -7,18 +7,18 @@
 namespace skyline::gpu::interconnect {
     CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu) {}
 
-    bool CommandExecutor::CreateRenderpass(vk::Rect2D renderArea) {
-        if (renderpass && renderpass->renderArea != renderArea) {
-            nodes.emplace_back(std::in_place_type_t<node::RenderpassEndNode>());
-            renderpass = nullptr;
+    bool CommandExecutor::CreateRenderPass(vk::Rect2D renderArea) {
+        if (renderPass && renderPass->renderArea != renderArea) {
+            nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
+            renderPass = nullptr;
         }
 
-        bool newRenderpass{renderpass == nullptr};
-        if (newRenderpass)
+        bool newRenderPass{renderPass == nullptr};
+        if (newRenderPass)
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
-            renderpass = &std::get<node::RenderpassNode>(nodes.emplace_back(std::in_place_type_t<node::RenderpassNode>(), renderArea));
+            renderPass = &std::get<node::RenderPassNode>(nodes.emplace_back(std::in_place_type_t<node::RenderPassNode>(), renderArea));
 
-        return newRenderpass;
+        return newRenderPass;
     }
 
     void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments, std::vector<TextureView> colorAttachments, std::optional<TextureView> depthStencilAttachment) {
@@ -28,22 +28,22 @@ namespace skyline::gpu::interconnect {
         if (depthStencilAttachment)
             syncTextures.emplace(depthStencilAttachment->backing.get());
 
-        bool newRenderpass{CreateRenderpass(renderArea)};
-        renderpass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
-        if (newRenderpass)
+        bool newRenderPass{CreateRenderPass(renderArea)};
+        renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
+        if (newRenderPass)
             nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
         else
             nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue &value) {
-        bool newRenderpass{CreateRenderpass(vk::Rect2D{
+        bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment.backing->dimensions,
         })};
-        renderpass->AddSubpass({}, attachment, nullptr);
+        renderPass->AddSubpass({}, attachment, nullptr);
 
-        if (renderpass->ClearColorAttachment(0, value)) {
-            if (!newRenderpass)
+        if (renderPass->ClearColorAttachment(0, value)) {
+            if (!newRenderPass)
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
         } else {
             auto function{[scissor = attachment.backing->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
@@ -58,7 +58,7 @@ namespace skyline::gpu::interconnect {
                 });
             }};
 
-            if (newRenderpass)
+            if (newRenderPass)
                 nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
             else
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
@@ -69,9 +69,9 @@ namespace skyline::gpu::interconnect {
         if (!nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Execute");
 
-            if (renderpass) {
-                nodes.emplace_back(std::in_place_type_t<node::RenderpassEndNode>());
-                renderpass = nullptr;
+            if (renderPass) {
+                nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
+                renderPass = nullptr;
             }
 
             gpu.scheduler.SubmitWithCycle([this](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle) {
@@ -83,10 +83,10 @@ namespace skyline::gpu::interconnect {
                     #define NODE(name) [&](name& node) { node(commandBuffer, cycle, gpu); }
                     std::visit(VariantVisitor{
                         NODE(FunctionNode),
-                        NODE(RenderpassNode),
+                        NODE(RenderPassNode),
                         NODE(NextSubpassNode),
                         NODE(NextSubpassFunctionNode),
-                        NODE(RenderpassEndNode),
+                        NODE(RenderPassEndNode),
                     }, node);
                     #undef NODE
                 }
