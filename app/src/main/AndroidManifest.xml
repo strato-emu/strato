@@ -63,7 +63,7 @@
             android:name="emu.skyline.EmulationActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:screenOrientation="landscape"
             tools:ignore="LockedOrientationActivity">
             <meta-data
