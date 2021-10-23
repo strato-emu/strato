@@ -63,7 +63,38 @@ namespace skyline::service::nvdrv::deserialisation {
     template<typename T> requires IsOut<T>::value
     using RemoveOut = typename T::ValueType;
 
+    // Padding template types
+    template<typename T, size_t Count = 1> requires BufferData<T>
+    struct Pad {
+        static constexpr auto Bytes{Count * sizeof(T)};
+    };
 
+    template<typename>
+    struct IsPad : std::false_type {};
+
+    template<typename T, size_t TCount>
+    struct IsPad<Pad<T, TCount>> : std::true_type {};
+
+    // Save to slot template types
+    constexpr size_t NumSaveSlots{10}; //!< Number of slots to save temporary values in during argument decoding
+
+    template<typename T, size_t TSaveSlot> requires (std::is_integral_v<T> && TSaveSlot < NumSaveSlots)
+    struct Save {
+        using SaveType = T;
+
+        static constexpr auto SaveSlot{TSaveSlot};
+    };
+
+    template<typename>
+    struct IsSave : std::false_type {};
+
+    template<typename T, size_t SaveSlot>
+    struct IsSave<Save<T, SaveSlot>> : std::true_type {};
+
+    template<typename T> requires IsSave<T>::value
+    using RemoveSave = typename T::SaveType;
+
+    // Span template types
     template<typename T> requires BufferData<T>
     using AutoSizeSpan = span<T>;
 
@@ -76,17 +107,21 @@ namespace skyline::service::nvdrv::deserialisation {
     template<typename T> requires IsAutoSizeSpan<T>::value
     using RemoveAutoSizeSpan = typename T::element_type;
 
-    // Padding template type
-    template<typename T, size_t Count = 1> requires BufferData<T>
-    struct Pad {
-        static constexpr auto Bytes{Count * sizeof(T)};
+    template<typename T, size_t TSaveSlot> requires (BufferData<T> && TSaveSlot < NumSaveSlots)
+    struct SlotSizeSpan {
+        static constexpr auto SaveSlot{TSaveSlot};
+
+        using ValueType = T;
     };
 
     template<typename>
-    struct IsPad : std::false_type {};
+    struct IsSlotSizeSpan : std::false_type {};
 
-    template<typename T, size_t TCount>
-    struct IsPad<Pad<T, TCount>> : std::true_type {};
+    template<typename T, size_t SaveSlot>
+    struct IsSlotSizeSpan<SlotSizeSpan<T, SaveSlot>> : std::true_type {};
+
+    template<typename T> requires IsSlotSizeSpan<T>::value
+    using RemoveSlotSizeSpan = typename T::ValueType;
 
     /**
      * @brief Describes an IOCTL as a type for use in deserialisation

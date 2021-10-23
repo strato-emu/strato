@@ -33,9 +33,9 @@ namespace skyline {
         template<typename Traits>
         constexpr span(const std::basic_string_view<T, Traits> &string) : std::span<T, Extent>(const_cast<T *>(string.data()), string.size()) {}
 
-        template<typename Out>
+        template<typename Out, bool SkipSizeCheck = false>
         constexpr Out &as() {
-            if constexpr (Extent != std::dynamic_extent && sizeof(T) * Extent >= sizeof(Out))
+            if constexpr (SkipSizeCheck || (Extent != std::dynamic_extent && sizeof(T) * Extent >= sizeof(Out)))
                 return *reinterpret_cast<Out *>(span::data());
 
             if (span::size_bytes() >= sizeof(Out))

@@ -9,23 +9,34 @@
 
 namespace skyline::service::nvdrv::deserialisation {
     template<typename Desc, typename ArgType> requires (Desc::In && IsIn<ArgType>::value)
-    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset) {
-        auto out{buffer.subspan(offset).template as<ArgType>()};
+    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
+        auto out{buffer.subspan(offset).template as<ArgType, true>()};
         offset += sizeof(ArgType);
         return out;
     }
 
     template<typename Desc, typename ArgType> requires (Desc::Out && Desc::In && IsInOut<ArgType>::value)
-    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset) {
-        auto &out{buffer.subspan(offset).template as<RemoveInOut<ArgType>>()};
+    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
+        auto &out{buffer.subspan(offset).template as<RemoveInOut<ArgType>, true>()};
         offset += sizeof(RemoveInOut<ArgType>);
         return out;
     }
 
     template<typename Desc, typename ArgType> requires (Desc::Out && IsOut<ArgType>::value)
-    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset) {
-        auto out{Out(buffer.subspan(offset).template as<RemoveOut<ArgType>>())};
+    constexpr ArgType DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
+        auto out{Out(buffer.subspan(offset).template as<RemoveOut<ArgType>, true>())};
         offset += sizeof(RemoveOut<ArgType>);
+        return out;
+    }
+
+    template<typename Desc, typename ArgType> requires (IsSlotSizeSpan<ArgType>::value)
+    constexpr auto DecodeArgument(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
+        size_t bytes{saveSlots[ArgType::SaveSlot] * sizeof(RemoveSlotSizeSpan<ArgType>)};
+        auto out{buffer.subspan(offset, bytes).template cast<RemoveSlotSizeSpan<ArgType>, std::dynamic_extent, true>()};
+        offset += bytes;
+
+
+        // Return a simple `span` as that will be the function argument type as opposed to `SlotSizeSpan`
         return out;
     }
 
@@ -37,23 +48,27 @@ namespace skyline::service::nvdrv::deserialisation {
         return std::tuple<Ts...>{std::forward<Ts>(ts)...};
     }
 
+
     template<typename Desc, typename ArgType, typename... ArgTypes>
-    constexpr auto DecodeArgumentsImpl(span<u8, Desc::Size> buffer, size_t &offset) {
+    constexpr auto DecodeArgumentsImpl(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
+
         if constexpr (IsAutoSizeSpan<ArgType>::value) {
             // AutoSizeSpan needs to be the last argument
             static_assert(sizeof...(ArgTypes) == 0);
-            size_t bytes{buffer.size() - offset};
-            size_t extent{bytes / sizeof(RemoveAutoSizeSpan<ArgType>)};
-            return make_ref_tuple(buffer.subspan(offset, extent * sizeof(RemoveAutoSizeSpan<ArgType>)).template cast<RemoveAutoSizeSpan<ArgType>>());
+            return make_ref_tuple(buffer.subspan(offset).template cast<RemoveAutoSizeSpan<ArgType>, std::dynamic_extent, true>());
         } else if constexpr (IsPad<ArgType>::value) {
             offset += ArgType::Bytes;
-            return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset);
+            return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots);
+        } else if constexpr (IsSave<ArgType>::value) {
+            saveSlots[ArgType::SaveSlot] = buffer.subspan(offset).template as<RemoveSave<ArgType>, true>();
+            offset += sizeof(RemoveSave<ArgType>);
+            return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots);
         } else {
             if constexpr(sizeof...(ArgTypes) == 0) {
-                return make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset));
+                return make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset, saveSlots));
             } else {
-                return std::tuple_cat(make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset)),
-                                                     DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset));
+                return std::tuple_cat(make_ref_tuple(DecodeArgument<Desc, ArgType>(buffer, offset, saveSlots)),
+                                                     DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots));
             }
         }
     }
@@ -66,6 +81,7 @@ namespace skyline::service::nvdrv::deserialisation {
     template<typename Desc, typename... ArgTypes>
     constexpr auto DecodeArguments(span<u8, Desc::Size> buffer) {
         size_t offset{};
-        return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset);
+        std::array<size_t, NumSaveSlots> saveSlots{}; // No need to zero init as used slots will always be loaded first
+        return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots);
     }
 }
