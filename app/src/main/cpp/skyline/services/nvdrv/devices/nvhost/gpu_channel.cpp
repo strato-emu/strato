@@ -65,8 +65,8 @@ namespace skyline::service::nvdrv::device::nvhost {
         mem[offset++] = (fence.id << 8) | 0x1;
     }
 
-    PosixResult GpuChannel::SetNvmapFd(In<core::NvMap::Handle::Id> id) {
-        state.logger->Debug("id: {}", id);
+    PosixResult GpuChannel::SetNvmapFd(In<FileDescriptor> fd) {
+        state.logger->Debug("fd: {}", fd);
         return PosixResult::Success;
     }
 
@@ -224,7 +224,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
     VARIABLE_IOCTL_HANDLER_FUNC(GpuChannel, ({
         IOCTL_CASE_ARGS(IN,    SIZE(0x4),  MAGIC(GpuChannelMagic),     FUNC(0x1),
-                        SetNvmapFd,       ARGS(In<core::NvMap::Handle::Id>))
+                        SetNvmapFd,       ARGS(In<FileDescriptor>))
         IOCTL_CASE_ARGS(IN,    SIZE(0x4),  MAGIC(GpuChannelMagic),     FUNC(0x3),
                         SetTimeout,       ARGS(In<u32>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x10), MAGIC(GpuChannelMagic),     FUNC(0x9),

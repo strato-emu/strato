@@ -57,7 +57,7 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Sets the nvmap handle id to be used for channel submits (does nothing for GPU channels)
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SET_NVMAP_FD
          */
-        PosixResult SetNvmapFd(In<core::NvMap::Handle::Id> id);
+        PosixResult SetNvmapFd(In<FileDescriptor> id);
 
         /**
          * @brief Sets the timeout for channel submits
