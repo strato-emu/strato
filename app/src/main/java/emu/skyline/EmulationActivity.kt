@@ -307,8 +307,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     override fun onNewIntent(intent : Intent?) {
         super.onNewIntent(intent!!)
-        setIntent(intent)
-        executeApplication(intent)
+        if (getIntent().data != intent.data) {
+            setIntent(intent)
+            executeApplication(intent)
+        }
     }
 
     override fun onDestroy() {
