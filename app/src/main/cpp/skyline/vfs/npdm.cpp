@@ -54,7 +54,8 @@ namespace skyline::vfs {
             auto trailingOnes{std::countr_zero(~capability.raw)};
             switch (trailingOnes) {
                 case 3:
-                    threadInfo.priority = kernel::Priority{capability.threadInfo.highestPriority, capability.threadInfo.lowestPriority};
+                    threadInfo.priority = kernel::Priority{static_cast<i8>(capability.threadInfo.highestPriority),
+                                                           static_cast<i8>(capability.threadInfo.lowestPriority)};
 
                     threadInfo.coreMask = {};
                     for (u8 core{capability.threadInfo.minCoreId}; core <= capability.threadInfo.maxCoreId; core++)

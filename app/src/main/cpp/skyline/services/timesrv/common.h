@@ -24,11 +24,11 @@ namespace skyline::service::timesrv {
         }
 
         static constexpr TimeSpanType FromSeconds(i64 s) {
-            return {s * static_cast<i64>(skyline::constant::NsInSecond)};
+            return {s * skyline::constant::NsInSecond};
         }
 
         static constexpr TimeSpanType FromDays(i64 d) {
-            return {d * static_cast<i64>(skyline::constant::NsInDay)};
+            return {d * skyline::constant::NsInDay};
         }
 
         constexpr i64 Nanoseconds() const {
@@ -36,11 +36,11 @@ namespace skyline::service::timesrv {
         }
 
         constexpr i64 Microseconds() const {
-            return ns / static_cast<i64>(skyline::constant::NsInMicrosecond);
+            return ns / skyline::constant::NsInMicrosecond;
         }
 
         constexpr i64 Seconds() const {
-            return ns / static_cast<i64>(skyline::constant::NsInSecond);
+            return ns / skyline::constant::NsInSecond;
         }
 
         constexpr friend bool operator>(const TimeSpanType &lhs, const TimeSpanType &rhs) {

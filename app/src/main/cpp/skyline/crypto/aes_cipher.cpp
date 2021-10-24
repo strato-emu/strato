@@ -9,7 +9,7 @@ namespace skyline::crypto {
         if (mbedtls_cipher_setup(&decryptContext, mbedtls_cipher_info_from_type(type)) != 0)
             throw exception("Failed to setup decryption context");
 
-        if (mbedtls_cipher_setkey(&decryptContext, key.data(), key.size() * 8, MBEDTLS_DECRYPT) != 0)
+        if (mbedtls_cipher_setkey(&decryptContext, key.data(), static_cast<int>(key.size() * 8), MBEDTLS_DECRYPT) != 0)
             throw exception("Failed to set key for decryption context");
     }
 

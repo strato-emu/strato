@@ -67,7 +67,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     jobject assetManager
 ) {
     skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
-    Fps = AverageFrametimeMs = AverageFrametimeDeviationMs = 0;
+    Fps = 0;
+    AverageFrametimeMs = AverageFrametimeDeviationMs = 0.0f;
 
     pthread_setname_np(pthread_self(), "EmuMain");
 
@@ -178,7 +179,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceSt
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
     auto input{InputWeak.lock()};
     std::lock_guard guard(input->npad.mutex);
-    input->npad.controllers[index] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
+    input->npad.controllers[static_cast<size_t>(index)] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
 }
 
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateControllers(JNIEnv *, jobject) {
@@ -189,7 +190,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonSt
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss button updates while input hasn't been initialized
-    auto device{input->npad.controllers[index].device};
+    auto device{input->npad.controllers[static_cast<size_t>(index)].device};
     if (device)
         device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
 }
@@ -198,7 +199,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValu
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss axis updates while input hasn't been initialized
-    auto device{input->npad.controllers[index].device};
+    auto device{input->npad.controllers[static_cast<size_t>(index)].device};
     if (device)
         device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
 }
@@ -211,7 +212,8 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchSta
         return; // We don't mind if we miss touch updates while input hasn't been initialized
     jboolean isCopy{false};
 
-    skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)), env->GetArrayLength(pointsJni) / (sizeof(Point) / sizeof(jint)));
+    skyline::span<Point> points(reinterpret_cast<Point *>(env->GetIntArrayElements(pointsJni, &isCopy)),
+                                static_cast<size_t>(env->GetArrayLength(pointsJni)) / (sizeof(Point) / sizeof(jint)));
     input->touch.SetState(points);
     env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
 }

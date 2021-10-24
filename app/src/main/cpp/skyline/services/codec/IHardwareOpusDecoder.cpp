@@ -7,8 +7,8 @@
 #include "IHardwareOpusDecoder.h"
 
 namespace skyline::service::codec {
-    size_t CalculateOutBufferSize(i32 sampleRate, i32 channelCount, i32 frameSize) {
-        return util::AlignUp(frameSize * channelCount / (OpusFullbandSampleRate / sampleRate), 0x40);
+    u32 CalculateOutBufferSize(i32 sampleRate, i32 channelCount, i32 frameSize) {
+        return util::AlignUp(static_cast<u32>(frameSize * channelCount / (OpusFullbandSampleRate / sampleRate)), 0x40);
     }
 
     IHardwareOpusDecoder::IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, i32 sampleRate, i32 channelCount, u32 workBufferSize, KHandle workBufferHandle)
@@ -54,8 +54,8 @@ namespace skyline::service::codec {
         if (dataIn.size() <= sizeof(OpusDataHeader))
             throw exception("Incorrect Opus data size: 0x{:X} (Should be > 0x{:X})", dataIn.size(), sizeof(OpusDataHeader));
 
-        u32 opusPacketSize{dataIn.as<OpusDataHeader>().GetPacketSize()};
-        i32 requiredInSize{static_cast<i32>(opusPacketSize + sizeof(OpusDataHeader))};
+        i32 opusPacketSize{dataIn.as<OpusDataHeader>().GetPacketSize()};
+        i32 requiredInSize{opusPacketSize + static_cast<i32>(sizeof(OpusDataHeader))};
         if (opusPacketSize > MaxInputBufferSize || dataIn.size() < requiredInSize)
             throw exception("Opus packet size mismatch: 0x{:X} (Requested: 0x{:X})", dataIn.size() - sizeof(OpusDataHeader), opusPacketSize);
 
@@ -63,7 +63,7 @@ namespace skyline::service::codec {
         auto sampleDataIn = dataIn.subspan(sizeof(OpusDataHeader));
 
         auto perfTimer{timesrv::TimeSpanType::FromNanoseconds(util::GetTimeNs())};
-        i32 decodedCount{opus_decode(decoderState, sampleDataIn.data(), opusPacketSize, dataOut.data(), decoderOutputBufferSize, false)};
+        i32 decodedCount{opus_decode(decoderState, sampleDataIn.data(), opusPacketSize, dataOut.data(), static_cast<int>(decoderOutputBufferSize), false)};
         perfTimer = timesrv::TimeSpanType::FromNanoseconds(util::GetTimeNs()) - perfTimer;
 
         if (decodedCount < 0)
@@ -72,7 +72,7 @@ namespace skyline::service::codec {
         response.Push(requiredInSize); // Decoded data size is equal to opus packet size + header
         response.Push(decodedCount);
         if (writeDecodeTime)
-            response.Push<u64>(perfTimer.Microseconds());
+            response.Push<i64>(perfTimer.Microseconds());
 
         return {};
     }

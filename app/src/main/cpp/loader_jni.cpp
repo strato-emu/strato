@@ -61,8 +61,8 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
         env->SetObjectField(thiz, applicationAuthorField, env->NewStringUTF(loader->nacp->GetApplicationPublisher(language).c_str()));
 
         auto icon{loader->GetIcon(language)};
-        jbyteArray iconByteArray{env->NewByteArray(icon.size())};
-        env->SetByteArrayRegion(iconByteArray, 0, icon.size(), reinterpret_cast<const jbyte *>(icon.data()));
+        jbyteArray iconByteArray{env->NewByteArray(static_cast<jsize>(icon.size()))};
+        env->SetByteArrayRegion(iconByteArray, 0, static_cast<jsize>(icon.size()), reinterpret_cast<const jbyte *>(icon.data()));
         env->SetObjectField(thiz, rawIconField, iconByteArray);
     }
 

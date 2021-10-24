@@ -37,10 +37,10 @@ namespace skyline {
 
     namespace constant {
         // Time
-        constexpr u64 NsInMicrosecond{1000}; //!< The amount of nanoseconds in a microsecond
-        constexpr u64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
-        constexpr u64 NsInMillisecond{1000000}; //!< The amount of nanoseconds in a millisecond
-        constexpr u64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
+        constexpr i64 NsInMicrosecond{1000}; //!< The amount of nanoseconds in a microsecond
+        constexpr i64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
+        constexpr i64 NsInMillisecond{1000000}; //!< The amount of nanoseconds in a millisecond
+        constexpr i64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
     }
 
     namespace util {

@@ -64,7 +64,7 @@ namespace skyline::kernel::ipc {
 
         auto bufCPointer{pointer + header->rawSize * sizeof(u32)};
 
-        auto offset{pointer - tls}; // We calculate the relative offset as the absolute one might differ
+        size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
         auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
         pointer += padding;
 
@@ -154,7 +154,7 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        auto offset{pointer - tls}; // We calculate the relative offset as the absolute one might differ
+        size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
         auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
         pointer += padding;
 

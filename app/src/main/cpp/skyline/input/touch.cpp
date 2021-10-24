@@ -29,11 +29,11 @@ namespace skyline::input {
         for (size_t i{}; i < points.size(); i++) {
             const auto &host{points[i]};
             auto &guest{entry.data[i]};
-            guest.index = i;
-            guest.positionX = host.x;
-            guest.positionY = host.y;
-            guest.minorAxis = host.minor;
-            guest.majorAxis = host.major;
+            guest.index = static_cast<u32>(i);
+            guest.positionX = static_cast<u32>(host.x);
+            guest.positionY = static_cast<u32>(host.y);
+            guest.minorAxis = static_cast<u32>(host.minor);
+            guest.majorAxis = static_cast<u32>(host.major);
             guest.angle = host.angle;
         }
 

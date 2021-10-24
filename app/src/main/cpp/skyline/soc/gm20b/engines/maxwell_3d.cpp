@@ -84,7 +84,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             if (!(method & 1)) {
                 if (macroInvocation.index != -1) {
                     // Flush the current macro as we are switching to another one
-                    macroInterpreter.Execute(macroPositions[macroInvocation.index], macroInvocation.arguments);
+                    macroInterpreter.Execute(macroPositions[static_cast<size_t>(macroInvocation.index)], macroInvocation.arguments);
                     macroInvocation.arguments.clear();
                 }
 
@@ -96,7 +96,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             // Flush macro after all of the data in the method call has been sent
             if (lastCall && macroInvocation.index != -1) {
-                macroInterpreter.Execute(macroPositions[macroInvocation.index], macroInvocation.arguments);
+                macroInterpreter.Execute(macroPositions[static_cast<size_t>(macroInvocation.index)], macroInvocation.arguments);
                 macroInvocation.arguments.clear();
                 macroInvocation.index = -1;
             }
@@ -313,13 +313,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
                 // Convert the current nanosecond time to GPU ticks
-                constexpr u64 NsToTickNumerator{384};
-                constexpr u64 NsToTickDenominator{625};
+                constexpr i64 NsToTickNumerator{384};
+                constexpr i64 NsToTickDenominator{625};
 
-                u64 nsTime{util::GetTimeNs()};
-                u64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
+                i64 nsTime{util::GetTimeNs()};
+                i64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(), FourWordResult{result, timestamp});
+                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(),
+                                                             FourWordResult{result, static_cast<u64>(timestamp)});
                 break;
             }
         }

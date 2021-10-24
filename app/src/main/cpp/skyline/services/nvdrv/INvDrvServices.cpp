@@ -72,7 +72,7 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd{request.Pop<u32>()};
+        auto fd{request.Pop<FileDescriptor>()};
         state.logger->Debug("Closing NVDRV device ({})", fd);
 
         driver.CloseDevice(fd);
@@ -85,7 +85,7 @@ namespace skyline::service::nvdrv {
     }
 
     Result INvDrvServices::QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto fd{request.Pop<u32>()};
+        auto fd{request.Pop<FileDescriptor>()};
         auto eventId{request.Pop<u32>()};
 
         auto event{driver.QueryEvent(fd, eventId)};

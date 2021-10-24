@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect::node {
             return static_cast<u32>(attachments.size() - 1);
         } else {
             // If we've got a match from a previous subpass, we need to preserve the attachment till the current subpass
-            auto attachmentIndex{std::distance(attachments.begin(), attachment)};
+            auto attachmentIndex{static_cast<u32>(std::distance(attachments.begin(), attachment))};
 
             auto it{subpassDescriptions.begin()};
             auto getSubpassAttachmentRange{[this] (const vk::SubpassDescription& subpassDescription) {
@@ -74,7 +74,7 @@ namespace skyline::gpu::interconnect::node {
                     continue; // If a subpass uses an attachment then it doesn't need to be preserved
                 }
 
-                auto &subpassPreserveAttachments{preserveAttachmentReferences[std::distance(subpassDescriptions.begin(), it)]};
+                auto &subpassPreserveAttachments{preserveAttachmentReferences[static_cast<size_t>(std::distance(subpassDescriptions.begin(), it))]};
                 if (std::find(subpassPreserveAttachments.begin(), subpassPreserveAttachments.end(), attachmentIndex) != subpassPreserveAttachments.end())
                     subpassPreserveAttachments.push_back(attachmentIndex);
             }
@@ -174,7 +174,7 @@ namespace skyline::gpu::interconnect::node {
             else
                 subpassDescription.pDepthStencilAttachment = nullptr;
 
-            subpassDescription.preserveAttachmentCount = preserveAttachmentIt->size();
+            subpassDescription.preserveAttachmentCount = static_cast<u32>(preserveAttachmentIt->size());
             subpassDescription.pPreserveAttachments = preserveAttachmentIt->data();
             preserveAttachmentIt++;
         }

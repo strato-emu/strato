@@ -57,7 +57,7 @@ namespace skyline::kernel::type {
         return tlsPage->ReserveSlot();
     }
 
-    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, std::optional<u8> priority, std::optional<u8> idealCore) {
+    std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, std::optional<i8> priority, std::optional<u8> idealCore) {
         std::lock_guard guard(threadMutex);
         if (disableThreadCreation)
             return nullptr;
@@ -172,14 +172,14 @@ namespace skyline::kernel::type {
             if (!waiters.empty()) {
                 // If there are threads still waiting on us then try to inherit their priority
                 auto highestPriorityThread{waiters.front()};
-                u8 newPriority, basePriority;
+                i8 newPriority, basePriority;
                 do {
                     basePriority = state.thread->basePriority.load();
                     newPriority = std::min(basePriority, highestPriorityThread->priority.load());
                 } while (basePriority != newPriority && state.thread->priority.compare_exchange_strong(basePriority, newPriority));
                 state.scheduler->UpdatePriority(state.thread);
             } else {
-                u8 priority, basePriority;
+                i8 priority, basePriority;
                 do {
                     basePriority = state.thread->basePriority.load();
                     priority = state.thread->priority.load();
@@ -190,7 +190,7 @@ namespace skyline::kernel::type {
 
             if (nextWaiter) {
                 // If there is a waiter on the new owner then try to inherit its priority
-                u8 priority, ownerPriority;
+                i8 priority, ownerPriority;
                 do {
                     ownerPriority = nextOwner->priority.load();
                     priority = std::min(ownerPriority, nextWaiter->priority.load());

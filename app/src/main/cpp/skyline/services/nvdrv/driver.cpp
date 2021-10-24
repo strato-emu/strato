@@ -74,7 +74,7 @@ namespace skyline::service::nvdrv {
         }
     }
 
-    NvResult Driver::Ioctl(u32 fd, IoctlDescriptor cmd, span<u8> buffer) {
+    NvResult Driver::Ioctl(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer) {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
@@ -85,7 +85,7 @@ namespace skyline::service::nvdrv {
         }
     }
 
-    NvResult Driver::Ioctl2(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
+    NvResult Driver::Ioctl2(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
@@ -96,7 +96,7 @@ namespace skyline::service::nvdrv {
         }
     }
 
-    NvResult Driver::Ioctl3(u32 fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
+    NvResult Driver::Ioctl3(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
         state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
@@ -107,7 +107,7 @@ namespace skyline::service::nvdrv {
         }
     }
 
-    void Driver::CloseDevice(u32 fd) {
+    void Driver::CloseDevice(FileDescriptor fd) {
         try {
             std::unique_lock lock(deviceMutex);
             devices.erase(fd);
@@ -116,7 +116,7 @@ namespace skyline::service::nvdrv {
         }
     }
 
-    std::shared_ptr<kernel::type::KEvent> Driver::QueryEvent(u32 fd, u32 eventId) {
+    std::shared_ptr<kernel::type::KEvent> Driver::QueryEvent(FileDescriptor fd, u32 eventId) {
         state.logger->Debug("fd: {}, eventId: 0x{:X}, device: {}", fd, eventId, devices.at(fd)->GetName());
 
         try {

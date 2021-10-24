@@ -20,8 +20,8 @@ namespace skyline {
          * @note Lower priority values result in a higher priority, similar to niceness on Linux
          */
         struct Priority {
-            u8 min; //!< Numerically lowest priority, highest scheduler priority
-            u8 max; //!< Numerically highest priority, lowest scheduler priority
+            i8 min; //!< Numerically lowest priority, highest scheduler priority
+            i8 max; //!< Numerically highest priority, lowest scheduler priority
 
             /**
              * @return A bitmask with each bit corresponding to if scheduler priority with the same index is valid
@@ -30,7 +30,7 @@ namespace skyline {
                 return (std::numeric_limits<u64>::max() >> ((std::numeric_limits<u64>::digits - 1 + min) - max)) << min;
             }
 
-            constexpr bool Valid(u8 value) const {
+            constexpr bool Valid(i8 value) const {
                 return (value >= min) && (value <= max);
             }
         };
@@ -45,11 +45,11 @@ namespace skyline {
 
             struct CoreContext {
                 u8 id;
-                u8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
+                i8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
                 std::mutex mutex; //!< Synchronizes all operations on the queue
                 std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
-                CoreContext(u8 id, u8 preemptionPriority);
+                CoreContext(u8 id, i8 preemptionPriority);
             };
 
             std::array<CoreContext, constant::CoreCount> cores{CoreContext(0, 59), CoreContext(1, 59), CoreContext(2, 59), CoreContext(3, 63)};

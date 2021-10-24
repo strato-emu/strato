@@ -44,7 +44,7 @@ namespace skyline {
                     u8 raw{};
                 } flags;
                 u8 _unk1_;
-                u8 mainThreadPriority;
+                i8 mainThreadPriority;
                 u8 idealCore;
                 u32 _unk2_;
                 u32 systemResourceSize; //!< 3.0.0+

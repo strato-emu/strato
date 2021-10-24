@@ -26,7 +26,7 @@ namespace skyline::service::audio {
 
         u32 totalMixCount{params.subMixCount + 1};
 
-        i64 size{util::AlignUp(params.mixBufferCount * 4, constant::BufferAlignment) +
+        u64 size{util::AlignUp(params.mixBufferCount * 4, constant::BufferAlignment) +
             params.subMixCount * 0x400 +
             totalMixCount * 0x940 +
             params.voiceCount * 0x3F0 +
@@ -35,21 +35,21 @@ namespace skyline::service::audio {
             util::AlignUp(((params.sinkCount + params.subMixCount) * 0x3C0 + params.sampleCount * 4) * (params.mixBufferCount + 6), constant::BufferAlignment) + (params.sinkCount + params.subMixCount) * 0x2C0 + (params.effectCount + params.voiceCount * 4) * 0x30 + 0x50};
 
         if (revisionInfo.SplitterSupported()) {
-            i32 nodeStateWorkSize{util::AlignUp<i32>(totalMixCount, constant::BufferAlignment)};
+            i32 nodeStateWorkSize{static_cast<i32>(util::AlignUp(totalMixCount, constant::BufferAlignment))};
             if (nodeStateWorkSize < 0)
                 nodeStateWorkSize |= 7;
 
-            nodeStateWorkSize = 4 * (totalMixCount * totalMixCount) + 12 * totalMixCount + 2 * (nodeStateWorkSize / 8);
+            nodeStateWorkSize = static_cast<i32>(4 * (totalMixCount * totalMixCount) + 12 * totalMixCount + static_cast<u32>(2 * (nodeStateWorkSize / 8)));
 
-            i32 edgeMatrixWorkSize{util::AlignUp<i32>(totalMixCount * totalMixCount, constant::BufferAlignment)};
+            i32 edgeMatrixWorkSize{static_cast<i32>(util::AlignUp(totalMixCount * totalMixCount, constant::BufferAlignment))};
             if (edgeMatrixWorkSize < 0)
                 edgeMatrixWorkSize |= 7;
 
             edgeMatrixWorkSize /= 8;
-            size += util::AlignUp(edgeMatrixWorkSize + nodeStateWorkSize, 16);
+            size += util::AlignUp(static_cast<u32>(edgeMatrixWorkSize + nodeStateWorkSize), 16);
         }
 
-        i64 splitterWorkSize{};
+        u64 splitterWorkSize{};
         if (revisionInfo.SplitterSupported()) {
             splitterWorkSize += params.splitterDestinationDataCount * 0xE0 + params.splitterCount * 0x20;
 
@@ -57,7 +57,7 @@ namespace skyline::service::audio {
                 splitterWorkSize += util::AlignUp(4 * params.splitterDestinationDataCount, 16);
         }
 
-        size = params.sinkCount * 0x170 + (params.sinkCount + params.subMixCount) * 0x280 + params.effectCount * 0x4C0 + ((size + splitterWorkSize + 0x30 * params.effectCount + (4 * params.voiceCount) + 0x8F) & ~0x3FL) + ((params.voiceCount << 8) | 0x40);
+        size = params.sinkCount * 0x170 + (params.sinkCount + params.subMixCount) * 0x280 + params.effectCount * 0x4C0 + ((size + splitterWorkSize + 0x30 * params.effectCount + (4 * params.voiceCount) + 0x8F) & ~0x3FUL) + ((params.voiceCount << 8) | 0x40);
 
         if (params.performanceManagerCount > 0) {
             i64 performanceMetricsBufferSize{};
@@ -67,7 +67,7 @@ namespace skyline::service::audio {
                 performanceMetricsBufferSize = ((static_cast<i64>((params.voiceCount + params.effectCount + totalMixCount + params.sinkCount)) << 32) >> 0x1C) + 0x658;
             }
 
-            size += (performanceMetricsBufferSize * (params.performanceManagerCount + 1) + 0xFF) & ~0x3FL;
+            size += static_cast<u64>((performanceMetricsBufferSize * (params.performanceManagerCount + 1) + 0xFF) & ~0x3FL);
         }
 
         if (revisionInfo.VaradicCommandBufferSizeSupported()) {
@@ -79,7 +79,7 @@ namespace skyline::service::audio {
         size = util::AlignUp(size, 0x1000);
 
         state.logger->Debug("Work buffer size: 0x{:X}", size);
-        response.Push<i64>(size);
+        response.Push<u64>(size);
         return {};
     }
 

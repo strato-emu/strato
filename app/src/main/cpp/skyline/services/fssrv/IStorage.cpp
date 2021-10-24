@@ -21,7 +21,7 @@ namespace skyline::service::fssrv {
             return result::InvalidSize;
         }
 
-        backing->Read(request.outputBuf.at(0), offset);
+        backing->Read(request.outputBuf.at(0), static_cast<size_t>(offset));
         return {};
     }
 

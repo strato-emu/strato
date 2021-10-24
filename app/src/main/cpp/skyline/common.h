@@ -27,7 +27,7 @@ namespace skyline {
       private:
         std::mutex mutex; //!< Synchronizes all output I/O to ensure there are no races
         std::ofstream logFile; //!< An output stream to the log file
-        u64 start; //!< A timestamp in milliseconds for when the logger was started, this is used as the base for all log timestamps
+        i64 start; //!< A timestamp in milliseconds for when the logger was started, this is used as the base for all log timestamps
 
       public:
         enum class LogLevel {

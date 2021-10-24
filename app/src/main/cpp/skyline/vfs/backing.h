@@ -110,7 +110,7 @@ namespace skyline::vfs {
             if (!mode.write)
                 throw exception("Attempting to write to a backing that is not writable");
 
-            if (input.size() > (static_cast<ssize_t>(size) - offset)) {
+            if (input.size() > (static_cast<ssize_t>(size) - static_cast<ssize_t>(offset))) {
                 if (mode.append)
                     Resize(offset + input.size());
                 else

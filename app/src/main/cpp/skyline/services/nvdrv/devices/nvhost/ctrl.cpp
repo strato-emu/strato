@@ -118,7 +118,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             value.val = 0;
 
             if (allocate) {
-                value.syncpointIdForAllocation = fence.id;
+                value.syncpointIdForAllocation = static_cast<u16>(fence.id);
                 value.eventAllocated = true;
             } else {
                 value.syncpointId = fence.id;
@@ -215,11 +215,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         // Avoid repeated locks/unlocks by just locking now
         std::lock_guard lock(syncpointEventMutex);
 
-        for (int i{}; i < 64; i++) {
+        for (u32 i{}; i < std::numeric_limits<u64>::digits; i++)
             if (bitmask & (1 << i))
                 if (auto freeErr{SyncpointFreeEventLocked(i)}; freeErr != PosixResult::Success)
                     err = freeErr;
-        }
 
         return err;
     }

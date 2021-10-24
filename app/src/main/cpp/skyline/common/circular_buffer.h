@@ -55,11 +55,11 @@ namespace skyline {
                     copyFunction(source, destination);
 
                 if (copyOffset != -1) {
-                    std::memcpy(pointer + copyOffset, start + copyOffset, (sizeEnd - copyOffset) * sizeof(Type));
+                    std::memcpy(pointer + copyOffset, start + copyOffset, static_cast<size_t>(sizeEnd - copyOffset) * sizeof(Type));
                     copyOffset -= sizeEnd;
                 }
             } else {
-                std::memcpy(pointer, start, sizeEnd * sizeof(Type));
+                std::memcpy(pointer, start, static_cast<size_t>(sizeEnd) * sizeof(Type));
             }
 
             pointer += sizeEnd;
@@ -72,9 +72,9 @@ namespace skyline {
                         copyFunction(source, destination);
 
                     if (copyOffset != -1)
-                        std::memcpy(array.begin() + copyOffset, pointer + copyOffset, (sizeBegin - copyOffset) * sizeof(Type));
+                        std::memcpy(array.begin() + copyOffset, pointer + copyOffset, static_cast<size_t>(sizeBegin - copyOffset) * sizeof(Type));
                 } else {
-                    std::memcpy(pointer, array.begin(), sizeBegin * sizeof(Type));
+                    std::memcpy(pointer, array.begin(), static_cast<size_t>(sizeBegin) * sizeof(Type));
                 }
 
                 start = array.begin() + sizeBegin;
@@ -99,7 +99,7 @@ namespace skyline {
             while (size) {
                 if (start <= end && end != array.end()) {
                     auto sizeEnd{std::min(array.end() - end, size)};
-                    std::memcpy(end, pointer, sizeEnd * sizeof(Type));
+                    std::memcpy(end, pointer, static_cast<size_t>(sizeEnd) * sizeof(Type));
 
                     pointer += sizeEnd;
                     size -= sizeEnd;
@@ -110,7 +110,7 @@ namespace skyline {
                     auto sizePostStart{std::min(array.end() - start, size - sizePreStart)};
 
                     if (sizePreStart)
-                        std::memcpy((end == array.end()) ? array.begin() : end, pointer, sizePreStart * sizeof(Type));
+                        std::memcpy((end == array.end()) ? array.begin() : end, pointer, static_cast<size_t>(sizePreStart) * sizeof(Type));
 
                     if (end == array.end())
                         end = array.begin() + sizePreStart;
@@ -121,7 +121,7 @@ namespace skyline {
                     size -= sizePreStart;
 
                     if (sizePostStart)
-                        std::memcpy(end, pointer, sizePostStart * sizeof(Type));
+                        std::memcpy(end, pointer, static_cast<size_t>(sizePostStart) * sizeof(Type));
 
                     if (start == array.end())
                         start = array.begin() + sizePostStart;

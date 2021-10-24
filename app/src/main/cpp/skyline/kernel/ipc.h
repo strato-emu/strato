@@ -134,7 +134,7 @@ namespace skyline {
             }
 
             u16 Counter() {
-                return static_cast<u16>(counter0_5) | static_cast<u16>(counter9_11) << 9;
+                return static_cast<u16>(counter0_5) | static_cast<u16>(static_cast<u16>(counter9_11) << 9);
             }
         };
         static_assert(sizeof(BufferDescriptorX) == 8);

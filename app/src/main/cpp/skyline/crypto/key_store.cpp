@@ -24,8 +24,8 @@ namespace skyline::crypto {
             if (keyEnd == lineEnd)
                 throw exception("Invalid key file");
 
-            std::string_view key(&*lineStart, keyEnd - lineStart);
-            std::string_view value(&*(keyEnd + 1), lineEnd - keyEnd - 1);
+            std::string_view key(&*lineStart, static_cast<size_t>(keyEnd - lineStart));
+            std::string_view value(&*(keyEnd + 1), static_cast<size_t>(lineEnd - keyEnd - 1));
             (this->*callback)(key, value);
 
             lineStart = lineEnd + 1;

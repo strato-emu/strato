@@ -21,7 +21,7 @@ namespace skyline::loader {
             std::vector<u8> compressedBuffer(compressedSize);
             backing->Read(compressedBuffer, segment.fileOffset);
 
-            LZ4_decompress_safe(reinterpret_cast<char *>(compressedBuffer.data()), reinterpret_cast<char *>(outputBuffer.data()), compressedSize, segment.decompressedSize);
+            LZ4_decompress_safe(reinterpret_cast<char *>(compressedBuffer.data()), reinterpret_cast<char *>(outputBuffer.data()), static_cast<int>(compressedSize), static_cast<int>(segment.decompressedSize));
         } else {
             backing->Read(outputBuffer, segment.fileOffset);
         }

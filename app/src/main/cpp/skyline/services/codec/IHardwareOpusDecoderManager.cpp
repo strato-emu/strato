@@ -7,8 +7,8 @@
 #include "IHardwareOpusDecoder.h"
 
 namespace skyline::service::codec {
-    static size_t CalculateBufferSize(i32 sampleRate, i32 channelCount) {
-        i32 requiredSize{opus_decoder_get_size(channelCount)};
+    static u32 CalculateBufferSize(i32 sampleRate, i32 channelCount) {
+        u32 requiredSize{static_cast<u32>(opus_decoder_get_size(channelCount))};
         requiredSize += MaxInputBufferSize + CalculateOutBufferSize(sampleRate, channelCount, MaxFrameSizeNormal);
         return requiredSize;
     }

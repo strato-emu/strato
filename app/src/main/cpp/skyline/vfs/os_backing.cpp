@@ -12,7 +12,7 @@ namespace skyline::vfs {
         if (fstat(fd, &fileInfo))
             throw exception("Failed to stat fd: {}", strerror(errno));
 
-        size = fileInfo.st_size;
+        size = static_cast<size_t>(fileInfo.st_size);
     }
 
     OsBacking::~OsBacking() {
@@ -21,7 +21,7 @@ namespace skyline::vfs {
     }
 
     size_t OsBacking::ReadImpl(span<u8> output, size_t offset) {
-        auto ret{pread64(fd, output.data(), output.size(), offset)};
+        auto ret{pread64(fd, output.data(), output.size(), static_cast<off64_t>(offset))};
         if (ret < 0)
             throw exception("Failed to read from fd: {}", strerror(errno));
 
@@ -29,7 +29,7 @@ namespace skyline::vfs {
     }
 
     size_t OsBacking::WriteImpl(span<u8> input, size_t offset) {
-        auto ret{pwrite64(fd, input.data(), input.size(), offset)};
+        auto ret{pwrite64(fd, input.data(), input.size(), static_cast<off64_t>(offset))};
         if (ret < 0)
             throw exception("Failed to write to fd: {}", strerror(errno));
 
@@ -37,7 +37,7 @@ namespace skyline::vfs {
     }
 
     void OsBacking::ResizeImpl(size_t pSize) {
-        int ret{ftruncate(fd, pSize)};
+        int ret{ftruncate(fd, static_cast<off_t>(pSize))};
         if (ret < 0)
             throw exception("Failed to resize file: {}", strerror(errno));
 

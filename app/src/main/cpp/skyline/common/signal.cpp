@@ -157,11 +157,11 @@ namespace skyline::signal {
         if (TlsRestorer)
             tls = TlsRestorer();
 
-        auto handler{ThreadSignalHandlers.at(signal)};
+        auto handler{ThreadSignalHandlers.at(static_cast<size_t>(signal))};
         if (handler) {
             handler(signal, info, context, &tls);
         } else {
-            auto defaultHandler{DefaultSignalHandlers.at(signal).function};
+            auto defaultHandler{DefaultSignalHandlers.at(static_cast<size_t>(signal)).function};
             if (defaultHandler)
                 defaultHandler(signal, info, context);
         }
@@ -179,7 +179,7 @@ namespace skyline::signal {
         };
 
         for (int signal : signals) {
-            std::call_once(signalHandlerOnce[signal], [signal, &action]() {
+            std::call_once(signalHandlerOnce[static_cast<size_t>(signal)], [signal, &action]() {
                 struct sigaction oldAction;
                 Sigaction(signal, &action, &oldAction);
                 if (oldAction.sa_flags) {
@@ -189,9 +189,9 @@ namespace skyline::signal {
                         throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
                 }
 
-                DefaultSignalHandlers.at(signal).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
+                DefaultSignalHandlers.at(static_cast<size_t>(signal)).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
             });
-            ThreadSignalHandlers.at(signal) = function;
+            ThreadSignalHandlers.at(static_cast<size_t>(signal)) = function;
         }
     }
 

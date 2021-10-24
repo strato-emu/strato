@@ -26,7 +26,7 @@ namespace skyline::service::hosbinder {
         header.dataOffset = sizeof(ParcelHeader);
 
         header.objectsSize = static_cast<u32>(objects.size());
-        header.objectsOffset = sizeof(ParcelHeader) + data.size();
+        header.objectsOffset = static_cast<u32>(sizeof(ParcelHeader) + data.size());
 
         auto totalSize{sizeof(ParcelHeader) + header.dataSize + header.objectsSize};
 

@@ -27,7 +27,7 @@ namespace skyline::service::timesrv::core {
     Result TimeZoneManager::SetNewLocation(std::string_view pLocationName, span<u8> binary) {
         std::lock_guard lock(mutex);
 
-        rule = tz_tzalloc(binary.data(), binary.size());
+        rule = tz_tzalloc(binary.data(), static_cast<long>(binary.size()));
         if (!rule)
             return result::RuleConversionFailed;
 
@@ -79,7 +79,7 @@ namespace skyline::service::timesrv::core {
     }
 
     Result TimeZoneManager::ParseTimeZoneBinary(span<u8> binary, span<u8> ruleOut) {
-        auto ruleObj{tz_tzalloc(binary.data(), binary.size())};
+        auto ruleObj{tz_tzalloc(binary.data(), static_cast<long>(binary.size()))};
         if (!ruleObj)
             return result::RuleConversionFailed;
 

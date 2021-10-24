@@ -17,7 +17,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     class GpuChannel : public NvDevice {
       private:
         u32 channelSyncpoint{}; //!< The syncpoint for submissions allocated to this channel in `AllocGpfifo`
-        u32 channelUserData{};
+        u64 channelUserData{};
         std::mutex channelMutex;
         std::shared_ptr<type::KEvent> smExceptionBreakpointIntReportEvent;
         std::shared_ptr<type::KEvent> smExceptionBreakpointPauseReportEvent;

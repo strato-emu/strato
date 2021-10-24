@@ -106,11 +106,11 @@ namespace skyline::service::nvdrv::deserialisation {
         constexpr static u32 Raw() {
             u32 raw{Function};
 
-            i8 offset{8};
-            raw |= Magic << offset; offset += 8;
-            raw |= Size << offset; offset += 14;
-            raw |= In << offset; offset++;
-            raw |= Out << offset; offset++;
+            int offset{8};
+            raw |= static_cast<u32>(Magic << offset); offset += 8;
+            raw |= static_cast<u32>(Size << offset); offset += 14;
+            raw |= (In ? 1U : 0U) << offset; offset++;
+            raw |= (Out ? 1U : 0U) << offset; offset++;
             return raw;
         }
     };
@@ -130,10 +130,10 @@ namespace skyline::service::nvdrv::deserialisation {
             u32 raw{Function};
 
             i8 offset{8};
-            raw |= Magic << offset; offset += 8;
+            raw |= static_cast<u32>(Magic << offset); offset += 8;
             offset += 14; // Use a 0 size for raw
-            raw |= In << offset; offset++;
-            raw |= Out << offset; offset++;
+            raw |= (In ? 1U : 0U) << offset; offset++;
+            raw |= (Out ? 1U : 0U) << offset; offset++;
             return raw;
         }
     };

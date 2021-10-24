@@ -40,7 +40,7 @@ namespace skyline::audio {
 
     oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
         auto destBuffer{static_cast<i16 *>(audioData)};
-        auto streamSamples{static_cast<size_t>(numFrames) * audioStream->getChannelCount()};
+        auto streamSamples{static_cast<size_t>(numFrames) * static_cast<size_t>(audioStream->getChannelCount())};
         size_t writtenSamples{};
 
         {
@@ -54,7 +54,7 @@ namespace skyline::audio {
 
                 auto trackSamples{track->samples.Read(span(destBuffer, streamSamples), [](i16 *source, i16 *destination) {
                     *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
-                }, writtenSamples)};
+                }, static_cast<ssize_t>(writtenSamples))};
 
                 writtenSamples = std::max(trackSamples, writtenSamples);
 

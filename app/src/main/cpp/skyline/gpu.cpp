@@ -8,7 +8,7 @@ namespace skyline::gpu {
     vk::raii::Instance GPU::CreateInstance(const DeviceState &state, const vk::raii::Context &context) {
         vk::ApplicationInfo applicationInfo{
             .pApplicationName = "Skyline",
-            .applicationVersion = state.jvm->GetVersionCode(), // Get the application version from JNI
+            .applicationVersion = static_cast<uint32_t>(state.jvm->GetVersionCode()), // Get the application version from JNI
             .pEngineName = "FTX1", // "Fast Tegra X1"
             .apiVersion = VkApiVersion,
         };
@@ -111,7 +111,7 @@ namespace skyline::gpu {
             #undef IGNORE_TYPE
         }
 
-        logger->Write(severityLookup.at(std::countr_zero(static_cast<u32>(flags))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
+        logger->Write(severityLookup.at(static_cast<size_t>(std::countr_zero(static_cast<u32>(flags)))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
 
         return VK_FALSE;
     }

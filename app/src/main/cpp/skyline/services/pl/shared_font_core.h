@@ -17,8 +17,8 @@ namespace skyline::service::pl {
 
         struct FontEntry {
             std::string path; //!< The path of the font asset
-            size_t length; //!< The length of the font TTF data
-            size_t offset; //!< The offset of the font in shared memory
+            u32 length; //!< The length of the font TTF data
+            u32 offset; //!< The offset of the font in shared memory
         };
 
         std::array<FontEntry, 6> fonts{
@@ -42,7 +42,7 @@ namespace skyline::service::pl {
             for (auto &font : fonts) {
                 *ptr++ = 0x18029a7f;
                 *ptr++ = util::SwapEndianness(font.length ^ 0x49621806);
-                font.offset = reinterpret_cast<u64>(ptr) - reinterpret_cast<u64>(sharedFontMemory->host.ptr);
+                font.offset = static_cast<u32>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(sharedFontMemory->host.ptr));
 
                 std::shared_ptr<vfs::Backing> fontFile;
                 if (fontsDirectory->FileExists(font.path))
@@ -50,7 +50,7 @@ namespace skyline::service::pl {
                 else
                     fontFile = state.os->assetFileSystem->OpenFile("fonts/" + font.path);
 
-                font.length = fontFile->size;
+                font.length = static_cast<u32>(fontFile->size);
                 fontFile->Read(span<u8>(reinterpret_cast<u8 *>(ptr), font.length));
                 ptr = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(ptr) + font.length);
             }

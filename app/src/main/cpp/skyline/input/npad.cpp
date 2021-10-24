@@ -50,15 +50,15 @@ namespace skyline::input {
                 if (style.raw) {
                     if (style.proController || style.joyconHandheld || style.joyconLeft || style.joyconRight) {
                         device.Connect(controller.type);
-                        device.index = static_cast<size_t>(&controller - controllers.data());
+                        device.index = static_cast<i8>(&controller - controllers.data());
                         device.partnerIndex = -1;
                         controller.device = &device;
                     } else if (style.joyconDual && orientation == NpadJoyOrientation::Vertical && device.GetAssignment() == NpadJoyAssignment::Dual) {
                         device.Connect(NpadControllerType::JoyconDual);
-                        device.index = static_cast<size_t>(&controller - controllers.data());
+                        device.index = static_cast<i8>(&controller - controllers.data());
                         device.partnerIndex = controller.partnerIndex;
                         controller.device = &device;
-                        controllers.at(controller.partnerIndex).device = &device;
+                        controllers.at(static_cast<size_t>(controller.partnerIndex)).device = &device;
                     } else {
                         continue;
                     }

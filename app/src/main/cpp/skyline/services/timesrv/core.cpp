@@ -270,7 +270,7 @@ namespace skyline::service::timesrv::core {
         for (auto it{buffer.begin()}; it != buffer.end(); it++) {
             if (*it == '\n' && prev != it) {
                 timesrv::LocationName name{};
-                span(prev.base(), std::distance(prev, std::prev(it))).as_string().copy(name.data(), name.size());
+                span(prev.base(), static_cast<size_t>(std::distance(prev, std::prev(it)))).as_string().copy(name.data(), name.size());
                 locationNameList.push_back(name);
 
                 if (std::next(it) != buffer.end())
@@ -286,6 +286,6 @@ namespace skyline::service::timesrv::core {
         buffer.resize(timeZoneBinaryFile->size);
         timeZoneBinaryFile->Read(buffer);
 
-        managerServer.SetupTimeZoneManager(state.os->deviceTimeZone, *timezoneUpdateTime, locationNameList.size(), timeZoneBinaryVersion, buffer);
+        managerServer.SetupTimeZoneManager(state.os->deviceTimeZone, *timezoneUpdateTime, static_cast<int>(locationNameList.size()), timeZoneBinaryVersion, buffer);
     }
 }

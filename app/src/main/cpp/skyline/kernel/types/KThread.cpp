@@ -11,7 +11,7 @@
 #include "KThread.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), priority(priority), basePriority(priority), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore) : handle(handle), parent(parent), id(id), entry(entry), entryArgument(argument), stackTop(stackTop), priority(priority), basePriority(priority), idealCore(idealCore), coreId(idealCore), KSyncObject(state, KType::KThread) {
         affinityMask.set(coreId);
     }
 
@@ -235,7 +235,7 @@ namespace skyline::kernel::type {
         statusCondition.wait(lock, [this]() { return ready || killed; });
         if (!killed && running) {
             struct itimerspec spec{.it_value = {
-                .tv_nsec = std::min(timeToFire.count(), static_cast<long long>(constant::NsInSecond)),
+                .tv_nsec = std::min(static_cast<i64>(timeToFire.count()), constant::NsInSecond),
                 .tv_sec = std::max(std::chrono::duration_cast<std::chrono::seconds>(timeToFire).count() - 1, 0LL),
             }};
             timer_settime(preemptionTimer, 0, &spec, nullptr);
@@ -258,9 +258,9 @@ namespace skyline::kernel::type {
 
     void KThread::UpdatePriorityInheritance() {
         auto waitingOn{waitThread};
-        u8 currentPriority{priority.load()};
+        i8 currentPriority{priority.load()};
         while (waitingOn) {
-            u8 ownerPriority;
+            i8 ownerPriority;
             do {
                 // Try to CAS the priority of the owner with the current thread
                 // If the new priority is equivalent to the current priority then we don't need to CAS

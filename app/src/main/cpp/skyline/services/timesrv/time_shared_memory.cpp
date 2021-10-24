@@ -61,7 +61,7 @@ namespace skyline::service::timesrv::core {
 
     void TimeSharedMemory::SetupStandardSteadyClock(UUID rtcId, TimeSpanType baseTimePoint) {
         SteadyClockTimePoint context{
-            .timePoint = baseTimePoint.Nanoseconds() - static_cast<i64>(util::GetTimeNs()),
+            .timePoint = baseTimePoint.Nanoseconds() - util::GetTimeNs(),
             .clockSourceId = rtcId
         };
 
@@ -70,7 +70,7 @@ namespace skyline::service::timesrv::core {
 
     void TimeSharedMemory::SetSteadyClockRawTimePoint(TimeSpanType timePoint) {
         auto context{ReadTimeSharedMemoryItem(timeSharedMemory->standardSteadyClockContextEntry.updateCount, timeSharedMemory->standardSteadyClockContextEntry.context)};
-        context.timePoint = timePoint.Nanoseconds() - static_cast<i64>(util::GetTimeNs());
+        context.timePoint = timePoint.Nanoseconds() - util::GetTimeNs();
 
         UpdateTimeSharedMemoryItem(timeSharedMemory->standardSteadyClockContextEntry.updateCount, timeSharedMemory->standardSteadyClockContextEntry.context, context);
     }

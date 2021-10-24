@@ -29,7 +29,7 @@ namespace skyline::vfs {
         }
 
         // Truncate the file to desired length
-        int ret{ftruncate(fd, size)};
+        int ret{ftruncate(fd, static_cast<off_t>(size))};
         close(fd);
 
         if (ret < 0)

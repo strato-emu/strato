@@ -104,13 +104,13 @@ namespace skyline::nce {
             /**
              * @param negate The direction of the supplied offset
              */
-            constexpr B(i64 offset, bool negate = false) : offset(negate ? -offset : offset), sig(0x5) {}
+            constexpr B(i32 offset, bool negate = false) : offset(negate ? -offset : offset), sig(0x5) {}
 
             /**
              * @return The offset encoded within the instruction in bytes
              */
             constexpr i32 Offset() {
-                return offset * sizeof(u32);
+                return offset * static_cast<i32>(sizeof(u32));
             }
 
             constexpr bool Verify() {
@@ -138,7 +138,7 @@ namespace skyline::nce {
              * @return The offset encoded within the instruction in bytes
              */
             constexpr i32 Offset() {
-                return offset * sizeof(u32);
+                return offset * static_cast<i32>(sizeof(u32));
             }
 
             constexpr bool Verify() {

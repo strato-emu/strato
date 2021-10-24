@@ -10,7 +10,7 @@ namespace skyline::vfs {
         if (mode.write || mode.append)
             throw exception("AndroidAssetBacking doesn't support writing");
 
-        size = AAsset_getLength64(asset);
+        size = static_cast<size_t>(AAsset_getLength64(asset));
     }
 
     AndroidAssetBacking::~AndroidAssetBacking() {
@@ -18,7 +18,7 @@ namespace skyline::vfs {
     }
 
     size_t AndroidAssetBacking::ReadImpl(span<u8> output, size_t offset) {
-        if (AAsset_seek64(asset, offset, SEEK_SET) != offset)
+        if (AAsset_seek64(asset, static_cast<off64_t>(offset), SEEK_SET) != offset)
             throw exception("Failed to seek asset position");
 
         auto result{AAsset_read(asset, output.data(), output.size())};

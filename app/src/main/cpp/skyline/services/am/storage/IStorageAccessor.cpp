@@ -8,7 +8,7 @@ namespace skyline::service::am {
     IStorageAccessor::IStorageAccessor(const DeviceState &state, ServiceManager &manager, std::shared_ptr<IStorage> parent) : parent(std::move(parent)), BaseService(state, manager) {}
 
     Result IStorageAccessor::GetSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<i64>(parent->content.size());
+        response.Push<i64>(static_cast<i64>(parent->content.size()));
         return {};
     }
 
@@ -18,7 +18,7 @@ namespace skyline::service::am {
         if (offset < 0 || offset > parent->content.size())
             return result::OutOfBounds;
 
-        auto size{std::min(static_cast<i64>(request.inputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset)};
+        size_t size{std::min(request.inputBuf.at(0).size(), parent->content.size() - static_cast<size_t>(offset))};
 
         if (size)
             span(parent->content).copy_from(request.inputBuf.at(0), size);
@@ -32,7 +32,7 @@ namespace skyline::service::am {
         if (offset < 0 || offset > parent->content.size())
             return result::OutOfBounds;
 
-        auto size{std::min(static_cast<i64>(request.outputBuf.at(0).size()), static_cast<i64>(parent->content.size()) - offset)};
+        size_t size{std::min(request.outputBuf.at(0).size(), parent->content.size() - static_cast<size_t>(offset))};
 
         if (size)
             request.outputBuf.at(0).copy_from(span(parent->content.data() + offset, size));

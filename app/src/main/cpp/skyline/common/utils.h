@@ -13,12 +13,12 @@ namespace skyline::util {
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
-    inline u64 GetTimeNs() {
+    inline i64 GetTimeNs() {
         u64 frequency;
         asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
         u64 ticks;
         asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-        return ((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency);
+        return static_cast<i64>(((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency));
     }
 
     /**
@@ -52,18 +52,19 @@ namespace skyline::util {
         if constexpr (std::is_pointer<Return>::value)
             return reinterpret_cast<Return>(item);
         else
-            return item;
+            return static_cast<Return>(item);
     }
 
     template <typename T>
-    concept IsPointerOrIntegral = std::is_integral_v<T> || std::is_pointer_v<T>;
+    concept IsPointerOrUnsignedIntegral = (std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_pointer_v<T>;
 
     /**
      * @return The value aligned up to the next multiple
      * @note The multiple needs to be a power of 2
      */
-    template<typename TypeVal, typename TypeMul>
-    constexpr TypeVal AlignUp(TypeVal value, TypeMul multiple) {
+    template<typename TypeVal>
+    requires IsPointerOrUnsignedIntegral<TypeVal>
+    constexpr TypeVal AlignUp(TypeVal value, size_t multiple) {
         multiple--;
         return ValuePointer<TypeVal>((PointerValue(value) + multiple) & ~(multiple));
     }
@@ -72,17 +73,18 @@ namespace skyline::util {
      * @return The value aligned down to the previous multiple
      * @note The multiple needs to be a power of 2
      */
-    template<typename TypeVal, typename TypeMul>
-    constexpr TypeVal AlignDown(TypeVal value, TypeMul multiple) {
+    template<typename TypeVal>
+    requires IsPointerOrUnsignedIntegral<TypeVal>
+    constexpr TypeVal AlignDown(TypeVal value, size_t multiple) {
         return ValuePointer<TypeVal>(PointerValue(value) & ~(multiple - 1));
     }
 
     /**
      * @return If the address is aligned with the multiple
      */
-    template<typename TypeVal, typename TypeMul>
-    requires (IsPointerOrIntegral<TypeVal> && IsPointerOrIntegral<TypeMul>)
-    constexpr bool IsAligned(TypeVal value, TypeMul multiple) {
+    template<typename TypeVal>
+    requires IsPointerOrUnsignedIntegral<TypeVal>
+    constexpr bool IsAligned(TypeVal value, size_t multiple) {
         if ((multiple & (multiple - 1)) == 0)
             return !(PointerValue(value) & (multiple - 1U));
         else
@@ -90,13 +92,13 @@ namespace skyline::util {
     }
 
     template<typename TypeVal>
-    requires IsPointerOrIntegral<TypeVal>
+    requires IsPointerOrUnsignedIntegral<TypeVal>
     constexpr bool IsPageAligned(TypeVal value) {
         return IsAligned(value, PAGE_SIZE);
     }
 
     template<typename TypeVal>
-    requires IsPointerOrIntegral<TypeVal>
+    requires IsPointerOrUnsignedIntegral<TypeVal>
     constexpr bool IsWordAligned(TypeVal value) {
         return IsAligned(value, WORD_BIT / 8);
     }
@@ -136,7 +138,7 @@ namespace skyline::util {
         std::array<u8, Size> result;
         for (size_t i{}; i < Size; i++) {
             size_t index{i * 2};
-            result[i] = (HexDigitToNibble(string[index]) << 4) | HexDigitToNibble(string[index + 1]);
+            result[i] = static_cast<u8>(HexDigitToNibble(string[index]) << 4) | HexDigitToNibble(string[index + 1]);
         }
         return result;
     }

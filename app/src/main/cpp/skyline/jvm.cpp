@@ -76,10 +76,10 @@ namespace skyline {
     }
 
     void JvmManager::VibrateDevice(jint index, const span<jlong> &timings, const span<jint> &amplitudes) {
-        auto jTimings{env->NewLongArray(timings.size())};
-        env->SetLongArrayRegion(jTimings, 0, timings.size(), timings.data());
-        auto jAmplitudes{env->NewIntArray(amplitudes.size())};
-        env->SetIntArrayRegion(jAmplitudes, 0, amplitudes.size(), amplitudes.data());
+        auto jTimings{env->NewLongArray(static_cast<jsize>(timings.size()))};
+        env->SetLongArrayRegion(jTimings, 0, static_cast<jsize>(timings.size()), timings.data());
+        auto jAmplitudes{env->NewIntArray(static_cast<jsize>(amplitudes.size()))};
+        env->SetIntArrayRegion(jAmplitudes, 0, static_cast<jsize>(amplitudes.size()), amplitudes.data());
 
         env->CallVoidMethod(instance, vibrateDeviceId, index, jTimings, jAmplitudes);
 
@@ -91,7 +91,7 @@ namespace skyline {
         env->CallVoidMethod(instance, clearVibrationDeviceId, index);
     }
 
-    u32 JvmManager::GetVersionCode() {
+    i32 JvmManager::GetVersionCode() {
         return env->CallIntMethod(instance, getVersionCodeId);
     }
 }

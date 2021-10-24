@@ -8,7 +8,7 @@
 #include "scheduler.h"
 
 namespace skyline::kernel {
-    Scheduler::CoreContext::CoreContext(u8 id, u8 preemptionPriority) : id(id), preemptionPriority(preemptionPriority) {}
+    Scheduler::CoreContext::CoreContext(u8 id, i8 preemptionPriority) : id(id), preemptionPriority(preemptionPriority) {}
 
     Scheduler::Scheduler(const DeviceState &state) : state(state) {}
 

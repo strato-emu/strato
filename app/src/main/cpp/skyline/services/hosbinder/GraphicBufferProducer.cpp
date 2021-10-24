@@ -34,7 +34,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         }
 
-        auto &bufferSlot{queue[slot]};
+        auto &bufferSlot{queue[static_cast<size_t>(slot)]};
         bufferSlot.wasBufferRequested = true;
         buffer = bufferSlot.graphicBuffer.get();
 
@@ -77,7 +77,7 @@ namespace skyline::service::hosbinder {
             state.logger->Warn("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
         }
 
-        activeSlotCount = count;
+        activeSlotCount = static_cast<u8>(count);
         bufferEvent->Signal();
 
         return AndroidStatus::Ok;
@@ -157,7 +157,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         }
 
-        auto &bufferSlot{queue[slot]};
+        auto &bufferSlot{queue[static_cast<size_t>(slot)]};
         if (bufferSlot.state != BufferState::Dequeued) [[unlikely]] {
             state.logger->Warn("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
             return AndroidStatus::BadValue;
@@ -245,10 +245,10 @@ namespace skyline::service::hosbinder {
             FreeGraphicBufferNvMap(*bufferSlot->graphicBuffer);
         bufferSlot->graphicBuffer = std::make_unique<GraphicBuffer>(graphicBuffer);
 
-        slot = std::distance(queue.begin(), bufferSlot);
+        slot = static_cast<u8>(std::distance(queue.begin(), bufferSlot));
 
-        preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
-        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; });
+        preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer && slot.isPreallocated; }));
+        activeSlotCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer != nullptr; }));
 
         state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
@@ -273,7 +273,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         }
 
-        auto &buffer{queue[slot]};
+        auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
             state.logger->Warn("#{} was '{}' instead of being dequeued", slot, ToString(buffer.state));
             return AndroidStatus::BadValue;
@@ -411,7 +411,7 @@ namespace skyline::service::hosbinder {
             return;
         }
 
-        auto &buffer{queue[slot]};
+        auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
             state.logger->Warn("#{} is not owned by the producer as it is '{}' instead of being dequeued", slot, ToString(buffer.state));
             return;
@@ -544,7 +544,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::BadValue;
         }
 
-        auto &buffer{queue[slot]};
+        auto &buffer{queue[static_cast<size_t>(slot)]};
         buffer.state = BufferState::Free;
         buffer.frameNumber = 0;
         buffer.wasBufferRequested = false;
@@ -578,8 +578,8 @@ namespace skyline::service::hosbinder {
             state.logger->Debug("#{} - No GraphicBuffer", slot);
         }
 
-        preallocatedBufferCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; });
-        activeSlotCount = std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; });
+        preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; }));
+        activeSlotCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer != nullptr; }));
 
         bufferEvent->Signal();
 

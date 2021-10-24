@@ -362,7 +362,10 @@ namespace skyline::input {
         jlong start;
         jlong end;
 
-        VibrationInfo(float frequency, float amplitude) : period(MsInSecond / frequency), amplitude(amplitude), start(0), end(period) {}
+        VibrationInfo(float frequency, float amplitude)
+            : period(static_cast<jlong>(MsInSecond / frequency)),
+              amplitude(static_cast<jint>(amplitude)),
+              start(0), end(period) {}
     };
 
     template<size_t Size>

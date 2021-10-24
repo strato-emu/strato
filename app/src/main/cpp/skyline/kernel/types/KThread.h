@@ -47,12 +47,12 @@ namespace skyline {
             void *stackTop; //!< The top of the guest's stack, this is set to the initial guest stack pointer
 
             std::condition_variable scheduleCondition; //!< Signalled to wake the thread when it's scheduled or its resident core changes
-            std::atomic<u8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
-            std::atomic<u8> priority; //!< The priority of the thread for the scheduler including priority-inheritance
+            std::atomic<i8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
+            std::atomic<i8> priority; //!< The priority of the thread for the scheduler including priority-inheritance
 
             std::mutex coreMigrationMutex; //!< Synchronizes operations which depend on which core the thread is running on
-            i8 idealCore; //!< The ideal CPU core for this thread to run on
-            i8 coreId; //!< The CPU core on which this thread is running
+            u8 idealCore; //!< The ideal CPU core for this thread to run on
+            u8 coreId; //!< The CPU core on which this thread is running
             CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
 
             u64 timesliceStart{}; //!< A timestamp in host CNTVCT ticks of when the thread's current timeslice started
@@ -72,7 +72,7 @@ namespace skyline {
             bool cancelSync{false}; //!< Whether to cancel the SvcWaitSynchronization call this thread currently is in/the next one it joins
             type::KSyncObject *wakeObject{}; //!< A pointer to the synchronization object responsible for waking this thread up
 
-            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, u8 priority, i8 idealCore);
+            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore);
 
             ~KThread();
 

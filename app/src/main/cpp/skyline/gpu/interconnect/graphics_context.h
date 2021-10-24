@@ -186,9 +186,10 @@ namespace skyline::gpu::interconnect {
 
         void SetRenderTargetBaseLayer(size_t index, u32 baseArrayLayer) {
             auto &renderTarget{renderTargets.at(index)};
-            renderTarget.guest.baseArrayLayer = baseArrayLayer;
             if (baseArrayLayer > std::numeric_limits<u16>::max())
                 throw exception("Base array layer ({}) exceeds the range of array count ({}) (with layer count = {})", baseArrayLayer, std::numeric_limits<u16>::max(), renderTarget.guest.layerCount);
+
+            renderTarget.guest.baseArrayLayer = static_cast<u16>(baseArrayLayer);
             renderTarget.view.reset();
         }
 
@@ -263,8 +264,10 @@ namespace skyline::gpu::interconnect {
                     return;
 
                 auto scissor{scissors.at(renderTargetIndex)};
-                scissor.extent.width = std::min(renderTarget.backing->dimensions.width - scissor.offset.x, scissor.extent.width);
-                scissor.extent.height = std::min(renderTarget.backing->dimensions.height - scissor.offset.y, scissor.extent.height);
+                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget.backing->dimensions.width) - scissor.offset.x,
+                                                                 static_cast<i32>(scissor.extent.width)));
+                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget.backing->dimensions.height) - scissor.offset.y,
+                                                                  static_cast<i32>(scissor.extent.height)));
 
                 if (scissor.extent.width == 0 || scissor.extent.height == 0)
                     return;

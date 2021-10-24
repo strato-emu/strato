@@ -14,7 +14,7 @@ namespace skyline::service::settings {
     }
 
     Result ISettingsServer::MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u64>(language::LanguageCodeList.at(request.Pop<i32>()));
+        response.Push<u64>(language::LanguageCodeList.at(static_cast<size_t>(request.Pop<i32>())));
         return {};
     }
 

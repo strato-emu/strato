@@ -66,7 +66,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
 
         if (flags.fixed)
-            allocator.AllocateFixed(offset >> pageSizeBits, pages);
+            allocator.AllocateFixed(static_cast<u32>(offset >> pageSizeBits), pages);
         else
             offset = static_cast<u64>(allocator.Allocate(pages)) << pageSizeBits;
 
@@ -91,7 +91,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
             u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-            allocator.Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
+            allocator.Free(static_cast<u32>(mapping->offset >> pageSizeBits), static_cast<u32>(mapping->size >> pageSizeBits));
         }
 
         // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
@@ -128,7 +128,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
             u32 pageSizeBits{pageSize == VM::PageSize ? VM::PageSizeBits : vm.bigPageSizeBits};
 
-            allocator.Free(offset >> pageSizeBits, allocation.size >> pageSizeBits);
+            allocator.Free(static_cast<u32>(offset >> pageSizeBits), static_cast<u32>(allocation.size >> pageSizeBits));
             allocationMap.erase(offset);
         } catch (const std::out_of_range &e) {
             return PosixResult::InvalidArgument;
@@ -152,7 +152,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
                 u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-                allocator.Free(mapping->offset >> pageSizeBits, mapping->size >> pageSizeBits);
+                allocator.Free(static_cast<u32>(mapping->offset >> pageSizeBits), static_cast<u32>(mapping->size >> pageSizeBits));
             }
 
             // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
@@ -235,7 +235,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 pageSize{bigPage ? vm.bigPageSize : VM::PageSize};
             u32 pageSizeBits{bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
-            offset = static_cast<u64>(allocator.Allocate(util::AlignUp(size, pageSize) >> pageSizeBits)) << pageSizeBits;
+            offset = static_cast<u64>(allocator.Allocate(static_cast<u32>(util::AlignUp(size, pageSize) >> pageSizeBits))) << pageSizeBits;
             asCtx->gmmu.Map(offset, cpuPtr, size);
 
             auto mapping{std::make_shared<Mapping>(cpuPtr, offset, size, false, bigPage, false)};
@@ -297,7 +297,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             }
 
             vm.bigPageSize = bigPageSize;
-            vm.bigPageSizeBits = std::countr_zero(bigPageSize);
+            vm.bigPageSizeBits = static_cast<u32>(std::countr_zero(bigPageSize));
 
             vm.vaRangeStart = bigPageSize << VM::VaStartShift;
         }

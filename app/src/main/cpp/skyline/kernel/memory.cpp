@@ -146,7 +146,7 @@ namespace skyline::kernel {
         if (upper != chunks.end() && upper->ptr < chunk.ptr + chunk.size) {
             auto end{upper->ptr + upper->size};
             upper->ptr = chunk.ptr + chunk.size;
-            upper->size = end - upper->ptr;
+            upper->size = static_cast<size_t>(end - upper->ptr);
         }
 
         auto lower{std::prev(upper)};
@@ -157,16 +157,16 @@ namespace skyline::kernel {
         } else if (lower->ptr + lower->size > chunk.ptr + chunk.size) {
             auto lowerExtension{*lower};
             lowerExtension.ptr = chunk.ptr + chunk.size;
-            lowerExtension.size = (lower->ptr + lower->size) - lowerExtension.ptr;
+            lowerExtension.size = static_cast<size_t>((lower->ptr + lower->size) - lowerExtension.ptr);
 
-            lower->size = chunk.ptr - lower->ptr;
+            lower->size = static_cast<size_t>(chunk.ptr - lower->ptr);
             if (lower->size) {
                 upper = chunks.insert(upper, lowerExtension);
                 chunks.insert(upper, chunk);
             } else {
                 auto lower2{std::prev(lower)};
                 if (chunk.IsCompatible(*lower2) && lower2->ptr + lower2->size >= chunk.ptr) {
-                    lower2->size = chunk.ptr + chunk.size - lower2->ptr;
+                    lower2->size = static_cast<size_t>(chunk.ptr + chunk.size - lower2->ptr);
                     upper = chunks.erase(lower);
                 } else {
                     *lower = chunk;
@@ -174,10 +174,10 @@ namespace skyline::kernel {
                 upper = chunks.insert(upper, lowerExtension);
             }
         } else if (chunk.IsCompatible(*lower) && lower->ptr + lower->size >= chunk.ptr) {
-            lower->size = chunk.ptr + chunk.size - lower->ptr;
+            lower->size = static_cast<size_t>(chunk.ptr + chunk.size - lower->ptr);
         } else {
             if (lower->ptr + lower->size > chunk.ptr)
-                lower->size = chunk.ptr - lower->ptr;
+                lower->size = static_cast<size_t>(chunk.ptr - lower->ptr);
             if (upper != chunks.end() && chunk.IsCompatible(*upper) && chunk.ptr + chunk.size >= upper->ptr) {
                 upper->ptr = chunk.ptr;
                 upper->size = chunk.size + upper->size;

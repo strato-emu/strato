@@ -166,30 +166,31 @@ namespace skyline::nce {
             auto svc{*reinterpret_cast<const instructions::Svc *>(instruction)};
             auto mrs{*reinterpret_cast<const instructions::Mrs *>(instruction)};
             auto msr{*reinterpret_cast<const instructions::Msr *>(instruction)};
+            auto instructionOffset{static_cast<size_t>(instruction - start)};
 
             if (svc.Verify()) {
                 size += 7;
-                offsets.push_back(instruction - start);
+                offsets.push_back(instructionOffset);
             } else if (mrs.Verify()) {
                 if (mrs.srcReg == TpidrroEl0 || mrs.srcReg == TpidrEl0) {
                     size += ((mrs.destReg != registers::X0) ? 6 : 3);
-                    offsets.push_back(instruction - start);
+                    offsets.push_back(instructionOffset);
                 } else {
                     if (rescaleClock) {
                         if (mrs.srcReg == CntpctEl0) {
                             size += guest::RescaleClockSize + 3;
-                            offsets.push_back(instruction - start);
+                            offsets.push_back(instructionOffset);
                         } else if (mrs.srcReg == CntfrqEl0) {
                             size += 3;
-                            offsets.push_back(instruction - start);
+                            offsets.push_back(instructionOffset);
                         }
                     } else if (mrs.srcReg == CntpctEl0) {
-                        offsets.push_back(instruction - start);
+                        offsets.push_back(instructionOffset);
                     }
                 }
             } else if (msr.Verify() && msr.destReg == TpidrEl0) {
                 size += 6;
-                offsets.push_back(instruction - start);
+                offsets.push_back(instructionOffset);
             }
         }
         return {util::AlignUp(size * sizeof(u32), PAGE_SIZE), offsets};
@@ -248,33 +249,35 @@ namespace skyline::nce {
             auto svc{*reinterpret_cast<instructions::Svc *>(instruction)};
             auto mrs{*reinterpret_cast<instructions::Mrs *>(instruction)};
             auto msr{*reinterpret_cast<instructions::Msr *>(instruction)};
+            auto endOffset{[&] { return static_cast<size_t>(end - patch); }};
+            auto startOffset{[&] { return static_cast<size_t>(start - patch); }};
 
             if (svc.Verify()) {
                 /* Per-SVC Trampoline */
                 /* Rewrite SVC with B to trampoline */
-                *instruction = instructions::B((end - patch) + offset, true).raw;
+                *instruction = instructions::B(static_cast<i32>(endOffset() + offset), true).raw;
 
                 /* Save Context */
                 *patch++ = 0xF81F0FFE; // STR LR, [SP, #-16]!
-                *patch = instructions::BL(start - patch).raw;
+                *patch = instructions::BL(static_cast<i32>(startOffset())).raw;
                 patch++;
 
                 /* Jump to main SVC trampoline */
                 *patch++ = instructions::Movz(registers::W0, static_cast<u16>(svc.value)).raw;
-                *patch = instructions::BL((start - patch) + guest::SaveCtxSize).raw;
+                *patch = instructions::BL(static_cast<i32>(startOffset() + guest::SaveCtxSize)).raw;
                 patch++;
 
                 /* Restore Context and Return */
-                *patch = instructions::BL((start - patch) + guest::SaveCtxSize + MainSvcTrampolineSize).raw;
+                *patch = instructions::BL(static_cast<i32>(startOffset() + guest::SaveCtxSize + MainSvcTrampolineSize)).raw;
                 patch++;
                 *patch++ = 0xF84107FE; // LDR LR, [SP], #16
-                *patch = instructions::B((end - patch) + offset + 1).raw;
+                *patch = instructions::B(static_cast<i32>(endOffset() + offset + 1)).raw;
                 patch++;
             } else if (mrs.Verify()) {
                 if (mrs.srcReg == TpidrroEl0 || mrs.srcReg == TpidrEl0) {
                     /* Emulated TLS Register Load */
                     /* Rewrite MRS with B to trampoline */
-                    *instruction = instructions::B((end - patch) + offset, true).raw;
+                    *instruction = instructions::B(static_cast<i32>(endOffset() + offset), true).raw;
 
                     /* Allocate Scratch Register */
                     if (mrs.destReg != registers::X0)
@@ -292,14 +295,14 @@ namespace skyline::nce {
                         *patch++ = instructions::Mov(registers::X(mrs.destReg), registers::X0).raw;
                         *patch++ = 0xF84107E0; // LDR X0, [SP], #16
                     }
-                    *patch = instructions::B((end - patch) + offset + 1).raw;
+                    *patch = instructions::B(static_cast<i32>(endOffset() + offset + 1)).raw;
                     patch++;
                 } else {
                     if (rescaleClock) {
                         if (mrs.srcReg == CntpctEl0) {
                             /* Physical Counter Load Emulation (With Rescaling) */
                             /* Rewrite MRS with B to trampoline */
-                            *instruction = instructions::B((end - patch) + offset, true).raw;
+                            *instruction = instructions::B(static_cast<i32>(endOffset() + offset), true).raw;
 
                             /* Rescale host clock */
                             std::memcpy(patch, reinterpret_cast<void *>(&guest::RescaleClock), guest::RescaleClockSize * sizeof(u32));
@@ -312,17 +315,17 @@ namespace skyline::nce {
 
                             /* Free 32B stack allocation by RescaleClock and Return */
                             *patch++ = {0x910083FF}; // ADD SP, SP, #32
-                            *patch = instructions::B((end - patch) + offset + 1).raw;
+                            *patch = instructions::B(static_cast<i32>(endOffset() + offset + 1)).raw;
                             patch++;
                         } else if (mrs.srcReg == CntfrqEl0) {
                             /* Physical Counter Frequency Load Emulation */
                             /* Rewrite MRS with B to trampoline */
-                            *instruction = instructions::B((end - patch) + offset, true).raw;
+                            *instruction = instructions::B(static_cast<i32>(endOffset() + offset), true).raw;
 
                             /* Write back Tegra X1 Counter Frequency and Return */
                             for (const auto &mov : instructions::MoveRegister(registers::X(mrs.destReg), TegraX1Freq))
                                 *patch++ = mov;
-                            *patch = instructions::B((end - patch) + offset + 1).raw;
+                            *patch = instructions::B(static_cast<i32>(endOffset() + offset + 1)).raw;
                             patch++;
                         }
                     } else if (mrs.srcReg == CntpctEl0) {
@@ -334,7 +337,7 @@ namespace skyline::nce {
             } else if (msr.Verify() && msr.destReg == TpidrEl0) {
                 /* Emulated TLS Register Store */
                 /* Rewrite MSR with B to trampoline */
-                *instruction = instructions::B((end - patch) + offset, true).raw;
+                *instruction = instructions::B(static_cast<i32>(endOffset() + offset), true).raw;
 
                 /* Allocate Scratch Registers */
                 bool x0x1{mrs.srcReg != registers::X0 && mrs.srcReg != registers::X1};
@@ -347,7 +350,7 @@ namespace skyline::nce {
 
                 /* Restore Scratch Registers and Return */
                 *patch++ = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
-                *patch = instructions::B((end - patch) + offset + 1).raw;
+                *patch = instructions::B(static_cast<i32>(endOffset() + offset + 1)).raw;
                 patch++;
             }
         }

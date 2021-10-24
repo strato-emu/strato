@@ -23,7 +23,7 @@ namespace skyline::service::fssrv {
             return result::InvalidSize;
         }
 
-        response.Push<u32>(static_cast<u32>(backing->ReadUnchecked(request.outputBuf.at(0), offset)));
+        response.Push<u64>(backing->ReadUnchecked(request.outputBuf.at(0), static_cast<size_t>(offset)));
         return {};
     }
 
@@ -48,7 +48,7 @@ namespace skyline::service::fssrv {
             return result::InvalidSize;
         }
 
-        if (backing->Write(request.inputBuf.at(0), offset) != size) {
+        if (backing->Write(request.inputBuf.at(0), static_cast<size_t>(offset)) != size) {
             state.logger->Warn("Failed to write all data to the backing");
             return result::UnexpectedFailure;
         }

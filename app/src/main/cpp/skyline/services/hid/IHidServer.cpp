@@ -70,7 +70,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::GetPlayerLedPattern(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<NpadId>()};
-        response.Push<u64>([id] {
+        response.Push<u64>([id]() -> u64 {
             switch (id) {
                 case NpadId::Player1:
                     return 0b0001;

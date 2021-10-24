@@ -42,7 +42,7 @@ namespace skyline::service::glue {
 
         outList.copy_from(span(timesrvCore.locationNameList).subspan(offset, outList.size()));
 
-        response.Push<u32>(outList.size());
+        response.Push(static_cast<u32>(outList.size()));
         return {};
     }
 

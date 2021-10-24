@@ -13,11 +13,11 @@ namespace skyline::service::codec {
     /**
      * @return The required output buffer size for decoding an Opus stream with the given parameters
      */
-    size_t CalculateOutBufferSize(i32 sampleRate, i32 channelCount, i32 frameSize);
+    u32 CalculateOutBufferSize(i32 sampleRate, i32 channelCount, i32 frameSize);
 
-    static constexpr u32 OpusFullbandSampleRate{48000};
-    static constexpr u32 MaxFrameSizeNormal = OpusFullbandSampleRate * 0.040; //!< 40ms frame size limit for normal decoders
-    static constexpr u32 MaxFrameSizeEx = OpusFullbandSampleRate * 0.120; //!< 120ms frame size limit for ex decoders added in 12.0.0
+    static constexpr i32 OpusFullbandSampleRate{48000};
+    static constexpr i32 MaxFrameSizeNormal{static_cast<u32>(OpusFullbandSampleRate * 0.040f)}; //!< 40ms frame size limit for normal decoders
+    static constexpr i32 MaxFrameSizeEx{static_cast<u32>(OpusFullbandSampleRate * 0.120f)}; //!< 120ms frame size limit for ex decoders added in 12.0.0
     static constexpr u32 MaxInputBufferSize{0x600}; //!< Maximum allocated size of the input buffer
 
     /**
@@ -30,7 +30,7 @@ namespace skyline::service::codec {
         OpusDecoder *decoderState{};
         i32 sampleRate;
         i32 channelCount;
-        i32 decoderOutputBufferSize;
+        u32 decoderOutputBufferSize;
 
         /**
          * @brief Holds information about the Opus packet to be decoded
@@ -41,8 +41,8 @@ namespace skyline::service::codec {
             u32 sizeBe; //!< Size of the packet following this header
             u32 finalRangeBe; //!< Final range of the codec encoder's entropy coder (can be zero)
 
-            u32 GetPacketSize() {
-                return util::SwapEndianness(sizeBe);
+            i32 GetPacketSize() {
+                return static_cast<i32>(util::SwapEndianness(sizeBe));
             }
         };
         static_assert(sizeof(OpusDataHeader) == 0x8);

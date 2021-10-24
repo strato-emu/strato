@@ -89,7 +89,7 @@ namespace skyline::gpu {
          * @param frameId The ID of this frame for correlating it with presentation timing readouts
          * @note The texture **must** be locked prior to calling this
          */
-        void Present(const std::shared_ptr<Texture> &texture, u64 timestamp, u64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, u64 &frameId);
+        void Present(const std::shared_ptr<Texture> &texture, i64 timestamp, u64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, u64 &frameId);
 
         /**
          * @return A transform that the application should render with to elide costly transforms later

@@ -29,7 +29,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             }
 
             case Opcode::Operation::AddImmediate:
-                HandleAssignment(opcode->assignmentOperation, opcode->dest, registers[opcode->srcA] + opcode->immediate);
+                HandleAssignment(opcode->assignmentOperation, opcode->dest,
+                                 static_cast<u32>(static_cast<i32>(registers[opcode->srcA]) + opcode->immediate));
                 break;
 
             case Opcode::Operation::BitfieldReplace: {
@@ -70,7 +71,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             }
 
             case Opcode::Operation::ReadImmediate: {
-                u32 result{maxwell3D.registers.raw[registers[opcode->srcA] + opcode->immediate]};
+                u32 result{maxwell3D.registers.raw[static_cast<size_t>(static_cast<i32>(registers[opcode->srcA]) + opcode->immediate)]};
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }

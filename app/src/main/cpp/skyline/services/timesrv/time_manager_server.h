@@ -70,7 +70,7 @@ namespace skyline::service::timesrv {
         /**
          * @url https://switchbrew.org/w/index.php?title=PSC_services#SetupTimeZoneServiceCore
          */
-        Result SetupTimeZoneManager(std::string_view locationName, const SteadyClockTimePoint &updateTime, size_t locationCount, std::array<u8, 0x10> binaryVersion, span<u8> binary);
+        Result SetupTimeZoneManager(std::string_view locationName, const SteadyClockTimePoint &updateTime, int locationCount, std::array<u8, 0x10> binaryVersion, span<u8> binary);
 
         /**
          * @url https://switchbrew.org/w/index.php?title=PSC_services#SetupEphemeralNetworkSystemClockCore

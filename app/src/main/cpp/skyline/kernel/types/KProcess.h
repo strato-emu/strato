@@ -94,7 +94,7 @@ namespace skyline {
              * @return A shared pointer to a KThread initialized with the specified values or nullptr, if thread creation has been disabled
              * @note The default values are for the main thread and will use values from the NPDM
              */
-            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, std::optional<u8> priority = std::nullopt, std::optional<u8> idealCore = std::nullopt);
+            std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, std::optional<i8> priority = std::nullopt, std::optional<u8> idealCore = std::nullopt);
 
             /**
             * @brief The output for functions that return created kernel objects

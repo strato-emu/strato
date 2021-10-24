@@ -210,7 +210,7 @@ namespace skyline::gpu {
         }
     }
 
-    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, u64 timestamp, u64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, u64 &frameId) {
+    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, i64 timestamp, u64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, u64 &frameId) {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
@@ -257,7 +257,7 @@ namespace skyline::gpu {
             // If the timestamp is specified, we need to convert it from the util::GetTimeNs base to the CLOCK_MONOTONIC one
             // We do so by getting an offset from the current time in nanoseconds and then adding it to the current time in CLOCK_MONOTONIC
             // Note: It's important we do this right before present as going past the timestamp could lead to fewer Binder IPC calls
-            auto current{util::GetTimeNs()};
+            i64 current{util::GetTimeNs()};
             if (current < timestamp) {
                 timespec time;
                 if (clock_gettime(CLOCK_MONOTONIC, &time))
@@ -270,7 +270,7 @@ namespace skyline::gpu {
 
         if (swapInterval > 1)
             // If we have a swap interval above 1 we have to adjust the timestamp to emulate the swap interval
-            timestamp = std::max(timestamp, lastChoreographerTime + (refreshCycleDuration * swapInterval * 2));
+            timestamp = std::max(timestamp, lastChoreographerTime + (refreshCycleDuration * static_cast<i64>(swapInterval) * 2));
 
         auto lastTimestamp{std::exchange(windowLastTimestamp, timestamp)};
         if (!timestamp && lastTimestamp)
@@ -293,8 +293,8 @@ namespace skyline::gpu {
         }
 
         if (frameTimestamp) {
-            i64 now{static_cast<i64>(util::GetTimeNs())};
-            i64 sampleWeight{static_cast<i64>(swapInterval ? constant::NsInSecond / (refreshCycleDuration * swapInterval) : 10)}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
+            i64 now{util::GetTimeNs()};
+            i64 sampleWeight{swapInterval ? constant::NsInSecond / (refreshCycleDuration * static_cast<i64>(swapInterval)) : 10}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
 
             auto weightedAverage{[](auto weight, auto previousAverage, auto current) {
                 return (((weight - 1) * previousAverage) + current) / weight;
@@ -314,7 +314,7 @@ namespace skyline::gpu {
 
             frameTimestamp = now;
         } else {
-            frameTimestamp = static_cast<i64>(util::GetTimeNs());
+            frameTimestamp = util::GetTimeNs();
         }
     }
 

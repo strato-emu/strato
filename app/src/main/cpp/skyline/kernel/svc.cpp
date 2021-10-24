@@ -230,10 +230,10 @@ namespace skyline::kernel::svc {
         auto entry{reinterpret_cast<void *>(state.ctx->gpr.x1)};
         auto entryArgument{state.ctx->gpr.x2};
         auto stackTop{reinterpret_cast<u8 *>(state.ctx->gpr.x3)};
-        auto priority{static_cast<i8>(static_cast<u32>(state.ctx->gpr.w4))};
-        auto idealCore{static_cast<i8>(static_cast<u32>(state.ctx->gpr.w5))};
+        auto priority{static_cast<i8>(state.ctx->gpr.w4)};
+        auto idealCore{static_cast<i32>(state.ctx->gpr.w5)};
 
-        idealCore = (idealCore == IdealCoreUseProcessValue) ? state.process->npdm.meta.idealCore : idealCore;
+        idealCore = (idealCore == IdealCoreUseProcessValue) ? static_cast<i32>(state.process->npdm.meta.idealCore) : idealCore;
         if (idealCore < 0 || idealCore >= constant::CoreCount) {
             state.ctx->gpr.w0 = result::InvalidCoreId;
             state.logger->Warn("'idealCore' invalid: {}", idealCore);
@@ -250,7 +250,7 @@ namespace skyline::kernel::svc {
         if (!stack)
             throw exception("svcCreateThread: Cannot find memory object in handle table for thread stack: 0x{:X}", stackTop);
 
-        auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, idealCore)};
+        auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, static_cast<u8>(idealCore))};
         if (thread) {
             state.logger->Debug("Created thread #{} with handle 0x{:X} (Entry Point: 0x{:X}, Argument: 0x{:X}, Stack Pointer: 0x{:X}, Priority: {}, Ideal Core: {})", thread->id, thread->handle, entry, entryArgument, stackTop, priority, idealCore);
 
@@ -335,10 +335,10 @@ namespace skyline::kernel::svc {
         KHandle handle{state.ctx->gpr.w1};
         try {
             auto thread{state.process->GetHandle<type::KThread>(handle)};
-            u8 priority{thread->priority};
+            i8 priority{thread->priority};
             state.logger->Debug("Retrieving thread #{}'s priority: {}", thread->id, priority);
 
-            state.ctx->gpr.w1 = priority;
+            state.ctx->gpr.w1 = static_cast<u32>(priority);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("'handle' invalid: 0x{:X}", handle);
@@ -348,7 +348,7 @@ namespace skyline::kernel::svc {
 
     void SetThreadPriority(const DeviceState &state) {
         KHandle handle{state.ctx->gpr.w0};
-        u8 priority{static_cast<u8>(state.ctx->gpr.w1)};
+        i8 priority{static_cast<i8>(state.ctx->gpr.w1)};
         if (!state.process->npdm.threadInfo.priority.Valid(priority)) {
             state.logger->Warn("'priority' invalid: 0x{:X}", priority);
             state.ctx->gpr.w0 = result::InvalidPriority;
@@ -359,7 +359,7 @@ namespace skyline::kernel::svc {
             state.logger->Debug("Setting thread #{}'s priority to {}", thread->id, priority);
             if (thread->priority != priority) {
                 thread->basePriority = priority;
-                u8 newPriority{};
+                i8 newPriority{};
                 do {
                     // Try to CAS the priority of the thread with its new base priority
                     // If the new priority is equivalent to the current priority then we don't need to CAS
@@ -385,7 +385,7 @@ namespace skyline::kernel::svc {
             state.logger->Debug("Getting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
             state.ctx->gpr.x2 = affinityMask.to_ullong();
-            state.ctx->gpr.w1 = idealCore;
+            state.ctx->gpr.w1 = static_cast<u32>(idealCore);
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
             state.logger->Warn("'handle' invalid: 0x{:X}", handle);
@@ -402,7 +402,7 @@ namespace skyline::kernel::svc {
 
             if (idealCore == IdealCoreUseProcessValue) {
                 idealCore = state.process->npdm.meta.idealCore;
-                affinityMask.reset().set(idealCore);
+                affinityMask.reset().set(static_cast<size_t>(idealCore));
             } else if (idealCore == IdealCoreNoUpdate) {
                 idealCore = thread->idealCore;
             } else if (idealCore == IdealCoreDontCare) {
@@ -416,7 +416,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            if (affinityMask.none() || !affinityMask.test(idealCore)) {
+            if (affinityMask.none() || !affinityMask.test(static_cast<size_t>(idealCore))) {
                 state.logger->Warn("'affinityMask' invalid: {} (Ideal Core: {})", affinityMask, idealCore);
                 state.ctx->gpr.w0 = result::InvalidCombination;
                 return;
@@ -425,19 +425,19 @@ namespace skyline::kernel::svc {
             state.logger->Debug("Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
             std::lock_guard guard(thread->coreMigrationMutex);
-            thread->idealCore = idealCore;
+            thread->idealCore = static_cast<u8>(idealCore);
             thread->affinityMask = affinityMask;
 
-            if (!affinityMask.test(thread->coreId) && thread->coreId != constant::ParkedCoreId) {
+            if (!affinityMask.test(static_cast<size_t>(thread->coreId)) && thread->coreId != constant::ParkedCoreId) {
                 state.logger->Debug("Migrating thread #{} to Ideal Core C{} -> C{}", thread->id, thread->coreId, idealCore);
 
                 if (thread == state.thread) {
                     state.scheduler->RemoveThread();
-                    thread->coreId = idealCore;
+                    thread->coreId = static_cast<u8>(idealCore);
                     state.scheduler->InsertThread(state.thread);
                     state.scheduler->WaitSchedule();
                 } else if (!thread->running) {
-                    thread->coreId = idealCore;
+                    thread->coreId = static_cast<u8>(idealCore);
                 } else {
                     state.scheduler->UpdateCore(thread);
                 }
@@ -452,7 +452,7 @@ namespace skyline::kernel::svc {
 
     void GetCurrentProcessorNumber(const DeviceState &state) {
         std::lock_guard guard(state.thread->coreMigrationMutex);
-        auto coreId{state.thread->coreId};
+        u8 coreId{state.thread->coreId};
         state.logger->Debug("C{}", coreId);
         state.ctx->gpr.w0 = coreId;
     }
@@ -490,7 +490,7 @@ namespace skyline::kernel::svc {
                 return;
             }
 
-            memory::Permission permission(state.ctx->gpr.w3);
+            memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
             if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
                 state.logger->Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
                 state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
@@ -553,7 +553,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        memory::Permission permission(state.ctx->gpr.w3);
+        memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
         if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
             state.logger->Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
             state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
@@ -1067,10 +1067,10 @@ namespace skyline::kernel::svc {
                             item->Resize(0);
                             state.process->CloseHandle(memory->handle);
                         } else {
-                            item->Remap(pointer + size, item->size - (size + (item->ptr - pointer)));
+                            item->Remap(pointer + size, item->size - (size + static_cast<size_t>(item->ptr - pointer)));
                         }
                     } else if (item->ptr < pointer) {
-                        item->Resize(pointer - item->ptr);
+                        item->Resize(static_cast<size_t>(pointer - item->ptr));
                     }
                 }
                 pointer += initialSize;
