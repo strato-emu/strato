@@ -81,7 +81,7 @@ namespace skyline::service::nvdrv {
             std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl(cmd, buffer));
         } catch (const std::out_of_range &) {
-            throw exception("Ioctl was called with invalid file descriptor: {}", fd);
+            throw exception("Ioctl was called with invalid fd: {}", fd);
         }
     }
 
@@ -92,7 +92,7 @@ namespace skyline::service::nvdrv {
             std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl2(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
-            throw exception("Ioctl2 was called with invalid file descriptor: 0x{:X}", fd);
+            throw exception("Ioctl2 was called with invalid fd: {}", fd);
         }
     }
 
@@ -103,7 +103,7 @@ namespace skyline::service::nvdrv {
             std::shared_lock lock(deviceMutex);
             return ConvertResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
-            throw exception("Ioctl3 was called with invalid file descriptor: {}", fd);
+            throw exception("Ioctl3 was called with invalid fd: {}", fd);
         }
     }
 
@@ -112,7 +112,7 @@ namespace skyline::service::nvdrv {
             std::unique_lock lock(deviceMutex);
             devices.erase(fd);
         } catch (const std::out_of_range &) {
-            state.logger->Warn("Trying to close non-existent file descriptor: {}");
+            state.logger->Warn("Trying to close invalid fd: {}");
         }
     }
 
@@ -123,7 +123,7 @@ namespace skyline::service::nvdrv {
             std::shared_lock lock(deviceMutex);
             return devices.at(fd)->QueryEvent(eventId);
         } catch (const std::exception &) {
-            throw exception("QueryEvent was called with invalid file descriptor: {}", fd);
+            throw exception("QueryEvent was called with invalid fd: {}", fd);
         }
     }
 }

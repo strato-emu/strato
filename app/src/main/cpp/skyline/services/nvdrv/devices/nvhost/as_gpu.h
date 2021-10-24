@@ -131,7 +131,9 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Maps a region into this address space with extra parameters
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_MAP_BUFFER_EX
          */
-        PosixResult MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset);
+        PosixResult MapBufferEx(In<MappingFlags> flags, In<u32> kind,
+                                In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset,
+                                In<u64> mappingSize, InOut<u64> offset);
 
         /**
          * @brief Returns info about the address space and its page sizes
@@ -148,7 +150,10 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Allocates this address space with the given parameters
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_AS_IOCTL_ALLOC_AS_EX
          */
-        PosixResult AllocAsEx(In<u32> flags, In<FileDescriptor> asFd, In<u32> bigPageSize, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit);
+        PosixResult AllocAsEx(In<u32> flags,
+                              In<FileDescriptor> asFd,
+                              In<u32> bigPageSize,
+                              In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit);
 
         /**
          * @brief Remaps a region of the GPU address space

@@ -5,10 +5,10 @@
 #include "ctrl_gpu.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    CtrlGpu::CtrlGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) :
-        NvDevice(state, driver, core, ctx),
-        errorNotifierEvent(std::make_shared<type::KEvent>(state, false)),
-        unknownEvent(std::make_shared<type::KEvent>(state, false)) {}
+    CtrlGpu::CtrlGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx)
+        : NvDevice(state, driver, core, ctx),
+          errorNotifierEvent(std::make_shared<type::KEvent>(state, false)),
+          unknownEvent(std::make_shared<type::KEvent>(state, false)) {}
 
     PosixResult CtrlGpu::ZCullGetCtxSize(Out<u32> size) {
         size = 0x1;

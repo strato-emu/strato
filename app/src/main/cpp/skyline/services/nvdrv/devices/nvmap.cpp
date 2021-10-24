@@ -38,8 +38,11 @@ namespace skyline::service::nvdrv::device {
         return result;
     }
 
-    PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address) {
-        state.logger->Debug("handle: {}, flags: ( mapUncached: {}, keepUncachedAfterFree: {} ), align: 0x{:X}, kind: {}, address: 0x{:X}", handle, flags.mapUncached, flags.keepUncachedAfterFree, align, kind, address);
+    PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle,
+                             In<u32> heapMask, In<NvMapCore::Handle::Flags> flags,
+                             InOut<u32> align, In<u8> kind, In<u64> address) {
+        state.logger->Debug("handle: {}, flags: ( mapUncached: {}, keepUncachedAfterFree: {} ), align: 0x{:X}, kind: {}, address: 0x{:X}",
+                            handle, flags.mapUncached, flags.keepUncachedAfterFree, align, kind, address);
 
         if (!handle) [[unlikely]]
             return PosixResult::InvalidArgument;
@@ -58,7 +61,9 @@ namespace skyline::service::nvdrv::device {
         return handleDesc->Alloc(flags, align, kind, address);
     }
 
-    PosixResult NvMap::Free(In<NvMapCore::Handle::Id> handle, Out<u64> address, Out<u32> size, Out<NvMapCore::Handle::Flags> flags) {
+    PosixResult NvMap::Free(In<NvMapCore::Handle::Id> handle,
+                            Out<u64> address, Out<u32> size,
+                            Out<NvMapCore::Handle::Flags> flags) {
         state.logger->Debug("handle: {}", handle);
 
         if (!handle) [[unlikely]]

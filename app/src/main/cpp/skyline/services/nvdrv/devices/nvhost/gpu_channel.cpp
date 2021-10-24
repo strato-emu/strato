@@ -6,11 +6,11 @@
 #include "gpu_channel.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    GpuChannel::GpuChannel(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) :
-        NvDevice(state, driver, core, ctx),
-        smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state, false)),
-        smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state, false)),
-        errorNotifierEvent(std::make_shared<type::KEvent>(state, false)) {
+    GpuChannel::GpuChannel(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx)
+        : NvDevice(state, driver, core, ctx),
+          smExceptionBreakpointIntReportEvent(std::make_shared<type::KEvent>(state, false)),
+          smExceptionBreakpointPauseReportEvent(std::make_shared<type::KEvent>(state, false)),
+          errorNotifierEvent(std::make_shared<type::KEvent>(state, false)) {
         channelSyncpoint = core.syncpointManager.AllocateSyncpoint(false);
     }
 
@@ -75,7 +75,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult GpuChannel::SubmitGpfifo(In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence, span<soc::gm20b::GpEntry> gpEntries) {
+    PosixResult GpuChannel::SubmitGpfifo(In<u64> userAddress, In<u32> numEntries,
+                                         InOut<SubmitGpfifoFlags> flags,
+                                         InOut<Fence> fence,
+                                         span<soc::gm20b::GpEntry> gpEntries) {
         state.logger->Debug("userAddress: 0x{:X}, numEntries: {},"
                             "flags ( fenceWait: {}, fenceIncrement: {}, hwFormat: {}, suppressWfi: {}, incrementWithValue: {}),"
                             "fence ( id: {}, threshold: {} )",

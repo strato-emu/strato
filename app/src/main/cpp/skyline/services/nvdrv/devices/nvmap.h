@@ -41,13 +41,17 @@ namespace skyline::service::nvdrv::device {
          * @brief Adds the given backing memory to the nvmap handle
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_ALLOC
          */
-        PosixResult Alloc(In<NvMapCore::Handle::Id> handle, In<u32> heapMask, In<NvMapCore::Handle::Flags> flags, InOut<u32> align, In<u8> kind, In<u64> address);
+        PosixResult Alloc(In<NvMapCore::Handle::Id> handle,
+                          In<u32> heapMask, In<NvMapCore::Handle::Flags> flags,
+                          InOut<u32> align, In<u8> kind, In<u64> address);
 
         /**
          * @brief Attempts to free a handle and unpin it from SMMU memory
          * @url https://switchbrew.org/wiki/NV_services#NVMAP_IOC_FREE
          */
-        PosixResult Free(In<NvMapCore::Handle::Id> handle, Out<u64> address, Out<u32> size, Out<NvMapCore::Handle::Flags> flags);
+        PosixResult Free(In<NvMapCore::Handle::Id> handle,
+                         Out<u64> address, Out<u32> size,
+                         Out<NvMapCore::Handle::Flags> flags);
 
         /**
          * @brief Returns info about a property of the nvmap handle

@@ -69,12 +69,17 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @brief Submits GPFIFO entries for this channel
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_IOCTL_CHANNEL_SUBMIT_GPFIFO
          */
-        PosixResult SubmitGpfifo(In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence, span<soc::gm20b::GpEntry> gpEntries);
+        PosixResult SubmitGpfifo(In<u64> userAddress, In<u32> numEntries,
+                                 InOut<SubmitGpfifoFlags> flags,
+                                 InOut<Fence> fence,
+                                 span<soc::gm20b::GpEntry> gpEntries);
 
         /**
          * @brief Ioctl2 variant of SubmitGpfifo
          */
-        PosixResult SubmitGpfifo2(span<u8> inlineBuffer, In<u64> userAddress, In<u32> numEntries, InOut<SubmitGpfifoFlags> flags, InOut<Fence> fence);
+        PosixResult SubmitGpfifo2(span<u8> inlineBuffer, In<u64> userAddress, In<u32> numEntries,
+                                  InOut<SubmitGpfifoFlags> flags,
+                                  InOut<Fence> fence);
 
         /**
          * @brief Allocates a graphic context object

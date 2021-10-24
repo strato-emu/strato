@@ -170,7 +170,9 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind, In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset, In<u64> mappingSize, InOut<u64> offset) {
+    PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind,
+                                   In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset,
+                                   In<u64> mappingSize, InOut<u64> offset) {
         state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
                             flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
@@ -271,7 +273,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         return GetVaRegions(bufAddr, bufSize, vaRegions);
     }
 
-    PosixResult AsGpu::AllocAsEx(In<u32> flags, In<FileDescriptor> asFd, In<u32> bigPageSize, In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit) {
+    PosixResult AsGpu::AllocAsEx(In<u32> flags,
+                                 In<FileDescriptor> asFd,
+                                 In<u32> bigPageSize,
+                                 In<u64> vaRangeStart, In<u64> vaRangeEnd, In<u64> vaRangeSplit) {
         std::scoped_lock lock(mutex);
 
         if (vm.initialised)

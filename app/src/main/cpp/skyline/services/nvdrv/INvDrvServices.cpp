@@ -16,7 +16,10 @@
     } (x)
 
 namespace skyline::service::nvdrv {
-    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager, Driver &driver, const SessionPermissions &perms) : BaseService(state, manager), driver(driver), ctx(SessionContext{.perms = perms}) {}
+    INvDrvServices::INvDrvServices(const DeviceState &state, ServiceManager &manager, Driver &driver, const SessionPermissions &perms)
+        : BaseService(state, manager),
+          driver(driver),
+          ctx(SessionContext{.perms = perms}) {}
 
     Result INvDrvServices::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr FileDescriptor SessionFdLimit{std::numeric_limits<u64>::digits * 2}; //!< Nvdrv uses two 64 bit variables to store a bitset
@@ -59,7 +62,9 @@ namespace skyline::service::nvdrv {
         auto fd{request.Pop<FileDescriptor>()};
         auto ioctl{request.Pop<IoctlDescriptor>()};
 
-        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
+        auto buf{GetMainIoctlBuffer(ioctl,
+                                    !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{},
+                                    !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else
@@ -104,7 +109,9 @@ namespace skyline::service::nvdrv {
         // Inline buffer is optional
         auto inlineBuf{request.inputBuf.size() > 1 ? request.inputBuf.at(1) : span<u8>{}};
 
-        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
+        auto buf{GetMainIoctlBuffer(ioctl,
+                                    !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{},
+                                    !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else
@@ -118,7 +125,9 @@ namespace skyline::service::nvdrv {
         // Inline buffer is optional
         auto inlineBuf{request.outputBuf.size() > 1 ? request.outputBuf.at(1) : span<u8>{}};
 
-        auto buf{GetMainIoctlBuffer(ioctl, !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{}, !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
+        auto buf{GetMainIoctlBuffer(ioctl,
+                                    !request.inputBuf.empty() ? request.inputBuf.at(0) : span<u8>{},
+                                    !request.outputBuf.empty() ? request.outputBuf.at(0) : span<u8>{})};
         if (!buf)
             return NVRESULT(buf);
         else
