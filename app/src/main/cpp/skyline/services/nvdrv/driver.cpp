@@ -23,12 +23,12 @@ namespace skyline::service::nvdrv {
                     break;           \
             }
 
-        #define DEVICE_CASE(path, object)                                                           \
-            case util::Hash(path):                                                                  \
-                {                                                                                   \
-                    std::unique_lock lock(deviceMutex);                                             \
-                    devices.emplace(fd, std::make_unique<device::object>(state, *this, core, ctx)); \
-                    return NvResult::Success;                                                       \
+        #define DEVICE_CASE(path, object, ...)                                                                     \
+            case util::Hash(path):                                                                                 \
+                {                                                                                                  \
+                    std::unique_lock lock(deviceMutex);                                                            \
+                    devices.emplace(fd, std::make_unique<device::object>(state, *this, core, ctx, ##__VA_ARGS__)); \
+                    return NvResult::Success;                                                                      \
                 }
 
         DEVICE_SWITCH(
