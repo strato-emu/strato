@@ -9,6 +9,20 @@
 
 namespace skyline::service::nvdrv::core {
     /**
+     * @brief A unique ID for a specific channel type
+     */
+    enum class ChannelType : u32 {
+        MsEnc = 0,
+        Vic = 1,
+        Gpu = 2,
+        NvDec = 3,
+        Display = 4,
+        NvJpg = 5,
+        TSec = 6,
+        Max = 7
+    };
+
+    /**
      * @brief SyncpointManager handles allocating and accessing host1x syncpoints, these are cached versions of the HW syncpoints which are intermittently synced
      * @note Refer to Chapter 14 of the Tegra X1 TRM for an exhaustive overview of them
      * @url https://http.download.nvidia.com/tegra-public-appnotes/host1x.html
@@ -39,6 +53,16 @@ namespace skyline::service::nvdrv::core {
         u32 FindFreeSyncpoint();
 
       public:
+        static constexpr std::array<u32, static_cast<u32>(ChannelType::Max)> ChannelSyncpoints{
+            0x0,  // `MsEnc` is unimplemented
+            0xC,  // `Vic`
+            0x0,  // `Gpu` syncpoints are allocated per-channel instead
+            0x36, // `NvDec`
+            0x0,  // `Display` is unimplemented
+            0x37, // `NvJpg`
+            0x0,  // `TSec` is unimplemented
+        }; //!< Maps each channel ID to a constant syncpoint
+
         SyncpointManager(const DeviceState &state);
 
         /**

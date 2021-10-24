@@ -15,6 +15,10 @@ namespace skyline::service::nvdrv::core {
         // https://github.com/Jetson-TX1-AndroidTV/android_kernel_jetson_tx1_hdmi_primary/blob/8f74a72394efb871cb3f886a3de2998cd7ff2990/drivers/gpu/host1x/drm/dc.c#L660
         ReserveSyncpoint(VBlank0SyncpointId, true);
         ReserveSyncpoint(VBlank1SyncpointId, true);
+
+        for (u32 syncpointId : ChannelSyncpoints)
+            if (syncpointId)
+                ReserveSyncpoint(syncpointId, false);
     }
 
     u32 SyncpointManager::ReserveSyncpoint(u32 id, bool clientManaged) {
