@@ -7,7 +7,7 @@
 #include "devices/nvhost/ctrl_gpu.h"
 #include "devices/nvhost/gpu_channel.h"
 #include "devices/nvhost/as_gpu.h"
-
+#include "devices/nvhost/host1x_channel.h"
 
 namespace skyline::service::nvdrv {
     Driver::Driver(const DeviceState &state) : state(state), core(state) {}
@@ -43,6 +43,15 @@ namespace skyline::service::nvdrv {
                 DEVICE_CASE("/dev/nvhost-gpu", nvhost::GpuChannel)
             )
         }
+
+        if (ctx.perms.AccessJpeg)
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvjpg", nvhost::Host1XChannel, core::ChannelType::NvJpg))
+
+        if (ctx.perms.AccessVic)
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-vic", nvhost::Host1XChannel, core::ChannelType::Vic))
+
+        if (ctx.perms.AccessVideoDecoder)
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvdec", nvhost::Host1XChannel, core::ChannelType::NvDec))
 
         #undef DEVICE_CASE
         #undef DEVICE_SWITCH

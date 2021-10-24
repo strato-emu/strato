@@ -229,6 +229,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost/ctrl.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost/ctrl_gpu.cpp
         ${source_DIR}/skyline/services/nvdrv/devices/nvhost/gpu_channel.cpp
+        ${source_DIR}/skyline/services/nvdrv/devices/nvhost/host1x_channel.cpp
         ${source_DIR}/skyline/services/hosbinder/parcel.cpp
         ${source_DIR}/skyline/services/hosbinder/IHOSBinderDriver.cpp
         ${source_DIR}/skyline/services/hosbinder/GraphicBufferProducer.cpp
