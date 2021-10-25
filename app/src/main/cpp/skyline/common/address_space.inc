@@ -406,7 +406,7 @@ namespace skyline {
             if (searchSuccessor != this->blocks.end())
                 allocStart = searchPredecessor->virt;
             else
-                throw exception("Unexpected allocator state!");
+                return {}; // AS is full
         }
 
 

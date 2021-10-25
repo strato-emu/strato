@@ -65,10 +65,13 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
 
-        if (flags.fixed)
+        if (flags.fixed) {
             allocator.AllocateFixed(static_cast<u32>(offset >> pageSizeBits), pages);
-        else
+        } else {
             offset = static_cast<u64>(allocator.Allocate(pages)) << pageSizeBits;
+            if (!offset)
+                throw exception("Failed to allocate free space in the GPU AS!");
+        }
 
         u64 size{static_cast<u64>(pages) * pageSize};
 
@@ -236,6 +239,9 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 pageSizeBits{bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
             offset = static_cast<u64>(allocator.Allocate(static_cast<u32>(util::AlignUp(size, pageSize) >> pageSizeBits))) << pageSizeBits;
+            if (!offset)
+                throw exception("Failed to allocate free space in the GPU AS!");
+
             asCtx->gmmu.Map(offset, cpuPtr, size);
 
             auto mapping{std::make_shared<Mapping>(cpuPtr, offset, size, false, bigPage, false)};
