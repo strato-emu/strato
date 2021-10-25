@@ -56,11 +56,23 @@ namespace skyline::service::nvdrv::device::nvhost {
 
     PosixResult Host1XChannel::MapBuffer(u8 compressed, span<BufferHandle> handles) {
         state.logger->Debug("compressed: {}", compressed);
+
+        for (auto &bufferHandle : handles) {
+            bufferHandle.address = core.nvMap.PinHandle(bufferHandle.handle);
+            state.logger->Debug("handle: {}, address: 0x{:X}", bufferHandle.handle, bufferHandle.address);
+        }
+
         return PosixResult::Success;
     }
 
     PosixResult Host1XChannel::UnmapBuffer(u8 compressed, span<BufferHandle> handles) {
         state.logger->Debug("compressed: {}", compressed);
+
+        for (auto &bufferHandle : handles) {
+            core.nvMap.UnpinHandle(bufferHandle.handle);
+            state.logger->Debug("handle: {}", bufferHandle.handle);
+        }
+
         return PosixResult::Success;
     }
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>

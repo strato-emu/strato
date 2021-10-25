@@ -159,7 +159,7 @@ namespace skyline {
       public:
         VaType vaStart; //!< The base VA of the allocator, no allocations will be below this
 
-        FlatAllocator(VaType vaStart, VaType vaLimit);
+        FlatAllocator(VaType vaStart, VaType vaLimit = Base::VaMaximum);
 
         /**
          * @brief Allocates a region in the AS of the given size and returns its address

@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/address_space.inc>
+#include <soc.h>
 #include "nvmap.h"
+
+namespace skyline {
+    template class FlatAddressSpaceMap<u32, 0, bool, false, false, 32>;
+    template class FlatAllocator<u32, 0, 32>;
+}
 
 namespace skyline::service::nvdrv::core {
     NvMap::Handle::Handle(u64 size, Id id) : size(size), alignedSize(size), origSize(size), id(id) {}
@@ -51,7 +58,7 @@ namespace skyline::service::nvdrv::core {
         return PosixResult::Success;
     }
 
-    NvMap::NvMap(const DeviceState &state) : state(state) {}
+    NvMap::NvMap(const DeviceState &state) : state(state), smmuAllocator(PAGE_SIZE) {}
 
     void NvMap::AddHandle(std::shared_ptr<Handle> handleDesc) {
         std::scoped_lock lock(handlesLock);
@@ -59,12 +66,26 @@ namespace skyline::service::nvdrv::core {
         handles.emplace(handleDesc->id, std::move(handleDesc));
     }
 
-    bool NvMap::TryRemoveHandle(const std::shared_ptr<Handle> &handleDesc) {
+    void NvMap::UnmapHandle(Handle &handleDesc) {
+        // Remove pending unmap queue entry if needed
+        if (handleDesc.unmapQueueEntry) {
+            unmapQueue.erase(*handleDesc.unmapQueueEntry);
+            handleDesc.unmapQueueEntry.reset();
+        }
+
+        // Free and unmap the handle from the SMMU
+        state.soc->smmu.Unmap(handleDesc.pinVirtAddress, static_cast<u32>(handleDesc.alignedSize));
+        smmuAllocator.Free(handleDesc.pinVirtAddress, static_cast<u32>(handleDesc.alignedSize));
+        handleDesc.pinVirtAddress = 0;
+    }
+
+
+    bool NvMap::TryRemoveHandle(const Handle &handleDesc) {
         // No dupes left, we can remove from handle map
-        if (handleDesc->dupes == 0 && handleDesc->internalDupes == 0) {
+        if (handleDesc.dupes == 0 && handleDesc.internalDupes == 0) {
             std::scoped_lock lock(handlesLock);
 
-            auto it{handles.find(handleDesc->id)};
+            auto it{handles.find(handleDesc.id)};
             if (it != handles.end())
                 handles.erase(it);
 
@@ -95,15 +116,72 @@ namespace skyline::service::nvdrv::core {
         }
     }
 
+    u32 NvMap::PinHandle(NvMap::Handle::Id handle) {
+        auto handleDesc{GetHandle(handle)};
+        if (!handleDesc) [[unlikely]]
+            return 0;
+
+        std::scoped_lock lock(handleDesc->mutex);
+        if (!handleDesc->pins) {
+            // If we're in the unmap queue we can just remove ourselves and return since we're already mapped
+            {
+                // Lock now to prevent our queue entry from being removed for allocation in-between the following check and erase
+                std::scoped_lock queueLock(unmapQueueLock);
+                if (handleDesc->unmapQueueEntry) {
+                    unmapQueue.erase(*handleDesc->unmapQueueEntry);
+                    handleDesc->unmapQueueEntry.reset();
+
+                    handleDesc->pins++;
+                    return handleDesc->pinVirtAddress;
+                }
+            }
+
+            // If not then allocate some space and map it
+            u32 address{};
+            while (!(address = smmuAllocator.Allocate(static_cast<u32>(handleDesc->alignedSize)))) {
+                // Free handles until the allocation succeeds
+                std::scoped_lock queueLock(unmapQueueLock);
+                if (auto freeHandleDesc{unmapQueue.front()}) {
+                    // Handles in the unmap queue are guaranteed not to be pinned so don't bother checking if they are before unmapping
+                    std::scoped_lock freeLock(freeHandleDesc->mutex);
+                    if (handleDesc->pinVirtAddress)
+                        UnmapHandle(*freeHandleDesc);
+                } else {
+                    throw exception("Ran out of SMMU address space!");
+                }
+            }
+
+            state.soc->smmu.Map(address, handleDesc->GetPointer(), static_cast<u32>(handleDesc->alignedSize));
+            handleDesc->pinVirtAddress = address;
+        }
+
+        handleDesc->pins++;
+        return handleDesc->pinVirtAddress;
+    }
+
+    void NvMap::UnpinHandle(Handle::Id handle) {
+        auto handleDesc{GetHandle(handle)};
+        if (!handleDesc)
+            return;
+
+        std::scoped_lock lock(handleDesc->mutex);
+        if (--handleDesc->pins < 0) {
+            state.logger->Warn("Pin count imbalance detected!");
+        } else if (!handleDesc->pins) {
+            std::scoped_lock queueLock(unmapQueueLock);
+
+            // Add to the unmap queue allowing this handle's memory to be freed if needed
+            unmapQueue.push_back(handleDesc);
+            handleDesc->unmapQueueEntry = std::prev(unmapQueue.end());
+        }
+    }
+
     std::optional<NvMap::FreeInfo> NvMap::FreeHandle(Handle::Id handle, bool internalSession) {
         std::weak_ptr<Handle> hWeak{GetHandle(handle)};
         FreeInfo freeInfo;
 
         // We use a weak ptr here so we can tell when the handle has been freed and report that back to guest
         if (auto handleDesc = hWeak.lock()) {
-            if (!handleDesc) [[unlikely]]
-                return std::nullopt;
-
             std::scoped_lock lock(handleDesc->mutex);
 
             if (internalSession) {
@@ -113,13 +191,19 @@ namespace skyline::service::nvdrv::core {
                 if (--handleDesc->dupes < 0) {
                     state.logger->Warn("User duplicate count imbalance detected!");
                 } else if (handleDesc->dupes == 0) {
-                    // TODO: unpin
+                    // Force unmap the handle
+                    if (handleDesc->pinVirtAddress) {
+                        std::scoped_lock queueLock(unmapQueueLock);
+                        UnmapHandle(*handleDesc);
+                    }
+
+                    handleDesc->pins = 0;
                 }
             }
 
             // Try to remove the shared ptr to the handle from the map, if nothing else is using the handle
-            // then it will now be freed when `h` goes out of scope
-            if (TryRemoveHandle(handleDesc))
+            // then it will now be freed when `handleDesc` goes out of scope
+            if (TryRemoveHandle(*handleDesc))
                 state.logger->Debug("Removed nvmap handle: {}", handle);
             else
                 state.logger->Debug("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);

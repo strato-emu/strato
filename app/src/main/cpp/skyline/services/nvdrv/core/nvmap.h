@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <queue>
 #include <common.h>
+#include <common/address_space.h>
 #include <services/common/result.h>
 
 namespace skyline::service::nvdrv::core {
@@ -29,6 +31,10 @@ namespace skyline::service::nvdrv::core {
             using Id = u32;
             Id id; //!< A globally unique identifier for this handle
 
+            i32 pins{};
+            u32 pinVirtAddress{};
+            std::optional<typeof(std::list<std::shared_ptr<Handle>>::iterator)> unmapQueueEntry{};
+
             struct Flags {
                 bool mapUncached : 1; //!< If the handle should be mapped as uncached
                 bool _pad0_ : 1;
@@ -41,7 +47,6 @@ namespace skyline::service::nvdrv::core {
 
             u64 address{}; //!< The memory location in the guest's AS that this handle corresponds to, this can also be in the nvdrv tmem
             bool isSharedMemMapped{}; //!< If this nvmap has been mapped with the MapSharedMem IPC call
-
 
             u8 kind{}; //!< Used for memory compression
             bool allocated{}; //!< If the handle has been allocated with `Alloc`
@@ -73,6 +78,10 @@ namespace skyline::service::nvdrv::core {
       private:
         const DeviceState &state;
 
+        FlatAllocator<u32, 0, 32> smmuAllocator;
+        std::list<std::shared_ptr<Handle>> unmapQueue;
+        std::mutex unmapQueueLock; //!< Protects access to `unmapQueue`
+
         std::unordered_map<Handle::Id, std::shared_ptr<Handle>> handles; //!< Main owning map of handles
         std::mutex handlesLock; //!< Protects access to `handles`
 
@@ -82,11 +91,17 @@ namespace skyline::service::nvdrv::core {
         void AddHandle(std::shared_ptr<Handle> handle);
 
         /**
+         * @brief Unmaps and frees the SMMU memory region a handle is mapped to
+         * @note Both `unmapQueueLock` and `handleDesc.mutex` MUST be locked when calling this
+         */
+        void UnmapHandle(Handle &handleDesc);
+
+        /**
          * @brief Removes a handle from the map taking its dupes into account
-         * @note h->mutex MUST be locked when calling this
+         * @note handleDesc.mutex MUST be locked when calling this
          * @return If the handle was removed from the map
          */
-        bool TryRemoveHandle(const std::shared_ptr<Handle> &h);
+        bool TryRemoveHandle(const Handle &handleDesc);
 
       public:
         /**
@@ -106,6 +121,18 @@ namespace skyline::service::nvdrv::core {
         [[nodiscard]] PosixResultValue<std::shared_ptr<Handle>> CreateHandle(u64 size);
 
         std::shared_ptr<Handle> GetHandle(Handle::Id handle);
+
+        /**
+         * @brief Maps a handle into the SMMU address space
+         * @note This operation is refcounted, the number of calls to this must eventually match the number of calls to `UnpinHandle`
+         * @return The SMMU virtual address that the handle has been mapped to
+         */
+        u32 PinHandle(Handle::Id handle);
+
+        /**
+         * @brief When this has been called an equal number of times to `PinHandle` for the supplied handle it will be added to a list of handles to be freed when necessary
+         */
+        void UnpinHandle(Handle::Id handle);
 
         /**
          * @brief Tries to free a handle and remove a single dupe
