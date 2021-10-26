@@ -21,21 +21,21 @@ target_compile_options(tzcode PRIVATE -Wno-everything)
 
 # Oboe
 add_subdirectory("libraries/oboe")
-include_directories("libraries/oboe/include")
+include_directories(SYSTEM "libraries/oboe/include")
 
 # LZ4
 set(LZ4_BUILD_CLI OFF CACHE BOOL "Build LZ4 CLI" FORCE)
 set(LZ4_BUILD_LEGACY_LZ4C OFF CACHE BOOL "Build lz4c progam with legacy argument support" FORCE)
 add_subdirectory("libraries/lz4/build/cmake")
-include_directories("libraries/lz4/lib")
+include_directories(SYSTEM "libraries/lz4/lib")
 
 # Vulkan + Vulkan-Hpp
 add_compile_definitions(VK_USE_PLATFORM_ANDROID_KHR) # We want all the Android-specific structures to be defined
 add_compile_definitions(VULKAN_HPP_NO_SPACESHIP_OPERATOR) # libcxx doesn't implement operator<=> for std::array which breaks this
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # We want to use designated initializers in Vulkan-Hpp
 add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1) # We use the dynamic loader rather than the static one to avoid an additional level of indirection
-include_directories("libraries/vkhpp")
-include_directories("libraries/vkhpp/Vulkan-Headers/include") # We use base Vulkan headers from this to ensure version parity with Vulkan-Hpp
+include_directories(SYSTEM "libraries/vkhpp")
+include_directories(SYSTEM "libraries/vkhpp/Vulkan-Headers/include") # We use base Vulkan headers from this to ensure version parity with Vulkan-Hpp
 
 # Vulkan Memory Allocator
 include_directories("libraries/vkma/include")
@@ -43,24 +43,24 @@ add_library(vkma STATIC libraries/vkma.cpp)
 target_compile_options(vkma PRIVATE -Wno-everything)
 
 # PugiXML (Header-only mode)
-include_directories("libraries/pugixml/src")
+include_directories(SYSTEM "libraries/pugixml/src")
 
 # Frozen
-include_directories("libraries/frozen/include")
+include_directories(SYSTEM "libraries/frozen/include")
 
 # MbedTLS
 set(ENABLE_TESTING OFF CACHE BOOL "Build mbed TLS tests." FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "Build mbed TLS programs." FORCE)
 set(UNSAFE_BUILD ON CACHE BOOL "Allow unsafe builds. These builds ARE NOT SECURE." FORCE)
 add_subdirectory("libraries/mbedtls")
-include_directories("libraries/mbedtls/include")
+include_directories(SYSTEM "libraries/mbedtls/include")
 
 # Opus
+include_directories(SYSTEM "libraries/opus/include")
 add_subdirectory("libraries/opus")
-include_directories("libraries/opus/include")
 
 # Perfetto SDK
-include_directories(libraries/perfetto/sdk)
+include_directories(SYSTEM "libraries/perfetto/sdk")
 add_library(perfetto STATIC libraries/perfetto/sdk/perfetto.cc)
 target_compile_options(perfetto PRIVATE -Wno-everything)
 
@@ -231,5 +231,20 @@ add_library(skyline SHARED
         )
 target_include_directories(skyline PRIVATE ${source_DIR}/skyline)
 # target_precompile_headers(skyline PRIVATE ${source_DIR}/skyline/common.h) # PCH will currently break Intellisense
-target_link_libraries(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto opus Boost::container)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field -Wno-dangling-else -Wconversion)
+
+# Include headers from libraries as system headers to silence warnings from them
+function(target_link_libraries_system target)
+    set(libraries ${ARGN})
+    foreach (library ${libraries})
+        if (TARGET ${library})
+            get_target_property(library_include_directories ${library} INTERFACE_INCLUDE_DIRECTORIES)
+            if (NOT "${library_include_directories}" STREQUAL "library_include_directories-NOTFOUND")
+                target_include_directories(${target} SYSTEM PRIVATE ${library_include_directories})
+            endif ()
+        endif ()
+        target_link_libraries(${target} ${library})
+    endforeach (library)
+endfunction(target_link_libraries_system)
+
+target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto opus Boost::container)
