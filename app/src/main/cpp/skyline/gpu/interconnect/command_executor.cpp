@@ -52,7 +52,7 @@ namespace skyline::gpu::interconnect {
                     .colorAttachment = 0,
                     .clearValue = value,
                 }, vk::ClearRect{
-                    .rect = scissor,
+                    .rect = vk::Rect2D{.extent = scissor},
                     .baseArrayLayer = 0,
                     .layerCount = 1,
                 });
