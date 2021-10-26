@@ -36,10 +36,9 @@ import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.utils.Settings
-import emu.skyline.utils.toFile
 import javax.inject.Inject
 import kotlin.math.ceil
-import kotlin.math.roundToInt
+
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {

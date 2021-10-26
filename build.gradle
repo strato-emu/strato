@@ -2,19 +2,18 @@
 
 buildscript {
     ext {
-        kotlin_version = '1.4.30'
+        kotlin_version = '1.5.31'
         lifecycle_version = '2.3.1'
-        hilt_version = '2.33-beta'
+        hilt_version = '2.39.1'
         lifecycle_version = '2.3.1'
     }
 
     repositories {
         google()
         mavenCentral()
-        jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.2'
+        classpath 'com.android.tools.build:gradle:7.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
 
@@ -28,7 +27,6 @@ allprojects {
         google()
         mavenCentral()
         maven { url "https://google.bintray.com/flexbox-layout" }
-        jcenter()
     }
 }
 

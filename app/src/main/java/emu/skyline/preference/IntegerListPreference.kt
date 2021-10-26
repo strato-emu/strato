@@ -5,24 +5,23 @@
 
 package emu.skyline.preference
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.DialogInterface
+import android.content.res.Resources
+import android.content.res.TypedArray
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
-import android.os.Parcelable.Creator
 import android.util.AttributeSet
-import android.content.Context
-import android.content.res.Resources
-import android.content.res.TypedArray
-import android.content.DialogInterface
-import android.annotation.SuppressLint
 import androidx.annotation.ArrayRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.TypedArrayUtils
-import androidx.preference.R
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceDialogFragmentCompat
-import emu.skyline.R as sR
+import androidx.preference.R
 import emu.skyline.di.getSettings
+import emu.skyline.R as sR
 
 /**
  * A Preference that displays a list of strings in a dialog and saves an integer that corresponds to the selected entry (as specified by entryValues or the index of the selected entry)
@@ -176,19 +175,6 @@ class IntegerListPreference @JvmOverloads constructor(
         override fun writeToParcel(dest : Parcel, flags : Int) {
             super.writeToParcel(dest, flags)
             dest.writeSerializable(value)
-        }
-
-        companion object {
-            @JvmField
-            val CREATOR : Creator<SavedState> = object : Creator<SavedState> {
-                override fun createFromParcel(input : Parcel) : SavedState? {
-                    return SavedState(input)
-                }
-
-                override fun newArray(size : Int) : Array<SavedState?> {
-                    return arrayOfNulls(size)
-                }
-            }
         }
     }
 

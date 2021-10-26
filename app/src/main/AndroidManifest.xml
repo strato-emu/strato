@@ -22,12 +22,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
-        <activity android:name="emu.skyline.MainActivity">
+        <activity
+            android:name="emu.skyline.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name="emu.skyline.SettingsActivity"
             android:exported="true"
@@ -37,6 +40,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="emu.skyline.MainActivity" />
         </activity>
+
         <activity
             android:name="emu.skyline.input.ControllerActivity"
             android:exported="true">
@@ -44,6 +48,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="emu.skyline.SettingsActivity" />
         </activity>
+
         <activity
             android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
             android:exported="true"
@@ -53,9 +58,11 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="emu.skyline.input.ControllerActivity" />
         </activity>
+
         <activity
             android:name="emu.skyline.EmulationActivity"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:launchMode="singleInstance"
             android:screenOrientation="landscape"
             tools:ignore="LockedOrientationActivity">

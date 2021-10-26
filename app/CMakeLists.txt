@@ -11,7 +11,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -Wno-unused-command-line-argument -DNDEBUG")
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 
 # {fmt}
 add_subdirectory("libraries/fmt")

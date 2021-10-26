@@ -90,7 +90,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
          * This sorts the items in [allItems] in relation to how similar they are to [currentSearchTerm]
          */
         fun extractSorted() = allItems.mapNotNull { item ->
-            item.key().toLowerCase(Locale.getDefault()).let {
+            item.key().lowercase(Locale.getDefault()).let {
                 val similarity = (jw.similarity(currentSearchTerm, it) + cos.similarity(currentSearchTerm, it)) / 2
                 if (similarity != 0.0) ScoredItem(similarity, item) else null
             }
@@ -99,7 +99,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
         /**
          * This performs filtering on the items in [allItems] based on similarity to [term]
          */
-        override fun performFiltering(term : CharSequence) = (term as String).toLowerCase(Locale.getDefault()).let { lowerCaseTerm ->
+        override fun performFiltering(term : CharSequence) = (term as String).lowercase(Locale.getDefault()).let { lowerCaseTerm ->
             currentSearchTerm = lowerCaseTerm
 
             with(if (term.isEmpty()) {
@@ -108,7 +108,7 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
                 val filterData = mutableListOf<GenericListItem<*>>()
 
                 val topResults = extractSorted()
-                val avgScore = topResults.sumByDouble { it.score } / topResults.size
+                val avgScore = topResults.sumOf { it.score } / topResults.size
 
                 for (result in topResults)
                     if (result.score >= avgScore) filterData.add(result.item)

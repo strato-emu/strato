@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <unwind.h>
+#include <fcntl.h>
 #include "signal.h"
 
 namespace skyline::signal {
@@ -172,19 +173,21 @@ namespace skyline::signal {
     void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function, bool syscallRestart) {
         static std::array<std::once_flag, NSIG> signalHandlerOnce{};
 
-        stack_t stack;
-        sigaltstack(nullptr, &stack);
         struct sigaction action{
             .sa_sigaction = reinterpret_cast<void (*)(int, siginfo *, void *)>(ThreadSignalHandler),
-            .sa_flags = (syscallRestart ? SA_RESTART : 0) | SA_SIGINFO | (stack.ss_sp && stack.ss_size ? SA_ONSTACK : 0),
+            .sa_flags = SA_SIGINFO | SA_EXPOSE_TAGBITS | (syscallRestart ? SA_RESTART : 0) | SA_ONSTACK,
         };
 
         for (int signal : signals) {
             std::call_once(signalHandlerOnce[signal], [signal, &action]() {
                 struct sigaction oldAction;
                 Sigaction(signal, &action, &oldAction);
-                if (oldAction.sa_flags && oldAction.sa_flags != action.sa_flags)
-                    throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
+                if (oldAction.sa_flags) {
+                    oldAction.sa_flags &= ~SA_UNSUPPORTED; // Mask out kernel not supporting old sigaction() bits
+                    oldAction.sa_flags |= SA_SIGINFO | SA_EXPOSE_TAGBITS | SA_RESTART | SA_ONSTACK; // Intentionally ignore these flags for the comparison
+                    if (oldAction.sa_flags != (action.sa_flags | SA_RESTART))
+                        throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
+                }
 
                 DefaultSignalHandlers.at(signal).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
             });

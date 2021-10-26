@@ -8,7 +8,6 @@ package emu.skyline.adapter.controller
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import emu.skyline.adapter.GenericListItem
-import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.adapter.ViewBindingFactory
 import emu.skyline.adapter.inflater
 import emu.skyline.databinding.ControllerCheckboxItemBinding

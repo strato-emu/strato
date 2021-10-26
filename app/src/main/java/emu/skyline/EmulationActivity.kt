@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
 import android.graphics.PointF
-import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.view.*
@@ -434,15 +433,25 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         } else {
             inputManager.controllers[index]!!.rumbleDeviceDescriptor?.let {
                 if (it == "builtin") {
-                    val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                        vibratorManager.defaultVibrator
+                    } else {
+                        @Suppress("DEPRECATION")
+                        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    }
                     vibrators[index] = vibrator
                     vibrator
                 } else {
                     for (id in InputDevice.getDeviceIds()) {
                         val device = InputDevice.getDevice(id)
                         if (device.descriptor == inputManager.controllers[index]!!.rumbleDeviceDescriptor) {
-                            vibrators[index] = device.vibrator
-                            device.vibrator
+                            vibrators[index] = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                device.vibratorManager.defaultVibrator
+                            } else {
+                                @Suppress("DEPRECATION")
+                                device.vibrator
+                            }
                         }
                     }
                 }

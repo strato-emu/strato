@@ -23,7 +23,7 @@ class RomProvider @Inject constructor(@ApplicationContext private val context : 
             if (file.isDirectory) {
                 addEntries(fileFormats, file, entries, systemLanguage)
             } else {
-                fileFormats[file.name?.substringAfterLast(".")?.toLowerCase()]?.let { romFormat->
+                fileFormats[file.name?.substringAfterLast(".")?.lowercase()]?.let { romFormat->
                     entries.getOrPut(romFormat, { arrayListOf() }).add(RomFile(context, romFormat, file.uri, systemLanguage).appEntry)
                 }
             }

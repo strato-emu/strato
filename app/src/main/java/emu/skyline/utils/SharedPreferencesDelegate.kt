@@ -44,7 +44,7 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
     private fun camelToSnakeCase(text : String) = StringBuilder().apply {
         text.forEachIndexed { index, c ->
             if (index != 0 && c.isUpperCase()) append('_')
-            append(c.toLowerCase())
+            append(c.lowercase())
         }.toString()
     }
 }

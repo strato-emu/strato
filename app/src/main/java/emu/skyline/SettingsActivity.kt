@@ -64,9 +64,10 @@ class SettingsActivity : AppCompatActivity() {
                 if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null)
                     return
 
-                val f = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
-                f.setTargetFragment(this, 0)
-                f.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
+                val dialogFragment = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
+                @Suppress("DEPRECATION")
+                dialogFragment.setTargetFragment(this, 0) // androidx.preference.PreferenceDialogFragmentCompat depends on the target fragment being set correctly even though it's deprecated
+                dialogFragment.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
             } else {
                 super.onDisplayPreferenceDialog(preference)
             }

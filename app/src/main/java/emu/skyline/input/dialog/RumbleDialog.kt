@@ -7,9 +7,7 @@ package emu.skyline.input.dialog
 
 import android.animation.LayoutTransition
 import android.content.Context
-import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
+import android.os.*
 import android.view.*
 import android.view.animation.LinearInterpolator
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -64,7 +62,15 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
 
             if (context.id == 0) {
                 binding.rumbleBuiltin.visibility = View.VISIBLE
-                if (!(context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).hasVibrator())
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                    vibratorManager.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                }
+
+                if (!vibrator.hasVibrator())
                     binding.rumbleBuiltin.isEnabled = false
                 binding.rumbleBuiltin.setOnClickListener {
                     controller.rumbleDeviceDescriptor = "builtin"
@@ -85,7 +91,12 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
                 // We want all input events from Joysticks and game pads
                 if (event.isFromSource(InputDevice.SOURCE_GAMEPAD) || event.isFromSource(InputDevice.SOURCE_JOYSTICK)) {
                     if (event.repeatCount == 0 && event.action == KeyEvent.ACTION_DOWN) {
-                        val vibrator = event.device.vibrator
+                        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            event.device.vibratorManager.defaultVibrator
+                        } else {
+                            @Suppress("DEPRECATION")
+                            event.device.vibrator
+                        }
 
                         when {
                             // If the device doesn't match the currently selected device then update the UI accordingly and set [deviceId] to the current device

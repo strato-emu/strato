@@ -41,7 +41,7 @@ fun getRomFormat(uri : Uri, contentResolver : ContentResolver) : RomFormat {
         cursor.moveToFirst()
         uriStr = cursor.getString(nameIndex)
     }
-    return RomFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).toUpperCase(Locale.ROOT))
+    return RomFormat.valueOf(uriStr.substring(uriStr.lastIndexOf(".") + 1).uppercase(Locale.ROOT))
 }
 
 /**

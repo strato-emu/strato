@@ -149,7 +149,7 @@ namespace skyline {
          */
         template<typename S, typename... Args>
         auto Format(S formatString, Args &&... args) {
-            return fmt::format(formatString, FmtCast(args)...);
+            return fmt::format(fmt::runtime(formatString), FmtCast(args)...);
         }
     }
 
@@ -159,7 +159,7 @@ namespace skyline {
     class exception : public std::runtime_error {
       public:
         template<typename S, typename... Args>
-        exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, util::FmtCast(args)...)) {}
+        exception(const S &formatStr, Args &&... args) : runtime_error(fmt::format(fmt::runtime(formatStr), util::FmtCast(args)...)) {}
     };
 
     namespace util {
@@ -364,7 +364,6 @@ namespace skyline {
         template<typename T> requires (std::is_integral_v<T>)
         void FillRandomBytes(std::span<T> in) {
             std::independent_bits_engine<std::mt19937_64, std::numeric_limits<T>::digits, T> gen(detail::generator);
-
             std::generate(in.begin(), in.end(), gen);
         }
 
@@ -577,7 +576,7 @@ namespace skyline {
             S string;
             const char *function;
 
-            FunctionString(S string, const char *function = __builtin_FUNCTION()) : string(std::move(string)), function(function) {}
+            constexpr FunctionString(S string, const char *function = __builtin_FUNCTION()) : string(std::move(string)), function(function) {}
 
             std::string operator*() {
                 return std::string(function) + ": " + std::string(string);
@@ -587,91 +586,91 @@ namespace skyline {
         template<typename... Args>
         void Error(FunctionString<const char*> formatString, Args &&... args) {
             if (LogLevel::Error <= configLevel)
-                Write(LogLevel::Error, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Error, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Error(FunctionString<std::string> formatString, Args &&... args) {
             if (LogLevel::Error <= configLevel)
-                Write(LogLevel::Error, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Error, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
         void ErrorNoPrefix(S formatString, Args &&... args) {
             if (LogLevel::Error <= configLevel)
-                Write(LogLevel::Error, fmt::format(formatString, util::FmtCast(args)...));
+                Write(LogLevel::Error, fmt::format(fmt::runtime(formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Warn(FunctionString<const char*> formatString, Args &&... args) {
             if (LogLevel::Warn <= configLevel)
-                Write(LogLevel::Warn, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Warn, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Warn(FunctionString<std::string> formatString, Args &&... args) {
             if (LogLevel::Warn <= configLevel)
-                Write(LogLevel::Warn, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Warn, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
         void WarnNoPrefix(S formatString, Args &&... args) {
             if (LogLevel::Warn <= configLevel)
-                Write(LogLevel::Warn, fmt::format(formatString, util::FmtCast(args)...));
+                Write(LogLevel::Warn, fmt::format(fmt::runtime(formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Info(FunctionString<const char*> formatString, Args &&... args) {
             if (LogLevel::Info <= configLevel)
-                Write(LogLevel::Info, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Info, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Info(FunctionString<std::string> formatString, Args &&... args) {
             if (LogLevel::Info <= configLevel)
-                Write(LogLevel::Info, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Info, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
         void InfoNoPrefix(S formatString, Args &&... args) {
             if (LogLevel::Info <= configLevel)
-                Write(LogLevel::Info, fmt::format(formatString, util::FmtCast(args)...));
+                Write(LogLevel::Info, fmt::format(fmt::runtime(formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Debug(FunctionString<const char*> formatString, Args &&... args) {
             if (LogLevel::Debug <= configLevel)
-                Write(LogLevel::Debug, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Debug, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Debug(FunctionString<std::string> formatString, Args &&... args) {
             if (LogLevel::Debug <= configLevel)
-                Write(LogLevel::Debug, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Debug, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
         void DebugNoPrefix(S formatString, Args &&... args) {
             if (LogLevel::Debug <= configLevel)
-                Write(LogLevel::Debug, fmt::format(formatString, util::FmtCast(args)...));
+                Write(LogLevel::Debug, fmt::format(fmt::runtime(formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Verbose(FunctionString<const char*> formatString, Args &&... args) {
             if (LogLevel::Verbose <= configLevel)
-                Write(LogLevel::Verbose, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Verbose, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename... Args>
         void Verbose(FunctionString<std::string> formatString, Args &&... args) {
             if (LogLevel::Verbose <= configLevel)
-                Write(LogLevel::Verbose, fmt::format(*formatString, util::FmtCast(args)...));
+                Write(LogLevel::Verbose, fmt::format(fmt::runtime(*formatString), util::FmtCast(args)...));
         }
 
         template<typename S, typename... Args>
         void VerboseNoPrefix(S formatString, Args &&... args) {
             if (LogLevel::Verbose <= configLevel)
-                Write(LogLevel::Verbose, fmt::format(formatString, util::FmtCast(args)...));
+                Write(LogLevel::Verbose, fmt::format(fmt::runtime(formatString), util::FmtCast(args)...));
         }
     };
 
