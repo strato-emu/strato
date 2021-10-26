@@ -375,12 +375,15 @@ namespace skyline::input {
             return a.period < b.period;
         });
 
+        jlong totalPeriod{};
         jint totalAmplitude{};
-        for (const auto &vibration : vibrations)
+        for (const auto &vibration : vibrations) {
+            totalPeriod += vibration.period;
             totalAmplitude += vibration.amplitude;
+        }
 
         // If this vibration is essentially null then we don't play rather clear any running vibrations
-        if (totalAmplitude == 0 || vibrations[3].period == 0) {
+        if (totalPeriod == 0 || totalAmplitude == 0) {
             jvm->ClearVibrationDevice(index);
             return;
         }
@@ -390,13 +393,13 @@ namespace skyline::input {
         std::array<jint, 50> amplitudes;
 
         // We are essentially unrolling the bands into a linear sequence, due to the data not being always linearizable there will be inaccuracies at the ends unless there's a pattern that's repeatable which will happen when all band's frequencies are factors of each other
-        u8 i{};
-        for (; i < timings.size(); i++) {
+        size_t timingIndex{};
+        for (; timingIndex < timings.size(); timingIndex++) {
             jlong time{};
 
-            u8 startCycleCount{};
-            for (u8 n{}; n < vibrations.size(); n++) {
-                auto &vibration{vibrations[n]};
+            size_t startCycleCount{};
+            for (size_t vibrationIndex{}; vibrationIndex < vibrations.size(); vibrationIndex++) {
+                auto &vibration{vibrations[vibrationIndex]};
                 if (totalTime <= vibration.start) {
                     vibration.start = vibration.end + vibration.period;
                     totalAmplitude += vibration.amplitude;
@@ -410,16 +413,16 @@ namespace skyline::input {
             }
 
             // If all bands start again at this point then we can end the pattern here as a loop to the front will be flawless
-            if (i && startCycleCount == vibrations.size())
+            if (timingIndex && startCycleCount == vibrations.size())
                 break;
 
-            timings[i] = time;
+            timings[timingIndex] = time;
             totalTime += time;
 
-            amplitudes[i] = std::min(totalAmplitude, AmplitudeMax);
+            amplitudes[timingIndex] = std::min(totalAmplitude, AmplitudeMax);
         }
 
-        jvm->VibrateDevice(index, span(timings.begin(), timings.begin() + i), span(amplitudes.begin(), amplitudes.begin() + i));
+        jvm->VibrateDevice(index, span(timings.begin(), timings.begin() + timingIndex), span(amplitudes.begin(), amplitudes.begin() + timingIndex));
     }
 
     void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 index, const NpadVibrationValue &value) {
@@ -461,7 +464,7 @@ namespace skyline::input {
                 {right.frequencyLow, right.amplitudeLow * (AmplitudeMax / 4)},
                 {right.frequencyHigh, right.amplitudeHigh * (AmplitudeMax / 4)},
             };
-            VibrateDevice<4>(manager.state.jvm, index, vibrations);
+            VibrateDevice(manager.state.jvm, index, vibrations);
         } else {
             VibrateDevice(manager.state.jvm, index, left);
             VibrateDevice(manager.state.jvm, partnerIndex, right);
