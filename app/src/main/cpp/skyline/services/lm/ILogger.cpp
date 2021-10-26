@@ -8,6 +8,7 @@ namespace skyline::service::lm {
     ILogger::ILogger(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result ILogger::Log(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto inputBuffer{request.inputBuf.at(0)};
         struct Data {
             u64 pid;
             u64 threadContext;
@@ -15,7 +16,7 @@ namespace skyline::service::lm {
             LogLevel level;
             u8 verbosity;
             u32 payloadLength;
-        } &data = request.inputBuf.at(0).as<Data>();
+        } &data = inputBuffer.as<Data>();
 
         struct LogMessage {
             std::string_view message;
@@ -30,10 +31,10 @@ namespace skyline::service::lm {
         } logMessage{};
 
         u64 offset{sizeof(Data)};
-        while (offset < request.inputBuf[0].size()) {
-            auto fieldType{request.inputBuf[0].subspan(offset++).as<LogFieldType>()};
-            auto length{request.inputBuf[0].subspan(offset++).as<u8>()};
-            auto object{request.inputBuf[0].subspan(offset, length)};
+        while ((offset + sizeof(LogFieldType) + sizeof(u8)) < inputBuffer.size()) { // The length of the last field sometimes doesn't add up to the buffer size, so we need to terminate the loop when we can't pop the type and length off the buffer
+            auto fieldType{inputBuffer.subspan(offset++).as<LogFieldType>()};
+            auto length{inputBuffer.subspan(offset++).as<u8>()};
+            auto object{inputBuffer.subspan(offset, length)};
 
             switch (fieldType) {
                 case LogFieldType::Start:
