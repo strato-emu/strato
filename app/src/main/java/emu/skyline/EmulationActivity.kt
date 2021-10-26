@@ -486,17 +486,18 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     for (id in InputDevice.getDeviceIds()) {
                         val device = InputDevice.getDevice(id)
                         if (device.descriptor == inputManager.controllers[index]!!.rumbleDeviceDescriptor) {
-                            vibrators[index] = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 device.vibratorManager.defaultVibrator
                             } else {
                                 @Suppress("DEPRECATION")
-                                device.vibrator
+                                device.vibrator!!
                             }
+                            vibrators[index] = vibrator
+                            return@let vibrator
                         }
                     }
                 }
-            }
-            return
+            } as Vibrator
         }
 
         val effect = VibrationEffect.createWaveform(timing, amplitude, 0)
