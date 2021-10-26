@@ -100,7 +100,7 @@ namespace skyline::gpu {
         auto first{type.find('[')};
         auto last{type.find(']', first)};
         if (first != std::string_view::npos && last != std::string_view::npos) {
-            type = type.substr(first + 2, last != std::string_view::npos ? last - 4 : last);
+            type = type.substr(first + 2, last != std::string_view::npos ? (last - first) - 3 : last);
 
             switch (util::Hash(type)) {
                 IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
