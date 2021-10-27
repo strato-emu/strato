@@ -33,6 +33,8 @@ namespace skyline::gpu::format {
         .green = swc::Blue,
     }};
     constexpr Format R16G16B16A16Unorm{sizeof(u16) * 4, vkf::eR16G16B16A16Unorm};
+    constexpr Format R16G16B16A16Snorm{sizeof(u16) * 4, vkf::eR16G16B16A16Snorm};
+    constexpr Format R16G16B16A16Sint{sizeof(u16) * 4, vkf::eR16G16B16A16Sint};
     constexpr Format R16G16B16A16Uint{sizeof(u16) * 4, vkf::eR16G16B16A16Uint};
     constexpr Format R16G16B16A16Float{sizeof(u16) * 4, vkf::eR16G16B16A16Sfloat};
 
@@ -76,6 +78,10 @@ namespace skyline::gpu::format {
             case vk::Format::eR8Uint:
                 return R8Uint;
             case vk::Format::eR16G16B16A16Unorm:
+                return R16G16B16A16Unorm;
+            case vk::Format::eR16G16B16A16Snorm:
+                return R16G16B16A16Unorm;
+            case vk::Format::eR16G16B16A16Sint:
                 return R16G16B16A16Unorm;
             case vk::Format::eR16G16B16A16Uint:
                 return R16G16B16A16Uint;

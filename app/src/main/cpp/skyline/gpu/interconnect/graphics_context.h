@@ -98,6 +98,10 @@ namespace skyline::gpu::interconnect {
                         return format::R32B32G32A32Float;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Unorm:
                         return format::R16G16B16A16Unorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Snorm:
+                        return format::R16G16B16A16Snorm;
+                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Sint:
+                        return format::R16G16B16A16Sint;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Uint:
                         return format::R16G16B16A16Uint;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Float:
@@ -205,6 +209,8 @@ namespace skyline::gpu::interconnect {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.gpuAddress, size)};
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
+
+            renderTarget.guest.type = static_cast<texture::TextureType>(renderTarget.guest.dimensions.GetType());
 
             renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest);
             return &renderTarget.view.value();
