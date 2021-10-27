@@ -255,13 +255,13 @@ namespace skyline::gpu {
         using Mappings = boost::container::small_vector<span < u8>, 3>;
 
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this texture
-        texture::Dimensions dimensions;
-        texture::Format format;
-        texture::TileConfig tileConfig;
-        texture::TextureType type;
-        u16 baseArrayLayer;
-        u16 layerCount;
-        u32 layerStride; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available
+        texture::Dimensions dimensions{};
+        texture::Format format{};
+        texture::TileConfig tileConfig{};
+        texture::TextureType type{};
+        u16 baseArrayLayer{};
+        u16 layerCount{};
+        u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available
 
         GuestTexture() {}
 
