@@ -127,8 +127,6 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
         get() = result == LoaderResult.Success
 
     init {
-        System.loadLibrary("skyline")
-
         context.contentResolver.openFileDescriptor(uri, "r")!!.use {
             result = LoaderResult.get(populate(format.ordinal, it.fd, context.filesDir.canonicalPath + "/", systemLanguage))
         }

@@ -4,10 +4,10 @@
 #include <csignal>
 #include <pthread.h>
 #include <unistd.h>
-#include <android/log.h>
 #include <android/asset_manager_jni.h>
 #include <sys/system_properties.h>
 #include "skyline/common.h"
+#include "skyline/common/logger.h"
 #include "skyline/common/language.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
@@ -55,6 +55,17 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
+extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
+    JNIEnv *env,
+    jobject,
+    jstring appFilesPathJstring,
+    jint logLevel
+) {
+    std::string appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
+    skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
+    skyline::Logger::LoaderContext.Initialize(appFilesPath + "loader.log");
+}
+
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     JNIEnv *env,
     jobject instance,
@@ -77,7 +88,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(preferenceFd);
 
     skyline::JniString appFilesPath(env, appFilesPathJstring);
-    auto logger{std::make_shared<skyline::Logger>(appFilesPath + "skyline.log", settings->logLevel)};
+    skyline::Logger::EmulationContext.Initialize(appFilesPath + "emulation.log");
 
     auto start{std::chrono::steady_clock::now()};
 
@@ -90,7 +101,6 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     try {
         auto os{std::make_shared<skyline::kernel::OS>(
             jvmManager,
-            logger,
             settings,
             appFilesPath,
             GetTimeZoneName(),
@@ -121,6 +131,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     auto end{std::chrono::steady_clock::now()};
     logger->Write(skyline::Logger::LogLevel::Info, fmt::format("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 
+    skyline::Logger::EmulationContext.Finalize();
     close(romFd);
 }
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <random>
+#include <span>
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 #include "base.h"

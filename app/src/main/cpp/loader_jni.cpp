@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "skyline/common/logger.h"
 #include "skyline/crypto/key_store.h"
 #include "skyline/vfs/nca.h"
 #include "skyline/vfs/os_backing.h"
@@ -13,6 +14,8 @@
 
 extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
     skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
+
+    skyline::Logger::SetContext(&skyline::Logger::LoaderContext);
 
     auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, appFilesPathJstring))};
     std::unique_ptr<skyline::loader::Loader> loader;

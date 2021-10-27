@@ -15,13 +15,12 @@
 namespace skyline::kernel {
     OS::OS(
         std::shared_ptr<JvmManager> &jvmManager,
-        std::shared_ptr<Logger> &logger,
         std::shared_ptr<Settings> &settings,
         std::string appFilesPath,
         std::string deviceTimeZone,
         language::SystemLanguage systemLanguage,
         std::shared_ptr<vfs::FileSystem> assetFileSystem)
-        : state(this, jvmManager, settings, logger),
+        : state(this, jvmManager, settings),
           appFilesPath(std::move(appFilesPath)),
           deviceTimeZone(std::move(deviceTimeZone)),
           assetFileSystem(std::move(assetFileSystem)),

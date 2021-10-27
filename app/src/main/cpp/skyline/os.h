@@ -22,13 +22,11 @@ namespace skyline::kernel {
         language::SystemLanguage systemLanguage;
 
         /**
-         * @param logger An instance of the Logger class
          * @param settings An instance of the Settings class
          * @param window The ANativeWindow object to draw the screen to
          */
         OS(
             std::shared_ptr<JvmManager> &jvmManager,
-            std::shared_ptr<Logger> &logger,
             std::shared_ptr<Settings> &settings,
             std::string appFilesPath,
             std::string deviceTimeZone,

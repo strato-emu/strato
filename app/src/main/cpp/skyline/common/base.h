@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <variant>
+#include <bitset>
 #include <fmt/format.h>
 
 namespace fmt {

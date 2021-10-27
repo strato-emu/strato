@@ -37,10 +37,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         private var emulationThread : Thread? = null
     }
 
-    init {
-        System.loadLibrary("skyline") // libskyline.so
-    }
-
     private val binding by lazy { EmuActivityBinding.inflate(layoutInflater) }
 
     /**
