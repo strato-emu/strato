@@ -94,6 +94,7 @@ namespace skyline::service::audio::IAudioRenderer {
             outputHeader.elapsedFrameCountInfoSize;
 
         auto output{request.outputBuf.at(0).data()};
+        std::memset(output, 0, request.outputBuf.at(0).size());
 
         *reinterpret_cast<UpdateDataHeader *>(output) = outputHeader;
         output += sizeof(UpdateDataHeader);
