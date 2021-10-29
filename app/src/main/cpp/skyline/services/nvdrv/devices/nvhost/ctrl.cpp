@@ -225,7 +225,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::lock_guard lock(syncpointEventMutex);
 
         for (u32 i{}; i < std::numeric_limits<u64>::digits; i++)
-            if (bitmask & (1 << i))
+            if (bitmask & (1ULL << i))
                 if (auto freeErr{SyncpointFreeEventLocked(i)}; freeErr != PosixResult::Success)
                     err = freeErr;
 
