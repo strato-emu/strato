@@ -16,7 +16,10 @@ namespace skyline::gpu::format {
     constexpr Format A2B10G10R10Unorm{sizeof(u32), vkf::eA2B10G10R10UnormPack32};
     constexpr Format A8B8G8R8Srgb{sizeof(u32), vkf::eA8B8G8R8SrgbPack32};
     constexpr Format A8B8G8R8Snorm{sizeof(u32), vkf::eA8B8G8R8SnormPack32};
+    constexpr Format R16G16Unorm{sizeof(u32), vkf::eR16G16Unorm};
     constexpr Format R16G16Snorm{sizeof(u32), vkf::eR16G16Snorm};
+    constexpr Format R16G16Sint{sizeof(u32), vkf::eR16G16Sint};
+    constexpr Format R16G16Uint{sizeof(u32), vkf::eR16G16Uint};
     constexpr Format R16G16Float{sizeof(u32), vkf::eR16G16Sfloat};
     constexpr Format B10G11R11Float{sizeof(u32), vkf::eB10G11R11UfloatPack32};
     constexpr Format R32Float{sizeof(u32), vkf::eR32Sfloat};
@@ -53,8 +56,14 @@ namespace skyline::gpu::format {
                 return A8B8G8R8Srgb;
             case vk::Format::eA8B8G8R8SnormPack32:
                 return A8B8G8R8Snorm;
+            case vk::Format::eR16G16Unorm:
+                return R16G16Unorm;
             case vk::Format::eR16G16Snorm:
                 return R16G16Snorm;
+            case vk::Format::eR16G16Sint:
+                return R16G16Sint;
+            case vk::Format::eR16G16Uint:
+                return R16G16Uint;
             case vk::Format::eR16G16Sfloat:
                 return R16G16Float;
             case vk::Format::eB10G11R11UfloatPack32:
