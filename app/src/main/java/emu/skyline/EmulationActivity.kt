@@ -55,7 +55,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var shouldFinish : Boolean = true
 
     /**
-     * If the activity should return to [MainActivity] or just call [finishAndRemoveTask]
+     * If the activity should return to [MainActivity] or just call [finishAffinity]
      */
     var returnToMain : Boolean = false
 
@@ -183,7 +183,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     shouldFinish = false
                     if (returnToMain)
                         startActivity(Intent(applicationContext, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
-                    finishAndRemoveTask()
+                    finishAffinity()
                 }
             }
         }
@@ -199,7 +199,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 emulationThread!!.join(250)
 
             if (emulationThread!!.isAlive) {
-                finishAndRemoveTask()
+                finishAffinity()
                 startActivity(intent)
                 Runtime.getRuntime().exit(0)
             }
