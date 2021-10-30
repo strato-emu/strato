@@ -12,6 +12,9 @@ set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Wno-unused-command-line-argument")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -DNDEBUG")
 
+# Build all libraries with -Ofast but with default debug data (-g) for debug builds
+set(CMAKE_CXX_FLAGS_DEBUG "-Ofast")
+
 # libcxx
 set(ANDROID_STL "none")
 set(LIBCXX_INCLUDE_TESTS OFF)
@@ -94,6 +97,9 @@ target_compile_options(perfetto PRIVATE -Wno-everything)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 add_subdirectory("libraries/boost")
+
+# Build Skyline with full debugging data and -Og for debug builds
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5")
 
 # Skyline
 add_library(skyline SHARED
