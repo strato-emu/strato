@@ -8,14 +8,6 @@
 #define U32_OFFSET(regs, field) (offsetof(regs, field) / sizeof(u32))
 
 namespace skyline::soc::gm20b {
-    enum class EngineID {
-        Fermi2D = 0x902D,
-        KeplerMemory = 0xA140,
-        Maxwell3D = 0xB197,
-        MaxwellCompute = 0xB1C0,
-        MaxwellDma = 0xB0B5,
-    };
-
     namespace engine {
         /**
          * @brief The Engine class provides an interface that can be used to communicate with the GPU's internal engines
