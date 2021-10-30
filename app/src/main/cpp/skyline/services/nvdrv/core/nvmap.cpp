@@ -151,7 +151,7 @@ namespace skyline::service::nvdrv::core {
                 }
             }
 
-            state.soc->smmu.Map(address, handleDesc->GetPointer(), static_cast<u32>(handleDesc->alignedSize));
+            state.soc->smmu.Map(address, reinterpret_cast<u8 *>(handleDesc->address), static_cast<u32>(handleDesc->alignedSize));
             handleDesc->pinVirtAddress = address;
         }
 
