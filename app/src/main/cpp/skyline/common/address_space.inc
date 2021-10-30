@@ -238,8 +238,6 @@ namespace skyline {
 
         std::scoped_lock lock(this->blockMutex);
 
-        VaType virtEnd{virt + size};
-
         auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [] (auto virt, const auto &block) {
             return virt < block.virt;
         })};
@@ -278,8 +276,6 @@ namespace skyline {
         TRACE_EVENT("containers", "FlatMemoryManager::Read");
 
         std::scoped_lock lock(this->blockMutex);
-
-        VaType virtEnd{virt + size};
 
         auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [] (auto virt, const auto &block) {
             return virt < block.virt;
