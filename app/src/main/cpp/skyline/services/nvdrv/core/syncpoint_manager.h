@@ -13,8 +13,8 @@ namespace skyline::service::nvdrv::core {
      */
     enum class ChannelType : u32 {
         MsEnc = 0,
-        Vic = 1,
-        Gpu = 2,
+        VIC = 1,
+        GPU = 2,
         NvDec = 3,
         Display = 4,
         NvJpg = 5,
@@ -55,8 +55,8 @@ namespace skyline::service::nvdrv::core {
       public:
         static constexpr std::array<u32, static_cast<u32>(ChannelType::Max)> ChannelSyncpoints{
             0x0,  // `MsEnc` is unimplemented
-            0xC,  // `Vic`
-            0x0,  // `Gpu` syncpoints are allocated per-channel instead
+            0xC,  // `VIC`
+            0x0,  // `GPU` syncpoints are allocated per-channel instead
             0x36, // `NvDec`
             0x0,  // `Display` is unimplemented
             0x37, // `NvJpg`

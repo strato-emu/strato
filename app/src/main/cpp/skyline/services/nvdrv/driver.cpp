@@ -48,7 +48,7 @@ namespace skyline::service::nvdrv {
             DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvjpg", nvhost::Host1xChannel, core::ChannelType::NvJpg))
 
         if (ctx.perms.AccessVic)
-            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-vic", nvhost::Host1xChannel, core::ChannelType::Vic))
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-vic", nvhost::Host1xChannel, core::ChannelType::VIC))
 
         if (ctx.perms.AccessVideoDecoder)
             DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvdec", nvhost::Host1xChannel, core::ChannelType::NvDec))
