@@ -26,6 +26,13 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::Kill(bool join, bool all, bool disableCreation) {
+        bool expected{false};
+        if (!join && !alreadyKilled.compare_exchange_strong(expected, true))
+            // If the process has already been killed and we don't want to wait for it to join then just instantly return rather than waiting on the mutex
+            return;
+        else
+            alreadyKilled.store(true);
+
         std::lock_guard guard(threadMutex);
         if (disableCreation)
             disableThreadCreation = true;
