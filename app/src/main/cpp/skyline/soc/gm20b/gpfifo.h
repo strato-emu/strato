@@ -82,8 +82,8 @@ namespace skyline::soc::gm20b {
 
     /**
      * @brief The ChannelGpfifo class handles creating pushbuffers from GP entries and then processing them for a single channel
-     * @note A single ChannelGpfifo thread exists per channel with a single shared mutex in `GPFIFO` to enforce that only one channel can run at a time
-     * @note This class doesn't perfectly map to any particular hardware component on the X1, it does a mix of the GPU Host PBDMA (With  and handling the GPFIFO entries
+     * @note A single ChannelGpfifo thread exists per channel, allowing them to run asynchronously
+     * @note This class doesn't perfectly map to any particular hardware component on the X1, it does a mix of the GPU Host PBDMA and handling the GPFIFO entries
      * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_pbdma.ref.txt#L62
      */
     class ChannelGpfifo {
@@ -126,6 +126,11 @@ namespace skyline::soc::gm20b {
          */
         void Process(GpEntry gpEntry);
 
+        /**
+         * @brief Executes all pending entries in the FIFO and polls for more
+         */
+        void Run();
+
       public:
         /**
          * @param numEntries The number of gpEntries to allocate space for in the FIFO
@@ -133,11 +138,6 @@ namespace skyline::soc::gm20b {
         ChannelGpfifo(const DeviceState &state, ChannelContext &channelCtx, size_t numEntries);
 
         ~ChannelGpfifo();
-
-        /**
-         * @brief Executes all pending entries in the FIFO
-         */
-        void Run();
 
         /**
          * @brief Pushes a list of entries to the FIFO, these commands will be executed on calls to 'Process'
