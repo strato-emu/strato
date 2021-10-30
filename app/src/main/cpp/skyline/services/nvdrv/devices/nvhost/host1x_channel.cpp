@@ -12,7 +12,9 @@ namespace skyline::service::nvdrv::device::nvhost {
                                  const SessionContext &ctx,
                                  core::ChannelType channelType)
         : NvDevice(state, driver, core, ctx),
-          channelType(channelType) {}
+          channelType(channelType) {
+        state.soc->host1x.channels[static_cast<size_t>(channelType)].Start();
+    }
 
     PosixResult Host1XChannel::SetNvmapFd(In<FileDescriptor> fd) {
         state.logger->Debug("fd: {}", fd);
@@ -24,6 +26,34 @@ namespace skyline::service::nvdrv::device::nvhost {
                                       span<SubmitSyncpointIncr> syncpointIncrs, span<u32> fenceThresholds) {
         state.logger->Debug("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
                             cmdBufs.size(), relocs.size(), syncpointIncrs.size(), fenceThresholds.size());
+
+        if (fenceThresholds.size() > syncpointIncrs.size())
+            return PosixResult::InvalidArgument;
+
+        if (!relocs.empty())
+            throw exception("Relocations are unimplemented!");
+
+        std::scoped_lock lock(channelMutex);
+
+        for (size_t i{}; i < syncpointIncrs.size(); i++) {
+            const auto &incr{syncpointIncrs[i]};
+
+            u32 max{core.syncpointManager.IncrementSyncpointMaxExt(incr.syncpointId, incr.numIncrs)};
+            if (i < fenceThresholds.size())
+                fenceThresholds[i] = max;
+        }
+
+        for (const auto &cmdBuf : cmdBufs) {
+            auto handleDesc{core.nvMap.GetHandle(cmdBuf.mem)};
+            if (!handleDesc)
+                throw exception("Invalid handle passed for a command buffer!");
+
+            u64 gatherAddress{handleDesc->address + cmdBuf.offset};
+            state.logger->Debug("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
+
+            span gather(reinterpret_cast<u32 *>(gatherAddress), cmdBuf.words);
+            state.soc->host1x.channels[static_cast<size_t>(channelType)].Push(gather);
+        }
 
         return PosixResult::Success;
     }

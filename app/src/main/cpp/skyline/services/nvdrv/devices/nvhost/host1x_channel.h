@@ -23,7 +23,7 @@ namespace skyline::service::nvdrv::device::nvhost {
          */
         struct SubmitCmdBuf {
             core::NvMap::Handle::Id mem;
-            u32 offset; //!< Offset from the handle of where the gather should start
+            u32 offset; //!< Offset in bytes from the handle of where the gather should start
             u32 words; //!< Size for the gather in 4 byte words
         };
 
