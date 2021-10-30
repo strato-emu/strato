@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <bit>
 #include <map>
 #include <unordered_map>
 #include <list>

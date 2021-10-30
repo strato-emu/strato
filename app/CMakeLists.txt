@@ -54,6 +54,7 @@ set(ENABLE_PROGRAMS OFF CACHE BOOL "Build mbed TLS programs." FORCE)
 set(UNSAFE_BUILD ON CACHE BOOL "Allow unsafe builds. These builds ARE NOT SECURE." FORCE)
 add_subdirectory("libraries/mbedtls")
 include_directories(SYSTEM "libraries/mbedtls/include")
+target_compile_options(mbedcrypto PRIVATE -Wno-everything)
 
 # Opus
 include_directories(SYSTEM "libraries/opus/include")

@@ -12,7 +12,7 @@ namespace skyline::vfs {
         constexpr i8 DefaultCore{0}; // The default core for an HOS process
         constexpr u64 DefaultStackSize{0x200000}; //!< The default amount of stack: 2 MiB
         constexpr u64 DefaultSystemResourceSize{0x1FE00000}; //!< The amount of memory reserved for system resources, it's the maximum at 510 MiB
-        meta = {
+        meta = NpdmMeta{
             .magic = MetaMagic,
             .flags = {
                 {
