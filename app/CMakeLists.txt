@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(Skyline LANGUAGES CXX ASM VERSION 0.3)
+project(Skyline LANGUAGES C CXX ASM VERSION 0.3)
 
 set(BUILD_TESTS OFF CACHE BOOL "Build Tests" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Build Testing" FORCE)
@@ -9,8 +9,31 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -Wno-unused-command-line-argument -DNDEBUG")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Wno-unused-command-line-argument")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -DNDEBUG")
+
+# libcxx
+set(ANDROID_STL "none")
+set(LIBCXX_INCLUDE_TESTS OFF)
+set(LIBCXX_INCLUDE_BENCHMARKS OFF)
+set(LIBCXX_INCLUDE_DOCS OFF)
+set(LIBCXX_ENABLE_SHARED FALSE)
+set(LIBCXX_ENABLE_ASSERTIONS FALSE)
+set(LIBCXX_STANDALONE_BUILD FALSE)
+add_subdirectory("libraries/llvm/libcxx")
+link_libraries(cxx_static)
+get_target_property(LIBCXX_INCLUDE_COMPILE_OPTION cxx-headers INTERFACE_COMPILE_OPTIONS)
+string(REGEX REPLACE "-I" "" LIBCXX_INCLUDE_DIRECTORY_LIST "${LIBCXX_INCLUDE_COMPILE_OPTION}")
+list(GET LIBCXX_INCLUDE_DIRECTORY_LIST 1 LIBCXX_TARGET_INCLUDE_DIRECTORY) # We just want the target include directory
+set_target_properties(cxx-headers PROPERTIES INTERFACE_COMPILE_OPTIONS -isystem${LIBCXX_TARGET_INCLUDE_DIRECTORY})
+
+# libcxxabi
+set(LIBCXXABI_INCLUDE_TESTS OFF)
+set(LIBCXXABI_ENABLE_SHARED FALSE)
+set(LIBCXXABI_STANDALONE_BUILD FALSE)
+set(LIBCXXABI_LIBCXX_INCLUDES "${LIBCXX_TARGET_INCLUDE_DIRECTORY}" CACHE STRING "" FORCE)
+add_subdirectory("libraries/llvm/libcxxabi")
+link_libraries(cxxabi_static)
 
 # {fmt}
 add_subdirectory("libraries/fmt")
@@ -57,8 +80,10 @@ include_directories(SYSTEM "libraries/mbedtls/include")
 target_compile_options(mbedcrypto PRIVATE -Wno-everything)
 
 # Opus
+set(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "Install Opus CMake package config module" FORCE)
 include_directories(SYSTEM "libraries/opus/include")
 add_subdirectory("libraries/opus")
+target_compile_definitions(opus PRIVATE OPUS_WILL_BE_SLOW=1) # libopus will warn when built without optimizations
 
 # Perfetto SDK
 include_directories(SYSTEM "libraries/perfetto/sdk")

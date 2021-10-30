@@ -286,7 +286,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                             bigPageSize, asFd, flags, vaRangeStart, vaRangeEnd, vaRangeSplit);
 
         if (bigPageSize) {
-            if (!std::ispow2(bigPageSize)) {
+            if (!std::has_single_bit(bigPageSize)) {
                 state.logger->Error("Non power-of-2 big page size: 0x{:X}!", bigPageSize);
                 return PosixResult::InvalidArgument;
             }

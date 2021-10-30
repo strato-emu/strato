@@ -47,7 +47,7 @@ namespace skyline::service::nvdrv::device {
         if (!handle) [[unlikely]]
             return PosixResult::InvalidArgument;
 
-        if (!std::ispow2(align)) [[unlikely]]
+        if (!std::has_single_bit(align)) [[unlikely]]
             return PosixResult::InvalidArgument;
 
         // Force page size alignment at a minimum

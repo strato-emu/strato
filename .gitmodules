@@ -38,3 +38,7 @@
 	path = app/libraries/boost
 	url = https://github.com/boostorg/boost.git
 	ignore = all
+[submodule "app/libraries/llvm-project"]
+    path = app/libraries/llvm
+    url = https://github.com/llvm/llvm-project.git
+    shallow = true

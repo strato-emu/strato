@@ -98,7 +98,7 @@ namespace skyline {
             return this->data() < pointer;
         }
 
-        constexpr bool operator<(typename std::span<T, Extent>::const_iterator it) const {
+        constexpr bool operator<(typename std::span<T, Extent>::iterator it) const {
             return this->begin() < it;
         }
 
