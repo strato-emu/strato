@@ -26,7 +26,7 @@ namespace skyline::soc::host1x {
         std::thread thread; //!< The thread that manages processing of pushbuffers within gathers
         std::mutex threadStartMutex; //!< Protects the thread from being started multiple times
 
-        Host1XClass host1XClass; //!< The internal Host1x class, used for performing syncpoint waits and other general operations
+        Host1xClass host1XClass; //!< The internal Host1x class, used for performing syncpoint waits and other general operations
         TegraHostInterface<NvDecClass> nvDecClass; //!< The THI wrapped NVDEC class for video decoding
         TegraHostInterface<VicClass> vicClass; //!< The THI wrapped VIC class for acceleration of image operations
 

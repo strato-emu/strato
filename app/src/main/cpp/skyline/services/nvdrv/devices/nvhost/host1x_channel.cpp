@@ -6,7 +6,7 @@
 #include "host1x_channel.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
-    Host1XChannel::Host1XChannel(const DeviceState &state,
+    Host1xChannel::Host1xChannel(const DeviceState &state,
                                  Driver &driver,
                                  Core &core,
                                  const SessionContext &ctx,
@@ -16,12 +16,12 @@ namespace skyline::service::nvdrv::device::nvhost {
         state.soc->host1x.channels[static_cast<size_t>(channelType)].Start();
     }
 
-    PosixResult Host1XChannel::SetNvmapFd(In<FileDescriptor> fd) {
+    PosixResult Host1xChannel::SetNvmapFd(In<FileDescriptor> fd) {
         state.logger->Debug("fd: {}", fd);
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::Submit(span<SubmitCmdBuf> cmdBufs,
+    PosixResult Host1xChannel::Submit(span<SubmitCmdBuf> cmdBufs,
                                       span<SubmitReloc> relocs, span<u32> relocShifts,
                                       span<SubmitSyncpointIncr> syncpointIncrs, span<u32> fenceThresholds) {
         state.logger->Debug("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
@@ -58,7 +58,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::GetSyncpoint(In<u32> channelSyncpointIdx, Out<u32> syncpointId) {
+    PosixResult Host1xChannel::GetSyncpoint(In<u32> channelSyncpointIdx, Out<u32> syncpointId) {
         state.logger->Debug("channelSyncpointIdx: {}", channelSyncpointIdx);
 
         if (channelSyncpointIdx > 0)
@@ -73,18 +73,18 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::GetWaitBase(In<core::ChannelType> pChannelType, Out<u32> waitBase) {
+    PosixResult Host1xChannel::GetWaitBase(In<core::ChannelType> pChannelType, Out<u32> waitBase) {
         state.logger->Debug("channelType: {}", static_cast<u32>(pChannelType));
         waitBase = 0;
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::SetSubmitTimeout(In<u32> timeout) {
+    PosixResult Host1xChannel::SetSubmitTimeout(In<u32> timeout) {
         state.logger->Debug("timeout: {}", timeout);
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::MapBuffer(u8 compressed, span<BufferHandle> handles) {
+    PosixResult Host1xChannel::MapBuffer(u8 compressed, span<BufferHandle> handles) {
         state.logger->Debug("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
@@ -95,7 +95,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
-    PosixResult Host1XChannel::UnmapBuffer(u8 compressed, span<BufferHandle> handles) {
+    PosixResult Host1xChannel::UnmapBuffer(u8 compressed, span<BufferHandle> handles) {
         state.logger->Debug("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
@@ -106,27 +106,27 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>
-    static constexpr u32 Host1XChannelMagic{0x00};
+    static constexpr u32 Host1xChannelMagic{0x00};
     static constexpr u32 GpuChannelMagic{0x48}; //!< Used for SetNvmapFd which is needed in both GPU and host1x channels
 
-    VARIABLE_IOCTL_HANDLER_FUNC(Host1XChannel, ({
+    VARIABLE_IOCTL_HANDLER_FUNC(Host1xChannel, ({
         IOCTL_CASE_ARGS(IN,    SIZE(0x4), MAGIC(GpuChannelMagic),    FUNC(0x1),
                         SetNvmapFd,       ARGS(In<FileDescriptor>))
-        IOCTL_CASE_ARGS(INOUT, SIZE(0x8), MAGIC(Host1XChannelMagic), FUNC(0x2),
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x8), MAGIC(Host1xChannelMagic), FUNC(0x2),
                         GetSyncpoint,     ARGS(In<u32>, Out<u32>))
-        IOCTL_CASE_ARGS(INOUT, SIZE(0x8), MAGIC(Host1XChannelMagic), FUNC(0x3),
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x8), MAGIC(Host1xChannelMagic), FUNC(0x3),
                         GetWaitBase,      ARGS(In<core::ChannelType>, Out<u32>))
-        IOCTL_CASE_ARGS(IN,    SIZE(0x4), MAGIC(Host1XChannelMagic), FUNC(0x7),
+        IOCTL_CASE_ARGS(IN,    SIZE(0x4), MAGIC(Host1xChannelMagic), FUNC(0x7),
                         SetSubmitTimeout, ARGS(In<u32>))
     }), ({
-        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1XChannelMagic), FUNC(0x1),
+        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1xChannelMagic), FUNC(0x1),
                                  Submit,      ARGS(Save<u32, 0>, Save<u32, 1>, Save<u32, 2>, Save<u32, 3>,
                                                    SlotSizeSpan<SubmitCmdBuf, 0>,
                                                    SlotSizeSpan<SubmitReloc, 1>, SlotSizeSpan<u32, 1>,
                                                    SlotSizeSpan<SubmitSyncpointIncr, 2>, SlotSizeSpan<u32, 3>))
-        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1XChannelMagic), FUNC(0x9),
+        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1xChannelMagic), FUNC(0x9),
                                  MapBuffer,   ARGS(Save<u32, 0>, Pad<u32>, In<u8>, Pad<u8, 3>, SlotSizeSpan<BufferHandle, 0>))
-        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1XChannelMagic), FUNC(0xA),
+        VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1xChannelMagic), FUNC(0xA),
                                  UnmapBuffer, ARGS(Save<u32, 0>, Pad<u32>, In<u8>, Pad<u8, 3>, SlotSizeSpan<BufferHandle, 0>))
     }))
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>

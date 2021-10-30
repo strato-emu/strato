@@ -15,7 +15,7 @@ namespace skyline::soc {
     class SOC {
       public:
         SMMU smmu;
-        host1x::Host1X host1x;
+        host1x::Host1x host1x;
 
         SOC(const DeviceState &state) : host1x(state) {}
     };

@@ -9,10 +9,10 @@
 
 namespace skyline::service::nvdrv::device::nvhost {
     /**
-     * @brief nvhost::Host1XChannel is used by applications to interface with host1x channels, such as VIC and NVDEC
+     * @brief nvhost::Host1xChannel is used by applications to interface with host1x channels, such as VIC and NVDEC
      * @url https://switchbrew.org/wiki/NV_services#Channels
      */
-    class Host1XChannel : public NvDevice {
+    class Host1xChannel : public NvDevice {
       private:
         core::ChannelType channelType; //!< The specific host1x channel that this instance refers to
         std::mutex channelMutex; //!< Synchronises submit operations
@@ -55,7 +55,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 address; //!< The output IOVA that the handle was pinned too
         };
 
-        Host1XChannel(const DeviceState &state,
+        Host1xChannel(const DeviceState &state,
                       Driver &driver,
                       Core &core,
                       const SessionContext &ctx,

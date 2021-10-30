@@ -59,7 +59,7 @@ namespace skyline::service::hosbinder {
         /**
          * @brief Wait on all native fences in this Android fence till they're signalled
          */
-        void Wait(soc::host1x::Host1X &host1x) const {
+        void Wait(soc::host1x::Host1x &host1x) const {
             if (fenceCount > fences.size())
                 throw exception("Wait has larger fence count ({}) than storage size ({})", fenceCount, fences.size());
             for (auto it{fences.begin()}, end{fences.begin() + fenceCount}; it < end; it++)

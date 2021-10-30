@@ -45,13 +45,13 @@ namespace skyline::service::nvdrv {
         }
 
         if (ctx.perms.AccessJpeg)
-            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvjpg", nvhost::Host1XChannel, core::ChannelType::NvJpg))
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvjpg", nvhost::Host1xChannel, core::ChannelType::NvJpg))
 
         if (ctx.perms.AccessVic)
-            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-vic", nvhost::Host1XChannel, core::ChannelType::Vic))
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-vic", nvhost::Host1xChannel, core::ChannelType::Vic))
 
         if (ctx.perms.AccessVideoDecoder)
-            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvdec", nvhost::Host1XChannel, core::ChannelType::NvDec))
+            DEVICE_SWITCH(DEVICE_CASE("/dev/nvhost-nvdec", nvhost::Host1xChannel, core::ChannelType::NvDec))
 
         #undef DEVICE_CASE
         #undef DEVICE_SWITCH

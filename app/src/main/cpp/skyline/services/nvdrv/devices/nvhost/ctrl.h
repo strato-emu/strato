@@ -63,13 +63,13 @@ namespace skyline::service::nvdrv::device::nvhost {
              * @brief Removes any wait requests on a syncpoint event and resets its state
              * @note Accesses to this function for a specific event should be locked
              */
-            void Cancel(soc::host1x::Host1X &host1x);
+            void Cancel(soc::host1x::Host1x &host1x);
 
             /**
              * @brief Asynchronously waits on a syncpoint event using the given fence
              * @note Accesses to this function for a specific event should be locked
              */
-            void RegisterWaiter(soc::host1x::Host1X &host1x, const Fence &fence);
+            void RegisterWaiter(soc::host1x::Host1x &host1x, const Fence &fence);
 
             bool IsInUse();
         };

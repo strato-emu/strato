@@ -17,12 +17,12 @@ namespace skyline::service::nvdrv::device::nvhost {
         state = State::Signalled;
     }
 
-    void Ctrl::SyncpointEvent::Cancel(soc::host1x::Host1X &host1x) {
+    void Ctrl::SyncpointEvent::Cancel(soc::host1x::Host1x &host1x) {
         host1x.syncpoints.at(fence.id).DeregisterWaiter(waiterHandle);
         waiterHandle = {};
     }
 
-    void Ctrl::SyncpointEvent::RegisterWaiter(soc::host1x::Host1X &host1x, const Fence &pFence) {
+    void Ctrl::SyncpointEvent::RegisterWaiter(soc::host1x::Host1x &host1x, const Fence &pFence) {
         fence = pFence;
         state = State::Waiting;
         waiterHandle = host1x.syncpoints.at(fence.id).RegisterWaiter(fence.threshold, [this] { Signal(); });
