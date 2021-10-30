@@ -6,7 +6,10 @@
 #include "ITimeZoneService.h"
 
 namespace skyline::service::timesrv {
-    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager, core::TimeServiceObject &core, bool writeable) : BaseService(state, manager), core(core), writeable(writeable) {}
+    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager, core::TimeServiceObject &core, bool writeable)
+        : BaseService(state, manager),
+          core(core),
+          writeable(writeable) {}
 
     Result ITimeZoneService::GetDeviceLocationName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto locationName{core.timeZoneManager.GetLocationName()};

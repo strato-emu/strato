@@ -4,7 +4,10 @@
 #include "track.h"
 
 namespace skyline::audio {
-    AudioTrack::AudioTrack(u8 channelCount, u32 sampleRate, std::function<void()> releaseCallback) : channelCount(channelCount), sampleRate(sampleRate), releaseCallback(std::move(releaseCallback)) {
+    AudioTrack::AudioTrack(u8 channelCount, u32 sampleRate, std::function<void()> releaseCallback)
+        : channelCount(channelCount),
+          sampleRate(sampleRate),
+          releaseCallback(std::move(releaseCallback)) {
         if (sampleRate != constant::SampleRate)
             throw exception("Unsupported audio sample rate: {}", sampleRate);
 

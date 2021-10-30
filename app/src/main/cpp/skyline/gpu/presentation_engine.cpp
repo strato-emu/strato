@@ -20,7 +20,13 @@ extern jfloat AverageFrametimeDeviationMs;
 namespace skyline::gpu {
     using namespace service::hosbinder;
 
-    PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu) : state(state), gpu(gpu), acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()), choreographerThread(&PresentationEngine::ChoreographerThread, this), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
+    PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu)
+        : state(state),
+          gpu(gpu),
+          acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}),
+          presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()),
+          choreographerThread(&PresentationEngine::ChoreographerThread, this),
+          vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);

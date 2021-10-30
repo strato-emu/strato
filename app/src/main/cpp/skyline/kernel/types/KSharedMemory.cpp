@@ -8,7 +8,9 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type) : memoryState(memState), KMemory(state, type) {
+    KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type)
+        : memoryState(memState),
+          KMemory(state, type) {
         fd = ASharedMemory_create("KSharedMemory", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);

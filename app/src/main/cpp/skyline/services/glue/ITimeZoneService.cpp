@@ -10,7 +10,12 @@
 #include "ITimeZoneService.h"
 
 namespace skyline::service::glue {
-    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::ITimeZoneService> core, timesrv::core::TimeServiceObject &timesrvCore, bool writeable) : BaseService(state, manager), core(std::move(core)), timesrvCore(timesrvCore), locationNameUpdateEvent(std::make_shared<kernel::type::KEvent>(state, false)), writeable(writeable) {}
+    ITimeZoneService::ITimeZoneService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::ITimeZoneService> core, timesrv::core::TimeServiceObject &timesrvCore, bool writeable)
+        : BaseService(state, manager),
+          core(std::move(core)),
+          timesrvCore(timesrvCore),
+          locationNameUpdateEvent(std::make_shared<kernel::type::KEvent>(state, false)),
+          writeable(writeable) {}
 
     Result ITimeZoneService::GetDeviceLocationName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return core->GetDeviceLocationName(session, request, response);

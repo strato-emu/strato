@@ -11,7 +11,9 @@
 #include "kernel/types/KProcess.h"
 
 namespace skyline {
-    Logger::Logger(const std::string &path, LogLevel configLevel) : configLevel(configLevel), start(util::GetTimeNs() / constant::NsInMillisecond) {
+    Logger::Logger(const std::string &path, LogLevel configLevel)
+        : configLevel(configLevel),
+          start(util::GetTimeNs() / constant::NsInMillisecond) {
         logFile.open(path, std::ios::trunc);
         UpdateTag();
         Write(LogLevel::Info, "Logging started");

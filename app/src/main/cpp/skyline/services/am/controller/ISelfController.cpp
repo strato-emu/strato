@@ -7,7 +7,11 @@
 #include "ISelfController.h"
 
 namespace skyline::service::am {
-    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager) : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)), accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)), hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")), BaseService(state, manager) {}
+    ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager)
+        : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)),
+          accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)),
+          hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")),
+          BaseService(state, manager) {}
 
     Result ISelfController::Exit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         throw nce::NCE::ExitException(true);

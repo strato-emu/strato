@@ -217,7 +217,15 @@ namespace skyline::service::timesrv::core {
         return localSystemClock.GetClockContext();
     }
 
-    TimeServiceObject::TimeServiceObject(const DeviceState &state) : timeSharedMemory(state), localSystemClockContextWriter(timeSharedMemory), networkSystemClockContextWriter(timeSharedMemory), localSystemClock(standardSteadyClock), networkSystemClock(standardSteadyClock), userSystemClock(state, standardSteadyClock, localSystemClock, networkSystemClock, timeSharedMemory), empheralSystemClock(tickBasedSteadyClock), managerServer(*this) {
+    TimeServiceObject::TimeServiceObject(const DeviceState &state)
+        : timeSharedMemory(state),
+          localSystemClockContextWriter(timeSharedMemory),
+          networkSystemClockContextWriter(timeSharedMemory),
+          localSystemClock(standardSteadyClock),
+          networkSystemClock(standardSteadyClock),
+          userSystemClock(state, standardSteadyClock, localSystemClock, networkSystemClock, timeSharedMemory),
+          empheralSystemClock(tickBasedSteadyClock),
+          managerServer(*this) {
         // Setup time service:
         // A new rtc UUID is generated every time glue inits time
         auto rtcId{UUID::GenerateUuidV4()};

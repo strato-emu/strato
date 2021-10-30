@@ -8,7 +8,12 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState) : ptr(ptr), size(size), permission(permission), memoryState(memState), KMemory(state, KType::KPrivateMemory) {
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState)
+        : ptr(ptr),
+          size(size),
+          permission(permission),
+          memoryState(memState),
+          KMemory(state, KType::KPrivateMemory) {
         if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
         if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))

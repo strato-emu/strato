@@ -5,7 +5,11 @@
 #include "command_scheduler.h"
 
 namespace skyline::gpu {
-    CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool) : device(device), commandBuffer(device, commandBuffer, pool), fence(device, vk::FenceCreateInfo{}), cycle(std::make_shared<FenceCycle>(device, *fence)) {}
+    CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool)
+        : device(device),
+          commandBuffer(device, commandBuffer, pool),
+          fence(device, vk::FenceCreateInfo{}),
+          cycle(std::make_shared<FenceCycle>(device, *fence)) {}
 
     bool CommandScheduler::CommandBufferSlot::AllocateIfFree(CommandScheduler::CommandBufferSlot &slot) {
         if (!slot.active.test_and_set(std::memory_order_acq_rel)) {

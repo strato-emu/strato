@@ -7,7 +7,11 @@
 #include "ISystemClock.h"
 
 namespace skyline::service::timesrv {
-    ISystemClock::ISystemClock(const DeviceState &state, ServiceManager &manager, core::SystemClockCore &core, bool writeClock, bool ignoreUninitializedChecks) : BaseService(state, manager), core(core), writable(writeClock), ignoreUninitializedChecks(ignoreUninitializedChecks) {}
+    ISystemClock::ISystemClock(const DeviceState &state, ServiceManager &manager, core::SystemClockCore &core, bool writeClock, bool ignoreUninitializedChecks)
+        : BaseService(state, manager),
+          core(core),
+          writable(writeClock),
+          ignoreUninitializedChecks(ignoreUninitializedChecks) {}
 
     Result ISystemClock::GetCurrentTime(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (!ignoreUninitializedChecks && !core.IsClockInitialized())

@@ -7,7 +7,11 @@
 #include "IStaticService.h"
 
 namespace skyline::service::glue {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::core::TimeServiceObject &timesrvCore, timesrv::StaticServicePermissions permissions) : BaseService(state, manager), core(std::move(core)), timesrvCore(timesrvCore), permissions(permissions) {}
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, std::shared_ptr<timesrv::IStaticService> core, timesrv::core::TimeServiceObject &timesrvCore, timesrv::StaticServicePermissions permissions)
+        : BaseService(state, manager),
+          core(std::move(core)),
+          timesrvCore(timesrvCore),
+          permissions(permissions) {}
 
     Result IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return core->GetStandardUserSystemClock(session, request, response);

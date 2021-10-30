@@ -20,7 +20,10 @@ namespace skyline::gpu {
             GuestTexture::Mappings::iterator iterator; //!< An iterator to the mapping in the texture's GuestTexture corresponding to this mapping
 
             template<typename... Args>
-            TextureMapping(std::shared_ptr<Texture> texture, GuestTexture::Mappings::iterator iterator, Args &&... args) : span<u8>(std::forward<Args>(args)...), texture(std::move(texture)), iterator(iterator) {}
+            TextureMapping(std::shared_ptr<Texture> texture, GuestTexture::Mappings::iterator iterator, Args &&... args)
+                : span<u8>(std::forward<Args>(args)...),
+                  texture(std::move(texture)),
+                  iterator(iterator) {}
         };
 
         GPU &gpu;

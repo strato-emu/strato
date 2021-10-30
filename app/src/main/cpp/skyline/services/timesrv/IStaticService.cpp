@@ -10,7 +10,10 @@
 #include "IStaticService.h"
 
 namespace skyline::service::timesrv {
-    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, core::TimeServiceObject &core, StaticServicePermissions permissions) : BaseService(state, manager), core(core), permissions(permissions) {}
+    IStaticService::IStaticService(const DeviceState &state, ServiceManager &manager, core::TimeServiceObject &core, StaticServicePermissions permissions)
+        : BaseService(state, manager),
+          core(core),
+          permissions(permissions) {}
 
     Result IStaticService::GetStandardUserSystemClock(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(std::make_shared<ISystemClock>(state, manager, core.userSystemClock, permissions.writeUserSystemClock, permissions.ignoreUninitializedChecks), session, response);

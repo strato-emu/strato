@@ -16,11 +16,18 @@ namespace skyline::gpu::memory {
         VmaAllocation vmaAllocation;
         vk::Buffer vkBuffer;
 
-        constexpr StagingBuffer(u8 *pointer, size_t size, VmaAllocator vmaAllocator, vk::Buffer vkBuffer, VmaAllocation vmaAllocation) : vmaAllocator(vmaAllocator), vkBuffer(vkBuffer), vmaAllocation(vmaAllocation), span(pointer, size) {}
+        constexpr StagingBuffer(u8 *pointer, size_t size, VmaAllocator vmaAllocator, vk::Buffer vkBuffer, VmaAllocation vmaAllocation)
+            : vmaAllocator(vmaAllocator),
+              vkBuffer(vkBuffer),
+              vmaAllocation(vmaAllocation),
+              span(pointer, size) {}
 
         StagingBuffer(const StagingBuffer &) = delete;
 
-        constexpr StagingBuffer(StagingBuffer &&other) : vmaAllocator(std::exchange(other.vmaAllocator, nullptr)), vmaAllocation(std::exchange(other.vmaAllocation, nullptr)), vkBuffer(std::exchange(other.vkBuffer, {})) {}
+        constexpr StagingBuffer(StagingBuffer &&other)
+            : vmaAllocator(std::exchange(other.vmaAllocator, nullptr)),
+              vmaAllocation(std::exchange(other.vmaAllocation, nullptr)),
+              vkBuffer(std::exchange(other.vkBuffer, {})) {}
 
         StagingBuffer &operator=(const StagingBuffer &) = delete;
 
@@ -42,13 +49,24 @@ namespace skyline::gpu::memory {
         VmaAllocation vmaAllocation;
         vk::Image vkImage;
 
-        constexpr Image(VmaAllocator vmaAllocator, vk::Image vkImage, VmaAllocation vmaAllocation) : vmaAllocator(vmaAllocator), vkImage(vkImage), vmaAllocation(vmaAllocation) {}
+        constexpr Image(VmaAllocator vmaAllocator, vk::Image vkImage, VmaAllocation vmaAllocation)
+            : vmaAllocator(vmaAllocator),
+              vkImage(vkImage),
+              vmaAllocation(vmaAllocation) {}
 
-        constexpr Image(u8 *pointer, VmaAllocator vmaAllocator, vk::Image vkImage, VmaAllocation vmaAllocation) : pointer(pointer), vmaAllocator(vmaAllocator), vkImage(vkImage), vmaAllocation(vmaAllocation) {}
+        constexpr Image(u8 *pointer, VmaAllocator vmaAllocator, vk::Image vkImage, VmaAllocation vmaAllocation)
+            : pointer(pointer),
+              vmaAllocator(vmaAllocator),
+              vkImage(vkImage),
+              vmaAllocation(vmaAllocation) {}
 
         Image(const Image &) = delete;
 
-        constexpr Image(Image &&other) : pointer(std::exchange(other.pointer, nullptr)), vmaAllocator(std::exchange(other.vmaAllocator, nullptr)), vmaAllocation(std::exchange(other.vmaAllocation, nullptr)), vkImage(std::exchange(other.vkImage, {})) {}
+        constexpr Image(Image &&other)
+            : pointer(std::exchange(other.pointer, nullptr)),
+              vmaAllocator(std::exchange(other.vmaAllocator, nullptr)),
+              vmaAllocation(std::exchange(other.vmaAllocation, nullptr)),
+              vkImage(std::exchange(other.vkImage, {})) {}
 
         Image &operator=(const Image &) = delete;
 
