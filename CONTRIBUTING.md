@@ -57,45 +57,45 @@ We generally follow the rule of **"Functional Spacing"**, that being spacing bet
 Here are a few examples of this to help with intution:
 * Spacing should generally follow multiple related variable declarations, this applies even more if error checking code needs to follow it
   ```cpp
-  auto a = GetSomethingA();
-  auto b = GetSomethingB();
-  auto c = GetSomethingC();
+  auto a{GetSomethingA()};
+  auto b{GetSomethingB()};
+  auto c{GetSomethingC()};
 
-  auto result = DoSomething(a, b, c);
+  auto result{DoSomething(a, b, c)};
   if (!result)
     throw exception("DoSomething has failed: {}", result);
   ```
 * If a function doesn't require multiple variable declarations, the function call should be right after the variable declaration
   ```cpp
-  auto a = GetClassA();
+  auto a{GetClassA()};
   a.DoSomething();
 
-  auto b = GetClassB();
+  auto b{GetClassB()};
   b.DoSomething();
   ```
 * If a single variable is used by a single-line control flow statement, there can be no spaces after it's declaration 
   ```cpp
-  auto a = GetClass();
+  auto a{GetClass()};
   if (a.fail)
     throw exception();
   ```
 * **Be consistent** (The above examples assume that `a`/`b`/`c` are correlated)
   * Inconsistent
     ```cpp
-    auto a = GetClassA();
+    auto a{GetClassA()};
     a.DoSomething();
 
-    auto b = GetClassB();
-    auto c = GetClassC();
+    auto b{GetClassB()};
+    auto c{GetClassC()};
 
     b.DoSomething();
     c.DoSomething();
     ```
   * Consistent #1
     ```cpp
-    auto a = GetClassA();
-    auto b = GetClassB();
-    auto c = GetClassC();
+    auto a{GetClassA()};
+    auto b{GetClassB()};
+    auto c{GetClassC()};
 
     a.DoSomething();
     b.DoSomething();
@@ -103,13 +103,13 @@ Here are a few examples of this to help with intution:
     ```
   * Consistent #2
     ```cpp
-    auto a = GetClassA();
+    auto a{GetClassA()};
     a.DoSomething();
 
-    auto b = GetClassB();
+    auto b{GetClassB()};
     b.DoSomething();
 
-    auto c = GetClassC();
+    auto c{GetClassC()};
     c.DoSomething();
     ```
 
@@ -162,8 +162,8 @@ Here are a few examples of this to help with intution:
 We generally support the usage of functional programming and lambda, usage of it for assigning conditional variables is recommended especially if it would otherwise be a nested ternary statement:
 * With Lambda (Inlined function)
   ```cpp
-  auto a = random();
-  auto b = [a] {
+  auto a{random()};
+  auto b{[a] {
     if (a > 1000)
       return 0;
     else if (a > 500)
@@ -172,12 +172,12 @@ We generally support the usage of functional programming and lambda, usage of it
       return 2;
     else
       return 3;
-  }();
+  }()};
   ```
 * With Ternary Operator
   ```cpp
-  auto a = random();
-  auto b = (a > 1000) ? 0 : ((a > 500) ? 1 : (a > 250 ? 2 : 3)); 
+  auto a{random()};
+  auto b{(a > 1000) ? 0 : ((a > 500) ? 1 : (a > 250 ? 2 : 3))}; 
   ```
 
 ### References
@@ -210,8 +210,8 @@ Use C++ range-based iterators for any C++ container iteration unless it can be p
 ### Usage of auto
 Use `auto` to assign a variable the type of the value it's being assigned to, but not where a different type is desired. So, as a rule of thumb always specify the type when setting something from a number rather than depending on `auto`. In addition, prefer not to use `auto` in cases where it's hard to determine the return type due to assigned value being complex.
 ```cpp
-u8 a = 20; // `20` won't be stored in a `u8` but rather in a `int` (i32, generally) if `auto` is used 
-auto b = std::make_shared<Something>(); // In this case `auto` is used to avoid typing out `std::shared_ptr<Something>`
+u8 a{20}; // `20` won't be stored in a `u8` but rather in a `int` (i32, generally) if `auto` is used 
+auto b{std::make_shared<Something>()}; // In this case `auto` is used to avoid typing out `std::shared_ptr<Something>`
 ```
 
 ### Primitive Types
@@ -224,6 +224,52 @@ In addition, try to `constexpr` as much as possible including constructors and f
 
 We should also mention that this isn't promoting the usage of `const`, it's use is actually discouraged out of references, in which case it is extremely encouraged. In addition, pointers are a general exception to this, using `const` with them isn't encouraged nor discouraged. Another exception are class functions, they can be made `const` if used from a `const` reference/pointer and don't
  modify any members but do not do this preemptively.
+
+### Initialization
+We use bracketed initialization as opposed to traditional initalization due to the better type checking it offers and the consistency with designated initalizers.
+
+* Correct
+```c++
+int a{FindA()};
+static constexpr size_t AConstant{1ULL << 63}
+
+for (int i{}; i < a; i++); 
+```
+
+* Incorrect
+```c++
+int a = FindA();
+static constexpr size_t AConstant = 1ULL << 63;
+
+for (int i = 0; i < a; i++); 
+```
+
+### Wrapping
+We do not enforce a particular limit on line lengths however excessively long lines that may be difficult to read when soft-wrapped should be wrapped semantically. See the below examples:
+
+* Correct:
+```c++
+PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu)
+    : state(state),
+      gpu(gpu),
+      acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}),
+      presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()),
+      choreographerThread(&PresentationEngine::ChoreographerThread, this),
+      vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
+```
+
+* Incorrect:
+```c++
+PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu) : state(state), gpu(gpu), acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()), choreographerThread(&PresentationEngine::ChoreographerThread, this), vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
+```
+
+* Incorrect
+```c++
+PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu)
+    : state(state), gpu(gpu), acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}), presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()),
+      choreographerThread(&PresentationEngine::ChoreographerThread, this),
+      vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
+```
 
 ### Vulkan.hpp Header Size
 The size of the header imported for [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp) is extremely large and exceeds the CLion default analysis limit, it is required to run for properly annotating any code which uses components from it. To override this limit, refer to this [article from JetBrains](https://www.jetbrains.com/help/objc/configuring-file-size-limit.html#file-size-limit) or navigate to Help -> Edit Custom Properties and add `idea.max.intellisense.filesize=20000` to set the maximum limit to 20MB which should be adequate for it.
