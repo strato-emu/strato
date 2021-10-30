@@ -61,4 +61,6 @@ namespace skyline::soc::host1x {
          */
         bool Wait(u32 threshold, std::chrono::steady_clock::duration timeout);
     };
+
+    using SyncpointSet = std::array<Syncpoint, SyncpointCount>;
 }
