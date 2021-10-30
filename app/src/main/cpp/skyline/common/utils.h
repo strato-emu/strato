@@ -260,4 +260,15 @@ namespace skyline::util {
             return &value;
         }
     };
+
+    template<typename T, typename... TArgs, size_t... Is>
+    std::array<T, sizeof...(Is)> MakeFilledArray(std::index_sequence<Is...>, TArgs &&... args)
+    {
+        return {(void(Is), T(args...))...};
+    }
+
+    template<typename T, size_t Size, typename... TArgs>
+    std::array<T, Size> MakeFilledArray(TArgs &&... args) {
+        return MakeFilledArray<T>(std::make_index_sequence<Size>(), std::forward<TArgs>(args)...);
+    }
 }
