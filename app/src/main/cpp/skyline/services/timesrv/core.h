@@ -19,6 +19,7 @@ namespace skyline::service::timesrv::core {
      * @brief A steady clock provides a monotonically increasing timepoint calibrated from a specific base
      */
     class SteadyClockCore {
+      private:
         bool rtcResetDetected{}; //!< True if the RTC this clock is based off has reset before this boot.
         bool initialized{}; //!< If this clock is calibrated with offsets etc and ready for use by applications
 
@@ -32,6 +33,8 @@ namespace skyline::service::timesrv::core {
         }
 
       public:
+        virtual ~SteadyClockCore() = default;
+
         bool IsRtcResetDetected() {
             return rtcResetDetected;
         }
@@ -96,6 +99,7 @@ namespace skyline::service::timesrv::core {
      * @brief The standard steady clock is calibrated against system RTC time and is used as a base for all clocks aside from alarms and ephemeral
      */
     class StandardSteadyClockCore : public SteadyClockCore {
+      private:
         std::mutex mutex; //!< Protects accesses to cachedValue
         TimeSpanType testOffset{};
         TimeSpanType internalOffset{};
@@ -162,6 +166,8 @@ namespace skyline::service::timesrv::core {
 
       public:
         SystemClockCore(SteadyClockCore &steadyClock) : steadyClock(steadyClock) {}
+
+        virtual ~SystemClockCore() = default;
 
         void AddOperationEvent(const std::shared_ptr<kernel::type::KEvent> &event) {
             updateCallback->AddOperationEvent(event);
@@ -254,7 +260,12 @@ namespace skyline::service::timesrv::core {
       public:
         std::shared_ptr<kernel::type::KEvent> automaticCorrectionUpdatedEvent;
 
-        StandardUserSystemClockCore(const DeviceState &state, StandardSteadyClockCore &standardSteadyClock, StandardLocalSystemClockCore &localSystemClock, StandardNetworkSystemClockCore &networkSystemClock, TimeSharedMemory &timeSharedMemory) : SystemClockCore(standardSteadyClock), localSystemClock(localSystemClock), networkSystemClock(networkSystemClock), automaticCorrectionUpdatedEvent(std::make_shared<kernel::type::KEvent>(state, false)), timeSharedMemory(timeSharedMemory) {}
+        StandardUserSystemClockCore(const DeviceState &state, StandardSteadyClockCore &standardSteadyClock, StandardLocalSystemClockCore &localSystemClock, StandardNetworkSystemClockCore &networkSystemClock, TimeSharedMemory &timeSharedMemory)
+            : SystemClockCore(standardSteadyClock),
+              localSystemClock(localSystemClock),
+              networkSystemClock(networkSystemClock),
+              automaticCorrectionUpdatedEvent(std::make_shared<kernel::type::KEvent>(state, false)),
+              timeSharedMemory(timeSharedMemory) {}
 
         void Setup(bool enableAutomaticCorrection, const SteadyClockTimePoint &automaticCorrectionUpdateTime);
 

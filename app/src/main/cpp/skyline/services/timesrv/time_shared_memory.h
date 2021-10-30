@@ -63,6 +63,8 @@ namespace skyline::service::timesrv::core {
         void SignalOperationEvent();
 
       public:
+        virtual ~SystemClockContextUpdateCallback() = default;
+
         /**
          * @brief Adds an operation event to be siignalled on context updates
          */
