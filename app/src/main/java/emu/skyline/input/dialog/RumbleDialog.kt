@@ -16,6 +16,7 @@ import emu.skyline.R
 import emu.skyline.adapter.controller.ControllerGeneralViewItem
 import emu.skyline.databinding.RumbleDialogBinding
 import emu.skyline.di.getInputManager
+import emu.skyline.input.Controller
 import emu.skyline.input.ControllerActivity
 
 /**
@@ -73,7 +74,7 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
                 if (!vibrator.hasVibrator())
                     binding.rumbleBuiltin.isEnabled = false
                 binding.rumbleBuiltin.setOnClickListener {
-                    controller.rumbleDeviceDescriptor = "builtin"
+                    controller.rumbleDeviceDescriptor = Controller.BuiltinRumbleDeviceDescriptor
                     controller.rumbleDeviceName = getString(R.string.builtin_vibrator)
                     item.update()
 

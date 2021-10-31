@@ -48,6 +48,11 @@ open class Controller(val id : Int, var type : ControllerType, var rumbleDeviceD
     companion object {
         @JvmStatic
         private val serialVersionUID = 6529685098267757690L
+
+        /**
+         * The value of [rumbleDeviceDescriptor] when the built-in Vibrator should be utilized
+         */
+        const val BuiltinRumbleDeviceDescriptor = "builtin"
     }
 }
 

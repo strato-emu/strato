@@ -469,10 +469,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @Suppress("unused")
     fun vibrateDevice(index : Int, timing : LongArray, amplitude : IntArray) {
         val vibrator = if (vibrators[index] != null) {
-            vibrators[index]!!
+            vibrators[index]
         } else {
             inputManager.controllers[index]!!.rumbleDeviceDescriptor?.let {
-                if (it == "builtin") {
+                if (it == Controller.BuiltinRumbleDeviceDescriptor) {
                     val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
                         vibratorManager.defaultVibrator
@@ -496,12 +496,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                             return@let vibrator
                         }
                     }
+                    return@let null
                 }
-            } as Vibrator
+            }
         }
 
-        val effect = VibrationEffect.createWaveform(timing, amplitude, 0)
-        vibrator.vibrate(effect)
+        vibrator?.let {
+            val effect = VibrationEffect.createWaveform(timing, amplitude, 0)
+            it.vibrate(effect)
+        }
     }
 
     @Suppress("unused")
