@@ -1,44 +1,44 @@
-[submodule "app/libraries/fmt"]
+[submodule "{fmt}"]
 	path = app/libraries/fmt
 	url = https://github.com/fmtlib/fmt
-[submodule "app/libraries/oboe"]
+[submodule "Oboe"]
 	path = app/libraries/oboe
 	url = https://github.com/google/oboe
 	branch = 1.3-stable
-[submodule "app/libraries/lz4"]
+[submodule "LZ4"]
 	path = app/libraries/lz4
 	url = https://github.com/lz4/lz4.git
-[submodule "app/libraries/frozen"]
+[submodule "Frozen"]
 	path = app/libraries/frozen
 	url = https://github.com/serge-sans-paille/frozen
-[submodule "app/libraries/pugixml"]
+[submodule "PugiXML"]
 	path = app/libraries/pugixml
 	url = https://github.com/zeux/pugixml.git
-[submodule "app/libraries/tzcode"]
+[submodule "tzcode"]
 	path = app/libraries/tzcode
 	url = https://github.com/skyline-emu/tz
 	branch = master
-[submodule "app/libraries/perfetto"]
+[submodule "Perfetto"]
 	path = app/libraries/perfetto
 	url = https://android.googlesource.com/platform/external/perfetto
 	branch = releases/v12.x
-[submodule "app/libraries/vkhpp"]
+[submodule "Vulkan-Hpp"]
 	path = app/libraries/vkhpp
 	url = https://github.com/KhronosGroup/Vulkan-Hpp
-[submodule "app/libraries/vkma"]
+[submodule "Vulkan Memory Allocator"]
 	path = app/libraries/vkma
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-[submodule "app/libraries/mbedtls"]
+[submodule "Mbed TLS"]
 	path = app/libraries/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
-[submodule "app/libraries/opus"]
+[submodule "Opus"]
 	path = app/libraries/opus
 	url = https://github.com/xiph/opus
-[submodule "app/libraries/boost"]
+[submodule "Boost"]
 	path = app/libraries/boost
 	url = https://github.com/boostorg/boost.git
 	ignore = all
-[submodule "app/libraries/llvm-project"]
-    path = app/libraries/llvm
-    url = https://github.com/llvm/llvm-project.git
-    shallow = true
+[submodule "LLVM"]
+	path = app/libraries/llvm
+	url = https://github.com/llvm/llvm-project.git
+	shallow = true
