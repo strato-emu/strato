@@ -114,7 +114,7 @@ namespace skyline::input {
       private:
         NpadManager &manager; //!< The manager responsible for managing this NpadDevice
         NpadSection &section; //!< The section in HID shared memory for this controller
-        NpadControllerInfo *controllerInfo; //!< The NpadControllerInfo for this controller's type
+        NpadControllerInfo *controllerInfo{}; //!< The NpadControllerInfo for this controller's type
         u64 globalTimestamp{}; //!< An incrementing timestamp that's common across all sections
 
         /**
@@ -134,7 +134,7 @@ namespace skyline::input {
         static constexpr i8 NullIndex{-1}; //!< The placeholder index value when there is no device present
         i8 index{NullIndex}; //!< The index of the device assigned to this player
         i8 partnerIndex{NullIndex}; //!< The index of a partner device, if present
-        NpadVibrationValue vibrationLeft; //!< Vibration for the left Joy-Con (Handheld/Pair), left LRA in a Pro-Controller or individual Joy-Cons
+        NpadVibrationValue vibrationLeft{}; //!< Vibration for the left Joy-Con (Handheld/Pair), left LRA in a Pro-Controller or individual Joy-Cons
         std::optional<NpadVibrationValue> vibrationRight; //!< Vibration for the right Joy-Con (Handheld/Pair) or right LRA in a Pro-Controller
         NpadControllerType type{};
         NpadConnectionState connectionState{};
@@ -174,8 +174,14 @@ namespace skyline::input {
          */
         void SetAxisValue(NpadAxisId axis, i32 value);
 
-        void Vibrate(bool isRight, const NpadVibrationValue &value);
-
+        /**
+         * @brief Sets the vibration for both the Joy-Cons to the specified vibration values
+         */
         void Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right);
+
+        /**
+         * @brief Sets the vibration for either the left or right Joy-Con to the specified vibration value
+         */
+        void VibrateSingle(bool isRight, const NpadVibrationValue &value);
     };
 }

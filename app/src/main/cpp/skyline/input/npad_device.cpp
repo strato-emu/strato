@@ -359,8 +359,8 @@ namespace skyline::input {
     struct VibrationInfo {
         jlong period;
         jint amplitude;
-        jlong start;
-        jlong end;
+        jlong start; //!< The timestamp to (re)start the vibration at
+        jlong end; //!< The timestamp to end the vibration at
 
         VibrationInfo(float frequency, float amplitude)
             : period(static_cast<jlong>(MsInSecond / frequency)),
@@ -369,22 +369,12 @@ namespace skyline::input {
     };
 
     template<size_t Size>
-    void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 index, std::array<VibrationInfo, Size> vibrations) {
-        jlong totalTime{};
-        std::sort(vibrations.begin(), vibrations.end(), [](const VibrationInfo &a, const VibrationInfo &b) {
-            return a.period < b.period;
-        });
-
-        jlong totalPeriod{};
+    void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 deviceIndex, std::array<VibrationInfo, Size> vibrations) {
         jint totalAmplitude{};
-        for (const auto &vibration : vibrations) {
-            totalPeriod += vibration.period;
+        for (const auto &vibration : vibrations)
             totalAmplitude += vibration.amplitude;
-        }
-
-        // If this vibration is essentially null then we don't play rather clear any running vibrations
-        if (totalPeriod == 0 || totalAmplitude == 0) {
-            jvm->ClearVibrationDevice(index);
+        if (totalAmplitude == 0) {
+            jvm->ClearVibrationDevice(deviceIndex); // If a null vibration was submitted then we just clear vibrations on the device
             return;
         }
 
@@ -393,47 +383,75 @@ namespace skyline::input {
         std::array<jint, 50> amplitudes;
 
         // We are essentially unrolling the bands into a linear sequence, due to the data not being always linearizable there will be inaccuracies at the ends unless there's a pattern that's repeatable which will happen when all band's frequencies are factors of each other
-        size_t timingIndex{};
-        for (; timingIndex < timings.size(); timingIndex++) {
-            jlong time{};
+        jint currentAmplitude{}; //!< The accumulated amplitude from adding up and subtracting the amplitude of individual bands
+        jlong currentTime{}; //!< The accumulated time passed by adding up all the periods prior to the current vibration cycle
+        size_t index{};
+        for (; index < timings.size(); index++) {
+            jlong cyclePeriod{}; //!< The length of this cycle, calculated as the largest period with the same amplitude
+            size_t bandStartCount{}; //!< The amount of bands that start their vibration cycles in this time slot
 
-            size_t startCycleCount{};
             for (size_t vibrationIndex{}; vibrationIndex < vibrations.size(); vibrationIndex++) {
-                auto &vibration{vibrations[vibrationIndex]};
-                if (totalTime <= vibration.start) {
-                    vibration.start = vibration.end + vibration.period;
-                    totalAmplitude += vibration.amplitude;
-                    time = std::max(vibration.period, time);
-                    startCycleCount++;
-                } else if (totalTime <= vibration.start) {
+                // Iterate over every band to calculate the amplitude for this time slot
+                VibrationInfo &vibration{vibrations[vibrationIndex]};
+                if (currentTime <= vibration.start) {
+                    // If the time to start has arrived then start the vibration
                     vibration.end = vibration.start + vibration.period;
-                    totalAmplitude -= vibration.amplitude;
-                    time = std::max(vibration.period, time);
+                    currentAmplitude += vibration.amplitude;
+                    auto vibrationPeriodLeft{vibration.end - currentTime};
+                    cyclePeriod = cyclePeriod ? std::min(vibrationPeriodLeft, cyclePeriod) : vibrationPeriodLeft;
+
+                    bandStartCount++;
+                } else if (currentTime <= vibration.end) {
+                    // If the time to end the vibration has arrived then end it
+                    vibration.start = vibration.end + vibration.period;
+                    currentAmplitude -= vibration.amplitude;
+                    auto vibrationPeriodLeft{vibration.start - currentTime};
+                    cyclePeriod = cyclePeriod ? std::min(vibrationPeriodLeft, cyclePeriod) : vibrationPeriodLeft;
                 }
             }
 
-            // If all bands start again at this point then we can end the pattern here as a loop to the front will be flawless
-            if (timingIndex && startCycleCount == vibrations.size())
-                break;
+            if (index && bandStartCount == vibrations.size())
+                break; // If all bands start again at this point then we can end the pattern here and just loop over the pattern
 
-            timings[timingIndex] = time;
-            totalTime += time;
+            currentTime += cyclePeriod;
+            timings[index] = cyclePeriod;
 
-            amplitudes[timingIndex] = std::min(totalAmplitude, AmplitudeMax);
+            amplitudes[index] = std::min(currentAmplitude, AmplitudeMax);
         }
 
-        jvm->VibrateDevice(index, span(timings.begin(), timings.begin() + timingIndex), span(amplitudes.begin(), amplitudes.begin() + timingIndex));
+        jvm->VibrateDevice(deviceIndex, span(timings.begin(), timings.begin() + index), span(amplitudes.begin(), amplitudes.begin() + index));
     }
 
     void VibrateDevice(const std::shared_ptr<JvmManager> &jvm, i8 index, const NpadVibrationValue &value) {
         std::array<VibrationInfo, 2> vibrations{
             VibrationInfo{value.frequencyLow, value.amplitudeLow * (AmplitudeMax / 2)},
-            {value.frequencyHigh, value.amplitudeHigh * (AmplitudeMax / 2)},
+            VibrationInfo{value.frequencyHigh, value.amplitudeHigh * (AmplitudeMax / 2)},
         };
         VibrateDevice(jvm, index, vibrations);
     }
 
-    void NpadDevice::Vibrate(bool isRight, const NpadVibrationValue &value) {
+    void NpadDevice::Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right) {
+        if (vibrationLeft == left && vibrationRight && (*vibrationRight) == right)
+            return;
+
+        vibrationLeft = left;
+        vibrationRight = right;
+
+        if (partnerIndex == NpadDevice::NullIndex) {
+            std::array<VibrationInfo, 4> vibrations{
+                VibrationInfo{left.frequencyLow, left.amplitudeLow * (AmplitudeMax / 4)},
+                VibrationInfo{left.frequencyHigh, left.amplitudeHigh * (AmplitudeMax / 4)},
+                VibrationInfo{right.frequencyLow, right.amplitudeLow * (AmplitudeMax / 4)},
+                VibrationInfo{right.frequencyHigh, right.amplitudeHigh * (AmplitudeMax / 4)},
+            };
+            VibrateDevice(manager.state.jvm, index, vibrations);
+        } else {
+            VibrateDevice(manager.state.jvm, index, left);
+            VibrateDevice(manager.state.jvm, partnerIndex, right);
+        }
+    }
+
+    void NpadDevice::VibrateSingle(bool isRight, const NpadVibrationValue &value) {
         if (isRight) {
             if (vibrationRight && (*vibrationRight) == value)
                 return;
@@ -448,26 +466,5 @@ namespace skyline::input {
             Vibrate(vibrationLeft, *vibrationRight);
         else
             VibrateDevice(manager.state.jvm, index, value);
-    }
-
-    void NpadDevice::Vibrate(const NpadVibrationValue &left, const NpadVibrationValue &right) {
-        if (vibrationLeft == left && vibrationRight && (*vibrationRight) == right)
-            return;
-
-        vibrationLeft = left;
-        vibrationRight = right;
-
-        if (partnerIndex == NpadDevice::NullIndex) {
-            std::array<VibrationInfo, 4> vibrations{
-                VibrationInfo{left.frequencyLow, left.amplitudeLow * (AmplitudeMax / 4)},
-                {left.frequencyHigh, left.amplitudeHigh * (AmplitudeMax / 4)},
-                {right.frequencyLow, right.amplitudeLow * (AmplitudeMax / 4)},
-                {right.frequencyHigh, right.amplitudeHigh * (AmplitudeMax / 4)},
-            };
-            VibrateDevice(manager.state.jvm, index, vibrations);
-        } else {
-            VibrateDevice(manager.state.jvm, index, left);
-            VibrateDevice(manager.state.jvm, partnerIndex, right);
-        }
     }
 }
