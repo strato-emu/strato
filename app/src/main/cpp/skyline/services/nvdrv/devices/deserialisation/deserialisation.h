@@ -35,7 +35,6 @@ namespace skyline::service::nvdrv::deserialisation {
         auto out{buffer.subspan(offset, bytes).template cast<RemoveSlotSizeSpan<ArgType>, std::dynamic_extent, true>()};
         offset += bytes;
 
-
         // Return a simple `span` as that will be the function argument type as opposed to `SlotSizeSpan`
         return out;
     }
@@ -48,10 +47,8 @@ namespace skyline::service::nvdrv::deserialisation {
         return std::tuple<Ts...>{std::forward<Ts>(ts)...};
     }
 
-
     template<typename Desc, typename ArgType, typename... ArgTypes>
     constexpr auto DecodeArgumentsImpl(span<u8, Desc::Size> buffer, size_t &offset, std::array<size_t, NumSaveSlots> &saveSlots) {
-
         if constexpr (IsAutoSizeSpan<ArgType>::value) {
             // AutoSizeSpan needs to be the last argument
             static_assert(sizeof...(ArgTypes) == 0);

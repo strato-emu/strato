@@ -21,9 +21,11 @@ namespace skyline::soc::host1x {
                 syncpoints.at(incrSyncpoint.index).Increment();
                 break;
             }
+
             case LoadSyncpointPayload32MethodId:
                 syncpointPayload = argument;
                 break;
+
             case WaitSyncpoint32MethodId: {
                 u32 syncpointId{static_cast<u8>(argument)};
                 state.logger->Debug("Wait syncpoint: {}, thresh: {}", syncpointId, syncpointPayload);
@@ -31,6 +33,7 @@ namespace skyline::soc::host1x {
                 syncpoints.at(syncpointId).Wait(syncpointPayload, std::chrono::steady_clock::duration::max());
                 break;
             }
+
             default:
                 state.logger->Error("Unknown host1x class method called: 0x{:X}", method);
                 break;

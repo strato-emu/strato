@@ -56,7 +56,7 @@ namespace skyline::soc::host1x {
         void Start();
 
         /**
-         * @brief Pushes a single gather into the fifo to be processed asynchronously
+         * @brief Pushes a single gather into the FIFO to be processed asynchronously
          */
         void Push(span<u32> gather);
     };
