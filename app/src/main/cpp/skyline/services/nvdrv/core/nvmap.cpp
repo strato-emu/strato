@@ -34,8 +34,6 @@ namespace skyline::service::nvdrv::core {
         alignedSize = util::AlignUp(size, align);
         address = pAddress;
 
-        // TODO: pin init
-
         allocated = true;
 
         return PosixResult::Success;
