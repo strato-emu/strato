@@ -76,8 +76,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
     close(preferenceFd);
 
-    auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
-    auto logger{std::make_shared<skyline::Logger>(std::string(appFilesPath) + "skyline.log", settings->logLevel)};
+    skyline::JniString appFilesPath(env, appFilesPathJstring);
+    auto logger{std::make_shared<skyline::Logger>(appFilesPath + "skyline.log", settings->logLevel)};
 
     auto start{std::chrono::steady_clock::now()};
 
@@ -92,7 +92,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
             jvmManager,
             logger,
             settings,
-            std::string(appFilesPath),
+            appFilesPath,
             GetTimeZoneName(),
             static_cast<skyline::language::SystemLanguage>(systemLanguage),
             std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
@@ -102,11 +102,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         AudioWeak = os->state.audio;
         InputWeak = os->state.input;
         jvmManager->InitializeControllers();
-        env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
 
-        auto romUri{env->GetStringUTFChars(romUriJstring, nullptr)};
-        logger->InfoNoPrefix("Launching ROM {}", romUri);
-        env->ReleaseStringUTFChars(romUriJstring, romUri);
+        logger->InfoNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {

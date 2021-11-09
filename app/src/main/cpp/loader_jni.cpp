@@ -14,10 +14,7 @@
 extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
     skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
 
-    auto appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
-    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(appFilesPath)};
-    env->ReleaseStringUTFChars(appFilesPathJstring, appFilesPath);
-
+    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, appFilesPathJstring))};
     std::unique_ptr<skyline::loader::Loader> loader;
     try {
         auto backing{std::make_shared<skyline::vfs::OsBacking>(fd)};

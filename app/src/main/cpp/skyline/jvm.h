@@ -8,6 +8,17 @@
 
 namespace skyline {
     /**
+     * @brief A wrapper over std::string that supports construction using a JNI jstring
+     */
+    class JniString : public std::string {
+      private:
+        static std::string GetJString(JNIEnv *env, jstring jString);
+
+      public:
+        JniString(JNIEnv *env, jstring jString) : std::string(GetJString(env, jString)) {}
+    };
+
+    /**
      * @brief The JvmManager class is used to simplify transactions with the Java component
      */
     class JvmManager {

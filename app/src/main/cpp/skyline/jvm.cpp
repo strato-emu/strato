@@ -4,6 +4,13 @@
 #include "jvm.h"
 
 namespace skyline {
+    std::string JniString::GetJString(JNIEnv *env, jstring jString) {
+        auto utf{env->GetStringUTFChars(jString, nullptr)};
+        std::string string{utf};
+        env->ReleaseStringUTFChars(jString, utf);
+        return string;
+    }
+
     /*
      * @brief A thread-local wrapper over JNIEnv and JavaVM which automatically handles attaching and detaching threads
      */
