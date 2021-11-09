@@ -347,6 +347,7 @@ namespace skyline::gpu {
 
         /**
          * @brief Records commands for copying data from the texture's backing to a staging buffer into the supplied command buffer
+         * @note Any caller **must** ensure that the layout is not `eUndefined`
          */
         void CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer);
 
