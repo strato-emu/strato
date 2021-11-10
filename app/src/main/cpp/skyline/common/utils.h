@@ -243,6 +243,15 @@ namespace skyline::util {
         ValueType value;
 
       public:
+        OffsetMember &operator=(const ValueType &pValue) {
+            value = pValue;
+            return *this;
+        }
+
+        auto operator[](std::size_t index) {
+            return value[index];
+        }
+
         ValueType &operator*() {
             return value;
         }
