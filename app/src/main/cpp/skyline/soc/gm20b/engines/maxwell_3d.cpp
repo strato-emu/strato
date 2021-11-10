@@ -16,57 +16,57 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         registers.rasterizerEnable = true;
 
-        for (auto &transform : registers.viewportTransforms) {
+        for (auto &transform : *registers.viewportTransforms) {
             transform.swizzles.x = type::ViewportTransform::Swizzle::PositiveX;
             transform.swizzles.y = type::ViewportTransform::Swizzle::PositiveY;
             transform.swizzles.z = type::ViewportTransform::Swizzle::PositiveZ;
             transform.swizzles.w = type::ViewportTransform::Swizzle::PositiveW;
         }
 
-        for (auto &viewport : registers.viewports) {
+        for (auto &viewport : *registers.viewports) {
             viewport.depthRangeFar = 1.0f;
             viewport.depthRangeNear = 0.0f;
         }
 
-        registers.polygonMode.front = type::PolygonMode::Fill;
-        registers.polygonMode.back = type::PolygonMode::Fill;
+        registers.polygonMode->front = type::PolygonMode::Fill;
+        registers.polygonMode->back = type::PolygonMode::Fill;
 
-        registers.stencilFront.failOp = registers.stencilFront.zFailOp = registers.stencilFront.zPassOp = type::StencilOp::Keep;
-        registers.stencilFront.compare.op = type::CompareOp::Always;
-        registers.stencilFront.compare.mask = 0xFFFFFFFF;
-        registers.stencilFront.writeMask = 0xFFFFFFFF;
+        registers.stencilFront->failOp = registers.stencilFront->zFailOp = registers.stencilFront->zPassOp = type::StencilOp::Keep;
+        registers.stencilFront->compare.op = type::CompareOp::Always;
+        registers.stencilFront->compare.mask = 0xFFFFFFFF;
+        registers.stencilFront->writeMask = 0xFFFFFFFF;
 
         registers.stencilTwoSideEnable = true;
-        registers.stencilBack.failOp = registers.stencilBack.zFailOp = registers.stencilBack.zPassOp = type::StencilOp::Keep;
-        registers.stencilBack.compareOp = type::CompareOp::Always;
-        registers.stencilBackExtra.compareMask = 0xFFFFFFFF;
-        registers.stencilBackExtra.writeMask = 0xFFFFFFFF;
+        registers.stencilBack->failOp = registers.stencilBack->zFailOp = registers.stencilBack->zPassOp = type::StencilOp::Keep;
+        registers.stencilBack->compareOp = type::CompareOp::Always;
+        registers.stencilBackExtra->compareMask = 0xFFFFFFFF;
+        registers.stencilBackExtra->writeMask = 0xFFFFFFFF;
 
         registers.rtSeparateFragData = true;
 
-        for (auto &attribute : registers.vertexAttributeState)
+        for (auto &attribute : *registers.vertexAttributeState)
             attribute.fixed = true;
 
         registers.depthTestFunc = type::CompareOp::Always;
 
-        registers.blend.colorOp = registers.blend.alphaOp = type::Blend::Op::Add;
-        registers.blend.colorSrcFactor = registers.blend.alphaSrcFactor = type::Blend::Factor::One;
-        registers.blend.colorDestFactor = registers.blend.alphaDestFactor = type::Blend::Factor::Zero;
+        registers.blendState->colorOp = registers.blendState->alphaOp = type::Blend::Op::Add;
+        registers.blendState->colorSrcFactor = registers.blendState->alphaSrcFactor = type::Blend::Factor::One;
+        registers.blendState->colorDestFactor = registers.blendState->alphaDestFactor = type::Blend::Factor::Zero;
 
         registers.lineWidthSmooth = 1.0f;
         registers.lineWidthAliased = 1.0f;
 
         registers.pointSpriteEnable = true;
         registers.pointSpriteSize = 1.0f;
-        registers.pointCoordReplace.enable = true;
+        registers.pointCoordReplace->enable = true;
 
         registers.frontFace = type::FrontFace::CounterClockwise;
         registers.cullFace = type::CullFace::Back;
 
-        for (auto &mask : registers.colorMask)
+        for (auto &mask : *registers.colorMask)
             mask.r = mask.g = mask.b = mask.a = 1;
 
-        for (auto &blend : registers.independentBlend) {
+        for (auto &blend : *registers.independentBlend) {
             blend.colorOp = blend.alphaOp = type::Blend::Op::Add;
             blend.colorSrcFactor = blend.alphaSrcFactor = type::Blend::Factor::One;
             blend.colorDestFactor = blend.alphaDestFactor = type::Blend::Factor::Zero;
@@ -105,27 +105,31 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             return;
         }
 
-        #define MAXWELL3D_OFFSET(field) U32_OFFSET(Registers, field)
-        #define MAXWELL3D_STRUCT_OFFSET(field, member) U32_OFFSET(Registers, field) + U32_OFFSET(typeof(Registers::field), member)
-        #define MAXWELL3D_ARRAY_OFFSET(field, index) U32_OFFSET(Registers, field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
+        #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(typeof(*Registers::field))) / sizeof(u32)
+        #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(typeof(*Registers::field), member)
+        #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
         #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(typeof(Registers::field[0]), member)
         #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(typeof(Registers::field[0].member), submember)
 
+        #define MAXWELL3D_CASE(field, content) case MAXWELL3D_OFFSET(field): { \
+            auto field{util::BitCast<typeof(*registers.field)>(argument)};     \
+            content                                                            \
+            return;                                                            \
+        }
         #define MAXWELL3D_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: { \
-            auto fieldName{util::BitCast<typeof(registers.fieldAccessor)>(argument)};  \
+            auto fieldName{util::BitCast<typeof(registers.fieldAccessor)>(argument)};         \
             content                                                                           \
             return;                                                                           \
         }
-        #define MAXWELL3D_CASE(field, content) MAXWELL3D_CASE_BASE(field, field, MAXWELL3D_OFFSET(field), content)
-        #define MAXWELL3D_STRUCT_CASE(field, member, content) MAXWELL3D_CASE_BASE(member, field.member, MAXWELL3D_STRUCT_OFFSET(field, member), content)
+        #define MAXWELL3D_STRUCT_CASE(field, member, content) MAXWELL3D_CASE_BASE(member, field->member, MAXWELL3D_STRUCT_OFFSET(field, member), content)
         #define MAXWELL3D_ARRAY_CASE(field, index, content) MAXWELL3D_CASE_BASE(field, field[index], MAXWELL3D_ARRAY_OFFSET(field, index), content)
         #define MAXWELL3D_ARRAY_STRUCT_CASE(field, index, member, content) MAXWELL3D_CASE_BASE(member, field[index].member, MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member), content)
         #define MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(field, index, member, submember, content) MAXWELL3D_CASE_BASE(submember, field[index].member.submember, MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember), content)
 
-        if (method != MAXWELL3D_OFFSET(mme.shadowRamControl)) {
-            if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrack || shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodTrackWithFilter)
+        if (method != MAXWELL3D_STRUCT_OFFSET(mme, shadowRamControl)) {
+            if (shadowRegisters.mme->shadowRamControl == type::MmeShadowRamControl::MethodTrack || shadowRegisters.mme->shadowRamControl == type::MmeShadowRamControl::MethodTrackWithFilter)
                 shadowRegisters.raw[method] = argument;
-            else if (shadowRegisters.mme.shadowRamControl == type::MmeShadowRamControl::MethodReplay)
+            else if (shadowRegisters.mme->shadowRamControl == type::MmeShadowRamControl::MethodReplay)
                 argument = shadowRegisters.raw[method];
         }
 
@@ -135,7 +139,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         if (!redundant) {
             switch (method) {
                 MAXWELL3D_STRUCT_CASE(mme, shadowRamControl, {
-                    shadowRegisters.mme.shadowRamControl = shadowRamControl;
+                    shadowRegisters.mme->shadowRamControl = shadowRamControl;
                 })
 
                 #define RENDER_TARGET_ARRAY(z, index, data)                               \
@@ -220,43 +224,43 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 #undef SCISSOR_CALLBACKS
 
                 MAXWELL3D_CASE(renderTargetControl, {
-                    context.UpdateRenderTargetControl(registers.renderTargetControl);
+                    context.UpdateRenderTargetControl(renderTargetControl);
                 })
             }
         }
 
         switch (method) {
             MAXWELL3D_STRUCT_CASE(mme, instructionRamLoad, {
-                if (registers.mme.instructionRamPointer >= macroCode.size())
+                if (registers.mme->instructionRamPointer >= macroCode.size())
                     throw exception("Macro memory is full!");
 
-                macroCode[registers.mme.instructionRamPointer++] = instructionRamLoad;
+                macroCode[registers.mme->instructionRamPointer++] = instructionRamLoad;
 
                 // Wraparound writes
-                registers.mme.instructionRamPointer %= macroCode.size();
+                registers.mme->instructionRamPointer %= macroCode.size();
             })
 
             MAXWELL3D_STRUCT_CASE(mme, startAddressRamLoad, {
-                if (registers.mme.startAddressRamPointer >= macroPositions.size())
+                if (registers.mme->startAddressRamPointer >= macroPositions.size())
                     throw exception("Maximum amount of macros reached!");
 
-                macroPositions[registers.mme.startAddressRamPointer++] = startAddressRamLoad;
+                macroPositions[registers.mme->startAddressRamPointer++] = startAddressRamLoad;
             })
 
             MAXWELL3D_CASE(syncpointAction, {
-                state.logger->Debug("Increment syncpoint: {}", +syncpointAction.id);
+                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Execute();
                 state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
             })
 
             MAXWELL3D_CASE(clearBuffers, {
-                context.ClearBuffers(registers.clearBuffers);
+                context.ClearBuffers(clearBuffers);
             })
 
             MAXWELL3D_STRUCT_CASE(semaphore, info, {
                 switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
-                        WriteSemaphoreResult(registers.semaphore.payload);
+                        WriteSemaphoreResult(registers.semaphore->payload);
                         break;
 
                     case type::SemaphoreInfo::Op::Counter: {
@@ -306,9 +310,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             u64 timestamp;
         };
 
-        switch (registers.semaphore.info.structureSize) {
+        switch (registers.semaphore->info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
-                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore.address.Pack(), static_cast<u32>(result));
+                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore->address.Pack(), static_cast<u32>(result));
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
@@ -319,7 +323,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 i64 nsTime{util::GetTimeNs()};
                 i64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore.address.Pack(),
+                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore->address.Pack(),
                                                              FourWordResult{result, static_cast<u64>(timestamp)});
                 break;
             }

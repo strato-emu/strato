@@ -29,6 +29,16 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         MethodReplay = 3, //!< Replays older tracked writes for any new writes to registers, discarding the contents of the new write
     };
 
+    struct SyncpointAction {
+        u16 id : 12;
+        u8 _pad0_ : 4;
+        bool flushCache : 1;
+        u8 _pad1_ : 3;
+        bool increment : 1;
+        u16 _pad2_ : 11;
+    };
+    static_assert(sizeof(SyncpointAction) == sizeof(u32));
+
     constexpr static size_t RenderTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
 
     /**
@@ -360,6 +370,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(Blend) == (sizeof(u32) * 8));
 
+    struct MultisampleControl {
+        bool alphaToCoverage : 1;
+        u8 _pad0_ : 3;
+        bool alphaToOne : 1;
+        u32 _pad1_ : 27;
+    };
+    static_assert(sizeof(MultisampleControl) == sizeof(u32));
+
     enum class StencilOp : u32 {
         Keep = 1,
         Zero = 2,
@@ -370,6 +388,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         IncrementAndWrap = 7,
         DecrementAndWrap = 8,
     };
+
+    struct PointCoordReplace {
+        u8 _unk_ : 2;
+        enum class CoordOrigin : u8 {
+            LowerLeft = 0,
+            UpperLeft = 1,
+        };
+        CoordOrigin origin : 1;
+        u16 enable : 10;
+        u32 _pad_ : 19;
+    };
+    static_assert(sizeof(PointCoordReplace) == sizeof(u32));
 
     enum class FrontFace : u32 {
         Clockwise = 0x900,
@@ -494,11 +524,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         StructureSize structureSize : 1;
     };
     static_assert(sizeof(SemaphoreInfo) == sizeof(u32));
-
-    enum class CoordOrigin : u8 {
-        LowerLeft = 0,
-        UpperLeft = 1,
-    };
 
     #pragma pack(pop)
 }
