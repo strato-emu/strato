@@ -55,7 +55,7 @@ namespace skyline::util {
             return static_cast<Return>(item);
     }
 
-    template <typename T>
+    template<typename T>
     concept IsPointerOrUnsignedIntegral = (std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_pointer_v<T>;
 
     /**
@@ -231,4 +231,24 @@ namespace skyline::util {
     To BitCast(const From &from) {
         return *reinterpret_cast<const To *>(&from);
     }
+
+    /**
+     * @brief A utility type for placing elements by offset in unions rather than relative position in structs
+     * @tparam PadType The type of a unit of padding, total size of padding is `sizeof(PadType) * Offset`
+     */
+    template<size_t Offset, typename ValueType, typename PadType = u8>
+    struct OffsetMember {
+      private:
+        PadType _pad_[Offset];
+        ValueType value;
+
+      public:
+        ValueType &operator*() {
+            return value;
+        }
+
+        ValueType *operator->() {
+            return &value;
+        }
+    };
 }
