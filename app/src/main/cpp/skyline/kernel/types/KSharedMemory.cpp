@@ -102,9 +102,9 @@ namespace skyline::kernel::type {
                 constexpr memory::Permission UnborrowPermission{true, true, false};
 
                 if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED)
-                    state.logger->Warn("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
+                    Logger::Warn("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
                 else if (!host.Valid())
-                    state.logger->Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
+                    Logger::Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
 
                 std::memcpy(guest.ptr, host.ptr, host.size);
 

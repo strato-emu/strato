@@ -9,7 +9,7 @@ namespace skyline::soc::gm20b::engine {
     GPFIFO::GPFIFO(const DeviceState &state, ChannelContext &channelCtx) : Engine(state), channelCtx(channelCtx) {}
 
     void GPFIFO::CallMethod(u32 method, u32 argument, bool lastCall) {
-        state.logger->Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
+        Logger::Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
 
         registers.raw[method] = argument;
 
@@ -27,11 +27,11 @@ namespace skyline::soc::gm20b::engine {
         switch (method) {
             GPFIFO_STRUCT_CASE(syncpoint, action, {
                 if (action.operation == Registers::SyncpointOperation::Incr) {
-                    state.logger->Debug("Increment syncpoint: {}", +action.index);
+                    Logger::Debug("Increment syncpoint: {}", +action.index);
                     channelCtx.executor.Execute();
                     state.soc->host1x.syncpoints.at(action.index).Increment();
                 } else if (action.operation == Registers::SyncpointOperation::Wait) {
-                    state.logger->Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint.payload);
+                    Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint.payload);
 
                     // Wait forever for another channel to increment
                     state.soc->host1x.syncpoints.at(action.index).Wait(registers.syncpoint.payload, std::chrono::steady_clock::duration::max());

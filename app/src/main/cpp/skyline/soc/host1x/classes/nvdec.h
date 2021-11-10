@@ -11,11 +11,10 @@ namespace skyline::soc::host1x {
      */
     class NvDecClass {
       private:
-        const DeviceState &state;
         std::function<void()> opDoneCallback;
 
       public:
-        NvDecClass(const DeviceState &state, std::function<void()> opDoneCallback);
+        NvDecClass(std::function<void()> opDoneCallback);
 
         void CallMethod(u32 method, u32 argument);
     };

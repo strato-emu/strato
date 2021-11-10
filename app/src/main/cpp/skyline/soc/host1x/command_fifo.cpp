@@ -44,10 +44,10 @@ namespace skyline::soc::host1x {
     };
     static_assert(sizeof(ChannelCommandFifoMethodHeader) == sizeof(u32));
 
-    ChannelCommandFifo::ChannelCommandFifo(const DeviceState &state, SyncpointSet &syncpoints) : state(state), gatherQueue(GatherQueueSize), host1XClass(state, syncpoints), nvDecClass(state, syncpoints), vicClass(state, syncpoints) {}
+    ChannelCommandFifo::ChannelCommandFifo(const DeviceState &state, SyncpointSet &syncpoints) : state(state), gatherQueue(GatherQueueSize), host1XClass(syncpoints), nvDecClass(syncpoints), vicClass(syncpoints) {}
 
     void ChannelCommandFifo::Send(ClassId targetClass, u32 method, u32 argument) {
-        state.logger->Verbose("Calling method in class: 0x{:X}, method: 0x{:X}, argument: 0x{:X}", targetClass, method, argument);
+        Logger::Verbose("Calling method in class: 0x{:X}, method: 0x{:X}, argument: 0x{:X}", targetClass, method, argument);
 
         switch (targetClass) {
             case ClassId::Host1x:
@@ -60,7 +60,7 @@ namespace skyline::soc::host1x {
                 vicClass.CallMethod(method, argument);
                 break;
             default:
-                state.logger->Error("Sending method to unimplemented class: 0x{:X}", targetClass);
+                Logger::Error("Sending method to unimplemented class: 0x{:X}", targetClass);
                 break;
         }
     }
@@ -118,17 +118,17 @@ namespace skyline::soc::host1x {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
 
             gatherQueue.Process([this](span<u32> gather) {
-                state.logger->Debug("Processing pushbuffer: 0x{:X}, size: 0x{:X}", gather.data(), gather.size());
+                Logger::Debug("Processing pushbuffer: 0x{:X}, size: 0x{:X}", gather.data(), gather.size());
                 Process(gather);
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+                Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
         } catch (const std::exception &e) {
-            state.logger->Error(e.what());
+            Logger::Error(e.what());
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }

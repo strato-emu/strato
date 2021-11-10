@@ -22,11 +22,11 @@ namespace skyline::gpu {
         #endif
 
         auto instanceLayers{context.enumerateInstanceLayerProperties()};
-        if (state.logger->configLevel >= Logger::LogLevel::Debug) {
+        if (Logger::configLevel >= Logger::LogLevel::Debug) {
             std::string layers;
             for (const auto &instanceLayer : instanceLayers)
                 layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_VERSION_MAJOR(instanceLayer.specVersion), VK_VERSION_MINOR(instanceLayer.specVersion), VK_VERSION_PATCH(instanceLayer.specVersion), VK_VERSION_MAJOR(instanceLayer.implementationVersion), VK_VERSION_MINOR(instanceLayer.implementationVersion), VK_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
-            state.logger->Debug("Vulkan Layers:{}", layers);
+            Logger::Debug("Vulkan Layers:{}", layers);
         }
 
         for (const auto &requiredLayer : requiredLayers) {
@@ -43,11 +43,11 @@ namespace skyline::gpu {
         };
 
         auto instanceExtensions{context.enumerateInstanceExtensionProperties()};
-        if (state.logger->configLevel >= Logger::LogLevel::Debug) {
+        if (Logger::configLevel >= Logger::LogLevel::Debug) {
             std::string extensions;
             for (const auto &instanceExtension : instanceExtensions)
                 extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_VERSION_MAJOR(instanceExtension.specVersion), VK_VERSION_MINOR(instanceExtension.specVersion), VK_VERSION_PATCH(instanceExtension.specVersion));
-            state.logger->Debug("Vulkan Instance Extensions:{}", extensions);
+            Logger::Debug("Vulkan Instance Extensions:{}", extensions);
         }
 
         for (const auto &requiredExtension : requiredInstanceExtensions) {
@@ -66,15 +66,14 @@ namespace skyline::gpu {
         });
     }
 
-    vk::raii::DebugReportCallbackEXT GPU::CreateDebugReportCallback(const DeviceState &state, const vk::raii::Instance &instance) {
+    vk::raii::DebugReportCallbackEXT GPU::CreateDebugReportCallback(const vk::raii::Instance &instance) {
         return vk::raii::DebugReportCallbackEXT(instance, vk::DebugReportCallbackCreateInfoEXT{
             .flags = vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eInformation | vk::DebugReportFlagBitsEXT::eDebug,
             .pfnCallback = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(&DebugCallback),
-            .pUserData = state.logger.get(),
         });
     }
 
-    VkBool32 GPU::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message, Logger *logger) {
+    VkBool32 GPU::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message) {
         constexpr std::array<Logger::LogLevel, 5> severityLookup{
             Logger::LogLevel::Info,  // VK_DEBUG_REPORT_INFORMATION_BIT_EXT
             Logger::LogLevel::Warn,  // VK_DEBUG_REPORT_WARNING_BIT_EXT
@@ -111,16 +110,16 @@ namespace skyline::gpu {
             #undef IGNORE_TYPE
         }
 
-        logger->Write(severityLookup.at(static_cast<size_t>(std::countr_zero(static_cast<u32>(flags)))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
+        Logger::Write(severityLookup.at(static_cast<size_t>(std::countr_zero(static_cast<u32>(flags)))), util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
 
         return VK_FALSE;
     }
 
-    vk::raii::PhysicalDevice GPU::CreatePhysicalDevice(const DeviceState &state, const vk::raii::Instance &instance) {
+    vk::raii::PhysicalDevice GPU::CreatePhysicalDevice(const vk::raii::Instance &instance) {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex) {
+    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex) {
         auto properties{physicalDevice.getProperties()}; // We should check for required properties here, if/when we have them
 
         // auto features{physicalDevice.getFeatures()}; // Same as above
@@ -154,7 +153,7 @@ namespace skyline::gpu {
             throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
         }()};
 
-        if (state.logger->configLevel >= Logger::LogLevel::Info) {
+        if (Logger::configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
             for (const auto &extension : deviceExtensions)
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
@@ -164,7 +163,7 @@ namespace skyline::gpu {
             for (const auto &queueFamily : queueFamilies)
                 queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
-            state.logger->Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
+            Logger::Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}", properties.deviceName, vk::to_string(properties.deviceType), VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion), queueString, extensionString);
         }
 
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
@@ -175,5 +174,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(state, vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(state, vkInstance)), vkDevice(CreateDevice(state, vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(vkInstance)), vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this) {}
 }

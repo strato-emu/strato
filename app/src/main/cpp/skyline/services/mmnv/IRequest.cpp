@@ -53,13 +53,13 @@ namespace skyline::service::mmnv {
         for (auto &req : requests) {
             if (req && req->module == module) {
                 req->freqHz = freqHz;
-                state.logger->Debug("Set frequency for module {}: {} Hz", static_cast<u32>(module), freqHz);
+                Logger::Debug("Set frequency for module {}: {} Hz", static_cast<u32>(module), freqHz);
                 return {};
             }
         }
 
         // This doesn't return any errors in HOS
-        state.logger->Warn("Tried to set frequency to {} Hz for unregistered module {}", freqHz,  static_cast<u32>(module));
+        Logger::Warn("Tried to set frequency to {} Hz for unregistered module {}", freqHz,  static_cast<u32>(module));
 
         return {};
     }
@@ -70,14 +70,14 @@ namespace skyline::service::mmnv {
         std::lock_guard lock(requestsMutex);
         for (auto &req : requests) {
             if (req && req->module == module) {
-                state.logger->Debug("Get frequency for module {}: {} Hz", static_cast<u32>(module), req->freqHz);
+                Logger::Debug("Get frequency for module {}: {} Hz", static_cast<u32>(module), req->freqHz);
                 response.Push<u32>(req->freqHz);
                 return {};
             }
         }
 
         // This doesn't return any errors in HOS
-        state.logger->Warn("Tried to get frequency of unregistered module {}", static_cast<u32>(module));
+        Logger::Warn("Tried to get frequency of unregistered module {}", static_cast<u32>(module));
         response.Push<u32>(0);
         return {};
     }
@@ -114,13 +114,13 @@ namespace skyline::service::mmnv {
             auto &req{requests[id]};
             if (req) {
                 req->freqHz = freqHz;
-                state.logger->Debug("Set frequency for request {}: {} Hz", id, freqHz);
+                Logger::Debug("Set frequency for request {}: {} Hz", id, freqHz);
                 return {};
             }
         }
 
         // This doesn't return any errors in HOS
-        state.logger->Warn("Tried to set frequency for unregistered request {}", id);
+        Logger::Warn("Tried to set frequency for unregistered request {}", id);
         return {};
     }
 
@@ -131,14 +131,14 @@ namespace skyline::service::mmnv {
         if (id < requests.size()) {
             auto &req{requests[id]};
             if (req) {
-                state.logger->Debug("Get frequency for request {}: {} Hz", id, req->freqHz);
+                Logger::Debug("Get frequency for request {}: {} Hz", id, req->freqHz);
                 response.Push<u32>(req->freqHz);
                 return {};
             }
         }
 
         // This doesn't return any errors in HOS
-        state.logger->Warn("Tried to get frequency of unregistered request {}", id);
+        Logger::Warn("Tried to get frequency of unregistered request {}", id);
         response.Push<u32>(0);
         return {};
     }

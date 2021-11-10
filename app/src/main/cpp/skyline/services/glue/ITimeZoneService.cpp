@@ -80,7 +80,7 @@ namespace skyline::service::glue {
 
     Result ITimeZoneService::GetDeviceLocationNameOperationEventReadableHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(locationNameUpdateEvent)};
-        state.logger->Debug("Location Name Update Event Handle: 0x{:X}", handle);
+        Logger::Debug("Location Name Update Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

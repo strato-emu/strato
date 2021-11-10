@@ -17,7 +17,7 @@ namespace skyline::service::audio {
         auto sampleRate{request.Pop<u32>()};
         auto channelCount{static_cast<u16>(request.Pop<u32>())};
 
-        state.logger->Debug("Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
+        Logger::Debug("Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
 
         sampleRate = sampleRate ? sampleRate : constant::SampleRate;
         channelCount = channelCount ? channelCount : constant::ChannelCount;

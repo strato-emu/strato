@@ -13,7 +13,7 @@ namespace skyline::service::am {
         stateChangeEvent->Signal();
 
         KHandle handle{state.process->InsertItem(stateChangeEvent)};
-        state.logger->Debug("Applet State Change Event Handle: 0x{:X}", handle);
+        Logger::Debug("Applet State Change Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};

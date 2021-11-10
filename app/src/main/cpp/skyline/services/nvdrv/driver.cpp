@@ -13,7 +13,7 @@ namespace skyline::service::nvdrv {
     Driver::Driver(const DeviceState &state) : state(state), core(state) {}
 
     NvResult Driver::OpenDevice(std::string_view path, FileDescriptor fd, const SessionContext &ctx) {
-        state.logger->Debug("Opening NvDrv device ({}): {}", fd, path);
+        Logger::Debug("Opening NvDrv device ({}): {}", fd, path);
         auto pathHash{util::Hash(path)};
 
         #define DEVICE_SWITCH(cases) \
@@ -84,7 +84,7 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer) {
-        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
             std::shared_lock lock(deviceMutex);
@@ -95,7 +95,7 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl2(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
-        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
             std::shared_lock lock(deviceMutex);
@@ -106,7 +106,7 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl3(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
-        state.logger->Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
 
         try {
             std::shared_lock lock(deviceMutex);
@@ -121,12 +121,12 @@ namespace skyline::service::nvdrv {
             std::unique_lock lock(deviceMutex);
             devices.erase(fd);
         } catch (const std::out_of_range &) {
-            state.logger->Warn("Trying to close invalid fd: {}");
+            Logger::Warn("Trying to close invalid fd: {}");
         }
     }
 
     std::shared_ptr<kernel::type::KEvent> Driver::QueryEvent(FileDescriptor fd, u32 eventId) {
-        state.logger->Debug("fd: {}, eventId: 0x{:X}, device: {}", fd, eventId, devices.at(fd)->GetName());
+        Logger::Debug("fd: {}, eventId: 0x{:X}, device: {}", fd, eventId, devices.at(fd)->GetName());
 
         try {
             std::shared_lock lock(deviceMutex);

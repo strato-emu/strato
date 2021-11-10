@@ -18,6 +18,7 @@
 #include <boost/container/small_vector.hpp>
 #include <common/span.h>
 #include <common/result.h>
+#include <common/logger.h>
 
 namespace skyline {
     class Settings;

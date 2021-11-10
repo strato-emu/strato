@@ -35,7 +35,7 @@ namespace skyline::service::audio {
 
     Result IAudioDevice::QueryAudioDeviceSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(systemEvent)};
-        state.logger->Debug("Audio Device System Event Handle: 0x{:X}", handle);
+        Logger::Debug("Audio Device System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

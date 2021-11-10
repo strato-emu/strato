@@ -73,7 +73,7 @@ namespace skyline::soc::gm20b {
         constexpr u32 TwoDSubChannel{3};
         constexpr u32 CopySubChannel{4}; // HW forces a memory flush on a switch from this subchannel to others
 
-        state.logger->Debug("Called GPU method - method: 0x{:X} argument: 0x{:X} subchannel: 0x{:X} last: {}", method, argument, subChannel, lastCall);
+        Logger::Debug("Called GPU method - method: 0x{:X} argument: 0x{:X} subchannel: 0x{:X} last: {}", method, argument, subChannel, lastCall);
 
         if (method < engine::GPFIFO::RegisterCount) {
             gpfifoEngine.CallMethod(method, argument, lastCall);
@@ -107,7 +107,7 @@ namespace skyline::soc::gm20b {
                 case GpEntry::Opcode::Nop:
                     return;
                 default:
-                    state.logger->Warn("Unsupported GpEntry control opcode used: {}", static_cast<u8>(gpEntry.opcode));
+                    Logger::Warn("Unsupported GpEntry control opcode used: {}", static_cast<u8>(gpEntry.opcode));
                     return;
             }
         }
@@ -220,17 +220,17 @@ namespace skyline::soc::gm20b {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
 
             gpEntries.Process([this](GpEntry gpEntry) {
-                state.logger->Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
+                Logger::Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
                 Process(gpEntry);
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+                Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
         } catch (const std::exception &e) {
-            state.logger->Error(e.what());
+            Logger::Error(e.what());
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }

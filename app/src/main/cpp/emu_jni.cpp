@@ -7,7 +7,6 @@
 #include <android/asset_manager_jni.h>
 #include <sys/system_properties.h>
 #include "skyline/common.h"
-#include "skyline/common/logger.h"
 #include "skyline/common/language.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/settings.h"
@@ -113,15 +112,15 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         InputWeak = os->state.input;
         jvmManager->InitializeControllers();
 
-        logger->InfoNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));
+        skyline::Logger::InfoNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
-        logger->ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
+        skyline::Logger::ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
     } catch (const skyline::signal::SignalException &e) {
-        logger->ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
+        skyline::Logger::ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
     } catch (...) {
-        logger->ErrorNoPrefix("An unknown uncaught exception has occurred");
+        skyline::Logger::ErrorNoPrefix("An unknown uncaught exception has occurred");
     }
 
     perfetto::TrackEvent::Flush();
@@ -129,7 +128,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     InputWeak.reset();
 
     auto end{std::chrono::steady_clock::now()};
-    logger->Write(skyline::Logger::LogLevel::Info, fmt::format("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    skyline::Logger::Write(skyline::Logger::LogLevel::Info, fmt::format("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
 
     skyline::Logger::EmulationContext.Finalize();
     close(romFd);

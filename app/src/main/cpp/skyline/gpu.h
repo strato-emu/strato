@@ -16,13 +16,13 @@ namespace skyline::gpu {
       private:
         static vk::raii::Instance CreateInstance(const DeviceState &state, const vk::raii::Context &context);
 
-        static vk::raii::DebugReportCallbackEXT CreateDebugReportCallback(const DeviceState &state, const vk::raii::Instance &instance);
+        static vk::raii::DebugReportCallbackEXT CreateDebugReportCallback(const vk::raii::Instance &instance);
 
-        static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message, Logger *logger);
+        static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message);
 
-        static vk::raii::PhysicalDevice CreatePhysicalDevice(const DeviceState &state, const vk::raii::Instance &instance);
+        static vk::raii::PhysicalDevice CreatePhysicalDevice(const vk::raii::Instance &instance);
 
-        static vk::raii::Device CreateDevice(const DeviceState &state, const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration);
+        static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration);
 
       public:
         static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require

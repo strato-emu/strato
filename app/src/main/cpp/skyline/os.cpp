@@ -54,7 +54,7 @@ namespace skyline::kernel {
         process->InitializeHeapTls();
         auto thread{process->CreateThread(entry)};
         if (thread) {
-            state.logger->Debug("Starting main HOS thread");
+            Logger::Debug("Starting main HOS thread");
             thread->Start(true);
             process->Kill(true, true, true);
         }

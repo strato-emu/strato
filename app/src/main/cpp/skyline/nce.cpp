@@ -40,7 +40,7 @@ namespace skyline::nce {
             }
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
+                Logger::ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
@@ -56,9 +56,9 @@ namespace skyline::nce {
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             if (svc)
-                state.logger->ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace());
+                Logger::ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace());
             else
-                state.logger->ErrorNoPrefix("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svcId, state.loader->GetStackTrace());
+                Logger::ErrorNoPrefix("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svcId, state.loader->GetStackTrace());
 
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
@@ -87,7 +87,7 @@ namespace skyline::nce {
                 for (u8 index{}; index < (sizeof(mcontext_t::regs) / sizeof(u64)); index += 2)
                     cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
 
-                state.logger->Error("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
+                Logger::Error("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
 
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});

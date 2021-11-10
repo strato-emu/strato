@@ -76,7 +76,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
-        state.logger->Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+        Logger::Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         // Methods that are greater than the register size are for macro control
         if (method >= RegisterCount) [[unlikely]] {
@@ -248,7 +248,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             MAXWELL3D_CASE(syncpointAction, {
-                state.logger->Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
+                Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Execute();
                 state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
             })
@@ -270,14 +270,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                                 break;
 
                             default:
-                                state.logger->Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
+                                Logger::Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
                                 break;
                         }
                         break;
                     }
 
                     default:
-                        state.logger->Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(info.op));
+                        Logger::Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(info.op));
                         break;
                 }
             })

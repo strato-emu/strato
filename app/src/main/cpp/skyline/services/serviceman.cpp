@@ -120,7 +120,7 @@ namespace skyline::service {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
         }
-        state.logger->Debug("Service has been created: \"{}\" (0x{:X})", serviceObject->GetName(), handle);
+        Logger::Debug("Service has been created: \"{}\" (0x{:X})", serviceObject->GetName(), handle);
         return serviceObject;
     }
 
@@ -137,7 +137,7 @@ namespace skyline::service {
             response.moveHandles.push_back(handle);
         }
 
-        state.logger->Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->GetName(), handle);
+        Logger::Debug("Service has been registered: \"{}\" (0x{:X})", serviceObject->GetName(), handle);
     }
 
     void ServiceManager::CloseSession(KHandle handle) {
@@ -161,8 +161,8 @@ namespace skyline::service {
     void ServiceManager::SyncRequestHandler(KHandle handle) {
         TRACE_EVENT("kernel", "ServiceManager::SyncRequestHandler");
         auto session{state.process->GetHandle<type::KSession>(handle)};
-        state.logger->Verbose("----IPC Start----");
-        state.logger->Verbose("Handle is 0x{:X}", handle);
+        Logger::Verbose("----IPC Start----");
+        Logger::Verbose("Handle is 0x{:X}", handle);
 
         if (session->isOpen) {
             ipc::IpcRequest request(session->isDomain, state);
@@ -199,7 +199,7 @@ namespace skyline::service {
 
                 case ipc::CommandType::Control:
                 case ipc::CommandType::ControlWithContext:
-                    state.logger->Debug("Control IPC Message: 0x{:X}", request.payload->value);
+                    Logger::Debug("Control IPC Message: 0x{:X}", request.payload->value);
                     switch (static_cast<ipc::ControlCommand>(request.payload->value)) {
                         case ipc::ControlCommand::ConvertCurrentObjectToDomain:
                             response.Push(session->ConvertDomain());
@@ -221,15 +221,15 @@ namespace skyline::service {
                     break;
 
                 case ipc::CommandType::Close:
-                    state.logger->Debug("Closing Session");
+                    Logger::Debug("Closing Session");
                     CloseSession(handle);
                     break;
                 default:
                     throw exception("Unimplemented IPC message type: {}", static_cast<u16>(request.header->type));
             }
         } else {
-            state.logger->Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
+            Logger::Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
         }
-        state.logger->Verbose("====IPC End====");
+        Logger::Verbose("====IPC End====");
     }
 }

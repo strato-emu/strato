@@ -23,9 +23,9 @@ namespace skyline::service {
         ServiceFunctionDescriptor function;
         try {
             function = GetServiceFunction(request.payload->value);
-            state.logger->DebugNoPrefix("Service: {}", function.name);
+            Logger::DebugNoPrefix("Service: {}", function.name);
         } catch (const std::out_of_range &) {
-            state.logger->Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
+            Logger::Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
             return {};
         }
         TRACE_EVENT("service", perfetto::StaticString{function.name});

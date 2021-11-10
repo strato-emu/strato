@@ -13,14 +13,14 @@ namespace skyline::service::nvdrv::device {
         if (handleDesc) {
             (*handleDesc)->origSize = size; // Orig size is the unaligned size
             handle = (*handleDesc)->id;
-            state.logger->Debug("handle: {}, size: 0x{:X}", (*handleDesc)->id, size);
+            Logger::Debug("handle: {}, size: 0x{:X}", (*handleDesc)->id, size);
         }
 
         return handleDesc;
     }
 
     PosixResult NvMap::FromId(In<NvMapCore::Handle::Id> id, Out<NvMapCore::Handle::Id> handle) {
-        state.logger->Debug("id: {}", id);
+        Logger::Debug("id: {}", id);
 
         // Handles and IDs are always the same value in nvmap however IDs can be used globally given the right permissions.
         // Since we don't plan on ever supporting multiprocess we can skip implementing handle refs and so this function just does simple validation and passes through the handle id.
@@ -41,7 +41,7 @@ namespace skyline::service::nvdrv::device {
     PosixResult NvMap::Alloc(In<NvMapCore::Handle::Id> handle,
                              In<u32> heapMask, In<NvMapCore::Handle::Flags> flags,
                              InOut<u32> align, In<u8> kind, In<u64> address) {
-        state.logger->Debug("handle: {}, flags: ( mapUncached: {}, keepUncachedAfterFree: {} ), align: 0x{:X}, kind: {}, address: 0x{:X}",
+        Logger::Debug("handle: {}, flags: ( mapUncached: {}, keepUncachedAfterFree: {} ), align: 0x{:X}, kind: {}, address: 0x{:X}",
                             handle, flags.mapUncached, flags.keepUncachedAfterFree, align, kind, address);
 
         if (!handle) [[unlikely]]
@@ -64,7 +64,7 @@ namespace skyline::service::nvdrv::device {
     PosixResult NvMap::Free(In<NvMapCore::Handle::Id> handle,
                             Out<u64> address, Out<u32> size,
                             Out<NvMapCore::Handle::Flags> flags) {
-        state.logger->Debug("handle: {}", handle);
+        Logger::Debug("handle: {}", handle);
 
         if (!handle) [[unlikely]]
             return PosixResult::Success;
@@ -74,14 +74,14 @@ namespace skyline::service::nvdrv::device {
             size = static_cast<u32>(freeInfo->size);
             flags = NvMapCore::Handle::Flags{ .mapUncached = freeInfo->wasUncached };
         } else {
-            state.logger->Debug("Handle not freed");
+            Logger::Debug("Handle not freed");
         }
 
         return PosixResult::Success;
     }
 
     PosixResult NvMap::Param(In<NvMapCore::Handle::Id> handle, In<HandleParameterType> param, Out<u32> result) {
-        state.logger->Debug("handle: {}, param: {}", handle, param);
+        Logger::Debug("handle: {}, param: {}", handle, param);
 
         if (!handle)
             return PosixResult::InvalidArgument;
@@ -119,7 +119,7 @@ namespace skyline::service::nvdrv::device {
     }
 
     PosixResult NvMap::GetId(Out<NvMapCore::Handle::Id> id, In<NvMapCore::Handle::Id> handle) {
-        state.logger->Debug("handle: {}", handle);
+        Logger::Debug("handle: {}", handle);
 
         // See the comment in FromId for extra info on this function
         if (!handle) [[unlikely]]

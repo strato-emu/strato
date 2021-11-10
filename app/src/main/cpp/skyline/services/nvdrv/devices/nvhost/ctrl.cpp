@@ -70,7 +70,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointWaitEventImpl(In<Fence> fence, In<i32> timeout, InOut<SyncpointEventValue> value, bool allocate) {
-        state.logger->Debug("fence: ( id: {}, threshold: {} ), timeout: {}, value: {}, allocate: {}",
+        Logger::Debug("fence: ( id: {}, threshold: {} ), timeout: {}, value: {}, allocate: {}",
                             fence.id, fence.threshold, timeout, value.val, allocate);
 
         if (fence.id >= soc::host1x::SyncpointCount)
@@ -80,7 +80,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (fence.threshold == 0) {
             // oss-nvjpg waits on syncpoint 0 during initialisation without reserving it, this is technically valid with a zero threshold but could also be a sign of a bug on our side in other cases, hence the warn
             if (!core.syncpointManager.IsSyncpointAllocated(fence.id))
-                state.logger->Warn("Tried to wait on an unreserved syncpoint with no threshold");
+                Logger::Warn("Tried to wait on an unreserved syncpoint with no threshold");
 
             return PosixResult::Success;
         }
@@ -121,7 +121,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             return PosixResult::InvalidArgument;
 
         if (!event->IsInUse()) {
-            state.logger->Debug("Waiting on syncpoint event: {} with fence: ({}, {})", slot, fence.id, fence.threshold);
+            Logger::Debug("Waiting on syncpoint event: {} with fence: ({}, {})", slot, fence.id, fence.threshold);
             event->RegisterWaiter(state.soc->host1x, fence);
 
             value.val = 0;
@@ -159,7 +159,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointClearEventWait(In<SyncpointEventValue> value) {
-        state.logger->Debug("slot: {}", value.slot);
+        Logger::Debug("slot: {}", value.slot);
 
         u16 slot{value.slot};
         if (slot >= SyncpointEventCount)
@@ -172,7 +172,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             return PosixResult::InvalidArgument;
 
         if (event->state.exchange(SyncpointEvent::State::Cancelling) == SyncpointEvent::State::Waiting) {
-            state.logger->Debug("Cancelling waiting syncpoint event: {}", slot);
+            Logger::Debug("Cancelling waiting syncpoint event: {}", slot);
             event->Cancel(state.soc->host1x);
             core.syncpointManager.UpdateMin(event->fence.id);
         }
@@ -192,7 +192,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointAllocateEvent(In<u32> slot) {
-        state.logger->Debug("slot: {}", slot);
+        Logger::Debug("slot: {}", slot);
 
         if (slot >= SyncpointEventCount)
             return PosixResult::InvalidArgument;
@@ -210,14 +210,14 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointFreeEvent(In<u32> slot) {
-        state.logger->Debug("slot: {}", slot);
+        Logger::Debug("slot: {}", slot);
 
         std::lock_guard lock(syncpointEventMutex);
         return SyncpointFreeEventLocked(slot);
     }
 
     PosixResult Ctrl::SyncpointFreeEventBatch(In<u64> bitmask) {
-        state.logger->Debug("bitmask: 0x{:X}", bitmask);
+        Logger::Debug("bitmask: 0x{:X}", bitmask);
 
         auto err{PosixResult::Success};
 

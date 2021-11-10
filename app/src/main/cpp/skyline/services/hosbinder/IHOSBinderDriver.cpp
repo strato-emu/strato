@@ -45,7 +45,7 @@ namespace skyline::service::hosbinder {
                 layerStrongReferenceCount = value;
 
             if (layerStrongReferenceCount < 0) {
-                state.logger->Warn("Strong reference count is lower than 0: {} + {} = {}", (layerStrongReferenceCount - value), value, layerStrongReferenceCount);
+                Logger::Warn("Strong reference count is lower than 0: {} + {} = {}", (layerStrongReferenceCount - value), value, layerStrongReferenceCount);
                 layerStrongReferenceCount = 0;
             }
 
@@ -55,7 +55,7 @@ namespace skyline::service::hosbinder {
             layerWeakReferenceCount += value;
 
             if (layerWeakReferenceCount < 0) {
-                state.logger->Warn("Weak reference count is lower than 0: {} + {} = {}", (layerWeakReferenceCount - value), value, layerWeakReferenceCount);
+                Logger::Warn("Weak reference count is lower than 0: {} + {} = {}", (layerWeakReferenceCount - value), value, layerWeakReferenceCount);
                 layerWeakReferenceCount = 0;
             }
 
@@ -63,7 +63,7 @@ namespace skyline::service::hosbinder {
                 layer.reset();
         }
 
-        state.logger->Debug("Reference Change: {} {} reference (S{} W{})", value, isStrong ? "strong" : "weak", layerStrongReferenceCount, layerWeakReferenceCount);
+        Logger::Debug("Reference Change: {} {} reference (S{} W{})", value, isStrong ? "strong" : "weak", layerStrongReferenceCount, layerWeakReferenceCount);
 
         return {};
     }
@@ -79,7 +79,7 @@ namespace skyline::service::hosbinder {
             throw exception("Getting unknown handle from binder object: 0x{:X}", handleId);
 
         KHandle handle{state.process->InsertItem(layer->bufferEvent)};
-        state.logger->Debug("Display Buffer Event Handle: 0x{:X}", handle);
+        Logger::Debug("Display Buffer Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 
         return {};

@@ -10,7 +10,7 @@ namespace skyline::service::apm {
         auto mode{request.Pop<u32>()};
         auto config{request.Pop<u32>()};
         performanceConfig.at(mode) = config;
-        state.logger->Info("Performance configuration set to 0x{:X} ({})", config, mode ? "Docked" : "Handheld");
+        Logger::Info("Performance configuration set to 0x{:X} ({})", config, mode ? "Docked" : "Handheld");
         return {};
     }
 

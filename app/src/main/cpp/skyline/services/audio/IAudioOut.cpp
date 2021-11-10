@@ -23,13 +23,13 @@ namespace skyline::service::audio {
     }
 
     Result IAudioOut::StartAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.logger->Debug("Start playback");
+        Logger::Debug("Start playback");
         track->Start();
         return {};
     }
 
     Result IAudioOut::StopAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        state.logger->Debug("Stop playback");
+        Logger::Debug("Stop playback");
         track->Stop();
         return {};
     }
@@ -44,7 +44,7 @@ namespace skyline::service::audio {
         } &data{request.inputBuf.at(0).as<Data>()};
         auto tag{request.Pop<u64>()};
 
-        state.logger->Debug("Appending buffer at 0x{:X}, Size: 0x{:X}", data.sampleBuffer, data.sampleSize);
+        Logger::Debug("Appending buffer at 0x{:X}, Size: 0x{:X}", data.sampleBuffer, data.sampleSize);
 
         span samples(data.sampleBuffer, data.sampleSize / sizeof(i16));
         if (sampleRate != constant::SampleRate) {
@@ -59,7 +59,7 @@ namespace skyline::service::audio {
 
     Result IAudioOut::RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(releaseEvent)};
-        state.logger->Debug("Buffer Release Event Handle: 0x{:X}", handle);
+        Logger::Debug("Buffer Release Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

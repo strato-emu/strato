@@ -27,16 +27,16 @@ namespace skyline::loader {
         auto size{patch.size + textSize + roSize + dataSize};
 
         process->NewHandle<kernel::type::KPrivateMemory>(base, patch.size, memory::Permission{false, false, false}, memory::states::Reserved); // ---
-        state.logger->Debug("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
+        Logger::Debug("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.text.offset, textSize, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
-        state.logger->Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.text.offset, textSize);
+        Logger::Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.text.offset, textSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.ro.offset, roSize, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
-        state.logger->Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.ro.offset, roSize);
+        Logger::Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.ro.offset, roSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(base + patch.size + executable.data.offset, dataSize, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
-        state.logger->Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.data.offset, dataSize);
+        Logger::Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.data.offset, dataSize);
 
         state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets);
         std::memcpy(base + patch.size + executable.text.offset, executable.text.contents.data(), textSize);

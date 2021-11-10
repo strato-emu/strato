@@ -2,6 +2,7 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <android/log.h>
+#include "utils.h"
 #include "logger.h"
 
 namespace skyline {

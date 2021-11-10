@@ -23,7 +23,7 @@ namespace skyline::soc::gm20b {
              * @brief Calls an engine method with the given parameters
              */
             void CallMethod(u32 method, u32 argument, bool lastCall) {
-                state.logger->Warn("Called method in unimplemented engine: 0x{:X} args: 0x{:X}", method, argument);
+                Logger::Warn("Called method in unimplemented engine: 0x{:X} args: 0x{:X}", method, argument);
             };
         };
     }

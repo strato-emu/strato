@@ -32,14 +32,14 @@ namespace skyline::service::nvdrv::device::nvhost {
             std::scoped_lock channelLock(gpuCh.channelMutex);
 
             if (gpuCh.asCtx) {
-                state.logger->Warn("Attempting to bind multiple ASes to a single GPU channel");
+                Logger::Warn("Attempting to bind multiple ASes to a single GPU channel");
                 return PosixResult::InvalidArgument;
             }
             
             gpuCh.asCtx = asCtx;
             gpuCh.asAllocator = vm.smallPageAllocator;
         } catch (const std::out_of_range &e) {
-            state.logger->Warn("Attempting to bind AS to an invalid channel: {}", channelFd);
+            Logger::Warn("Attempting to bind AS to an invalid channel: {}", channelFd);
             return PosixResult::InvalidArgument;
         }
         
@@ -47,7 +47,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::AllocSpace(In<u32> pages, In<u32> pageSize, In<MappingFlags> flags, InOut<u64> offset) {
-        state.logger->Debug("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}",
+        Logger::Debug("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}",
                             pages, pageSize, flags.fixed, flags.sparse, offset);
 
         std::scoped_lock lock(mutex);
@@ -108,7 +108,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::FreeSpace(In<u64> offset, In<u32> pages, In<u32> pageSize) {
-        state.logger->Debug("offset: 0x{:X}, pages: 0x{:X}, pageSize: 0x{:X}", offset, pages, pageSize);
+        Logger::Debug("offset: 0x{:X}, pages: 0x{:X}, pageSize: 0x{:X}", offset, pages, pageSize);
 
         std::scoped_lock lock(mutex);
 
@@ -141,7 +141,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::UnmapBuffer(In<u64> offset) {
-        state.logger->Debug("offset: 0x{:X}", offset);
+        Logger::Debug("offset: 0x{:X}", offset);
 
         std::scoped_lock lock(mutex);
 
@@ -167,7 +167,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
             mappingMap.erase(offset);
         } catch (const std::out_of_range &e) {
-            state.logger->Warn("Couldn't find region to unmap at 0x{:X}", offset);
+            Logger::Warn("Couldn't find region to unmap at 0x{:X}", offset);
         }
 
         return PosixResult::Success;
@@ -176,7 +176,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind,
                                    In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset,
                                    In<u64> mappingSize, InOut<u64> offset) {
-        state.logger->Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
+        Logger::Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
                             flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
         std::scoped_lock lock(mutex);
@@ -190,7 +190,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 auto mapping{mappingMap.at(offset)};
 
                 if (mapping->size < mappingSize) {
-                    state.logger->Warn("Cannot remap a partially mapped GPU address space region: 0x{:X}", offset);
+                    Logger::Warn("Cannot remap a partially mapped GPU address space region: 0x{:X}", offset);
                     return PosixResult::InvalidArgument;
                 }
 
@@ -201,7 +201,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
                 return PosixResult::Success;
             } catch (const std::out_of_range &e) {
-                state.logger->Warn("Cannot remap an unmapped GPU address space region: 0x{:X}", offset);
+                Logger::Warn("Cannot remap an unmapped GPU address space region: 0x{:X}", offset);
                 return PosixResult::InvalidArgument;
             }
         }
@@ -248,7 +248,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             mappingMap[offset] = mapping;
         }
 
-        state.logger->Debug("Mapped to 0x{:X}", offset);
+        Logger::Debug("Mapped to 0x{:X}", offset);
 
         return PosixResult::Success;
     }
@@ -288,17 +288,17 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (vm.initialised)
             throw exception("Cannot initialise an address space twice!");
 
-        state.logger->Debug("bigPageSize: 0x{:X}, asFd: {}, flags: 0x{:X}, vaRangeStart: 0x{:X}, vaRangeEnd: 0x{:X}, vaRangeSplit: 0x{:X}",
+        Logger::Debug("bigPageSize: 0x{:X}, asFd: {}, flags: 0x{:X}, vaRangeStart: 0x{:X}, vaRangeEnd: 0x{:X}, vaRangeSplit: 0x{:X}",
                             bigPageSize, asFd, flags, vaRangeStart, vaRangeEnd, vaRangeSplit);
 
         if (bigPageSize) {
             if (!std::has_single_bit(bigPageSize)) {
-                state.logger->Error("Non power-of-2 big page size: 0x{:X}!", bigPageSize);
+                Logger::Error("Non power-of-2 big page size: 0x{:X}!", bigPageSize);
                 return PosixResult::InvalidArgument;
             }
 
             if (!(bigPageSize & VM::SupportedBigPageSizes)) {
-                state.logger->Error("Unsupported big page size: 0x{:X}!", bigPageSize);
+                Logger::Error("Unsupported big page size: 0x{:X}!", bigPageSize);
                 return PosixResult::InvalidArgument;
             }
 
@@ -342,12 +342,12 @@ namespace skyline::service::nvdrv::device::nvhost {
             auto alloc{allocationMap.upper_bound(virtAddr)};
 
             if (alloc-- == allocationMap.begin() || (virtAddr - alloc->first) + size > alloc->second.size) {
-                state.logger->Warn("Cannot remap into an unallocated region!");
+                Logger::Warn("Cannot remap into an unallocated region!");
                 return PosixResult::InvalidArgument;
             }
 
             if (!alloc->second.sparse) {
-                state.logger->Warn("Cannot remap a non-sparse mapping!");
+                Logger::Warn("Cannot remap a non-sparse mapping!");
                 return PosixResult::InvalidArgument;
             }
 

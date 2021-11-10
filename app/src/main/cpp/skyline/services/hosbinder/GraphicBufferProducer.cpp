@@ -30,7 +30,7 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::RequestBuffer(i32 slot, GraphicBuffer *&buffer) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            state.logger->Warn("#{} was out of range", slot);
+            Logger::Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
@@ -38,20 +38,20 @@ namespace skyline::service::hosbinder {
         bufferSlot.wasBufferRequested = true;
         buffer = bufferSlot.graphicBuffer.get();
 
-        state.logger->Debug("#{}", slot);
+        Logger::Debug("#{}", slot);
         return AndroidStatus::Ok;
     }
 
     AndroidStatus GraphicBufferProducer::SetBufferCount(i32 count) {
         std::scoped_lock lock(mutex);
         if (count >= MaxSlotCount) [[unlikely]] {
-            state.logger->Warn("Setting buffer count too high: {} (Max: {})", count, MaxSlotCount);
+            Logger::Warn("Setting buffer count too high: {} (Max: {})", count, MaxSlotCount);
             return AndroidStatus::BadValue;
         }
 
         for (auto it{queue.begin()}; it != queue.end(); it++) {
             if (it->state == BufferState::Dequeued) {
-                state.logger->Warn("Cannot set buffer count as #{} is dequeued", std::distance(queue.begin(), it));
+                Logger::Warn("Cannot set buffer count as #{} is dequeued", std::distance(queue.begin(), it));
                 return AndroidStatus::BadValue;
             }
         }
@@ -74,7 +74,7 @@ namespace skyline::service::hosbinder {
                 slot.graphicBuffer = nullptr;
             }
         } else if (preallocatedBufferCount < count) {
-            state.logger->Warn("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
+            Logger::Warn("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
         }
 
         activeSlotCount = static_cast<u8>(count);
@@ -85,7 +85,7 @@ namespace skyline::service::hosbinder {
 
     AndroidStatus GraphicBufferProducer::DequeueBuffer(bool async, u32 width, u32 height, AndroidPixelFormat format, u32 usage, i32 &slot, std::optional<AndroidFence> &fence) {
         if ((width && !height) || (!width && height)) {
-            state.logger->Warn("Dimensions {}x{} should be uniformly zero or non-zero", width, height);
+            Logger::Warn("Dimensions {}x{} should be uniformly zero or non-zero", width, height);
             return AndroidStatus::BadValue;
         }
 
@@ -114,14 +114,14 @@ namespace skyline::service::hosbinder {
         } else if (async) {
             return AndroidStatus::WouldBlock;
         } else if (dequeuedSlotCount == queue.size()) {
-            state.logger->Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+            Logger::Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
             return AndroidStatus::InvalidOperation;
         } else {
             size_t index{};
             std::string bufferString;
             for (auto &bufferSlot : queue)
                 bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), bufferSlot.graphicBuffer != nullptr, bufferSlot.frameNumber);
-            state.logger->Warn("Cannot find any free buffers to dequeue:{}", bufferString);
+            Logger::Warn("Cannot find any free buffers to dequeue:{}", bufferString);
             return AndroidStatus::InvalidOperation;
         }
 
@@ -137,7 +137,7 @@ namespace skyline::service::hosbinder {
         auto &handle{buffer->graphicBuffer->graphicHandle};
         auto &surface{handle.surfaces.front()};
         if (handle.format != format || surface.width != width || surface.height != height || (buffer->graphicBuffer->usage & usage) != usage) {
-            state.logger->Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer->graphicBuffer->format), usage, buffer->graphicBuffer->usage);
+            Logger::Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer->graphicBuffer->format), usage, buffer->graphicBuffer->usage);
             // Nintendo doesn't deallocate the slot which was picked in here and reallocate it as a compatible buffer
             // This is related to the comment above, Nintendo only allocates buffers on the client side
             return AndroidStatus::NoInit;
@@ -146,23 +146,23 @@ namespace skyline::service::hosbinder {
         buffer->state = BufferState::Dequeued;
         fence = AndroidFence{}; // We just let the presentation engine return a buffer which is ready to be written into, there is no need for further synchronization
 
-        state.logger->Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
+        Logger::Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
         return AndroidStatus::Ok;
     }
 
     AndroidStatus GraphicBufferProducer::DetachBuffer(i32 slot) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            state.logger->Warn("#{} was out of range", slot);
+            Logger::Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
         auto &bufferSlot{queue[static_cast<size_t>(slot)]};
         if (bufferSlot.state != BufferState::Dequeued) [[unlikely]] {
-            state.logger->Warn("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
+            Logger::Warn("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
             return AndroidStatus::BadValue;
         } else if (!bufferSlot.wasBufferRequested) [[unlikely]] {
-            state.logger->Warn("#{} was detached prior to being requested", slot);
+            Logger::Warn("#{} was detached prior to being requested", slot);
             return AndroidStatus::BadValue;
         }
 
@@ -174,7 +174,7 @@ namespace skyline::service::hosbinder {
 
         bufferEvent->Signal();
 
-        state.logger->Debug("#{}", slot);
+        Logger::Debug("#{}", slot);
         return AndroidStatus::Ok;
     }
 
@@ -200,7 +200,7 @@ namespace skyline::service::hosbinder {
 
         bufferEvent->Signal();
 
-        state.logger->Debug("#{}", std::distance(queue.begin(), bufferSlot));
+        Logger::Debug("#{}", std::distance(queue.begin(), bufferSlot));
         return AndroidStatus::Ok;
     }
 
@@ -215,7 +215,7 @@ namespace skyline::service::hosbinder {
         }
 
         if (bufferSlot == queue.end()) {
-            state.logger->Warn("Could not find any free slots to attach the graphic buffer to");
+            Logger::Warn("Could not find any free slots to attach the graphic buffer to");
             return AndroidStatus::NoMemory;
         }
 
@@ -250,7 +250,7 @@ namespace skyline::service::hosbinder {
         preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer && slot.isPreallocated; }));
         activeSlotCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer != nullptr; }));
 
-        state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+        Logger::Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
     }
 
@@ -263,28 +263,28 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                state.logger->Warn("{} is not a valid scaling mode", static_cast<u32>(scalingMode));
+                Logger::Warn("{} is not a valid scaling mode", static_cast<u32>(scalingMode));
                 return AndroidStatus::BadValue;
         }
 
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            state.logger->Warn("#{} was out of range", slot);
+            Logger::Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
         auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
-            state.logger->Warn("#{} was '{}' instead of being dequeued", slot, ToString(buffer.state));
+            Logger::Warn("#{} was '{}' instead of being dequeued", slot, ToString(buffer.state));
             return AndroidStatus::BadValue;
         } else if (!buffer.wasBufferRequested) [[unlikely]] {
-            state.logger->Warn("#{} was queued prior to being requested", slot);
+            Logger::Warn("#{} was queued prior to being requested", slot);
             buffer.wasBufferRequested = true; // Switch ignores this and doesn't return an error, certain homebrew ends up depending on this behavior
         }
 
         auto graphicBuffer{*buffer.graphicBuffer};
         if (graphicBuffer.width < (crop.right - crop.left) || graphicBuffer.height < (crop.bottom - crop.top)) [[unlikely]] {
-            state.logger->Warn("Crop was out of range for surface buffer: ({}-{})x({}-{}) > {}x{}", crop.left, crop.right, crop.top, crop.bottom, graphicBuffer.width, graphicBuffer.height);
+            Logger::Warn("Crop was out of range for surface buffer: ({}-{})x({}-{}) > {}x{}", crop.left, crop.right, crop.top, crop.bottom, graphicBuffer.width, graphicBuffer.height);
             return AndroidStatus::BadValue;
         }
 
@@ -400,20 +400,20 @@ namespace skyline::service::hosbinder {
         transformHint = state.gpu->presentation.GetTransformHint();
         pendingBufferCount = GetPendingBufferCount();
 
-        state.logger->Debug("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}, Is Async: {}", slot, isAutoTimestamp ? "Auto " : "", timestamp, crop.left, crop.right, crop.top, crop.bottom, ToString(scalingMode), ToString(transform), ToString(stickyTransform), swapInterval, async);
+        Logger::Debug("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}, Is Async: {}", slot, isAutoTimestamp ? "Auto " : "", timestamp, crop.left, crop.right, crop.top, crop.bottom, ToString(scalingMode), ToString(transform), ToString(stickyTransform), swapInterval, async);
         return AndroidStatus::Ok;
     }
 
     void GraphicBufferProducer::CancelBuffer(i32 slot, const AndroidFence &fence) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            state.logger->Warn("#{} was out of range", slot);
+            Logger::Warn("#{} was out of range", slot);
             return;
         }
 
         auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
-            state.logger->Warn("#{} is not owned by the producer as it is '{}' instead of being dequeued", slot, ToString(buffer.state));
+            Logger::Warn("#{} is not owned by the producer as it is '{}' instead of being dequeued", slot, ToString(buffer.state));
             return;
         }
 
@@ -423,7 +423,7 @@ namespace skyline::service::hosbinder {
         buffer.frameNumber = 0;
         bufferEvent->Signal();
 
-        state.logger->Debug("#{}", slot);
+        Logger::Debug("#{}", slot);
     }
 
     AndroidStatus GraphicBufferProducer::Query(NativeWindowQuery query, u32 &out) {
@@ -467,18 +467,18 @@ namespace skyline::service::hosbinder {
             }
 
             default:
-                state.logger->Warn("Query not supported: {}", static_cast<u32>(query));
+                Logger::Warn("Query not supported: {}", static_cast<u32>(query));
                 return AndroidStatus::BadValue;
         }
 
-        state.logger->Debug("{}: {}", ToString(query), out);
+        Logger::Debug("{}: {}", ToString(query), out);
         return AndroidStatus::Ok;
     }
 
     AndroidStatus GraphicBufferProducer::Connect(NativeWindowApi api, bool producerControlledByApp, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount) {
         std::scoped_lock lock(mutex);
         if (connectedApi != NativeWindowApi::None) [[unlikely]] {
-            state.logger->Warn("Already connected to API '{}' while connection to '{}' is requested", ToString(connectedApi), ToString(api));
+            Logger::Warn("Already connected to API '{}' while connection to '{}' is requested", ToString(connectedApi), ToString(api));
             return AndroidStatus::BadValue;
         }
 
@@ -490,7 +490,7 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                state.logger->Warn("Unknown API: {}", static_cast<u32>(api));
+                Logger::Warn("Unknown API: {}", static_cast<u32>(api));
                 return AndroidStatus::BadValue;
         }
 
@@ -500,7 +500,7 @@ namespace skyline::service::hosbinder {
         transformHint = state.gpu->presentation.GetTransformHint();
         pendingBufferCount = GetPendingBufferCount();
 
-        state.logger->Debug("API: {}, Producer Controlled By App: {}, Default Dimensions: {}x{}, Transform Hint: {}, Pending Buffer Count: {}", ToString(api), producerControlledByApp, width, height, ToString(transformHint), pendingBufferCount);
+        Logger::Debug("API: {}, Producer Controlled By App: {}, Default Dimensions: {}x{}, Transform Hint: {}, Pending Buffer Count: {}", ToString(api), producerControlledByApp, width, height, ToString(transformHint), pendingBufferCount);
         return AndroidStatus::Ok;
     }
 
@@ -515,12 +515,12 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                state.logger->Warn("Unknown API: {}", static_cast<u32>(api));
+                Logger::Warn("Unknown API: {}", static_cast<u32>(api));
                 return AndroidStatus::BadValue;
         }
 
         if (api != connectedApi) {
-            state.logger->Warn("Disconnecting from API '{}' while connected to '{}'", ToString(api), ToString(connectedApi));
+            Logger::Warn("Disconnecting from API '{}' while connected to '{}'", ToString(api), ToString(connectedApi));
             return AndroidStatus::BadValue;
         }
 
@@ -533,14 +533,14 @@ namespace skyline::service::hosbinder {
             slot.graphicBuffer = nullptr;
         }
 
-        state.logger->Debug("API: {}", ToString(api));
+        Logger::Debug("API: {}", ToString(api));
         return AndroidStatus::Ok;
     }
 
     AndroidStatus GraphicBufferProducer::SetPreallocatedBuffer(i32 slot, const GraphicBuffer *graphicBuffer) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= MaxSlotCount) [[unlikely]] {
-            state.logger->Warn("#{} was out of range", slot);
+            Logger::Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
@@ -573,9 +573,9 @@ namespace skyline::service::hosbinder {
             else if (surface.layout == NvSurfaceLayout::Tiled)
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
 
-            state.logger->Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+            Logger::Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         } else {
-            state.logger->Debug("#{} - No GraphicBuffer", slot);
+            Logger::Debug("#{} - No GraphicBuffer", slot);
         }
 
         preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; }));

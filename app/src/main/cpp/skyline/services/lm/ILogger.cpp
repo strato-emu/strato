@@ -122,7 +122,7 @@ namespace skyline::service::lm {
         if (logMessage.dropCount)
             message << " (Dropped Messages: " << logMessage.time << ')';
 
-        state.logger->Write(hostLevel, message.str());
+        Logger::Write(hostLevel, message.str());
 
         return {};
     }

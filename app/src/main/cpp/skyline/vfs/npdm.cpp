@@ -36,7 +36,7 @@ namespace skyline::vfs {
         };
     }
 
-    NPDM::NPDM(const std::shared_ptr<vfs::Backing> &backing, const DeviceState &state) {
+    NPDM::NPDM(const std::shared_ptr<vfs::Backing> &backing) {
         meta = backing->Read<NpdmMeta>();
         if (meta.magic != MetaMagic)
             throw exception("NPDM Meta Magic isn't correct: 0x{:X} (\"META\" = 0x{:X})", meta.magic, MetaMagic);
@@ -77,6 +77,6 @@ namespace skyline::vfs {
         if (!threadInfo.coreMask.test(meta.idealCore))
             throw exception("NPDM Ideal Core isn't valid: {} ({})", meta.idealCore, threadInfo.coreMask);
 
-        state.logger->Debug("NPDM Metadata:\nTitle: ID: {:X}, Version: {}\nMain Thread: Priority: {}, Stack Size: 0x{:X}\nScheduler: Ideal Core: {}, Core Mask: {}, Priority: {} - {}\nKernel Version: v{}.{}", aci0.programId, meta.version, meta.mainThreadPriority, meta.mainThreadStackSize, meta.idealCore, threadInfo.coreMask, threadInfo.priority.min, threadInfo.priority.max, kernelVersion.majorVersion, kernelVersion.minorVersion);
+        Logger::Debug("NPDM Metadata:\nTitle: ID: {:X}, Version: {}\nMain Thread: Priority: {}, Stack Size: 0x{:X}\nScheduler: Ideal Core: {}, Core Mask: {}, Priority: {} - {}\nKernel Version: v{}.{}", aci0.programId, meta.version, meta.mainThreadPriority, meta.mainThreadStackSize, meta.idealCore, threadInfo.coreMask, threadInfo.priority.min, threadInfo.priority.max, kernelVersion.majorVersion, kernelVersion.minorVersion);
     }
 }

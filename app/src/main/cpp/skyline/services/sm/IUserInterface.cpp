@@ -21,7 +21,7 @@ namespace skyline::service::sm {
             return {};
         } catch (std::out_of_range &) {
             std::string_view stringName(span(reinterpret_cast<char *>(&name), sizeof(u64)).as_string(true));
-            state.logger->Warn("Service has not been implemented: \"{}\"", stringName);
+            Logger::Warn("Service has not been implemented: \"{}\"", stringName);
             return result::InvalidServiceName;
         }
     }

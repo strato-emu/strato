@@ -117,7 +117,7 @@ namespace skyline {
           public:
             NPDM();
 
-            NPDM(const std::shared_ptr<vfs::Backing> &backing, const DeviceState &state);
+            NPDM(const std::shared_ptr<vfs::Backing> &backing);
         };
     }
 }

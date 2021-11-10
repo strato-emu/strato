@@ -173,7 +173,7 @@ namespace skyline::service::audio::IAudioRenderer {
 
     Result IAudioRenderer::QuerySystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(systemEvent)};
-        state.logger->Debug("System Event Handle: 0x{:X}", handle);
+        Logger::Debug("System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

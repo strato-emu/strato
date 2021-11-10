@@ -12,7 +12,7 @@ namespace skyline::service::visrv {
         auto displayId{request.Pop<hosbinder::DisplayId>()};
 
         auto layerId{hosbinder->CreateLayer(displayId)};
-        state.logger->Debug("Creating Managed Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
+        Logger::Debug("Creating Managed Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
         response.Push(layerId);
 
         return {};
@@ -20,7 +20,7 @@ namespace skyline::service::visrv {
 
     Result IManagerDisplayService::DestroyManagedLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Destroying Managed Layer #{}", layerId);
+        Logger::Debug("Destroying Managed Layer #{}", layerId);
         hosbinder->DestroyLayer(layerId);
         return {};
     }

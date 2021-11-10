@@ -15,7 +15,6 @@ namespace skyline::soc::host1x {
     template<typename ClassType>
     class TegraHostInterface {
       private:
-        const DeviceState &state;
         SyncpointSet &syncpoints;
         ClassType deviceClass; //!< The device class behind the THI, such as NVDEC or VIC
 
@@ -31,15 +30,14 @@ namespace skyline::soc::host1x {
                 u32 syncpointId{incrQueue.front()};
                 incrQueue.pop();
 
-                state.logger->Debug("Increment syncpoint: {}", syncpointId);
+                Logger::Debug("Increment syncpoint: {}", syncpointId);
                 syncpoints.at(syncpointId).Increment();
             }
         }
 
       public:
-        TegraHostInterface(const DeviceState &state, SyncpointSet &syncpoints)
-            : state(state),
-              deviceClass(state, [&] { SubmitPendingIncrs(); }),
+        TegraHostInterface(SyncpointSet &syncpoints)
+            : deviceClass([&] { SubmitPendingIncrs(); }),
               syncpoints(syncpoints) {}
 
         void CallMethod(u32 method, u32 argument)  {
@@ -52,16 +50,16 @@ namespace skyline::soc::host1x {
 
                     switch (incrSyncpoint.condition) {
                         case IncrementSyncpointMethod::Condition::Immediate:
-                            state.logger->Debug("Increment syncpoint: {}", incrSyncpoint.index);
+                            Logger::Debug("Increment syncpoint: {}", incrSyncpoint.index);
                             syncpoints.at(incrSyncpoint.index).Increment();
                             break;
                         case IncrementSyncpointMethod::Condition::OpDone:
-                            state.logger->Debug("Queue syncpoint for OpDone: {}", incrSyncpoint.index);
+                            Logger::Debug("Queue syncpoint for OpDone: {}", incrSyncpoint.index);
                             incrQueue.push(incrSyncpoint.index);
 
                             SubmitPendingIncrs(); // FIXME: immediately submit the incrs as classes are not yet implemented
                         default:
-                            state.logger->Warn("Unimplemented syncpoint condition: {}", static_cast<u8>(incrSyncpoint.condition));
+                            Logger::Warn("Unimplemented syncpoint condition: {}", static_cast<u8>(incrSyncpoint.condition));
                             break;
                     }
                     break;
@@ -73,7 +71,7 @@ namespace skyline::soc::host1x {
                     deviceClass.CallMethod(storedMethod, argument);
                     break;
                 default:
-                    state.logger->Error("Unknown THI method called: 0x{:X}, argument: 0x{:X}", method, argument);
+                    Logger::Error("Unknown THI method called: 0x{:X}, argument: 0x{:X}", method, argument);
                     break;
             }
         }

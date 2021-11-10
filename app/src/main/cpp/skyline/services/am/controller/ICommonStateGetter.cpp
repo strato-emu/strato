@@ -13,13 +13,13 @@ namespace skyline::service::am {
 
     ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {
         operationMode = static_cast<OperationMode>(state.settings->operationMode);
-        state.logger->Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
+        Logger::Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
         QueueMessage(Message::FocusStateChange);
     }
 
     Result ICommonStateGetter::GetEventHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(messageEvent)};
-        state.logger->Debug("Applet Event Handle: 0x{:X}", handle);
+        Logger::Debug("Applet Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

@@ -15,7 +15,7 @@ namespace skyline::service::visrv {
         auto layerId{hosbinder->CreateLayer(displayId)};
         response.Push(layerId);
 
-        state.logger->Debug("Creating Stray Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
+        Logger::Debug("Creating Stray Layer #{} on Display: {}", layerId, hosbinder::ToString(displayId));
 
         auto parcel{hosbinder->OpenLayer(displayId, layerId)};
         response.Push<u64>(parcel.WriteParcel(request.outputBuf.at(0)));
@@ -25,7 +25,7 @@ namespace skyline::service::visrv {
 
     Result IDisplayService::DestroyStrayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Destroying Stray Layer #{}", layerId);
+        Logger::Debug("Destroying Stray Layer #{}", layerId);
 
         hosbinder->CloseLayer(layerId);
 

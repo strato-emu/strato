@@ -38,7 +38,7 @@ namespace skyline::kernel::type {
         std::array<char, 16> threadName;
         pthread_getname_np(pthread, threadName.data(), threadName.size());
         pthread_setname_np(pthread, fmt::format("HOS-{}", id).c_str());
-        state.logger->UpdateTag();
+        Logger::UpdateTag();
 
         if (!ctx.tpidrroEl0)
             ctx.tpidrroEl0 = parent->AllocateTlsSlot();
@@ -61,7 +61,7 @@ namespace skyline::kernel::type {
 
             if (threadName[0] != 'H' || threadName[1] != 'O' || threadName[2] != 'S' || threadName[3] != '-') {
                 pthread_setname_np(pthread, threadName.data());
-                state.logger->UpdateTag();
+                Logger::UpdateTag();
             }
 
             return;
@@ -176,7 +176,7 @@ namespace skyline::kernel::type {
 
             __builtin_unreachable();
         } catch (const std::exception &e) {
-            state.logger->Error(e.what());
+            Logger::Error(e.what());
             if (id) {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
@@ -185,7 +185,7 @@ namespace skyline::kernel::type {
             std::longjmp(originalCtx, true);
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                state.logger->Error(e.what());
+                Logger::Error(e.what());
                 if (id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);

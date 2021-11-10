@@ -29,7 +29,7 @@ namespace skyline::service::am {
         libraryAppletLaunchableEvent->Signal();
 
         KHandle handle{state.process->InsertItem(libraryAppletLaunchableEvent)};
-        state.logger->Debug("Library Applet Launchable Event Handle: 0x{:X}", handle);
+        Logger::Debug("Library Applet Launchable Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};
@@ -57,7 +57,7 @@ namespace skyline::service::am {
 
     Result ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{hosbinder->CreateLayer(hosbinder::DisplayId::Default)};
-        state.logger->Debug("Creating Managed Layer #{} on 'Default' Display", layerId);
+        Logger::Debug("Creating Managed Layer #{} on 'Default' Display", layerId);
         response.Push(layerId);
         return {};
     }
@@ -70,7 +70,7 @@ namespace skyline::service::am {
 
     Result ISelfController::GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(accumulatedSuspendedTickChangedEvent)};
-        state.logger->Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
+        Logger::Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};

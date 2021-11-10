@@ -29,7 +29,7 @@ namespace skyline::kernel::ipc {
             auto bufX{reinterpret_cast<BufferDescriptorX *>(pointer)};
             if (bufX->Pointer()) {
                 inputBuf.emplace_back(bufX->Pointer(), static_cast<u16>(bufX->size));
-                state.logger->Verbose("Buf X #{}: 0x{:X}, 0x{:X}, #{}", index, bufX->Pointer(), static_cast<u16>(bufX->size), static_cast<u16>(bufX->Counter()));
+                Logger::Verbose("Buf X #{}: 0x{:X}, 0x{:X}, #{}", index, bufX->Pointer(), static_cast<u16>(bufX->size), static_cast<u16>(bufX->Counter()));
             }
             pointer += sizeof(BufferDescriptorX);
         }
@@ -38,7 +38,7 @@ namespace skyline::kernel::ipc {
             auto bufA{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufA->Pointer()) {
                 inputBuf.emplace_back(bufA->Pointer(), bufA->Size());
-                state.logger->Verbose("Buf A #{}: 0x{:X}, 0x{:X}", index, bufA->Pointer(), static_cast<u64>(bufA->Size()));
+                Logger::Verbose("Buf A #{}: 0x{:X}, 0x{:X}", index, bufA->Pointer(), static_cast<u64>(bufA->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -47,7 +47,7 @@ namespace skyline::kernel::ipc {
             auto bufB{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufB->Pointer()) {
                 outputBuf.emplace_back(bufB->Pointer(), bufB->Size());
-                state.logger->Verbose("Buf B #{}: 0x{:X}, 0x{:X}", index, bufB->Pointer(), static_cast<u64>(bufB->Size()));
+                Logger::Verbose("Buf B #{}: 0x{:X}, 0x{:X}", index, bufB->Pointer(), static_cast<u64>(bufB->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -57,7 +57,7 @@ namespace skyline::kernel::ipc {
             if (bufW->Pointer()) {
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
-                state.logger->Verbose("Buf W #{}: 0x{:X}, 0x{:X}", index, bufW->Pointer(), static_cast<u16>(bufW->Size()));
+                Logger::Verbose("Buf W #{}: 0x{:X}, 0x{:X}", index, bufW->Pointer(), static_cast<u16>(bufW->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -94,33 +94,33 @@ namespace skyline::kernel::ipc {
         payloadOffset = cmdArg;
 
         if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
-            state.logger->Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
+            Logger::Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
 
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
             if (bufC->address) {
                 outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
-                state.logger->Verbose("Buf C: 0x{:X}, 0x{:X}", bufC->Pointer(), static_cast<u16>(bufC->size));
+                Logger::Verbose("Buf C: 0x{:X}, 0x{:X}", bufC->Pointer(), static_cast<u16>(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index{}; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
                 if (bufC->address) {
                     outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
-                    state.logger->Verbose("Buf C #{}: 0x{:X}, 0x{:X}", index, bufC->Pointer(), static_cast<u16>(bufC->size));
+                    Logger::Verbose("Buf C #{}: 0x{:X}, 0x{:X}", index, bufC->Pointer(), static_cast<u16>(bufC->size));
                 }
                 bufCPointer += sizeof(BufferDescriptorC);
             }
         }
 
         if (header->type == CommandType::Request || header->type == CommandType::RequestWithContext) {
-            state.logger->Verbose("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), static_cast<u64>(cmdArgSz));
+            Logger::Verbose("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), static_cast<u64>(cmdArgSz));
             if (header->handleDesc)
-                state.logger->Verbose("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
+                Logger::Verbose("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
             if (isDomain)
-                state.logger->Verbose("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
-            state.logger->Verbose("Command ID: 0x{:X}", static_cast<u32>(payload->value));
+                Logger::Verbose("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
+            Logger::Verbose("Command ID: 0x{:X}", static_cast<u32>(payload->value));
         }
     }
 
@@ -181,6 +181,6 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        state.logger->Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
+        Logger::Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
     }
 }

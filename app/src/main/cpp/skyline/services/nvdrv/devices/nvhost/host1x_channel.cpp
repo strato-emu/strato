@@ -17,14 +17,14 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Host1xChannel::SetNvmapFd(In<FileDescriptor> fd) {
-        state.logger->Debug("fd: {}", fd);
+        Logger::Debug("fd: {}", fd);
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::Submit(span<SubmitCmdBuf> cmdBufs,
                                       span<SubmitReloc> relocs, span<u32> relocShifts,
                                       span<SubmitSyncpointIncr> syncpointIncrs, span<u32> fenceThresholds) {
-        state.logger->Debug("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
+        Logger::Debug("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
                             cmdBufs.size(), relocs.size(), syncpointIncrs.size(), fenceThresholds.size());
 
         if (fenceThresholds.size() > syncpointIncrs.size())
@@ -49,7 +49,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 throw exception("Invalid handle passed for a command buffer!");
 
             u64 gatherAddress{handleDesc->address + cmdBuf.offset};
-            state.logger->Debug("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
+            Logger::Debug("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
 
             span gather(reinterpret_cast<u32 *>(gatherAddress), cmdBuf.words);
             state.soc->host1x.channels[static_cast<size_t>(channelType)].Push(gather);
@@ -59,7 +59,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Host1xChannel::GetSyncpoint(In<u32> channelSyncpointIdx, Out<u32> syncpointId) {
-        state.logger->Debug("channelSyncpointIdx: {}", channelSyncpointIdx);
+        Logger::Debug("channelSyncpointIdx: {}", channelSyncpointIdx);
 
         if (channelSyncpointIdx > 0)
             throw exception("Multiple channel syncpoints are unimplemented!");
@@ -68,39 +68,39 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (!id)
             throw exception("Requested syncpoint for a channel with none specified!");
 
-        state.logger->Debug("syncpointId: {}", id);
+        Logger::Debug("syncpointId: {}", id);
         syncpointId = id;
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::GetWaitBase(In<core::ChannelType> pChannelType, Out<u32> waitBase) {
-        state.logger->Debug("channelType: {}", static_cast<u32>(pChannelType));
+        Logger::Debug("channelType: {}", static_cast<u32>(pChannelType));
         waitBase = 0;
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::SetSubmitTimeout(In<u32> timeout) {
-        state.logger->Debug("timeout: {}", timeout);
+        Logger::Debug("timeout: {}", timeout);
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::MapBuffer(u8 compressed, span<BufferHandle> handles) {
-        state.logger->Debug("compressed: {}", compressed);
+        Logger::Debug("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
             bufferHandle.address = core.nvMap.PinHandle(bufferHandle.handle);
-            state.logger->Debug("handle: {}, address: 0x{:X}", bufferHandle.handle, bufferHandle.address);
+            Logger::Debug("handle: {}, address: 0x{:X}", bufferHandle.handle, bufferHandle.address);
         }
 
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::UnmapBuffer(u8 compressed, span<BufferHandle> handles) {
-        state.logger->Debug("compressed: {}", compressed);
+        Logger::Debug("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
             core.nvMap.UnpinHandle(bufferHandle.handle);
-            state.logger->Debug("handle: {}", bufferHandle.handle);
+            Logger::Debug("handle: {}", bufferHandle.handle);
         }
 
         return PosixResult::Success;

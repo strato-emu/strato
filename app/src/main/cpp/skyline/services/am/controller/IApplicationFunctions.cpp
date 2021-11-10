@@ -103,7 +103,7 @@ namespace skyline::service::am {
         if (width > MaximumFbWidth || height > MaximumFbHeight || !util::IsAligned(transferMemorySize, RequiredFbAlignment))
             return result::InvalidParameters;
 
-        state.logger->Debug("Dimensions: ({}, {}) Transfer Memory Size: {}", width, height, transferMemorySize);
+        Logger::Debug("Dimensions: ({}, {}) Transfer Memory Size: {}", width, height, transferMemorySize);
 
         return {};
     }
@@ -122,19 +122,19 @@ namespace skyline::service::am {
         if (y < 0 || x < 0 || width < 1 || height < 1)
             return result::InvalidParameters;
 
-        state.logger->Debug("Position: ({}, {}) Dimensions: ({}, {}) Origin mode: {}", x, y, width, height, static_cast<i32>(originMode));
+        Logger::Debug("Position: ({}, {}) Dimensions: ({}, {}) Origin mode: {}", x, y, width, height, static_cast<i32>(originMode));
         return {};
     }
 
     Result IApplicationFunctions::SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u8 visiblity{request.Pop<u8>()};
-        state.logger->Debug("Visiblity: {}", visiblity);
+        Logger::Debug("Visiblity: {}", visiblity);
         return {};
     }
 
     Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(gpuErrorEvent)};
-        state.logger->Debug("GPU Error Event Handle: 0x{:X}", handle);
+        Logger::Debug("GPU Error Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

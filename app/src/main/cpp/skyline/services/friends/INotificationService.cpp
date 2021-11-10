@@ -11,7 +11,7 @@ namespace skyline::service::friends {
 
     Result INotificationService::GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle{state.process->InsertItem(notificationEvent)};
-        state.logger->Debug("Friend Notification Event Handle: 0x{:X}", handle);
+        Logger::Debug("Friend Notification Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};

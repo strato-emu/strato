@@ -22,11 +22,11 @@ namespace skyline::service::nifm {
 
     Result IRequest::GetSystemEventReadableHandles(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(event0)};
-        state.logger->Debug("Request Event 0 Handle: 0x{:X}", handle);
+        Logger::Debug("Request Event 0 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 
         handle = state.process->InsertItem(event1);
-        state.logger->Debug("Request Event 1 Handle: 0x{:X}", handle);
+        Logger::Debug("Request Event 1 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 
         return {};

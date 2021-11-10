@@ -6,7 +6,7 @@
 #include "host1x.h"
 
 namespace skyline::soc::host1x {
-    Host1xClass::Host1xClass(const DeviceState &state, SyncpointSet &syncpoints) : state(state), syncpoints(syncpoints) {}
+    Host1xClass::Host1xClass(SyncpointSet &syncpoints) : syncpoints(syncpoints) {}
 
     void Host1xClass::CallMethod(u32 method, u32 argument) {
         constexpr static u32 LoadSyncpointPayload32MethodId{0x4E}; //!< See '14.3.2.12 32-Bit Sync Point Comparison Methods' in TRM
@@ -17,7 +17,7 @@ namespace skyline::soc::host1x {
                 IncrementSyncpointMethod incrSyncpoint{.raw = argument};
 
                 // incrSyncpoint.condition doesn't matter for Host1x class increments
-                state.logger->Debug("Increment syncpoint: {}", incrSyncpoint.index);
+                Logger::Debug("Increment syncpoint: {}", incrSyncpoint.index);
                 syncpoints.at(incrSyncpoint.index).Increment();
                 break;
             }
@@ -28,14 +28,14 @@ namespace skyline::soc::host1x {
 
             case WaitSyncpoint32MethodId: {
                 u32 syncpointId{static_cast<u8>(argument)};
-                state.logger->Debug("Wait syncpoint: {}, thresh: {}", syncpointId, syncpointPayload);
+                Logger::Debug("Wait syncpoint: {}, thresh: {}", syncpointId, syncpointPayload);
 
                 syncpoints.at(syncpointId).Wait(syncpointPayload, std::chrono::steady_clock::duration::max());
                 break;
             }
 
             default:
-                state.logger->Error("Unknown host1x class method called: 0x{:X}", method);
+                Logger::Error("Unknown host1x class method called: 0x{:X}", method);
                 break;
         }
     }

@@ -164,7 +164,7 @@ namespace skyline::service::nvdrv::core {
 
         std::scoped_lock lock(handleDesc->mutex);
         if (--handleDesc->pins < 0) {
-            state.logger->Warn("Pin count imbalance detected!");
+            Logger::Warn("Pin count imbalance detected!");
         } else if (!handleDesc->pins) {
             std::scoped_lock queueLock(unmapQueueLock);
 
@@ -184,10 +184,10 @@ namespace skyline::service::nvdrv::core {
 
             if (internalSession) {
                 if (--handleDesc->internalDupes < 0)
-                    state.logger->Warn("Internal duplicate count imbalance detected!");
+                    Logger::Warn("Internal duplicate count imbalance detected!");
             } else {
                 if (--handleDesc->dupes < 0) {
-                    state.logger->Warn("User duplicate count imbalance detected!");
+                    Logger::Warn("User duplicate count imbalance detected!");
                 } else if (handleDesc->dupes == 0) {
                     // Force unmap the handle
                     if (handleDesc->pinVirtAddress) {
@@ -200,11 +200,11 @@ namespace skyline::service::nvdrv::core {
             }
 
             // Try to remove the shared ptr to the handle from the map, if nothing else is using the handle
-            // then it will now be freed when `handleDesc` goes out of scope
+            // then it will now be freed when `h` goes out of scope
             if (TryRemoveHandle(*handleDesc))
-                state.logger->Debug("Removed nvmap handle: {}", handle);
+                Logger::Debug("Removed nvmap handle: {}", handle);
             else
-                state.logger->Debug("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);
+                Logger::Debug("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);
 
             freeInfo = {
                 .address = handleDesc->address,
@@ -217,7 +217,7 @@ namespace skyline::service::nvdrv::core {
 
         // Handle hasn't been freed from memory, set address to 0 to mark that the handle wasn't freed
         if (!hWeak.expired()) {
-            state.logger->Debug("nvmap handle: {} wasn't freed as it is still in use", handle);
+            Logger::Debug("nvmap handle: {} wasn't freed as it is still in use", handle);
             freeInfo.address = 0;
         }
 

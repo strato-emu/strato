@@ -19,7 +19,7 @@ namespace skyline::service::codec {
         u32 workBufferSize{request.Pop<u32>()};
         KHandle workBuffer{request.copyHandles.at(0)};
 
-        state.logger->Debug("Creating Opus decoder: Sample rate: {}, Channel count: {}, Work buffer handle: 0x{:X} (Size: 0x{:X})", sampleRate, channelCount, workBuffer, workBufferSize);
+        Logger::Debug("Creating Opus decoder: Sample rate: {}, Channel count: {}, Work buffer handle: 0x{:X} (Size: 0x{:X})", sampleRate, channelCount, workBuffer, workBufferSize);
 
         manager.RegisterService(std::make_shared<IHardwareOpusDecoder>(state, manager, sampleRate, channelCount, workBufferSize, workBuffer), session, response);
         return {};

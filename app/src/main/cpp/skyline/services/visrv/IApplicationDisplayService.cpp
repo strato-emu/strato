@@ -42,14 +42,14 @@ namespace skyline::service::visrv {
 
     Result IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto displayName(request.PopString());
-        state.logger->Debug("Opening display: {}", displayName);
+        Logger::Debug("Opening display: {}", displayName);
         response.Push(hosbinder->OpenDisplay(displayName));
         return {};
     }
 
     Result IApplicationDisplayService::CloseDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto displayId{request.Pop<hosbinder::DisplayId>()};
-        state.logger->Debug("Closing display: {}", hosbinder::ToString(displayId));
+        Logger::Debug("Closing display: {}", hosbinder::ToString(displayId));
         hosbinder->CloseDisplay(displayId);
         return {};
     }
@@ -57,7 +57,7 @@ namespace skyline::service::visrv {
     Result IApplicationDisplayService::OpenLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto displayName{request.PopString(0x40)};
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Opening layer #{} on display: {}", layerId, displayName);
+        Logger::Debug("Opening layer #{} on display: {}", layerId, displayName);
 
         auto displayId{hosbinder->OpenDisplay(displayName)};
         auto parcel{hosbinder->OpenLayer(displayId, layerId)};
@@ -68,7 +68,7 @@ namespace skyline::service::visrv {
 
     Result IApplicationDisplayService::CloseLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u64 layerId{request.Pop<u64>()};
-        state.logger->Debug("Closing layer #{}", layerId);
+        Logger::Debug("Closing layer #{}", layerId);
         hosbinder->CloseLayer(layerId);
         return {};
     }
@@ -76,13 +76,13 @@ namespace skyline::service::visrv {
     Result IApplicationDisplayService::SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto scalingMode{request.Pop<u64>()};
         auto layerId{request.Pop<u64>()};
-        state.logger->Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
+        Logger::Debug("Setting Layer Scaling mode to '{}' for layer {}", scalingMode, layerId);
         return {};
     }
 
     Result IApplicationDisplayService::GetDisplayVsyncEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle{state.process->InsertItem(state.gpu->presentation.vsyncEvent)};
-        state.logger->Debug("V-Sync Event Handle: 0x{:X}", handle);
+        Logger::Debug("V-Sync Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

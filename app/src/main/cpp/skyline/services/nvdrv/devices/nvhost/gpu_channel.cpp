@@ -66,12 +66,12 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::SetNvmapFd(In<FileDescriptor> fd) {
-        state.logger->Debug("fd: {}", fd);
+        Logger::Debug("fd: {}", fd);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetTimeout(In<u32> timeout) {
-        state.logger->Debug("timeout: {}", timeout);
+        Logger::Debug("timeout: {}", timeout);
         return PosixResult::Success;
     }
 
@@ -79,7 +79,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                                          InOut<SubmitGpfifoFlags> flags,
                                          InOut<Fence> fence,
                                          span<soc::gm20b::GpEntry> gpEntries) {
-        state.logger->Debug("userAddress: 0x{:X}, numEntries: {},"
+        Logger::Debug("userAddress: 0x{:X}, numEntries: {},"
                             "flags ( fenceWait: {}, fenceIncrement: {}, hwFormat: {}, suppressWfi: {}, incrementWithValue: {}),"
                             "fence ( id: {}, threshold: {} )",
                             userAddress, numEntries,
@@ -137,36 +137,36 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::AllocObjCtx(In<u32> classId, In<u32> flags, Out<u64> objId) {
-        state.logger->Debug("classId: 0x{:X}, flags: 0x{:X}", classId, flags);
+        Logger::Debug("classId: 0x{:X}, flags: 0x{:X}", classId, flags);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::ZcullBind(In<u64> gpuVa, In<u32> mode) {
-        state.logger->Debug("gpuVa: 0x{:X}, mode: {}", gpuVa, mode);
+        Logger::Debug("gpuVa: 0x{:X}, mode: {}", gpuVa, mode);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetErrorNotifier(In<u64> offset, In<u64> size, In<u32> mem) {
-        state.logger->Debug("offset: 0x{:X}, size: 0x{:X}, mem: 0x{:X}", offset, size, mem);
+        Logger::Debug("offset: 0x{:X}, size: 0x{:X}, mem: 0x{:X}", offset, size, mem);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetPriority(In<u32> priority) {
-        state.logger->Debug("priority: {}", priority);
+        Logger::Debug("priority: {}", priority);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::AllocGpfifoEx2(In<u32> numEntries, In<u32> numJobs, In<u32> flags, Out<Fence> fence) {
-        state.logger->Debug("numEntries: {}, numJobs: {}, flags: 0x{:X}", numEntries, numJobs, flags);
+        Logger::Debug("numEntries: {}, numJobs: {}, flags: 0x{:X}", numEntries, numJobs, flags);
 
         std::scoped_lock lock(channelMutex);
         if (!asCtx || !asAllocator) {
-            state.logger->Warn("Trying to allocate a channel without a bound address space");
+            Logger::Warn("Trying to allocate a channel without a bound address space");
             return PosixResult::InvalidArgument;
         }
 
         if (channelCtx) {
-            state.logger->Warn("Trying to allocate a channel twice!");
+            Logger::Warn("Trying to allocate a channel twice!");
             return PosixResult::FileExists;
         }
 
@@ -192,12 +192,12 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult GpuChannel::SetTimeslice(In<u32> timeslice) {
-        state.logger->Debug("timeslice: {}", timeslice);
+        Logger::Debug("timeslice: {}", timeslice);
         return PosixResult::Success;
     }
 
     PosixResult GpuChannel::SetUserData(In<u64> userData) {
-        state.logger->Debug("userData: 0x{:X}", userData);
+        Logger::Debug("userData: 0x{:X}", userData);
         channelUserData = userData;
         return PosixResult::Success;
     }

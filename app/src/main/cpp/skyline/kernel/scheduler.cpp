@@ -70,14 +70,14 @@ namespace skyline::kernel {
             }
 
             if (optimalCore != currentCore)
-                state.logger->Debug("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
+                Logger::Debug("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
             else
-                state.logger->Debug("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
+                Logger::Debug("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
 
             return *optimalCore;
         }
 
-        state.logger->Debug("Load Balancing T{}: C{} (Early)", thread->id, currentCore->id);
+        Logger::Debug("Load Balancing T{}: C{} (Early)", thread->id, currentCore->id);
 
         return *currentCore;
     }

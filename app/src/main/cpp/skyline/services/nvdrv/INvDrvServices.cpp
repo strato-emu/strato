@@ -9,7 +9,7 @@
 
 #define NVRESULT(x) [&response, this](NvResult err) {         \
         if (err != NvResult::Success)                         \
-            state.logger->Debug("IOCTL Failed: 0x{:X}", err); \
+            Logger::Debug("IOCTL Failed: 0x{:X}", err); \
                                                               \
         response.Push<NvResult>(err);                         \
         return Result{};                                      \
@@ -73,7 +73,7 @@ namespace skyline::service::nvdrv {
 
     Result INvDrvServices::Close(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto fd{request.Pop<FileDescriptor>()};
-        state.logger->Debug("Closing NVDRV device ({})", fd);
+        Logger::Debug("Closing NVDRV device ({})", fd);
 
         driver.CloseDevice(fd);
 
@@ -93,7 +93,7 @@ namespace skyline::service::nvdrv {
         if (event != nullptr) {
             auto handle{state.process->InsertItem<type::KEvent>(event)};
 
-            state.logger->Debug("FD: {}, Event ID: {}, Handle: 0x{:X}", fd, eventId, handle);
+            Logger::Debug("FD: {}, Event ID: {}, Handle: 0x{:X}", fd, eventId, handle);
             response.copyHandles.push_back(handle);
 
             return NVRESULT(NvResult::Success);
