@@ -122,7 +122,7 @@
         android:title="@string/licenses"
         app:initialExpandedChildrenCount="5">
         <emu.skyline.preference.LicensePreference
-            app:libraryCopyright="Copyright © 2019-2021 Skyline Team and Contributors (https://github.com/skyline-emu/)"
+            app:libraryCopyright="Copyright © 2019-2021\nSkyline Team and Contributors"
             app:libraryLicense="@string/mpl2_license"
             app:libraryUrl="https://github.com/skyline-emu/skyline"
             app:summary="@string/skyline_license_description"

@@ -38,7 +38,7 @@
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline4"
             android:textSize="17sp"
-            tools:text="Copyright © 2019-2021 Skyline Team and Contributors (https://github.com/skyline-emu/)" />
+            tools:text="Copyright © 2019-2021\nSkyline Team and Contributors" />
 
         <TextView
             android:id="@+id/license_content"
@@ -46,7 +46,9 @@
             android:layout_height="wrap_content"
             android:autoLink="web"
             android:paddingTop="10dp"
-            android:textAlignment="center"
+            android:paddingBottom="15dp"
+            android:paddingHorizontal="15dp"
+            android:justificationMode="inter_word"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
             tools:text="@string/mpl2_license" />
 
