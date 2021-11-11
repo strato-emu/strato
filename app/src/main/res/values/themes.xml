@@ -12,13 +12,12 @@
 
         <item name="chipChoiceStyle">@style/ChipChoice</item>
 
-        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.AppTheme.BottomSheetDialog</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <style name="AppTheme" parent="BaseAppTheme">
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:alertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <style name="ThemeOverlay.AppTheme.BottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
