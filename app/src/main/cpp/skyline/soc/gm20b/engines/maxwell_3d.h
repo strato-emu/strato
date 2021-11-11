@@ -79,6 +79,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x380, std::array<type::Scissor, type::ViewportCount>> scissors;
 
+            struct DepthBiasEnable {
+                u32 point; // 0x370
+                u32 line; // 0x371
+                u32 fill; // 0x372
+            };
+            Register<0x370, DepthBiasEnable> depthBiasEnable;
+
             struct StencilBackExtra {
                 u32 compareRef; // 0x3D5
                 u32 writeMask; // 0x3D6
@@ -162,7 +169,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x557, SamplerPool> samplerPool;
 
-            Register<0x55B, u32> polygonOffsetFactor;
+            Register<0x55B, float> depthBiasFactor;
             Register<0x55C, u32> lineSmoothEnable;
 
             struct TexturePool {
@@ -170,7 +177,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u32 maximumIndex; // 0x55F
             };
             Register<0x55D, TexturePool> texturePool;
-
 
             Register<0x565, u32> stencilTwoSideEnable;
 
@@ -182,15 +188,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x566, StencilBack> stencilBack;
 
+            Register<0x56F, float> depthBiasUnits;
+
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
+            Register<0x582, type::Address> setProgramRegion;
+
+            Register<0x5A1, u32> provokingVertexIsLast;
 
             Register<0x646, u32> cullFaceEnable;
             Register<0x647, type::FrontFace> frontFace;
             Register<0x648, type::CullFace> cullFace;
+
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportTransformEnable;
             Register<0x674, type::ClearBuffers> clearBuffers;
             Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorMask;
+
+            Register<0x61F, float> depthBiasClamp;
+            Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
 
             struct Semaphore {
                 type::Address address; // 0x6C0

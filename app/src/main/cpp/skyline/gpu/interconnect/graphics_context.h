@@ -26,6 +26,8 @@ namespace skyline::gpu::interconnect {
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
+            if (!gpu.quirks.supportsLastProvokingVertex)
+                rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
         }
 
         /* Render Targets + Render Target Control */
@@ -367,6 +369,111 @@ namespace skyline::gpu::interconnect {
             auto &shader{boundShaders[static_cast<size_t>(stage)]};
             shader.offset = offset;
             shader.data = span<u8>{};
+        }
+
+        /* Rasterizer State */
+      private:
+        vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> rasterizerState;
+        bool cullFaceEnabled{};
+        vk::CullModeFlags cullMode{}; //!< The current cull mode regardless of it being enabled or disabled
+        vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT provokingVertexState{};
+        bool depthBiasPoint{}, depthBiasLine{}, depthBiasFill{};
+
+      public:
+        void SetDepthClampEnabled(bool enabled) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthClampEnable = enabled;
+        }
+
+        vk::PolygonMode ConvertPolygonMode(maxwell3d::PolygonMode mode) {
+            switch (mode) {
+                case maxwell3d::PolygonMode::Point:
+                    return vk::PolygonMode::ePoint;
+                case maxwell3d::PolygonMode::Line:
+                    return vk::PolygonMode::eLine;
+                case maxwell3d::PolygonMode::Fill:
+                    return vk::PolygonMode::eFill;
+            }
+        }
+
+        void SetPolygonModeFront(maxwell3d::PolygonMode mode) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().polygonMode = ConvertPolygonMode(mode);
+        }
+
+        void SetPolygonModeBack(maxwell3d::PolygonMode mode) {
+            auto frontPolygonMode{rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().polygonMode};
+            auto backPolygonMode{ConvertPolygonMode(mode)};
+            if (frontPolygonMode != backPolygonMode)
+                Logger::Warn("Cannot set back-facing polygon mode ({}) different from front-facing polygon mode ({}) due to Vulkan constraints", vk::to_string(backPolygonMode), vk::to_string(frontPolygonMode));
+        }
+
+        void SetCullFaceEnabled(bool enabled) {
+            cullFaceEnabled = enabled;
+            if (!enabled)
+                rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().cullMode = {};
+        }
+
+        void SetFrontFace(maxwell3d::FrontFace face) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().frontFace = [face]() {
+                switch (face) {
+                    case maxwell3d::FrontFace::Clockwise:
+                        return vk::FrontFace::eClockwise;
+                    case maxwell3d::FrontFace::CounterClockwise:
+                        return vk::FrontFace::eCounterClockwise;
+                }
+            }();
+        }
+
+        void SetCullFace(maxwell3d::CullFace face) {
+            cullMode = [face]() -> vk::CullModeFlags {
+                switch (face) {
+                    case maxwell3d::CullFace::Front:
+                        return vk::CullModeFlagBits::eFront;
+                    case maxwell3d::CullFace::Back:
+                        return vk::CullModeFlagBits::eBack;
+                    case maxwell3d::CullFace::FrontAndBack:
+                        return vk::CullModeFlagBits::eFrontAndBack;
+                }
+            }();
+            if (cullFaceEnabled)
+                rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().cullMode = cullMode;
+        }
+
+        void SetProvokingVertex(bool isLast) {
+            if (isLast) {
+                if (!gpu.quirks.supportsLastProvokingVertex)
+                    Logger::Warn("Cannot set provoking vertex to last without host GPU support");
+                rasterizerState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = vk::ProvokingVertexModeEXT::eLastVertex;
+            } else {
+                rasterizerState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = vk::ProvokingVertexModeEXT::eFirstVertex;
+            }
+        }
+
+        void SetLineWidth(float width) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().lineWidth = width;
+        }
+
+        void SetDepthBiasPointEnabled(bool enabled) {
+            depthBiasPoint = enabled;
+        }
+
+        void SetDepthBiasLineEnabled(bool enabled) {
+            depthBiasLine = enabled;
+        }
+
+        void SetDepthBiasFillEnabled(bool enabled) {
+            depthBiasFill = enabled;
+        }
+
+        void SetDepthBiasConstantFactor(float factor) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthBiasConstantFactor = factor;
+        }
+
+        void SetDepthBiasClamp(float clamp) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthBiasClamp = clamp;
+        }
+
+        void SetDepthBiasSlopeFactor(float factor) {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthBiasSlopeFactor = factor;
         }
     };
 }

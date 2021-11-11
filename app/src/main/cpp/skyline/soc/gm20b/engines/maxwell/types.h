@@ -412,6 +412,19 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         FrontAndBack = 0x408,
     };
 
+    union ViewVolumeClipControl {
+        u32 raw;
+        struct {
+            bool forceDepthRangeZeroToOne : 1;
+            u8 _unk0_ : 2;
+            bool depthClampNear : 1;
+            bool depthClampFar : 1;
+            u8 _unk1_ : 7;
+            bool depthClampDisable : 1;
+        };
+    };
+    static_assert(sizeof(ViewVolumeClipControl) == sizeof(u32));
+
     union ColorWriteMask {
         u32 raw;
 

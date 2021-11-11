@@ -208,6 +208,22 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(4 < BOOST_PP_LIMIT_REPEAT);
                 #undef COLOR_CLEAR_CALLBACKS
 
+                MAXWELL3D_STRUCT_CASE(polygonMode, front, {
+                    context.SetPolygonModeFront(front);
+                })
+
+                MAXWELL3D_STRUCT_CASE(depthBiasEnable, point, {
+                    context.SetDepthBiasPointEnabled(point);
+                })
+
+                MAXWELL3D_STRUCT_CASE(depthBiasEnable, line, {
+                    context.SetDepthBiasLineEnabled(line);
+                })
+
+                MAXWELL3D_STRUCT_CASE(depthBiasEnable, fill, {
+                    context.SetDepthBiasFillEnabled(fill);
+                })
+
                 #define SCISSOR_CALLBACKS(z, index, data)                                                           \
                 MAXWELL3D_ARRAY_STRUCT_CASE(scissors, index, enable, {                                              \
                     context.SetScissor(index, enable ? registers.scissors[index] : std::optional<type::Scissor>{}); \
@@ -226,6 +242,61 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 MAXWELL3D_CASE(renderTargetControl, {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
+
+                MAXWELL3D_CASE(lineWidthSmooth, {
+                    if (*registers.lineSmoothEnable)
+                        context.SetLineWidth(lineWidthSmooth);
+                })
+
+                MAXWELL3D_CASE(lineWidthAliased, {
+                    if (!*registers.lineSmoothEnable)
+                        context.SetLineWidth(lineWidthAliased);
+                })
+
+                MAXWELL3D_CASE(depthBiasFactor, {
+                    context.SetDepthBiasSlopeFactor(depthBiasFactor);
+                })
+
+                MAXWELL3D_CASE(lineSmoothEnable, {
+                    context.SetLineWidth(lineSmoothEnable ? *registers.lineWidthSmooth : *registers.lineWidthAliased);
+                })
+
+                MAXWELL3D_CASE(depthBiasUnits, {
+                    context.SetDepthBiasConstantFactor(depthBiasUnits / 2.0f);
+                })
+
+                MAXWELL3D_STRUCT_CASE(setProgramRegion, high, {
+                    context.SetShaderBaseIovaHigh(high);
+                })
+
+                MAXWELL3D_STRUCT_CASE(setProgramRegion, low, {
+                    context.SetShaderBaseIovaLow(low);
+                })
+
+                MAXWELL3D_CASE(provokingVertexIsLast, {
+                    context.SetProvokingVertex(provokingVertexIsLast);
+                })
+
+                MAXWELL3D_CASE(depthBiasClamp, {
+                    context.SetDepthBiasClamp(depthBiasClamp);
+                })
+
+                MAXWELL3D_CASE(cullFaceEnable, {
+                    context.SetCullFaceEnabled(cullFaceEnable);
+                })
+
+                MAXWELL3D_CASE(frontFace, {
+                    context.SetFrontFace(frontFace);
+                })
+
+                MAXWELL3D_CASE(cullFace, {
+                    context.SetCullFace(cullFace);
+                })
+
+                MAXWELL3D_CASE(viewVolumeClipControl, {
+                    context.SetDepthClampEnabled(!viewVolumeClipControl.depthClampDisable);
+                })
+
                 #define SET_SHADER_ENABLE_CALLBACK(z, index, data)     \
                 MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, info, { \
                     context.SetShaderEnabled(info.stage, info.enable); \
