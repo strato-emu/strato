@@ -18,8 +18,4 @@
         <item name="materialThemeOverlay">@style/ChipChoice.Material</item>
         <item name="shapeAppearance">@style/ShapeAppearance.MaterialComponents.LargeComponent</item>
     </style>
-
-    <style name="ModalBottomSheetDialog" parent="Widget.MaterialComponents.BottomSheet.Modal">
-        <item name="backgroundTint">@color/dialogSurface</item>
-    </style>
 </resources>

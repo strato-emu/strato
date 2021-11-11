@@ -47,6 +47,7 @@ class RumbleDialog @JvmOverloads constructor(val item : ControllerGeneralViewIte
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.setBackgroundColor(requireContext().getColor(R.color.backgroundColor))
 
         if (item != null && context is ControllerActivity) {
             val context = requireContext() as ControllerActivity
