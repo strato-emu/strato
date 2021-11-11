@@ -226,6 +226,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 MAXWELL3D_CASE(renderTargetControl, {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
+                #define SET_SHADER_ENABLE_CALLBACK(z, index, data)     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, info, { \
+                    context.SetShaderEnabled(info.stage, info.enable); \
+                })
+
+                BOOST_PP_REPEAT(6, SET_SHADER_ENABLE_CALLBACK, 0)
+                static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
+                #undef SET_SHADER_ENABLE_CALLBACK
             }
         }
 
@@ -281,6 +289,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                         break;
                 }
             })
+
+            #define SET_SHADER_OFFSET_CALLBACK(z, index, data)                               \
+                MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, offset, {                     \
+                    context.SetShaderOffset(registers.setProgram[index].info.stage, offset); \
+                })
+
+            BOOST_PP_REPEAT(6, SET_SHADER_OFFSET_CALLBACK, 0)
+            static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
 
             MAXWELL3D_ARRAY_CASE(firmwareCall, 4, {
                 registers.raw[0xD00] = 1;

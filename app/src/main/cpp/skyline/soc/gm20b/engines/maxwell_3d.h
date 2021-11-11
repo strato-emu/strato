@@ -200,6 +200,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x6C0, Semaphore> semaphore;
 
             Register<0x780, std::array<type::Blend, type::RenderTargetCount>> independentBlend;
+
+            Register<0x800, std::array<type::SetProgramInfo, type::StageCount>> setProgram;
+
             Register<0x8C0, u32[0x20]> firmwareCall;
         };
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));

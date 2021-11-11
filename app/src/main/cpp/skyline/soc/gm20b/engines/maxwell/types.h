@@ -525,5 +525,37 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SemaphoreInfo) == sizeof(u32));
 
+    constexpr static size_t StageCount{6}; //!< Amount of pipeline stages on Maxwell 3D
+
+    /**
+     * @brief All the pipeline stages that Maxwell3D supports for draws
+     */
+    enum class StageId {
+        VertexA = 0,
+        VertexB = 1,
+        TessellationControl = 2,
+        TessellationEvaluation = 3,
+        Geometry = 4,
+        Fragment = 5,
+    };
+    static_assert(static_cast<size_t>(StageId::Fragment) + 1 == StageCount);
+
+    /**
+     * @brief The arguments to set a shader program for a pipeline stage
+     */
+    struct SetProgramInfo {
+        struct {
+            bool enable : 1;
+            u8 _pad0_ : 3;
+            StageId stage : 4;
+            u32 _pad1_ : 24;
+        } info;
+        u32 offset; //!< Offset from the base shader memory IOVA
+        u32 _pad2_;
+        u32 gprCount; //!< Amount of GPRs used by the shader program
+        u32 _pad3_[12];
+    };
+    static_assert(sizeof(SetProgramInfo) == (sizeof(u32) * 0x10));
+
     #pragma pack(pop)
 }

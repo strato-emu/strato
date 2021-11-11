@@ -326,5 +326,41 @@ namespace skyline::gpu::interconnect {
             scissor.offset.y = bounds.minimum;
             scissor.extent.height = bounds.maximum - bounds.minimum;
         }
+
+        /* Shader Program */
+      private:
+        struct Shader {
+            bool enabled{false};
+            u32 offset{}; //!< Offset of the shader from the base IOVA
+            span<u8> data; //!< The shader bytecode in the CPU AS
+        };
+
+        u64 shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
+        std::array<Shader, maxwell3d::StageCount> boundShaders{};
+
+      public:
+        void SetShaderBaseIovaHigh(u32 high) {
+            shaderBaseIova = (shaderBaseIova & std::numeric_limits<u32>::max()) | (static_cast<u64>(high) << 32);
+            for (auto &shader : boundShaders)
+                shader.data = span<u8>{};
+        }
+
+        void SetShaderBaseIovaLow(u32 low) {
+            shaderBaseIova = (shaderBaseIova & (static_cast<u64>(std::numeric_limits<u32>::max()) << 32)) | low;
+            for (auto &shader : boundShaders)
+                shader.data = span<u8>{};
+        }
+
+        void SetShaderEnabled(maxwell3d::StageId stage, bool enabled) {
+            auto &shader{boundShaders[static_cast<size_t>(stage)]};
+            shader.enabled = enabled;
+            shader.data = span<u8>{};
+        }
+
+        void SetShaderOffset(maxwell3d::StageId stage, u32 offset) {
+            auto &shader{boundShaders[static_cast<size_t>(stage)]};
+            shader.offset = offset;
+            shader.data = span<u8>{};
+        }
     };
 }
