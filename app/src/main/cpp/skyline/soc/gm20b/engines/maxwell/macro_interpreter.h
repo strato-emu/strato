@@ -90,7 +90,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             } bitfield;
         };
         static_assert(sizeof(Opcode) == sizeof(u32));
-        #pragma pack(pop)
 
         /**
          * @brief Metadata about the Maxwell 3D method to be called in 'Send'
@@ -99,9 +98,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             u32 raw;
             struct {
                 u16 address : 12;
-                u8 increment : 6;
+                u16 increment : 6;
             };
         };
+        static_assert(sizeof(MethodAddress) == sizeof(u32));
+        #pragma pack(pop)
 
         Maxwell3D &maxwell3D; //!< A reference to the parent engine object
 
