@@ -6,9 +6,12 @@
 package emu.skyline.input
 
 import android.content.Intent
+import android.graphics.Canvas
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.marginTop
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -186,6 +189,24 @@ class ControllerActivity : AppCompatActivity() {
                 if (layoutManager.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) binding.titlebar.appBarLayout.setExpanded(false)
             }
         })
+
+        val dividerItemDecoration = object : DividerItemDecoration(this, DividerItemDecoration.VERTICAL) {
+            override fun onDraw(canvas : Canvas, parent : RecyclerView, state : RecyclerView.State) {
+                val divider = drawable!!
+                for (i in 0 until parent.childCount) {
+                    val view = parent.getChildAt(i)
+                    if (parent.adapter!!.getItemViewType(parent.getChildAdapterPosition(view)) == adapter.getFactoryViewType(ControllerHeaderBindingFactory)) {
+                        val bottom = view.top - view.marginTop
+                        val top = bottom - divider.intrinsicHeight
+                        divider.setBounds(0, top, parent.width, bottom)
+                        divider.draw(canvas)
+                    }
+                }
+            }
+        }
+
+        dividerItemDecoration.drawable.let { it?.setTint(getColor(R.color.dividerColor)); it }
+        binding.controllerList.addItemDecoration(dividerItemDecoration)
 
         update()
     }

@@ -3,7 +3,17 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="../../../../../layout/custom_preview.xml" value="0.16875" />
+        <entry key="app/src/main/res/drawable/logo_skyline.xml" value="0.152" />
+        <entry key="app/src/main/res/layout/app_dialog.xml" value="0.22335526315789472" />
+        <entry key="app/src/main/res/layout/button_dialog.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/controller_activity.xml" value="0.22335526315789472" />
+        <entry key="app/src/main/res/layout/controller_header.xml" value="0.22335526315789472" />
+        <entry key="app/src/main/res/layout/header_rom_filter.xml" value="0.22335526315789472" />
+        <entry key="app/src/main/res/layout/license_dialog.xml" value="0.1" />
         <entry key="app/src/main/res/layout/main_activity.xml" value="0.2028688524590164" />
+        <entry key="app/src/main/res/layout/on_screen_edit_activity.xml" value="0.67" />
+        <entry key="app/src/main/res/layout/on_screen_edit_mini_fab.xml" value="0.22335526315789472" />
         <entry key="app/src/main/res/layout/settings_activity.xml" value="0.22302631578947368" />
         <entry key="app/src/main/res/menu/toolbar_log.xml" value="0.11019736842105263" />
       </map>

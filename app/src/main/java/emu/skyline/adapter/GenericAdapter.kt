@@ -52,6 +52,8 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
 
     override fun getItemCount() = currentItems.size
 
+    fun getFactoryViewType(factory : ViewBindingFactory) = viewTypesMapping.get(factory)
+
     override fun getItemViewType(position : Int) = viewTypesMapping.getOrPut(currentItems[position].getViewBindingFactory()) { viewTypesMapping.size }
 
     fun setHeaderItems(items : List<GenericListItem<*>>) {
