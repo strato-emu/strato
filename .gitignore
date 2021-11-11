@@ -95,3 +95,6 @@ lint/reports/
 
 # Adreno Validation Layer
 libVkLayer_adreno.so
+
+# Skyline logs
+*.sklog
