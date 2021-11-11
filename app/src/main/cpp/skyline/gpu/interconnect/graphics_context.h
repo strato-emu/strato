@@ -23,6 +23,13 @@ namespace skyline::gpu::interconnect {
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
 
+      public:
+        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
+            scissors.fill(DefaultScissor);
+        }
+
+        /* Render Targets + Render Target Control */
+      private:
         struct RenderTarget {
             bool disabled{true}; //!< If this RT has been disabled and will be an unbound attachment instead
             union {
@@ -43,22 +50,8 @@ namespace skyline::gpu::interconnect {
 
         std::array<RenderTarget, maxwell3d::RenderTargetCount> renderTargets{}; //!< The target textures to render into as color attachments
         maxwell3d::RenderTargetControl renderTargetControl{};
-        std::array<vk::Viewport, maxwell3d::ViewportCount> viewports;
-        vk::ClearColorValue clearColorValue{}; //!< The value written to a color buffer being cleared
-        std::array<vk::Rect2D, maxwell3d::ViewportCount> scissors; //!< The scissors applied to viewports/render targets for masking writes during draws or clears
-        constexpr static vk::Rect2D DefaultScissor{
-            .extent.height = std::numeric_limits<i32>::max(),
-            .extent.width = std::numeric_limits<i32>::max(),
-        }; //!< A scissor which displays the entire viewport, utilized when the viewport scissor is disabled
-
 
       public:
-        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
-            scissors.fill(DefaultScissor);
-        }
-
-        /* Render Targets + Render Target Control */
-
         void SetRenderTargetAddressHigh(size_t index, u32 high) {
             auto &renderTarget{renderTargets.at(index)};
             renderTarget.gpuAddressHigh = high;
@@ -227,7 +220,10 @@ namespace skyline::gpu::interconnect {
         }
 
         /* Viewport Transforms */
+      private:
+        std::array<vk::Viewport, maxwell3d::ViewportCount> viewports;
 
+      public:
         /**
          * @url https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#vertexpostproc-viewport
          * @note Comments are written in the way of getting the same viewport transformations to be done on the host rather than deriving the host structure values from the guest submitted values, fundamentally the same thing but it is consistent with not assuming a certain guest API
@@ -251,7 +247,10 @@ namespace skyline::gpu::interconnect {
         }
 
         /* Buffer Clears */
+      private:
+        vk::ClearColorValue clearColorValue{}; //!< The value written to a color buffer being cleared
 
+      public:
         void UpdateClearColorValue(size_t index, u32 value) {
             clearColorValue.uint32.at(index) = value;
         }
@@ -305,7 +304,14 @@ namespace skyline::gpu::interconnect {
         }
 
         /* Viewport Scissors */
+      private:
+        std::array<vk::Rect2D, maxwell3d::ViewportCount> scissors; //!< The scissors applied to viewports/render targets for masking writes during draws or clears
+        constexpr static vk::Rect2D DefaultScissor{
+            .extent.height = std::numeric_limits<i32>::max(),
+            .extent.width = std::numeric_limits<i32>::max(),
+        }; //!< A scissor which displays the entire viewport, utilized when the viewport scissor is disabled
 
+      public:
         void SetScissor(size_t index, std::optional<maxwell3d::Scissor> scissor) {
             scissors.at(index) = scissor ? vk::Rect2D{
                 .offset.x = scissor->horizontal.minimum,
