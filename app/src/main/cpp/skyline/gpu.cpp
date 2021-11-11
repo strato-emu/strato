@@ -119,17 +119,18 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex) {
-        auto properties{physicalDevice.getProperties()}; // We should check for required properties here, if/when we have them
+    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager& quirks) {
+        auto properties{physicalDevice.getProperties()};
+        auto features{physicalDevice.getFeatures2()};
+        auto extensions{physicalDevice.enumerateDeviceExtensionProperties()};
 
-        // auto features{physicalDevice.getFeatures()}; // Same as above
+        quirks = QuirkManager(properties, features, extensions);
 
         constexpr std::array<const char *, 1> requiredDeviceExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         };
-        auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
         for (const auto &requiredExtension : requiredDeviceExtensions) {
-            if (!std::any_of(deviceExtensions.begin(), deviceExtensions.end(), [&](const vk::ExtensionProperties &deviceExtension) {
+            if (!std::any_of(extensions.begin(), extensions.end(), [&](const vk::ExtensionProperties &deviceExtension) {
                 return std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension);
             }))
                 throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension);
@@ -155,7 +156,7 @@ namespace skyline::gpu {
 
         if (Logger::configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
-            for (const auto &extension : deviceExtensions)
+            for (const auto &extension : extensions)
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
@@ -174,5 +175,5 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(vkInstance)), vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this) {}
+    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(vkInstance)), vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex, quirks)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this) {}
 }

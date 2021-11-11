@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "gpu/quirk_manager.h"
 #include "gpu/memory_manager.h"
 #include "gpu/command_scheduler.h"
 #include "gpu/presentation_engine.h"
@@ -22,7 +23,7 @@ namespace skyline::gpu {
 
         static vk::raii::PhysicalDevice CreatePhysicalDevice(const vk::raii::Instance &instance);
 
-        static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration);
+        static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration, QuirkManager& quirks);
 
       public:
         static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
@@ -35,6 +36,8 @@ namespace skyline::gpu {
         vk::raii::Device vkDevice;
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations
+
+        QuirkManager quirks;
 
         memory::MemoryManager memory;
         CommandScheduler scheduler;

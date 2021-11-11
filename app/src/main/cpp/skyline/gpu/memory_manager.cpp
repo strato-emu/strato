@@ -68,7 +68,6 @@ namespace skyline::gpu::memory {
             .vulkanApiVersion = GPU::VkApiVersion,
         };
         ThrowOnFail(vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator));
-        // TODO: Use VK_KHR_dedicated_allocation when available (Should be on Adreno GPUs)
     }
 
     MemoryManager::~MemoryManager() {
