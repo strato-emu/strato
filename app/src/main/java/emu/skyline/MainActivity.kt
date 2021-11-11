@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchBar.apply {
             binding.logIcon.setOnClickListener {
-                val file = applicationContext.filesDir.resolve("skyline.log")
+                val file = applicationContext.filesDir.resolve("emulation.sklog")
                 if (file.length() != 0L) {
                     val intent = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")

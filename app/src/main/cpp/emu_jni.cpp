@@ -62,7 +62,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
 ) {
     std::string appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
     skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
-    skyline::Logger::LoaderContext.Initialize(appFilesPath + "loader.log");
+    skyline::Logger::LoaderContext.Initialize(appFilesPath + "loader.sklog");
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
@@ -87,7 +87,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(preferenceFd);
 
     skyline::JniString appFilesPath(env, appFilesPathJstring);
-    skyline::Logger::EmulationContext.Initialize(appFilesPath + "emulation.log");
+    skyline::Logger::EmulationContext.Initialize(appFilesPath + "emulation.sklog");
 
     auto start{std::chrono::steady_clock::now()};
 
