@@ -45,12 +45,12 @@
             tools:text="Nintendo" />
 
         <com.google.android.flexbox.FlexboxLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             app:layout_constraintStart_toStartOf="@id/game_title"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/game_subtitle"
             app:flexWrap="wrap">
 
             <Button
@@ -62,6 +62,7 @@
                 android:focusedByDefault="true"
                 android:text="@string/play"
                 android:textColor="?attr/colorAccent"
+                app:layout_minWidth="146dp"
                 app:icon="@drawable/ic_play"
                 app:iconTint="?attr/colorAccent" />
 
@@ -71,7 +72,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:text="@string/pin"
+                app:layout_maxWidth="55dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:icon="@drawable/ic_add_home"
                 android:textColor="?attr/colorAccent" />
         </com.google.android.flexbox.FlexboxLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
