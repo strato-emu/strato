@@ -58,6 +58,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             R16G16B16A16Sint = 0xC8,
             R16G16B16A16Uint = 0xC9,
             R16G16B16A16Float = 0xCA,
+            B8G8R8A8Unorm = 0xCF,
+            B8G8R8A8Srgb = 0xD0,
             A2B10G10R10Unorm = 0xD1,
             R8G8B8A8Unorm = 0xD5,
             A8B8G8R8Srgb = 0xD6,

@@ -40,6 +40,6 @@ namespace skyline::gpu::format {
     constexpr Format R16G16B16A16Sint{sizeof(u16) * 4, vkf::eR16G16B16A16Sint};
     constexpr Format R16G16B16A16Uint{sizeof(u16) * 4, vkf::eR16G16B16A16Uint};
     constexpr Format R16G16B16A16Float{sizeof(u16) * 4, vkf::eR16G16B16A16Sfloat};
-
-    /**
+    constexpr Format B8G8R8A8Unorm{sizeof(u32), vkf::eB8G8R8A8Unorm};
+    constexpr Format B8G8R8A8Srgb{sizeof(u32), vkf::eB8G8R8A8Srgb};
 }

@@ -101,6 +101,10 @@ namespace skyline::gpu::interconnect {
                         return format::R16G16B16A16Uint;
                     case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Float:
                         return format::R16G16B16A16Float;
+                    case maxwell3d::RenderTarget::ColorFormat::B8G8R8A8Unorm:
+                        return format::B8G8R8A8Unorm;
+                    case maxwell3d::RenderTarget::ColorFormat::B8G8R8A8Srgb:
+                        return format::B8G8R8A8Srgb;
                     case maxwell3d::RenderTarget::ColorFormat::A2B10G10R10Unorm:
                         return format::A2B10G10R10Unorm;
                     case maxwell3d::RenderTarget::ColorFormat::R8G8B8A8Unorm:
