@@ -18,5 +18,10 @@ namespace skyline {
         QuirkManager() = default;
 
         QuirkManager(vk::PhysicalDeviceProperties properties, vk::PhysicalDeviceFeatures2 features, const std::vector<vk::ExtensionProperties>& extensions);
+
+        /**
+         * @return A summary of all the GPU quirks as a human-readable string
+         */
+        std::string Summary();
     };
 }

@@ -30,4 +30,8 @@ namespace skyline {
 
         supportsLogicOp = features2.features.logicOp;
     }
+
+    std::string QuirkManager::Summary() {
+        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}", supportsLastProvokingVertex, supportsLogicOp);
+    }
 }
