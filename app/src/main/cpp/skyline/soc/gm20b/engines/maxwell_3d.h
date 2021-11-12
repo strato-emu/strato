@@ -30,6 +30,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         gpu::interconnect::GraphicsContext context;
 
         /**
+         * @brief Calls the appropriate function corresponding to a certain method with the supplied argument
+         */
+        void HandleMethod(u32 method, u32 argument, bool redundantCheck = false);
+
+        /**
          * @brief Writes back a semaphore result to the guest with an auto-generated timestamp (if required)
          * @note If the semaphore is OneWord then the result will be downcasted to a 32-bit unsigned integer
          */
@@ -233,10 +238,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
 
         /**
-         * @brief Resets the Maxwell 3D registers to their default values
+         * @brief Initializes Maxwell 3D registers to their default values
          */
-        void ResetRegs();
+        void InitializeRegisters();
 
-        void CallMethod(u32 method, u32 argument, bool lastCall);
+        void CallMethod(u32 method, u32 argument, bool lastCall = false);
     };
 }

@@ -3,79 +3,15 @@
 // Copyright © 2018-2020 fincs (https://github.com/devkitPro/deko3d)
 
 #include <boost/preprocessor/repeat.hpp>
-#include "maxwell_3d.h"
 #include <soc.h>
+#include "maxwell_3d.h"
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
     Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, channelCtx, executor), channelCtx(channelCtx) {
-        ResetRegs();
+        InitializeRegisters();
     }
 
-    void Maxwell3D::ResetRegs() {
-        registers = {};
-
-        registers.rasterizerEnable = true;
-
-        for (auto &transform : *registers.viewportTransforms) {
-            transform.swizzles.x = type::ViewportTransform::Swizzle::PositiveX;
-            transform.swizzles.y = type::ViewportTransform::Swizzle::PositiveY;
-            transform.swizzles.z = type::ViewportTransform::Swizzle::PositiveZ;
-            transform.swizzles.w = type::ViewportTransform::Swizzle::PositiveW;
-        }
-
-        for (auto &viewport : *registers.viewports) {
-            viewport.depthRangeFar = 1.0f;
-            viewport.depthRangeNear = 0.0f;
-        }
-
-        registers.polygonMode->front = type::PolygonMode::Fill;
-        registers.polygonMode->back = type::PolygonMode::Fill;
-
-        registers.stencilFront->failOp = registers.stencilFront->zFailOp = registers.stencilFront->zPassOp = type::StencilOp::Keep;
-        registers.stencilFront->compare.op = type::CompareOp::Always;
-        registers.stencilFront->compare.mask = 0xFFFFFFFF;
-        registers.stencilFront->writeMask = 0xFFFFFFFF;
-
-        registers.stencilTwoSideEnable = true;
-        registers.stencilBack->failOp = registers.stencilBack->zFailOp = registers.stencilBack->zPassOp = type::StencilOp::Keep;
-        registers.stencilBack->compareOp = type::CompareOp::Always;
-        registers.stencilBackExtra->compareMask = 0xFFFFFFFF;
-        registers.stencilBackExtra->writeMask = 0xFFFFFFFF;
-
-        registers.rtSeparateFragData = true;
-
-        for (auto &attribute : *registers.vertexAttributeState)
-            attribute.fixed = true;
-
-        registers.depthTestFunc = type::CompareOp::Always;
-
-        registers.blendState->colorOp = registers.blendState->alphaOp = type::Blend::Op::Add;
-        registers.blendState->colorSrcFactor = registers.blendState->alphaSrcFactor = type::Blend::Factor::One;
-        registers.blendState->colorDestFactor = registers.blendState->alphaDestFactor = type::Blend::Factor::Zero;
-
-        registers.lineWidthSmooth = 1.0f;
-        registers.lineWidthAliased = 1.0f;
-
-        registers.pointSpriteEnable = true;
-        registers.pointSpriteSize = 1.0f;
-        registers.pointCoordReplace->enable = true;
-
-        registers.frontFace = type::FrontFace::CounterClockwise;
-        registers.cullFace = type::CullFace::Back;
-
-        for (auto &mask : *registers.colorMask)
-            mask.r = mask.g = mask.b = mask.a = 1;
-
-        for (auto &blend : *registers.independentBlend) {
-            blend.colorOp = blend.alphaOp = type::Blend::Op::Add;
-            blend.colorSrcFactor = blend.alphaSrcFactor = type::Blend::Factor::One;
-            blend.colorDestFactor = blend.alphaDestFactor = type::Blend::Factor::Zero;
-        }
-
-        registers.viewportTransformEnable = true;
-    }
-
-    void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
+    __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
         Logger::Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         // Methods that are greater than the register size are for macro control
@@ -105,6 +41,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             return;
         }
 
+        HandleMethod(method, argument, true);
+    }
+
+    void Maxwell3D::HandleMethod(u32 method, u32 argument, bool redundantCheck) {
         #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(typeof(*Registers::field))) / sizeof(u32)
         #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(typeof(*Registers::field), member)
         #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
@@ -133,7 +73,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 argument = shadowRegisters.raw[method];
         }
 
-        bool redundant{registers.raw[method] == argument};
+        bool redundant{redundantCheck && registers.raw[method] == argument};
         registers.raw[method] = argument;
 
         if (!redundant) {
