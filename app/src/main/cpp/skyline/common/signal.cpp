@@ -56,14 +56,17 @@ namespace skyline::signal {
                         frame = SafeFrameRecurse(2, lookupFrame);
                         hasAdvanced = true;
                     } else {
+                        Logger::EmulationContext.TryFlush();
                         terminateHandler(); // We presumably have no exception handlers left on the stack to consume the exception, it's time to quit
                     }
                 }
                 lookupFrame = lookupFrame->next;
             }
 
-            if (!frame->next)
+            if (!frame->next) {
+                Logger::EmulationContext.TryFlush(); // We want to attempt to flush all logs before quitting
                 terminateHandler(); // We don't know the frame's stack boundaries, the only option is to quit
+            }
 
             asm("MOV SP, %x0\n\t" // Stack frame is the first item on a function's stack, it's used to calculate calling function's stack pointer
                 "MOV LR, %x1\n\t"
@@ -99,6 +102,8 @@ namespace skyline::signal {
             terminateHandler = handler;
             std::set_terminate(TerminateHandler);
         }
+
+        Logger::EmulationContext.TryFlush(); // We want to attempt to flush all logs in case exception handling fails and infloops
     }
 
     template<typename Signature>

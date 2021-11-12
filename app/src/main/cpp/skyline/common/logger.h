@@ -40,6 +40,8 @@ namespace skyline {
 
             void Finalize();
 
+            void TryFlush();
+
             void Flush();
 
             void Write(const std::string &str);

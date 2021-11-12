@@ -12,10 +12,18 @@ namespace skyline {
     }
 
     void Logger::LoggerContext::Finalize() {
+        std::lock_guard lock(mutex);
         logFile.close();
     }
 
+    void Logger::LoggerContext::TryFlush() {
+        std::unique_lock lock(mutex, std::try_to_lock);
+        if (lock)
+            logFile.flush();
+    }
+
     void Logger::LoggerContext::Flush() {
+        std::lock_guard lock(mutex);
         logFile.flush();
     }
 
