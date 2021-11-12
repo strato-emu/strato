@@ -479,5 +479,57 @@ namespace skyline::gpu::interconnect {
         void SetDepthBiasSlopeFactor(float factor) {
             rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthBiasSlopeFactor = factor;
         }
+
+        /* Color Blending */
+      private:
+        vk::PipelineColorBlendStateCreateInfo blendState{};
+
+      public:
+        void SetBlendLogicOpEnable(bool enabled) {
+            if (!gpu.quirks.supportsLogicOp && enabled) {
+                Logger::Warn("Cannot enable framebuffer logical operation without host GPU support");
+                return;
+            }
+            blendState.logicOpEnable = enabled;
+        }
+
+        void SetBlendLogicOpType(maxwell3d::ColorLogicOp logicOp) {
+            blendState.logicOp = [logicOp]() {
+                switch (logicOp) {
+                    case maxwell3d::ColorLogicOp::Clear:
+                        return vk::LogicOp::eClear;
+                    case maxwell3d::ColorLogicOp::And:
+                        return vk::LogicOp::eAnd;
+                    case maxwell3d::ColorLogicOp::AndReverse:
+                        return vk::LogicOp::eAndReverse;
+                    case maxwell3d::ColorLogicOp::Copy:
+                        return vk::LogicOp::eCopy;
+                    case maxwell3d::ColorLogicOp::AndInverted:
+                        return vk::LogicOp::eAndInverted;
+                    case maxwell3d::ColorLogicOp::Noop:
+                        return vk::LogicOp::eNoOp;
+                    case maxwell3d::ColorLogicOp::Xor:
+                        return vk::LogicOp::eXor;
+                    case maxwell3d::ColorLogicOp::Or:
+                        return vk::LogicOp::eOr;
+                    case maxwell3d::ColorLogicOp::Nor:
+                        return vk::LogicOp::eNor;
+                    case maxwell3d::ColorLogicOp::Equiv:
+                        return vk::LogicOp::eEquivalent;
+                    case maxwell3d::ColorLogicOp::Invert:
+                        return vk::LogicOp::eInvert;
+                    case maxwell3d::ColorLogicOp::OrReverse:
+                        return vk::LogicOp::eOrReverse;
+                    case maxwell3d::ColorLogicOp::CopyInverted:
+                        return vk::LogicOp::eCopyInverted;
+                    case maxwell3d::ColorLogicOp::OrInverted:
+                        return vk::LogicOp::eOrInverted;
+                    case maxwell3d::ColorLogicOp::Nand:
+                        return vk::LogicOp::eNand;
+                    case maxwell3d::ColorLogicOp::Set:
+                        return vk::LogicOp::eSet;
+                }
+            }();
+        }
     };
 }

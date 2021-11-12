@@ -219,6 +219,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x6C0, Semaphore> semaphore;
 
+            struct ColorLogicOp {
+                u32 enable;
+                type::ColorLogicOp type;
+            };
+            Register<0x671, ColorLogicOp> colorLogicOp;
+
             Register<0x780, std::array<type::Blend, type::RenderTargetCount>> independentBlend;
 
             Register<0x800, std::array<type::SetProgramInfo, type::StageCount>> setProgram;

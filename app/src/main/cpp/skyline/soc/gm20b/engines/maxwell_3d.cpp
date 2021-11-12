@@ -237,6 +237,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetDepthClampEnabled(!viewVolumeClipControl.depthClampDisable);
                 })
 
+                MAXWELL3D_STRUCT_CASE(colorLogicOp, enable, {
+                    context.SetBlendLogicOpEnable(enable);
+                })
+
+                MAXWELL3D_STRUCT_CASE(colorLogicOp, type, {
+                    context.SetBlendLogicOpType(type);
+                })
+
                 #define SET_SHADER_ENABLE_CALLBACK(z, index, data)     \
                 MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, info, { \
                     context.SetShaderEnabled(info.stage, info.enable); \

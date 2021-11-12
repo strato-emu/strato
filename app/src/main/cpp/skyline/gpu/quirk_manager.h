@@ -13,6 +13,7 @@ namespace skyline {
     class QuirkManager {
       public:
         bool supportsLastProvokingVertex{}; //!< If the device supports setting the last vertex as the provoking vertex (with VK_EXT_provoking_vertex)
+        bool supportsLogicOp{}; //!< If the device supports framebuffer logical operations during blending
 
         QuirkManager() = default;
 

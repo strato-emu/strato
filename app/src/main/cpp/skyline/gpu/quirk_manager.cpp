@@ -4,7 +4,7 @@
 #include "quirk_manager.h"
 
 namespace skyline {
-    QuirkManager::QuirkManager(vk::PhysicalDeviceProperties properties, vk::PhysicalDeviceFeatures2 features, const std::vector<vk::ExtensionProperties> &extensions) {
+    QuirkManager::QuirkManager(vk::PhysicalDeviceProperties properties, vk::PhysicalDeviceFeatures2 features2, const std::vector<vk::ExtensionProperties> &extensions) {
         for (auto &extension : extensions) {
             #define EXT_SET(name, property) \
             case util::Hash(name):          \
@@ -27,5 +27,7 @@ namespace skyline {
             #undef EXT_SET
             #undef EXT_SET_V
         }
+
+        supportsLogicOp = features2.features.logicOp;
     }
 }
