@@ -41,10 +41,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             return;
         }
 
-        HandleMethod(method, argument, true);
+        HandleMethod(method, argument);
     }
 
-    void Maxwell3D::HandleMethod(u32 method, u32 argument, bool redundantCheck) {
+    void Maxwell3D::HandleMethod(u32 method, u32 argument) {
         #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(typeof(*Registers::field))) / sizeof(u32)
         #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(typeof(*Registers::field), member)
         #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
@@ -73,7 +73,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 argument = shadowRegisters.raw[method];
         }
 
-        bool redundant{redundantCheck && registers.raw[method] == argument};
+        bool redundant{registers.raw[method] == argument};
         registers.raw[method] = argument;
 
         if (!redundant) {

@@ -32,7 +32,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         /**
          * @brief Calls the appropriate function corresponding to a certain method with the supplied argument
          */
-        void HandleMethod(u32 method, u32 argument, bool redundantCheck = false);
+        void HandleMethod(u32 method, u32 argument);
 
         /**
          * @brief Writes back a semaphore result to the guest with an auto-generated timestamp (if required)
