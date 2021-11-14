@@ -4,7 +4,7 @@
 #include "quirk_manager.h"
 
 namespace skyline {
-    QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, vk::PhysicalDeviceFeatures2 &features2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
+    QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, const vk::PhysicalDeviceFeatures2 &deviceFeatures2, vk::PhysicalDeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
             case util::Hash(name):                                                                   \
@@ -31,13 +31,10 @@ namespace skyline {
             #undef EXT_SET_V
         }
 
-        auto deviceFeatures2{features2};
-        features2 = vk::PhysicalDeviceFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
-
-        #define FEAT_SET(feature, property)     \
-        if (deviceFeatures2.features.feature) { \
-            property = true;                    \
-            features2.features.feature = true;  \
+        #define FEAT_SET(feature, property)            \
+        if (deviceFeatures2.features.feature) {        \
+            property = true;                           \
+            enabledFeatures2.features.feature = true;  \
         }
 
         FEAT_SET(logicOp, supportsLogicOp)

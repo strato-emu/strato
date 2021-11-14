@@ -121,9 +121,19 @@ namespace skyline::gpu {
 
     vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto properties{physicalDevice.getProperties()};
-        auto features{physicalDevice.getFeatures2()};
-        auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
 
+        auto deviceFeatures2{physicalDevice.getFeatures2()};
+        vk::PhysicalDeviceFeatures2 enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
+
+        #define FEAT_REQ(feature)                                                        \
+        if (deviceFeatures2.features.feature)                                            \
+            enabledFeatures2.features.feature = true;                                    \
+        else                                                                             \
+            throw exception("Vulkan device doesn't support required feature: " #feature)
+
+        #undef FEAT_REQ
+
+        auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
         std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> enabledExtensions{
             {
                 // Required Extensions
@@ -138,11 +148,11 @@ namespace skyline::gpu {
                 throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension.data());
         }
 
-        quirks = QuirkManager(properties, features, deviceExtensions, enabledExtensions);
+        quirks = QuirkManager(properties, deviceFeatures2, enabledFeatures2, deviceExtensions, enabledExtensions);
 
-        std::vector<const char*> pEnabledExtensions;
+        std::vector<const char *> pEnabledExtensions;
         pEnabledExtensions.reserve(enabledExtensions.size());
-        for (auto& extension : enabledExtensions)
+        for (auto &extension : enabledExtensions)
             pEnabledExtensions.push_back(extension.data());
 
         auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
@@ -181,7 +191,7 @@ namespace skyline::gpu {
         }
 
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
-            .pNext = &features,
+            .pNext = &enabledFeatures2,
             .queueCreateInfoCount = 1,
             .pQueueCreateInfos = &queue,
             .enabledExtensionCount = static_cast<uint32_t>(pEnabledExtensions.size()),
