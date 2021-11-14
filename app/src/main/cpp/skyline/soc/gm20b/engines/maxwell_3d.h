@@ -153,7 +153,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4E1, StencilFront> stencilFront;
 
             Register<0x4EC, float> lineWidthSmooth;
-            Register<0x4D, float> lineWidthAliased;
+            Register<0x4ED, float> lineWidthAliased;
 
             Register<0x50D, u32> drawBaseVertex;
             Register<0x50E, u32> drawBaseInstance;
