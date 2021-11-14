@@ -131,6 +131,8 @@ namespace skyline::gpu {
         else                                                                             \
             throw exception("Vulkan device doesn't support required feature: " #feature)
 
+        FEAT_REQ(independentBlend);
+
         #undef FEAT_REQ
 
         auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
