@@ -183,6 +183,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
 
+                MAXWELL3D_CASE(alphaTestEnable, {
+                    context.SetAlphaTestEnable(alphaTestEnable);
+                })
+
                 MAXWELL3D_CASE(lineWidthSmooth, {
                     if (*registers.lineSmoothEnable)
                         context.SetLineWidth(lineWidthSmooth);

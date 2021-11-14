@@ -108,6 +108,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x3EB, u32> rtSeparateFragData;
             Register<0x458, std::array<type::VertexAttribute, 0x20>> vertexAttributeState;
             Register<0x487, type::RenderTargetControl> renderTargetControl;
+            Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareOp> depthTestFunc;
             Register<0x4C4, float> alphaTestRef;
             Register<0x4C5, type::CompareOp> alphaTestFunc;

@@ -531,5 +531,10 @@ namespace skyline::gpu::interconnect {
                 }
             }();
         }
+
+        void SetAlphaTestEnable(bool enable) {
+            if (enable)
+                Logger::Warn("Cannot enable alpha testing due to Vulkan constraints");
+        }
     };
 }
