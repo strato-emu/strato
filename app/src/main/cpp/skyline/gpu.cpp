@@ -122,19 +122,28 @@ namespace skyline::gpu {
     vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto properties{physicalDevice.getProperties()};
         auto features{physicalDevice.getFeatures2()};
-        auto extensions{physicalDevice.enumerateDeviceExtensionProperties()};
+        auto deviceExtensions{physicalDevice.enumerateDeviceExtensionProperties()};
 
-        quirks = QuirkManager(properties, features, extensions);
-
-        constexpr std::array<const char *, 1> requiredDeviceExtensions{
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> enabledExtensions{
+            {
+                // Required Extensions
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            }
         };
-        for (const auto &requiredExtension : requiredDeviceExtensions) {
-            if (!std::any_of(extensions.begin(), extensions.end(), [&](const vk::ExtensionProperties &deviceExtension) {
-                return std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension);
+
+        for (const auto &requiredExtension : enabledExtensions) {
+            if (!std::any_of(deviceExtensions.begin(), deviceExtensions.end(), [&](const vk::ExtensionProperties &deviceExtension) {
+                return std::string_view(deviceExtension.extensionName) == std::string_view(requiredExtension.data());
             }))
-                throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension);
+                throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension.data());
         }
+
+        quirks = QuirkManager(properties, features, deviceExtensions, enabledExtensions);
+
+        std::vector<const char*> pEnabledExtensions;
+        pEnabledExtensions.reserve(enabledExtensions.size());
+        for (auto& extension : enabledExtensions)
+            pEnabledExtensions.push_back(extension.data());
 
         auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
         float queuePriority{1.0f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
@@ -156,7 +165,7 @@ namespace skyline::gpu {
 
         if (Logger::configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
-            for (const auto &extension : extensions)
+            for (const auto &extension : deviceExtensions)
                 extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
@@ -175,8 +184,8 @@ namespace skyline::gpu {
             .pNext = &features,
             .queueCreateInfoCount = 1,
             .pQueueCreateInfos = &queue,
-            .enabledExtensionCount = requiredDeviceExtensions.size(),
-            .ppEnabledExtensionNames = requiredDeviceExtensions.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(pEnabledExtensions.size()),
+            .ppEnabledExtensionNames = pEnabledExtensions.data(),
         });
     }
 
