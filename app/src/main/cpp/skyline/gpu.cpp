@@ -119,7 +119,7 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager& quirks) {
+    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto properties{physicalDevice.getProperties()};
         auto features{physicalDevice.getFeatures2()};
         auto extensions{physicalDevice.enumerateDeviceExtensionProperties()};
@@ -164,14 +164,15 @@ namespace skyline::gpu {
             for (const auto &queueFamily : queueFamilies)
                 queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
-            Logger::Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}\nQuirks:{}", properties.deviceName,
-                         vk::to_string(properties.deviceType),
+            Logger::Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}\nQuirks:{}",
+                         properties.deviceName, vk::to_string(properties.deviceType),
                          VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion),
                          VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion),
                          queueString, extensionString, quirks.Summary());
         }
 
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
+            .pNext = &features,
             .queueCreateInfoCount = 1,
             .pQueueCreateInfos = &queue,
             .enabledExtensionCount = requiredDeviceExtensions.size(),
