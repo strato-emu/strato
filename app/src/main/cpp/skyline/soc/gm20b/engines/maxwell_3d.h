@@ -104,6 +104,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x3D9, TiledCacheSize> tiledCacheSize;
 
+            Register<0x3E4, u32> commonColorWriteMask; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
             Register<0x3EB, u32> rtSeparateFragData;
             Register<0x458, std::array<type::VertexAttribute, 0x20>> vertexAttributeState;
             Register<0x487, type::RenderTargetControl> renderTargetControl;
@@ -210,7 +211,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportTransformEnable;
             Register<0x674, type::ClearBuffers> clearBuffers;
-            Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorMask;
+            Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorWriteMask;
 
             Register<0x61F, float> depthBiasClamp;
             Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;

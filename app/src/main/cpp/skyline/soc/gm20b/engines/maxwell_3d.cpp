@@ -12,7 +12,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
-        Logger::Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+        Logger::Error("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         // Methods that are greater than the register size are for macro control
         if (method >= RegisterCount) [[unlikely]] {
@@ -179,6 +179,17 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::ViewportCount == 16 && type::ViewportCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SCISSOR_CALLBACKS
 
+                MAXWELL3D_CASE(commonColorWriteMask, {
+                    if (commonColorWriteMask) {
+                        auto colorWriteMask{registers.colorWriteMask[0]};
+                        for (u32 index{}; index != type::RenderTargetCount; index++)
+                            context.SetColorWriteMask(index, colorWriteMask);
+                    } else {
+                        for (u32 index{}; index != type::RenderTargetCount; index++)
+                            context.SetColorWriteMask(index, registers.colorWriteMask[index]);
+                    }
+                })
+
                 MAXWELL3D_CASE(renderTargetControl, {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
@@ -286,6 +297,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 MAXWELL3D_CASE(cullFace, {
                     context.SetCullFace(cullFace);
                 })
+
+                #define SET_COLOR_WRITE_MASK_CALLBACK(z, index, data)              \
+                MAXWELL3D_ARRAY_CASE(colorWriteMask, index, {                      \
+                    if (*registers.commonColorWriteMask)                           \
+                        if (index == 0)                                            \
+                            for (u32 idx{}; idx != type::RenderTargetCount; idx++) \
+                                context.SetColorWriteMask(idx, colorWriteMask);    \
+                    else                                                           \
+                        context.SetColorWriteMask(index, colorWriteMask);          \
+                })
+
+                BOOST_PP_REPEAT(8, SET_COLOR_WRITE_MASK_CALLBACK, 2)
+                static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
+                #undef SET_COLOR_WRITE_MASK_CALLBACK
 
                 MAXWELL3D_CASE(viewVolumeClipControl, {
                     context.SetDepthClampEnabled(!viewVolumeClipControl.depthClampDisable);

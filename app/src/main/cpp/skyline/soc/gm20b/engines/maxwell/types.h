@@ -419,10 +419,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 raw;
 
         struct {
-            u8 r : 4;
-            u8 g : 4;
-            u8 b : 4;
-            u8 a : 4;
+            u8 red : 4;
+            u8 green : 4;
+            u8 blue : 4;
+            u8 alpha : 4;
         };
     };
     static_assert(sizeof(ColorWriteMask) == sizeof(u32));

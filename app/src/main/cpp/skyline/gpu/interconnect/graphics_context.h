@@ -721,6 +721,22 @@ namespace skyline::gpu::interconnect {
             independentRtBlendState[index].dstAlphaBlendFactor = ConvertBlendFactor(factor);
         }
 
+        void SetColorWriteMask(u32 index, maxwell3d::ColorWriteMask mask) {
+            vk::ColorComponentFlags colorWriteMask{};
+            if (mask.red)
+                colorWriteMask |= vk::ColorComponentFlagBits::eR;
+            if (mask.green)
+                colorWriteMask |= vk::ColorComponentFlagBits::eG;
+            if (mask.blue)
+                colorWriteMask |= vk::ColorComponentFlagBits::eB;
+            if (mask.alpha)
+                colorWriteMask |= vk::ColorComponentFlagBits::eA;
+
+            // While blending state might include the color write mask on Vulkan, they are separate on Maxwell and this results in even `commonRtBlendState` requiring the `independentBlend` feature in certain circumstances where blending state might be the same but with independent color write masks
+            independentRtBlendState[index].colorWriteMask = colorWriteMask;
+            commonRtBlendState[index].colorWriteMask = colorWriteMask;
+        }
+
         void SetColorBlendConstant(u32 index, float constant) {
             blendState.blendConstants[index] = constant;
         }
