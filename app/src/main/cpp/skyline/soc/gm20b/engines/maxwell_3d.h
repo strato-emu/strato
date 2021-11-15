@@ -45,7 +45,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         /**
          * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def
-         * @note To ease the extension of this structure, padding may follow both _padN_ and _padN_M_ formats
          */
         #pragma pack(push, 1)
         union Registers {
@@ -108,6 +107,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x3EB, u32> rtSeparateFragData;
             Register<0x458, std::array<type::VertexAttribute, 0x20>> vertexAttributeState;
             Register<0x487, type::RenderTargetControl> renderTargetControl;
+            Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareOp> depthTestFunc;
             Register<0x4C4, float> alphaTestRef;
@@ -115,26 +115,28 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4C6, u32> drawTFBStride;
 
             struct BlendConstant {
-                float r; // 0x4C7
-                float g; // 0x4C8
-                float b; // 0x4C9
-                float a; // 0x4CA
+                float red; // 0x4C7
+                float green; // 0x4C8
+                float blue; // 0x4C9
+                float alpha; // 0x4CA
             };
-            Register<0x4C7, BlendConstant> blendConstant;
+            Register<0x4C7, std::array<float, type::BlendColorChannelCount>> blendConstant;
 
-            struct BlendState {
+            struct BlendStateCommon {
                 u32 seperateAlpha; // 0x4CF
-                type::Blend::Op colorOp; // 0x4D0
-                type::Blend::Factor colorSrcFactor; // 0x4D1
-                type::Blend::Factor colorDestFactor; // 0x4D2
-                type::Blend::Op alphaOp; // 0x4D3
-                type::Blend::Factor alphaSrcFactor; // 0x4D4
-                type::Blend::Factor alphaDestFactor; // 0x4D6
+                type::BlendOp colorOp; // 0x4D0
+                type::BlendFactor colorSrcFactor; // 0x4D1
+                type::BlendFactor colorDstFactor; // 0x4D2
+                type::BlendOp alphaOp; // 0x4D3
+                type::BlendFactor alphaSrcFactor; // 0x4D4
+                u32 pad; // 0x4D5
+                type::BlendFactor alphaDstFactor; // 0x4D6
 
-                u32 enableCommon; // 0x4D7
-                std::array<u32, 8> enable; // 0x4D8 For each render target
+                u32 enable; // 0x4D7
             };
-            Register<0x4CF, BlendState> blendState;
+            Register<0x4CF, BlendStateCommon> blendStateCommon;
+
+            Register<0x4D8, std::array<u32, type::RenderTargetCount>> rtBlendEnable;
 
             Register<0x4E0, u32> stencilEnable;
             struct StencilFront {
@@ -226,7 +228,17 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x671, ColorLogicOp> colorLogicOp;
 
-            Register<0x780, std::array<type::Blend, type::RenderTargetCount>> independentBlend;
+            struct IndependentBlend {
+                u32 seperateAlpha;
+                type::BlendOp colorOp;
+                type::BlendFactor colorSrcFactor;
+                type::BlendFactor colorDstFactor;
+                type::BlendOp alphaOp;
+                type::BlendFactor alphaSrcFactor;
+                type::BlendFactor alphaDstFactor;
+                u32 _pad_;
+            };
+            Register<0x780, std::array<IndependentBlend, type::RenderTargetCount>> independentBlend;
 
             Register<0x800, std::array<type::SetProgramInfo, type::StageCount>> setProgram;
 

@@ -183,9 +183,59 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
 
-                MAXWELL3D_CASE(alphaTestEnable, {
-                    context.SetAlphaTestEnable(alphaTestEnable);
+                MAXWELL3D_CASE(independentBlendEnable, {
+                    context.SetIndependentBlendingEnabled(independentBlendEnable);
                 })
+
+                MAXWELL3D_CASE(alphaTestEnable, {
+                    context.SetAlphaTestEnabled(alphaTestEnable);
+                })
+
+                #define SET_COLOR_BLEND_CONSTANT_CALLBACK(z, index, data) \
+                MAXWELL3D_ARRAY_CASE(blendConstant, index, {              \
+                    context.SetColorBlendConstant(index, blendConstant);  \
+                })
+
+                BOOST_PP_REPEAT(4, SET_COLOR_BLEND_CONSTANT_CALLBACK, 0)
+                static_assert(type::BlendColorChannelCount == 4 && type::BlendColorChannelCount < BOOST_PP_LIMIT_REPEAT);
+                #undef SET_COLOR_BLEND_CONSTANT_CALLBACK
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, colorOp, {
+                    context.SetColorBlendOp(colorOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, colorSrcFactor, {
+                    context.SetSrcColorBlendFactor(colorSrcFactor);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, colorDstFactor, {
+                    context.SetDstColorBlendFactor(colorDstFactor);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, alphaOp, {
+                    context.SetAlphaBlendOp(alphaOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, alphaSrcFactor, {
+                    context.SetSrcAlphaBlendFactor(alphaSrcFactor);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, alphaDstFactor, {
+                    context.SetDstAlphaBlendFactor(alphaDstFactor);
+                })
+
+                MAXWELL3D_STRUCT_CASE(blendStateCommon, enable, {
+                    context.SetColorBlendEnabled(enable);
+                })
+
+                #define SET_COLOR_BLEND_ENABLE_CALLBACK(z, index, data) \
+                MAXWELL3D_ARRAY_CASE(rtBlendEnable, index, {            \
+                    context.SetColorBlendEnabled(index, rtBlendEnable); \
+                })
+
+                BOOST_PP_REPEAT(8, SET_COLOR_BLEND_ENABLE_CALLBACK, 0)
+                static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
+                #undef SET_COLOR_BLEND_ENABLE_CALLBACK
 
                 MAXWELL3D_CASE(lineWidthSmooth, {
                     if (*registers.lineSmoothEnable)
@@ -248,6 +298,30 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 MAXWELL3D_STRUCT_CASE(colorLogicOp, type, {
                     context.SetBlendLogicOpType(type);
                 })
+
+                #define SET_INDEPENDENT_COLOR_BLEND_CALLBACKS(z, index, data)          \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, colorOp, {        \
+                    context.SetColorBlendOp(index, colorOp);                           \
+                })                                                                     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, colorSrcFactor, { \
+                    context.SetSrcColorBlendFactor(index, colorSrcFactor);             \
+                })                                                                     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, colorDstFactor, { \
+                    context.SetDstColorBlendFactor(index, colorDstFactor);             \
+                })                                                                     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, alphaOp, {        \
+                    context.SetAlphaBlendOp(index, alphaOp);                           \
+                })                                                                     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, alphaSrcFactor, { \
+                    context.SetSrcAlphaBlendFactor(index, alphaSrcFactor);             \
+                })                                                                     \
+                MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, alphaDstFactor, { \
+                    context.SetDstAlphaBlendFactor(index, alphaDstFactor);             \
+                })
+
+                BOOST_PP_REPEAT(8, SET_INDEPENDENT_COLOR_BLEND_CALLBACKS, 0)
+                static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
+                #undef SET_COLOR_BLEND_ENABLE_CALLBACK
 
                 #define SET_SHADER_ENABLE_CALLBACK(z, index, data)     \
                 MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, info, { \

@@ -482,7 +482,11 @@ namespace skyline::gpu::interconnect {
 
         /* Color Blending */
       private:
-        vk::PipelineColorBlendStateCreateInfo blendState{};
+        std::array<vk::PipelineColorBlendAttachmentState, maxwell3d::RenderTargetCount> commonRtBlendState{}, independentRtBlendState{}; //!< Per-RT blending state for common/independent blending for trivial toggling behavior
+        vk::PipelineColorBlendStateCreateInfo blendState{
+            .pAttachments = commonRtBlendState.data(),
+            .attachmentCount = maxwell3d::RenderTargetCount,
+        };
 
       public:
         void SetBlendLogicOpEnable(bool enabled) {
@@ -532,9 +536,193 @@ namespace skyline::gpu::interconnect {
             }();
         }
 
-        void SetAlphaTestEnable(bool enable) {
+        void SetAlphaTestEnabled(bool enable) {
             if (enable)
                 Logger::Warn("Cannot enable alpha testing due to Vulkan constraints");
+        }
+
+        vk::BlendOp ConvertBlendOp(maxwell3d::BlendOp op) {
+            switch (op) {
+                case maxwell3d::BlendOp::Add:
+                case maxwell3d::BlendOp::AddGL:
+                    return vk::BlendOp::eAdd;
+
+                case maxwell3d::BlendOp::Subtract:
+                case maxwell3d::BlendOp::SubtractGL:
+                    return vk::BlendOp::eSubtract;
+
+                case maxwell3d::BlendOp::ReverseSubtract:
+                case maxwell3d::BlendOp::ReverseSubtractGL:
+                    return vk::BlendOp::eReverseSubtract;
+
+                case maxwell3d::BlendOp::Minimum:
+                case maxwell3d::BlendOp::MinimumGL:
+                    return vk::BlendOp::eMin;
+
+                case maxwell3d::BlendOp::Maximum:
+                case maxwell3d::BlendOp::MaximumGL:
+                    return vk::BlendOp::eMax;
+            }
+        }
+
+        vk::BlendFactor ConvertBlendFactor(maxwell3d::BlendFactor factor) {
+            switch (factor) {
+                case maxwell3d::BlendFactor::Zero:
+                case maxwell3d::BlendFactor::ZeroGL:
+                    return vk::BlendFactor::eZero;
+
+                case maxwell3d::BlendFactor::One:
+                case maxwell3d::BlendFactor::OneGL:
+                    return vk::BlendFactor::eOne;
+
+                case maxwell3d::BlendFactor::SourceColor:
+                case maxwell3d::BlendFactor::SourceColorGL:
+                    return vk::BlendFactor::eSrcColor;
+
+                case maxwell3d::BlendFactor::OneMinusSourceColor:
+                case maxwell3d::BlendFactor::OneMinusSourceColorGL:
+                    return vk::BlendFactor::eOneMinusSrcColor;
+
+                case maxwell3d::BlendFactor::SourceAlpha:
+                case maxwell3d::BlendFactor::SourceAlphaGL:
+                    return vk::BlendFactor::eSrcAlpha;
+
+                case maxwell3d::BlendFactor::OneMinusSourceAlpha:
+                case maxwell3d::BlendFactor::OneMinusSourceAlphaGL:
+                    return vk::BlendFactor::eOneMinusSrcColor;
+
+                case maxwell3d::BlendFactor::DestAlpha:
+                case maxwell3d::BlendFactor::DestAlphaGL:
+                    return vk::BlendFactor::eDstAlpha;
+
+                case maxwell3d::BlendFactor::OneMinusDestAlpha:
+                case maxwell3d::BlendFactor::OneMinusDestAlphaGL:
+                    return vk::BlendFactor::eOneMinusDstAlpha;
+
+                case maxwell3d::BlendFactor::DestColor:
+                case maxwell3d::BlendFactor::DestColorGL:
+                    return vk::BlendFactor::eDstColor;
+
+                case maxwell3d::BlendFactor::OneMinusDestColor:
+                case maxwell3d::BlendFactor::OneMinusDestColorGL:
+                    return vk::BlendFactor::eOneMinusDstColor;
+
+                case maxwell3d::BlendFactor::SourceAlphaSaturate:
+                case maxwell3d::BlendFactor::SourceAlphaSaturateGL:
+                    return vk::BlendFactor::eSrcAlphaSaturate;
+
+                case maxwell3d::BlendFactor::Source1Color:
+                case maxwell3d::BlendFactor::Source1ColorGL:
+                    return vk::BlendFactor::eSrc1Color;
+
+                case maxwell3d::BlendFactor::OneMinusSource1Color:
+                case maxwell3d::BlendFactor::OneMinusSource1ColorGL:
+                    return vk::BlendFactor::eOneMinusSrc1Color;
+
+                case maxwell3d::BlendFactor::Source1Alpha:
+                case maxwell3d::BlendFactor::Source1AlphaGL:
+                    return vk::BlendFactor::eSrc1Alpha;
+
+                case maxwell3d::BlendFactor::OneMinusSource1Alpha:
+                case maxwell3d::BlendFactor::OneMinusSource1AlphaGL:
+                    return vk::BlendFactor::eOneMinusSrc1Alpha;
+
+                case maxwell3d::BlendFactor::ConstantColor:
+                case maxwell3d::BlendFactor::ConstantColorGL:
+                    return vk::BlendFactor::eConstantColor;
+
+                case maxwell3d::BlendFactor::OneMinusConstantColor:
+                case maxwell3d::BlendFactor::OneMinusConstantColorGL:
+                    return vk::BlendFactor::eOneMinusConstantColor;
+
+                case maxwell3d::BlendFactor::ConstantAlpha:
+                case maxwell3d::BlendFactor::ConstantAlphaGL:
+                    return vk::BlendFactor::eConstantAlpha;
+
+                case maxwell3d::BlendFactor::OneMinusConstantAlpha:
+                case maxwell3d::BlendFactor::OneMinusConstantAlphaGL:
+                    return vk::BlendFactor::eOneMinusConstantAlpha;
+            }
+        }
+
+        void SetIndependentBlendingEnabled(bool enable) {
+            if (enable)
+                blendState.pAttachments = independentRtBlendState.data();
+            else
+                blendState.pAttachments = commonRtBlendState.data();
+        }
+
+        void SetColorBlendEnabled(bool enable) {
+            for (auto &blend : commonRtBlendState)
+                blend.blendEnable = enable;
+        }
+
+        void SetColorBlendOp(maxwell3d::BlendOp op) {
+            auto vkOp{ConvertBlendOp(op)};
+            for (auto &blend : commonRtBlendState)
+                blend.colorBlendOp = vkOp;
+        }
+
+        void SetSrcColorBlendFactor(maxwell3d::BlendFactor factor) {
+            auto vkFactor{ConvertBlendFactor(factor)};
+            for (auto &blend : commonRtBlendState)
+                blend.srcColorBlendFactor = vkFactor;
+        }
+
+        void SetDstColorBlendFactor(maxwell3d::BlendFactor factor) {
+            auto vkFactor{ConvertBlendFactor(factor)};
+            for (auto &blend : commonRtBlendState)
+                blend.dstColorBlendFactor = vkFactor;
+        }
+
+        void SetAlphaBlendOp(maxwell3d::BlendOp op) {
+            auto vkOp{ConvertBlendOp(op)};
+            for (auto &blend : commonRtBlendState)
+                blend.alphaBlendOp = vkOp;
+        }
+
+        void SetSrcAlphaBlendFactor(maxwell3d::BlendFactor factor) {
+            auto vkFactor{ConvertBlendFactor(factor)};
+            for (auto &blend : commonRtBlendState)
+                blend.srcAlphaBlendFactor = vkFactor;
+        }
+
+        void SetDstAlphaBlendFactor(maxwell3d::BlendFactor factor) {
+            auto vkFactor{ConvertBlendFactor(factor)};
+            for (auto &blend : commonRtBlendState)
+                blend.dstAlphaBlendFactor = vkFactor;
+        }
+
+        void SetColorBlendEnabled(u32 index, bool enable) {
+            independentRtBlendState[index].blendEnable = enable;
+        }
+
+        void SetColorBlendOp(u32 index, maxwell3d::BlendOp op) {
+            independentRtBlendState[index].colorBlendOp = ConvertBlendOp(op);
+        }
+
+        void SetSrcColorBlendFactor(u32 index, maxwell3d::BlendFactor factor) {
+            independentRtBlendState[index].srcColorBlendFactor = ConvertBlendFactor(factor);
+        }
+
+        void SetDstColorBlendFactor(u32 index, maxwell3d::BlendFactor factor) {
+            independentRtBlendState[index].dstColorBlendFactor = ConvertBlendFactor(factor);
+        }
+
+        void SetAlphaBlendOp(u32 index, maxwell3d::BlendOp op) {
+            independentRtBlendState[index].alphaBlendOp = ConvertBlendOp(op);
+        }
+
+        void SetSrcAlphaBlendFactor(u32 index, maxwell3d::BlendFactor factor) {
+            independentRtBlendState[index].srcAlphaBlendFactor = ConvertBlendFactor(factor);
+        }
+
+        void SetDstAlphaBlendFactor(u32 index, maxwell3d::BlendFactor factor) {
+            independentRtBlendState[index].dstAlphaBlendFactor = ConvertBlendFactor(factor);
+        }
+
+        void SetColorBlendConstant(u32 index, float constant) {
+            blendState.blendConstants[index] = constant;
         }
     };
 }

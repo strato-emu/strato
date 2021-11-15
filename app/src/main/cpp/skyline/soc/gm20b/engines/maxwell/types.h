@@ -302,75 +302,63 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         AlwaysGL = 0x207,
     };
 
-    struct Blend {
-        enum class Op : u32 {
-            Add = 1,
-            Subtract = 2,
-            ReverseSubtract = 3,
-            Minimum = 4,
-            Maximum = 5,
+    constexpr static size_t BlendColorChannelCount{4}; //!< The amount of color channels in operations such as blending
 
-            AddGL = 0x8006,
-            SubtractGL = 0x8007,
-            ReverseSubtractGL = 0x8008,
-            MinimumGL = 0x800A,
-            MaximumGL = 0x800B,
-        };
+    enum class BlendOp : u32 {
+        Add = 1,
+        Subtract = 2,
+        ReverseSubtract = 3,
+        Minimum = 4,
+        Maximum = 5,
 
-        enum class Factor : u32 {
-            Zero = 0x1,
-            One = 0x2,
-            SourceColor = 0x3,
-            OneMinusSourceColor = 0x4,
-            SourceAlpha = 0x5,
-            OneMinusSourceAlpha = 0x6,
-            DestAlpha = 0x7,
-            OneMinusDestAlpha = 0x8,
-            DestColor = 0x9,
-            OneMinusDestColor = 0xA,
-            SourceAlphaSaturate = 0xB,
-            Source1Color = 0x10,
-            OneMinusSource1Color = 0x11,
-            Source1Alpha = 0x12,
-            OneMinusSource1Alpha = 0x13,
-            ConstantColor = 0x61,
-            OneMinusConstantColor = 0x62,
-            ConstantAlpha = 0x63,
-            OneMinusConstantAlpha = 0x64,
-
-            ZeroGL = 0x4000,
-            OneGL = 0x4001,
-            SourceColorGL = 0x4300,
-            OneMinusSourceColorGL = 0x4301,
-            SourceAlphaGL = 0x4302,
-            OneMinusSourceAlphaGL = 0x4303,
-            DestAlphaGL = 0x4304,
-            OneMinusDestAlphaGL = 0x4305,
-            DestColorGL = 0x4306,
-            OneMinusDestColorGL = 0x4307,
-            SourceAlphaSaturateGL = 0x4308,
-            ConstantColorGL = 0xC001,
-            OneMinusConstantColorGL = 0xC002,
-            ConstantAlphaGL = 0xC003,
-            OneMinusConstantAlphaGL = 0xC004,
-            Source1ColorGL = 0xC900,
-            OneMinusSource1ColorGL = 0xC901,
-            Source1AlphaGL = 0xC902,
-            OneMinusSource1AlphaGL = 0xC903,
-        };
-
-        struct {
-            u32 seperateAlpha;
-            Op colorOp;
-            Factor colorSrcFactor;
-            Factor colorDestFactor;
-            Op alphaOp;
-            Factor alphaSrcFactor;
-            Factor alphaDestFactor;
-            u32 _pad_;
-        };
+        AddGL = 0x8006,
+        SubtractGL = 0x8007,
+        ReverseSubtractGL = 0x8008,
+        MinimumGL = 0x800A,
+        MaximumGL = 0x800B,
     };
-    static_assert(sizeof(Blend) == (sizeof(u32) * 8));
+
+    enum class BlendFactor : u32 {
+        Zero = 0x1,
+        One = 0x2,
+        SourceColor = 0x3,
+        OneMinusSourceColor = 0x4,
+        SourceAlpha = 0x5,
+        OneMinusSourceAlpha = 0x6,
+        DestAlpha = 0x7,
+        OneMinusDestAlpha = 0x8,
+        DestColor = 0x9,
+        OneMinusDestColor = 0xA,
+        SourceAlphaSaturate = 0xB,
+        Source1Color = 0x10,
+        OneMinusSource1Color = 0x11,
+        Source1Alpha = 0x12,
+        OneMinusSource1Alpha = 0x13,
+        ConstantColor = 0x61,
+        OneMinusConstantColor = 0x62,
+        ConstantAlpha = 0x63,
+        OneMinusConstantAlpha = 0x64,
+
+        ZeroGL = 0x4000,
+        OneGL = 0x4001,
+        SourceColorGL = 0x4300,
+        OneMinusSourceColorGL = 0x4301,
+        SourceAlphaGL = 0x4302,
+        OneMinusSourceAlphaGL = 0x4303,
+        DestAlphaGL = 0x4304,
+        OneMinusDestAlphaGL = 0x4305,
+        DestColorGL = 0x4306,
+        OneMinusDestColorGL = 0x4307,
+        SourceAlphaSaturateGL = 0x4308,
+        ConstantColorGL = 0xC001,
+        OneMinusConstantColorGL = 0xC002,
+        ConstantAlphaGL = 0xC003,
+        OneMinusConstantAlphaGL = 0xC004,
+        Source1ColorGL = 0xC900,
+        OneMinusSource1ColorGL = 0xC901,
+        Source1AlphaGL = 0xC902,
+        OneMinusSource1AlphaGL = 0xC903,
+    };
 
     struct MultisampleControl {
         bool alphaToCoverage : 1;
