@@ -34,7 +34,7 @@ namespace skyline::gpu::interconnect {
                 u32 high;
             };
 
-            operator u64&() {
+            operator u64 &() {
                 return iova;
             }
         };
@@ -795,6 +795,8 @@ namespace skyline::gpu::interconnect {
         void SetVertexBufferDivisor(u32 index, u32 divisor) {
             if (!gpu.quirks.supportsVertexAttributeDivisor)
                 Logger::Warn("Cannot set vertex attribute divisor without host GPU support");
+            else if (divisor == 0 && !gpu.quirks.supportsVertexAttributeZeroDivisor)
+                Logger::Warn("Cannot set vertex attribute divisor to zero without host GPU support");
             vertexBindingDivisors[index].divisor = divisor;
         }
     };
