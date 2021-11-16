@@ -14,10 +14,10 @@ namespace skyline::soc::gm20b::engine {
         registers.raw[method] = argument;
 
         #define GPFIFO_OFFSET(field) U32_OFFSET(Registers, field)
-        #define GPFIFO_STRUCT_OFFSET(field, member) GPFIFO_OFFSET(field) + U32_OFFSET(typeof(Registers::field), member)
+        #define GPFIFO_STRUCT_OFFSET(field, member) GPFIFO_OFFSET(field) + U32_OFFSET(decltype(Registers::field), member)
 
         #define GPFIFO_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: { \
-            auto fieldName{util::BitCast<typeof(registers.fieldAccessor)>(argument)};      \
+            auto fieldName{util::BitCast<decltype(registers.fieldAccessor)>(argument)};      \
             content                                                                        \
             return;                                                                        \
         }

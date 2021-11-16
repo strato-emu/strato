@@ -23,7 +23,7 @@ namespace skyline::gpu {
 
         static vk::raii::PhysicalDevice CreatePhysicalDevice(const vk::raii::Instance &instance);
 
-        static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration, QuirkManager& quirks);
+        static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, decltype(vk::DeviceQueueCreateInfo::queueCount)& queueConfiguration, QuirkManager& quirks);
 
       public:
         static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require

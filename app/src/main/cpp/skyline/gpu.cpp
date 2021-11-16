@@ -119,11 +119,11 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
+    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto properties{physicalDevice.getProperties()};
 
         auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>()};
-        typeof(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
+        decltype(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
         #define FEAT_REQ(structName, feature)                                            \
         if (deviceFeatures2.get<structName>().feature)                                   \
@@ -160,7 +160,7 @@ namespace skyline::gpu {
         auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
         float queuePriority{1.0f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
         vk::DeviceQueueCreateInfo queue{[&] {
-            typeof(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
+            decltype(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
             for (const auto &queueFamily : queueFamilies) {
                 if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
                     vkQueueFamilyIndex = index;

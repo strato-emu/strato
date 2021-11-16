@@ -25,7 +25,7 @@ namespace skyline {
 
         #undef PREF_ELEM
 
-        std::bitset<std::tuple_size_v<typeof(preferences)>> preferencesSet{}; // A bitfield to keep track of all the preferences we've set
+        std::bitset<std::tuple_size_v<decltype(preferences)>> preferencesSet{}; // A bitfield to keep track of all the preferences we've set
         for (auto element{document.last_child().first_child()}; element; element = element.next_sibling()) {
             std::string_view name{element.attribute("name").value()};
             std::apply([&](auto... preferences) {

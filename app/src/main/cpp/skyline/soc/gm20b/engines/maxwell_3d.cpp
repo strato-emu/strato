@@ -45,21 +45,21 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     void Maxwell3D::HandleMethod(u32 method, u32 argument) {
-        #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(typeof(*Registers::field))) / sizeof(u32)
-        #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(typeof(*Registers::field), member)
-        #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(typeof(Registers::field[0])) / sizeof(u32)) * index)
-        #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(typeof(Registers::field[0]), member)
-        #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(typeof(Registers::field[0].member), submember)
+        #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
+        #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
+        #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(std::remove_reference_t<decltype(Registers::field[0])>) / sizeof(u32)) * index)
+        #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field[0])>, member)
+        #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(decltype(Registers::field[0].member), submember)
 
-        #define MAXWELL3D_CASE(field, content) case MAXWELL3D_OFFSET(field): { \
-            auto field{util::BitCast<typeof(*registers.field)>(argument)};     \
-            content                                                            \
-            return;                                                            \
+        #define MAXWELL3D_CASE(field, content) case MAXWELL3D_OFFSET(field): {                        \
+            auto field{util::BitCast<std::remove_reference_t<decltype(*registers.field)>>(argument)}; \
+            content                                                                                   \
+            return;                                                                                   \
         }
-        #define MAXWELL3D_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: { \
-            auto fieldName{util::BitCast<typeof(registers.fieldAccessor)>(argument)};         \
-            content                                                                           \
-            return;                                                                           \
+        #define MAXWELL3D_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: {                    \
+            auto fieldName{util::BitCast<std::remove_reference_t<decltype(registers.fieldAccessor)>>(argument)}; \
+            content                                                                                              \
+            return;                                                                                              \
         }
         #define MAXWELL3D_STRUCT_CASE(field, member, content) MAXWELL3D_CASE_BASE(member, field->member, MAXWELL3D_STRUCT_OFFSET(field, member), content)
         #define MAXWELL3D_ARRAY_CASE(field, index, content) MAXWELL3D_CASE_BASE(field, field[index], MAXWELL3D_ARRAY_OFFSET(field, index), content)

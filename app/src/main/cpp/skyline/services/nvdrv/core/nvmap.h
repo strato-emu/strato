@@ -33,7 +33,7 @@ namespace skyline::service::nvdrv::core {
 
             i32 pins{};
             u32 pinVirtAddress{};
-            std::optional<typeof(std::list<std::shared_ptr<Handle>>::iterator)> unmapQueueEntry{};
+            std::optional<std::list<std::shared_ptr<Handle>>::iterator> unmapQueueEntry{};
 
             struct Flags {
                 bool mapUncached : 1; //!< If the handle should be mapped as uncached
