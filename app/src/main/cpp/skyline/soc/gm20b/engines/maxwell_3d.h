@@ -206,6 +206,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x61F, float> depthBiasClamp;
 
+            Register<0x620, std::array<u32, type::VertexBufferCount>> isVertexInputRatePerInstance; //!< A per-VBO boolean denoting if the vertex input rate should be per vertex or per instance
+
             Register<0x646, u32> cullFaceEnable;
             Register<0x647, type::FrontFace> frontFace;
             Register<0x648, type::CullFace> cullFace;

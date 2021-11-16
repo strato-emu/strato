@@ -784,6 +784,10 @@ namespace skyline::gpu::interconnect {
             vertexBindings[index].stride = stride;
         }
 
+        void SetVertexBufferInputRate(u32 index, bool isPerInstance) {
+            vertexBindings[index].inputRate = isPerInstance ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
+        }
+
         void SetVertexBufferIovaHigh(u32 index, u32 high) {
             vertexBindingIovas[index].high = high;
         }
