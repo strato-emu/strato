@@ -14,14 +14,14 @@
  * @brief Creates a function to convert an enumerant to its string representation at runtime
  * @example ENUM_STRING(Example, { ENUM_CASE(A); ENUM_CASE(B); })
  */
-#define ENUM_STRING(name, cases)                 \
-    constexpr const char *ToString(name value) { \
-        using ENUM_TYPE = name;                  \
-        switch (value) {                         \
-            cases                                \
-            default:                             \
-                return "Unknown";                \
-        }                                       \
+#define ENUM_STRING(name, cases)                        \
+    constexpr static const char *ToString(name value) { \
+        using ENUM_TYPE = name;                         \
+        switch (value) {                                \
+            cases                                       \
+            default:                                    \
+                return "Unknown";                       \
+        }                                               \
     }
 
 /**
@@ -29,7 +29,7 @@
  */
 #define ENUM_CASE_PAIR(key, value) \
     case ENUM_TYPE::key:           \
-    return value
+        return value
 
 /**
  * @brief Creates a switch case statement to convert an enumerant to the given values
