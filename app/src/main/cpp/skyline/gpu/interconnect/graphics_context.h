@@ -766,7 +766,10 @@ namespace skyline::gpu::interconnect {
 
         /* Vertex Buffers */
       private:
-        std::array<IOVA, maxwell3d::VertexBufferCount> vertexBindingIovas{};
+        struct VertexBuffer {
+            IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS with the vertex buffer
+        };
+        std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
         std::array<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindings{};
         std::array<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisors{};
         vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
@@ -788,12 +791,20 @@ namespace skyline::gpu::interconnect {
             vertexBindings[index].inputRate = isPerInstance ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
         }
 
-        void SetVertexBufferIovaHigh(u32 index, u32 high) {
-            vertexBindingIovas[index].high = high;
+        void SetVertexBufferStartIovaHigh(u32 index, u32 high) {
+            vertexBuffers[index].start.high = high;
         }
 
-        void SetVertexBufferIovaLow(u32 index, u32 low) {
-            vertexBindingIovas[index].low = low;
+        void SetVertexBufferStartIovaLow(u32 index, u32 low) {
+            vertexBuffers[index].start.low = low;
+        }
+
+        void SetVertexBufferEndIovaHigh(u32 index, u32 high) {
+            vertexBuffers[index].end.high = high;
+        }
+
+        void SetVertexBufferEndIovaLow(u32 index, u32 low) {
+            vertexBuffers[index].end.low = low;
         }
 
         void SetVertexBufferDivisor(u32 index, u32 divisor) {

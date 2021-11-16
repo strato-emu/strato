@@ -329,16 +329,22 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetVertexBufferStride(index, config.stride);                   \
                 })                                                                         \
                 MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, high, {     \
-                    context.SetVertexBufferIovaHigh(index, high);                          \
+                    context.SetVertexBufferStartIovaHigh(index, high);                     \
                 })                                                                         \
                 MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, low, {      \
-                    context.SetVertexBufferIovaLow(index, low);                            \
+                    context.SetVertexBufferStartIovaLow(index, low);                       \
                 })                                                                         \
                 MAXWELL3D_ARRAY_STRUCT_CASE(vertexBuffers, index, divisor, {               \
                     context.SetVertexBufferDivisor(index, divisor);                        \
                 })                                                                         \
                 MAXWELL3D_ARRAY_CASE(isVertexInputRatePerInstance, index, {                \
                     context.SetVertexBufferInputRate(index, isVertexInputRatePerInstance); \
+                })                                                                         \
+                MAXWELL3D_ARRAY_STRUCT_CASE(vertexBufferLimits, index, high, {             \
+                    context.SetVertexBufferEndIovaHigh(index, high);                       \
+                })                                                                         \
+                MAXWELL3D_ARRAY_STRUCT_CASE(vertexBufferLimits, index, low, {              \
+                    context.SetVertexBufferEndIovaLow(index, low);                         \
                 })
 
                 BOOST_PP_REPEAT(16, VERTEX_BUFFER_CALLBACKS, 0)
