@@ -23,6 +23,23 @@ namespace skyline::gpu::interconnect {
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
 
+        /**
+         * @brief A host IOVA address composed of 32-bit low/high register values
+         * @note This differs from maxwell3d::Address in that it is little-endian rather than big-endian ordered for the register values
+         */
+        union IOVA {
+            u64 iova;
+            struct {
+                u32 low;
+                u32 high;
+            };
+
+            operator u64&() {
+                return iova;
+            }
+        };
+        static_assert(sizeof(IOVA) == sizeof(u64));
+
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
@@ -34,13 +51,7 @@ namespace skyline::gpu::interconnect {
       private:
         struct RenderTarget {
             bool disabled{true}; //!< If this RT has been disabled and will be an unbound attachment instead
-            union {
-                u64 gpuAddress;
-                struct {
-                    u32 gpuAddressLow;
-                    u32 gpuAddressHigh;
-                };
-            };
+            IOVA iova;
             u32 widthBytes; //!< The width in bytes for linear textures
             GuestTexture guest;
             std::optional<TextureView> view;
@@ -56,14 +67,14 @@ namespace skyline::gpu::interconnect {
       public:
         void SetRenderTargetAddressHigh(size_t index, u32 high) {
             auto &renderTarget{renderTargets.at(index)};
-            renderTarget.gpuAddressHigh = high;
+            renderTarget.iova.high = high;
             renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
 
         void SetRenderTargetAddressLow(size_t index, u32 low) {
             auto &renderTarget{renderTargets.at(index)};
-            renderTarget.gpuAddressLow = low;
+            renderTarget.iova.low = low;
             renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
@@ -211,7 +222,7 @@ namespace skyline::gpu::interconnect {
 
             if (renderTarget.guest.mappings.empty()) {
                 auto size{std::max<u64>(renderTarget.guest.layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer), renderTarget.guest.format->GetSize(renderTarget.guest.dimensions))};
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.gpuAddress, size)};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.iova, size)};
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
 
@@ -347,18 +358,18 @@ namespace skyline::gpu::interconnect {
             span<u8> data; //!< The shader bytecode in the CPU AS
         };
 
-        u64 shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
+        IOVA shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
         std::array<Shader, maxwell3d::StageCount> boundShaders{};
 
       public:
         void SetShaderBaseIovaHigh(u32 high) {
-            shaderBaseIova = (shaderBaseIova & std::numeric_limits<u32>::max()) | (static_cast<u64>(high) << 32);
+            shaderBaseIova.high = high;
             for (auto &shader : boundShaders)
                 shader.data = span<u8>{};
         }
 
         void SetShaderBaseIovaLow(u32 low) {
-            shaderBaseIova = (shaderBaseIova & (static_cast<u64>(std::numeric_limits<u32>::max()) << 32)) | low;
+            shaderBaseIova.low = low;
             for (auto &shader : boundShaders)
                 shader.data = span<u8>{};
         }
