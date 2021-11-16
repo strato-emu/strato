@@ -106,7 +106,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x3E4, u32> commonColorWriteMask; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
             Register<0x3EB, u32> rtSeparateFragData;
-            Register<0x458, std::array<type::VertexAttribute, 0x20>> vertexAttributeState;
+            Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributeState;
             Register<0x487, type::RenderTargetControl> renderTargetControl;
             Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BB, u32> alphaTestEnable;

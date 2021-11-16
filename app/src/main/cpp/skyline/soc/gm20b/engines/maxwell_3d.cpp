@@ -351,6 +351,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::VertexBufferCount == 16 && type::VertexBufferCount < BOOST_PP_LIMIT_REPEAT);
                 #undef VERTEX_BUFFER_CALLBACKS
 
+                #define VERTEX_ATTRIBUTES_CALLBACKS(z, index, data)               \
+                MAXWELL3D_ARRAY_CASE(vertexAttributeState, index, {               \
+                    context.SetVertexAttributeState(index, vertexAttributeState); \
+                })
+
+                BOOST_PP_REPEAT(32, VERTEX_ATTRIBUTES_CALLBACKS, 0)
+                static_assert(type::VertexAttributeCount == 32 && type::VertexAttributeCount < BOOST_PP_LIMIT_REPEAT);
+                #undef VERTEX_BUFFER_CALLBACKS
+
                 #define SET_INDEPENDENT_COLOR_BLEND_CALLBACKS(z, index, data)          \
                 MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, colorOp, {        \
                     context.SetColorBlendOp(index, colorOp);                           \

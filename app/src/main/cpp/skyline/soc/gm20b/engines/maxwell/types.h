@@ -201,50 +201,84 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     static_assert(sizeof(Scissor) == (0x4 * sizeof(u32)));
 
     constexpr static size_t VertexBufferCount{16}; //!< The maximum amount of vertex buffers that can be bound at once
+    constexpr static size_t VertexAttributeCount{32}; //!< The amount of vertex attributes that can be set
 
     union VertexAttribute {
         u32 raw;
 
-        enum class Size : u8 {
-            Size_1x32 = 0x12,
-            Size_2x32 = 0x04,
-            Size_3x32 = 0x02,
-            Size_4x32 = 0x01,
-            Size_1x16 = 0x1B,
-            Size_2x16 = 0x0F,
-            Size_3x16 = 0x05,
-            Size_4x16 = 0x03,
-            Size_1x8 = 0x1D,
-            Size_2x8 = 0x18,
-            Size_3x8 = 0x13,
-            Size_4x8 = 0x0A,
-            Size_10_10_10_2 = 0x30,
-            Size_11_11_10 = 0x31,
+        enum class ElementSize : u16 {
+            e0 = 0x0,
+            e1x8 = 0x1D,
+            e2x8 = 0x18,
+            e3x8 = 0x13,
+            e4x8 = 0x0A,
+            e1x16 = 0x1B,
+            e2x16 = 0x0F,
+            e3x16 = 0x05,
+            e4x16 = 0x03,
+            e1x32 = 0x12,
+            e2x32 = 0x04,
+            e3x32 = 0x02,
+            e4x32 = 0x01,
+            e10_10_10_2 = 0x30,
+            e11_11_10 = 0x31,
         };
 
-        enum class Type : u8 {
+        ENUM_STRING(ElementSize, {
+            ENUM_CASE_PAIR(e1x8, "1x8");
+            ENUM_CASE_PAIR(e2x8, "2x8");
+            ENUM_CASE_PAIR(e3x8, "3x8");
+            ENUM_CASE_PAIR(e4x8, "4x8");
+            ENUM_CASE_PAIR(e1x16, "1x16");
+            ENUM_CASE_PAIR(e2x16, "2x16");
+            ENUM_CASE_PAIR(e3x16, "3x16");
+            ENUM_CASE_PAIR(e4x16, "4x16");
+            ENUM_CASE_PAIR(e1x32, "1x32");
+            ENUM_CASE_PAIR(e2x32, "2x32");
+            ENUM_CASE_PAIR(e3x32, "3x32");
+            ENUM_CASE_PAIR(e4x32, "4x32");
+            ENUM_CASE_PAIR(e10_10_10_2, "10_10_10_2");
+            ENUM_CASE_PAIR(e11_11_10, "11_11_10");
+        })
+
+        enum class ElementType : u16 {
             None = 0,
-            SNorm = 1,
-            UNorm = 2,
-            SInt = 3,
-            UInt = 4,
-            UScaled = 5,
-            SScaled = 6,
+            Snorm = 1,
+            Unorm = 2,
+            Sint = 3,
+            Uint = 4,
+            Uscaled = 5,
+            Sscaled = 6,
             Float = 7,
         };
+
+        ENUM_STRING(ElementType, {
+            ENUM_CASE(None);
+            ENUM_CASE(Snorm);
+            ENUM_CASE(Unorm);
+            ENUM_CASE(Sint);
+            ENUM_CASE(Uint);
+            ENUM_CASE(Uscaled);
+            ENUM_CASE(Sscaled);
+            ENUM_CASE(Float);
+        })
 
         struct {
             u8 bufferId : 5;
             u8 _pad0_ : 1;
-            bool fixed : 1;
+            bool isConstant : 1;
             u16 offset : 14;
-            Size size : 6;
-            Type type : 3;
+            ElementSize elementSize : 6;
+            ElementType type : 3;
             u8 _pad1_ : 1;
             bool bgra : 1;
         };
     };
     static_assert(sizeof(VertexAttribute) == sizeof(u32));
+
+    constexpr u16 operator|(VertexAttribute::ElementSize elementSize, VertexAttribute::ElementType type) {
+        return static_cast<u16>(static_cast<u16>(elementSize) | (static_cast<u16>(type) << 6));
+    }
 
     /**
      * @brief A descriptor that controls how the RenderTarget array (at 0x200) will be interpreted

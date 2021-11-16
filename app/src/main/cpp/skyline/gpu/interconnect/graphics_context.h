@@ -55,6 +55,10 @@ namespace skyline::gpu::interconnect {
                 vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
             }
 
+            u32 attributeIndex{};
+            for (auto &vertexAttribute : vertexAttributes)
+                vertexAttribute.location = attributeIndex++;
+
             if (!gpu.quirks.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
         }
@@ -772,10 +776,13 @@ namespace skyline::gpu::interconnect {
         std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
         std::array<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindings{};
         std::array<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisors{};
+        std::array<vk::VertexInputAttributeDescription, maxwell3d::VertexAttributeCount> vertexAttributes{};
         vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
             vk::PipelineVertexInputStateCreateInfo{
                 .pVertexBindingDescriptions = vertexBindings.data(),
                 .vertexBindingDescriptionCount = maxwell3d::VertexBufferCount,
+                .pVertexAttributeDescriptions = vertexAttributes.data(),
+                .vertexAttributeDescriptionCount = maxwell3d::VertexAttributeCount,
             }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
                 .pVertexBindingDivisors = vertexBindingDivisors.data(),
                 .vertexBindingDivisorCount = maxwell3d::VertexBufferCount,
@@ -813,6 +820,125 @@ namespace skyline::gpu::interconnect {
             else if (divisor == 0 && !gpu.quirks.supportsVertexAttributeZeroDivisor)
                 Logger::Warn("Cannot set vertex attribute divisor to zero without host GPU support");
             vertexBindingDivisors[index].divisor = divisor;
+        }
+
+        vk::Format ConvertVertexBufferFormat(maxwell3d::VertexAttribute::ElementType type, maxwell3d::VertexAttribute::ElementSize size) {
+            using Size = maxwell3d::VertexAttribute::ElementSize;
+            using Type = maxwell3d::VertexAttribute::ElementType;
+
+            if (size == Size::e0 || type == Type::None)
+                return vk::Format::eUndefined;
+
+            switch(size | type) {
+                // @fmt:off
+
+                /* 8-bit components */
+
+                case Size::e1x8 | Type::Unorm: return vk::Format::eR8Unorm;
+                case Size::e1x8 | Type::Snorm: return vk::Format::eR8Snorm;
+                case Size::e1x8 | Type::Uint: return vk::Format::eR8Uint;
+                case Size::e1x8 | Type::Sint: return vk::Format::eR8Sint;
+                case Size::e1x8 | Type::Uscaled: return vk::Format::eR8Uscaled;
+                case Size::e1x8 | Type::Sscaled: return vk::Format::eR8Sscaled;
+
+                case Size::e2x8 | Type::Unorm: return vk::Format::eR8G8Unorm;
+                case Size::e2x8 | Type::Snorm: return vk::Format::eR8G8Snorm;
+                case Size::e2x8 | Type::Uint: return vk::Format::eR8G8Uint;
+                case Size::e2x8 | Type::Sint: return vk::Format::eR8G8Sint;
+                case Size::e2x8 | Type::Uscaled: return vk::Format::eR8G8Uscaled;
+                case Size::e2x8 | Type::Sscaled: return vk::Format::eR8G8Sscaled;
+
+                case Size::e3x8 | Type::Unorm: return vk::Format::eR8G8B8Unorm;
+                case Size::e3x8 | Type::Snorm: return vk::Format::eR8G8B8Snorm;
+                case Size::e3x8 | Type::Uint: return vk::Format::eR8G8B8Uint;
+                case Size::e3x8 | Type::Sint: return vk::Format::eR8G8B8Sint;
+                case Size::e3x8 | Type::Uscaled: return vk::Format::eR8G8B8Uscaled;
+                case Size::e3x8 | Type::Sscaled: return vk::Format::eR8G8B8Sscaled;
+
+                case Size::e4x8 | Type::Unorm: return vk::Format::eR8G8B8A8Unorm;
+                case Size::e4x8 | Type::Snorm: return vk::Format::eR8G8B8A8Snorm;
+                case Size::e4x8 | Type::Uint: return vk::Format::eR8G8B8A8Uint;
+                case Size::e4x8 | Type::Sint: return vk::Format::eR8G8B8A8Sint;
+                case Size::e4x8 | Type::Uscaled: return vk::Format::eR8G8B8A8Uscaled;
+                case Size::e4x8 | Type::Sscaled: return vk::Format::eR8G8B8A8Sscaled;
+
+                /* 16-bit components */
+
+                case Size::e1x16 | Type::Unorm: return vk::Format::eR16Unorm;
+                case Size::e1x16 | Type::Snorm: return vk::Format::eR16Snorm;
+                case Size::e1x16 | Type::Uint: return vk::Format::eR16Uint;
+                case Size::e1x16 | Type::Sint: return vk::Format::eR16Sint;
+                case Size::e1x16 | Type::Uscaled: return vk::Format::eR16Uscaled;
+                case Size::e1x16 | Type::Sscaled: return vk::Format::eR16Sscaled;
+                case Size::e1x16 | Type::Float: return vk::Format::eR16Sfloat;
+
+                case Size::e2x16 | Type::Unorm: return vk::Format::eR16G16Unorm;
+                case Size::e2x16 | Type::Snorm: return vk::Format::eR16G16Snorm;
+                case Size::e2x16 | Type::Uint: return vk::Format::eR16G16Uint;
+                case Size::e2x16 | Type::Sint: return vk::Format::eR16G16Sint;
+                case Size::e2x16 | Type::Uscaled: return vk::Format::eR16G16Uscaled;
+                case Size::e2x16 | Type::Sscaled: return vk::Format::eR16G16Sscaled;
+                case Size::e2x16 | Type::Float: return vk::Format::eR16G16Sfloat;
+
+                case Size::e3x16 | Type::Unorm: return vk::Format::eR16G16B16Unorm;
+                case Size::e3x16 | Type::Snorm: return vk::Format::eR16G16B16Snorm;
+                case Size::e3x16 | Type::Uint: return vk::Format::eR16G16B16Uint;
+                case Size::e3x16 | Type::Sint: return vk::Format::eR16G16B16Sint;
+                case Size::e3x16 | Type::Uscaled: return vk::Format::eR16G16B16Uscaled;
+                case Size::e3x16 | Type::Sscaled: return vk::Format::eR16G16B16Sscaled;
+                case Size::e3x16 | Type::Float: return vk::Format::eR16G16B16Sfloat;
+
+                case Size::e4x16 | Type::Unorm: return vk::Format::eR16G16B16A16Unorm;
+                case Size::e4x16 | Type::Snorm: return vk::Format::eR16G16B16A16Snorm;
+                case Size::e4x16 | Type::Uint: return vk::Format::eR16G16B16A16Uint;
+                case Size::e4x16 | Type::Sint: return vk::Format::eR16G16B16A16Sint;
+                case Size::e4x16 | Type::Uscaled: return vk::Format::eR16G16B16A16Uscaled;
+                case Size::e4x16 | Type::Sscaled: return vk::Format::eR16G16B16A16Sscaled;
+                case Size::e4x16 | Type::Float: return vk::Format::eR16G16B16A16Sfloat;
+
+                /* 32-bit components */
+
+                case Size::e1x32 | Type::Uint: return vk::Format::eR32Uint;
+                case Size::e1x32 | Type::Sint: return vk::Format::eR32Sint;
+                case Size::e1x32 | Type::Float: return vk::Format::eR32Sfloat;
+
+                case Size::e2x32 | Type::Uint: return vk::Format::eR32G32Uint;
+                case Size::e2x32 | Type::Sint: return vk::Format::eR32G32Sint;
+                case Size::e2x32 | Type::Float: return vk::Format::eR32G32Sfloat;
+
+                case Size::e3x32 | Type::Uint: return vk::Format::eR32G32B32Uint;
+                case Size::e3x32 | Type::Sint: return vk::Format::eR32G32B32Sint;
+                case Size::e3x32 | Type::Float: return vk::Format::eR32G32B32Sfloat;
+
+                case Size::e4x32 | Type::Uint: return vk::Format::eR32G32B32A32Uint;
+                case Size::e4x32 | Type::Sint: return vk::Format::eR32G32B32A32Sint;
+                case Size::e4x32 | Type::Float: return vk::Format::eR32G32B32A32Sfloat;
+
+                /* 10-bit RGB, 2-bit A */
+
+                case Size::e10_10_10_2 | Type::Unorm: return vk::Format::eA2R10G10B10UnormPack32;
+                case Size::e10_10_10_2 | Type::Snorm: return vk::Format::eA2R10G10B10SnormPack32;
+                case Size::e10_10_10_2 | Type::Uint: return vk::Format::eA2R10G10B10UintPack32;
+                case Size::e10_10_10_2 | Type::Sint: return vk::Format::eA2R10G10B10SintPack32;
+                case Size::e10_10_10_2 | Type::Uscaled: return vk::Format::eA2R10G10B10UscaledPack32;
+                case Size::e10_10_10_2 | Type::Sscaled: return vk::Format::eA2R10G10B10SscaledPack32;
+
+                /* Unknown */
+
+                case 0x12F: return vk::Format::eUndefined; // Issued by Maxwell3D::InitializeRegisters()
+
+                // @fmt:on
+
+                default:
+                    throw exception("Unimplemented Vertex Buffer Format: {} | {}", maxwell3d::VertexAttribute::ToString(size), maxwell3d::VertexAttribute::ToString(type));
+            }
+        }
+
+        void SetVertexAttributeState(u32 index, maxwell3d::VertexAttribute attribute) {
+            auto& vkAttributes{vertexAttributes[index]};
+            vkAttributes.binding = attribute.bufferId;
+            vkAttributes.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
+            vkAttributes.offset = attribute.offset;
         }
     };
 }
