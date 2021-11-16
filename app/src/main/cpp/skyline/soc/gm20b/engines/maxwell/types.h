@@ -11,12 +11,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
 
     /**
      * @brief A 40-bit GMMU virtual address with register-packing
+     * @note The registers pack the address with big-endian ordering (but with 32 bit words)
      */
     struct Address {
         u32 high;
         u32 low;
 
-        u64 Pack() {
+        operator u64() {
             return (static_cast<u64>(high) << 32) | low;
         }
     };

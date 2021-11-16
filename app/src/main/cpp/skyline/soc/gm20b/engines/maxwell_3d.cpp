@@ -450,7 +450,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         switch (registers.semaphore->info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
-                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore->address.Pack(), static_cast<u32>(result));
+                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore->address, static_cast<u32>(result));
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
@@ -461,7 +461,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 i64 nsTime{util::GetTimeNs()};
                 i64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
 
-                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore->address.Pack(),
+                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore->address,
                                                              FourWordResult{result, static_cast<u64>(timestamp)});
                 break;
             }
