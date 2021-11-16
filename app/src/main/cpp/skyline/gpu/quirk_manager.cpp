@@ -4,7 +4,7 @@
 #include "quirk_manager.h"
 
 namespace skyline {
-    QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, const vk::PhysicalDeviceFeatures2 &deviceFeatures2, vk::PhysicalDeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
+    QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
             case util::Hash(name):                                                                   \
@@ -32,13 +32,13 @@ namespace skyline {
             #undef EXT_SET_V
         }
 
-        #define FEAT_SET(feature, property)            \
-        if (deviceFeatures2.features.feature) {        \
-            property = true;                           \
-            enabledFeatures2.features.feature = true;  \
+        #define FEAT_SET(structName, feature, property)        \
+        if (deviceFeatures2.get<structName>().feature) {       \
+            property = true;                                   \
+            enabledFeatures2.get<structName>().feature = true; \
         }
 
-        FEAT_SET(logicOp, supportsLogicOp)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.logicOp, supportsLogicOp)
 
         #undef FEAT_SET
     }

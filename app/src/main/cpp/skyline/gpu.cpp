@@ -122,16 +122,16 @@ namespace skyline::gpu {
     vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, typeof(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto properties{physicalDevice.getProperties()};
 
-        auto deviceFeatures2{physicalDevice.getFeatures2()};
-        vk::PhysicalDeviceFeatures2 enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
+        auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>()};
+        typeof(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
-        #define FEAT_REQ(feature)                                                        \
-        if (deviceFeatures2.features.feature)                                            \
-            enabledFeatures2.features.feature = true;                                    \
+        #define FEAT_REQ(structName, feature)                                            \
+        if (deviceFeatures2.get<structName>().feature)                                   \
+            enabledFeatures2.get<structName>().feature = true;                           \
         else                                                                             \
             throw exception("Vulkan device doesn't support required feature: " #feature)
 
-        FEAT_REQ(independentBlend);
+        FEAT_REQ(vk::PhysicalDeviceFeatures2, features.independentBlend);
 
         #undef FEAT_REQ
 
