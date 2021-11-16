@@ -200,6 +200,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(Scissor) == (0x4 * sizeof(u32)));
 
+    constexpr static size_t VertexBufferCount{16}; //!< The maximum amount of vertex buffers that can be bound at once
+
     union VertexAttribute {
         u32 raw;
 

@@ -25,6 +25,7 @@ namespace skyline {
             auto extensionVersion{extension.specVersion};
             switch (util::Hash(extensionName)) {
                 EXT_SET("VK_EXT_provoking_vertex", supportsLastProvokingVertex);
+                EXT_SET("VK_EXT_vertex_attribute_divisor", supportsVertexAttributeDivisor);
             }
 
             #undef EXT_SET
@@ -43,6 +44,6 @@ namespace skyline {
     }
 
     std::string QuirkManager::Summary() {
-        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}", supportsLastProvokingVertex, supportsLogicOp);
+        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}", supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor);
     }
 }

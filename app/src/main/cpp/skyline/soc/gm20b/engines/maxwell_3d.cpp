@@ -324,6 +324,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetBlendLogicOpType(type);
                 })
 
+                #define VERTEX_BUFFER_CALLBACKS(z, index, data)                         \
+                MAXWELL3D_ARRAY_STRUCT_CASE(vertexBuffers, index, config, {             \
+                    context.SetVertexBufferStride(index, config.stride);                \
+                })                                                                      \
+                MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, high, {  \
+                    context.SetVertexBufferIovaHigh(index, high);                       \
+                })                                                                      \
+                MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, low, {   \
+                    context.SetVertexBufferIovaLow(index, low);                         \
+                })                                                                      \
+                MAXWELL3D_ARRAY_STRUCT_CASE(vertexBuffers, index, divisor, {            \
+                    context.SetVertexBufferDivisor(index, divisor);                     \
+                })
+
+                BOOST_PP_REPEAT(16, VERTEX_BUFFER_CALLBACKS, 0)
+                static_assert(type::VertexBufferCount == 16 && type::VertexBufferCount < BOOST_PP_LIMIT_REPEAT);
+                #undef VERTEX_BUFFER_CALLBACKS
+
                 #define SET_INDEPENDENT_COLOR_BLEND_CALLBACKS(z, index, data)          \
                 MAXWELL3D_ARRAY_STRUCT_CASE(independentBlend, index, colorOp, {        \
                     context.SetColorBlendOp(index, colorOp);                           \

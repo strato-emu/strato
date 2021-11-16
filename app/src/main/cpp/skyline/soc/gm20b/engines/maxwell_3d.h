@@ -229,6 +229,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x671, ColorLogicOp> colorLogicOp;
 
+            struct VertexBuffer {
+                union {
+                    u32 raw;
+                    struct {
+                        u32 stride : 12;
+                        u32 enable : 1;
+                    };
+                } config;
+                type::Address iova;
+                u32 divisor;
+            };
+            static_assert(sizeof(VertexBuffer) == sizeof(u32) * 4);
+            Register<0x700, std::array<VertexBuffer, type::VertexBufferCount>> vertexBuffers;
+
             struct IndependentBlend {
                 u32 seperateAlpha;
                 type::BlendOp colorOp;

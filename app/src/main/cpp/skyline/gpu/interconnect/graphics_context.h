@@ -43,6 +43,18 @@ namespace skyline::gpu::interconnect {
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
+
+            u32 bindingIndex{};
+            for (auto &vertexBinding : vertexBindings)
+                vertexBinding.binding = bindingIndex++;
+            if (gpu.quirks.supportsVertexAttributeDivisor) {
+                bindingIndex = 0;
+                for (auto &vertexBindingDivisor : vertexBindingDivisors)
+                    vertexBindingDivisor.binding = bindingIndex++;
+            } else {
+                vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
+            }
+
             if (!gpu.quirks.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
         }
@@ -750,6 +762,40 @@ namespace skyline::gpu::interconnect {
 
         void SetColorBlendConstant(u32 index, float constant) {
             blendState.blendConstants[index] = constant;
+        }
+
+        /* Vertex Buffers */
+      private:
+        std::array<IOVA, maxwell3d::VertexBufferCount> vertexBindingIovas{};
+        std::array<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindings{};
+        std::array<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisors{};
+        vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
+            vk::PipelineVertexInputStateCreateInfo{
+                .pVertexBindingDescriptions = vertexBindings.data(),
+                .vertexBindingDescriptionCount = maxwell3d::VertexBufferCount,
+            }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
+                .pVertexBindingDivisors = vertexBindingDivisors.data(),
+                .vertexBindingDivisorCount = maxwell3d::VertexBufferCount,
+            }
+        };
+
+      public:
+        void SetVertexBufferStride(u32 index, u32 stride) {
+            vertexBindings[index].stride = stride;
+        }
+
+        void SetVertexBufferIovaHigh(u32 index, u32 high) {
+            vertexBindingIovas[index].high = high;
+        }
+
+        void SetVertexBufferIovaLow(u32 index, u32 low) {
+            vertexBindingIovas[index].low = low;
+        }
+
+        void SetVertexBufferDivisor(u32 index, u32 divisor) {
+            if (!gpu.quirks.supportsVertexAttributeDivisor)
+                Logger::Warn("Cannot set vertex attribute divisor without host GPU support");
+            vertexBindingDivisors[index].divisor = divisor;
         }
     };
 }

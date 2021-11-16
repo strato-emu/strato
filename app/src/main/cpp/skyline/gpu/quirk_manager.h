@@ -14,6 +14,7 @@ namespace skyline {
       public:
         bool supportsLastProvokingVertex{}; //!< If the device supports setting the last vertex as the provoking vertex (with VK_EXT_provoking_vertex)
         bool supportsLogicOp{}; //!< If the device supports framebuffer logical operations during blending
+        bool supportsVertexAttributeDivisor{}; //!< If the device supports a divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
 
         QuirkManager() = default;
 
