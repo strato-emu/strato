@@ -377,6 +377,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 BOOST_PP_REPEAT(6, SET_SHADER_ENABLE_CALLBACK, 0)
                 static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SET_SHADER_ENABLE_CALLBACK
+
+                default:
+                    break;
             }
         }
 
