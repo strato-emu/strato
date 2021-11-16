@@ -204,17 +204,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x5A1, u32> provokingVertexIsLast;
 
+            Register<0x61F, float> depthBiasClamp;
+
             Register<0x646, u32> cullFaceEnable;
             Register<0x647, type::FrontFace> frontFace;
             Register<0x648, type::CullFace> cullFace;
 
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportTransformEnable;
+            Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
+
+            struct ColorLogicOp {
+                u32 enable;
+                type::ColorLogicOp type;
+            };
+            Register<0x671, ColorLogicOp> colorLogicOp;
+
             Register<0x674, type::ClearBuffers> clearBuffers;
             Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorWriteMask;
-
-            Register<0x61F, float> depthBiasClamp;
-            Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
 
             struct Semaphore {
                 type::Address address; // 0x6C0
@@ -222,12 +229,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 type::SemaphoreInfo info; // 0x6C3
             };
             Register<0x6C0, Semaphore> semaphore;
-
-            struct ColorLogicOp {
-                u32 enable;
-                type::ColorLogicOp type;
-            };
-            Register<0x671, ColorLogicOp> colorLogicOp;
 
             struct VertexBuffer {
                 union {
