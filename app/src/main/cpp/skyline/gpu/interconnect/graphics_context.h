@@ -252,9 +252,20 @@ namespace skyline::gpu::interconnect {
             renderTargetControl = control;
         }
 
-        /* Viewport Transforms */
+        /* Viewport */
       private:
         std::array<vk::Viewport, maxwell3d::ViewportCount> viewports;
+        std::array<vk::Rect2D, maxwell3d::ViewportCount> scissors; //!< The scissors applied to viewports/render targets for masking writes during draws or clears
+        constexpr static vk::Rect2D DefaultScissor{
+            .extent.height = std::numeric_limits<i32>::max(),
+            .extent.width = std::numeric_limits<i32>::max(),
+        }; //!< A scissor which displays the entire viewport, utilized when the viewport scissor is disabled
+        vk::PipelineViewportStateCreateInfo viewportState{
+            .pViewports = viewports.data(),
+            .viewportCount = maxwell3d::ViewportCount,
+            .pScissors = scissors.data(),
+            .scissorCount = maxwell3d::ViewportCount,
+        };
 
       public:
         /**
@@ -277,6 +288,27 @@ namespace skyline::gpu::interconnect {
             auto &viewport{viewports.at(index)};
             viewport.minDepth = translate; // minDepth (o_z) directly corresponds to the host translation
             viewport.maxDepth = scale + translate; // Counteract the subtraction of the maxDepth (p_z - o_z) by minDepth (o_z) for the host scale
+        }
+
+        void SetScissor(size_t index, std::optional<maxwell3d::Scissor> scissor) {
+            scissors.at(index) = scissor ? vk::Rect2D{
+                .offset.x = scissor->horizontal.minimum,
+                .extent.width = static_cast<u32>(scissor->horizontal.maximum - scissor->horizontal.minimum),
+                .offset.y = scissor->vertical.minimum,
+                .extent.height = static_cast<u32>(scissor->horizontal.maximum - scissor->vertical.minimum),
+            } : DefaultScissor;
+        }
+
+        void SetScissorHorizontal(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
+            auto &scissor{scissors.at(index)};
+            scissor.offset.x = bounds.minimum;
+            scissor.extent.width = bounds.maximum - bounds.minimum;
+        }
+
+        void SetScissorVertical(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
+            auto &scissor{scissors.at(index)};
+            scissor.offset.y = bounds.minimum;
+            scissor.extent.height = bounds.maximum - bounds.minimum;
         }
 
         /* Buffer Clears */
@@ -334,36 +366,6 @@ namespace skyline::gpu::interconnect {
                     }, {}, {renderTarget});
                 }
             }
-        }
-
-        /* Viewport Scissors */
-      private:
-        std::array<vk::Rect2D, maxwell3d::ViewportCount> scissors; //!< The scissors applied to viewports/render targets for masking writes during draws or clears
-        constexpr static vk::Rect2D DefaultScissor{
-            .extent.height = std::numeric_limits<i32>::max(),
-            .extent.width = std::numeric_limits<i32>::max(),
-        }; //!< A scissor which displays the entire viewport, utilized when the viewport scissor is disabled
-
-      public:
-        void SetScissor(size_t index, std::optional<maxwell3d::Scissor> scissor) {
-            scissors.at(index) = scissor ? vk::Rect2D{
-                .offset.x = scissor->horizontal.minimum,
-                .extent.width = static_cast<u32>(scissor->horizontal.maximum - scissor->horizontal.minimum),
-                .offset.y = scissor->vertical.minimum,
-                .extent.height = static_cast<u32>(scissor->horizontal.maximum - scissor->vertical.minimum),
-            } : DefaultScissor;
-        }
-
-        void SetScissorHorizontal(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
-            auto &scissor{scissors.at(index)};
-            scissor.offset.x = bounds.minimum;
-            scissor.extent.width = bounds.maximum - bounds.minimum;
-        }
-
-        void SetScissorVertical(size_t index, maxwell3d::Scissor::ScissorBounds bounds) {
-            auto &scissor{scissors.at(index)};
-            scissor.offset.y = bounds.minimum;
-            scissor.extent.height = bounds.maximum - bounds.minimum;
         }
 
         /* Shader Program */
