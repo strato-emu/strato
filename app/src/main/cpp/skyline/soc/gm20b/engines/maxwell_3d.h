@@ -202,6 +202,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
             Register<0x582, type::Address> setProgramRegion;
 
+            Register<0x586, u32> vertexEndGl; //!< Method-only register with no real value, used after calling vertexBeginGl and draws are complete
+            Register<0x586, type::VertexBeginGl> vertexBeginGl; //!< Similar to glVertexBegin semantically, supplies a primitive topology for draws alongside instancing data
+
             Register<0x5A1, u32> provokingVertexIsLast;
 
             Register<0x61F, float> depthBiasClamp;

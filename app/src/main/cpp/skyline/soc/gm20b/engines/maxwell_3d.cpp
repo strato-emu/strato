@@ -393,6 +393,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SET_SHADER_ENABLE_CALLBACK
 
+                MAXWELL3D_CASE(vertexBeginGl, {
+                    context.SetPrimitiveTopology(vertexBeginGl.topology);
+                })
+
                 default:
                     break;
             }

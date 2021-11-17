@@ -829,7 +829,7 @@ namespace skyline::gpu::interconnect {
             if (size == Size::e0 || type == Type::None)
                 return vk::Format::eUndefined;
 
-            switch(size | type) {
+            switch (size | type) {
                 // @fmt:off
 
                 /* 8-bit components */
@@ -930,15 +930,48 @@ namespace skyline::gpu::interconnect {
                 // @fmt:on
 
                 default:
-                    throw exception("Unimplemented Vertex Buffer Format: {} | {}", maxwell3d::VertexAttribute::ToString(size), maxwell3d::VertexAttribute::ToString(type));
+                    throw exception("Unimplemented Maxwell3D Vertex Buffer Format: {} | {}", maxwell3d::VertexAttribute::ToString(size), maxwell3d::VertexAttribute::ToString(type));
             }
         }
 
         void SetVertexAttributeState(u32 index, maxwell3d::VertexAttribute attribute) {
-            auto& vkAttributes{vertexAttributes[index]};
+            auto &vkAttributes{vertexAttributes[index]};
             vkAttributes.binding = attribute.bufferId;
             vkAttributes.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
             vkAttributes.offset = attribute.offset;
+        }
+
+        /* Input Assembly */
+      private:
+        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+
+      public:
+        void SetPrimitiveTopology(maxwell3d::PrimitiveTopology topology) {
+            inputAssemblyState.topology = [topology]() {
+                switch (topology) {
+                    // @fmt:off
+
+                    case maxwell3d::PrimitiveTopology::PointList: return vk::PrimitiveTopology::ePointList;
+
+                    case maxwell3d::PrimitiveTopology::LineList: return vk::PrimitiveTopology::eLineList;
+                    case maxwell3d::PrimitiveTopology::LineListWithAdjacency: return vk::PrimitiveTopology::eLineListWithAdjacency;
+                    case maxwell3d::PrimitiveTopology::LineStrip: return vk::PrimitiveTopology::eLineStrip;
+                    case maxwell3d::PrimitiveTopology::LineStripWithAdjacency: return vk::PrimitiveTopology::eLineStripWithAdjacency;
+
+                    case maxwell3d::PrimitiveTopology::TriangleList: return vk::PrimitiveTopology::eTriangleList;
+                    case maxwell3d::PrimitiveTopology::TriangleListWithAdjacency: return vk::PrimitiveTopology::eTriangleListWithAdjacency;
+                    case maxwell3d::PrimitiveTopology::TriangleStrip: return vk::PrimitiveTopology::eTriangleStrip;
+                    case maxwell3d::PrimitiveTopology::TriangleStripWithAdjacency: return vk::PrimitiveTopology::eTriangleStripWithAdjacency;
+                    case maxwell3d::PrimitiveTopology::TriangleFan: return vk::PrimitiveTopology::eTriangleFan;
+
+                    case maxwell3d::PrimitiveTopology::PatchList: return vk::PrimitiveTopology::ePatchList;
+
+                    // @fmt:on
+
+                    default:
+                        throw exception("Unimplemented Maxwell3D Primitive Topology: {}", maxwell3d::ToString(topology));
+                }
+            }();
         }
     };
 }

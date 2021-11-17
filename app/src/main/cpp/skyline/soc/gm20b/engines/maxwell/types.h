@@ -428,6 +428,53 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(PointCoordReplace) == sizeof(u32));
 
+    enum class PrimitiveTopology : u16 {
+        PointList = 0,
+        LineList = 1,
+        LineLoop = 2,
+        LineStrip = 3,
+        TriangleList = 4,
+        TriangleStrip = 5,
+        TriangleFan = 6,
+        QuadList = 7,
+        QuadStrip = 8,
+        Polygon = 9,
+        LineListWithAdjacency = 10,
+        LineStripWithAdjacency = 11,
+        TriangleListWithAdjacency = 12,
+        TriangleStripWithAdjacency = 13,
+        PatchList = 14,
+    };
+
+    ENUM_STRING(PrimitiveTopology, {
+        ENUM_CASE(PointList);
+        ENUM_CASE(LineList);
+        ENUM_CASE(LineLoop);
+        ENUM_CASE(LineStrip);
+        ENUM_CASE(TriangleList);
+        ENUM_CASE(TriangleStrip);
+        ENUM_CASE(TriangleFan);
+        ENUM_CASE(QuadList);
+        ENUM_CASE(QuadStrip);
+        ENUM_CASE(Polygon);
+        ENUM_CASE(LineListWithAdjacency);
+        ENUM_CASE(LineStripWithAdjacency);
+        ENUM_CASE(TriangleListWithAdjacency);
+        ENUM_CASE(TriangleStripWithAdjacency);
+        ENUM_CASE(PatchList);
+    })
+
+    union VertexBeginGl {
+        u32 raw;
+        struct {
+            PrimitiveTopology topology;
+            u16 pad : 12;
+            bool instanceNext : 1;
+            bool instanceContinue : 1;
+        };
+    };
+    static_assert(sizeof(VertexBeginGl) == sizeof(u32));
+
     enum class FrontFace : u32 {
         Clockwise = 0x900,
         CounterClockwise = 0x901,
