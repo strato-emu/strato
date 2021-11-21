@@ -139,6 +139,7 @@
     <string name="perfetto_description">Perfetto is used to profile and debug with detailed tracing</string>
     <string name="fmtlib_description">{fmt} provides a modern C++ string formatting API</string>
     <string name="boost_description">Boost provides high-quality implementations of containers and other convenience functions in C++</string>
+    <string name="rangev3_description">Range v3 is a reference implementation of ISO C++ 20 ranges, this allows us to use ranges while they are developed in LLVM\'s libc++</string>
     <string name="frozen_description">Frozen provides compile-time immutable hash maps with a perfect hash function for faster lookups</string>
     <string name="pugixml_description">pugixml is used to parse the preference XML to retrieve settings from C++</string>
     <string name="opus_description">Opus Audio Codec provides a high-quality Opus decoder used to decode Opus-encoded audio provided by the guest</string>

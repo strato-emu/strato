@@ -98,6 +98,9 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 add_subdirectory("libraries/boost")
 
+# C++ Range v3
+add_subdirectory("libraries/range")
+
 # Build Skyline with full debugging data and -Og for debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5")
 

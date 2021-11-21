@@ -181,6 +181,12 @@
             app:summary="@string/boost_description"
             app:title="Boost" />
         <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright Eric Niebler 2019-present"
+            app:libraryLicense="@string/boost_software_license"
+            app:libraryUrl="https://github.com/ericniebler/range-v3"
+            app:summary="@string/rangev3_description"
+            app:title="Range v3" />
+        <emu.skyline.preference.LicensePreference
             app:libraryCopyright="Copyright 2016 QuarksLab"
             app:libraryLicense="@string/apache2_license"
             app:libraryUrl="https://github.com/serge-sans-paille/frozen"
