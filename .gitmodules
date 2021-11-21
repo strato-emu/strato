@@ -45,3 +45,6 @@
 [submodule "C++ Range v3"]
 	path = app/libraries/range
 	url = https://github.com/ericniebler/range-v3
+[submodule "Sirit"]
+	path = app/libraries/sirit
+	url = https://github.com/ReinUsesLisp/sirit

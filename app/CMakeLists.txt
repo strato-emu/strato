@@ -101,6 +101,9 @@ add_subdirectory("libraries/boost")
 # C++ Range v3
 add_subdirectory("libraries/range")
 
+# Sirit
+add_subdirectory("libraries/sirit")
+
 # Build Skyline with full debugging data and -Og for debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5")
 

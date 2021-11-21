@@ -140,6 +140,12 @@
             app:summary="@string/ryujinx_description"
             app:title="Ryujinx" />
         <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright (c) 2019, sirit\nAll rights reserved."
+            app:libraryLicense="@string/bsd_3_clause_license"
+            app:libraryUrl="https://github.com/ReinUsesLisp/sirit"
+            app:summary="@string/sirit_description"
+            app:title="Sirit" />
+        <emu.skyline.preference.LicensePreference
             app:libraryCopyright="Copyright 2015-2020 The Khronos Group Inc."
             app:libraryLicense="@string/apache2_license"
             app:libraryUrl="https://github.com/KhronosGroup/Vulkan-Hpp"
