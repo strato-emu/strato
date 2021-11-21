@@ -132,6 +132,7 @@
     <string name="licenses">Licenses</string>
     <string name="skyline_license_description">Skyline is licensed under Mozilla Public License 2.0</string>
     <string name="ryujinx_description">Ryujinx has been used for reference throughout the project due to their highly accurate implementations\n\n<b>Note: Skyline is not based on Ryujinx</b></string>
+    <string name="shader_compiler_description">Skyline\'s shader compiler is a <b>fork</b> of <i>yuzu</i>\'s shader compiler with Skyline-specific changes while other changes are shared between them allowing both projects to benefit from the development of it\n\n<b>Note:</b> Using it in Skyline is only possible due to the licensing exemption granted to Skyline by the <i>yuzu</i> team</string>
     <string name="sirit_description">Skyline\'s shader compiler internally uses Sirit to emit SPIR-V in an efficient manner</string>
     <string name="vkhpp_description">Vulkan-Hpp provides a C++ API for Vulkan</string>
     <string name="vkma_description">Vulkan Memory Allocator provides a high-quality GPU memory allocator with UMA support</string>

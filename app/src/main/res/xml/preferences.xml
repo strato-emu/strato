@@ -140,6 +140,12 @@
             app:summary="@string/ryujinx_description"
             app:title="Ryujinx" />
         <emu.skyline.preference.LicensePreference
+            app:libraryCopyright="Copyright 2021 yuzu Emulator Project\nCopyright © 2021 Skyline Team and Contributors"
+            app:libraryLicense="@string/mpl2_license"
+            app:libraryUrl="https://github.com/skyline-emu/shader-compiler"
+            app:summary="@string/shader_compiler_description"
+            app:title="yuzu Shader Compiler" />
+        <emu.skyline.preference.LicensePreference
             app:libraryCopyright="Copyright (c) 2019, sirit\nAll rights reserved."
             app:libraryLicense="@string/bsd_3_clause_license"
             app:libraryUrl="https://github.com/ReinUsesLisp/sirit"
