@@ -43,6 +43,10 @@ namespace skyline::gpu::interconnect {
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
+            if (!gpu.quirks.supportsMultipleViewports) {
+                viewportState.viewportCount = 1;
+                viewportState.scissorCount = 1;
+            }
 
             u32 bindingIndex{};
             for (auto &vertexBinding : vertexBindings)
