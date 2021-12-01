@@ -132,6 +132,7 @@ namespace skyline::gpu {
             throw exception("Vulkan device doesn't support required feature: " #feature)
 
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.independentBlend);
+        FEAT_REQ(vk::PhysicalDeviceFeatures2, features.shaderImageGatherExtended);
 
         #undef FEAT_REQ
 
