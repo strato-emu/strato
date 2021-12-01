@@ -11,29 +11,36 @@ namespace skyline::gpu::memory {
      * @brief A view into a CPU mapping of a Vulkan buffer
      * @note The mapping **should not** be used after the lifetime of the object has ended
      */
-    struct StagingBuffer : public span<u8>, public FenceCycleDependency {
+    struct Buffer : public span<u8> {
         VmaAllocator vmaAllocator;
         VmaAllocation vmaAllocation;
         vk::Buffer vkBuffer;
 
-        constexpr StagingBuffer(u8 *pointer, size_t size, VmaAllocator vmaAllocator, vk::Buffer vkBuffer, VmaAllocation vmaAllocation)
+        constexpr Buffer(u8 *pointer, size_t size, VmaAllocator vmaAllocator, vk::Buffer vkBuffer, VmaAllocation vmaAllocation)
             : vmaAllocator(vmaAllocator),
               vkBuffer(vkBuffer),
               vmaAllocation(vmaAllocation),
               span(pointer, size) {}
 
-        StagingBuffer(const StagingBuffer &) = delete;
+        Buffer(const Buffer &) = delete;
 
-        constexpr StagingBuffer(StagingBuffer &&other)
+        constexpr Buffer(Buffer &&other)
             : vmaAllocator(std::exchange(other.vmaAllocator, nullptr)),
               vmaAllocation(std::exchange(other.vmaAllocation, nullptr)),
               vkBuffer(std::exchange(other.vkBuffer, {})) {}
 
-        StagingBuffer &operator=(const StagingBuffer &) = delete;
+        Buffer &operator=(const Buffer &) = delete;
 
-        StagingBuffer &operator=(StagingBuffer &&) = default;
+        Buffer &operator=(Buffer &&) = default;
 
-        ~StagingBuffer();
+        ~Buffer();
+    };
+
+    /**
+     * @brief A Buffer that can be independently attached to a fence cycle
+     */
+    class StagingBuffer : public Buffer, public FenceCycleDependency {
+        using Buffer::Buffer;
     };
 
     /**
@@ -98,6 +105,11 @@ namespace skyline::gpu::memory {
          * @brief Creates a buffer which is optimized for staging (Transfer Source)
          */
         std::shared_ptr<StagingBuffer> AllocateStagingBuffer(vk::DeviceSize size);
+
+        /**
+         * @brief Creates a buffer with a CPU mapping and all usage flags
+         */
+        Buffer AllocateBuffer(vk::DeviceSize size);
 
         /**
          * @brief Creates an image which is allocated and deallocated using RAII
