@@ -114,7 +114,7 @@ namespace skyline {
         }
 
         /**
-         * @brief Returns a vector of all physical ranges inside of the given virtual range
+         * @return A vector of all physical ranges inside of the given virtual range
          */
         std::vector<span<u8>> TranslateRange(VaType virt, VaType size);
 
@@ -132,6 +132,60 @@ namespace skyline {
             return obj;
         }
 
+        /**
+         * @brief Writes contents starting from the virtual address till the end of the span or an unmapped block has been hit or when `function` returns a non-nullopt value
+         * @param function A function that is called on every block where it should return an end offset into the block when it wants to end reading or std::nullopt when it wants to continue reading
+         * @return If returning was caused by the supplied function returning a non-nullopt value or other conditions
+         * @note The function will **NOT** be run on any sparse block
+         */
+        template<typename Function>
+        bool ReadTill(std::vector<u8>& destination, VaType virt, Function function) {
+            //TRACE_EVENT("containers", "FlatMemoryManager::ReadTill");
+
+            std::scoped_lock lock(this->blockMutex);
+
+            auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [](auto virt, const auto &block) {
+                return virt < block.virt;
+            })};
+
+            auto predecessor{std::prev(successor)};
+
+            auto pointer{destination.data()};
+            auto remainingSize{destination.size()};
+
+            u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
+            VaType blockReadSize{std::min(successor->virt - virt, remainingSize)};
+
+            while (remainingSize) {
+                if (predecessor->phys == nullptr) {
+                    destination.resize(destination.size() - remainingSize);
+                    return false;
+                } else {
+                    if (predecessor->extraInfo.sparseMapped) {
+                        std::memset(pointer, 0, blockReadSize);
+                    } else {
+                        auto end{function(span<u8>(blockPhys, blockReadSize))};
+                        std::memcpy(pointer, blockPhys, end ? *end : blockReadSize);
+                        if (end) {
+                            destination.resize((destination.size() - remainingSize) + *end);
+                            return true;
+                        }
+                    }
+                }
+
+                pointer += blockReadSize;
+                remainingSize -= blockReadSize;
+
+                if (remainingSize) {
+                    predecessor = successor++;
+                    blockPhys = predecessor->phys;
+                    blockReadSize = std::min(successor->virt - predecessor->virt, remainingSize);
+                }
+            }
+
+            return false;
+        }
+
         void Write(VaType virt, u8 *source, VaType size);
 
         template<typename T>
@@ -144,7 +198,6 @@ namespace skyline {
             Write(virt, reinterpret_cast<u8 *>(&source), sizeof(T));
         }
     };
-
 
     /**
      * @brief FlatMemoryManager specialises FlatAddressSpaceMap to work as an allocator, with an initial, fast linear pass and a subsequent slower pass that iterates until it finds a free block
