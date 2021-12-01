@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.hpp>
 #include <common.h>
 
-namespace skyline {
+namespace skyline::gpu {
     /**
      * @brief Checks and stores all the quirks of the host GPU discovered at runtime
      */

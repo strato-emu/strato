@@ -3,7 +3,7 @@
 
 #include "quirk_manager.h"
 
-namespace skyline {
+namespace skyline::gpu {
     QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
@@ -16,9 +16,10 @@ namespace skyline {
 
             #define EXT_SET_V(name, property, version)                                               \
             case util::Hash(name):                                                                   \
-                if (name == extensionName && extensionVersion >= version)                            \
+                if (name == extensionName && extensionVersion >= version) {                          \
                     property = true;                                                                 \
                     enabledExtensions.push_back(std::array<char, VK_MAX_EXTENSION_NAME_SIZE>{name}); \
+                }                                                                                    \
                 break
 
             std::string_view extensionName{extension.extensionName};
