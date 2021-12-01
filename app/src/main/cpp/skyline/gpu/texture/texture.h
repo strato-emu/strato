@@ -296,7 +296,7 @@ namespace skyline::gpu {
         vk::raii::ImageView *view{};
 
       public:
-        std::shared_ptr<Texture> backing;
+        std::shared_ptr<Texture> texture;
         vk::ImageViewType type;
         texture::Format format;
         vk::ComponentMapping mapping;
@@ -305,7 +305,7 @@ namespace skyline::gpu {
         /**
          * @param format A compatible format for the texture view (Defaults to the format of the backing texture)
          */
-        TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format = {}, vk::ComponentMapping mapping = {});
+        TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format = {}, vk::ComponentMapping mapping = {});
 
         /**
          * @return A Vulkan Image View that corresponds to the properties of this view
@@ -313,7 +313,7 @@ namespace skyline::gpu {
         vk::ImageView GetView();
 
         bool operator==(const TextureView &rhs) {
-            return backing == rhs.backing && type == rhs.type && format == rhs.format && mapping == rhs.mapping && range == rhs.range;
+            return texture == rhs.texture && type == rhs.type && format == rhs.format && mapping == rhs.mapping && range == rhs.range;
         }
     };
 

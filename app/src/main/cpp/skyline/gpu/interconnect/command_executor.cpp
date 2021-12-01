@@ -24,9 +24,9 @@ namespace skyline::gpu::interconnect {
     void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments, std::vector<TextureView> colorAttachments, std::optional<TextureView> depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
-                syncTextures.emplace(attachment.backing.get());
+                syncTextures.emplace(attachment.texture.get());
         if (depthStencilAttachment)
-            syncTextures.emplace(depthStencilAttachment->backing.get());
+            syncTextures.emplace(depthStencilAttachment->texture.get());
 
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
@@ -38,7 +38,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue &value) {
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
-            .extent = attachment.backing->dimensions,
+            .extent = attachment.texture->dimensions,
         })};
         renderPass->AddSubpass({}, attachment, nullptr);
 
@@ -46,7 +46,7 @@ namespace skyline::gpu::interconnect {
             if (!newRenderPass)
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
         } else {
-            auto function{[scissor = attachment.backing->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+            auto function{[scissor = attachment.texture->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                 commandBuffer.clearAttachments(vk::ClearAttachment{
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
                     .colorAttachment = 0,

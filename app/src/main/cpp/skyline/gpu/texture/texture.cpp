@@ -455,14 +455,14 @@ namespace skyline::gpu {
         WaitOnFence();
     }
 
-    TextureView::TextureView(std::shared_ptr<Texture> backing, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : backing(std::move(backing)), type(type), format(format), mapping(mapping), range(range) {}
+    TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
 
     vk::ImageView TextureView::GetView() {
         if (view)
             return **view;
 
         auto viewType{[&]() {
-            switch (backing->dimensions.GetType()) {
+            switch (texture->dimensions.GetType()) {
                 case vk::ImageType::e1D:
                     return range.layerCount > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
                 case vk::ImageType::e2D:
@@ -473,20 +473,20 @@ namespace skyline::gpu {
         }()};
 
         vk::ImageViewCreateInfo createInfo{
-            .image = backing->GetBacking(),
+            .image = texture->GetBacking(),
             .viewType = viewType,
-            .format = format ? *format : *backing->format,
+            .format = format ? *format : *texture->format,
             .components = mapping,
             .subresourceRange = range,
         };
 
-        auto &views{backing->views};
+        auto &views{texture->views};
         auto iterator{std::find_if(views.begin(), views.end(), [&](const std::pair<vk::ImageViewCreateInfo, vk::raii::ImageView> &item) {
             return item.first == createInfo;
         })};
         if (iterator != views.end())
             return *iterator->second;
 
-        return *views.emplace_back(createInfo, vk::raii::ImageView(backing->gpu.vkDevice, createInfo)).second;
+        return *views.emplace_back(createInfo, vk::raii::ImageView(texture->gpu.vkDevice, createInfo)).second;
     }
 }

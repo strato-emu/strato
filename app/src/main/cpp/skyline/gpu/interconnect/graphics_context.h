@@ -329,7 +329,7 @@ namespace skyline::gpu::interconnect {
             auto renderTargetPointer{GetRenderTarget(renderTargetIndex)};
             if (renderTargetPointer) {
                 auto renderTarget{*renderTargetPointer};
-                std::lock_guard lock(*renderTarget.backing);
+                std::lock_guard lock(*renderTarget.texture);
 
                 vk::ImageAspectFlags aspect{};
                 if (clear.depth)
@@ -344,15 +344,15 @@ namespace skyline::gpu::interconnect {
                     return;
 
                 auto scissor{scissors.at(renderTargetIndex)};
-                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget.backing->dimensions.width) - scissor.offset.x,
+                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget.texture->dimensions.width) - scissor.offset.x,
                                                                  static_cast<i32>(scissor.extent.width)));
-                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget.backing->dimensions.height) - scissor.offset.y,
+                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget.texture->dimensions.height) - scissor.offset.y,
                                                                   static_cast<i32>(scissor.extent.height)));
 
                 if (scissor.extent.width == 0 || scissor.extent.height == 0)
                     return;
 
-                if (scissor.extent.width == renderTarget.backing->dimensions.width && scissor.extent.height == renderTarget.backing->dimensions.height && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
+                if (scissor.extent.width == renderTarget.texture->dimensions.width && scissor.extent.height == renderTarget.texture->dimensions.height && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
                     executor.AddClearColorSubpass(renderTarget, clearColorValue);
                 } else {
                     executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
@@ -366,7 +366,7 @@ namespace skyline::gpu::interconnect {
                             .layerCount = 1,
                         });
                     }, vk::Rect2D{
-                        .extent = renderTarget.backing->dimensions,
+                        .extent = renderTarget.texture->dimensions,
                     }, {}, {renderTarget});
                 }
             }

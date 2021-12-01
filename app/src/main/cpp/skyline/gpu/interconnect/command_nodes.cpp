@@ -15,9 +15,9 @@ namespace skyline::gpu::interconnect::node {
 
     u32 RenderPassNode::AddAttachment(TextureView &view) {
         auto &textures{storage->textures};
-        auto texture{std::find(textures.begin(), textures.end(), view.backing)};
+        auto texture{std::find(textures.begin(), textures.end(), view.texture)};
         if (texture == textures.end())
-            textures.push_back(view.backing);
+            textures.push_back(view.texture);
 
         auto vkView{view.GetView()};
         auto attachment{std::find(attachments.begin(), attachments.end(), vkView)};
@@ -26,8 +26,8 @@ namespace skyline::gpu::interconnect::node {
             attachments.push_back(vkView);
             attachmentDescriptions.push_back(vk::AttachmentDescription{
                 .format = *view.format,
-                .initialLayout = view.backing->layout,
-                .finalLayout = view.backing->layout,
+                .initialLayout = view.texture->layout,
+                .finalLayout = view.texture->layout,
             });
             return static_cast<u32>(attachments.size() - 1);
         } else {
@@ -104,7 +104,7 @@ namespace skyline::gpu::interconnect::node {
         for (auto &attachment : inputAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
                 .attachment = AddAttachment(attachment),
-                .layout = attachment.backing->layout,
+                .layout = attachment.texture->layout,
             });
         }
 
@@ -112,7 +112,7 @@ namespace skyline::gpu::interconnect::node {
         for (auto &attachment : colorAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
                 .attachment = AddAttachment(attachment),
-                .layout = attachment.backing->layout,
+                .layout = attachment.texture->layout,
             });
         }
 
@@ -120,7 +120,7 @@ namespace skyline::gpu::interconnect::node {
         if (depthStencilAttachment) {
             attachmentReferences.push_back(vk::AttachmentReference{
                 .attachment = AddAttachment(*depthStencilAttachment),
-                .layout = depthStencilAttachment->backing->layout,
+                .layout = depthStencilAttachment->texture->layout,
             });
         }
 
