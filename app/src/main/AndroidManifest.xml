@@ -112,5 +112,9 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
+
+        <meta-data
+            android:name="com.android.graphics.injectLayers.enable"
+            android:value="true" />
     </application>
 </manifest>
