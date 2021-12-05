@@ -22,7 +22,7 @@ namespace Shader::Log {
 
 namespace skyline::gpu {
     ShaderManager::ShaderManager(const DeviceState &state, GPU &gpu) : gpu(gpu) {
-        auto& quirks{gpu.quirks};
+        auto &quirks{gpu.quirks};
         hostTranslateInfo = Shader::HostTranslateInfo{
             .support_float16 = quirks.supportsFloat16,
             .support_int64 = quirks.supportsInt64,
@@ -63,8 +63,13 @@ namespace skyline::gpu {
         };
 
         Shader::Settings::values = {
+            #ifdef NDEBUG
+            .renderer_debug = false,
             .disable_shader_loop_safety_checks = false,
+            #else
             .renderer_debug = true,
+            .disable_shader_loop_safety_checks = true,
+            #endif
             .resolution_info = {
                 .active = false,
             },
