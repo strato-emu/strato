@@ -5,6 +5,8 @@
 
 namespace skyline::gpu {
     QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &properties, const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions) {
+        bool hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{};
+
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
             case util::Hash(name):                                                                   \
@@ -27,6 +29,10 @@ namespace skyline::gpu {
             switch (util::Hash(extensionName)) {
                 EXT_SET("VK_EXT_provoking_vertex", supportsLastProvokingVertex);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", supportsVertexAttributeDivisor);
+                EXT_SET("VK_KHR_spirv_1_4", supportsSpirv14);
+                EXT_SET("VK_KHR_shader_atomic_int64", hasShaderAtomicInt64);
+                EXT_SET("VK_KHR_shader_float16_int8", hasShaderFloat16Int8Ext);
+                EXT_SET("VK_KHR_shader_float_controls", supportsFloatControls);
             }
 
             #undef EXT_SET
@@ -41,6 +47,9 @@ namespace skyline::gpu {
 
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.logicOp, supportsLogicOp)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.multiViewport, supportsMultipleViewports)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt16, supportsInt16)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt64, supportsInt64)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderStorageImageReadWithoutFormat, supportsImageReadWithoutFormat)
 
         if (supportsVertexAttributeDivisor) {
             FEAT_SET(vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor, supportsVertexAttributeDivisor)
@@ -49,10 +58,24 @@ namespace skyline::gpu {
             enabledFeatures2.unlink<vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
         }
 
+        auto& shaderAtomicFeatures{deviceFeatures2.get<vk::PhysicalDeviceShaderAtomicInt64Features>()};
+        if (hasShaderAtomicInt64 && shaderAtomicFeatures.shaderBufferInt64Atomics && shaderAtomicFeatures.shaderSharedInt64Atomics) {
+            supportsAtomicInt64 = true;
+        } else {
+            enabledFeatures2.unlink<vk::PhysicalDeviceShaderAtomicInt64Features>();
+        }
+
+        if (hasShaderFloat16Int8Ext) {
+            FEAT_SET(vk::PhysicalDeviceShaderFloat16Int8Features, shaderFloat16, supportsFloat16)
+            FEAT_SET(vk::PhysicalDeviceShaderFloat16Int8Features, shaderInt8, supportsInt8)
+        } else {
+            enabledFeatures2.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
+        }
+
         #undef FEAT_SET
     }
 
     std::string QuirkManager::Summary() {
-        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}", supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports);
+        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports SPIR-V 1.4: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}", supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsSpirv14, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat);
     }
 }
