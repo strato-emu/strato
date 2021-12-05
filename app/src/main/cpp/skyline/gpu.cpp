@@ -25,7 +25,7 @@ namespace skyline::gpu {
         if (Logger::configLevel >= Logger::LogLevel::Debug) {
             std::string layers;
             for (const auto &instanceLayer : instanceLayers)
-                layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_VERSION_MAJOR(instanceLayer.specVersion), VK_VERSION_MINOR(instanceLayer.specVersion), VK_VERSION_PATCH(instanceLayer.specVersion), VK_VERSION_MAJOR(instanceLayer.implementationVersion), VK_VERSION_MINOR(instanceLayer.implementationVersion), VK_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
+                layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_API_VERSION_MAJOR(instanceLayer.specVersion), VK_API_VERSION_MINOR(instanceLayer.specVersion), VK_API_VERSION_PATCH(instanceLayer.specVersion), VK_API_VERSION_MAJOR(instanceLayer.implementationVersion), VK_API_VERSION_MINOR(instanceLayer.implementationVersion), VK_API_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
             Logger::Debug("Vulkan Layers:{}", layers);
         }
 
@@ -46,7 +46,7 @@ namespace skyline::gpu {
         if (Logger::configLevel >= Logger::LogLevel::Debug) {
             std::string extensions;
             for (const auto &instanceExtension : instanceExtensions)
-                extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_VERSION_MAJOR(instanceExtension.specVersion), VK_VERSION_MINOR(instanceExtension.specVersion), VK_VERSION_PATCH(instanceExtension.specVersion));
+                extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_API_VERSION_MAJOR(instanceExtension.specVersion), VK_API_VERSION_MINOR(instanceExtension.specVersion), VK_API_VERSION_PATCH(instanceExtension.specVersion));
             Logger::Debug("Vulkan Instance Extensions:{}", extensions);
         }
 
@@ -179,7 +179,7 @@ namespace skyline::gpu {
         if (Logger::configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
             for (const auto &extension : deviceExtensions)
-                extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_VERSION_MAJOR(extension.specVersion), VK_VERSION_MINOR(extension.specVersion), VK_VERSION_PATCH(extension.specVersion));
+                extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
             u32 familyIndex{};
@@ -188,8 +188,8 @@ namespace skyline::gpu {
 
             Logger::Info("Vulkan Device:\nName: {}\nType: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}\nQuirks:{}",
                          properties.deviceName, vk::to_string(properties.deviceType),
-                         VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion),
-                         VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion),
+                         VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion), VK_API_VERSION_PATCH(properties.apiVersion),
+                         VK_API_VERSION_MAJOR(properties.driverVersion), VK_API_VERSION_MINOR(properties.driverVersion), VK_API_VERSION_PATCH(properties.driverVersion),
                          queueString, extensionString, quirks.Summary());
         }
 
@@ -202,5 +202,15 @@ namespace skyline::gpu {
         });
     }
 
-    GPU::GPU(const DeviceState &state) : vkInstance(CreateInstance(state, vkContext)), vkDebugReportCallback(CreateDebugReportCallback(vkInstance)), vkPhysicalDevice(CreatePhysicalDevice(vkInstance)), vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex, quirks)), vkQueue(vkDevice, vkQueueFamilyIndex, 0), memory(*this), scheduler(*this), presentation(state, *this), texture(*this), shader(state, *this) {}
+    GPU::GPU(const DeviceState &state)
+        : vkInstance(CreateInstance(state, vkContext)),
+          vkDebugReportCallback(CreateDebugReportCallback(vkInstance)),
+          vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
+          vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex, quirks)),
+          vkQueue(vkDevice, vkQueueFamilyIndex, 0),
+          memory(*this),
+          scheduler(*this),
+          presentation(state, *this),
+          texture(*this),
+          shader(state, *this) {}
 }
