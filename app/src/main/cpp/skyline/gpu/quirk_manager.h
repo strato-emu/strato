@@ -17,6 +17,7 @@ namespace skyline::gpu {
         bool supportsVertexAttributeDivisor{}; //!< If the device supports a divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsVertexAttributeZeroDivisor{}; //!< If the device supports a zero divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsMultipleViewports{}; //!< If the device supports more than one viewport
+        bool supportsShaderViewportIndexLayer{}; //!< If the device supports retrieving the viewport index in shaders (with VK_EXT_shader_viewport_index_layer)
         bool supportsSpirv14{}; //!< If SPIR-V 1.4 is supported (with VK_KHR_spirv_1_4)
         bool supportsFloat16{}; //!< If 16-bit floating point integers are supported in shaders
         bool supportsInt8{}; //!< If 8-bit integers are supported in shaders
