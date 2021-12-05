@@ -29,6 +29,7 @@ namespace skyline::gpu {
             .needs_demote_reorder = false,
         };
 
+        constexpr u32 TegraX1WarpSize{32}; //!< The amount of threads in a warp on the Tegra X1
         profile = Shader::Profile{
             .supported_spirv = quirks.supportsSpirv14 ? 0x00010400U : 0x00010000U,
             .unified_descriptor_binding = true,
@@ -38,8 +39,17 @@ namespace skyline::gpu {
             .support_int64 = quirks.supportsInt64,
             .support_vertex_instance_id = false,
             .support_float_controls = quirks.supportsFloatControls,
-            // TODO: Float control specifics
-            .support_vote = true,
+            .support_separate_denorm_behavior = quirks.floatControls.denormBehaviorIndependence == vk::ShaderFloatControlsIndependence::eAll,
+            .support_separate_rounding_mode = quirks.floatControls.roundingModeIndependence == vk::ShaderFloatControlsIndependence::eAll,
+            .support_fp16_denorm_preserve = static_cast<bool>(quirks.floatControls.shaderDenormPreserveFloat16),
+            .support_fp32_denorm_preserve = static_cast<bool>(quirks.floatControls.shaderDenormPreserveFloat32),
+            .support_fp16_denorm_flush = static_cast<bool>(quirks.floatControls.shaderDenormFlushToZeroFloat16),
+            .support_fp32_denorm_flush = static_cast<bool>(quirks.floatControls.shaderDenormFlushToZeroFloat32),
+            .support_fp16_signed_zero_nan_preserve = static_cast<bool>(quirks.floatControls.shaderSignedZeroInfNanPreserveFloat16),
+            .support_fp32_signed_zero_nan_preserve = static_cast<bool>(quirks.floatControls.shaderSignedZeroInfNanPreserveFloat32),
+            .support_fp64_signed_zero_nan_preserve = static_cast<bool>(quirks.floatControls.shaderSignedZeroInfNanPreserveFloat64),
+            .support_explicit_workgroup_layout = false,
+            .support_vote = quirks.supportsSubgroupVote,
             .support_viewport_index_layer_non_geometry = false,
             .support_viewport_mask = false,
             .support_typeless_image_loads = quirks.supportsImageReadWithoutFormat,
@@ -47,7 +57,7 @@ namespace skyline::gpu {
             .support_int64_atomics = false,
             .support_derivative_control = true,
             .support_geometry_shader_passthrough = false,
-            // TODO: Warp size property
+            .warp_size_potentially_larger_than_guest = TegraX1WarpSize < quirks.subgroupSize,
             .lower_left_origin_mode = false,
             .need_declared_frag_colors = false,
         };

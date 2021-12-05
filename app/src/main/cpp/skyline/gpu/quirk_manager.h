@@ -24,13 +24,18 @@ namespace skyline::gpu {
         bool supportsInt64{}; //!< If 64-bit integers are supported in shaders
         bool supportsAtomicInt64{}; //!< If atomic operations on 64-bit integers are supported in shaders
         bool supportsFloatControls{}; //!< If extensive control over FP behavior is exposed (with VK_KHR_shader_float_controls)
+        vk::PhysicalDeviceFloatControlsProperties floatControls{}; //!< Specifics of FP behavior control (All members will be zero'd out when unavailable)
         bool supportsImageReadWithoutFormat{}; //!< If a storage image can be read without a format
+        bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
+        u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
         QuirkManager() = default;
 
+        using DeviceProperties2 = vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>;
+
         using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>;
 
-        QuirkManager(const vk::PhysicalDeviceProperties &properties, const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions);
+        QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
 
         /**
          * @return A summary of all the GPU quirks as a human-readable string
