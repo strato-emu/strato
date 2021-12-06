@@ -361,7 +361,7 @@ namespace skyline::gpu::interconnect {
                 if (scissor.extent.width == renderTarget->texture->dimensions.width && scissor.extent.height == renderTarget->texture->dimensions.height && renderTarget->range.baseArrayLayer == 0 && renderTarget->range.layerCount == 1 && clear.layerId == 0) {
                     executor.AddClearColorSubpass(renderTarget, clearColorValue);
                 } else {
-                    executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+                    executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
                         commandBuffer.clearAttachments(vk::ClearAttachment{
                             .aspectMask = aspect,
                             .colorAttachment = 0,

@@ -13,7 +13,7 @@ namespace skyline::gpu::interconnect::node {
     struct FunctionNodeBase {
         std::function<FunctionSignature> function;
 
-        FunctionNodeBase(std::function<FunctionSignature> function) : function(function) {}
+        FunctionNodeBase(std::function<FunctionSignature> &&function) : function(function) {}
 
         template<class... Args>
         void operator()(Args &&... args) {
@@ -86,7 +86,7 @@ namespace skyline::gpu::interconnect::node {
          */
         bool ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value);
 
-        void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu);
+        vk::RenderPass operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu);
     };
 
     /**
@@ -98,15 +98,17 @@ namespace skyline::gpu::interconnect::node {
         }
     };
 
+    using SubpassFunctionNode = FunctionNodeBase<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>;
+
     /**
      * @brief A FunctionNode which progresses to the next subpass prior to calling the function
      */
-    struct NextSubpassFunctionNode : private FunctionNode {
-        using FunctionNode::FunctionNode;
+    struct NextSubpassFunctionNode : private SubpassFunctionNode {
+        using SubpassFunctionNode::SubpassFunctionNode;
 
-        void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
+        void operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu, vk::RenderPass renderPass, u32 subpassIndex) {
             commandBuffer.nextSubpass(vk::SubpassContents::eInline);
-            FunctionNode::operator()(commandBuffer, cycle, gpu);
+            SubpassFunctionNode::operator()(commandBuffer, cycle, gpu, renderPass, subpassIndex);
         }
     };
 
@@ -119,5 +121,5 @@ namespace skyline::gpu::interconnect::node {
         }
     };
 
-    using NodeVariant = std::variant<FunctionNode, RenderPassNode, NextSubpassNode, NextSubpassFunctionNode, RenderPassEndNode>; //!< A variant encompassing all command nodes types
+    using NodeVariant = std::variant<FunctionNode, RenderPassNode, NextSubpassNode, SubpassFunctionNode, NextSubpassFunctionNode, RenderPassEndNode>; //!< A variant encompassing all command nodes types
 }

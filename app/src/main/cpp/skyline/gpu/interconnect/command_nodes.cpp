@@ -160,7 +160,7 @@ namespace skyline::gpu::interconnect::node {
         return false;
     }
 
-    void RenderPassNode::operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
+    vk::RenderPass RenderPassNode::operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
         storage->device = &gpu.vkDevice;
 
         auto preserveAttachmentIt{preserveAttachmentReferences.begin()};
@@ -220,5 +220,7 @@ namespace skyline::gpu::interconnect::node {
             texture->unlock();
             texture->cycle = cycle;
         }
+
+        return renderPass;
     }
 }

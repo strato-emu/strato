@@ -43,7 +43,7 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
+    void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
                 AttachTexture(attachment->texture);
@@ -53,9 +53,9 @@ namespace skyline::gpu::interconnect {
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
         if (newRenderPass)
-            nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
+            nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), std::forward<std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>>(function));
         else
-            nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
+            nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), std::forward<std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>>(function));
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
@@ -83,7 +83,7 @@ namespace skyline::gpu::interconnect {
             }};
 
             if (newRenderPass)
-                nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), function);
+                nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), function);
             else
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
         }
@@ -110,14 +110,24 @@ namespace skyline::gpu::interconnect {
                 for (auto buffer : syncBuffers)
                     buffer->SynchronizeHostWithCycle(cycle);
 
+                vk::RenderPass lRenderPass;
+                u32 subpassIndex;
+
                 using namespace node;
                 for (NodeVariant &node : nodes) {
                     #define NODE(name) [&](name& node) { node(commandBuffer, cycle, gpu); }
                     std::visit(VariantVisitor{
                         NODE(FunctionNode),
-                        NODE(RenderPassNode),
+
+                        [&](RenderPassNode &node) {
+                            lRenderPass = node(commandBuffer, cycle, gpu);
+                            subpassIndex = 0;
+                        },
+
                         NODE(NextSubpassNode),
-                        NODE(NextSubpassFunctionNode),
+                        [&](SubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, subpassIndex); },
+                        [&](NextSubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, ++subpassIndex); },
+
                         NODE(RenderPassEndNode),
                     }, node);
                     #undef NODE
