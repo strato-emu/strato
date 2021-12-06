@@ -284,13 +284,13 @@ namespace skyline::gpu::interconnect {
          */
         void SetViewportX(size_t index, float scale, float translate) {
             auto &viewport{viewports.at(index)};
-            viewport.x = scale - translate; // Counteract the addition of the half of the width (o_x) to the host translation
+            viewport.x = translate - scale; // Counteract the addition of the half of the width (o_x) to the host translation
             viewport.width = scale * 2.0f; // Counteract the division of the width (p_x) by 2 for the host scale
         }
 
         void SetViewportY(size_t index, float scale, float translate) {
             auto &viewport{viewports.at(index)};
-            viewport.y = scale - translate; // Counteract the addition of the half of the height (p_y/2 is center) to the host translation (o_y)
+            viewport.y = translate - scale; // Counteract the addition of the half of the height (p_y/2 is center) to the host translation (o_y)
             viewport.height = scale * 2.0f; // Counteract the division of the height (p_y) by 2 for the host scale
         }
 
