@@ -1060,6 +1060,22 @@ namespace skyline::gpu::interconnect {
             }
         }
 
+        BufferView *GetVertexBuffer(size_t index) {
+            auto &vertexBuffer{vertexBuffers.at(index)};
+            if (vertexBuffer.disabled || vertexBuffer.start > vertexBuffer.end)
+                return nullptr;
+            else if (vertexBuffer.view)
+                return &*vertexBuffer.view;
+
+            if (vertexBuffer.guest.mappings.empty()) {
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
+                vertexBuffer.guest.mappings.assign(mappings.begin(), mappings.end());
+            }
+
+            vertexBuffer.view = gpu.buffer.FindOrCreate(vertexBuffer.guest);
+            return vertexBuffer.view.get();
+        }
+
         /* Input Assembly */
       private:
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
