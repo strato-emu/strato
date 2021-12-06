@@ -14,6 +14,7 @@
 
 namespace skyline::gpu::interconnect {
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
+    namespace ShaderCompiler = ::Shader; //!< Namespace alias to avoid conflict with the `Shader` class
 
     /**
      * @brief Host-equivalent context for state of the Maxwell3D engine on the guest
@@ -381,36 +382,121 @@ namespace skyline::gpu::interconnect {
       private:
         struct Shader {
             bool enabled{false};
+            bool invalidated{true}; //!< If the shader that existed earlier has been invalidated
+            bool shouldCheckSame{false}; //!< If we should do a check for the shader being the same as before
+            ShaderCompiler::Stage stage;
+            vk::ShaderStageFlagBits vkStage;
             u32 offset{}; //!< Offset of the shader from the base IOVA
-            span<u8> data; //!< The shader bytecode in the CPU AS
+            std::vector<u8> data; //!< The shader bytecode in a vector
+            std::optional<vk::raii::ShaderModule> vkModule;
+
+            Shader(ShaderCompiler::Stage stage, vk::ShaderStageFlagBits vkStage) : stage(stage), vkStage(vkStage) {}
         };
 
         IOVA shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
-        std::array<Shader, maxwell3d::StageCount> boundShaders{};
+        std::array<Shader, maxwell3d::StageCount> shaders{
+            Shader{ShaderCompiler::Stage::VertexA, vk::ShaderStageFlagBits::eVertex},
+            Shader{ShaderCompiler::Stage::VertexB, vk::ShaderStageFlagBits::eVertex},
+            Shader{ShaderCompiler::Stage::TessellationControl, vk::ShaderStageFlagBits::eTessellationControl},
+            Shader{ShaderCompiler::Stage::TessellationEval, vk::ShaderStageFlagBits::eTessellationEvaluation},
+            Shader{ShaderCompiler::Stage::Geometry, vk::ShaderStageFlagBits::eGeometry},
+            Shader{ShaderCompiler::Stage::Fragment, vk::ShaderStageFlagBits::eFragment},
+        };
+
+        std::array<vk::PipelineShaderStageCreateInfo, maxwell3d::StageCount - 1> shaderStagesInfo{}; //!< Storage backing for the pipeline shader stage information for all shaders aside from 'VertexA' which uses the same stage as 'VertexB'
+        size_t activeShaderStagesInfoCount{}; //!< The amount of active shader stages with valid entries in 'shaderStagesInfo'
+
+        ShaderCompiler::RuntimeInfo runtimeInfo{};
+
+        constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
+
+        span<vk::PipelineShaderStageCreateInfo> GetShaderStages() {
+            if (!activeShaderStagesInfoCount) {
+                runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
+
+                size_t count{};
+                for (auto &shader : shaders) {
+                    if (shader.enabled) {
+                        // We only want to add the stage if it is enabled on the guest
+                        if (shader.invalidated) {
+                            // If a shader is invalidated, we need to ensure the corresponding VkShaderModule is accurate
+                            if (!shader.data.empty() && shader.shouldCheckSame) {
+                                auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
+                                auto originalShader{shader.data.data()};
+
+                                // A fast path to check if the shader is the same as before to avoid work
+                                for (auto &range : newIovaRanges) {
+                                    if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
+                                        originalShader += range.size();
+                                    } else {
+                                        break;
+                                    }
+                                }
+
+                                shader.shouldCheckSame = true;
+                            }
+
+                            // A pass to check if the shader has a BRA infloop opcode ending (On most commercial games)
+                            shader.data.resize(MaxShaderBytecodeSize);
+                            auto foundEnd{channelCtx.asCtx->gmmu.ReadTill(shader.data, shaderBaseIova + shader.offset, [](span<u8> data) -> std::optional<size_t> {
+                                // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
+                                // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
+                                constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
+
+                                span<u64> shaderInstructions{data.cast<u64, std::dynamic_extent, true>()};
+                                for (auto it{shaderInstructions.begin()}; it != shaderInstructions.end(); it++) {
+                                    auto instruction{*it};
+                                    if (instruction == BraSelf1 || instruction == BraSelf2) [[unlikely]]
+                                        // It is far more likely that the instruction doesn't match so this is an unlikely case
+                                        return static_cast<size_t>(std::distance(shaderInstructions.begin(), it)) * sizeof(u64);
+                                }
+                                return std::nullopt;
+                            })};
+
+                            shader.vkModule = gpu.shader.CompileGraphicsShader(shader.data, shader.stage, shader.offset, runtimeInfo);
+                        }
+
+                        shaderStagesInfo[count++] = vk::PipelineShaderStageCreateInfo{
+                            .stage = shader.vkStage,
+                            .module = **shader.vkModule,
+                            .pName = "main",
+                        };
+                    }
+                }
+
+                activeShaderStagesInfoCount = count;
+            }
+
+            return span(shaderStagesInfo.data(), activeShaderStagesInfoCount);
+        }
 
       public:
         void SetShaderBaseIovaHigh(u32 high) {
             shaderBaseIova.high = high;
-            for (auto &shader : boundShaders)
-                shader.data = span<u8>{};
+            for (auto &shader : shaders) {
+                shader.invalidated = true;
+                shader.shouldCheckSame = false;
+            }
         }
 
         void SetShaderBaseIovaLow(u32 low) {
             shaderBaseIova.low = low;
-            for (auto &shader : boundShaders)
-                shader.data = span<u8>{};
+            for (auto &shader : shaders) {
+                shader.invalidated = true;
+                shader.shouldCheckSame = false;
+            }
         }
 
         void SetShaderEnabled(maxwell3d::StageId stage, bool enabled) {
-            auto &shader{boundShaders[static_cast<size_t>(stage)]};
+            auto &shader{shaders[static_cast<size_t>(stage)]};
             shader.enabled = enabled;
-            shader.data = span<u8>{};
+            shader.invalidated = true;
         }
 
         void SetShaderOffset(maxwell3d::StageId stage, u32 offset) {
-            auto &shader{boundShaders[static_cast<size_t>(stage)]};
+            auto &shader{shaders[static_cast<size_t>(stage)]};
             shader.offset = offset;
-            shader.data = span<u8>{};
+            shader.invalidated = true;
         }
 
         /* Rasterizer State */
