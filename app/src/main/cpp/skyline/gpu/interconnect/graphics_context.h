@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <boost/container/static_vector.hpp>
 #include <gpu/texture/format.h>
+#include <gpu/buffer_manager.h>
 #include <soc/gm20b/channel.h>
 #include <soc/gm20b/gmmu.h>
 #include <soc/gm20b/engines/maxwell/types.h>
@@ -49,19 +51,17 @@ namespace skyline::gpu::interconnect {
             }
 
             u32 bindingIndex{};
-            for (auto &vertexBinding : vertexBindings)
-                vertexBinding.binding = bindingIndex++;
-            if (gpu.quirks.supportsVertexAttributeDivisor) {
-                bindingIndex = 0;
-                for (auto &vertexBindingDivisor : vertexBindingDivisors)
-                    vertexBindingDivisor.binding = bindingIndex++;
-            } else {
-                vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
+            for (auto &vertexBuffer : vertexBuffers) {
+                vertexBuffer.bindingDescription.binding = bindingIndex;
+                vertexBuffer.bindingDivisorDescription.binding = bindingIndex;
+                bindingIndex++;
             }
+            if (!gpu.quirks.supportsVertexAttributeDivisor)
+                vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
 
             u32 attributeIndex{};
             for (auto &vertexAttribute : vertexAttributes)
-                vertexAttribute.location = attributeIndex++;
+                vertexAttribute.description.location = attributeIndex++;
 
             if (!gpu.quirks.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
@@ -776,47 +776,64 @@ namespace skyline::gpu::interconnect {
         /* Vertex Buffers */
       private:
         struct VertexBuffer {
+            bool disabled{};
+            vk::VertexInputBindingDescription bindingDescription{};
+            vk::VertexInputBindingDivisorDescriptionEXT bindingDivisorDescription{};
             IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS with the vertex buffer
+            GuestBuffer guest;
+            std::shared_ptr<BufferView> view;
         };
         std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
-        std::array<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindings{};
-        std::array<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisors{};
-        std::array<vk::VertexInputAttributeDescription, maxwell3d::VertexAttributeCount> vertexAttributes{};
+        boost::container::static_vector<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindingDescriptions{};
+        boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
+
+        struct VertexAttribute {
+            bool enabled{};
+            vk::VertexInputAttributeDescription description;
+        };
+        std::array<VertexAttribute, maxwell3d::VertexAttributeCount> vertexAttributes{};
+        boost::container::static_vector<vk::VertexInputAttributeDescription, maxwell3d::VertexAttributeCount> vertexAttributesDescriptions{};
+
         vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
             vk::PipelineVertexInputStateCreateInfo{
-                .pVertexBindingDescriptions = vertexBindings.data(),
-                .vertexBindingDescriptionCount = maxwell3d::VertexBufferCount,
-                .pVertexAttributeDescriptions = vertexAttributes.data(),
-                .vertexAttributeDescriptionCount = maxwell3d::VertexAttributeCount,
+                .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
+                .pVertexAttributeDescriptions = vertexAttributesDescriptions.data(),
             }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
-                .pVertexBindingDivisors = vertexBindingDivisors.data(),
-                .vertexBindingDivisorCount = maxwell3d::VertexBufferCount,
+                .pVertexBindingDivisors = vertexBindingDivisorsDescriptions.data(),
             }
         };
 
       public:
         void SetVertexBufferStride(u32 index, u32 stride) {
-            vertexBindings[index].stride = stride;
+            vertexBuffers[index].bindingDescription.stride = stride;
         }
 
         void SetVertexBufferInputRate(u32 index, bool isPerInstance) {
-            vertexBindings[index].inputRate = isPerInstance ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
+            vertexBuffers[index].bindingDescription.inputRate = isPerInstance ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
         }
 
         void SetVertexBufferStartIovaHigh(u32 index, u32 high) {
-            vertexBuffers[index].start.high = high;
+            auto &vertexBuffer{vertexBuffers[index]};
+            vertexBuffer.start.high = high;
+            vertexBuffer.view.reset();
         }
 
         void SetVertexBufferStartIovaLow(u32 index, u32 low) {
-            vertexBuffers[index].start.low = low;
+            auto &vertexBuffer{vertexBuffers[index]};
+            vertexBuffer.start.low = low;
+            vertexBuffer.view.reset();
         }
 
         void SetVertexBufferEndIovaHigh(u32 index, u32 high) {
-            vertexBuffers[index].end.high = high;
+            auto &vertexBuffer{vertexBuffers[index]};
+            vertexBuffer.end.high = high;
+            vertexBuffer.view.reset();
         }
 
         void SetVertexBufferEndIovaLow(u32 index, u32 low) {
-            vertexBuffers[index].end.low = low;
+            auto &vertexBuffer{vertexBuffers[index]};
+            vertexBuffer.end.low = low;
+            vertexBuffer.view.reset();
         }
 
         void SetVertexBufferDivisor(u32 index, u32 divisor) {
@@ -824,7 +841,7 @@ namespace skyline::gpu::interconnect {
                 Logger::Warn("Cannot set vertex attribute divisor without host GPU support");
             else if (divisor == 0 && !gpu.quirks.supportsVertexAttributeZeroDivisor)
                 Logger::Warn("Cannot set vertex attribute divisor to zero without host GPU support");
-            vertexBindingDivisors[index].divisor = divisor;
+            vertexBuffers[index].bindingDivisorDescription.divisor = divisor;
         }
 
         vk::Format ConvertVertexBufferFormat(maxwell3d::VertexAttribute::ElementType type, maxwell3d::VertexAttribute::ElementSize size) {
@@ -940,10 +957,15 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetVertexAttributeState(u32 index, maxwell3d::VertexAttribute attribute) {
-            auto &vkAttributes{vertexAttributes[index]};
-            vkAttributes.binding = attribute.bufferId;
-            vkAttributes.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
-            vkAttributes.offset = attribute.offset;
+            auto &vertexAttribute{vertexAttributes[index]};
+            if (!attribute.isConstant) {
+                vertexAttribute.enabled = true;
+                vertexAttribute.description.binding = attribute.bufferId;
+                vertexAttribute.description.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
+                vertexAttribute.description.offset = attribute.offset;
+            } else {
+                vertexAttribute.enabled = false;
+            }
         }
 
         /* Input Assembly */
