@@ -21,6 +21,7 @@ namespace skyline::gpu {
     };
 
     struct BufferView;
+    class BufferManager;
 
     /**
      * @brief A buffer which is backed by host constructs while being synchronized with the underlying guest buffer
@@ -36,6 +37,7 @@ namespace skyline::gpu {
         std::vector<std::weak_ptr<BufferView>> views; //!< BufferView(s) that are backed by this Buffer, used for repointing to a new Buffer on deletion
 
         friend BufferView;
+        friend BufferManager;
 
       public:
         std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing

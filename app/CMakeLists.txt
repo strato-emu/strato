@@ -157,6 +157,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/quirk_manager.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
         ${source_DIR}/skyline/gpu/texture_manager.cpp
+        ${source_DIR}/skyline/gpu/buffer_manager.cpp
         ${source_DIR}/skyline/gpu/command_scheduler.cpp
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/buffer.cpp

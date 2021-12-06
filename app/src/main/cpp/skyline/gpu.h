@@ -8,6 +8,7 @@
 #include "gpu/command_scheduler.h"
 #include "gpu/presentation_engine.h"
 #include "gpu/texture_manager.h"
+#include "gpu/buffer_manager.h"
 #include "gpu/shader_manager.h"
 
 namespace skyline::gpu {
@@ -45,6 +46,7 @@ namespace skyline::gpu {
         PresentationEngine presentation;
 
         TextureManager texture;
+        BufferManager buffer;
 
         ShaderManager shader;
 
