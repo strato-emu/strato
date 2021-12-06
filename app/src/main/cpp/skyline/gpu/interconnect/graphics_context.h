@@ -63,6 +63,12 @@ namespace skyline::gpu::interconnect {
             for (auto &vertexAttribute : vertexAttributes)
                 vertexAttribute.description.location = attributeIndex++;
 
+            for (auto &rtBlendState : commonRtBlendState)
+                rtBlendState.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+
+            for (auto &rtBlendState : independentRtBlendState)
+                rtBlendState.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+
             if (!gpu.quirks.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
         }
