@@ -72,6 +72,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x280, std::array<type::ViewportTransform, type::ViewportCount>> viewportTransforms;
             Register<0x300, std::array<type::Viewport, type::ViewportCount>> viewports;
 
+            Register<0x35D, u32> drawVertexFirst; //!< The index of the first vertex to draw
+            Register<0x35E, u32> drawVertexCount; //!< The amount of vertices to draw, calling this method triggers drawing
+
             Register<0x360, std::array<u32, 4>> clearColorValue;
             Register<0x364, u32> clearDepthValue;
 

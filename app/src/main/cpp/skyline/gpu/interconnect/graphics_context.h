@@ -1113,4 +1113,115 @@ namespace skyline::gpu::interconnect {
         vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1,
         };
+
+        /* Draws */
+      private:
+        vk::GraphicsPipelineCreateInfo pipelineState{
+            .pVertexInputState = &vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
+            .pInputAssemblyState = &inputAssemblyState,
+            .pViewportState = &viewportState,
+            .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
+            .pMultisampleState = &multisampleState,
+            .pDepthStencilState = nullptr,
+            .pColorBlendState = &blendState,
+            .pDynamicState = nullptr,
+        };
+
+      public:
+        void Draw(u32 vertexCount, u32 firstVertex) {
+            // Render Target Setup
+            boost::container::static_vector<std::scoped_lock<TextureView>, maxwell3d::RenderTargetCount> renderTargetLocks;
+            std::vector<TextureView *> activeRenderTargets;
+
+            for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
+                auto renderTarget{GetRenderTarget(index)};
+                if (renderTarget) {
+                    renderTargetLocks.emplace_back(*renderTarget);
+                    activeRenderTargets.push_back(renderTarget);
+                }
+            }
+
+            blendState.attachmentCount = static_cast<u32>(activeRenderTargets.size());
+
+            // Vertex Buffer Setup
+            boost::container::static_vector<std::scoped_lock<BufferView>, maxwell3d::VertexBufferCount> vertexBufferLocks;
+            std::array<vk::Buffer, maxwell3d::VertexBufferCount> vertexBufferHandles{};
+            std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> vertexBufferOffsets{};
+
+            vertexBindingDescriptions.clear();
+            vertexBindingDivisorsDescriptions.clear();
+
+            for (u32 index{}; index < maxwell3d::VertexBufferCount; index++) {
+                auto vertexBufferView{GetVertexBuffer(index)};
+                if (vertexBufferView) {
+                    auto &vertexBuffer{vertexBuffers[index]};
+                    vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
+                    vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
+
+                    vertexBufferLocks.emplace_back(*vertexBufferView);
+                    executor.AttachBuffer(vertexBufferView->buffer);
+                    vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
+                    vertexBufferOffsets[index] = vertexBufferView->offset;
+                }
+            }
+
+            vertexState.get<vk::PipelineVertexInputStateCreateInfo>().vertexBindingDescriptionCount = static_cast<u32>(vertexBindingDescriptions.size());
+            vertexState.get<vk::PipelineVertexInputDivisorStateCreateInfoEXT>().vertexBindingDivisorCount = static_cast<u32>(vertexBindingDivisorsDescriptions.size());
+
+            // Vertex Attribute Setup
+            vertexAttributesDescriptions.clear();
+
+            for (auto &vertexAttribute : vertexAttributes)
+                if (vertexAttribute.enabled)
+                    vertexAttributesDescriptions.push_back(vertexAttribute.description);
+
+            vertexState.get<vk::PipelineVertexInputStateCreateInfo>().vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size());
+
+            // Shader Setup
+            auto shaderStages{GetShaderStages()};
+            pipelineState.pStages = shaderStages.data();
+            pipelineState.stageCount = static_cast<u32>(shaderStages.size());
+
+            // Submit Draw
+            executor.AddSubpass([vertexCount, firstVertex, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+                vk::PipelineLayoutCreateInfo layoutCreateInfo{};
+                vk::raii::PipelineLayout pipelineLayout(vkDevice, layoutCreateInfo);
+                pipelineCreateInfo.layout = *pipelineLayout;
+
+                pipelineCreateInfo.renderPass = renderPass;
+                pipelineCreateInfo.subpass = subpassIndex;
+
+                auto pipeline{(*vkDevice).createGraphicsPipeline(nullptr, pipelineCreateInfo, nullptr, *vkDevice.getDispatcher())};
+                if (pipeline.result != vk::Result::eSuccess)
+                    vk::throwResultException(pipeline.result, __builtin_FUNCTION());
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.value);
+
+                for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
+                    // We need to bind all non-null vertex buffers while skipping any null ones
+                    if (vertexBufferHandles[bindingIndex]) {
+                        u32 bindingEndIndex{bindingIndex + 1};
+                        while (bindingEndIndex < vertexBufferHandles.size() && vertexBufferHandles[bindingEndIndex])
+                            bindingEndIndex++;
+
+                        u32 bindingCount{bindingEndIndex - bindingIndex};
+                        commandBuffer.bindVertexBuffers(bindingIndex, span(vertexBufferHandles.data() + bindingIndex, bindingCount), span(vertexBufferOffsets.data() + bindingIndex, bindingCount));
+                    }
+                }
+
+                commandBuffer.draw(vertexCount, 1, firstVertex, 0);
+
+                struct Storage : FenceCycleDependency {
+                    vk::raii::PipelineLayout pipelineLayout;
+                    vk::raii::Pipeline pipeline;
+
+                    Storage(vk::raii::PipelineLayout&& pipelineLayout, vk::raii::Pipeline&& pipeline) : pipelineLayout(std::move(pipelineLayout)), pipeline(std::move(pipeline)) {}
+                };
+
+                cycle->AttachObject(std::make_shared<Storage>(std::move(pipelineLayout), vk::raii::Pipeline(vkDevice, pipeline.value)));
+            }, vk::Rect2D{
+                .extent = activeRenderTargets[0]->texture->dimensions,
+            }, {}, activeRenderTargets);
+        }
+    };
 }

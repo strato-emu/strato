@@ -12,7 +12,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
-        Logger::Error("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+        Logger::Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         // Methods that are greater than the register size are for macro control
         if (method >= RegisterCount) [[unlikely]] {
@@ -428,6 +428,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             MAXWELL3D_CASE(clearBuffers, {
                 context.ClearBuffers(clearBuffers);
+            })
+
+            MAXWELL3D_CASE(drawVertexCount, {
+                context.Draw(drawVertexCount, *registers.drawVertexFirst);
             })
 
             MAXWELL3D_STRUCT_CASE(semaphore, info, {
