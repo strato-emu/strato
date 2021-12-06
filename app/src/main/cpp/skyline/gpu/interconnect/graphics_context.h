@@ -1108,5 +1108,9 @@ namespace skyline::gpu::interconnect {
                 }
             }();
         }
-    };
+
+        /* Multisampling */
+        vk::PipelineMultisampleStateCreateInfo multisampleState{
+            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+        };
 }
