@@ -8,6 +8,39 @@
 #include "copy.h"
 
 namespace skyline::gpu {
+    void TextureView::lock() {
+        auto currentBacking{std::atomic_load(&texture)};
+        while (true) {
+            currentBacking->lock();
+
+            auto newBacking{std::atomic_load(&texture)};
+            if (currentBacking == newBacking)
+                return;
+
+            currentBacking->unlock();
+            currentBacking = newBacking;
+        }
+    }
+
+    void TextureView::unlock() {
+        texture->unlock();
+    }
+
+    bool TextureView::try_lock() {
+        auto currentBacking{std::atomic_load(&texture)};
+        while (true) {
+            bool success{currentBacking->try_lock()};
+
+            auto newBacking{std::atomic_load(&texture)};
+            if (currentBacking == newBacking)
+                return success;
+
+            if (success)
+                currentBacking->unlock();
+            currentBacking = newBacking;
+        }
+    }
+
     std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
         if (!guest)
             throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
@@ -130,6 +163,7 @@ namespace skyline::gpu {
     Texture::TextureBufferCopy::TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer) : texture(std::move(texture)), stagingBuffer(std::move(stagingBuffer)) {}
 
     Texture::TextureBufferCopy::~TextureBufferCopy() {
+        TRACE_EVENT("gpu", "Texture::TextureBufferCopy");
         texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
     }
 
@@ -362,6 +396,18 @@ namespace skyline::gpu {
         }
     }
 
+    std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {
+        for (const auto &viewWeak : views) {
+            auto view{viewWeak.lock()};
+            if (view && type == view->type && pFormat == view->format && range == view->range && mapping == view->mapping)
+                return view;
+        }
+
+        auto view{std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping)};
+        views.push_back(view);
+        return view;
+    }
+
     void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
         WaitOnBacking();
         WaitOnFence();
@@ -480,13 +526,6 @@ namespace skyline::gpu {
             .subresourceRange = range,
         };
 
-        auto &views{texture->views};
-        auto iterator{std::find_if(views.begin(), views.end(), [&](const std::pair<vk::ImageViewCreateInfo, vk::raii::ImageView> &item) {
-            return item.first == createInfo;
-        })};
-        if (iterator != views.end())
-            return *iterator->second;
-
-        return *views.emplace_back(createInfo, vk::raii::ImageView(texture->gpu.vkDevice, createInfo)).second;
+        return *view.emplace(texture->gpu.vkDevice, createInfo);
     }
 }

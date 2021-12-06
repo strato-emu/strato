@@ -21,10 +21,10 @@ namespace skyline::gpu::interconnect {
         return newRenderPass;
     }
 
-    void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments, std::vector<TextureView> colorAttachments, std::optional<TextureView> depthStencilAttachment) {
+    void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
-                syncTextures.emplace(attachment.texture.get());
+                syncTextures.emplace(attachment->texture.get());
         if (depthStencilAttachment)
             syncTextures.emplace(depthStencilAttachment->texture.get());
 
@@ -36,9 +36,9 @@ namespace skyline::gpu::interconnect {
             nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
     }
 
-    void CommandExecutor::AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue &value) {
+    void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
-            .extent = attachment.texture->dimensions,
+            .extent = attachment->texture->dimensions,
         })};
         renderPass->AddSubpass({}, attachment, nullptr);
 
@@ -46,7 +46,7 @@ namespace skyline::gpu::interconnect {
             if (!newRenderPass)
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
         } else {
-            auto function{[scissor = attachment.texture->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+            auto function{[scissor = attachment->texture->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
                 commandBuffer.clearAttachments(vk::ClearAttachment{
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
                     .colorAttachment = 0,

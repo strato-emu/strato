@@ -31,13 +31,13 @@ namespace skyline::gpu::interconnect {
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments
          * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
          */
-        void AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, std::vector<TextureView> inputAttachments = {}, std::vector<TextureView> colorAttachments = {}, std::optional<TextureView> depthStencilAttachment = {});
+        void AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments = {}, span<TextureView *> colorAttachments = {}, TextureView *depthStencilAttachment = {});
 
         /**
          * @brief Adds a subpass that clears the entirety of the specified attachment with a value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
          * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
          */
-        void AddClearColorSubpass(TextureView attachment, const vk::ClearColorValue& value);
+        void AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value);
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU

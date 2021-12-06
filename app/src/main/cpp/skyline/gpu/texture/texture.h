@@ -290,10 +290,12 @@ namespace skyline::gpu {
 
     /**
      * @brief A view into a specific subresource of a Texture
+     * @note The object **must** be locked prior to accessing any members as values will be mutated
+     * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
     class TextureView {
       private:
-        vk::raii::ImageView *view{};
+        std::optional<vk::raii::ImageView> view;
 
       public:
         std::shared_ptr<Texture> texture;
@@ -308,7 +310,26 @@ namespace skyline::gpu {
         TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format = {}, vk::ComponentMapping mapping = {});
 
         /**
-         * @return A Vulkan Image View that corresponds to the properties of this view
+         * @brief Acquires an exclusive lock on the backing texture for the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void lock();
+
+        /**
+         * @brief Relinquishes an existing lock on the backing texture by the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void unlock();
+
+        /**
+         * @brief Attempts to acquire an exclusive lock on the backing texture but returns immediately if it's captured by another thread
+         * @note Naming is in accordance to the Lockable named requirement
+         */
+        bool try_lock();
+
+        /**
+         * @return A VkImageView that corresponds to the properties of this view
+         * @note The texture **must** be locked prior to calling this
          */
         vk::ImageView GetView();
 
@@ -329,7 +350,7 @@ namespace skyline::gpu {
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
 
-        std::vector<std::pair<vk::ImageViewCreateInfo, vk::raii::ImageView>> views; //!< VkImageView(s) that have been constructed from this Texture, utilized for caching
+        std::vector<std::weak_ptr<TextureView>> views; //!< TextureView(s) that are backed by this Texture, used for repointing to a new Texture on deletion
 
         friend TextureManager;
         friend TextureView;
@@ -461,8 +482,6 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
-         * @param commandBuffer An optional command buffer that the command will be recorded into rather than creating one as necessary
-         * @note A command buffer **must** not be submitted if it is created just for the command as it can be more efficient to allocate one within the function as necessary which is done when one isn't passed in
          * @note The texture **must** be locked prior to calling this
          * @note The guest texture backing should exist prior to calling this
          */
@@ -490,6 +509,11 @@ namespace skyline::gpu {
          * @note The guest texture should not be null prior to calling this
          */
         void SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
+
+        /**
+         * @return A cached or newly created view into this texture with the supplied attributes
+         */
+        std::shared_ptr<TextureView> GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format = {}, vk::ComponentMapping mapping = {});
 
         /**
          * @brief Copies the contents of the supplied source texture into the current texture

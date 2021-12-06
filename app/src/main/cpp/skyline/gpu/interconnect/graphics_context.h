@@ -74,7 +74,7 @@ namespace skyline::gpu::interconnect {
             IOVA iova;
             u32 widthBytes; //!< The width in bytes for linear textures
             GuestTexture guest;
-            std::optional<TextureView> view;
+            std::shared_ptr<TextureView> view;
 
             RenderTarget() {
                 guest.dimensions = texture::Dimensions(1, 1, 1); // We want the depth to be 1 by default (It cannot be set by the application)
@@ -233,7 +233,7 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        const TextureView *GetRenderTarget(size_t index) {
+        TextureView *GetRenderTarget(size_t index) {
             auto &renderTarget{renderTargets.at(index)};
             if (renderTarget.disabled)
                 return nullptr;
@@ -249,7 +249,7 @@ namespace skyline::gpu::interconnect {
             renderTarget.guest.type = static_cast<texture::TextureType>(renderTarget.guest.dimensions.GetType());
 
             renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest);
-            return &renderTarget.view.value();
+            return renderTarget.view.get();
         }
 
         void UpdateRenderTargetControl(maxwell3d::RenderTargetControl control) {
@@ -326,10 +326,9 @@ namespace skyline::gpu::interconnect {
 
         void ClearBuffers(maxwell3d::ClearBuffers clear) {
             auto renderTargetIndex{renderTargetControl[clear.renderTargetId]};
-            auto renderTargetPointer{GetRenderTarget(renderTargetIndex)};
-            if (renderTargetPointer) {
-                auto renderTarget{*renderTargetPointer};
-                std::lock_guard lock(*renderTarget.texture);
+            auto renderTarget{GetRenderTarget(renderTargetIndex)};
+            if (renderTarget) {
+                std::lock_guard lock(*renderTarget->texture);
 
                 vk::ImageAspectFlags aspect{};
                 if (clear.depth)
@@ -338,21 +337,21 @@ namespace skyline::gpu::interconnect {
                     aspect |= vk::ImageAspectFlagBits::eStencil;
                 if (clear.red || clear.green || clear.blue || clear.alpha)
                     aspect |= vk::ImageAspectFlagBits::eColor;
-                aspect &= renderTarget.format->vkAspect;
+                aspect &= renderTarget->format->vkAspect;
 
                 if (aspect == vk::ImageAspectFlags{})
                     return;
 
                 auto scissor{scissors.at(renderTargetIndex)};
-                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget.texture->dimensions.width) - scissor.offset.x,
+                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.width) - scissor.offset.x,
                                                                  static_cast<i32>(scissor.extent.width)));
-                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget.texture->dimensions.height) - scissor.offset.y,
+                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.height) - scissor.offset.y,
                                                                   static_cast<i32>(scissor.extent.height)));
 
                 if (scissor.extent.width == 0 || scissor.extent.height == 0)
                     return;
 
-                if (scissor.extent.width == renderTarget.texture->dimensions.width && scissor.extent.height == renderTarget.texture->dimensions.height && renderTarget.range.baseArrayLayer == 0 && renderTarget.range.layerCount == 1 && clear.layerId == 0) {
+                if (scissor.extent.width == renderTarget->texture->dimensions.width && scissor.extent.height == renderTarget->texture->dimensions.height && renderTarget->range.baseArrayLayer == 0 && renderTarget->range.layerCount == 1 && clear.layerId == 0) {
                     executor.AddClearColorSubpass(renderTarget, clearColorValue);
                 } else {
                     executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
@@ -366,7 +365,7 @@ namespace skyline::gpu::interconnect {
                             .layerCount = 1,
                         });
                     }, vk::Rect2D{
-                        .extent = renderTarget.texture->dimensions,
+                        .extent = renderTarget->texture->dimensions,
                     }, {}, {renderTarget});
                 }
             }

@@ -13,21 +13,21 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    u32 RenderPassNode::AddAttachment(TextureView &view) {
+    u32 RenderPassNode::AddAttachment(TextureView *view) {
         auto &textures{storage->textures};
-        auto texture{std::find(textures.begin(), textures.end(), view.texture)};
+        auto texture{std::find(textures.begin(), textures.end(), view->texture)};
         if (texture == textures.end())
-            textures.push_back(view.texture);
+            textures.push_back(view->texture);
 
-        auto vkView{view.GetView()};
+        auto vkView{view->GetView()};
         auto attachment{std::find(attachments.begin(), attachments.end(), vkView)};
         if (attachment == attachments.end()) {
             // If we cannot find any matches for the specified attachment, we add it as a new one
             attachments.push_back(vkView);
             attachmentDescriptions.push_back(vk::AttachmentDescription{
-                .format = *view.format,
-                .initialLayout = view.texture->layout,
-                .finalLayout = view.texture->layout,
+                .format = *view->format,
+                .initialLayout = view->texture->layout,
+                .finalLayout = view->texture->layout,
             });
             return static_cast<u32>(attachments.size() - 1);
         } else {
@@ -97,14 +97,14 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    void RenderPassNode::AddSubpass(span<TextureView> inputAttachments, span<TextureView> colorAttachments, TextureView *depthStencilAttachment) {
+    void RenderPassNode::AddSubpass(span<TextureView*> inputAttachments, span<TextureView*> colorAttachments, TextureView *depthStencilAttachment) {
         attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
         auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
         for (auto &attachment : inputAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
                 .attachment = AddAttachment(attachment),
-                .layout = attachment.texture->layout,
+                .layout = attachment->texture->layout,
             });
         }
 
@@ -112,14 +112,14 @@ namespace skyline::gpu::interconnect::node {
         for (auto &attachment : colorAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
                 .attachment = AddAttachment(attachment),
-                .layout = attachment.texture->layout,
+                .layout = attachment->texture->layout,
             });
         }
 
         auto depthStencilAttachmentOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
         if (depthStencilAttachment) {
             attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = AddAttachment(*depthStencilAttachment),
+                .attachment = AddAttachment(depthStencilAttachment),
                 .layout = depthStencilAttachment->texture->layout,
             });
         }

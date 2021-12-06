@@ -6,20 +6,22 @@
 namespace skyline::gpu {
     TextureManager::TextureManager(GPU &gpu) : gpu(gpu) {}
 
-    TextureView TextureManager::FindOrCreate(const GuestTexture &guestTexture) {
+    std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture) {
         auto guestMapping{guestTexture.mappings.front()};
 
-        // Iterate over all textures that overlap with the first mapping of the guest texture and compare the mappings:
-        // 1) All mappings match up perfectly, we check that the rest of the supplied mappings correspond to mappings in the texture
-        // 1.1) If they match as well, we check for format/dimensions/tiling config matching the texture and return or move onto (3)
-        // 2) Only a contiguous range of mappings match, we check for if the overlap is meaningful with layout math, it can go two ways:
-        // 2.1) If there is a meaningful overlap, we check for format/dimensions/tiling config compatibility and return or move onto (3)
-        // 2.2) If there isn't, we move onto (3)
-        // 3) If there's another overlap we go back to (1) with it else we go to (4)
-        // 4) We check all the overlapping texture for if they're in the texture pool:
-        // 4.1) If they are, we do nothing to them
-        // 4.2) If they aren't, we delete them from the map
-        // 5) Create a new texture and insert it in the map then return it
+        /*
+         * Iterate over all textures that overlap with the first mapping of the guest texture and compare the mappings:
+         * 1) All mappings match up perfectly, we check that the rest of the supplied mappings correspond to mappings in the texture
+         * 1.1) If they match as well, we check for format/dimensions/tiling config matching the texture and return or move onto (3)
+         * 2) Only a contiguous range of mappings match, we check for if the overlap is meaningful with layout math, it can go two ways:
+         * 2.1) If there is a meaningful overlap, we check for format/dimensions/tiling config compatibility and return or move onto (3)
+         * 2.2) If there isn't, we move onto (3)
+         * 3) If there's another overlap we go back to (1) with it else we go to (4)
+         * 4) We check all the overlapping texture for if they're in the texture pool:
+         * 4.1) If they are, we do nothing to them
+         * 4.2) If they aren't, we delete them from the map
+         * 5) Create a new texture and insert it in the map then return it
+         */
 
         std::scoped_lock lock(mutex);
         std::shared_ptr<Texture> match{};
@@ -45,7 +47,7 @@ namespace skyline::gpu {
                 auto &matchGuestTexture{*hostMapping->texture->guest};
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && matchGuestTexture.dimensions == guestTexture.dimensions && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
-                    return TextureView(texture, static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
+                    return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
                         .aspectMask = guestTexture.format->vkAspect,
                         .levelCount = texture->mipLevels,
                         .layerCount = texture->layerCount,
@@ -76,7 +78,7 @@ namespace skyline::gpu {
             textures.emplace(mapping, TextureMapping{texture, it, guestMapping});
         }
 
-        return TextureView(texture, static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
+        return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
             .aspectMask = guestTexture.format->vkAspect,
             .levelCount = texture->mipLevels,
             .layerCount = texture->layerCount,

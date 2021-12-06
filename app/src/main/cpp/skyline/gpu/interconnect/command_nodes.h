@@ -71,12 +71,12 @@ namespace skyline::gpu::interconnect::node {
          * @note Any preservation of attachments from previous subpasses is automatically handled by this
          * @return The index of the attachment in the render pass which can be utilized with VkAttachmentReference
          */
-        u32 AddAttachment(TextureView &view);
+        u32 AddAttachment(TextureView *view);
 
         /**
          * @brief Creates a subpass with the attachments bound in the specified order
          */
-        void AddSubpass(span<TextureView> inputAttachments, span<TextureView> colorAttachments, TextureView *depthStencilAttachment);
+        void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment);
 
         /**
          * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_LOAD

@@ -4,7 +4,6 @@
 #pragma once
 
 #include "texture/texture.h"
-#include <random>
 
 namespace skyline::gpu {
     /**
@@ -36,6 +35,6 @@ namespace skyline::gpu {
         /**
          * @return A pre-existing or newly created Texture object which matches the specified criteria
          */
-        TextureView FindOrCreate(const GuestTexture &guestTexture);
+        std::shared_ptr<TextureView> FindOrCreate(const GuestTexture &guestTexture);
     };
 }
