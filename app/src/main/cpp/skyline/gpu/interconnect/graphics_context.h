@@ -44,7 +44,7 @@ namespace skyline::gpu::interconnect {
         static_assert(sizeof(IOVA) == sizeof(u64));
 
       public:
-        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
+        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor), pipelineCache(gpu.vkDevice, vk::PipelineCacheCreateInfo{}) {
             scissors.fill(DefaultScissor);
             if (!gpu.quirks.supportsMultipleViewports) {
                 viewportState.viewportCount = 1;
@@ -1126,6 +1126,7 @@ namespace skyline::gpu::interconnect {
             .pColorBlendState = &blendState,
             .pDynamicState = nullptr,
         };
+        vk::raii::PipelineCache pipelineCache;
 
       public:
         void Draw(u32 vertexCount, u32 firstVertex) {
@@ -1191,7 +1192,7 @@ namespace skyline::gpu::interconnect {
                 pipelineCreateInfo.renderPass = renderPass;
                 pipelineCreateInfo.subpass = subpassIndex;
 
-                auto pipeline{(*vkDevice).createGraphicsPipeline(nullptr, pipelineCreateInfo, nullptr, *vkDevice.getDispatcher())};
+                auto pipeline{(*vkDevice).createGraphicsPipeline(pipelineCache, pipelineCreateInfo, nullptr, *vkDevice.getDispatcher())};
                 if (pipeline.result != vk::Result::eSuccess)
                     vk::throwResultException(pipeline.result, __builtin_FUNCTION());
 
