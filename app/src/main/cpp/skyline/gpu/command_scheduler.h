@@ -31,6 +31,22 @@ namespace skyline::gpu {
             static bool AllocateIfFree(CommandBufferSlot &slot);
         };
 
+        GPU &gpu;
+
+        /**
+         * @brief A command pool designed to be thread-local to respect external synchronization for all command buffers and the associated pool
+         * @note If we utilized a single global pool there would need to be a mutex around command buffer recording which would incur significant costs
+         */
+        struct CommandPool {
+            vk::raii::CommandPool vkCommandPool;
+            std::list<CommandBufferSlot> buffers;
+
+            template<typename... Args>
+            constexpr CommandPool(Args &&... args) : vkCommandPool(std::forward<Args>(args)...) {}
+        };
+        ThreadLocal<CommandPool> pool;
+
+      public:
         /**
          * @brief An active command buffer occupies a slot and ensures that its status is updated correctly
          */
@@ -60,22 +76,20 @@ namespace skyline::gpu {
             vk::raii::CommandBuffer *operator->() {
                 return &slot.commandBuffer;
             }
+
+            /**
+             * @brief Resets the state of the command buffer with a new FenceCycle
+             * @note This should be used when a single allocated command buffer is used for all submissions from a component
+             */
+            std::shared_ptr<FenceCycle> Reset() {
+                slot.cycle->Wait();
+                slot.cycle = std::make_shared<FenceCycle>(slot.device, *slot.fence);
+                slot.commandBuffer.reset();
+                return slot.cycle;
+            }
         };
 
-        GPU &gpu;
-
-        /**
-         * @brief A command pool designed to be thread-local to respect external synchronization for all command buffers and the associated pool
-         * @note If we utilized a single global pool there would need to be a mutex around command buffer recording which would incur significant costs
-         */
-        struct CommandPool {
-            vk::raii::CommandPool vkCommandPool;
-            std::list<CommandBufferSlot> buffers;
-
-            template<typename... Args>
-            constexpr CommandPool(Args &&... args) : vkCommandPool(std::forward<Args>(args)...) {}
-        };
-        ThreadLocal<CommandPool> pool;
+        CommandScheduler(GPU &gpu);
 
         /**
          * @brief Allocates an existing or new primary command buffer from the pool
@@ -86,9 +100,6 @@ namespace skyline::gpu {
          * @brief Submits a single command buffer to the GPU queue with an optional fence
          */
         void SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, vk::Fence fence = {});
-
-      public:
-        CommandScheduler(GPU &gpu);
 
         /**
          * @brief Submits a command buffer recorded with the supplied function synchronously
