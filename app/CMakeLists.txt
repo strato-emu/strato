@@ -159,6 +159,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/texture_manager.cpp
         ${source_DIR}/skyline/gpu/command_scheduler.cpp
         ${source_DIR}/skyline/gpu/texture/texture.cpp
+        ${source_DIR}/skyline/gpu/buffer.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/shader_manager.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
