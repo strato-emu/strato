@@ -5,7 +5,11 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu) {}
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu), activeCommandBuffer(gpu.scheduler.AllocateCommandBuffer()), cycle(activeCommandBuffer.GetFenceCycle()) {}
+
+    CommandExecutor::~CommandExecutor() {
+        cycle->Cancel();
+    }
 
     bool CommandExecutor::CreateRenderPass(vk::Rect2D renderArea) {
         if (renderPass && renderPass->renderArea != renderArea) {
@@ -21,12 +25,30 @@ namespace skyline::gpu::interconnect {
         return newRenderPass;
     }
 
+    void CommandExecutor::AttachTexture(const std::shared_ptr<Texture> &texture) {
+        if (!syncTextures.contains(texture.get())) {
+            texture->WaitOnFence();
+            texture->cycle = cycle;
+            cycle->AttachObject(texture);
+            syncTextures.emplace(texture.get());
+        }
+    }
+
+    void CommandExecutor::AttachBuffer(const std::shared_ptr<Buffer> &buffer) {
+        if (!syncBuffers.contains(buffer.get())) {
+            buffer->WaitOnFence();
+            buffer->cycle = cycle;
+            cycle->AttachObject(buffer);
+            syncBuffers.emplace(buffer.get());
+        }
+    }
+
     void CommandExecutor::AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
-                syncTextures.emplace(attachment->texture.get());
+                AttachTexture(attachment->texture);
         if (depthStencilAttachment)
-            syncTextures.emplace(depthStencilAttachment->texture.get());
+            AttachTexture(depthStencilAttachment->texture);
 
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
@@ -37,6 +59,8 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
+        AttachTexture(attachment->texture);
+
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,
         })};
@@ -74,9 +98,17 @@ namespace skyline::gpu::interconnect {
                 renderPass = nullptr;
             }
 
-            gpu.scheduler.SubmitWithCycle([this](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle) {
+            {
+                auto &commandBuffer{*activeCommandBuffer};
+                commandBuffer.begin(vk::CommandBufferBeginInfo{
+                    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+                });
+
                 for (auto texture : syncTextures)
                     texture->SynchronizeHostWithBuffer(commandBuffer, cycle);
+
+                for (auto buffer : syncBuffers)
+                    buffer->SynchronizeHostWithCycle(cycle);
 
                 using namespace node;
                 for (NodeVariant &node : nodes) {
@@ -93,7 +125,15 @@ namespace skyline::gpu::interconnect {
 
                 for (auto texture : syncTextures)
                     texture->SynchronizeGuestWithBuffer(commandBuffer, cycle);
-            })->Wait();
+
+                for (auto buffer : syncBuffers)
+                    buffer->SynchronizeGuestWithCycle(cycle);
+
+                commandBuffer.end();
+
+                gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
+                cycle = activeCommandBuffer.Reset();
+            }
 
             nodes.clear();
             syncTextures.clear();

@@ -10,14 +10,17 @@
 namespace skyline::gpu::interconnect {
     /**
      * @brief Assembles a Vulkan command stream with various nodes and manages execution of the produced graph
-     * @note This class is **NOT** thread-safe and should not be utilized by multiple threads concurrently
+     * @note This class is **NOT** thread-safe and should **ONLY** be utilized by a single thread
      */
     class CommandExecutor {
       private:
         GPU &gpu;
+        CommandScheduler::ActiveCommandBuffer activeCommandBuffer;
+        std::shared_ptr<FenceCycle> cycle;
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderPassNode *renderPass{};
-        std::unordered_set<Texture*> syncTextures; //!< All textures that need to be synced prior to and after execution
+        std::unordered_set<Texture *> syncTextures; //!< All textures that need to be synced prior to and after execution
+        std::unordered_set<Buffer *> syncBuffers; //!< All buffers that need to be synced prior to and after execution
 
         /**
          * @return If a new render pass was created by the function or the current one was reused as it was compatible
@@ -27,9 +30,24 @@ namespace skyline::gpu::interconnect {
       public:
         CommandExecutor(const DeviceState &state);
 
+        ~CommandExecutor();
+
+        /**
+         * @brief Attach the lifetime of the texture to the command buffer
+         * @note This'll automatically handle syncing of the texture in the most optimal way possible
+         */
+        void AttachTexture(const std::shared_ptr<Texture> &texture);
+
+        /**
+         * @brief Attach the lifetime of a buffer to the command buffer
+         * @note This'll automatically handle syncing of the buffer in the most optimal way possible
+         */
+        void AttachBuffer(const std::shared_ptr<Buffer> &buffer);
+
         /**
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments
          * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
+         * @note All attachments will automatically be attached and aren't required to be attached prior
          */
         void AddSubpass(const std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments = {}, span<TextureView *> colorAttachments = {}, TextureView *depthStencilAttachment = {});
 
