@@ -43,11 +43,11 @@ namespace skyline::gpu {
                 if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && endHostMapping == hostMappings.end() && lastGuestMapping.end() == lastHostMapping.end()) {
                     // We've gotten a perfect 1:1 match for *all* mappings from the start to end
                     std::scoped_lock bufferLock(*hostMapping->buffer);
-                    return hostMapping->buffer->GetView(0, hostMapping->buffer->size, guest.format);
+                    return hostMapping->buffer->GetView(0, hostMapping->buffer->size);
                 } else if (mappingMatch && firstHostMapping->begin() > guestMapping.begin() && lastHostMapping.end() > lastGuestMapping.end()) {
                     // We've gotten a guest buffer that is located entirely within a host buffer
                     std::scoped_lock bufferLock(*hostMapping->buffer);
-                    return hostMapping->buffer->GetView(hostMapping->offset + static_cast<vk::DeviceSize>(hostMapping->begin() - guestMapping.begin()), guest.BufferSize(), guest.format);
+                    return hostMapping->buffer->GetView(hostMapping->offset + static_cast<vk::DeviceSize>(hostMapping->begin() - guestMapping.begin()), guest.BufferSize());
                 }
             }
         }
@@ -103,6 +103,6 @@ namespace skyline::gpu {
             offset += mapping->size_bytes();
         }
 
-        return buffer->GetView(0, buffer->size, guest.format);
+        return buffer->GetView(0, buffer->size);
     }
 }

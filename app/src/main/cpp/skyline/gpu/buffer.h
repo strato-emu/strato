@@ -12,7 +12,6 @@ namespace skyline::gpu {
     struct GuestBuffer {
         using Mappings = boost::container::small_vector<span<u8>, 3>;
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this buffer
-        vk::Format format;
 
         /**
          * @return The total size of the buffer by adding up the size of all mappings
@@ -107,7 +106,7 @@ namespace skyline::gpu {
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
          */
-        std::shared_ptr<BufferView> GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format);
+        std::shared_ptr<BufferView> GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format = {});
     };
 
     /**
