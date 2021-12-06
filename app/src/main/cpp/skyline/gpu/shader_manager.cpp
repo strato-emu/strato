@@ -4,6 +4,8 @@
 #include <gpu.h>
 #include <shader_compiler/common/settings.h>
 #include <shader_compiler/common/log.h>
+#include <shader_compiler/frontend/maxwell/translate_program.h>
+#include <shader_compiler/backend/spirv/emit_spirv.h>
 #include "shader_manager.h"
 
 namespace Shader::Log {
@@ -74,5 +76,74 @@ namespace skyline::gpu {
                 .active = false,
             },
         };
+    }
+
+    /**
+     * @brief A shader environment for all graphics pipeline stages
+     */
+    class GraphicsEnvironment : public Shader::Environment {
+      private:
+        std::vector<u8> binary;
+        u32 baseOffset;
+
+      public:
+        explicit GraphicsEnvironment(std::vector<u8> pBinary, u32 baseOffset, Shader::Stage pStage) : binary(std::move(pBinary)), baseOffset(baseOffset) {
+            sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
+            start_address = baseOffset;
+            stage = pStage;
+        }
+
+        [[nodiscard]] u64 ReadInstruction(u32 address) final {
+            address -= baseOffset;
+            if (binary.size() < (address + sizeof(u64)))
+                throw exception("Out of bounds instruction read: 0x{:X}", address);
+            return *reinterpret_cast<u64 *>(binary.data() + address);
+        }
+
+        [[nodiscard]] u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] Shader::TextureType ReadTextureType(u32 raw_handle) final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] u32 TextureBoundBuffer() const final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] u32 LocalMemorySize() const final {
+            return static_cast<u32>(sph.LocalMemorySize()) + sph.common3.shader_local_memory_crs_size;
+        }
+
+        [[nodiscard]] u32 SharedMemorySize() const final {
+            return 0; // Shared memory size is only relevant for compute shaders
+        }
+
+        [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
+            return {0, 0, 0}; // Workgroup size is only relevant for compute shaders
+        }
+    };
+
+    vk::raii::ShaderModule ShaderManager::CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo& runtimeInfo) {
+        GraphicsEnvironment environment{binary, baseOffset, stage};
+        Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
+
+        auto program{Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo)};
+
+        Shader::Backend::Bindings bindings{};
+        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
+
+        runtimeInfo.previous_stage_stores = program.info.stores;
+        if (program.is_geometry_passthrough)
+            runtimeInfo.previous_stage_stores.mask |= program.info.passthrough.mask;
+
+        vk::ShaderModuleCreateInfo createInfo{
+            .pCode = spirv.data(),
+            .codeSize = spirv.size() * sizeof(u32),
+        };
+        vk::raii::ShaderModule shaderModule(gpu.vkDevice, createInfo);
+
+        return shaderModule;
     }
 }
