@@ -35,7 +35,7 @@ namespace skyline::gpu::interconnect::node {
             auto attachmentIndex{static_cast<u32>(std::distance(attachments.begin(), attachment))};
 
             auto it{subpassDescriptions.begin()};
-            auto getSubpassAttachmentRange{[this] (const vk::SubpassDescription& subpassDescription) {
+            auto getSubpassAttachmentRange{[this](const vk::SubpassDescription &subpassDescription) {
                 // Find the bounds for the attachment references belonging to the current subpass
                 auto referenceBeginIt{attachmentReferences.begin()};
                 referenceBeginIt += reinterpret_cast<uintptr_t>(subpassDescription.pInputAttachments) / sizeof(vk::AttachmentReference);
@@ -49,7 +49,7 @@ namespace skyline::gpu::interconnect::node {
 
             // We want to find the first subpass that utilizes the attachment we want to preserve
             for (; it != subpassDescriptions.end(); it++) {
-                auto [attachmentReferenceBegin, attachmentReferenceEnd]{getSubpassAttachmentRange(*it)};
+                auto[attachmentReferenceBegin, attachmentReferenceEnd]{getSubpassAttachmentRange(*it)};
 
                 // Iterate over all attachment references in the current subpass to see if they point to our target attachment
                 if (std::find_if(attachmentReferenceBegin, attachmentReferenceEnd, [&](const vk::AttachmentReference &reference) {
@@ -65,7 +65,7 @@ namespace skyline::gpu::interconnect::node {
             // We want to preserve the attachment for all subpasses till the current subpass
             auto lastUsageIt{it}; //!< The last subpass that the attachment has been used in for creating a dependency
             for (; it != subpassDescriptions.end(); it++) {
-                auto [attachmentReferenceBegin, attachmentReferenceEnd]{getSubpassAttachmentRange(*it)};
+                auto[attachmentReferenceBegin, attachmentReferenceEnd]{getSubpassAttachmentRange(*it)};
 
                 if (std::find_if(attachmentReferenceBegin, attachmentReferenceEnd, [&](const vk::AttachmentReference &reference) {
                     return reference.attachment == attachmentIndex;
@@ -83,12 +83,18 @@ namespace skyline::gpu::interconnect::node {
             vk::SubpassDependency dependency{
                 .srcSubpass = static_cast<u32>(std::distance(subpassDescriptions.begin(), lastUsageIt)),
                 .dstSubpass = static_cast<uint32_t>(subpassDescriptions.size()), // We assume that the next subpass is using the attachment
-                .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
+                .dstStageMask = vk::PipelineStageFlagBits::eAllGraphics,
                 .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             };
+            if (view->format->vkAspect & vk::ImageAspectFlagBits::eColor) {
+                dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+                dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+                dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead;
+            } else if (view->format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)) {
+                dependency.srcStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+                dependency.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead;
+                dependency.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+            }
 
             if (std::find(subpassDependencies.begin(), subpassDependencies.end(), dependency) == subpassDependencies.end())
                 subpassDependencies.push_back(dependency);
@@ -97,7 +103,7 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    void RenderPassNode::AddSubpass(span<TextureView*> inputAttachments, span<TextureView*> colorAttachments, TextureView *depthStencilAttachment) {
+    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
         auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
