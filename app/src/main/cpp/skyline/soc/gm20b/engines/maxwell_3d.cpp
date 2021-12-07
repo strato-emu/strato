@@ -176,6 +176,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(4 < BOOST_PP_LIMIT_REPEAT);
                 #undef COLOR_CLEAR_CALLBACKS
 
+                MAXWELL3D_CASE(clearDepthValue, {
+                    context.UpdateClearDepthValue(clearDepthValue);
+                })
+
+                MAXWELL3D_CASE(clearStencilValue, {
+                    context.UpdateClearStencilValue(clearStencilValue);
+                })
+
                 MAXWELL3D_STRUCT_CASE(polygonMode, front, {
                     context.SetPolygonModeFront(front);
                 })

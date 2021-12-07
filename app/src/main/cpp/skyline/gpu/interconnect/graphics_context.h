@@ -404,57 +404,110 @@ namespace skyline::gpu::interconnect {
 
         /* Buffer Clears */
       private:
-        vk::ClearColorValue clearColorValue{}; //!< The value written to a color buffer being cleared
+        vk::ClearColorValue clearColorValue{}; //!< The value written to the color RT being cleared
+        vk::ClearDepthStencilValue clearDepthValue{}; //!< The value written to the depth/stencil RT being cleared
 
       public:
         void UpdateClearColorValue(size_t index, u32 value) {
             clearColorValue.uint32.at(index) = value;
         }
 
-        void ClearBuffers(maxwell3d::ClearBuffers clear) {
-            auto renderTargetIndex{renderTargetControl[clear.renderTargetId]};
-            auto renderTarget{GetColorRenderTarget(renderTargetIndex)};
-            if (renderTarget) {
-                std::lock_guard lock(*renderTarget->texture);
+        void UpdateClearDepthValue(float depth) {
+            clearDepthValue.depth = depth;
+        }
 
+        void UpdateClearStencilValue(u32 stencil) {
+            clearDepthValue.stencil = stencil;
+        }
+
+        void ClearColorRt(TextureView *renderTarget, vk::Rect2D scissor, u32 layerIndex) {
+            std::lock_guard lock(*renderTarget);
+
+            scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.width) - scissor.offset.x,
+                                                             static_cast<i32>(scissor.extent.width)));
+            scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.height) - scissor.offset.y,
+                                                              static_cast<i32>(scissor.extent.height)));
+
+            if (scissor.extent.width != 0 && scissor.extent.height != 0) {
+                if (scissor.extent.width == renderTarget->texture->dimensions.width && scissor.extent.height == renderTarget->texture->dimensions.height && renderTarget->range.baseArrayLayer == 0 && renderTarget->range.layerCount == 1 && layerIndex == 0) {
+                    executor.AddClearColorSubpass(renderTarget, clearColorValue);
+                } else {
+                    vk::ClearAttachment clearAttachment{
+                        .aspectMask = vk::ImageAspectFlagBits::eColor,
+                        .colorAttachment = 0,
+                        .clearValue = clearColorValue,
+                    };
+
+                    vk::ClearRect clearRect{
+                        .rect = scissor,
+                        .baseArrayLayer = layerIndex,
+                        .layerCount = 1,
+                    };
+
+                    executor.AddSubpass([clearAttachment, clearRect](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
+                        commandBuffer.clearAttachments(clearAttachment, clearRect);
+                    }, vk::Rect2D{.extent = renderTarget->texture->dimensions}, {}, renderTarget);
+                }
+            }
+        }
+
+        void ClearDepthStencilRt(TextureView *renderTarget, vk::ImageAspectFlags aspect, u32 layerIndex) {
+            std::lock_guard lock(*renderTarget);
+
+            if (renderTarget->range.layerCount == 1 && layerIndex == 0) {
+                executor.AddClearDepthStencilSubpass(renderTarget, clearDepthValue);
+            } else {
+                vk::ClearAttachment clearAttachment{
+                    .aspectMask = aspect,
+                    .clearValue = clearDepthValue,
+                };
+
+                auto &dimensions{renderTarget->texture->dimensions};
+                vk::Rect2D imageArea{
+                    .extent = vk::Extent2D{
+                        .width = dimensions.width,
+                        .height = dimensions.height
+                    },
+                };
+
+                vk::ClearRect clearRect{
+                    .rect = imageArea,
+                    .baseArrayLayer = layerIndex,
+                    .layerCount = 1,
+                };
+
+                executor.AddSubpass([clearAttachment, clearRect](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
+                    commandBuffer.clearAttachments(clearAttachment, clearRect);
+                }, imageArea, {}, {}, renderTarget);
+            }
+        }
+
+        void ClearBuffers(maxwell3d::ClearBuffers clear) {
+            bool isColor{clear.red || clear.green || clear.blue || clear.alpha};
+            auto renderTargetIndex{renderTargetControl[clear.renderTargetId]};
+            auto colorRenderTargetView{isColor ? GetColorRenderTarget(renderTargetIndex) : nullptr};
+
+            if (colorRenderTargetView) {
+                if (!clear.red || !clear.green || !clear.blue || !clear.alpha)
+                    throw exception("Atomically clearing color channels is not supported ({}{}{}{})", clear.red ? 'R' : '-', clear.green ? 'G' : '-', clear.blue ? 'B' : '-', clear.alpha ? 'A' : '-');
+
+                if (colorRenderTargetView->format->vkAspect & vk::ImageAspectFlagBits::eColor)
+                    ClearColorRt(colorRenderTargetView, scissors.at(renderTargetIndex), clear.layerId);
+            }
+
+            bool isDepth{clear.depth || clear.stencil};
+            auto depthRenderTargetView{isDepth ? GetDepthRenderTarget() : nullptr};
+
+            if (depthRenderTargetView) {
                 vk::ImageAspectFlags aspect{};
                 if (clear.depth)
                     aspect |= vk::ImageAspectFlagBits::eDepth;
                 if (clear.stencil)
                     aspect |= vk::ImageAspectFlagBits::eStencil;
-                if (clear.red || clear.green || clear.blue || clear.alpha)
-                    aspect |= vk::ImageAspectFlagBits::eColor;
-                aspect &= renderTarget->format->vkAspect;
 
-                if (aspect == vk::ImageAspectFlags{})
-                    return;
-
-                auto scissor{scissors.at(renderTargetIndex)};
-                scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.width) - scissor.offset.x,
-                                                                 static_cast<i32>(scissor.extent.width)));
-                scissor.extent.height = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.height) - scissor.offset.y,
-                                                                  static_cast<i32>(scissor.extent.height)));
-
-                if (scissor.extent.width == 0 || scissor.extent.height == 0)
-                    return;
-
-                if (scissor.extent.width == renderTarget->texture->dimensions.width && scissor.extent.height == renderTarget->texture->dimensions.height && renderTarget->range.baseArrayLayer == 0 && renderTarget->range.layerCount == 1 && clear.layerId == 0) {
-                    executor.AddClearColorSubpass(renderTarget, clearColorValue);
-                } else {
-                    executor.AddSubpass([aspect, clearColorValue = clearColorValue, layerId = clear.layerId, scissor](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
-                        commandBuffer.clearAttachments(vk::ClearAttachment{
-                            .aspectMask = aspect,
-                            .colorAttachment = 0,
-                            .clearValue = clearColorValue,
-                        }, vk::ClearRect{
-                            .rect = scissor,
-                            .baseArrayLayer = layerId,
-                            .layerCount = 1,
-                        });
-                    }, vk::Rect2D{
-                        .extent = renderTarget->texture->dimensions,
-                    }, {}, {renderTarget});
-                }
+                aspect &= depthRenderTargetView->format->vkAspect;
+                if (aspect)
+                    ClearDepthStencilRt(depthRenderTargetView, aspect, clear.layerId);
             }
         }
 
