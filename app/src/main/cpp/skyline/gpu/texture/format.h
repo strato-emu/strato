@@ -11,6 +11,7 @@ namespace skyline::gpu::format {
     using vka = vk::ImageAspectFlagBits;
     using swc = gpu::texture::SwizzleChannel;
 
+    // Color Formats
     constexpr Format R8G8B8A8Unorm{sizeof(u32), vkf::eR8G8B8A8Unorm};
     constexpr Format R5G6B5Unorm{sizeof(u16), vkf::eR5G6B5UnormPack16};
     constexpr Format A2B10G10R10Unorm{sizeof(u32), vkf::eA2B10G10R10UnormPack32};
@@ -42,4 +43,7 @@ namespace skyline::gpu::format {
     constexpr Format R16G16B16A16Float{sizeof(u16) * 4, vkf::eR16G16B16A16Sfloat};
     constexpr Format B8G8R8A8Unorm{sizeof(u32), vkf::eB8G8R8A8Unorm};
     constexpr Format B8G8R8A8Srgb{sizeof(u32), vkf::eB8G8R8A8Srgb};
+
+    // Depth/Stencil Formats
+    constexpr Format S8D24Unorm{sizeof(u32), vkf::eD24UnormS8Uint, vka::eStencil | vka::eDepth}; // TODO: Swizzle Depth/Stencil
 }

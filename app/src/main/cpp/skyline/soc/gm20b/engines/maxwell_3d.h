@@ -109,8 +109,19 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x3E4, u32> commonColorWriteMask; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
             Register<0x3EB, u32> rtSeparateFragData;
+
+            Register<0x3F8, type::Address> depthTargetAddress;
+            Register<0x3FA, type::DepthRtFormat> depthTargetFormat;
+            Register<0x3FB, type::RenderTargetTileMode> depthTargetTileMode;
+            Register<0x3FC, u32> depthTargetLayerStride;
+
             Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributeState;
             Register<0x487, type::RenderTargetControl> renderTargetControl;
+
+            Register<0x48A, u32> depthTargetWidth;
+            Register<0x48B, u32> depthTargetHeight;
+            Register<0x48C, type::RenderTargetArrayMode> depthTargetArrayMode;
+
             Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareOp> depthTestFunc;

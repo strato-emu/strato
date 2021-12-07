@@ -91,7 +91,13 @@ namespace skyline::gpu::interconnect {
         std::array<RenderTarget, maxwell3d::RenderTargetCount> colorRenderTargets{}; //!< The target textures to render into as color attachments
         maxwell3d::RenderTargetControl renderTargetControl{};
 
+        RenderTarget depthRenderTarget{}; //!< The target texture to render depth/stencil into
+
       public:
+        void SetDepthRenderTargetEnabled(bool enabled) {
+            depthRenderTarget.disabled = !enabled;
+        }
+
         void SetRenderTargetAddressHigh(RenderTarget &renderTarget, u32 high) {
             renderTarget.iova.high = high;
             renderTarget.guest.mappings.clear();
@@ -102,6 +108,10 @@ namespace skyline::gpu::interconnect {
             SetRenderTargetAddressHigh(colorRenderTargets.at(index), high);
         }
 
+        void SetDepthRenderTargetAddressHigh(u32 high) {
+            SetRenderTargetAddressHigh(depthRenderTarget, high);
+        }
+
         void SetRenderTargetAddressLow(RenderTarget &renderTarget, u32 low) {
             renderTarget.iova.low = low;
             renderTarget.guest.mappings.clear();
@@ -110,6 +120,10 @@ namespace skyline::gpu::interconnect {
 
         void SetColorRenderTargetAddressLow(size_t index, u32 low) {
             SetRenderTargetAddressLow(colorRenderTargets.at(index), low);
+        }
+
+        void SetDepthRenderTargetAddressLow(u32 low) {
+            SetRenderTargetAddressLow(depthRenderTarget, low);
         }
 
         void SetRenderTargetWidth(RenderTarget &renderTarget, u32 value) {
@@ -124,6 +138,10 @@ namespace skyline::gpu::interconnect {
             SetRenderTargetWidth(colorRenderTargets.at(index), value);
         }
 
+        void SetDepthRenderTargetWidth(u32 value) {
+            SetRenderTargetWidth(depthRenderTarget, value);
+        }
+
         void SetRenderTargetHeight(RenderTarget &renderTarget, u32 value) {
             renderTarget.guest.dimensions.height = value;
             renderTarget.view.reset();
@@ -131,6 +149,10 @@ namespace skyline::gpu::interconnect {
 
         void SetColorRenderTargetHeight(size_t index, u32 value) {
             SetRenderTargetHeight(colorRenderTargets.at(index), value);
+        }
+
+        void SetDepthRenderTargetHeight(u32 value) {
+            SetRenderTargetHeight(depthRenderTarget, value);
         }
 
         void SetColorRenderTargetFormat(size_t index, maxwell3d::ColorRenderTarget::Format format) {
@@ -206,6 +228,23 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
+        void SetDepthRenderTargetFormat(maxwell3d::DepthRtFormat format) {
+            depthRenderTarget.guest.format = [&]() -> texture::Format {
+                using MaxwellDepthRtFormat = maxwell3d::DepthRtFormat;
+                switch (format) {
+                    case MaxwellDepthRtFormat::S8D24Unorm:
+                        return format::S8D24Unorm;
+                    default:
+                        throw exception("Cannot translate the supplied depth RT format: 0x{:X}", static_cast<u32>(format));
+                }
+            }();
+
+            if (depthRenderTarget.guest.tileConfig.mode == texture::TileMode::Linear && depthRenderTarget.guest.format)
+                depthRenderTarget.guest.dimensions.width = depthRenderTarget.widthBytes / depthRenderTarget.guest.format->bpb;
+
+            depthRenderTarget.view.reset();
+        }
+
         void SetRenderTargetTileMode(RenderTarget &renderTarget, maxwell3d::RenderTargetTileMode mode) {
             auto &config{renderTarget.guest.tileConfig};
             if (mode.isLinear) {
@@ -233,15 +272,23 @@ namespace skyline::gpu::interconnect {
             SetRenderTargetTileMode(colorRenderTargets.at(index), mode);
         }
 
+        void SetDepthRenderTargetTileMode(maxwell3d::RenderTargetTileMode mode) {
+            SetRenderTargetTileMode(depthRenderTarget, mode);
+        }
+
         void SetRenderTargetArrayMode(RenderTarget &renderTarget, maxwell3d::RenderTargetArrayMode mode) {
             renderTarget.guest.layerCount = mode.layerCount;
-            if (mode.volume)
-                throw exception("RT Array Volumes are not supported (with layer count = {})", mode.layerCount);
             renderTarget.view.reset();
         }
 
         void SetColorRenderTargetArrayMode(size_t index, maxwell3d::RenderTargetArrayMode mode) {
+            if (mode.volume)
+                throw exception("Color RT Array Volumes are not supported (with layer count = {})", mode.layerCount);
             SetRenderTargetArrayMode(colorRenderTargets.at(index), mode);
+        }
+
+        void SetDepthRenderTargetArrayMode(maxwell3d::RenderTargetArrayMode mode) {
+            SetRenderTargetArrayMode(depthRenderTarget, mode);
         }
 
         void SetRenderTargetLayerStride(RenderTarget &renderTarget, u32 layerStrideLsr2) {
@@ -253,6 +300,10 @@ namespace skyline::gpu::interconnect {
             SetRenderTargetLayerStride(colorRenderTargets.at(index), layerStrideLsr2);
         }
 
+        void SetDepthRenderTargetLayerStride(u32 layerStrideLsr2) {
+            SetRenderTargetLayerStride(depthRenderTarget, layerStrideLsr2);
+        }
+
         void SetColorRenderTargetBaseLayer(size_t index, u32 baseArrayLayer) {
             auto &renderTarget{colorRenderTargets.at(index)};
             if (baseArrayLayer > std::numeric_limits<u16>::max())
@@ -262,7 +313,7 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        TextureView *GetRenderTarget(RenderTarget& renderTarget) {
+        TextureView *GetRenderTarget(RenderTarget &renderTarget) {
             if (renderTarget.disabled)
                 return nullptr;
             else if (renderTarget.view)
@@ -282,6 +333,10 @@ namespace skyline::gpu::interconnect {
 
         TextureView *GetColorRenderTarget(size_t index) {
             return GetRenderTarget(colorRenderTargets.at(index));
+        }
+
+        TextureView *GetDepthRenderTarget() {
+            return GetRenderTarget(depthRenderTarget);
         }
 
         void UpdateRenderTargetControl(maxwell3d::RenderTargetControl control) {

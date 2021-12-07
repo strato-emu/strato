@@ -108,6 +108,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(ColorRenderTarget) == (0x10 * sizeof(u32)));
 
+    enum class DepthRtFormat : u32 {
+        D32Float = 0x0A,
+        D16Unorm = 0x13,
+        S8D24Unorm = 0x14,
+        D24X8Unorm = 0x15,
+        D24S8Unorm = 0x16,
+        S8Uint = 0x17,
+        D24C8Unorm = 0x18,
+        D32S8X24Float = 0x19,
+        D24X8S8C8X16Unorm = 0x1D,
+        D32X8C8X16Float = 0x1E,
+        D32S8C8X16Float = 0x1F,
+    };
+
     constexpr static size_t ViewportCount{16}; //!< Amount of viewports on Maxwell 3D, array size for any per-viewport parameter such as transform, scissors, etc
 
     /**

@@ -115,6 +115,34 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
                 #undef RENDER_TARGET_ARRAY
 
+                MAXWELL3D_CASE(depthTargetEnable, {
+                    context.SetDepthRenderTargetEnabled(depthTargetEnable);
+                })
+                MAXWELL3D_STRUCT_CASE(depthTargetAddress, high, {
+                    context.SetDepthRenderTargetAddressHigh(high);
+                })
+                MAXWELL3D_STRUCT_CASE(depthTargetAddress, low, {
+                    context.SetDepthRenderTargetAddressLow(low);
+                })
+                MAXWELL3D_CASE(depthTargetFormat, {
+                    context.SetDepthRenderTargetFormat(depthTargetFormat);
+                })
+                MAXWELL3D_CASE(depthTargetTileMode, {
+                    context.SetDepthRenderTargetTileMode(depthTargetTileMode);
+                })
+                MAXWELL3D_CASE(depthTargetLayerStride, {
+                    context.SetDepthRenderTargetLayerStride(depthTargetLayerStride);
+                })
+                MAXWELL3D_CASE(depthTargetWidth, {
+                    context.SetDepthRenderTargetWidth(depthTargetWidth);
+                })
+                MAXWELL3D_CASE(depthTargetHeight, {
+                    context.SetDepthRenderTargetHeight(depthTargetHeight);
+                })
+                MAXWELL3D_CASE(depthTargetArrayMode, {
+                    context.SetDepthRenderTargetArrayMode(depthTargetArrayMode);
+                })
+
                 #define VIEWPORT_TRANSFORM_CALLBACKS(z, index, data)                                      \
                 MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                          \
                     context.SetViewportX(index, scaleX, registers.viewportTransforms[index].translateX);  \
