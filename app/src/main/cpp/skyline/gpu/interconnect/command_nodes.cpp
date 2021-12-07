@@ -166,6 +166,29 @@ namespace skyline::gpu::interconnect::node {
         return false;
     }
 
+    bool RenderPassNode::ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value) {
+        auto attachmentReference{RebasePointer(attachmentReferences, subpassDescriptions.back().pDepthStencilAttachment)};
+        auto attachmentIndex{attachmentReference->attachment};
+
+        for (const auto &reference : attachmentReferences)
+            if (reference.attachment == attachmentIndex && &reference != attachmentReference)
+                return false;
+
+        auto &attachmentDescription{attachmentDescriptions.at(attachmentIndex)};
+        if (attachmentDescription.loadOp == vk::AttachmentLoadOp::eLoad) {
+            attachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
+
+            clearValues.resize(attachmentIndex + 1);
+            clearValues[attachmentIndex].depthStencil = value;
+
+            return true;
+        } else if (attachmentDescription.loadOp == vk::AttachmentLoadOp::eClear && clearValues[attachmentIndex].depthStencil == value) {
+            return true;
+        }
+
+        return false;
+    }
+
     vk::RenderPass RenderPassNode::operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
         storage->device = &gpu.vkDevice;
 

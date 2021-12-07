@@ -79,12 +79,19 @@ namespace skyline::gpu::interconnect::node {
         void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment);
 
         /**
-         * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_LOAD
+         * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_CLEAR
          * @param colorAttachment The index of the attachment in the attachments bound to the current subpass
          * @return If the attachment could be cleared or not due to conflicts with other operations
          * @note We require a subpass to be attached during this as the clear will not take place unless it's referenced by a subpass
          */
         bool ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value);
+
+        /**
+         * @brief Clears the depth/stencil attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_CLEAR
+         * @return If the attachment could be cleared or not due to conflicts with other operations
+         * @note We require a subpass to be attached during this as the clear will not take place unless it's referenced by a subpass
+         */
+        bool ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value);
 
         vk::RenderPass operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu);
     };

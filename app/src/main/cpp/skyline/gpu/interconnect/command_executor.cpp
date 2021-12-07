@@ -89,6 +89,36 @@ namespace skyline::gpu::interconnect {
         }
     }
 
+    void CommandExecutor::AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value) {
+        AttachTexture(attachment->texture);
+
+        bool newRenderPass{CreateRenderPass(vk::Rect2D{
+            .extent = attachment->texture->dimensions,
+        })};
+        renderPass->AddSubpass({}, {}, attachment);
+
+        if (renderPass->ClearDepthStencilAttachment(value)) {
+            if (!newRenderPass)
+                nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
+        } else {
+            auto function{[aspect = attachment->format->vkAspect, extent = attachment->texture->dimensions, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
+                commandBuffer.clearAttachments(vk::ClearAttachment{
+                    .aspectMask = aspect,
+                    .clearValue = value,
+                }, vk::ClearRect{
+                    .rect.extent = extent,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                });
+            }};
+
+            if (newRenderPass)
+                nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), function);
+            else
+                nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), function);
+        }
+    }
+
     void CommandExecutor::Execute() {
         if (!nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Execute");

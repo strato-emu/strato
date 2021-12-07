@@ -52,10 +52,16 @@ namespace skyline::gpu::interconnect {
         void AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments = {}, span<TextureView *> colorAttachments = {}, TextureView *depthStencilAttachment = {});
 
         /**
-         * @brief Adds a subpass that clears the entirety of the specified attachment with a value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
+         * @brief Adds a subpass that clears the entirety of the specified attachment with a color value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
          * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
          */
         void AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value);
+
+        /**
+         * @brief Adds a subpass that clears the entirety of the specified attachment with a depth/stencil value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
+         * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
+         */
+        void AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value);
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
