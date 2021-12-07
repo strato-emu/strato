@@ -9,16 +9,16 @@
 
 namespace skyline::gpu {
     void TextureView::lock() {
-        auto currentBacking{std::atomic_load(&texture)};
+        auto backing{std::atomic_load(&texture)};
         while (true) {
-            currentBacking->lock();
+            backing->lock();
 
-            auto newBacking{std::atomic_load(&texture)};
-            if (currentBacking == newBacking)
+            auto latestBacking{std::atomic_load(&texture)};
+            if (backing == latestBacking)
                 return;
 
-            currentBacking->unlock();
-            currentBacking = newBacking;
+            backing->unlock();
+            backing = latestBacking;
         }
     }
 
@@ -27,17 +27,19 @@ namespace skyline::gpu {
     }
 
     bool TextureView::try_lock() {
-        auto currentBacking{std::atomic_load(&texture)};
+        auto backing{std::atomic_load(&texture)};
         while (true) {
-            bool success{currentBacking->try_lock()};
+            bool success{backing->try_lock()};
 
-            auto newBacking{std::atomic_load(&texture)};
-            if (currentBacking == newBacking)
+            auto latestBacking{std::atomic_load(&texture)};
+            if (backing == latestBacking)
+                // We want to ensure that the try_lock() was on the latest backing and not on an outdated one
                 return success;
 
             if (success)
-                currentBacking->unlock();
-            currentBacking = newBacking;
+                // We only unlock() if the try_lock() was successful and we acquired the mutex
+                backing->unlock();
+            backing = latestBacking;
         }
     }
 

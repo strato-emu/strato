@@ -104,16 +104,16 @@ namespace skyline::gpu {
     BufferView::BufferView(std::shared_ptr<Buffer> backing, vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) : buffer(std::move(backing)), offset(offset), range(range), format(format) {}
 
     void BufferView::lock() {
-        auto currentBacking{std::atomic_load(&buffer)};
+        auto backing{std::atomic_load(&buffer)};
         while (true) {
-            currentBacking->lock();
+            backing->lock();
 
-            auto newBacking{std::atomic_load(&buffer)};
-            if (currentBacking == newBacking)
+            auto latestBacking{std::atomic_load(&buffer)};
+            if (backing == latestBacking)
                 return;
 
-            currentBacking->unlock();
-            currentBacking = newBacking;
+            backing->unlock();
+            backing = latestBacking;
         }
     }
 
@@ -122,17 +122,19 @@ namespace skyline::gpu {
     }
 
     bool BufferView::try_lock() {
-        auto currentBacking{std::atomic_load(&buffer)};
+        auto backing{std::atomic_load(&buffer)};
         while (true) {
-            bool success{currentBacking->try_lock()};
+            bool success{backing->try_lock()};
 
-            auto newBacking{std::atomic_load(&buffer)};
-            if (currentBacking == newBacking)
+            auto latestBacking{std::atomic_load(&buffer)};
+            if (backing == latestBacking)
+                // We want to ensure that the try_lock() was on the latest backing and not on an outdated one
                 return success;
 
             if (success)
-                currentBacking->unlock();
-            currentBacking = newBacking;
+                // We only unlock() if the try_lock() was successful and we acquired the mutex
+                backing->unlock();
+            backing = latestBacking;
         }
     }
 }
