@@ -1082,24 +1082,27 @@ namespace skyline::gpu::interconnect {
 
       public:
         void SetPrimitiveTopology(maxwell3d::PrimitiveTopology topology) {
-            inputAssemblyState.topology = [topology]() {
+            auto[vkTopology, shaderTopology] = [topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology> {
+                using MaxwellTopology = maxwell3d::PrimitiveTopology;
+                using VkTopology = vk::PrimitiveTopology;
+                using ShaderTopology = ShaderCompiler::InputTopology;
                 switch (topology) {
                     // @fmt:off
 
-                    case maxwell3d::PrimitiveTopology::PointList: return vk::PrimitiveTopology::ePointList;
+                    case MaxwellTopology::PointList: return {VkTopology::ePointList, ShaderTopology::Points};
 
-                    case maxwell3d::PrimitiveTopology::LineList: return vk::PrimitiveTopology::eLineList;
-                    case maxwell3d::PrimitiveTopology::LineListWithAdjacency: return vk::PrimitiveTopology::eLineListWithAdjacency;
-                    case maxwell3d::PrimitiveTopology::LineStrip: return vk::PrimitiveTopology::eLineStrip;
-                    case maxwell3d::PrimitiveTopology::LineStripWithAdjacency: return vk::PrimitiveTopology::eLineStripWithAdjacency;
+                    case MaxwellTopology::LineList: return {VkTopology::eLineList, ShaderTopology::Lines};
+                    case MaxwellTopology::LineStrip: return {VkTopology::eLineStrip, ShaderTopology::Lines};
+                    case MaxwellTopology::LineListWithAdjacency: return {VkTopology::eLineListWithAdjacency, ShaderTopology::LinesAdjacency};
+                    case MaxwellTopology::LineStripWithAdjacency: return {VkTopology::eLineStripWithAdjacency, ShaderTopology::LinesAdjacency};
 
-                    case maxwell3d::PrimitiveTopology::TriangleList: return vk::PrimitiveTopology::eTriangleList;
-                    case maxwell3d::PrimitiveTopology::TriangleListWithAdjacency: return vk::PrimitiveTopology::eTriangleListWithAdjacency;
-                    case maxwell3d::PrimitiveTopology::TriangleStrip: return vk::PrimitiveTopology::eTriangleStrip;
-                    case maxwell3d::PrimitiveTopology::TriangleStripWithAdjacency: return vk::PrimitiveTopology::eTriangleStripWithAdjacency;
-                    case maxwell3d::PrimitiveTopology::TriangleFan: return vk::PrimitiveTopology::eTriangleFan;
+                    case MaxwellTopology::TriangleList: return {VkTopology::eTriangleList, ShaderTopology::Triangles};
+                    case MaxwellTopology::TriangleStrip: return {VkTopology::eTriangleStrip, ShaderTopology::Triangles};
+                    case MaxwellTopology::TriangleFan: return {VkTopology::eTriangleFan, ShaderTopology::Triangles};
+                    case MaxwellTopology::TriangleListWithAdjacency: return {VkTopology::eTriangleListWithAdjacency, ShaderTopology::TrianglesAdjacency};
+                    case MaxwellTopology::TriangleStripWithAdjacency: return {VkTopology::eTriangleStripWithAdjacency, ShaderTopology::TrianglesAdjacency};
 
-                    case maxwell3d::PrimitiveTopology::PatchList: return vk::PrimitiveTopology::ePatchList;
+                    case MaxwellTopology::PatchList: return {VkTopology::ePatchList, ShaderTopology::Triangles};
 
                     // @fmt:on
 
@@ -1107,6 +1110,9 @@ namespace skyline::gpu::interconnect {
                         throw exception("Unimplemented Maxwell3D Primitive Topology: {}", maxwell3d::ToString(topology));
                 }
             }();
+
+            inputAssemblyState.topology = vkTopology;
+            runtimeInfo.input_topology = shaderTopology;
         }
 
         /* Multisampling */
@@ -1216,7 +1222,7 @@ namespace skyline::gpu::interconnect {
                     vk::raii::PipelineLayout pipelineLayout;
                     vk::raii::Pipeline pipeline;
 
-                    Storage(vk::raii::PipelineLayout&& pipelineLayout, vk::raii::Pipeline&& pipeline) : pipelineLayout(std::move(pipelineLayout)), pipeline(std::move(pipeline)) {}
+                    Storage(vk::raii::PipelineLayout &&pipelineLayout, vk::raii::Pipeline &&pipeline) : pipelineLayout(std::move(pipelineLayout)), pipeline(std::move(pipeline)) {}
                 };
 
                 cycle->AttachObject(std::make_shared<Storage>(std::move(pipelineLayout), vk::raii::Pipeline(vkDevice, pipeline.value)));
