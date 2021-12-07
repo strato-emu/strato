@@ -68,7 +68,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0xB2, type::SyncpointAction> syncpointAction;
 
             Register<0xDF, u32> rasterizerEnable;
-            Register<0x200, std::array<type::RenderTarget, type::RenderTargetCount>> renderTargets;
+            Register<0x200, std::array<type::ColorRenderTarget, type::RenderTargetCount>> renderTargets;
             Register<0x280, std::array<type::ViewportTransform, type::ViewportCount>> viewportTransforms;
             Register<0x300, std::array<type::Viewport, type::ViewportCount>> viewports;
 

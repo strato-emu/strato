@@ -42,16 +42,32 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
 
     constexpr static size_t RenderTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
 
+    struct RenderTargetTileMode {
+        u8 blockWidthLog2 : 4; //!< The width of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
+        u8 blockHeightLog2 : 4; //!< The height of a block in GOBs with log2 encoding
+        u8 blockDepthLog2 : 4; //!< The depth of a block in GOBs with log2 encoding
+        bool isLinear : 1;
+        u8 _pad0_ : 3;
+        bool is3d : 1;
+        u16 _pad1_ : 15;
+    };
+
+    struct RenderTargetArrayMode {
+        u16 layerCount;
+        bool volume : 1;
+        u16 _pad_ : 15;
+    };
+
     /**
      * @brief The target image's metadata for any rendering operations
      * @note Any render target with ColorFormat::None as their format are effectively disabled
      */
-    struct RenderTarget {
+    struct ColorRenderTarget {
         Address address;
         u32 width;
         u32 height;
 
-        enum class ColorFormat : u32 {
+        enum class Format : u32 {
             None = 0x0,
             R32B32G32A32Float = 0xC0,
             R16G16B16A16Unorm = 0xC6,
@@ -82,27 +98,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             R8Uint = 0xF6,
         } format;
 
-        struct TileMode {
-            u8 blockWidthLog2 : 4; //!< The width of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
-            u8 blockHeightLog2 : 4; //!< The height of a block in GOBs with log2 encoding
-            u8 blockDepthLog2 : 4; //!< The depth of a block in GOBs with log2 encoding
-            bool isLinear : 1;
-            u8 _pad0_ : 3;
-            bool is3d : 1;
-            u16 _pad1_ : 15;
-        } tileMode;
+        RenderTargetTileMode tileMode;
 
-        struct ArrayMode {
-            u16 layerCount;
-            bool volume : 1;
-            u16 _pad_ : 15;
-        } arrayMode;
+        RenderTargetArrayMode arrayMode;
 
         u32 layerStrideLsr2; //!< The length of the stride of a layer shifted right by 2 bits
         u32 baseLayer;
         u32 _pad_[0x7];
     };
-    static_assert(sizeof(RenderTarget) == (0x10 * sizeof(u32)));
+    static_assert(sizeof(ColorRenderTarget) == (0x10 * sizeof(u32)));
 
     constexpr static size_t ViewportCount{16}; //!< Amount of viewports on Maxwell 3D, array size for any per-viewport parameter such as transform, scissors, etc
 

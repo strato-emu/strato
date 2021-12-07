@@ -88,26 +88,31 @@ namespace skyline::gpu::interconnect {
             }
         };
 
-        std::array<RenderTarget, maxwell3d::RenderTargetCount> renderTargets{}; //!< The target textures to render into as color attachments
+        std::array<RenderTarget, maxwell3d::RenderTargetCount> colorRenderTargets{}; //!< The target textures to render into as color attachments
         maxwell3d::RenderTargetControl renderTargetControl{};
 
       public:
-        void SetRenderTargetAddressHigh(size_t index, u32 high) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetRenderTargetAddressHigh(RenderTarget &renderTarget, u32 high) {
             renderTarget.iova.high = high;
             renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetAddressLow(size_t index, u32 low) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetAddressHigh(size_t index, u32 high) {
+            SetRenderTargetAddressHigh(colorRenderTargets.at(index), high);
+        }
+
+        void SetRenderTargetAddressLow(RenderTarget &renderTarget, u32 low) {
             renderTarget.iova.low = low;
             renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetWidth(size_t index, u32 value) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetAddressLow(size_t index, u32 low) {
+            SetRenderTargetAddressLow(colorRenderTargets.at(index), low);
+        }
+
+        void SetRenderTargetWidth(RenderTarget &renderTarget, u32 value) {
             renderTarget.widthBytes = value;
             if (renderTarget.guest.tileConfig.mode == texture::TileMode::Linear && renderTarget.guest.format)
                 value /= renderTarget.guest.format->bpb; // Width is in bytes rather than format units for linear textures
@@ -115,74 +120,82 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetHeight(size_t index, u32 value) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetWidth(size_t index, u32 value) {
+            SetRenderTargetWidth(colorRenderTargets.at(index), value);
+        }
+
+        void SetRenderTargetHeight(RenderTarget &renderTarget, u32 value) {
             renderTarget.guest.dimensions.height = value;
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetFormat(size_t index, maxwell3d::RenderTarget::ColorFormat format) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetHeight(size_t index, u32 value) {
+            SetRenderTargetHeight(colorRenderTargets.at(index), value);
+        }
+
+        void SetColorRenderTargetFormat(size_t index, maxwell3d::ColorRenderTarget::Format format) {
+            auto &renderTarget{colorRenderTargets.at(index)};
             renderTarget.guest.format = [&]() -> texture::Format {
+                using MaxwellColorRtFormat = maxwell3d::ColorRenderTarget::Format;
                 switch (format) {
-                    case maxwell3d::RenderTarget::ColorFormat::None:
+                    case MaxwellColorRtFormat::None:
                         return {};
-                    case maxwell3d::RenderTarget::ColorFormat::R32B32G32A32Float:
+                    case MaxwellColorRtFormat::R32B32G32A32Float:
                         return format::R32B32G32A32Float;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Unorm:
+                    case MaxwellColorRtFormat::R16G16B16A16Unorm:
                         return format::R16G16B16A16Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Snorm:
+                    case MaxwellColorRtFormat::R16G16B16A16Snorm:
                         return format::R16G16B16A16Snorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Sint:
+                    case MaxwellColorRtFormat::R16G16B16A16Sint:
                         return format::R16G16B16A16Sint;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Uint:
+                    case MaxwellColorRtFormat::R16G16B16A16Uint:
                         return format::R16G16B16A16Uint;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16B16A16Float:
+                    case MaxwellColorRtFormat::R16G16B16A16Float:
                         return format::R16G16B16A16Float;
-                    case maxwell3d::RenderTarget::ColorFormat::B8G8R8A8Unorm:
+                    case MaxwellColorRtFormat::B8G8R8A8Unorm:
                         return format::B8G8R8A8Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::B8G8R8A8Srgb:
+                    case MaxwellColorRtFormat::B8G8R8A8Srgb:
                         return format::B8G8R8A8Srgb;
-                    case maxwell3d::RenderTarget::ColorFormat::A2B10G10R10Unorm:
+                    case MaxwellColorRtFormat::A2B10G10R10Unorm:
                         return format::A2B10G10R10Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R8G8B8A8Unorm:
+                    case MaxwellColorRtFormat::R8G8B8A8Unorm:
                         return format::R8G8B8A8Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Srgb:
+                    case MaxwellColorRtFormat::A8B8G8R8Srgb:
                         return format::A8B8G8R8Srgb;
-                    case maxwell3d::RenderTarget::ColorFormat::A8B8G8R8Snorm:
+                    case MaxwellColorRtFormat::A8B8G8R8Snorm:
                         return format::A8B8G8R8Snorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16Unorm:
+                    case MaxwellColorRtFormat::R16G16Unorm:
                         return format::R16G16Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16Snorm:
+                    case MaxwellColorRtFormat::R16G16Snorm:
                         return format::R16G16Snorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16Sint:
+                    case MaxwellColorRtFormat::R16G16Sint:
                         return format::R16G16Sint;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16Uint:
+                    case MaxwellColorRtFormat::R16G16Uint:
                         return format::R16G16Uint;
-                    case maxwell3d::RenderTarget::ColorFormat::R16G16Float:
+                    case MaxwellColorRtFormat::R16G16Float:
                         return format::R16G16Float;
-                    case maxwell3d::RenderTarget::ColorFormat::B10G11R11Float:
+                    case MaxwellColorRtFormat::B10G11R11Float:
                         return format::B10G11R11Float;
-                    case maxwell3d::RenderTarget::ColorFormat::R32Float:
+                    case MaxwellColorRtFormat::R32Float:
                         return format::R32Float;
-                    case maxwell3d::RenderTarget::ColorFormat::R8G8Unorm:
+                    case MaxwellColorRtFormat::R8G8Unorm:
                         return format::R8G8Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R8G8Snorm:
+                    case MaxwellColorRtFormat::R8G8Snorm:
                         return format::R8G8Snorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16Unorm:
+                    case MaxwellColorRtFormat::R16Unorm:
                         return format::R16Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R16Float:
+                    case MaxwellColorRtFormat::R16Float:
                         return format::R16Float;
-                    case maxwell3d::RenderTarget::ColorFormat::R8Unorm:
+                    case MaxwellColorRtFormat::R8Unorm:
                         return format::R8Unorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R8Snorm:
+                    case MaxwellColorRtFormat::R8Snorm:
                         return format::R8Snorm;
-                    case maxwell3d::RenderTarget::ColorFormat::R8Sint:
+                    case MaxwellColorRtFormat::R8Sint:
                         return format::R8Sint;
-                    case maxwell3d::RenderTarget::ColorFormat::R8Uint:
+                    case MaxwellColorRtFormat::R8Uint:
                         return format::R8Uint;
                     default:
-                        throw exception("Cannot translate the supplied RT format: 0x{:X}", static_cast<u32>(format));
+                        throw exception("Cannot translate the supplied color RT format: 0x{:X}", static_cast<u32>(format));
                 }
             }();
 
@@ -193,8 +206,7 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetTileMode(size_t index, maxwell3d::RenderTarget::TileMode mode) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetRenderTargetTileMode(RenderTarget &renderTarget, maxwell3d::RenderTargetTileMode mode) {
             auto &config{renderTarget.guest.tileConfig};
             if (mode.isLinear) {
                 if (config.mode != texture::TileMode::Linear && renderTarget.guest.format) {
@@ -217,22 +229,32 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetArrayMode(size_t index, maxwell3d::RenderTarget::ArrayMode mode) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetTileMode(size_t index, maxwell3d::RenderTargetTileMode mode) {
+            SetRenderTargetTileMode(colorRenderTargets.at(index), mode);
+        }
+
+        void SetRenderTargetArrayMode(RenderTarget &renderTarget, maxwell3d::RenderTargetArrayMode mode) {
             renderTarget.guest.layerCount = mode.layerCount;
             if (mode.volume)
                 throw exception("RT Array Volumes are not supported (with layer count = {})", mode.layerCount);
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetLayerStride(size_t index, u32 layerStrideLsr2) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetArrayMode(size_t index, maxwell3d::RenderTargetArrayMode mode) {
+            SetRenderTargetArrayMode(colorRenderTargets.at(index), mode);
+        }
+
+        void SetRenderTargetLayerStride(RenderTarget &renderTarget, u32 layerStrideLsr2) {
             renderTarget.guest.layerStride = layerStrideLsr2 << 2;
             renderTarget.view.reset();
         }
 
-        void SetRenderTargetBaseLayer(size_t index, u32 baseArrayLayer) {
-            auto &renderTarget{renderTargets.at(index)};
+        void SetColorRenderTargetLayerStride(size_t index, u32 layerStrideLsr2) {
+            SetRenderTargetLayerStride(colorRenderTargets.at(index), layerStrideLsr2);
+        }
+
+        void SetColorRenderTargetBaseLayer(size_t index, u32 baseArrayLayer) {
+            auto &renderTarget{colorRenderTargets.at(index)};
             if (baseArrayLayer > std::numeric_limits<u16>::max())
                 throw exception("Base array layer ({}) exceeds the range of array count ({}) (with layer count = {})", baseArrayLayer, std::numeric_limits<u16>::max(), renderTarget.guest.layerCount);
 
@@ -240,8 +262,7 @@ namespace skyline::gpu::interconnect {
             renderTarget.view.reset();
         }
 
-        TextureView *GetRenderTarget(size_t index) {
-            auto &renderTarget{renderTargets.at(index)};
+        TextureView *GetRenderTarget(RenderTarget& renderTarget) {
             if (renderTarget.disabled)
                 return nullptr;
             else if (renderTarget.view)
@@ -257,6 +278,10 @@ namespace skyline::gpu::interconnect {
 
             renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest);
             return renderTarget.view.get();
+        }
+
+        TextureView *GetColorRenderTarget(size_t index) {
+            return GetRenderTarget(colorRenderTargets.at(index));
         }
 
         void UpdateRenderTargetControl(maxwell3d::RenderTargetControl control) {
@@ -333,7 +358,7 @@ namespace skyline::gpu::interconnect {
 
         void ClearBuffers(maxwell3d::ClearBuffers clear) {
             auto renderTargetIndex{renderTargetControl[clear.renderTargetId]};
-            auto renderTarget{GetRenderTarget(renderTargetIndex)};
+            auto renderTarget{GetColorRenderTarget(renderTargetIndex)};
             if (renderTarget) {
                 std::lock_guard lock(*renderTarget->texture);
 
@@ -1141,7 +1166,7 @@ namespace skyline::gpu::interconnect {
             std::vector<TextureView *> activeRenderTargets;
 
             for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
-                auto renderTarget{GetRenderTarget(index)};
+                auto renderTarget{GetColorRenderTarget(index)};
                 if (renderTarget) {
                     renderTargetLocks.emplace_back(*renderTarget);
                     activeRenderTargets.push_back(renderTarget);

@@ -84,31 +84,31 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 #define RENDER_TARGET_ARRAY(z, index, data)                               \
                 MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, high, { \
-                    context.SetRenderTargetAddressHigh(index, high);                      \
+                    context.SetColorRenderTargetAddressHigh(index, high);                 \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, low, {  \
-                    context.SetRenderTargetAddressLow(index, low);                        \
+                    context.SetColorRenderTargetAddressLow(index, low);                   \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, width, {                \
-                    context.SetRenderTargetWidth(index, width);                           \
+                    context.SetColorRenderTargetWidth(index, width);                      \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, height, {               \
-                    context.SetRenderTargetHeight(index, height);                         \
+                    context.SetColorRenderTargetHeight(index, height);                    \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, format, {               \
-                    context.SetRenderTargetFormat(index, format);                         \
+                    context.SetColorRenderTargetFormat(index, format);                    \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, tileMode, {             \
-                    context.SetRenderTargetTileMode(index, tileMode);                     \
+                    context.SetColorRenderTargetTileMode(index, tileMode);                \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, arrayMode, {            \
-                    context.SetRenderTargetArrayMode(index, arrayMode);                   \
+                    context.SetColorRenderTargetArrayMode(index, arrayMode);              \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, layerStrideLsr2, {      \
-                    context.SetRenderTargetLayerStride(index, layerStrideLsr2);           \
+                    context.SetColorRenderTargetLayerStride(index, layerStrideLsr2);      \
                 })                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(renderTargets, index, baseLayer, {            \
-                    context.SetRenderTargetBaseLayer(index, baseLayer);                   \
+                    context.SetColorRenderTargetBaseLayer(index, baseLayer);              \
                 })
 
                 BOOST_PP_REPEAT(8, RENDER_TARGET_ARRAY, 0)
