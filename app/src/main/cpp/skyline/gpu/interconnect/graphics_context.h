@@ -1248,6 +1248,9 @@ namespace skyline::gpu::interconnect {
             runtimeInfo.input_topology = shaderTopology;
         }
 
+        /* Depth */
+        vk::PipelineDepthStencilStateCreateInfo depthState{};
+
         /* Multisampling */
         vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1,
@@ -1261,7 +1264,7 @@ namespace skyline::gpu::interconnect {
             .pViewportState = &viewportState,
             .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
             .pMultisampleState = &multisampleState,
-            .pDepthStencilState = nullptr,
+            .pDepthStencilState = &depthState,
             .pColorBlendState = &blendState,
             .pDynamicState = nullptr,
         };
