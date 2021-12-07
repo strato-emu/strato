@@ -1272,19 +1272,25 @@ namespace skyline::gpu::interconnect {
 
       public:
         void Draw(u32 vertexCount, u32 firstVertex) {
-            // Render Target Setup
-            boost::container::static_vector<std::scoped_lock<TextureView>, maxwell3d::RenderTargetCount> renderTargetLocks;
-            std::vector<TextureView *> activeRenderTargets;
+            // Color Render Target Setup
+            boost::container::static_vector<std::scoped_lock<TextureView>, maxwell3d::RenderTargetCount> colorRenderTargetLocks;
+            boost::container::static_vector<TextureView *, maxwell3d::RenderTargetCount> activeColorRenderTargets;
 
             for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
                 auto renderTarget{GetColorRenderTarget(index)};
                 if (renderTarget) {
-                    renderTargetLocks.emplace_back(*renderTarget);
-                    activeRenderTargets.push_back(renderTarget);
+                    colorRenderTargetLocks.emplace_back(*renderTarget);
+                    activeColorRenderTargets.push_back(renderTarget);
                 }
             }
 
-            blendState.attachmentCount = static_cast<u32>(activeRenderTargets.size());
+            blendState.attachmentCount = static_cast<u32>(activeColorRenderTargets.size());
+
+            // Depth/Stencil Render Target Setup
+            auto depthRenderTargetView{GetDepthRenderTarget()};
+            std::optional<std::scoped_lock<TextureView>> depthTargetLock;
+            if (depthRenderTargetView)
+                depthTargetLock.emplace(*depthRenderTargetView);
 
             // Vertex Buffer Setup
             boost::container::static_vector<std::scoped_lock<BufferView>, maxwell3d::VertexBufferCount> vertexBufferLocks;
@@ -1363,8 +1369,8 @@ namespace skyline::gpu::interconnect {
 
                 cycle->AttachObject(std::make_shared<Storage>(std::move(pipelineLayout), vk::raii::Pipeline(vkDevice, pipeline.value)));
             }, vk::Rect2D{
-                .extent = activeRenderTargets[0]->texture->dimensions,
-            }, {}, activeRenderTargets);
+                .extent = activeColorRenderTargets[0]->texture->dimensions,
+            }, {}, activeColorRenderTargets, depthRenderTargetView);
         }
     };
 }
