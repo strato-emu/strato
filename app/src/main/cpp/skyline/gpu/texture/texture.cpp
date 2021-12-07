@@ -103,13 +103,26 @@ namespace skyline::gpu {
                 },
             });
 
-        commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, layout, vk::BufferImageCopy{
-            .imageExtent = dimensions,
-            .imageSubresource = {
-                .aspectMask = format->vkAspect,
-                .layerCount = layerCount,
-            },
-        });
+        boost::container::static_vector<const vk::BufferImageCopy, 3> bufferImageCopies;
+        auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
+            bufferImageCopies.emplace_back(
+                vk::BufferImageCopy{
+                    .imageExtent = dimensions,
+                    .imageSubresource = {
+                        .aspectMask = aspect,
+                        .layerCount = layerCount,
+                    },
+                });
+        }};
+
+        if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eColor);
+        if (format->vkAspect & vk::ImageAspectFlagBits::eDepth)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eDepth);
+        if (format->vkAspect & vk::ImageAspectFlagBits::eStencil)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eStencil);
+
+        commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, layout, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
     }
 
     void Texture::CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
@@ -203,6 +216,12 @@ namespace skyline::gpu {
           mipLevels(1),
           layerCount(guest->layerCount),
           sampleCount(vk::SampleCountFlagBits::e1) {
+        vk::ImageUsageFlags usage{vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
+        if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
+            usage |= vk::ImageUsageFlagBits::eColorAttachment;
+        if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
+            usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+
         vk::ImageCreateInfo imageCreateInfo{
             .imageType = guest->dimensions.GetType(),
             .format = *guest->format,
@@ -211,7 +230,7 @@ namespace skyline::gpu {
             .arrayLayers = guest->layerCount,
             .samples = vk::SampleCountFlagBits::e1,
             .tiling = tiling,
-            .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+            .usage = usage,
             .sharingMode = vk::SharingMode::eExclusive,
             .queueFamilyIndexCount = 1,
             .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
