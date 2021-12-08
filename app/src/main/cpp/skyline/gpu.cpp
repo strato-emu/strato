@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <dlfcn.h>
+#include <adrenotools/driver.h>
+#include <os.h>
 #include <jvm.h>
 #include "gpu.h"
 
@@ -208,8 +211,34 @@ namespace skyline::gpu {
         });
     }
 
+    static PFN_vkGetInstanceProcAddr LoadVulkanDriver(const DeviceState &state) {
+        // Try turnip first, if not then fallback to regular with file redirect then plain dlopen
+        auto libvulkanHandle{adrenotools_open_libvulkan(RTLD_NOW,
+            ADRENOTOOLS_DRIVER_CUSTOM,
+            nullptr, // We require Android 10 so don't need to supply
+            state.os->nativeLibraryPath.c_str(),
+            (state.os->appFilesPath + "turnip/").c_str(),
+            "libvulkan_freedreno.so",
+            nullptr)};
+        if (!libvulkanHandle) {
+            libvulkanHandle = adrenotools_open_libvulkan(RTLD_NOW,
+                ADRENOTOOLS_DRIVER_FILE_REDIRECT,
+                nullptr, // We require Android 10 so don't need to supply
+                state.os->nativeLibraryPath.c_str(),
+                nullptr,
+                nullptr,
+                (state.os->appFilesPath + "vk_file_redirect/").c_str());
+            if (!libvulkanHandle)
+                libvulkanHandle = dlopen("libvulkan.so", RTLD_NOW);
+        }
+
+        return reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(libvulkanHandle, "vkGetInstanceProcAddr"));
+    }
+
+
     GPU::GPU(const DeviceState &state)
-        : vkInstance(CreateInstance(state, vkContext)),
+        : vkContext(LoadVulkanDriver(state)),
+          vkInstance(CreateInstance(state, vkContext)),
           vkDebugReportCallback(CreateDebugReportCallback(vkInstance)),
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
           vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, traits)),

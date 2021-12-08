@@ -54,8 +54,3 @@
 [submodule "libadrenotools"]
 	path = app/libraries/adrenotools
 	url = https://github.com/bylaws/libadrenotools/
-	branch = master
-[submodule "app/libraries/adrenotools"]
-	path = app/libraries/adrenotools
-	url = https://github.com/bylaws/libadrenotools/
-	branch = master
