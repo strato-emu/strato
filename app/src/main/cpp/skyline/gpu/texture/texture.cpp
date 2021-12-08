@@ -8,6 +8,34 @@
 #include "copy.h"
 
 namespace skyline::gpu {
+    TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
+
+    vk::ImageView TextureView::GetView() {
+        if (view)
+            return **view;
+
+        auto viewType{[&]() {
+            switch (texture->dimensions.GetType()) {
+                case vk::ImageType::e1D:
+                    return range.layerCount > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
+                case vk::ImageType::e2D:
+                    return range.layerCount > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+                case vk::ImageType::e3D:
+                    return vk::ImageViewType::e3D;
+            }
+        }()};
+
+        vk::ImageViewCreateInfo createInfo{
+            .image = texture->GetBacking(),
+            .viewType = viewType,
+            .format = format ? *format : *texture->format,
+            .components = mapping,
+            .subresourceRange = range,
+        };
+
+        return *view.emplace(texture->gpu.vkDevice, createInfo);
+    }
+
     void TextureView::lock() {
         auto backing{std::atomic_load(&texture)};
         while (true) {
@@ -520,33 +548,5 @@ namespace skyline::gpu {
 
     Texture::~Texture() {
         WaitOnFence();
-    }
-
-    TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
-
-    vk::ImageView TextureView::GetView() {
-        if (view)
-            return **view;
-
-        auto viewType{[&]() {
-            switch (texture->dimensions.GetType()) {
-                case vk::ImageType::e1D:
-                    return range.layerCount > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
-                case vk::ImageType::e2D:
-                    return range.layerCount > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
-                case vk::ImageType::e3D:
-                    return vk::ImageViewType::e3D;
-            }
-        }()};
-
-        vk::ImageViewCreateInfo createInfo{
-            .image = texture->GetBacking(),
-            .viewType = viewType,
-            .format = format ? *format : *texture->format,
-            .components = mapping,
-            .subresourceRange = range,
-        };
-
-        return *view.emplace(texture->gpu.vkDevice, createInfo);
     }
 }
