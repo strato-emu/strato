@@ -74,6 +74,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     jint preferenceFd,
     jint systemLanguage,
     jstring appFilesPathJstring,
+    jstring nativeLibraryPathJstring,
     jobject assetManager
 ) {
     skyline::signal::ScopedStackBlocker stackBlocker; // We do not want anything to unwind past JNI code as there are invalid stack frames which can lead to a segmentation fault
@@ -98,10 +99,13 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     perfetto::TrackEvent::Register();
 
     try {
+        skyline::JniString nativeLibraryPath(env, nativeLibraryPathJstring);
+
         auto os{std::make_shared<skyline::kernel::OS>(
             jvmManager,
             settings,
             appFilesPath,
+            nativeLibraryPath,
             GetTimeZoneName(),
             static_cast<skyline::language::SystemLanguage>(systemLanguage),
             std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))

@@ -70,9 +70,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * @param romFd The file descriptor of the ROM object
      * @param preferenceFd The file descriptor of the Preference XML
      * @param appFilesPath The full path to the app files directory
+     * @param nativeLibraryPath The full path to the app native library directory
      * @param assetManager The asset manager used for accessing app assets
      */
-    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, language : Int, appFilesPath : String, assetManager : AssetManager)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, preferenceFd : Int, language : Int, appFilesPath : String, nativeLibraryPath : String, assetManager : AssetManager)
 
     /**
      * @param join If the function should only return after all the threads join or immediately
@@ -211,7 +212,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val preferenceFd = ParcelFileDescriptor.open(File("${applicationInfo.dataDir}/shared_prefs/${applicationInfo.packageName}_preferences.xml"), ParcelFileDescriptor.MODE_READ_WRITE)
 
         emulationThread = Thread {
-            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), settings.systemLanguage, applicationContext.filesDir.canonicalPath + "/", assets)
+            executeApplication(rom.toString(), romType, romFd.detachFd(), preferenceFd.detachFd(), settings.systemLanguage, applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
             returnFromEmulation()
         }
 

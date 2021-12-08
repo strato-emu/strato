@@ -14,8 +14,9 @@ namespace skyline::kernel {
      */
     class OS {
       public:
-        DeviceState state;
+        std::string nativeLibraryPath; //!< The full path to the app's native library directory
         std::string appFilesPath; //!< The full path to the app's files directory
+        DeviceState state;
         std::string deviceTimeZone; //!< The timezone name (e.g. Europe/London)
         std::shared_ptr<vfs::FileSystem> assetFileSystem; //!< A filesystem to be used for accessing emulator assets (like tzdata)
         service::ServiceManager serviceManager;
@@ -30,6 +31,7 @@ namespace skyline::kernel {
             std::shared_ptr<Settings> &settings,
             std::string appFilesPath,
             std::string deviceTimeZone,
+            std::string nativeLibraryPath,
             language::SystemLanguage systemLanguage,
             std::shared_ptr<vfs::FileSystem> assetFileSystem
         );
