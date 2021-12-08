@@ -7,7 +7,7 @@
 namespace skyline::gpu {
     CommandScheduler::CommandBufferSlot::CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool)
         : device(device),
-          commandBuffer(device, commandBuffer, pool),
+          commandBuffer(device, static_cast<VkCommandBuffer>(commandBuffer), static_cast<VkCommandPool>(*pool)),
           fence(device, vk::FenceCreateInfo{}),
           cycle(std::make_shared<FenceCycle>(device, *fence)) {}
 
