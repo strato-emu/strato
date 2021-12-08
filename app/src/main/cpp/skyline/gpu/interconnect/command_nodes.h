@@ -35,7 +35,6 @@ namespace skyline::gpu::interconnect::node {
             vk::raii::Device *device{};
             vk::Framebuffer framebuffer{};
             vk::RenderPass renderPass{};
-            std::vector<std::shared_ptr<Texture>> textures;
 
             ~Storage();
         };

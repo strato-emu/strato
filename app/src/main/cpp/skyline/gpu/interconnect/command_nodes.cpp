@@ -14,11 +14,6 @@ namespace skyline::gpu::interconnect::node {
     }
 
     u32 RenderPassNode::AddAttachment(TextureView *view) {
-        auto &textures{storage->textures};
-        auto texture{std::find(textures.begin(), textures.end(), view->texture)};
-        if (texture == textures.end())
-            textures.push_back(view->texture);
-
         auto vkView{view->GetView()};
         auto attachment{std::find(attachments.begin(), attachments.end(), vkView)};
         if (attachment == attachments.end()) {
@@ -208,13 +203,6 @@ namespace skyline::gpu::interconnect::node {
             preserveAttachmentIt++;
         }
 
-        for (auto &texture : storage->textures) {
-            texture->lock();
-            texture->WaitOnBacking();
-            if (texture->cycle.lock() != cycle)
-                texture->WaitOnFence();
-        }
-
         auto renderPass{(*gpu.vkDevice).createRenderPass(vk::RenderPassCreateInfo{
             .attachmentCount = static_cast<u32>(attachmentDescriptions.size()),
             .pAttachments = attachmentDescriptions.data(),
@@ -243,12 +231,7 @@ namespace skyline::gpu::interconnect::node {
             .pClearValues = clearValues.data(),
         }, vk::SubpassContents::eInline);
 
-        cycle->AttachObjects(storage);
-
-        for (auto &texture : storage->textures) {
-            texture->unlock();
-            texture->cycle = cycle;
-        }
+        cycle->AttachObject(storage);
 
         return renderPass;
     }
