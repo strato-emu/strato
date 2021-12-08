@@ -10,7 +10,7 @@ namespace skyline::gpu {
      * @brief A descriptor for a GPU buffer on the guest
      */
     struct GuestBuffer {
-        using Mappings = boost::container::small_vector<span<u8>, 3>;
+        using Mappings = boost::container::small_vector<span < u8>, 3>;
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this buffer
 
         /**
@@ -114,7 +114,7 @@ namespace skyline::gpu {
      * @note The object **must** be locked prior to accessing any members as values will be mutated
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    struct BufferView {
+    struct BufferView : public FenceCycleDependency, public std::enable_shared_from_this<BufferView> {
         std::shared_ptr<Buffer> buffer;
         vk::DeviceSize offset;
         vk::DeviceSize range;

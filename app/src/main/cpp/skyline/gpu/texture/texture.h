@@ -293,7 +293,7 @@ namespace skyline::gpu {
      * @note The object **must** be locked prior to accessing any members as values will be mutated
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class TextureView {
+    class TextureView : public FenceCycleDependency, public std::enable_shared_from_this<TextureView> {
       private:
         std::optional<vk::raii::ImageView> view;
 

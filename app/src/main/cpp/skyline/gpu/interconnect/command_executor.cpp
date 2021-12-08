@@ -25,30 +25,32 @@ namespace skyline::gpu::interconnect {
         return newRenderPass;
     }
 
-    void CommandExecutor::AttachTexture(const std::shared_ptr<Texture> &texture) {
-        if (!syncTextures.contains(texture.get())) {
+    void CommandExecutor::AttachTexture(TextureView *view) {
+        auto texture{view->texture.get()};
+        if (!syncTextures.contains(texture)) {
             texture->WaitOnFence();
             texture->cycle = cycle;
-            cycle->AttachObject(texture);
-            syncTextures.emplace(texture.get());
+            cycle->AttachObject(view->shared_from_this());
+            syncTextures.emplace(texture);
         }
     }
 
-    void CommandExecutor::AttachBuffer(const std::shared_ptr<Buffer> &buffer) {
-        if (!syncBuffers.contains(buffer.get())) {
+    void CommandExecutor::AttachBuffer(BufferView *view) {
+        auto buffer{view->buffer.get()};
+        if (!syncBuffers.contains(buffer)) {
             buffer->WaitOnFence();
             buffer->cycle = cycle;
-            cycle->AttachObject(buffer);
-            syncBuffers.emplace(buffer.get());
+            cycle->AttachObject(view->shared_from_this());
+            syncBuffers.emplace(buffer);
         }
     }
 
     void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
-                AttachTexture(attachment->texture);
+                AttachTexture(attachment);
         if (depthStencilAttachment)
-            AttachTexture(depthStencilAttachment->texture);
+            AttachTexture(depthStencilAttachment);
 
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
@@ -59,7 +61,7 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
-        AttachTexture(attachment->texture);
+        AttachTexture(attachment);
 
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,
@@ -90,7 +92,7 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value) {
-        AttachTexture(attachment->texture);
+        AttachTexture(attachment);
 
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,

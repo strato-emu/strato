@@ -1308,7 +1308,7 @@ namespace skyline::gpu::interconnect {
                     vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
 
                     vertexBufferLocks.emplace_back(*vertexBufferView);
-                    executor.AttachBuffer(vertexBufferView->buffer);
+                    executor.AttachBuffer(vertexBufferView);
                     vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
                     vertexBufferOffsets[index] = vertexBufferView->offset;
                 }

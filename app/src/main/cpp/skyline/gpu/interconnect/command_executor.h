@@ -34,15 +34,17 @@ namespace skyline::gpu::interconnect {
 
         /**
          * @brief Attach the lifetime of the texture to the command buffer
+         * @note The supplied texture **must** be locked by the calling thread
          * @note This'll automatically handle syncing of the texture in the most optimal way possible
          */
-        void AttachTexture(const std::shared_ptr<Texture> &texture);
+        void AttachTexture(TextureView *view);
 
         /**
          * @brief Attach the lifetime of a buffer to the command buffer
+         * @note The supplied buffer **must** be locked by the calling thread
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachBuffer(const std::shared_ptr<Buffer> &buffer);
+        void AttachBuffer(BufferView *view);
 
         /**
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments
