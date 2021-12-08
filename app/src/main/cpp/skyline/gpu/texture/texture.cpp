@@ -172,13 +172,26 @@ namespace skyline::gpu {
             },
         });
 
-        commandBuffer.copyImageToBuffer(image, layout, stagingBuffer->vkBuffer, vk::BufferImageCopy{
-            .imageExtent = dimensions,
-            .imageSubresource = {
-                .aspectMask = format->vkAspect,
-                .layerCount = layerCount,
-            },
-        });
+        boost::container::static_vector<const vk::BufferImageCopy, 3> bufferImageCopies;
+        auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
+            bufferImageCopies.emplace_back(
+                vk::BufferImageCopy{
+                    .imageExtent = dimensions,
+                    .imageSubresource = {
+                        .aspectMask = aspect,
+                        .layerCount = layerCount,
+                    },
+                });
+        }};
+
+        if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eColor);
+        if (format->vkAspect & vk::ImageAspectFlagBits::eDepth)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eDepth);
+        if (format->vkAspect & vk::ImageAspectFlagBits::eStencil)
+            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eStencil);
+
+        commandBuffer.copyImageToBuffer(image, layout, stagingBuffer->vkBuffer, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
 
         commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eHost, {}, {}, vk::BufferMemoryBarrier{
             .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
