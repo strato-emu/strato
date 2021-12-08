@@ -1195,7 +1195,7 @@ namespace skyline::gpu::interconnect {
 
         BufferView *GetVertexBuffer(size_t index) {
             auto &vertexBuffer{vertexBuffers.at(index)};
-            if (vertexBuffer.disabled || vertexBuffer.start > vertexBuffer.end)
+            if (vertexBuffer.disabled || vertexBuffer.start > vertexBuffer.end || vertexBuffer.start == 0 || vertexBuffer.end == 0)
                 return nullptr;
             else if (vertexBuffer.view)
                 return &*vertexBuffer.view;
