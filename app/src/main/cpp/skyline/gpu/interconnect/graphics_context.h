@@ -1188,6 +1188,26 @@ namespace skyline::gpu::interconnect {
                 vertexAttribute.description.binding = attribute.bufferId;
                 vertexAttribute.description.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
                 vertexAttribute.description.offset = attribute.offset;
+
+                runtimeInfo.generic_input_types[index] = [type = attribute.type]() {
+                    using MaxwellType = maxwell3d::VertexAttribute::ElementType;
+                    using ShaderType = ShaderCompiler::AttributeType;
+
+                    switch (type) {
+                        case MaxwellType::None:
+                            return ShaderType::Disabled;
+                        case MaxwellType::Snorm:
+                        case MaxwellType::Unorm:
+                        case MaxwellType::Uscaled:
+                        case MaxwellType::Sscaled:
+                        case MaxwellType::Float:
+                            return ShaderType::Float;
+                        case MaxwellType::Sint:
+                            return ShaderType::SignedInt;
+                        case MaxwellType::Uint:
+                            return ShaderType::UnsignedInt;
+                    };
+                }();
             } else {
                 vertexAttribute.enabled = false;
             }
