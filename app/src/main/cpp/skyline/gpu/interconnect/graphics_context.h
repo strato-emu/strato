@@ -511,6 +511,47 @@ namespace skyline::gpu::interconnect {
             }
         }
 
+        /* Constant Buffers */
+      private:
+        struct ConstantBuffer {
+            IOVA iova;
+            u32 size;
+            GuestBuffer guest;
+            std::shared_ptr<BufferView> view;
+        };
+        ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
+
+      public:
+        void SetConstantBufferSelectorSize(u32 size) {
+            constantBufferSelector.size = size;
+            constantBufferSelector.view.reset();
+        }
+
+        void SetConstantBufferSelectorIovaHigh(u32 high) {
+            constantBufferSelector.iova.high = high;
+            constantBufferSelector.view.reset();
+        }
+
+        void SetConstantBufferSelectorIovaLow(u32 low) {
+            constantBufferSelector.iova.low = low;
+            constantBufferSelector.view.reset();
+        }
+
+        BufferView *GetConstantBufferSelectorView() {
+            if (constantBufferSelector.size == 0)
+                return nullptr;
+            else if (constantBufferSelector.view)
+                return &*constantBufferSelector.view;
+
+            if (constantBufferSelector.guest.mappings.empty()) {
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
+                constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
+            }
+
+            constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);
+            return constantBufferSelector.view.get();
+        }
+
         /* Shader Program */
       private:
         struct Shader {

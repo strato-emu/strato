@@ -281,6 +281,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x800, std::array<type::SetProgramInfo, type::StageCount>> setProgram;
 
             Register<0x8C0, u32[0x20]> firmwareCall;
+
+            struct ConstantBufferSelector {
+                u32 size;
+                type::Address address;
+            };
+            Register<0x8E0, ConstantBufferSelector> constantBufferSelector;
         };
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
         #pragma pack(pop)
