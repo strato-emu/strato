@@ -546,6 +546,7 @@ namespace skyline::gpu::interconnect {
         span<vk::PipelineShaderStageCreateInfo> GetShaderStages() {
             if (!activeShaderStagesInfoCount) {
                 runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
+                ShaderCompiler::Backend::Bindings bindings;
 
                 size_t count{};
                 for (auto &shader : shaders) {
@@ -586,7 +587,7 @@ namespace skyline::gpu::interconnect {
                                 return std::nullopt;
                             })};
 
-                            shader.vkModule = gpu.shader.CompileGraphicsShader(shader.data, shader.stage, shader.offset, runtimeInfo);
+                            shader.vkModule = gpu.shader.CompileGraphicsShader(shader.data, shader.stage, shader.offset, runtimeInfo, bindings);
                         }
 
                         shaderStagesInfo[count++] = vk::PipelineShaderStageCreateInfo{

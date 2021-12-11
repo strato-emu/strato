@@ -8,9 +8,10 @@
 #include <shader_compiler/frontend/maxwell/control_flow.h>
 #include <shader_compiler/frontend/ir/value.h>
 #include <shader_compiler/frontend/ir/basic_block.h>
-#include <shader_compiler/runtime_info.h>
 #include <shader_compiler/host_translate_info.h>
 #include <shader_compiler/profile.h>
+#include <shader_compiler/runtime_info.h>
+#include <shader_compiler/backend/bindings.h>
 #include <common.h>
 
 namespace skyline::gpu {
@@ -27,11 +28,11 @@ namespace skyline::gpu {
         Shader::Profile profile;
 
       public:
-        ShaderManager(const DeviceState& state, GPU &gpu);
+        ShaderManager(const DeviceState &state, GPU &gpu);
 
         /**
          * @note `runtimeInfo::previous_stage_stores` will automatically be updated for the next stage
          */
-        vk::raii::ShaderModule CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo& runtimeInfo);
+        vk::raii::ShaderModule CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo &runtimeInfo, Shader::Backend::Bindings &bindings);
     };
 }

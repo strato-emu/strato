@@ -125,13 +125,12 @@ namespace skyline::gpu {
         }
     };
 
-    vk::raii::ShaderModule ShaderManager::CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo& runtimeInfo) {
+    vk::raii::ShaderModule ShaderManager::CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo &runtimeInfo, Shader::Backend::Bindings &bindings) {
         GraphicsEnvironment environment{binary, baseOffset, stage};
         Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
 
         auto program{Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo)};
 
-        Shader::Backend::Bindings bindings{};
         auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
 
         runtimeInfo.previous_stage_stores = program.info.stores;
