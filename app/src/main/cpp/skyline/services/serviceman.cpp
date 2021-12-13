@@ -16,6 +16,7 @@
 #include "hid/IHidServer.h"
 #include "timesrv/IStaticService.h"
 #include "glue/IStaticService.h"
+#include "glue/IWriterForSystem.h"
 #include "services/timesrv/core.h"
 #include "fssrv/IFileSystemProxy.h"
 #include "nvdrv/INvDrvServices.h"
@@ -79,6 +80,8 @@ namespace skyline::service {
             SERVICE_CASE(glue::IStaticService, "time:a", globalServiceState->timesrv.managerServer.GetStaticServiceAsAdmin(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceAdminPermissions)
             SERVICE_CASE(glue::IStaticService, "time:r", globalServiceState->timesrv.managerServer.GetStaticServiceAsRepair(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceRepairPermissions)
             SERVICE_CASE(glue::IStaticService, "time:u", globalServiceState->timesrv.managerServer.GetStaticServiceAsUser(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceUserPermissions)
+            SERVICE_CASE(glue::IWriterForSystem, "ectx:w")
+            SERVICE_CASE(glue::IWriterForSystem, "ectx:aw")
             SERVICE_CASE(fssrv::IFileSystemProxy, "fsp-srv")
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv", globalServiceState->nvdrv, nvdrv::ApplicationSessionPermissions)
             SERVICE_CASE(nvdrv::INvDrvServices, "nvdrv:a", globalServiceState->nvdrv, nvdrv::AppletSessionPermissions)
