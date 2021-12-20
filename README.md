@@ -24,9 +24,9 @@ You can contact the core developers of Skyline at our **[Discord](https://discor
 A few noteworthy teams/projects who've helped us along the way are:
 * **[Ryujinx](https://ryujinx.org/):** We've used Ryujinx for reference throughout the project, the amount of accuracy of their HLE kernel implementation is what makes them such an amazing reference. The team behind the project has been really helpful with any queries we've had. **It should be noted that Skyline is not based on Ryujinx**.
 
-* **[Switchbrew](https://github.com/switchbrew/):** We've extensively used Switchbrew whether that be their **[wiki](https://switchbrew.org/)** with it's colossal amount of information on the Switch that has saved us countless hours of time or **[libnx](https://github.com/switchbrew/libnx)** which was crucial to initial development of the emulator to ensure that our HLE kernel and sysmodule implementations were accurate.
+* **[Switchbrew](https://github.com/switchbrew/):** We've extensively used Switchbrew whether that be their **[wiki](https://switchbrew.org/)** with its colossal amount of information on the Switch that has saved us countless hours of time or **[libnx](https://github.com/switchbrew/libnx)** which was crucial to initial development of the emulator to ensure that our HLE kernel and sysmodule implementations were accurate.
 
-* **[Atmosphère](https://github.com/Atmosphere-NX/Atmosphere):** We've used [libmesosphere](https://github.com/Atmosphere-NX/Atmosphere/tree/master/libraries/libmesosphere) as another reference for our HLE kernel, it's faithfulness to the HOS kernel helps us a lot. This makes it invaluably important for us as a tool for writing code that can accurately emulate HOS behavior without missing any crucial parts.
+* **[Atmosphère](https://github.com/Atmosphere-NX/Atmosphere):** We've used [libmesosphere](https://github.com/Atmosphere-NX/Atmosphere/tree/master/libraries/libmesosphere) as another reference for our HLE kernel, its faithfulness to the HOS kernel helps us a lot. This makes it invaluably important for us as a tool for writing code that can accurately emulate HOS behavior without missing any crucial parts.
 
 ---
 
