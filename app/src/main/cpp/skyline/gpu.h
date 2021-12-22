@@ -9,6 +9,7 @@
 #include "gpu/presentation_engine.h"
 #include "gpu/texture_manager.h"
 #include "gpu/buffer_manager.h"
+#include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
 
 namespace skyline::gpu {
@@ -48,6 +49,7 @@ namespace skyline::gpu {
         TextureManager texture;
         BufferManager buffer;
 
+        DescriptorAllocator descriptor;
         ShaderManager shader;
 
         GPU(const DeviceState &state);

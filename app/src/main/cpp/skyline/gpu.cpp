@@ -214,5 +214,6 @@ namespace skyline::gpu {
           presentation(state, *this),
           texture(*this),
           buffer(*this),
+          descriptor(*this),
           shader(state, *this) {}
 }
