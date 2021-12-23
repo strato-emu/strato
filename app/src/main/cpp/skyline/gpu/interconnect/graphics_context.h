@@ -675,6 +675,24 @@ namespace skyline::gpu::interconnect {
         };
 
         /**
+         * @brief Updates `runtimeInfo` while automatically triggering a recompilation for a stage if the value has been updated
+         * @param member A member of `runtimeInfo` passed by reference which will be checked and set
+         * @param value The new value of the member
+         * @param stages All the shader stages that need to be recompiled if this value is updated
+         */
+        template<typename T, class... Args>
+        void UpdateRuntimeInformation(T &member, T value, Args... stages) {
+            if (member != value) {
+                member = value;
+
+                auto setStageRecompile{[this](maxwell3d::PipelineStage stage) {
+                    pipelineStages[stage].needsRecompile = true;
+                }};
+                ((void) setStageRecompile(stages), ...);
+            }
+        }
+
+        /**
          * @note The return value of previous calls will be invalidated on a call to this as values are provided by reference
          * @note Any bound resources will automatically be attached to the CommandExecutor, there's no need to manually attach them
          */
@@ -1408,7 +1426,7 @@ namespace skyline::gpu::interconnect {
                 vertexAttribute.description.format = ConvertVertexBufferFormat(attribute.type, attribute.elementSize);
                 vertexAttribute.description.offset = attribute.offset;
 
-                runtimeInfo.generic_input_types[index] = [type = attribute.type]() {
+                auto inputType{[type = attribute.type]() {
                     using MaxwellType = maxwell3d::VertexAttribute::ElementType;
                     using ShaderType = ShaderCompiler::AttributeType;
 
@@ -1425,8 +1443,10 @@ namespace skyline::gpu::interconnect {
                             return ShaderType::SignedInt;
                         case MaxwellType::Uint:
                             return ShaderType::UnsignedInt;
-                    };
-                }();
+                    }
+                }()};
+
+                UpdateRuntimeInformation(runtimeInfo.generic_input_types[index], inputType, maxwell3d::PipelineStage::Vertex);
             } else {
                 vertexAttribute.enabled = false;
             }
@@ -1484,7 +1504,7 @@ namespace skyline::gpu::interconnect {
             }();
 
             inputAssemblyState.topology = vkTopology;
-            runtimeInfo.input_topology = shaderTopology;
+            UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
         }
 
         /* Depth */
