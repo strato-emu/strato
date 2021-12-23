@@ -83,11 +83,11 @@ namespace skyline::gpu {
      */
     class GraphicsEnvironment : public Shader::Environment {
       private:
-        std::vector<u8> binary;
+        span<u8> binary;
         u32 baseOffset;
 
       public:
-        explicit GraphicsEnvironment(std::vector<u8> pBinary, u32 baseOffset, Shader::Stage pStage) : binary(std::move(pBinary)), baseOffset(baseOffset) {
+        GraphicsEnvironment(span<u8> pBinary, u32 baseOffset, Shader::Stage pStage) : binary(pBinary), baseOffset(baseOffset) {
             sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
             start_address = baseOffset;
             stage = pStage;
@@ -125,24 +125,21 @@ namespace skyline::gpu {
         }
     };
 
-    vk::raii::ShaderModule ShaderManager::CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo &runtimeInfo, Shader::Backend::Bindings &bindings) {
+    Shader::IR::Program ShaderManager::ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset) {
         GraphicsEnvironment environment{binary, baseOffset, stage};
         Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
 
-        auto program{Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo)};
+        return Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo);
+    }
 
+    vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
         auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
-
-        runtimeInfo.previous_stage_stores = program.info.stores;
-        if (program.is_geometry_passthrough)
-            runtimeInfo.previous_stage_stores.mask |= program.info.passthrough.mask;
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),
             .codeSize = spirv.size() * sizeof(u32),
         };
         vk::raii::ShaderModule shaderModule(gpu.vkDevice, createInfo);
-
         return shaderModule;
     }
 }

@@ -556,61 +556,156 @@ namespace skyline::gpu::interconnect {
       private:
         struct Shader {
             bool enabled{false};
+            ShaderCompiler::Stage stage;
+
             bool invalidated{true}; //!< If the shader that existed earlier has been invalidated
             bool shouldCheckSame{false}; //!< If we should do a check for the shader being the same as before
-            ShaderCompiler::Stage stage;
-            vk::ShaderStageFlagBits vkStage;
             u32 offset{}; //!< Offset of the shader from the base IOVA
             std::vector<u8> data; //!< The shader bytecode in a vector
+            std::optional<ShaderCompiler::IR::Program> program;
+
+            Shader(ShaderCompiler::Stage stage) : stage(stage) {}
+
+            maxwell3d::PipelineStage ToPipelineStage() {
+                using ShaderStage = ShaderCompiler::Stage;
+                using PipelineStage = maxwell3d::PipelineStage;
+
+                switch (stage) {
+                    case ShaderStage::VertexA:
+                    case ShaderStage::VertexB:
+                        return PipelineStage::Vertex;
+
+                    case ShaderStage::TessellationControl:
+                        return PipelineStage::TessellationControl;
+                    case ShaderStage::TessellationEval:
+                        return PipelineStage::TessellationEvaluation;
+
+                    case ShaderStage::Geometry:
+                        return PipelineStage::Geometry;
+
+                    case ShaderStage::Fragment:
+                        return PipelineStage::Fragment;
+
+                    case ShaderStage::Compute:
+                        throw exception("Unexpected compute shader in Maxwell3D");
+                }
+            }
+        };
+
+        struct Shaders : public std::array<Shader, maxwell3d::ShaderStageCount> {
+            Shaders() : array({
+                                  Shader{ShaderCompiler::Stage::VertexA},
+                                  Shader{ShaderCompiler::Stage::VertexB},
+                                  Shader{ShaderCompiler::Stage::TessellationControl},
+                                  Shader{ShaderCompiler::Stage::TessellationEval},
+                                  Shader{ShaderCompiler::Stage::Geometry},
+                                  Shader{ShaderCompiler::Stage::Fragment},
+                              }) {}
+
+            Shader &at(maxwell3d::ShaderStage stage) {
+                return array::at(static_cast<size_t>(stage));
+            }
+
+            Shader &operator[](maxwell3d::ShaderStage stage) {
+                return array::operator[](static_cast<size_t>(stage));
+            }
+        };
+
+        struct PipelineStage {
+            bool enabled{false};
+            vk::ShaderStageFlagBits vkStage;
+
+            std::variant<ShaderCompiler::IR::Program, std::reference_wrapper<ShaderCompiler::IR::Program>> program; //!< The shader program by value or by reference (VertexA and VertexB shaders when combined will store by value, otherwise only a reference is stored)
+
+            bool needsRecompile{}; //!< If the shader needs to be recompiled as runtime information has changed
+            ShaderCompiler::VaryingState previousStageStores{};
+            u32 bindingBase{}, bindingLast{}; //!< The base and last binding for descriptors bound to this stage
             std::optional<vk::raii::ShaderModule> vkModule;
 
-            Shader(ShaderCompiler::Stage stage, vk::ShaderStageFlagBits vkStage) : stage(stage), vkStage(vkStage) {}
+            std::array<std::shared_ptr<BufferView>, maxwell3d::PipelineStageConstantBufferCount> constantBuffers{};
+
+            PipelineStage(vk::ShaderStageFlagBits vkStage) : vkStage(vkStage) {}
+        };
+
+        struct PipelineStages : public std::array<PipelineStage, maxwell3d::PipelineStageCount> {
+            PipelineStages() : array({
+                                         PipelineStage{vk::ShaderStageFlagBits::eVertex},
+                                         PipelineStage{vk::ShaderStageFlagBits::eTessellationControl},
+                                         PipelineStage{vk::ShaderStageFlagBits::eTessellationEvaluation},
+                                         PipelineStage{vk::ShaderStageFlagBits::eGeometry},
+                                         PipelineStage{vk::ShaderStageFlagBits::eFragment},
+                                     }) {}
+
+            PipelineStage &at(maxwell3d::PipelineStage stage) {
+                return array::at(static_cast<size_t>(stage));
+            }
+
+            PipelineStage &operator[](maxwell3d::PipelineStage stage) {
+                return array::operator[](static_cast<size_t>(stage));
+            }
         };
 
         IOVA shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
-        std::array<Shader, maxwell3d::ShaderStageCount> shaders{
-            Shader{ShaderCompiler::Stage::VertexA, vk::ShaderStageFlagBits::eVertex},
-            Shader{ShaderCompiler::Stage::VertexB, vk::ShaderStageFlagBits::eVertex},
-            Shader{ShaderCompiler::Stage::TessellationControl, vk::ShaderStageFlagBits::eTessellationControl},
-            Shader{ShaderCompiler::Stage::TessellationEval, vk::ShaderStageFlagBits::eTessellationEvaluation},
-            Shader{ShaderCompiler::Stage::Geometry, vk::ShaderStageFlagBits::eGeometry},
-            Shader{ShaderCompiler::Stage::Fragment, vk::ShaderStageFlagBits::eFragment},
-        };
+        Shaders shaders;
+        PipelineStages pipelineStages;
 
-        std::array<vk::PipelineShaderStageCreateInfo, maxwell3d::StageCount - 1> shaderStagesInfo{}; //!< Storage backing for the pipeline shader stage information for all shaders aside from 'VertexA' which uses the same stage as 'VertexB'
-        size_t activeShaderStagesInfoCount{}; //!< The amount of active shader stages with valid entries in 'shaderStagesInfo'
+        std::array<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStagesInfo{}; //!< Storage backing for the pipeline shader stage information for all shaders aside from 'VertexA' which uses the same stage as 'VertexB'
+        std::optional<vk::raii::DescriptorSetLayout> descriptorSetLayout{}; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
 
         ShaderCompiler::RuntimeInfo runtimeInfo{};
 
         constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
 
-        span<vk::PipelineShaderStageCreateInfo> GetShaderStages() {
-            if (!activeShaderStagesInfoCount) {
-                runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
-                ShaderCompiler::Backend::Bindings bindings;
+        constexpr static size_t PipelineUniqueDescriptorTypeCount{1}; //!< The amount of unique descriptor types that may be bound to a pipeline
+        constexpr static size_t MaxPipelineDescriptorWriteCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The maxium amount of descriptors writes that are used to bind a pipeline
+        constexpr static size_t MaxPipelineDescriptorCount{100}; //!< The maxium amount of descriptors we support being bound to a pipeline
 
-                size_t count{};
-                for (auto &shader : shaders) {
-                    if (shader.enabled) {
-                        // We only want to add the stage if it is enabled on the guest
-                        if (shader.invalidated) {
-                            // If a shader is invalidated, we need to ensure the corresponding VkShaderModule is accurate
-                            if (!shader.data.empty() && shader.shouldCheckSame) {
-                                auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
-                                auto originalShader{shader.data.data()};
+        boost::container::static_vector<vk::WriteDescriptorSet, MaxPipelineDescriptorWriteCount> descriptorSetWrites;
+        boost::container::static_vector<vk::DescriptorSetLayoutBinding, MaxPipelineDescriptorCount> layoutBindings;
+        boost::container::static_vector<vk::DescriptorBufferInfo, MaxPipelineDescriptorCount> bufferInfo;
 
-                                // A fast path to check if the shader is the same as before to avoid work
-                                for (auto &range : newIovaRanges) {
-                                    if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
-                                        originalShader += range.size();
-                                    } else {
-                                        break;
-                                    }
+        /**
+         * @brief All state concerning the shader programs and their bindings
+         * @note The `descriptorSetWrite` will have a null `dstSet` which needs to be assigned prior to usage
+         */
+        struct ShaderProgramState {
+            span<vk::PipelineShaderStageCreateInfo> shaders;
+            vk::DescriptorSetLayout descriptorSetLayout;
+            span<vk::WriteDescriptorSet> descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
+        };
+
+        /**
+         * @note The return value of previous calls will be invalidated on a call to this as values are provided by reference
+         * @note Any bound resources will automatically be attached to the CommandExecutor, there's no need to manually attach them
+         */
+        ShaderProgramState CompileShaderProgramState() {
+            for (auto &shader : shaders) {
+                auto &pipelineStage{pipelineStages[shader.ToPipelineStage()]};
+                if (shader.enabled) {
+                    // We only want to include the shader if it is enabled on the guest
+                    if (shader.invalidated) {
+                        // If a shader is invalidated, we need to reparse the program (given that it has changed)
+
+                        bool shouldParseShader{true};
+                        if (!shader.data.empty() && shader.shouldCheckSame) {
+                            // A fast path to check if the shader is the same as before to avoid reparsing the shader
+                            auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
+                            auto originalShader{shader.data.data()};
+
+                            shouldParseShader = false;
+                            for (auto &range : newIovaRanges) {
+                                if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
+                                    originalShader += range.size();
+                                } else {
+                                    shouldParseShader = true;
+                                    break;
                                 }
-
-                                shader.shouldCheckSame = true;
                             }
 
+                            shader.shouldCheckSame = true;
+                        }
+
+                        if (shouldParseShader) {
                             // A pass to check if the shader has a BRA infloop opcode ending (On most commercial games)
                             shader.data.resize(MaxShaderBytecodeSize);
                             auto foundEnd{channelCtx.asCtx->gmmu.ReadTill(shader.data, shaderBaseIova + shader.offset, [](span<u8> data) -> std::optional<size_t> {
@@ -628,21 +723,93 @@ namespace skyline::gpu::interconnect {
                                 return std::nullopt;
                             })};
 
-                            shader.vkModule = gpu.shader.CompileGraphicsShader(shader.data, shader.stage, shader.offset, runtimeInfo, bindings);
+                            shader.program = gpu.shader.ParseGraphicsShader(shader.data, shader.stage, shader.offset);
+
+                            if (shader.stage != ShaderCompiler::Stage::VertexA) {
+                                pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
+                            }
+
+                            pipelineStage.enabled = true;
+                            pipelineStage.needsRecompile = true;
                         }
 
-                        shaderStagesInfo[count++] = vk::PipelineShaderStageCreateInfo{
-                            .stage = shader.vkStage,
-                            .module = **shader.vkModule,
-                            .pName = "main",
-                        };
+                        shader.invalidated = false;
+                    }
+                } else if (shader.stage != ShaderCompiler::Stage::VertexA) {
+                    pipelineStage.enabled = false;
+                }
+            }
+
+            runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
+            ShaderCompiler::Backend::Bindings bindings{};
+
+            size_t count{};
+            for (auto &pipelineStage : pipelineStages) {
+                if (!pipelineStage.enabled)
+                    continue;
+
+                auto &program{std::visit(VariantVisitor{
+                    [](ShaderCompiler::IR::Program &program) -> ShaderCompiler::IR::Program & { return program; },
+                    [](std::reference_wrapper<ShaderCompiler::IR::Program> program) -> ShaderCompiler::IR::Program & { return program.get(); },
+                }, pipelineStage.program)};
+
+                if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
+                    pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
+                    pipelineStage.bindingBase = bindings.unified;
+                    pipelineStage.vkModule = gpu.shader.CompileShader(runtimeInfo, program, bindings);
+                    pipelineStage.bindingLast = bindings.unified;
+                }
+
+                runtimeInfo.previous_stage_stores = program.info.stores;
+                if (program.is_geometry_passthrough)
+                    runtimeInfo.previous_stage_stores.mask |= program.info.passthrough.mask;
+                bindings.unified = pipelineStage.bindingLast;
+
+                u32 bindingIndex{pipelineStage.bindingBase};
+                if (!program.info.constant_buffer_descriptors.empty()) {
+                    descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                        .dstBinding = bindingIndex,
+                        .descriptorCount = static_cast<u32>(program.info.constant_buffer_descriptors.size()),
+                        .descriptorType = vk::DescriptorType::eUniformBuffer,
+                        .pBufferInfo = bufferInfo.data() + bufferInfo.size(),
+                    });
+
+                    for (auto &constantBuffer : program.info.constant_buffer_descriptors) {
+                        layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
+                            .binding = bindingIndex++,
+                            .descriptorType = vk::DescriptorType::eUniformBuffer,
+                            .descriptorCount = 1,
+                            .stageFlags = pipelineStage.vkStage,
+                        });
+
+                        auto view{pipelineStage.constantBuffers[constantBuffer.index]};
+                        std::scoped_lock lock(*view);
+                        bufferInfo.push_back(vk::DescriptorBufferInfo{
+                            .buffer = view->buffer->GetBacking(),
+                            .offset = view->offset,
+                            .range = view->range,
+                        });
+                        executor.AttachBuffer(view.get());
                     }
                 }
 
-                activeShaderStagesInfoCount = count;
+                shaderStagesInfo[count++] = vk::PipelineShaderStageCreateInfo{
+                    .stage = pipelineStage.vkStage,
+                    .module = **pipelineStage.vkModule,
+                    .pName = "main",
+                };
             }
 
-            return span(shaderStagesInfo.data(), activeShaderStagesInfoCount);
+            descriptorSetLayout.emplace(gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
+                .pBindings = layoutBindings.data(),
+                .bindingCount = static_cast<u32>(layoutBindings.size()),
+            });
+
+            return {
+                span(shaderStagesInfo.data(), count),
+                **descriptorSetLayout,
+                descriptorSetWrites,
+            };
         }
 
       public:
@@ -663,15 +830,25 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetShaderEnabled(maxwell3d::ShaderStage stage, bool enabled) {
-            auto &shader{shaders[static_cast<size_t>(stage)]};
+            auto &shader{shaders[stage]};
             shader.enabled = enabled;
             shader.invalidated = true;
         }
 
         void SetShaderOffset(maxwell3d::ShaderStage stage, u32 offset) {
-            auto &shader{shaders[static_cast<size_t>(stage)]};
+            auto &shader{shaders[stage]};
             shader.offset = offset;
             shader.invalidated = true;
+        }
+
+        void BindPipelineConstantBuffer(maxwell3d::PipelineStage stage, bool enable, u32 index) {
+            auto &constantBufferView{pipelineStages[stage].constantBuffers[index]};
+
+            if (enable) {
+                constantBufferView = GetConstantBufferSelectorView()->shared_from_this();
+            } else {
+                constantBufferView = nullptr;
+            }
         }
 
         /* Rasterizer State */
@@ -1388,16 +1565,35 @@ namespace skyline::gpu::interconnect {
 
             vertexState.get<vk::PipelineVertexInputStateCreateInfo>().vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size());
 
-            // Shader Setup
-            auto shaderStages{GetShaderStages()};
-            pipelineState.pStages = shaderStages.data();
-            pipelineState.stageCount = static_cast<u32>(shaderStages.size());
+            // Shader + Binding Setup
+            auto programState{CompileShaderProgramState()};
+            pipelineState.pStages = programState.shaders.data();
+            pipelineState.stageCount = static_cast<u32>(programState.shaders.size());
+
+            auto descriptorSet{gpu.descriptor.AllocateSet(programState.descriptorSetLayout)};
+            for (auto &descriptorSetWrite : programState.descriptorSetWrites)
+                descriptorSetWrite.dstSet = descriptorSet;
+            gpu.vkDevice.updateDescriptorSets(programState.descriptorSetWrites, nullptr);
+
+            vk::raii::PipelineLayout pipelineLayout(gpu.vkDevice, vk::PipelineLayoutCreateInfo{
+                .pSetLayouts = &programState.descriptorSetLayout,
+                .setLayoutCount = 1,
+            });
+
+            // Draw Persistent Storage
+            struct Storage : FenceCycleDependency {
+                vk::raii::PipelineLayout pipelineLayout;
+                std::optional<vk::raii::Pipeline> pipeline;
+                DescriptorAllocator::ActiveDescriptorSet descriptorSet;
+
+                Storage(vk::raii::PipelineLayout &&pipelineLayout, DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : pipelineLayout(std::move(pipelineLayout)), descriptorSet(std::move(descriptorSet)) {}
+            };
+
+            auto storage{std::make_shared<Storage>(std::move(pipelineLayout), std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([vertexCount, firstVertex, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
-                vk::PipelineLayoutCreateInfo layoutCreateInfo{};
-                vk::raii::PipelineLayout pipelineLayout(vkDevice, layoutCreateInfo);
-                pipelineCreateInfo.layout = *pipelineLayout;
+            executor.AddSubpass([vertexCount, firstVertex, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, storage = std::move(storage), vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+                pipelineCreateInfo.layout = *storage->pipelineLayout;
 
                 pipelineCreateInfo.renderPass = renderPass;
                 pipelineCreateInfo.subpass = subpassIndex;
@@ -1420,16 +1616,13 @@ namespace skyline::gpu::interconnect {
                     }
                 }
 
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *storage->pipelineLayout, 0, storage->descriptorSet, nullptr);
+
                 commandBuffer.draw(vertexCount, 1, firstVertex, 0);
 
-                struct Storage : FenceCycleDependency {
-                    vk::raii::PipelineLayout pipelineLayout;
-                    vk::raii::Pipeline pipeline;
+                storage->pipeline = vk::raii::Pipeline(vkDevice, pipeline.value);
 
-                    Storage(vk::raii::PipelineLayout &&pipelineLayout, vk::raii::Pipeline &&pipeline) : pipelineLayout(std::move(pipelineLayout)), pipeline(std::move(pipeline)) {}
-                };
-
-                cycle->AttachObject(std::make_shared<Storage>(std::move(pipelineLayout), vk::raii::Pipeline(vkDevice, pipeline.value)));
+                cycle->AttachObject(storage);
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets[0]->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView);

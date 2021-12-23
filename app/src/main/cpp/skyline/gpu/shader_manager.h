@@ -8,6 +8,7 @@
 #include <shader_compiler/frontend/maxwell/control_flow.h>
 #include <shader_compiler/frontend/ir/value.h>
 #include <shader_compiler/frontend/ir/basic_block.h>
+#include <shader_compiler/frontend/ir/program.h>
 #include <shader_compiler/host_translate_info.h>
 #include <shader_compiler/profile.h>
 #include <shader_compiler/runtime_info.h>
@@ -30,9 +31,8 @@ namespace skyline::gpu {
       public:
         ShaderManager(const DeviceState &state, GPU &gpu);
 
-        /**
-         * @note `runtimeInfo::previous_stage_stores` will automatically be updated for the next stage
-         */
-        vk::raii::ShaderModule CompileGraphicsShader(const std::vector<u8> &binary, Shader::Stage stage, u32 baseOffset, Shader::RuntimeInfo &runtimeInfo, Shader::Backend::Bindings &bindings);
+        Shader::IR::Program ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset);
+
+        vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings);
     };
 }

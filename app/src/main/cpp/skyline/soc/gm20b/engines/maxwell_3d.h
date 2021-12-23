@@ -287,6 +287,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 type::Address address;
             };
             Register<0x8E0, ConstantBufferSelector> constantBufferSelector;
+
+            Register<0x900, std::array<type::Bind, type::PipelineStageCount>> bind; //!< Binds constant buffers to pipeline stages
         };
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
         #pragma pack(pop)

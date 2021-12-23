@@ -518,6 +518,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             static_assert(type::ShaderStageCount == 6 && type::ShaderStageCount < BOOST_PP_LIMIT_REPEAT);
             #undef SHADER_CALLBACKS
 
+            #define PIPELINE_CALLBACKS(z, idx, data)                                                                                       \
+                MAXWELL3D_ARRAY_STRUCT_CASE(bind, idx, constantBuffer, {                                                                   \
+                    context.BindPipelineConstantBuffer(static_cast<type::PipelineStage>(idx), constantBuffer.valid, constantBuffer.index); \
+                })
+
+            BOOST_PP_REPEAT(5, PIPELINE_CALLBACKS, 0)
+            static_assert(type::PipelineStageCount == 5 && type::PipelineStageCount < BOOST_PP_LIMIT_REPEAT);
+            #undef PIPELINE_CALLBACKS
+
             MAXWELL3D_ARRAY_CASE(firmwareCall, 4, {
                 registers.raw[0xD00] = 1;
             })
