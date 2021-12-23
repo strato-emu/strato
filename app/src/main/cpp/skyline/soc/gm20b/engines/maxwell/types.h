@@ -652,12 +652,43 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         Set = 0x150F,
     };
 
-    constexpr static size_t StageCount{6}; //!< Amount of pipeline stages on Maxwell 3D
+    constexpr static size_t PipelineStageCount{5}; //!< Amount of pipeline stages on Maxwell 3D
 
     /**
      * @brief All the pipeline stages that Maxwell3D supports for draws
      */
-    enum class StageId {
+    enum class PipelineStage {
+        Vertex = 0,
+        TessellationControl = 1,
+        TessellationEvaluation = 2,
+        Geometry = 3,
+        Fragment = 4,
+    };
+    static_assert(static_cast<size_t>(PipelineStage::Fragment) + 1 == PipelineStageCount);
+
+    struct Bind {
+        u32 _pad0_[4];
+        union {
+            struct {
+                u32 valid : 1;
+                u32 _pad1_ : 3;
+                u32 index : 5; //!< The index of the constant buffer in the pipeline stage to bind to
+            };
+            u32 raw;
+        } constantBuffer;
+        u32 _pad2_[3];
+    };
+    static_assert(sizeof(Bind) == (sizeof(u32) * 8));
+
+    constexpr static size_t PipelineStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
+
+    constexpr static size_t ShaderStageCount{6}; //!< Amount of shader stages on Maxwell 3D
+
+    /**
+     * @brief All the shader programs stages that Maxwell3D supports for draws
+     * @note As opposed to pipeline stages, there are two shader programs for the vertex stage
+     */
+    enum class ShaderStage {
         VertexA = 0,
         VertexB = 1,
         TessellationControl = 2,
@@ -665,7 +696,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         Geometry = 4,
         Fragment = 5,
     };
-    static_assert(static_cast<size_t>(StageId::Fragment) + 1 == StageCount);
+    static_assert(static_cast<size_t>(ShaderStage::Fragment) + 1 == ShaderStageCount);
 
     /**
      * @brief The arguments to set a shader program for a pipeline stage
@@ -674,7 +705,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         struct {
             bool enable : 1;
             u8 _pad0_ : 3;
-            StageId stage : 4;
+            ShaderStage stage : 4;
             u32 _pad1_ : 24;
         } info;
         u32 offset; //!< Offset from the base shader memory IOVA

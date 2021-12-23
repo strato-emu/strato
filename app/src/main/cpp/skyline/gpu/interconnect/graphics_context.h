@@ -568,7 +568,7 @@ namespace skyline::gpu::interconnect {
         };
 
         IOVA shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
-        std::array<Shader, maxwell3d::StageCount> shaders{
+        std::array<Shader, maxwell3d::ShaderStageCount> shaders{
             Shader{ShaderCompiler::Stage::VertexA, vk::ShaderStageFlagBits::eVertex},
             Shader{ShaderCompiler::Stage::VertexB, vk::ShaderStageFlagBits::eVertex},
             Shader{ShaderCompiler::Stage::TessellationControl, vk::ShaderStageFlagBits::eTessellationControl},
@@ -662,13 +662,13 @@ namespace skyline::gpu::interconnect {
             }
         }
 
-        void SetShaderEnabled(maxwell3d::StageId stage, bool enabled) {
+        void SetShaderEnabled(maxwell3d::ShaderStage stage, bool enabled) {
             auto &shader{shaders[static_cast<size_t>(stage)]};
             shader.enabled = enabled;
             shader.invalidated = true;
         }
 
-        void SetShaderOffset(maxwell3d::StageId stage, u32 offset) {
+        void SetShaderOffset(maxwell3d::ShaderStage stage, u32 offset) {
             auto &shader{shaders[static_cast<size_t>(stage)]};
             shader.offset = offset;
             shader.invalidated = true;

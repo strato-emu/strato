@@ -428,7 +428,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 BOOST_PP_REPEAT(6, SET_SHADER_ENABLE_CALLBACK, 0)
-                static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
+                static_assert(type::ShaderStageCount == 6 && type::ShaderStageCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SET_SHADER_ENABLE_CALLBACK
 
                 MAXWELL3D_CASE(vertexBeginGl, {
@@ -509,13 +509,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 }
             })
 
-            #define SET_SHADER_OFFSET_CALLBACK(z, index, data)                               \
-                MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, offset, {                     \
-                    context.SetShaderOffset(registers.setProgram[index].info.stage, offset); \
+            #define SHADER_CALLBACKS(z, index, data)                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(setProgram, index, offset, {                    \
+                    context.SetShaderOffset(static_cast<type::ShaderStage>(index), offset); \
                 })
 
-            BOOST_PP_REPEAT(6, SET_SHADER_OFFSET_CALLBACK, 0)
-            static_assert(type::StageCount == 6 && type::StageCount < BOOST_PP_LIMIT_REPEAT);
+            BOOST_PP_REPEAT(6, SHADER_CALLBACKS, 0)
+            static_assert(type::ShaderStageCount == 6 && type::ShaderStageCount < BOOST_PP_LIMIT_REPEAT);
+            #undef SHADER_CALLBACKS
 
             MAXWELL3D_ARRAY_CASE(firmwareCall, 4, {
                 registers.raw[0xD00] = 1;

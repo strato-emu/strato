@@ -278,7 +278,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x7C0, std::array<type::Address, type::VertexBufferCount>> vertexBufferLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
 
-            Register<0x800, std::array<type::SetProgramInfo, type::StageCount>> setProgram;
+            Register<0x800, std::array<type::SetProgramInfo, type::ShaderStageCount>> setProgram;
 
             Register<0x8C0, u32[0x20]> firmwareCall;
 
