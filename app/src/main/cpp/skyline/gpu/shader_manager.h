@@ -33,6 +33,11 @@ namespace skyline::gpu {
 
         Shader::IR::Program ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset);
 
+        /**
+         * @brief Combines the VertexA and VertexB shader programs into a single program
+         */
+        static Shader::IR::Program CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary);
+
         vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings);
     };
 }

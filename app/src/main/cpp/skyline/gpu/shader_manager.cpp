@@ -125,11 +125,55 @@ namespace skyline::gpu {
         }
     };
 
+    /**
+     * @brief A shader environment for VertexB during combination as it only requires the shader header and no higher level context
+     */
+    class VertexBEnvironment : public Shader::Environment {
+      public:
+        explicit VertexBEnvironment(span<u8> binary) {
+            sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
+            stage = Shader::Stage::VertexB;
+        }
+
+        [[nodiscard]] u64 ReadInstruction(u32 address) final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] Shader::TextureType ReadTextureType(u32 raw_handle) final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] u32 TextureBoundBuffer() const final {
+            throw exception("Not implemented");
+        }
+
+        [[nodiscard]] u32 LocalMemorySize() const final {
+            return static_cast<u32>(sph.LocalMemorySize()) + sph.common3.shader_local_memory_crs_size;
+        }
+
+        [[nodiscard]] u32 SharedMemorySize() const final {
+            return 0;
+        }
+
+        [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
+            return {0, 0, 0};
+        }
+    };
+
     Shader::IR::Program ShaderManager::ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset) {
         GraphicsEnvironment environment{binary, baseOffset, stage};
         Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
 
         return Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo);
+    }
+
+    Shader::IR::Program ShaderManager::CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary) {
+        VertexBEnvironment vertexBEnvironment{vertexBBinary};
+        return Shader::Maxwell::MergeDualVertexPrograms(vertexA, vertexB, vertexBEnvironment);
     }
 
     vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {

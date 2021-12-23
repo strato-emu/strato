@@ -743,8 +743,24 @@ namespace skyline::gpu::interconnect {
 
                             shader.program = gpu.shader.ParseGraphicsShader(shader.data, shader.stage, shader.offset);
 
-                            if (shader.stage != ShaderCompiler::Stage::VertexA) {
+                            if (shader.stage != ShaderCompiler::Stage::VertexA && shader.stage != ShaderCompiler::Stage::VertexB) {
                                 pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
+                            } else if (shader.stage == ShaderCompiler::Stage::VertexA) {
+                                auto &vertexB{shaders[maxwell3d::ShaderStage::VertexB]};
+
+                                if (!vertexB.enabled)
+                                    throw exception("Enabling VertexA without VertexB is not supported");
+                                else if (!vertexB.invalidated)
+                                    // If only VertexA is invalidated, we need to recombine here but we can defer it otherwise
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(*shader.program, *vertexB.program, vertexB.data);
+                            } else if (shader.stage == ShaderCompiler::Stage::VertexB) {
+                                auto &vertexA{shaders[maxwell3d::ShaderStage::VertexA]};
+
+                                if (vertexA.enabled)
+                                    // We need to combine the vertex shader stages if VertexA is enabled
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(*vertexA.program, *shader.program, shader.data);
+                                else
+                                    pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
                             }
 
                             pipelineStage.enabled = true;
