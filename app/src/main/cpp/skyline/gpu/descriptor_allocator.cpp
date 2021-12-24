@@ -6,7 +6,7 @@
 #include "descriptor_allocator.h"
 
 namespace skyline::gpu {
-    DescriptorAllocator::DescriptorPool::DescriptorPool(const vk::raii::Device &device, const vk::DescriptorPoolCreateInfo &createInfo) : vk::raii::DescriptorPool(device, createInfo), setCount(createInfo.maxSets) {}
+    DescriptorAllocator::DescriptorPool::DescriptorPool(const vk::raii::Device &device, const vk::DescriptorPoolCreateInfo &createInfo) : vk::raii::DescriptorPool(device, createInfo), freeSetCount(createInfo.maxSets) {}
 
     void DescriptorAllocator::AllocateDescriptorPool() {
         namespace maxwell3d = soc::gm20b::engine::maxwell3d::type; // We use Maxwell3D as reference for base descriptor counts
@@ -31,13 +31,13 @@ namespace skyline::gpu {
     }
 
     DescriptorAllocator::ActiveDescriptorSet::ActiveDescriptorSet(std::shared_ptr<DescriptorPool> pPool, vk::DescriptorSet set) : pool(std::move(pPool)), DescriptorSet(set) {
-        pool->setCount--;
+        pool->freeSetCount--;
     }
 
     DescriptorAllocator::ActiveDescriptorSet::~ActiveDescriptorSet() {
         std::scoped_lock lock(*pool);
         pool->getDevice().freeDescriptorSets(**pool, 1, this, *pool->getDispatcher());
-        pool->setCount++;
+        pool->freeSetCount++;
     }
 
     DescriptorAllocator::DescriptorAllocator(GPU &gpu) : gpu(gpu) {
@@ -61,9 +61,9 @@ namespace skyline::gpu {
             if (result == vk::Result::eSuccess) {
                 return ActiveDescriptorSet(pool, set);
             } else if (result == vk::Result::eErrorOutOfPoolMemory) {
-                if (pool->setCount == 0)
+                if (pool->freeSetCount == 0)
                     // The amount of maximum descriptor sets is insufficient
-                    descriptorSetCount += BaseDescriptorSetCount;
+                    descriptorSetCount += DescriptorSetCountIncrement;
                 else
                     // The amount of maximum descriptors is insufficient
                     descriptorMultiplier++;

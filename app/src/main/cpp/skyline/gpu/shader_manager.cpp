@@ -117,11 +117,11 @@ namespace skyline::gpu {
         }
 
         [[nodiscard]] u32 SharedMemorySize() const final {
-            return 0; // Shared memory size is only relevant for compute shaders
+            return 0; // Only relevant for compute shaders
         }
 
         [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
-            return {0, 0, 0}; // Workgroup size is only relevant for compute shaders
+            return {0, 0, 0}; // Only relevant for compute shaders
         }
     };
 
@@ -156,11 +156,11 @@ namespace skyline::gpu {
         }
 
         [[nodiscard]] u32 SharedMemorySize() const final {
-            return 0;
+            return 0; // Only relevant for compute shaders
         }
 
         [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
-            return {0, 0, 0};
+            return {0, 0, 0}; // Only relevant for compute shaders
         }
     };
 

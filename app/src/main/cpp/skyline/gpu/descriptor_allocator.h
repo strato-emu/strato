@@ -14,15 +14,15 @@ namespace skyline::gpu {
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes the creation and replacement of the pool object
 
-        static constexpr u32 BaseDescriptorSetCount{64}; //!< An arbitrary amount of descriptor sets that we allocate in multiples of
-        u32 descriptorSetCount{BaseDescriptorSetCount}; //!< The maximum amount of descriptor sets in the pool
+        static constexpr u32 DescriptorSetCountIncrement{64}; //!< The amount of descriptor sets that we allocate in increments of
+        u32 descriptorSetCount{DescriptorSetCountIncrement}; //!< The maximum amount of descriptor sets in the pool
         u32 descriptorMultiplier{1}; //!< A multiplier for the maximum amount of descriptors in the pool
 
         /**
          * @brief A lockable VkDescriptorPool for maintaining external synchronization requirements
          */
         struct DescriptorPool : public std::mutex, public vk::raii::DescriptorPool {
-            u64 setCount{}; //!< The amount of sets free to allocate from this pool
+            u64 freeSetCount{}; //!< The amount of sets free to allocate from this pool
 
             DescriptorPool(vk::raii::Device const &device, vk::DescriptorPoolCreateInfo const &createInfo);
         };
@@ -30,14 +30,14 @@ namespace skyline::gpu {
         std::shared_ptr<DescriptorPool> pool; //!< The current pool used by any allocations in the class, replaced when an error is ran into
 
         /**
-         * @brief (Re-)Allocates the descriptor pool with the current multiplier applied to the base counts
+         * @brief (Re-)Allocates the descriptor pool with the current multiplier applied to the descriptor counts and the current descriptor set count
          * @note `DescriptorAllocator::mutex` **must** be locked prior to calling this
          */
         void AllocateDescriptorPool();
 
       public:
         /**
-         * @brief A RAII-bound descriptor set that automatically frees of resources into the pool on destruction while respecting external synchronization requirements
+         * @brief A RAII-bound descriptor set that automatically frees resources into the pool on destruction while respecting external synchronization requirements
          */
         struct ActiveDescriptorSet : public vk::DescriptorSet {
           private:
@@ -56,7 +56,7 @@ namespace skyline::gpu {
         DescriptorAllocator(GPU &gpu);
 
         /**
-         * @note It is UB to allocate a set with a descriptor type that isn't in the pool
+         * @note It is UB to allocate a set with a descriptor type that isn't in the pool as defined in AllocateDescriptorPool
          */
         ActiveDescriptorSet AllocateSet(vk::DescriptorSetLayout layout);
     };

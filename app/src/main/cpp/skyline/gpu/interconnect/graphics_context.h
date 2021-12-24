@@ -592,8 +592,8 @@ namespace skyline::gpu::interconnect {
             }
         };
 
-        struct Shaders : public std::array<Shader, maxwell3d::ShaderStageCount> {
-            Shaders() : array({
+        struct ShaderSet : public std::array<Shader, maxwell3d::ShaderStageCount> {
+            ShaderSet() : array({
                                   Shader{ShaderCompiler::Stage::VertexA},
                                   Shader{ShaderCompiler::Stage::VertexB},
                                   Shader{ShaderCompiler::Stage::TessellationControl},
@@ -646,7 +646,7 @@ namespace skyline::gpu::interconnect {
         };
 
         IOVA shaderBaseIova{}; //!< The base IOVA that shaders are located at an offset from
-        Shaders shaders;
+        ShaderSet shaders;
         PipelineStages pipelineStages;
 
         std::array<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStagesInfo{}; //!< Storage backing for the pipeline shader stage information for all shaders aside from 'VertexA' which uses the same stage as 'VertexB'
@@ -688,7 +688,7 @@ namespace skyline::gpu::interconnect {
                 auto setStageRecompile{[this](maxwell3d::PipelineStage stage) {
                     pipelineStages[stage].needsRecompile = true;
                 }};
-                ((void) setStageRecompile(stages), ...);
+                (setStageRecompile(stages), ...);
             }
         }
 
@@ -704,24 +704,26 @@ namespace skyline::gpu::interconnect {
                     if (shader.invalidated) {
                         // If a shader is invalidated, we need to reparse the program (given that it has changed)
 
-                        bool shouldParseShader{true};
-                        if (!shader.data.empty() && shader.shouldCheckSame) {
-                            // A fast path to check if the shader is the same as before to avoid reparsing the shader
-                            auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
-                            auto originalShader{shader.data.data()};
+                        bool shouldParseShader{[&]() {
+                            if (!shader.data.empty() && shader.shouldCheckSame) {
+                                // A fast path to check if the shader is the same as before to avoid reparsing the shader
+                                auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
+                                auto originalShader{shader.data.data()};
 
-                            shouldParseShader = false;
-                            for (auto &range : newIovaRanges) {
-                                if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
-                                    originalShader += range.size();
-                                } else {
-                                    shouldParseShader = true;
-                                    break;
+                                for (auto &range : newIovaRanges) {
+                                    if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
+                                        originalShader += range.size();
+                                    } else {
+                                        return true;
+                                    }
                                 }
-                            }
 
-                            shader.shouldCheckSame = true;
-                        }
+                                return false;
+                            } else {
+                                shader.shouldCheckSame = true; // We want to reset the value and check for it being same the next time
+                                return true;
+                            }
+                        }()};
 
                         if (shouldParseShader) {
                             // A pass to check if the shader has a BRA infloop opcode ending (On most commercial games)
