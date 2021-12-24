@@ -1626,7 +1626,8 @@ namespace skyline::gpu::interconnect {
         vk::raii::PipelineCache pipelineCache;
 
       public:
-        void Draw(u32 vertexCount, u32 firstVertex) {
+        template<bool IsIndexed>
+        void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
             // Color Render Target Setup
             boost::container::static_vector<std::scoped_lock<TextureView>, maxwell3d::RenderTargetCount> colorRenderTargetLocks;
             boost::container::static_vector<TextureView *, maxwell3d::RenderTargetCount> activeColorRenderTargets;
@@ -1696,6 +1697,19 @@ namespace skyline::gpu::interconnect {
                 .setLayoutCount = 1,
             });
 
+            vk::Buffer indexBufferHandle;
+            vk::DeviceSize indexBufferOffset;
+            vk::IndexType indexBufferType;
+            if constexpr (IsIndexed) {
+                auto indexBufferView{GetIndexBuffer(count)};
+                std::scoped_lock lock(*indexBufferView);
+                executor.AttachBuffer(indexBufferView);
+
+                indexBufferHandle = indexBufferView->buffer->GetBacking();
+                indexBufferOffset = indexBufferView->offset;
+                indexBufferType = indexBuffer.type;
+            }
+
             // Draw Persistent Storage
             struct Storage : FenceCycleDependency {
                 vk::raii::PipelineLayout pipelineLayout;
@@ -1708,7 +1722,7 @@ namespace skyline::gpu::interconnect {
             auto storage{std::make_shared<Storage>(std::move(pipelineLayout), std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([vertexCount, firstVertex, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, storage = std::move(storage), vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, storage = std::move(storage), vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 pipelineCreateInfo.layout = *storage->pipelineLayout;
 
                 pipelineCreateInfo.renderPass = renderPass;
@@ -1734,7 +1748,12 @@ namespace skyline::gpu::interconnect {
 
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *storage->pipelineLayout, 0, storage->descriptorSet, nullptr);
 
-                commandBuffer.draw(vertexCount, 1, firstVertex, 0);
+                if constexpr (IsIndexed) {
+                    commandBuffer.bindIndexBuffer(indexBufferHandle, indexBufferOffset, indexBufferType);
+                    commandBuffer.drawIndexed(count, 1, first, vertexOffset, 0);
+                } else {
+                    commandBuffer.draw(count, 1, first, 0);
+                }
 
                 storage->pipeline = vk::raii::Pipeline(vkDevice, pipeline.value);
 
@@ -1742,6 +1761,14 @@ namespace skyline::gpu::interconnect {
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets[0]->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView);
+        }
+
+        void DrawVertex(u32 vertexCount, u32 firstVertex) {
+            Draw<false>(vertexCount, firstVertex);
+        }
+
+        void DrawIndexed(u32 indexCount, u32 firstIndex, i32 vertexOffset) {
+            Draw<true>(indexCount, firstIndex, vertexOffset);
         }
     };
 }

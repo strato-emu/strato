@@ -497,7 +497,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             MAXWELL3D_CASE(drawVertexCount, {
-                context.Draw(drawVertexCount, *registers.drawVertexFirst);
+                context.DrawVertex(drawVertexCount, *registers.drawVertexFirst);
+            })
+
+            MAXWELL3D_CASE(drawIndexCount, {
+                context.DrawIndexed(drawIndexCount, *registers.drawIndexFirst, *registers.drawBaseVertex);
             })
 
             MAXWELL3D_STRUCT_CASE(semaphore, info, {

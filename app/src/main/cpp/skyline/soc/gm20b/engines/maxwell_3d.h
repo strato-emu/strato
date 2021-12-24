@@ -72,8 +72,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x280, std::array<type::ViewportTransform, type::ViewportCount>> viewportTransforms;
             Register<0x300, std::array<type::Viewport, type::ViewportCount>> viewports;
 
-            Register<0x35D, u32> drawVertexFirst; //!< The index of the first vertex to draw
-            Register<0x35E, u32> drawVertexCount; //!< The amount of vertices to draw, calling this method triggers drawing
+            Register<0x35D, u32> drawVertexFirst; //!< The first vertex to draw
+            Register<0x35E, u32> drawVertexCount; //!< The amount of vertices to draw, calling this method triggers non-indexed drawing
 
             Register<0x360, std::array<u32, 4>> clearColorValue;
             Register<0x364, float> clearDepthValue;
@@ -173,7 +173,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4EC, float> lineWidthSmooth;
             Register<0x4ED, float> lineWidthAliased;
 
-            Register<0x50D, u32> drawBaseVertex;
+            Register<0x50D, i32> drawBaseVertex;
             Register<0x50E, u32> drawBaseInstance;
 
             Register<0x544, u32> clipDistanceEnable;
@@ -223,6 +223,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x5A1, u32> provokingVertexIsLast;
 
             Register<0x5F2, type::IndexBuffer> indexBuffer;
+
+            Register<0x5F7, u32> drawIndexFirst; //!< The the first element in the index buffer to draw
+            Register<0x5F8, u32> drawIndexCount; //!< The amount of elements to draw, calling this method triggers indexed drawing
 
             Register<0x61F, float> depthBiasClamp;
 
