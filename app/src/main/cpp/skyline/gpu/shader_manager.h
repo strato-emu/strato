@@ -31,7 +31,7 @@ namespace skyline::gpu {
       public:
         ShaderManager(const DeviceState &state, GPU &gpu);
 
-        Shader::IR::Program ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset);
+        Shader::IR::Program ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex);
 
         /**
          * @brief Combines the VertexA and VertexB shader programs into a single program

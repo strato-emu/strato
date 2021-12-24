@@ -743,7 +743,7 @@ namespace skyline::gpu::interconnect {
                                 return std::nullopt;
                             })};
 
-                            shader.program = gpu.shader.ParseGraphicsShader(shader.data, shader.stage, shader.offset);
+                            shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.data, shader.offset, bindlessTextureConstantBufferIndex);
 
                             if (shader.stage != ShaderCompiler::Stage::VertexA && shader.stage != ShaderCompiler::Stage::VertexB) {
                                 pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
@@ -1546,6 +1546,15 @@ namespace skyline::gpu::interconnect {
                 }
             }
         } indexBuffer{};
+
+        /* Textures */
+      private:
+        u32 bindlessTextureConstantBufferIndex{};
+
+      public:
+        void SetBindlessTextureConstantBufferIndex(u32 index) {
+            bindlessTextureConstantBufferIndex = index;
+        }
 
       public:
         void SetIndexBufferStartIovaHigh(u32 high) {

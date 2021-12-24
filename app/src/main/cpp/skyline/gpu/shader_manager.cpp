@@ -85,12 +85,13 @@ namespace skyline::gpu {
       private:
         span<u8> binary;
         u32 baseOffset;
+        u32 textureBufferIndex;
 
       public:
-        GraphicsEnvironment(span<u8> pBinary, u32 baseOffset, Shader::Stage pStage) : binary(pBinary), baseOffset(baseOffset) {
+        GraphicsEnvironment(Shader::Stage pStage, span<u8> pBinary, u32 baseOffset, u32 textureBufferIndex) : binary(pBinary), baseOffset(baseOffset), textureBufferIndex(textureBufferIndex) {
+            stage = pStage;
             sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
             start_address = baseOffset;
-            stage = pStage;
         }
 
         [[nodiscard]] u64 ReadInstruction(u32 address) final {
@@ -109,7 +110,7 @@ namespace skyline::gpu {
         }
 
         [[nodiscard]] u32 TextureBoundBuffer() const final {
-            throw exception("Not implemented");
+            return textureBufferIndex;
         }
 
         [[nodiscard]] u32 LocalMemorySize() const final {
@@ -164,8 +165,8 @@ namespace skyline::gpu {
         }
     };
 
-    Shader::IR::Program ShaderManager::ParseGraphicsShader(span<u8> binary, Shader::Stage stage, u32 baseOffset) {
-        GraphicsEnvironment environment{binary, baseOffset, stage};
+    Shader::IR::Program ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex) {
+        GraphicsEnvironment environment{stage, binary, baseOffset, bindlessTextureConstantBufferIndex};
         Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
 
         return Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo);

@@ -463,6 +463,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetIndexBufferFormat(format);
                 })
 
+                MAXWELL3D_CASE(bindlessTextureConstantBufferIndex, {
+                    context.SetBindlessTextureConstantBufferIndex(bindlessTextureConstantBufferIndex);
+                })
+
                 default:
                     break;
             }
