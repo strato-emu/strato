@@ -27,6 +27,7 @@ namespace skyline::gpu {
             std::string_view extensionName{extension.extensionName};
             auto extensionVersion{extension.specVersion};
             switch (util::Hash(extensionName)) {
+                EXT_SET("VK_EXT_index_type_uint8", supportsUint8Indices);
                 EXT_SET("VK_EXT_provoking_vertex", supportsLastProvokingVertex);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", supportsVertexAttributeDivisor);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
@@ -84,6 +85,6 @@ namespace skyline::gpu {
     }
 
     std::string QuirkManager::Summary() {
-        return fmt::format("\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}", supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsSubgroupVote, subgroupSize);
+        return fmt::format("\n* Supports U8 Indices: {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}", supportsUint8Indices, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsSubgroupVote, subgroupSize);
     }
 }

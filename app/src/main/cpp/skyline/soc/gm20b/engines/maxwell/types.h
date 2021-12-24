@@ -715,5 +715,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SetProgramInfo) == (sizeof(u32) * 0x10));
 
+    struct IndexBuffer {
+        Address start, limit; //!< The IOVA bounds of the index buffer
+        enum class Format : u32 {
+            Uint8 = 0,
+            Uint16 = 1,
+            Uint32 = 2,
+        } format;
+    };
+
     #pragma pack(pop)
 }

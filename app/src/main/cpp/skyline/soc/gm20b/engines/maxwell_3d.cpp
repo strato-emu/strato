@@ -447,6 +447,22 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetConstantBufferSelectorIovaLow(low);
                 })
 
+                MAXWELL3D_STRUCT_STRUCT_CASE(indexBuffer, start, high, {
+                    context.SetIndexBufferStartIovaHigh(high);
+                })
+                MAXWELL3D_STRUCT_STRUCT_CASE(indexBuffer, start, low, {
+                    context.SetIndexBufferStartIovaLow(low);
+                })
+                MAXWELL3D_STRUCT_STRUCT_CASE(indexBuffer, limit, high, {
+                    context.SetIndexBufferEndIovaHigh(high);
+                })
+                MAXWELL3D_STRUCT_STRUCT_CASE(indexBuffer, limit, low, {
+                    context.SetIndexBufferEndIovaLow(low);
+                })
+                MAXWELL3D_STRUCT_CASE(indexBuffer, format, {
+                    context.SetIndexBufferFormat(format);
+                })
+
                 default:
                     break;
             }

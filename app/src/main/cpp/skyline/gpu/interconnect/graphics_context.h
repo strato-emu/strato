@@ -1256,7 +1256,6 @@ namespace skyline::gpu::interconnect {
         /* Vertex Buffers */
       private:
         struct VertexBuffer {
-            bool disabled{};
             vk::VertexInputBindingDescription bindingDescription{};
             vk::VertexInputBindingDivisorDescriptionEXT bindingDivisorDescription{};
             IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS with the vertex buffer
@@ -1472,10 +1471,10 @@ namespace skyline::gpu::interconnect {
 
         BufferView *GetVertexBuffer(size_t index) {
             auto &vertexBuffer{vertexBuffers.at(index)};
-            if (vertexBuffer.disabled || vertexBuffer.start > vertexBuffer.end || vertexBuffer.start == 0 || vertexBuffer.end == 0)
+            if (vertexBuffer.start > vertexBuffer.end || vertexBuffer.start == 0 || vertexBuffer.end == 0)
                 return nullptr;
             else if (vertexBuffer.view)
-                return &*vertexBuffer.view;
+                return vertexBuffer.view.get();
 
             if (vertexBuffer.guest.mappings.empty()) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
@@ -1523,6 +1522,85 @@ namespace skyline::gpu::interconnect {
 
             inputAssemblyState.topology = vkTopology;
             UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
+        }
+
+        /* Index Buffer */
+      private:
+        struct IndexBuffer {
+            IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS containing the index buffer (end does not represent the true extent of the index buffers, just a maximum possible extent and is set to extremely high values which cannot be used to create a buffer)
+            vk::IndexType type{};
+            vk::DeviceSize viewSize{}; //!< The size of the cached view
+            std::shared_ptr<BufferView> view{}; //!< A cached view tied to the IOVAs and size to allow for a faster lookup
+
+            vk::DeviceSize GetIndexBufferSize(u32 elementCount) {
+                switch (type) {
+                    case vk::IndexType::eUint8EXT:
+                        return sizeof(u8) * elementCount;
+                    case vk::IndexType::eUint16:
+                        return sizeof(u16) * elementCount;
+                    case vk::IndexType::eUint32:
+                        return sizeof(u32) * elementCount;
+
+                    default:
+                        throw exception("Unsupported Vulkan Index Type: {}", vk::to_string(type));
+                }
+            }
+        } indexBuffer{};
+
+      public:
+        void SetIndexBufferStartIovaHigh(u32 high) {
+            indexBuffer.start.high = high;
+            indexBuffer.view.reset();
+        }
+
+        void SetIndexBufferStartIovaLow(u32 low) {
+            indexBuffer.start.low = low;
+            indexBuffer.view.reset();
+        }
+
+        void SetIndexBufferEndIovaHigh(u32 high) {
+            indexBuffer.end.high = high;
+            indexBuffer.view.reset();
+        }
+
+        void SetIndexBufferEndIovaLow(u32 low) {
+            indexBuffer.end.low = low;
+            indexBuffer.view.reset();
+        }
+
+        void SetIndexBufferFormat(maxwell3d::IndexBuffer::Format format) {
+            indexBuffer.type = [format]() {
+                using MaxwellFormat = maxwell3d::IndexBuffer::Format;
+                using VkFormat = vk::IndexType;
+                switch (format) {
+                    case MaxwellFormat::Uint8:
+                        return VkFormat::eUint8EXT;
+                    case MaxwellFormat::Uint16:
+                        return VkFormat::eUint16;
+                    case MaxwellFormat::Uint32:
+                        return VkFormat::eUint32;
+                }
+            }();
+
+            if (indexBuffer.type == vk::IndexType::eUint8EXT && !gpu.quirks.supportsUint8Indices)
+                throw exception("Cannot use U8 index buffer without host GPU support");
+
+            indexBuffer.view.reset();
+        }
+
+        BufferView *GetIndexBuffer(u32 elementCount) {
+            auto size{indexBuffer.GetIndexBufferSize(elementCount)};
+            if (indexBuffer.start > indexBuffer.end || indexBuffer.start == 0 || indexBuffer.end == 0 || size == 0)
+                return nullptr;
+            else if (indexBuffer.view && size == indexBuffer.viewSize)
+                return indexBuffer.view.get();
+
+            GuestBuffer guestBuffer;
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(indexBuffer.start, size)};
+            guestBuffer.mappings.assign(mappings.begin(), mappings.end());
+
+            indexBuffer.view = gpu.buffer.FindOrCreate(guestBuffer);
+            return indexBuffer.view.get();
         }
 
         /* Depth */
