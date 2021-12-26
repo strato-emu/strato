@@ -543,10 +543,8 @@ namespace skyline::gpu::interconnect {
             else if (constantBufferSelector.view)
                 return &*constantBufferSelector.view;
 
-            if (constantBufferSelector.guest.mappings.empty()) {
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
-                constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
-            }
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
+            constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
 
             constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);
             return constantBufferSelector.view.get();
@@ -1259,7 +1257,6 @@ namespace skyline::gpu::interconnect {
             vk::VertexInputBindingDescription bindingDescription{};
             vk::VertexInputBindingDivisorDescriptionEXT bindingDivisorDescription{};
             IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS with the vertex buffer
-            GuestBuffer guest;
             std::shared_ptr<BufferView> view;
         };
         std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
@@ -1476,12 +1473,11 @@ namespace skyline::gpu::interconnect {
             else if (vertexBuffer.view)
                 return vertexBuffer.view.get();
 
-            if (vertexBuffer.guest.mappings.empty()) {
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
-                vertexBuffer.guest.mappings.assign(mappings.begin(), mappings.end());
-            }
+            GuestBuffer guest;
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
+            guest.mappings.assign(mappings.begin(), mappings.end());
 
-            vertexBuffer.view = gpu.buffer.FindOrCreate(vertexBuffer.guest);
+            vertexBuffer.view = gpu.buffer.FindOrCreate(guest);
             return vertexBuffer.view.get();
         }
 
