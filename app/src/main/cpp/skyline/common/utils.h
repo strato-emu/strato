@@ -7,6 +7,7 @@
 #include <span>
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
+#include <xxhash.h>
 #include "base.h"
 
 namespace skyline::util {
@@ -191,6 +192,16 @@ namespace skyline::util {
     }
 
     /**
+     * @brief A fast hash for any trivial object that is designed to be utilized with hash-based containers
+     */
+    template<typename T> requires std::is_trivial_v<T>
+    struct ObjectHash {
+        size_t operator()(const T &object) const noexcept {
+            return XXH64(&object, sizeof(object), 0);
+        }
+    };
+
+    /**
      * @brief Selects the largest possible integer type for representing an object alongside providing the size of the object in terms of the underlying type
      */
     template<class T>
@@ -263,8 +274,7 @@ namespace skyline::util {
     };
 
     template<typename T, typename... TArgs, size_t... Is>
-    std::array<T, sizeof...(Is)> MakeFilledArray(std::index_sequence<Is...>, TArgs &&... args)
-    {
+    std::array<T, sizeof...(Is)> MakeFilledArray(std::index_sequence<Is...>, TArgs &&... args) {
         return {(void(Is), T(args...))...};
     }
 
