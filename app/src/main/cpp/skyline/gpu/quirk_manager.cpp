@@ -5,7 +5,7 @@
 
 namespace skyline::gpu {
     QuirkManager::QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) {
-        bool hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{};
+        bool hasCustomBorderColorExtension{}, hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{};
 
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
@@ -28,6 +28,9 @@ namespace skyline::gpu {
             auto extensionVersion{extension.specVersion};
             switch (util::Hash(extensionName)) {
                 EXT_SET("VK_EXT_index_type_uint8", supportsUint8Indices);
+                EXT_SET("VK_EXT_sampler_mirror_clamp_to_edge", supportsSamplerMirrorClampToEdge);
+                EXT_SET("VK_EXT_sampler_filter_minmax", supportsSamplerReductionMode);
+                EXT_SET("VK_EXT_custom_border_color", hasCustomBorderColorExtension);
                 EXT_SET("VK_EXT_provoking_vertex", supportsLastProvokingVertex);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", supportsVertexAttributeDivisor);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
@@ -52,6 +55,16 @@ namespace skyline::gpu {
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt16, supportsInt16)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt64, supportsInt64)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderStorageImageReadWithoutFormat, supportsImageReadWithoutFormat)
+
+        if (hasCustomBorderColorExtension) {
+            bool hasCustomBorderColorFeature{};
+            FEAT_SET(vk::PhysicalDeviceCustomBorderColorFeaturesEXT, customBorderColors, hasCustomBorderColorFeature)
+            if (hasCustomBorderColorFeature)
+                // We only want to mark custom border colors as supported if it can be done without supplying a format
+                FEAT_SET(vk::PhysicalDeviceCustomBorderColorFeaturesEXT, customBorderColorWithoutFormat, supportsCustomBorderColor)
+        } else {
+            enabledFeatures2.unlink<vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
+        }
 
         if (supportsVertexAttributeDivisor) {
             FEAT_SET(vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor, supportsVertexAttributeDivisor)
@@ -85,6 +98,9 @@ namespace skyline::gpu {
     }
 
     std::string QuirkManager::Summary() {
-        return fmt::format("\n* Supports U8 Indices: {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}", supportsUint8Indices, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsSubgroupVote, subgroupSize);
+        return fmt::format(
+            "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}",
+            supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsSubgroupVote, subgroupSize
+        );
     }
 }

@@ -11,6 +11,7 @@
 #include <soc/gm20b/engines/maxwell/types.h>
 
 #include "command_executor.h"
+#include "types/tsc.h"
 
 namespace skyline::gpu::interconnect {
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
@@ -1546,6 +1547,211 @@ namespace skyline::gpu::interconnect {
         /* Textures */
       private:
         u32 bindlessTextureConstantBufferIndex{};
+
+        /* Samplers */
+      private:
+        struct Sampler : public vk::raii::Sampler, public FenceCycleDependency {
+            using vk::raii::Sampler::Sampler;
+        };
+
+        struct SamplerPool {
+            IOVA iova;
+            u32 maximumIndex;
+            span<TextureSamplerControl> samplerControls;
+            std::unordered_map<TextureSamplerControl, std::shared_ptr<Sampler>, util::ObjectHash<TextureSamplerControl>> samplers;
+        } samplerPool{};
+
+      public:
+        void SetSamplerPoolIovaHigh(u32 high) {
+            samplerPool.iova.high = high;
+            samplerPool.samplerControls = nullptr;
+        }
+
+        void SetSamplerPoolIovaLow(u32 low) {
+            samplerPool.iova.low = low;
+            samplerPool.samplerControls = nullptr;
+        }
+
+        void SetSamplerPoolMaximumIndex(u32 index) {
+            samplerPool.maximumIndex = index;
+            samplerPool.samplerControls = nullptr;
+        }
+
+        vk::Filter ConvertSamplerFilter(TextureSamplerControl::Filter filter) {
+            using TscFilter = TextureSamplerControl::Filter;
+            using VkFilter = vk::Filter;
+            switch (filter) {
+                // @fmt:off
+
+                case TscFilter::Nearest: return VkFilter::eNearest;
+                case TscFilter::Linear: return VkFilter::eLinear;
+
+                // @fmt:on
+            }
+        }
+
+        vk::SamplerMipmapMode ConvertSamplerMipFilter(TextureSamplerControl::MipFilter filter) {
+            using TscFilter = TextureSamplerControl::MipFilter;
+            using VkMode = vk::SamplerMipmapMode;
+            switch (filter) {
+                // @fmt:off
+
+                case TscFilter::None: return VkMode{};
+                case TscFilter::Nearest: return VkMode::eNearest;
+                case TscFilter::Linear: return VkMode::eLinear;
+
+                // @fmt:on
+            }
+        }
+
+        vk::SamplerAddressMode ConvertSamplerAddressMode(TextureSamplerControl::AddressMode mode) {
+            using TscMode = TextureSamplerControl::AddressMode;
+            using VkMode = vk::SamplerAddressMode;
+            switch (mode) {
+                // @fmt:off
+
+                case TscMode::Repeat: return VkMode::eRepeat;
+                case TscMode::MirroredRepeat: return VkMode::eMirroredRepeat;
+
+                case TscMode::ClampToEdge: return VkMode::eClampToEdge;
+                case TscMode::ClampToBorder: return VkMode::eClampToBorder;
+                case TscMode::Clamp: return VkMode::eClampToEdge; // Vulkan doesn't support 'GL_CLAMP' so this is an approximation
+
+                case TscMode::MirrorClampToEdge: return VkMode::eMirrorClampToEdge;
+                case TscMode::MirrorClampToBorder: return VkMode::eMirrorClampToEdge; // Only supported mirror clamps are to edges so this is an approximation
+                case TscMode::MirrorClamp: return VkMode::eMirrorClampToEdge; // Same as above
+
+                // @fmt:on
+            }
+        }
+
+        vk::CompareOp ConvertSamplerCompareOp(TextureSamplerControl::CompareOp compareOp) {
+            using TscOp = TextureSamplerControl::CompareOp;
+            using VkOp = vk::CompareOp;
+            switch (compareOp) {
+                // @fmt:off
+
+                case TscOp::Never: return VkOp::eNever;
+                case TscOp::Less: return VkOp::eLess;
+                case TscOp::Equal: return VkOp::eEqual;
+                case TscOp::LessOrEqual: return VkOp::eLessOrEqual;
+                case TscOp::Greater: return VkOp::eGreater;
+                case TscOp::NotEqual: return VkOp::eNotEqual;
+                case TscOp::GreaterOrEqual: return VkOp::eGreaterOrEqual;
+                case TscOp::Always: return VkOp::eAlways;
+
+                // @fmt:on
+            }
+        }
+
+        vk::SamplerReductionMode ConvertSamplerReductionFilter(TextureSamplerControl::SamplerReduction reduction) {
+            using TscReduction = TextureSamplerControl::SamplerReduction;
+            using VkReduction = vk::SamplerReductionMode;
+            switch (reduction) {
+                // @fmt:off
+
+                case TscReduction::WeightedAverage: return VkReduction::eWeightedAverage;
+                case TscReduction::Min: return VkReduction::eMin;
+                case TscReduction::Max: return VkReduction::eMax;
+
+                // @fmt:on
+            }
+        }
+
+        vk::BorderColor ConvertBorderColorWithCustom(float red, float green, float blue, float alpha) {
+            if (alpha == 1.0f) {
+                if (red == 1.0f && green == 1.0f && blue == 1.0f)
+                    return vk::BorderColor::eFloatOpaqueWhite;
+                else if (red == 0.0f && green == 0.0f && blue == 0.0f)
+                    return vk::BorderColor::eFloatOpaqueBlack;
+            } else if (red == 1.0f && green == 1.0f && blue == 1.0f && alpha == 0.0f) {
+                return vk::BorderColor::eFloatTransparentBlack;
+            }
+
+            return vk::BorderColor::eFloatCustomEXT;
+        }
+
+        vk::BorderColor ConvertBorderColorFixed(float red, float green, float blue, float alpha) {
+            if (alpha == 1.0f) {
+                if (red == 1.0f && green == 1.0f && blue == 1.0f)
+                    return vk::BorderColor::eFloatOpaqueWhite;
+                else if (red == 0.0f && green == 0.0f && blue == 0.0f)
+                    return vk::BorderColor::eFloatOpaqueBlack;
+            } else if (red == 1.0f && green == 1.0f && blue == 1.0f && alpha == 0.0f) {
+                return vk::BorderColor::eFloatTransparentBlack;
+            }
+
+            // Approximations of a custom color using fixed colors
+            if (red + green + blue > 1.0f)
+                return vk::BorderColor::eFloatOpaqueWhite;
+            else if (alpha > 0.0f)
+                return vk::BorderColor::eFloatOpaqueBlack;
+            else
+                return vk::BorderColor::eFloatTransparentBlack;
+        }
+
+        std::shared_ptr<Sampler> GetSampler(u32 index) {
+            if (!samplerPool.samplerControls.valid()) {
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(samplerPool.iova, samplerPool.maximumIndex * sizeof(TextureSamplerControl))};
+                if (mappings.size() != 1)
+                    throw exception("Sampler pool mapping count is unexpected: {}", mappings.size());
+                samplerPool.samplerControls = mappings.front().cast<TextureSamplerControl>();
+            }
+
+            TextureSamplerControl &samplerControl{samplerPool.samplerControls[index]};
+            auto &sampler{samplerPool.samplers[samplerControl]};
+            if (sampler)
+                return sampler;
+
+            auto convertAddressModeWithCheck{[&](TextureSamplerControl::AddressMode mode) {
+                auto vkMode{ConvertSamplerAddressMode(mode)};
+                if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !gpu.quirks.supportsSamplerMirrorClampToEdge) [[unlikely]] {
+                    Logger::Warn("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
+                    return vk::SamplerAddressMode::eClampToEdge; // We use a normal clamp to edge to approximate it
+                }
+                return vkMode;
+            }};
+
+            auto maxAnisotropy{samplerControl.MaxAnisotropy()};
+            vk::StructureChain<vk::SamplerCreateInfo, vk::SamplerReductionModeCreateInfoEXT, vk::SamplerCustomBorderColorCreateInfoEXT> samplerInfo{
+                vk::SamplerCreateInfo{
+                    .magFilter = ConvertSamplerFilter(samplerControl.magFilter),
+                    .minFilter = ConvertSamplerFilter(samplerControl.minFilter),
+                    .mipmapMode = ConvertSamplerMipFilter(samplerControl.mipFilter),
+                    .addressModeU = convertAddressModeWithCheck(samplerControl.addressModeU),
+                    .addressModeV = convertAddressModeWithCheck(samplerControl.addressModeV),
+                    .addressModeW = convertAddressModeWithCheck(samplerControl.addressModeP),
+                    .mipLodBias = samplerControl.MipLodBias(),
+                    .anisotropyEnable = maxAnisotropy > 1.0f,
+                    .maxAnisotropy = maxAnisotropy,
+                    .compareEnable = samplerControl.depthCompareEnable,
+                    .compareOp = ConvertSamplerCompareOp(samplerControl.depthCompareOp),
+                    .minLod = samplerControl.MinLodClamp(),
+                    .maxLod = samplerControl.MaxLodClamp(),
+                    .unnormalizedCoordinates = false,
+                }, vk::SamplerReductionModeCreateInfoEXT{
+                    .reductionMode = ConvertSamplerReductionFilter(samplerControl.reductionFilter),
+                }, vk::SamplerCustomBorderColorCreateInfoEXT{
+                    .customBorderColor.float32 = {{samplerControl.borderColorR, samplerControl.borderColorG, samplerControl.borderColorB, samplerControl.borderColorA}},
+                    .format = vk::Format::eUndefined,
+                },
+            };
+
+            if (!gpu.quirks.supportsSamplerReductionMode)
+                samplerInfo.unlink<vk::SamplerReductionModeCreateInfoEXT>();
+
+            vk::BorderColor &borderColor{samplerInfo.get<vk::SamplerCreateInfo>().borderColor};
+            if (gpu.quirks.supportsCustomBorderColor) {
+                borderColor = ConvertBorderColorWithCustom(samplerControl.borderColorR, samplerControl.borderColorG, samplerControl.borderColorB, samplerControl.borderColorA);
+                if (borderColor != vk::BorderColor::eFloatCustomEXT)
+                    samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
+            } else {
+                borderColor = ConvertBorderColorFixed(samplerControl.borderColorR, samplerControl.borderColorG, samplerControl.borderColorB, samplerControl.borderColorA);
+                samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
+            }
+
+            return sampler = std::make_shared<Sampler>(gpu.vkDevice, samplerInfo.get<vk::SamplerCreateInfo>());
+        }
 
       public:
         void SetBindlessTextureConstantBufferIndex(u32 index) {

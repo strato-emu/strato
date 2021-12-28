@@ -467,6 +467,16 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetBindlessTextureConstantBufferIndex(bindlessTextureConstantBufferIndex);
                 })
 
+                MAXWELL3D_STRUCT_STRUCT_CASE(samplerPool, address, high, {
+                    context.SetSamplerPoolIovaHigh(high);
+                })
+                MAXWELL3D_STRUCT_STRUCT_CASE(samplerPool, address, low, {
+                    context.SetSamplerPoolIovaLow(low);
+                })
+                MAXWELL3D_STRUCT_CASE(samplerPool, maximumIndex, {
+                    context.SetSamplerPoolMaximumIndex(maximumIndex);
+                })
+
                 default:
                     break;
             }
