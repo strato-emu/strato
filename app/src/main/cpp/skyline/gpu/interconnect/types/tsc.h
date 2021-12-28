@@ -72,7 +72,7 @@ namespace skyline::gpu::interconnect {
         u32 cubemapAnisotropy : 1;
         u32 cubemapInterfaceFiltering : 1;
         SamplerReduction reductionFilter : 2;
-        signed int mipLodBias : 13;
+        i32 mipLodBias : 13;
         u32 floatCoordNormalization : 1;
         u32 trilinearOptimization : 5;
         u32 _pad2_ : 1;
