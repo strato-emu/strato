@@ -27,6 +27,8 @@ namespace skyline {
          */
         constexpr span(T &spn) : std::span<T, Extent>(&spn, 1) {}
 
+        constexpr span(nullptr_t) : std::span<T, Extent>() {}
+
         /**
          * @brief We want to support implicitly casting from std::string_view -> span as it's just a specialization of a data view which span is a generic form of, the opposite doesn't hold true as not all data held by a span is string data therefore the conversion isn't implicit there
          */
@@ -82,6 +84,13 @@ namespace skyline {
          */
         constexpr bool contains(const span<T, Extent>& other) const {
             return this->begin() <= other.begin() && this->end() >= other.end();
+        }
+
+        /**
+         * @return If the span is valid by not being null
+         */
+        constexpr bool valid() {
+            return this->data() != nullptr;
         }
 
         /** Comparision operators for equality and binary searches **/
