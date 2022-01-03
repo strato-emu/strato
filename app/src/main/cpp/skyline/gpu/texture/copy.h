@@ -103,7 +103,7 @@ namespace skyline::gpu {
      */
     void CopyPitchLinearToLinear(GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
-        auto sizeStride{guest.format->GetSize(guest.tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
+        auto sizeStride{guest.tileConfig.pitch}; //!< The size of a single stride of pixel data
 
         auto inputLine{guestInput};
         auto outputLine{linearOutput};
@@ -120,7 +120,7 @@ namespace skyline::gpu {
      */
     void CopyLinearToPitchLinear(GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
-        auto sizeStride{guest.format->GetSize(guest.tileConfig.pitch, 1)}; //!< The size of a single stride of pixel data
+        auto sizeStride{guest.tileConfig.pitch}; //!< The size of a single stride of pixel data
 
         auto inputLine{linearInput};
         auto outputLine{guestOutput};

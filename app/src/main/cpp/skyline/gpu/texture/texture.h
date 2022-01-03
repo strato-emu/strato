@@ -210,7 +210,7 @@ namespace skyline::gpu {
                     u8 blockHeight; //!< The height of the blocks in GOBs
                     u8 blockDepth;  //!< The depth of the blocks in GOBs
                 };
-                u32 pitch; //!< The pitch of the texture if it's pitch linear
+                u32 pitch; //!< The pitch of the texture in bytes
             };
 
             constexpr bool operator==(const TileConfig &other) const {
