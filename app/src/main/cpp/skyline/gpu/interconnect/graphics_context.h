@@ -520,6 +520,29 @@ namespace skyline::gpu::interconnect {
             u32 size;
             GuestBuffer guest;
             std::shared_ptr<BufferView> view;
+
+            /**
+             * @brief Reads an object from the supplied offset in the constant buffer
+             * @note This must only be called when the GuestBuffer is resolved correctly
+             */
+            template<typename T>
+            T Read(size_t offset) {
+                T object;
+                size_t objectOffset{};
+                for (auto &mapping: guest.mappings) {
+                    if (offset < mapping.size_bytes()) {
+                        auto copySize{std::min(mapping.size_bytes() - offset, sizeof(T))};
+                        std::memcpy(reinterpret_cast<u8 *>(&object) + objectOffset, mapping.data() + offset, copySize);
+                        objectOffset += copySize;
+                        if (objectOffset == sizeof(T))
+                            return object;
+                        offset = mapping.size_bytes();
+                    } else {
+                        offset -= mapping.size_bytes();
+                    }
+                }
+                throw exception("Object extent ({} + {} = {}) is larger than constant buffer size: {}", size + offset, sizeof(T), size + offset + sizeof(T), size);
+            }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
 
@@ -539,17 +562,17 @@ namespace skyline::gpu::interconnect {
             constantBufferSelector.view.reset();
         }
 
-        BufferView *GetConstantBufferSelectorView() {
+        std::optional<ConstantBuffer> GetConstantBufferSelector() {
             if (constantBufferSelector.size == 0)
-                return nullptr;
+                return std::nullopt;
             else if (constantBufferSelector.view)
-                return &*constantBufferSelector.view;
+                return constantBufferSelector;
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
             constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
 
             constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);
-            return constantBufferSelector.view.get();
+            return constantBufferSelector;
         }
 
         /* Shader Program */
@@ -622,7 +645,7 @@ namespace skyline::gpu::interconnect {
             u32 bindingBase{}, bindingLast{}; //!< The base and last binding for descriptors bound to this stage
             std::optional<vk::raii::ShaderModule> vkModule;
 
-            std::array<std::shared_ptr<BufferView>, maxwell3d::PipelineStageConstantBufferCount> constantBuffers{};
+            std::array<ConstantBuffer, maxwell3d::PipelineStageConstantBufferCount> constantBuffers{};
 
             PipelineStage(vk::ShaderStageFlagBits vkStage) : vkStage(vkStage) {}
         };
@@ -818,7 +841,7 @@ namespace skyline::gpu::interconnect {
                             .stageFlags = pipelineStage.vkStage,
                         });
 
-                        auto view{pipelineStage.constantBuffers[constantBuffer.index]};
+                        auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
                         std::scoped_lock lock(*view);
                         bufferInfo.push_back(vk::DescriptorBufferInfo{
                             .buffer = view->buffer->GetBacking(),
@@ -878,12 +901,12 @@ namespace skyline::gpu::interconnect {
         }
 
         void BindPipelineConstantBuffer(maxwell3d::PipelineStage stage, bool enable, u32 index) {
-            auto &constantBufferView{pipelineStages[stage].constantBuffers[index]};
+            auto &constantBuffer{pipelineStages[stage].constantBuffers[index]};
 
             if (enable) {
-                constantBufferView = GetConstantBufferSelectorView()->shared_from_this();
+                constantBuffer = GetConstantBufferSelector().value();
             } else {
-                constantBufferView = nullptr;
+                constantBuffer = {};
             }
         }
 
