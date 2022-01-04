@@ -50,6 +50,13 @@ namespace skyline::gpu {
             ActiveDescriptorSet(std::shared_ptr<DescriptorPool> pool, vk::DescriptorSet set);
 
           public:
+            ActiveDescriptorSet(ActiveDescriptorSet &&other) noexcept;
+
+            /* Delete the move constructor to prevent early freeing of the descriptor set */
+            ActiveDescriptorSet(const ActiveDescriptorSet &) = delete;
+
+            ActiveDescriptorSet &operator=(const ActiveDescriptorSet &) = delete;
+
             ~ActiveDescriptorSet();
         };
 

@@ -38,10 +38,17 @@ namespace skyline::gpu {
         pool->freeSetCount--;
     }
 
+    DescriptorAllocator::ActiveDescriptorSet::ActiveDescriptorSet(DescriptorAllocator::ActiveDescriptorSet &&other) noexcept {
+        pool = std::move(other.pool);
+        static_cast<vk::DescriptorSet &>(*this) = std::exchange(static_cast<vk::DescriptorSet &>(other), vk::DescriptorSet{});
+    }
+
     DescriptorAllocator::ActiveDescriptorSet::~ActiveDescriptorSet() {
-        std::scoped_lock lock(*pool);
-        pool->getDevice().freeDescriptorSets(**pool, 1, this, *pool->getDispatcher());
-        pool->freeSetCount++;
+        if (static_cast<vk::DescriptorSet &>(*this)) {
+            std::scoped_lock lock(*pool);
+            pool->getDevice().freeDescriptorSets(**pool, 1, this, *pool->getDispatcher());
+            pool->freeSetCount++;
+        }
     }
 
     DescriptorAllocator::DescriptorAllocator(GPU &gpu) : gpu(gpu) {
