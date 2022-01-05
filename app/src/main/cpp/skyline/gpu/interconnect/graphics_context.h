@@ -679,13 +679,14 @@ namespace skyline::gpu::interconnect {
 
         constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
 
-        constexpr static size_t PipelineUniqueDescriptorTypeCount{1}; //!< The amount of unique descriptor types that may be bound to a pipeline
+        constexpr static size_t PipelineUniqueDescriptorTypeCount{2}; //!< The amount of unique descriptor types that may be bound to a pipeline
         constexpr static size_t MaxPipelineDescriptorWriteCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The maxium amount of descriptors writes that are used to bind a pipeline
         constexpr static size_t MaxPipelineDescriptorCount{100}; //!< The maxium amount of descriptors we support being bound to a pipeline
 
         boost::container::static_vector<vk::WriteDescriptorSet, MaxPipelineDescriptorWriteCount> descriptorSetWrites;
         boost::container::static_vector<vk::DescriptorSetLayoutBinding, MaxPipelineDescriptorCount> layoutBindings;
         boost::container::static_vector<vk::DescriptorBufferInfo, MaxPipelineDescriptorCount> bufferInfo;
+        boost::container::static_vector<vk::DescriptorImageInfo, MaxPipelineDescriptorCount> imageInfo;
 
         /**
          * @brief All state concerning the shader programs and their bindings
@@ -799,6 +800,11 @@ namespace skyline::gpu::interconnect {
                 }
             }
 
+            descriptorSetWrites.clear();
+            layoutBindings.clear();
+            bufferInfo.clear();
+            imageInfo.clear();
+
             runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
             ShaderCompiler::Backend::Bindings bindings{};
 
@@ -849,6 +855,46 @@ namespace skyline::gpu::interconnect {
                             .range = view->range,
                         });
                         executor.AttachBuffer(view.get());
+                    }
+                }
+
+                if (!program.info.texture_descriptors.empty()) {
+                    descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                        .dstBinding = bindingIndex,
+                        .descriptorCount = static_cast<u32>(program.info.texture_descriptors.size()),
+                        .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                        .pImageInfo = imageInfo.data() + imageInfo.size(),
+                    });
+
+                    u32 descriptorIndex{};
+                    for (auto &texture : program.info.texture_descriptors) {
+                        layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
+                            .binding = bindingIndex++,
+                            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                            .descriptorCount = 1,
+                            .stageFlags = pipelineStage.vkStage,
+                        });
+
+                        auto &constantBuffer{pipelineStage.constantBuffers[texture.cbuf_index]};
+                        union TextureHandle {
+                            u32 raw;
+                            struct {
+                                u32 textureIndex : 20;
+                                u32 samplerIndex : 12;
+                            };
+                        } handle{constantBuffer.Read<u32>(texture.cbuf_offset + (descriptorIndex++ << texture.size_shift))};
+
+                        auto sampler{GetSampler(handle.samplerIndex)};
+                        auto textureView{GetPoolTextureView(handle.textureIndex)};
+
+                        std::scoped_lock lock(*textureView);
+                        imageInfo.push_back(vk::DescriptorImageInfo{
+                            .sampler = **sampler,
+                            .imageView = textureView->GetView(),
+                            .imageLayout = textureView->texture->layout,
+                        });
+                        executor.AttachTexture(textureView.get());
+                        executor.AttachDependency(std::move(sampler));
                     }
                 }
 

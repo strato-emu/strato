@@ -10,11 +10,15 @@ namespace skyline::gpu {
 
     void DescriptorAllocator::AllocateDescriptorPool() {
         namespace maxwell3d = soc::gm20b::engine::maxwell3d::type; // We use Maxwell3D as reference for base descriptor counts
-        using DescriptorSizes = std::array<vk::DescriptorPoolSize, 1>;
+        using DescriptorSizes = std::array<vk::DescriptorPoolSize, 2>;
         constexpr DescriptorSizes BaseDescriptorSizes{
             vk::DescriptorPoolSize{
                 .descriptorCount = maxwell3d::PipelineStageConstantBufferCount,
                 .type = vk::DescriptorType::eUniformBuffer,
+            },
+            vk::DescriptorPoolSize{
+                .descriptorCount = maxwell3d::PipelineStageCount * 20,
+                .type = vk::DescriptorType::eCombinedImageSampler,
             },
         };
 

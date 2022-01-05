@@ -45,6 +45,10 @@ namespace skyline::gpu::interconnect {
         }
     }
 
+    void CommandExecutor::AttachDependency(std::shared_ptr<FenceCycleDependency> dependency) {
+        cycle->AttachObject(dependency);
+    }
+
     void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         for (const auto &attachments : {inputAttachments, colorAttachments})
             for (const auto &attachment : attachments)
