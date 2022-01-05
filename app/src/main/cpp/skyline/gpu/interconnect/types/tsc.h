@@ -7,6 +7,8 @@
 #include <common/base.h>
 
 namespace skyline::gpu::interconnect {
+    #pragma pack(push, 1)
+
     /**
      * @brief The Texture Sampler Control is a descriptor used to configure the texture sampler in Maxwell GPUs
      * @url https://github.com/envytools/envytools/blob/master/rnndb/graph/g80_texture.xml#L367
@@ -133,4 +135,6 @@ namespace skyline::gpu::interconnect {
         }
     };
     static_assert(sizeof(TextureSamplerControl) == 0x20);
+
+    #pragma pack(pop)
 }

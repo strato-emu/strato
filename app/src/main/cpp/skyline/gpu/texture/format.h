@@ -16,6 +16,7 @@ namespace skyline::gpu::format {
     constexpr Format R5G6B5Unorm{sizeof(u16), vkf::eR5G6B5UnormPack16};
     constexpr Format A2B10G10R10Unorm{sizeof(u32), vkf::eA2B10G10R10UnormPack32};
     constexpr Format A8B8G8R8Srgb{sizeof(u32), vkf::eA8B8G8R8SrgbPack32};
+    constexpr Format A8B8G8R8Unorm{sizeof(u32), vkf::eA8B8G8R8UnormPack32};
     constexpr Format A8B8G8R8Snorm{sizeof(u32), vkf::eA8B8G8R8SnormPack32};
     constexpr Format R16G16Unorm{sizeof(u32), vkf::eR16G16Unorm};
     constexpr Format R16G16Snorm{sizeof(u32), vkf::eR16G16Snorm};

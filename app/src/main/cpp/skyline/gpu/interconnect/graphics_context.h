@@ -12,6 +12,7 @@
 
 #include "command_executor.h"
 #include "types/tsc.h"
+#include "types/tic.h"
 
 namespace skyline::gpu::interconnect {
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
@@ -1548,6 +1549,146 @@ namespace skyline::gpu::interconnect {
       private:
         u32 bindlessTextureConstantBufferIndex{};
 
+        struct PoolTexture : public FenceCycleDependency {
+            GuestTexture guest;
+            std::weak_ptr<TextureView> view;
+        };
+
+        struct TexturePool {
+            IOVA iova;
+            u32 maximumIndex;
+            span<TextureImageControl> imageControls;
+            std::unordered_map<TextureImageControl, PoolTexture, util::ObjectHash<TextureImageControl>> textures;
+        } texturePool{};
+
+      public:
+        void SetBindlessTextureConstantBufferIndex(u32 index) {
+            bindlessTextureConstantBufferIndex = index;
+        }
+
+        void SetTexturePoolIovaHigh(u32 high) {
+            texturePool.iova.high = high;
+            texturePool.imageControls = nullptr;
+        }
+
+        void SetTexturePoolIovaLow(u32 low) {
+            texturePool.iova.low = low;
+            texturePool.imageControls = nullptr;
+        }
+
+        void SetTexturePoolMaximumIndex(u32 index) {
+            texturePool.maximumIndex = index;
+            texturePool.imageControls = nullptr;
+        }
+
+      private:
+        texture::Format ConvertTicFormat(TextureImageControl::FormatWord format) {
+            using TIC = TextureImageControl;
+            #define TIC_FORMAT(format, componentR, componentG, componentB, componentA, swizzleX, swizzleY, swizzleZ, swizzleW) TIC::FormatWord{TIC::ImageFormat::format, TIC::ImageComponent::componentR, TIC::ImageComponent::componentG, TIC::ImageComponent::componentB, TIC::ImageComponent::componentA, TIC::ImageSwizzle::swizzleX, TIC::ImageSwizzle::swizzleY, TIC::ImageSwizzle::swizzleZ, TIC::ImageSwizzle::swizzleW}.Raw()
+
+            #define TIC_FORMAT_SC(format, component, swizzleX, swizzleY, swizzleZ, swizzleW) TIC_FORMAT(format, component, component, component, component, swizzleX, swizzleY, swizzleZ, swizzleW)
+
+            switch (format.Raw()) {
+                case TIC_FORMAT_SC(B5G6R5, Unorm, B, G, R, OneFloat):
+                    return format::R5G6B5Unorm;
+
+                case TIC_FORMAT_SC(A8R8G8B8, Unorm, R, G, B, A):
+                    return format::A8B8G8R8Unorm;
+
+                default:
+                    throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
+            }
+
+            #undef TIC_FORMAT_SC
+            #undef TIC_FORMAT
+        }
+
+        std::shared_ptr<TextureView> GetPoolTextureView(u32 index) {
+            if (!texturePool.imageControls.valid()) {
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(texturePool.iova, texturePool.maximumIndex * sizeof(TextureImageControl))};
+                if (mappings.size() != 1)
+                    throw exception("Texture pool mapping count is unexpected: {}", mappings.size());
+                texturePool.imageControls = mappings.front().cast<TextureImageControl>();
+            }
+
+            TextureImageControl &textureControl{texturePool.imageControls[index]};
+            auto textureIt{texturePool.textures.insert({textureControl, {}})};
+            auto &poolTexture{textureIt.first->second};
+            if (textureIt.second) {
+                // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
+                auto &guest{poolTexture.guest};
+                guest.format = ConvertTicFormat(textureControl.formatWord);
+
+                constexpr size_t CubeFaceCount{6}; //!< The amount of faces of a cube
+
+                guest.baseArrayLayer = static_cast<u16>(textureControl.BaseLayer());
+                guest.dimensions = texture::Dimensions(textureControl.widthMinusOne + 1, textureControl.heightMinusOne + 1, 1);
+                u16 depth{static_cast<u16>(textureControl.depthMinusOne + 1)};
+
+                using TicType = TextureImageControl::TextureType;
+                using TexType = texture::TextureType;
+                switch (textureControl.textureType) {
+                    case TicType::e1D:
+                        guest.type = TexType::e1D;
+                        guest.layerCount = 1;
+                        break;
+                    case TicType::e1DArray:
+                        guest.type = TexType::e1D;
+                        guest.layerCount = depth;
+                        break;
+                    case TicType::e1DBuffer:
+                        throw exception("1D Buffers are not supported");
+
+                    case TicType::e2D:
+                    case TicType::e2DNoMipmap:
+                        guest.type = TexType::e2D;
+                        guest.layerCount = 1;
+                        break;
+                    case TicType::e2DArray:
+                        guest.type = TexType::e2D;
+                        guest.layerCount = depth;
+                        break;
+
+                    case TicType::e3D:
+                        guest.type = TexType::e3D;
+                        guest.layerCount = 1;
+                        guest.dimensions.depth = depth;
+                        break;
+
+                    case TicType::eCubemap:
+                        guest.type = TexType::e2D;
+                        guest.layerCount = CubeFaceCount;
+                        break;
+                    case TicType::eCubeArray:
+                        guest.type = TexType::e2D;
+                        guest.layerCount = depth * CubeFaceCount;
+                        break;
+                }
+
+                size_t size; //!< The size of the texture in bytes
+                if (textureControl.headerType == TextureImageControl::HeaderType::Pitch) {
+                    u32 pitch{static_cast<u32>(textureControl.tileConfig.pitchHigh) << TextureImageControl::TileConfig::PitchAlignmentBits};
+                    guest.tileConfig = {
+                        .mode = texture::TileMode::Pitch,
+                        .pitch = pitch,
+                    };
+                    size = pitch * guest.dimensions.height * guest.dimensions.depth * guest.layerCount;
+                } else {
+                    throw exception("Unsupported TIC Header Type: {}", static_cast<u32>(textureControl.headerType));
+                }
+
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), size)};
+                guest.mappings.assign(mappings.begin(), mappings.end());
+            } else if (auto textureView{poolTexture.view.lock()}; textureView != nullptr) {
+                // If the entry already exists and the view is still valid then we return it directly
+                return textureView;
+            }
+
+            auto textureView{gpu.texture.FindOrCreate(poolTexture.guest)};
+            poolTexture.view = textureView;
+            return textureView;
+        }
+
         /* Samplers */
       private:
         struct Sampler : public vk::raii::Sampler, public FenceCycleDependency {
@@ -1577,6 +1718,7 @@ namespace skyline::gpu::interconnect {
             samplerPool.samplerControls = nullptr;
         }
 
+      private:
         vk::Filter ConvertSamplerFilter(TextureSamplerControl::Filter filter) {
             using TscFilter = TextureSamplerControl::Filter;
             using VkFilter = vk::Filter;
@@ -1751,11 +1893,6 @@ namespace skyline::gpu::interconnect {
             }
 
             return sampler = std::make_shared<Sampler>(gpu.vkDevice, samplerInfo.get<vk::SamplerCreateInfo>());
-        }
-
-      public:
-        void SetBindlessTextureConstantBufferIndex(u32 index) {
-            bindlessTextureConstantBufferIndex = index;
         }
 
       public:
