@@ -543,8 +543,32 @@ namespace skyline::gpu::interconnect {
                 }
                 throw exception("Object extent ({} + {} = {}) is larger than constant buffer size: {}", size + offset, sizeof(T), size + offset + sizeof(T), size);
             }
+
+            /**
+             * @brief Writes an object to the supplied offset in the constant buffer
+             * @note This must only be called when the GuestBuffer is resolved correctly
+             */
+            template<typename T>
+            void Write(const T &object, size_t offset) {
+                size_t objectOffset{};
+                for (auto &mapping: guest.mappings) {
+                    if (offset < mapping.size_bytes()) {
+                        auto copySize{std::min(mapping.size_bytes() - offset, sizeof(T))};
+                        std::memcpy(mapping.data() + offset, reinterpret_cast<const u8 *>(&object) + objectOffset, copySize);
+                        objectOffset += copySize;
+                        if (objectOffset == sizeof(T))
+                            return;
+                        offset = mapping.size_bytes();
+                    } else {
+                        offset -= mapping.size_bytes();
+                    }
+                }
+                throw exception("Object extent ({} + {} = {}) is larger than constant buffer size: {}", size + offset, sizeof(T), size + offset + sizeof(T), size);
+            }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
+
+        u32 constantBufferUpdateOffset{}; //!< The offset at which any inline constant buffer updata data is written
 
       public:
         void SetConstantBufferSelectorSize(u32 size) {
@@ -573,6 +597,15 @@ namespace skyline::gpu::interconnect {
 
             constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);
             return constantBufferSelector;
+        }
+
+        void SetConstantBufferUpdateOffset(u32 offset) {
+            constantBufferUpdateOffset = offset;
+        }
+
+        void ConstantBufferUpdate(u32 data) {
+            auto constantBuffer{GetConstantBufferSelector().value()};
+            constantBuffer.Write(data, constantBufferUpdateOffset);
         }
 
         /* Shader Program */

@@ -48,6 +48,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
         #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
         #define MAXWELL3D_STRUCT_STRUCT_OFFSET(field, member, submember) MAXWELL3D_STRUCT_OFFSET(field, member) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field->member)>, submember)
+        #define MAXWELL3D_STRUCT_ARRAY_OFFSET(field, member, index) MAXWELL3D_STRUCT_OFFSET(field, member) + ((sizeof(std::remove_reference_t<decltype(Registers::field->member[0])>) / sizeof(u32)) * index)
         #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(std::remove_reference_t<decltype(Registers::field[0])>) / sizeof(u32)) * index)
         #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field[0])>, member)
         #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(decltype(Registers::field[0].member), submember)
@@ -64,6 +65,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         }
         #define MAXWELL3D_STRUCT_CASE(field, member, content) MAXWELL3D_CASE_BASE(member, field->member, MAXWELL3D_STRUCT_OFFSET(field, member), content)
         #define MAXWELL3D_STRUCT_STRUCT_CASE(field, member, submember, content) MAXWELL3D_CASE_BASE(submember, field->member.submember, MAXWELL3D_STRUCT_STRUCT_OFFSET(field, member, submember), content)
+        #define MAXWELL3D_STRUCT_ARRAY_CASE(field, member, index, content) MAXWELL3D_CASE_BASE(member, field->member[index], MAXWELL3D_STRUCT_ARRAY_OFFSET(field, member, index), content)
         #define MAXWELL3D_ARRAY_CASE(field, index, content) MAXWELL3D_CASE_BASE(field, field[index], MAXWELL3D_ARRAY_OFFSET(field, index), content)
         #define MAXWELL3D_ARRAY_STRUCT_CASE(field, index, member, content) MAXWELL3D_CASE_BASE(member, field[index].member, MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member), content)
         #define MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE(field, index, member, submember, content) MAXWELL3D_CASE_BASE(submember, field[index].member.submember, MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember), content)
@@ -487,6 +489,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetTexturePoolMaximumIndex(maximumIndex);
                 })
 
+                MAXWELL3D_STRUCT_CASE(constantBufferUpdate, offset, {
+                    context.SetConstantBufferUpdateOffset(offset);
+                })
+
                 default:
                     break;
             }
@@ -575,12 +581,21 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.raw[0xD00] = 1;
             })
 
+            #define CBUF_UPDATE_CALLBACKS(z, index, data_)                   \
+            MAXWELL3D_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, { \
+                context.ConstantBufferUpdate(data);                          \
+            })
+
+            BOOST_PP_REPEAT(16, CBUF_UPDATE_CALLBACKS, 0)
+            #undef CBUF_UPDATE_CALLBACKS
+
             default:
                 break;
         }
 
         #undef MAXWELL3D_OFFSET
         #undef MAXWELL3D_STRUCT_OFFSET
+        #undef MAXWELL3D_STRUCT_ARRAY_OFFSET
         #undef MAXWELL3D_ARRAY_OFFSET
         #undef MAXWELL3D_ARRAY_STRUCT_OFFSET
         #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET
@@ -588,6 +603,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         #undef MAXWELL3D_CASE_BASE
         #undef MAXWELL3D_CASE
         #undef MAXWELL3D_STRUCT_CASE
+        #undef MAXWELL3D_STRUCT_ARRAY_CASE
         #undef MAXWELL3D_ARRAY_CASE
         #undef MAXWELL3D_ARRAY_STRUCT_CASE
         #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE

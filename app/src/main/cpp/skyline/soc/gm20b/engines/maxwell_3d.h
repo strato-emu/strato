@@ -293,6 +293,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x8E0, ConstantBufferSelector> constantBufferSelector;
 
+            /**
+             * @brief Allows updating the currently selected constant buffer inline with an offset and up to 16 words of data
+             */
+            struct ConstantBufferUpdate {
+                u32 offset;
+                std::array<u32, 16> data;
+            };
+            Register<0x8E3, ConstantBufferUpdate> constantBufferUpdate;
+
             Register<0x900, std::array<type::Bind, type::PipelineStageCount>> bind; //!< Binds constant buffers to pipeline stages
 
             Register<0x982, u32> bindlessTextureConstantBufferIndex; //!< The index of the constant buffer containing bindless texture descriptors
