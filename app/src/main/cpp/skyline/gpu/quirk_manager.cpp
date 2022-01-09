@@ -63,7 +63,7 @@ namespace skyline::gpu {
                 // We only want to mark custom border colors as supported if it can be done without supplying a format
                 FEAT_SET(vk::PhysicalDeviceCustomBorderColorFeaturesEXT, customBorderColorWithoutFormat, supportsCustomBorderColor)
         } else {
-            enabledFeatures2.unlink<vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
+            enabledFeatures2.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
         }
 
         if (supportsVertexAttributeDivisor) {
