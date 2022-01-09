@@ -6,45 +6,101 @@
 #include "texture.h"
 
 namespace skyline::gpu::format {
-    using Format = gpu::texture::FormatBase;
-    using vkf = vk::Format;
+    // @fmt:off
+
     using vka = vk::ImageAspectFlagBits;
     using swc = gpu::texture::SwizzleChannel;
 
-    // Color Formats
-    constexpr Format R8G8B8A8Unorm{sizeof(u32), vkf::eR8G8B8A8Unorm};
-    constexpr Format R5G6B5Unorm{sizeof(u16), vkf::eR5G6B5UnormPack16};
-    constexpr Format A2B10G10R10Unorm{sizeof(u32), vkf::eA2B10G10R10UnormPack32};
-    constexpr Format A8B8G8R8Srgb{sizeof(u32), vkf::eA8B8G8R8SrgbPack32};
-    constexpr Format A8B8G8R8Unorm{sizeof(u32), vkf::eA8B8G8R8UnormPack32};
-    constexpr Format A8B8G8R8Snorm{sizeof(u32), vkf::eA8B8G8R8SnormPack32};
-    constexpr Format R16G16Unorm{sizeof(u32), vkf::eR16G16Unorm};
-    constexpr Format R16G16Snorm{sizeof(u32), vkf::eR16G16Snorm};
-    constexpr Format R16G16Sint{sizeof(u32), vkf::eR16G16Sint};
-    constexpr Format R16G16Uint{sizeof(u32), vkf::eR16G16Uint};
-    constexpr Format R16G16Float{sizeof(u32), vkf::eR16G16Sfloat};
-    constexpr Format B10G11R11Float{sizeof(u32), vkf::eB10G11R11UfloatPack32};
-    constexpr Format R32Float{sizeof(u32), vkf::eR32Sfloat};
-    constexpr Format R8G8Unorm{sizeof(u16), vkf::eR8G8Unorm};
-    constexpr Format R8G8Snorm{sizeof(u16), vkf::eR8G8Snorm};
-    constexpr Format R16Unorm{sizeof(u16), vkf::eR16Unorm};
-    constexpr Format R16Float{sizeof(u16), vkf::eR16Sfloat};
-    constexpr Format R8Unorm{sizeof(u8), vkf::eR8Unorm};
-    constexpr Format R8Snorm{sizeof(u8), vkf::eR8Snorm};
-    constexpr Format R8Sint{sizeof(u8), vkf::eR8Sint};
-    constexpr Format R8Uint{sizeof(u8), vkf::eR8Uint};
-    constexpr Format R32B32G32A32Float{sizeof(u32) * 4, vkf::eR32G32B32A32Sfloat, .swizzle = {
+    #define FORMAT(name, bitsPerBlock, format, ...) \
+            constexpr gpu::texture::FormatBase name{bitsPerBlock / 8, vk::Format::format, ##__VA_ARGS__}
+
+    #define FORMAT_SUFF_UNORM_SRGB(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT(name ## Unorm, bitsPerBlock, format ## Unorm ## fmtSuffix, ##__VA_ARGS__);   \
+            FORMAT(name ## Srgb, bitsPerBlock, format ## Srgb ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT(name ## Uint, bitsPerBlock, format ## Uint ## fmtSuffix, ##__VA_ARGS__);   \
+            FORMAT(name ## Sint, bitsPerBlock, format ## Sint ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_INT(name, bitsPerBlock, format, ...) \
+            FORMAT_SUFF_INT(name, bitsPerBlock, format,, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_INT_FLOAT(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__) ; \
+            FORMAT(name ## Float, bitsPerBlock, format ## Sfloat ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_INT_FLOAT(name, bitsPerBlock, format, ...) \
+            FORMAT_SUFF_INT_FLOAT(name, bitsPerBlock, format,, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__);            \
+            FORMAT(name ## Unorm, bitsPerBlock, format ## Unorm ## fmtSuffix, ##__VA_ARGS__); \
+            FORMAT(name ## Snorm, bitsPerBlock, format ## Snorm ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_NORM_INT(name, bitsPerBlock, format, ...) \
+            FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format,, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_NORM_INT_SRGB(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__); \
+            FORMAT(name ## Srgb, bitsPerBlock, format ## Srgb ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_NORM_INT_SRGB(name, bitsPerBlock, format, ...) \
+            FORMAT_SUFF_NORM_INT_SRGB(name, bitsPerBlock, format,, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_NORM_INT_FLOAT(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__) ; \
+            FORMAT(name ## Float, bitsPerBlock, format ## Sfloat ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_NORM_INT_FLOAT(name, bitsPerBlock, format, ...) \
+            FORMAT_SUFF_NORM_INT_FLOAT(name, bitsPerBlock, format,, ##__VA_ARGS__)
+
+    // These are ordered according to Size -> Component Count -> R/G/B/A Order
+
+    // Color formats
+    FORMAT_NORM_INT_SRGB(R8, 8, eR8);
+    FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
+    FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
+    FORMAT(R5G6B5Unorm, 16, eR5G6B5UnormPack16);
+    FORMAT_INT_FLOAT(R32, 32, eR32);
+    FORMAT_NORM_INT_FLOAT(R16G16, 32, eR16G16);
+    FORMAT(B10G11R11Float, 32, eB10G11R11UfloatPack32);
+    FORMAT_NORM_INT_SRGB(R8G8B8A8, 32, eR8G8B8A8);
+    FORMAT_NORM_INT_SRGB(G8B8A8R8, 32, eB8G8R8A8, .swizzle = {
         .blue = swc::Green,
         .green = swc::Blue,
-    }};
-    constexpr Format R16G16B16A16Unorm{sizeof(u16) * 4, vkf::eR16G16B16A16Unorm};
-    constexpr Format R16G16B16A16Snorm{sizeof(u16) * 4, vkf::eR16G16B16A16Snorm};
-    constexpr Format R16G16B16A16Sint{sizeof(u16) * 4, vkf::eR16G16B16A16Sint};
-    constexpr Format R16G16B16A16Uint{sizeof(u16) * 4, vkf::eR16G16B16A16Uint};
-    constexpr Format R16G16B16A16Float{sizeof(u16) * 4, vkf::eR16G16B16A16Sfloat};
-    constexpr Format B8G8R8A8Unorm{sizeof(u32), vkf::eB8G8R8A8Unorm};
-    constexpr Format B8G8R8A8Srgb{sizeof(u32), vkf::eB8G8R8A8Srgb};
+        .red = swc::Alpha,
+        .alpha = swc::Red
+    });
+    FORMAT_NORM_INT_SRGB(B8G8R8A8, 32, eB8G8R8A8);
+    FORMAT_SUFF_NORM_INT_SRGB(A8B8G8R8, 32, eA8B8G8R8, Pack32);
+    FORMAT_SUFF_NORM_INT(A2B10G10R10, 32, eA2B10G10R10, Pack32);
+    FORMAT_NORM_INT_FLOAT(R16G16B16A16, 16 * 4, eR16G16B16A16);
+    FORMAT_INT_FLOAT(R32B32G32A32, 32 * 4, eR32G32B32A32, .swizzle = {
+        .blue = swc::Green,
+        .green = swc::Blue,
+    });
+
+    // Compressed Colour Formats
+    FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block);
 
     // Depth/Stencil Formats
-    constexpr Format S8D24Unorm{sizeof(u32), vkf::eD24UnormS8Uint, vka::eStencil | vka::eDepth}; // TODO: Swizzle Depth/Stencil
+    FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth);
+    FORMAT(S8D24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
+        vka::eStencil | vka::eDepth
+    }); // TODO: Swizzle Depth/Stencil
+
+    #undef FORMAT
+    #undef FORMAT_SUFF_UNORM_SRGB
+    #undef FORMAT_SUFF_INT
+    #undef FORMAT_INT
+    #undef FORMAT_SUFF_INT_FLOAT
+    #undef FORMAT_INT_FLOAT
+    #undef FORMAT_SUFF_NORM_INT
+    #undef FORMAT_NORM_INT
+    #undef FORMAT_SUFF_NORM_INT_SRGB
+    #undef FORMAT_NORM_INT_SRGB
+    #undef FORMAT_SUFF_NORM_INT_FLOAT
+    #undef FORMAT_NORM_INT_FLOAT
+
+    // @fmt:on
 }
