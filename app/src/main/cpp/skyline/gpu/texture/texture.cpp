@@ -118,7 +118,7 @@ namespace skyline::gpu {
     void Texture::CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
         auto image{GetBacking()};
         if (layout == vk::ImageLayout::eUndefined)
-            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
                 .image = image,
                 .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
                 .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
@@ -157,7 +157,7 @@ namespace skyline::gpu {
 
     void Texture::CopyIntoStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
         auto image{GetBacking()};
-        commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+        commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
             .image = image,
             .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
             .dstAccessMask = vk::AccessFlagBits::eTransferRead,
@@ -206,7 +206,6 @@ namespace skyline::gpu {
 
     void Texture::CopyToGuest(u8 *hostBuffer) {
         auto guestOutput{guest->mappings[0].data()};
-        auto size{format->GetSize(dimensions)};
 
         if (guest->tileConfig.mode == texture::TileMode::Block)
             CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
