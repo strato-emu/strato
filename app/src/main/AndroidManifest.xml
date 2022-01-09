@@ -52,7 +52,7 @@
         <activity
             android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:screenOrientation="sensorLandscape"
             tools:ignore="LockedOrientationActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -63,9 +63,7 @@
             android:name="emu.skyline.EmulationActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:launchMode="singleTask"
-            android:screenOrientation="landscape"
-            tools:ignore="LockedOrientationActivity">
+            android:launchMode="singleTask">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="emu.skyline.MainActivity" />

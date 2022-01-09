@@ -84,6 +84,13 @@
     <PreferenceCategory
         android:key="category_presentation"
         android:title="@string/display">
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="6"
+            android:entries="@array/orientation_entries"
+            android:entryValues="@array/orientation_values"
+            app:key="orientation"
+            app:title="@string/screen_orientation"
+            app:useSimpleSummaryProvider="true" />
         <CheckBoxPreference
             android:defaultValue="true"
             android:summaryOff="@string/triple_buffering_disabled"

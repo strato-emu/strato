@@ -52,6 +52,7 @@
     <string name="import_keys_failed">Failed to import keys</string>
     <!-- Settings - Display -->
     <string name="display">Display</string>
+    <string name="screen_orientation">Screen orientation</string>
     <string name="force_triple_buffering">Force Triple Buffering</string>
     <string name="triple_buffering_enabled">Utilize at least three swapchain buffers (Higher FPS but more input lag)</string>
     <string name="triple_buffering_disabled">Utilize at least two swapchain buffers (Lower FPS but less input lag)</string>

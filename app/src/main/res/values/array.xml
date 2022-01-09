@@ -79,4 +79,14 @@
         <item>21:9 (Ultrawide Mods)</item>
         <item>Device Aspect Ratio (Stretch to fit)</item>
     </string-array>
+    <string-array name="orientation_entries">
+        <item>Auto</item>
+        <item>Landscape</item>
+        <item>Landscape (reverse)</item>
+    </string-array>
+    <integer-array name="orientation_values">
+        <item>6</item>
+        <item>0</item>
+        <item>8</item>
+    </integer-array>
 </resources>
