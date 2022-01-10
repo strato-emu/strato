@@ -160,67 +160,83 @@ namespace skyline::gpu::interconnect {
         void SetColorRenderTargetFormat(size_t index, maxwell3d::ColorRenderTarget::Format format) {
             auto &renderTarget{colorRenderTargets.at(index)};
             renderTarget.guest.format = [&]() -> texture::Format {
-                using MaxwellColorRtFormat = maxwell3d::ColorRenderTarget::Format;
+                #define FORMAT_CASE(maxwellFmt, skFmt, type) \
+                    case maxwell3d::ColorRenderTarget::Format::maxwellFmt ## type: \
+                        return format::skFmt ## type
+
+                #define FORMAT_SAME_CASE(fmt, type) FORMAT_CASE(fmt, fmt, type)
+
+                #define FORMAT_INT_CASE(maxwellFmt, skFmt) \
+                    FORMAT_CASE(maxwellFmt, skFmt, Sint); \
+                    FORMAT_CASE(maxwellFmt, skFmt, Uint)
+
+                #define FORMAT_SAME_INT_CASE(fmt) FORMAT_INT_CASE(fmt, fmt)
+
+                #define FORMAT_INT_FLOAT_CASE(maxwellFmt, skFmt) \
+                    FORMAT_INT_CASE(maxwellFmt, skFmt); \
+                    FORMAT_CASE(maxwellFmt, skFmt, Float)
+
+                #define FORMAT_SAME_INT_FLOAT_CASE(fmt) FORMAT_INT_FLOAT_CASE(fmt, fmt)
+
+                #define FORMAT_NORM_CASE(maxwellFmt, skFmt) \
+                    FORMAT_CASE(maxwellFmt, skFmt, Snorm); \
+                    FORMAT_CASE(maxwellFmt, skFmt, Unorm)
+
+                #define FORMAT_NORM_INT_CASE(maxwellFmt, skFmt) \
+                    FORMAT_NORM_CASE(maxwellFmt, skFmt); \
+                    FORMAT_INT_CASE(maxwellFmt, skFmt)
+
+                #define FORMAT_SAME_NORM_INT_CASE(fmt) FORMAT_NORM_INT_CASE(fmt, fmt)
+
+                #define FORMAT_NORM_INT_SRGB_CASE(maxwellFmt, skFmt) \
+                    FORMAT_NORM_INT_CASE(maxwellFmt, skFmt); \
+                    FORMAT_CASE(maxwellFmt, skFmt, Srgb)
+
+                #define FORMAT_NORM_INT_FLOAT_CASE(maxwellFmt, skFmt) \
+                    FORMAT_NORM_INT_CASE(maxwellFmt, skFmt); \
+                    FORMAT_CASE(maxwellFmt, skFmt, Float)
+
+                #define FORMAT_SAME_NORM_INT_FLOAT_CASE(fmt) FORMAT_NORM_INT_FLOAT_CASE(fmt, fmt)
+
                 switch (format) {
-                    case MaxwellColorRtFormat::None:
-                        return {};
-                    case MaxwellColorRtFormat::R32B32G32A32Float:
-                        return format::R32B32G32A32Float;
-                    case MaxwellColorRtFormat::R16G16B16A16Unorm:
-                        return format::R16G16B16A16Unorm;
-                    case MaxwellColorRtFormat::R16G16B16A16Snorm:
-                        return format::R16G16B16A16Snorm;
-                    case MaxwellColorRtFormat::R16G16B16A16Sint:
-                        return format::R16G16B16A16Sint;
-                    case MaxwellColorRtFormat::R16G16B16A16Uint:
-                        return format::R16G16B16A16Uint;
-                    case MaxwellColorRtFormat::R16G16B16A16Float:
-                        return format::R16G16B16A16Float;
-                    case MaxwellColorRtFormat::B8G8R8A8Unorm:
-                        return format::B8G8R8A8Unorm;
-                    case MaxwellColorRtFormat::B8G8R8A8Srgb:
-                        return format::B8G8R8A8Srgb;
-                    case MaxwellColorRtFormat::A2B10G10R10Unorm:
-                        return format::A2B10G10R10Unorm;
-                    case MaxwellColorRtFormat::R8G8B8A8Unorm:
-                        return format::R8G8B8A8Unorm;
-                    case MaxwellColorRtFormat::A8B8G8R8Srgb:
-                        return format::A8B8G8R8Srgb;
-                    case MaxwellColorRtFormat::A8B8G8R8Snorm:
-                        return format::A8B8G8R8Snorm;
-                    case MaxwellColorRtFormat::R16G16Unorm:
-                        return format::R16G16Unorm;
-                    case MaxwellColorRtFormat::R16G16Snorm:
-                        return format::R16G16Snorm;
-                    case MaxwellColorRtFormat::R16G16Sint:
-                        return format::R16G16Sint;
-                    case MaxwellColorRtFormat::R16G16Uint:
-                        return format::R16G16Uint;
-                    case MaxwellColorRtFormat::R16G16Float:
-                        return format::R16G16Float;
-                    case MaxwellColorRtFormat::B10G11R11Float:
-                        return format::B10G11R11Float;
-                    case MaxwellColorRtFormat::R32Float:
-                        return format::R32Float;
-                    case MaxwellColorRtFormat::R8G8Unorm:
-                        return format::R8G8Unorm;
-                    case MaxwellColorRtFormat::R8G8Snorm:
-                        return format::R8G8Snorm;
-                    case MaxwellColorRtFormat::R16Unorm:
-                        return format::R16Unorm;
-                    case MaxwellColorRtFormat::R16Float:
-                        return format::R16Float;
-                    case MaxwellColorRtFormat::R8Unorm:
-                        return format::R8Unorm;
-                    case MaxwellColorRtFormat::R8Snorm:
-                        return format::R8Snorm;
-                    case MaxwellColorRtFormat::R8Sint:
-                        return format::R8Sint;
-                    case MaxwellColorRtFormat::R8Uint:
-                        return format::R8Uint;
+                    FORMAT_SAME_NORM_INT_CASE(R8);
+                    FORMAT_SAME_NORM_INT_FLOAT_CASE(R16);
+                    FORMAT_SAME_NORM_INT_CASE(R8G8);
+                    FORMAT_SAME_CASE(B5G6R5, Unorm);
+                    FORMAT_SAME_CASE(B5G5R5A1, Unorm);
+                    FORMAT_SAME_INT_FLOAT_CASE(R32);
+                    FORMAT_SAME_NORM_INT_FLOAT_CASE(R16G16);
+                    FORMAT_SAME_CASE(R8G8B8A8, Unorm);
+                    FORMAT_SAME_CASE(R8G8B8A8, Srgb);
+                    FORMAT_NORM_INT_SRGB_CASE(R8G8B8X8, R8G8B8A8);
+                    FORMAT_SAME_CASE(B8G8R8A8, Unorm);
+                    FORMAT_SAME_CASE(B8G8R8A8, Srgb);
+                    /* Not supported by VK
+                      FORMAT_SAME_CASE(R10G10B10A2, Unorm);
+                      FORMAT_SAME_CASE(R10G10B10A2, Uint);*/
+                    FORMAT_SAME_INT_CASE(R32G32);
+                    FORMAT_SAME_CASE(R32G32, Float);
+                    FORMAT_SAME_CASE(R16G16B16A16, Float);
+                    FORMAT_NORM_INT_FLOAT_CASE(R16G16B16X16, R16G16B16A16);
+                    FORMAT_SAME_CASE(R32G32B32A32, Float);
+                    FORMAT_INT_FLOAT_CASE(R32G32B32X32, R32G32B32A32);
+
                     default:
                         throw exception("Cannot translate the supplied color RT format: 0x{:X}", static_cast<u32>(format));
                 }
+
+                #undef FORMAT_CASE
+                #undef FORMAT_SAME_CASE
+                #undef FORMAT_INT_CASE
+                #undef FORMAT_SAME_INT_CASE
+                #undef FORMAT_INT_FLOAT_CASE
+                #undef FORMAT_SAME_INT_FLOAT_CASE
+                #undef FORMAT_NORM_CASE
+                #undef FORMAT_NORM_INT_CASE
+                #undef FORMAT_SAME_NORM_INT_CASE
+                #undef FORMAT_NORM_INT_SRGB_CASE
+                #undef FORMAT_NORM_INT_FLOAT_CASE
+                #undef FORMAT_SAME_NORM_INT_FLOAT_CASE
             }();
 
             if (renderTarget.guest.tileConfig.mode == texture::TileMode::Linear && renderTarget.guest.format)
@@ -234,6 +250,8 @@ namespace skyline::gpu::interconnect {
             depthRenderTarget.guest.format = [&]() -> texture::Format {
                 using MaxwellDepthRtFormat = maxwell3d::DepthRtFormat;
                 switch (format) {
+                    case MaxwellDepthRtFormat::D32Float:
+                        return format::D32Float;
                     case MaxwellDepthRtFormat::S8D24Unorm:
                         return format::S8D24Unorm;
                     default:
@@ -1431,102 +1449,54 @@ namespace skyline::gpu::interconnect {
             if (size == Size::e0 || type == Type::None)
                 return vk::Format::eUndefined;
 
+            #define FORMAT_CASE(size, type, vkType, vkFormat, ...) \
+                case Size::size | Type::type: \
+                    return vk::Format::vkFormat ## vkType ##__VA_ARGS__
+
+            #define FORMAT_INT_CASE(size, vkFormat, ...) \
+                FORMAT_CASE(size, Uint, Uint, vkFormat, ##__VA_ARGS__); \
+                FORMAT_CASE(size, Sint, Sint, vkFormat, ##__VA_ARGS__);
+
+            #define FORMAT_INT_FLOAT_CASE(size, vkFormat, ...) \
+                FORMAT_INT_CASE(size, vkFormat, ##__VA_ARGS__); \
+                FORMAT_CASE(size, Float, Sfloat, vkFormat, ##__VA_ARGS__);
+
+            #define FORMAT_NORM_INT_SCALED_CASE(size, vkFormat, ...) \
+                FORMAT_INT_CASE(size, vkFormat, ##__VA_ARGS__);               \
+                FORMAT_CASE(size, Unorm, Unorm, vkFormat, ##__VA_ARGS__);     \
+                FORMAT_CASE(size, Snorm, Unorm, vkFormat, ##__VA_ARGS__);     \
+                FORMAT_CASE(size, Uscaled, Uscaled, vkFormat, ##__VA_ARGS__); \
+                FORMAT_CASE(size, Sscaled, Sscaled, vkFormat, ##__VA_ARGS__)
+
+            #define FORMAT_NORM_INT_SCALED_FLOAT_CASE(size, vkFormat) \
+                FORMAT_NORM_INT_SCALED_CASE(size, vkFormat); \
+                FORMAT_CASE(size, Float, Sfloat, vkFormat)
+
             switch (size | type) {
                 // @fmt:off
 
                 /* 8-bit components */
-
-                case Size::e1x8 | Type::Unorm: return vk::Format::eR8Unorm;
-                case Size::e1x8 | Type::Snorm: return vk::Format::eR8Snorm;
-                case Size::e1x8 | Type::Uint: return vk::Format::eR8Uint;
-                case Size::e1x8 | Type::Sint: return vk::Format::eR8Sint;
-                case Size::e1x8 | Type::Uscaled: return vk::Format::eR8Uscaled;
-                case Size::e1x8 | Type::Sscaled: return vk::Format::eR8Sscaled;
-
-                case Size::e2x8 | Type::Unorm: return vk::Format::eR8G8Unorm;
-                case Size::e2x8 | Type::Snorm: return vk::Format::eR8G8Snorm;
-                case Size::e2x8 | Type::Uint: return vk::Format::eR8G8Uint;
-                case Size::e2x8 | Type::Sint: return vk::Format::eR8G8Sint;
-                case Size::e2x8 | Type::Uscaled: return vk::Format::eR8G8Uscaled;
-                case Size::e2x8 | Type::Sscaled: return vk::Format::eR8G8Sscaled;
-
-                case Size::e3x8 | Type::Unorm: return vk::Format::eR8G8B8Unorm;
-                case Size::e3x8 | Type::Snorm: return vk::Format::eR8G8B8Snorm;
-                case Size::e3x8 | Type::Uint: return vk::Format::eR8G8B8Uint;
-                case Size::e3x8 | Type::Sint: return vk::Format::eR8G8B8Sint;
-                case Size::e3x8 | Type::Uscaled: return vk::Format::eR8G8B8Uscaled;
-                case Size::e3x8 | Type::Sscaled: return vk::Format::eR8G8B8Sscaled;
-
-                case Size::e4x8 | Type::Unorm: return vk::Format::eR8G8B8A8Unorm;
-                case Size::e4x8 | Type::Snorm: return vk::Format::eR8G8B8A8Snorm;
-                case Size::e4x8 | Type::Uint: return vk::Format::eR8G8B8A8Uint;
-                case Size::e4x8 | Type::Sint: return vk::Format::eR8G8B8A8Sint;
-                case Size::e4x8 | Type::Uscaled: return vk::Format::eR8G8B8A8Uscaled;
-                case Size::e4x8 | Type::Sscaled: return vk::Format::eR8G8B8A8Sscaled;
+                FORMAT_NORM_INT_SCALED_CASE(e1x8, eR8);
+                FORMAT_NORM_INT_SCALED_CASE(e2x8, eR8G8);
+                FORMAT_NORM_INT_SCALED_CASE(e3x8, eR8G8B8);
+                FORMAT_NORM_INT_SCALED_CASE(e4x8, eR8G8B8A8);
 
                 /* 16-bit components */
-
-                case Size::e1x16 | Type::Unorm: return vk::Format::eR16Unorm;
-                case Size::e1x16 | Type::Snorm: return vk::Format::eR16Snorm;
-                case Size::e1x16 | Type::Uint: return vk::Format::eR16Uint;
-                case Size::e1x16 | Type::Sint: return vk::Format::eR16Sint;
-                case Size::e1x16 | Type::Uscaled: return vk::Format::eR16Uscaled;
-                case Size::e1x16 | Type::Sscaled: return vk::Format::eR16Sscaled;
-                case Size::e1x16 | Type::Float: return vk::Format::eR16Sfloat;
-
-                case Size::e2x16 | Type::Unorm: return vk::Format::eR16G16Unorm;
-                case Size::e2x16 | Type::Snorm: return vk::Format::eR16G16Snorm;
-                case Size::e2x16 | Type::Uint: return vk::Format::eR16G16Uint;
-                case Size::e2x16 | Type::Sint: return vk::Format::eR16G16Sint;
-                case Size::e2x16 | Type::Uscaled: return vk::Format::eR16G16Uscaled;
-                case Size::e2x16 | Type::Sscaled: return vk::Format::eR16G16Sscaled;
-                case Size::e2x16 | Type::Float: return vk::Format::eR16G16Sfloat;
-
-                case Size::e3x16 | Type::Unorm: return vk::Format::eR16G16B16Unorm;
-                case Size::e3x16 | Type::Snorm: return vk::Format::eR16G16B16Snorm;
-                case Size::e3x16 | Type::Uint: return vk::Format::eR16G16B16Uint;
-                case Size::e3x16 | Type::Sint: return vk::Format::eR16G16B16Sint;
-                case Size::e3x16 | Type::Uscaled: return vk::Format::eR16G16B16Uscaled;
-                case Size::e3x16 | Type::Sscaled: return vk::Format::eR16G16B16Sscaled;
-                case Size::e3x16 | Type::Float: return vk::Format::eR16G16B16Sfloat;
-
-                case Size::e4x16 | Type::Unorm: return vk::Format::eR16G16B16A16Unorm;
-                case Size::e4x16 | Type::Snorm: return vk::Format::eR16G16B16A16Snorm;
-                case Size::e4x16 | Type::Uint: return vk::Format::eR16G16B16A16Uint;
-                case Size::e4x16 | Type::Sint: return vk::Format::eR16G16B16A16Sint;
-                case Size::e4x16 | Type::Uscaled: return vk::Format::eR16G16B16A16Uscaled;
-                case Size::e4x16 | Type::Sscaled: return vk::Format::eR16G16B16A16Sscaled;
-                case Size::e4x16 | Type::Float: return vk::Format::eR16G16B16A16Sfloat;
+                FORMAT_NORM_INT_SCALED_FLOAT_CASE(e1x16, eR16);
+                FORMAT_NORM_INT_SCALED_FLOAT_CASE(e2x16, eR16G16);
+                FORMAT_NORM_INT_SCALED_FLOAT_CASE(e3x16, eR16G16B16);
+                FORMAT_NORM_INT_SCALED_FLOAT_CASE(e4x16, eR16G16B16A16);
 
                 /* 32-bit components */
-
-                case Size::e1x32 | Type::Uint: return vk::Format::eR32Uint;
-                case Size::e1x32 | Type::Sint: return vk::Format::eR32Sint;
-                case Size::e1x32 | Type::Float: return vk::Format::eR32Sfloat;
-
-                case Size::e2x32 | Type::Uint: return vk::Format::eR32G32Uint;
-                case Size::e2x32 | Type::Sint: return vk::Format::eR32G32Sint;
-                case Size::e2x32 | Type::Float: return vk::Format::eR32G32Sfloat;
-
-                case Size::e3x32 | Type::Uint: return vk::Format::eR32G32B32Uint;
-                case Size::e3x32 | Type::Sint: return vk::Format::eR32G32B32Sint;
-                case Size::e3x32 | Type::Float: return vk::Format::eR32G32B32Sfloat;
-
-                case Size::e4x32 | Type::Uint: return vk::Format::eR32G32B32A32Uint;
-                case Size::e4x32 | Type::Sint: return vk::Format::eR32G32B32A32Sint;
-                case Size::e4x32 | Type::Float: return vk::Format::eR32G32B32A32Sfloat;
+                FORMAT_INT_FLOAT_CASE(e1x32, eR32);
+                FORMAT_INT_FLOAT_CASE(e2x32, eR32G32);
+                FORMAT_INT_FLOAT_CASE(e3x32, eR32G32B32);
+                FORMAT_INT_FLOAT_CASE(e4x32, eR32G32B32A32);
 
                 /* 10-bit RGB, 2-bit A */
-
-                case Size::e10_10_10_2 | Type::Unorm: return vk::Format::eA2R10G10B10UnormPack32;
-                case Size::e10_10_10_2 | Type::Snorm: return vk::Format::eA2R10G10B10SnormPack32;
-                case Size::e10_10_10_2 | Type::Uint: return vk::Format::eA2R10G10B10UintPack32;
-                case Size::e10_10_10_2 | Type::Sint: return vk::Format::eA2R10G10B10SintPack32;
-                case Size::e10_10_10_2 | Type::Uscaled: return vk::Format::eA2R10G10B10UscaledPack32;
-                case Size::e10_10_10_2 | Type::Sscaled: return vk::Format::eA2R10G10B10SscaledPack32;
+                FORMAT_NORM_INT_SCALED_CASE(e10_10_10_2, eA2B10G10R10, Pack32);
 
                 /* Unknown */
-
                 case 0x12F: return vk::Format::eUndefined; // Issued by Maxwell3D::InitializeRegisters()
 
                 // @fmt:on
@@ -1534,6 +1504,12 @@ namespace skyline::gpu::interconnect {
                 default:
                     throw exception("Unimplemented Maxwell3D Vertex Buffer Format: {} | {}", maxwell3d::VertexAttribute::ToString(size), maxwell3d::VertexAttribute::ToString(type));
             }
+
+            #undef FORMAT_CASE
+            #undef FORMAT_INT_CASE
+            #undef FORMAT_INT_FLOAT_CASE
+            #undef FORMAT_NORM_INT_SCALED_CASE
+            #undef FORMAT_NORM_INT_SCALED_FLOAT_CASE
         }
 
         void SetVertexAttributeState(u32 index, maxwell3d::VertexAttribute attribute) {
