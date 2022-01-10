@@ -27,9 +27,23 @@ namespace skyline {
 
         /**
          * @brief Updates settings with the given values
+         * @note The implementations of this method must call OnSettingsChanged
          * @param newSettings A platform-specific object containing the new settings' values
          */
         template<class T>
         void Update(T newSettings);
+
+        using Callback = std::function<void(const Settings &)>;
+
+        /**
+         * @brief Subscribe to settings changes
+         * @param callback The function to be called when settings change
+         */
+        void Subscribe(Callback callback);
+
+      private:
+        std::vector<Callback> callbacks; //!< Callbacks to be called when settings change
+
+        void OnSettingsChanged();
     };
 }

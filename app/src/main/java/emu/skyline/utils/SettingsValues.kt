@@ -13,4 +13,9 @@ class SettingsValues(pref: Settings) : Serializable {
     var systemLanguage : Int = pref.systemLanguage
     var forceTripleBuffering : Boolean = pref.forceTripleBuffering
     var disableFrameThrottling : Boolean = pref.disableFrameThrottling
+
+    /**
+     * Updates settings in libskyline during emulation
+     */
+    external fun updateNative()
 }

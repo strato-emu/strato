@@ -60,6 +60,8 @@ template<> void skyline::Settings::Update<skyline::KtSettings>(KtSettings newSet
     systemLanguage = newSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
     forceTripleBuffering = newSettings.GetBool("forceTripleBuffering");
     disableFrameThrottling = newSettings.GetBool("disableFrameThrottling");
+
+    OnSettingsChanged();
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
@@ -238,4 +240,12 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchSta
                                 static_cast<size_t>(env->GetArrayLength(pointsJni)) / (sizeof(Point) / sizeof(jint)));
     input->touch.SetState(points);
     env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_SettingsValues_updateNative(JNIEnv *env, jobject settingsInstance) {
+    auto settings{SettingsWeak.lock()};
+    if (!settings)
+        return; // We don't mind if we miss settings updates while settings haven't been initialized
+    skyline::KtSettings ktSettings{env, settingsInstance};
+    settings->Update(ktSettings);
 }
