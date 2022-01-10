@@ -24,7 +24,7 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
     var logCompact by sharedPreferences(context, false)
 
     // System
-    var operationMode by sharedPreferences(context, true)
+    var isDocked by sharedPreferences(context, true)
     var usernameValue by sharedPreferences(context, context.getString(R.string.username_default))
     var systemLanguage by sharedPreferences(context, 1)
 

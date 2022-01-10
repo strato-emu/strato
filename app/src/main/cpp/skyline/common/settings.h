@@ -12,7 +12,7 @@ namespace skyline {
     class Settings {
       public:
         // System
-        bool operationMode; //!< If the emulated Switch should be handheld or docked
+        bool isDocked; //!< If the emulated Switch should be handheld or docked
         std::string usernameValue; //!< The name set by the user to be supplied to the guest
         language::SystemLanguage systemLanguage; //!< The system language set by the user
 

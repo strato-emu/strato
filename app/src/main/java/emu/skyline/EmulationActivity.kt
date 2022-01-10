@@ -172,7 +172,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             if (controller.type != ControllerType.None) {
                 val type = when (controller.type) {
                     ControllerType.None -> throw IllegalArgumentException()
-                    ControllerType.HandheldProController -> if (settings.operationMode) ControllerType.ProController.id else ControllerType.HandheldProController.id
+                    ControllerType.HandheldProController -> if (settings.isDocked) ControllerType.ProController.id else ControllerType.HandheldProController.id
                     ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
                 }
 

@@ -55,7 +55,7 @@ static std::string GetTimeZoneName() {
 }
 
 template<> void skyline::Settings::Update<skyline::KtSettings>(KtSettings newSettings) {
-    operationMode = newSettings.GetBool("operationMode");
+    isDocked = newSettings.GetBool("isDocked");
     usernameValue = newSettings.GetString("usernameValue");
     systemLanguage = newSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
     forceTripleBuffering = newSettings.GetBool("forceTripleBuffering");
