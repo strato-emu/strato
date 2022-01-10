@@ -195,7 +195,8 @@ class ControllerActivity : AppCompatActivity() {
                 val divider = drawable!!
                 for (i in 0 until parent.childCount) {
                     val view = parent.getChildAt(i)
-                    if (parent.adapter!!.getItemViewType(parent.getChildAdapterPosition(view)) == adapter.getFactoryViewType(ControllerHeaderBindingFactory)) {
+                    val position = parent.getChildAdapterPosition(view)
+                    if (position != RecyclerView.NO_POSITION && parent.adapter!!.getItemViewType(position) == adapter.getFactoryViewType(ControllerHeaderBindingFactory)) {
                         val bottom = view.top - view.marginTop
                         val top = bottom - divider.intrinsicHeight
                         divider.setBounds(0, top, parent.width, bottom)
