@@ -55,7 +55,7 @@ namespace skyline::gpu {
             .support_viewport_index_layer_non_geometry = quirks.supportsShaderViewportIndexLayer,
             .support_viewport_mask = false,
             .support_typeless_image_loads = quirks.supportsImageReadWithoutFormat,
-            .support_demote_to_helper_invocation = true,
+            .support_demote_to_helper_invocation = quirks.supportsShaderDemoteToHelper,
             .support_int64_atomics = quirks.supportsAtomicInt64,
             .support_derivative_control = true,
             .support_geometry_shader_passthrough = false,

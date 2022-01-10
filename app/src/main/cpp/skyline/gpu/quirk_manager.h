@@ -23,6 +23,7 @@ namespace skyline::gpu {
         bool supportsMultipleViewports{}; //!< If the device supports more than one viewport
         bool supportsShaderViewportIndexLayer{}; //!< If the device supports retrieving the viewport index in shaders (with VK_EXT_shader_viewport_index_layer)
         bool supportsSpirv14{}; //!< If SPIR-V 1.4 is supported (with VK_KHR_spirv_1_4)
+        bool supportsShaderDemoteToHelper{}; //!< If a shader invocation can be demoted to a helper invocation (with VK_EXT_shader_demote_to_helper_invocation)
         bool supportsFloat16{}; //!< If 16-bit floating point integers are supported in shaders
         bool supportsInt8{}; //!< If 8-bit integers are supported in shaders
         bool supportsInt16{}; //!< If 16-bit integers are supported in shaders
@@ -38,7 +39,7 @@ namespace skyline::gpu {
 
         using DeviceProperties2 = vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>;
 
-        using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>;
+        using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>;
 
         QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
 
