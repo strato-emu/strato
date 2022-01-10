@@ -28,4 +28,8 @@
         <!-- A URL to the library -->
         <attr format="string" name="libraryUrl"/>
     </declare-styleable>
+    <declare-styleable name="ControllerPreference">
+        <!-- Index of the controller the preference corresponds to -->
+        <attr name="index" format="integer" />
+    </declare-styleable>
 </resources>

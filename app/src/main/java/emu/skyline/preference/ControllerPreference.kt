@@ -25,6 +25,10 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
         notifyChanged()
     }
 
+    companion object {
+        const val INDEX_ARG = "index"
+    }
+
     /**
      * The index of the controller this preference manages
      */
@@ -36,7 +40,7 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
         for (i in 0 until attrs!!.attributeCount) {
             val attr = attrs.getAttributeName(i)
 
-            if (attr.equals("index", ignoreCase = true)) {
+            if (attr.equals(INDEX_ARG)) {
                 index = attrs.getAttributeValue(i).toInt()
                 break
             }
@@ -55,5 +59,5 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
     /**
      * This launches [ControllerActivity] on click to configure the controller
      */
-    override fun onClick() = controllerCallback.launch(Intent(context, ControllerActivity::class.java))
+    override fun onClick() = controllerCallback.launch(Intent(context, ControllerActivity::class.java).putExtra(INDEX_ARG, index))
 }
