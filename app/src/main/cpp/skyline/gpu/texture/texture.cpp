@@ -254,7 +254,7 @@ namespace skyline::gpu {
           dimensions(guest->dimensions),
           format(guest->format),
           layout(vk::ImageLayout::eUndefined),
-          tiling((guest->tileConfig.mode == texture::TileMode::Block) ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear),
+          tiling(vk::ImageTiling::eOptimal), // Force Optimal due to not adhering to host subresource layout during Linear synchronization
           mipLevels(1),
           layerCount(guest->layerCount),
           sampleCount(vk::SampleCountFlagBits::e1) {
@@ -287,7 +287,7 @@ namespace skyline::gpu {
           dimensions(dimensions),
           format(format),
           layout(initialLayout == vk::ImageLayout::ePreinitialized ? vk::ImageLayout::ePreinitialized : vk::ImageLayout::eUndefined),
-          tiling(tiling),
+          tiling(vk::ImageTiling::eOptimal), // Same as above
           mipLevels(mipLevels),
           layerCount(layerCount),
           sampleCount(sampleCount) {
