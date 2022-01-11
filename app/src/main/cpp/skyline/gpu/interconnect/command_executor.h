@@ -49,24 +49,23 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer
          */
-        void AttachDependency(std::shared_ptr<FenceCycleDependency> dependency);
+        void AttachDependency(const std::shared_ptr<FenceCycleDependency> &dependency);
 
         /**
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments
-         * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
-         * @note All attachments will automatically be attached and aren't required to be attached prior
+         * @note Any supplied texture should be attached prior and not undergo any persistent layout transitions till execution
          */
         void AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments = {}, span<TextureView *> colorAttachments = {}, TextureView *depthStencilAttachment = {});
 
         /**
          * @brief Adds a subpass that clears the entirety of the specified attachment with a color value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
-         * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
+         * @note Any supplied texture should be attached prior and not undergo any persistent layout transitions till execution
          */
         void AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value);
 
         /**
          * @brief Adds a subpass that clears the entirety of the specified attachment with a depth/stencil value, it may utilize VK_ATTACHMENT_LOAD_OP_CLEAR for a more efficient clear when possible
-         * @note Any texture supplied to this **must** be locked by the calling thread, it should also undergo no persistent layout transitions till execution
+         * @note Any supplied texture should be attached prior and not undergo any persistent layout transitions till execution
          */
         void AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value);
 

@@ -442,6 +442,7 @@ namespace skyline::gpu::interconnect {
 
         void ClearColorRt(TextureView *renderTarget, vk::Rect2D scissor, u32 layerIndex) {
             std::lock_guard lock(*renderTarget);
+            executor.AttachTexture(renderTarget);
 
             scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.width) - scissor.offset.x,
                                                              static_cast<i32>(scissor.extent.width)));
@@ -473,6 +474,7 @@ namespace skyline::gpu::interconnect {
 
         void ClearDepthStencilRt(TextureView *renderTarget, vk::ImageAspectFlags aspect, u32 layerIndex) {
             std::lock_guard lock(*renderTarget);
+            executor.AttachTexture(renderTarget);
 
             if (renderTarget->range.layerCount == 1 && layerIndex == 0) {
                 executor.AddClearDepthStencilSubpass(renderTarget, clearDepthValue);
@@ -2112,7 +2114,6 @@ namespace skyline::gpu::interconnect {
                 depthTargetLock.emplace(*depthRenderTargetView);
 
             // Vertex Buffer Setup
-            boost::container::static_vector<std::scoped_lock<BufferView>, maxwell3d::VertexBufferCount> vertexBufferLocks;
             std::array<vk::Buffer, maxwell3d::VertexBufferCount> vertexBufferHandles{};
             std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> vertexBufferOffsets{};
 
@@ -2126,7 +2127,7 @@ namespace skyline::gpu::interconnect {
                     vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
                     vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
 
-                    vertexBufferLocks.emplace_back(*vertexBufferView);
+                    std::scoped_lock vertexBufferLock(*vertexBufferView);
                     executor.AttachBuffer(vertexBufferView);
                     vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
                     vertexBufferOffsets[index] = vertexBufferView->offset;

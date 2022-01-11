@@ -30,9 +30,9 @@ namespace skyline::gpu::interconnect {
         if (!syncTextures.contains(texture)) {
             texture->WaitOnFence();
             texture->cycle = cycle;
-            cycle->AttachObject(view->shared_from_this());
             syncTextures.emplace(texture);
         }
+        cycle->AttachObject(view->shared_from_this());
     }
 
     void CommandExecutor::AttachBuffer(BufferView *view) {
@@ -45,17 +45,11 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    void CommandExecutor::AttachDependency(std::shared_ptr<FenceCycleDependency> dependency) {
+    void CommandExecutor::AttachDependency(const std::shared_ptr<FenceCycleDependency> &dependency) {
         cycle->AttachObject(dependency);
     }
 
     void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
-        for (const auto &attachments : {inputAttachments, colorAttachments})
-            for (const auto &attachment : attachments)
-                AttachTexture(attachment);
-        if (depthStencilAttachment)
-            AttachTexture(depthStencilAttachment);
-
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
         if (newRenderPass)
@@ -65,8 +59,6 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
-        AttachTexture(attachment);
-
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,
         })};
@@ -96,8 +88,6 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value) {
-        AttachTexture(attachment);
-
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,
         })};
