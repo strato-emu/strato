@@ -193,6 +193,9 @@ namespace skyline::gpu::interconnect {
                 #define FORMAT_SAME_NORM_INT_FLOAT_CASE(fmt) FORMAT_NORM_INT_FLOAT_CASE(fmt, fmt)
 
                 switch (format) {
+                    case maxwell3d::ColorRenderTarget::Format::None:
+                        return {};
+
                     FORMAT_SAME_NORM_INT_CASE(R8);
                     FORMAT_SAME_NORM_INT_FLOAT_CASE(R16);
                     FORMAT_SAME_NORM_INT_CASE(R8G8);
