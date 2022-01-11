@@ -393,10 +393,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         Maximum = 5,
 
         AddGL = 0x8006,
-        SubtractGL = 0x8007,
-        ReverseSubtractGL = 0x8008,
-        MinimumGL = 0x800A,
-        MaximumGL = 0x800B,
+        MinimumGL = 0x8007,
+        MaximumGL = 0x8008,
+        SubtractGL = 0x800A,
+        ReverseSubtractGL = 0x800B,
     };
 
     enum class BlendFactor : u32 {

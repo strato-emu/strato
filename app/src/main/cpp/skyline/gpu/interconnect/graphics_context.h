@@ -1210,7 +1210,7 @@ namespace skyline::gpu::interconnect {
 
                 case maxwell3d::BlendFactor::OneMinusSourceAlpha:
                 case maxwell3d::BlendFactor::OneMinusSourceAlphaGL:
-                    return vk::BlendFactor::eOneMinusSrcColor;
+                    return vk::BlendFactor::eOneMinusSrcAlpha;
 
                 case maxwell3d::BlendFactor::DestAlpha:
                 case maxwell3d::BlendFactor::DestAlphaGL:
