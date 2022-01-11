@@ -138,8 +138,8 @@ namespace skyline {
          * @return If returning was caused by the supplied function returning a non-nullopt value or other conditions
          * @note The function will **NOT** be run on any sparse block
          */
-        template<typename Function>
-        bool ReadTill(std::vector<u8>& destination, VaType virt, Function function) {
+        template<typename Function, typename Container>
+        bool ReadTill(Container& destination, VaType virt, Function function) {
             //TRACE_EVENT("containers", "FlatMemoryManager::ReadTill");
 
             std::scoped_lock lock(this->blockMutex);

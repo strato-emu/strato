@@ -618,6 +618,8 @@ namespace skyline::gpu::interconnect {
 
         /* Shader Program */
       private:
+        constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
+
         struct Shader {
             bool enabled{false};
             ShaderCompiler::Stage stage;
@@ -625,7 +627,7 @@ namespace skyline::gpu::interconnect {
             bool invalidated{true}; //!< If the shader that existed earlier has been invalidated
             bool shouldCheckSame{false}; //!< If we should do a check for the shader being the same as before
             u32 offset{}; //!< Offset of the shader from the base IOVA
-            std::vector<u8> data; //!< The shader bytecode in a vector
+            boost::container::static_vector<u8, MaxShaderBytecodeSize> data; //!< The shader bytecode in a statically allocated vector
             std::optional<ShaderCompiler::IR::Program> program;
 
             Shader(ShaderCompiler::Stage stage) : stage(stage) {}
@@ -657,14 +659,14 @@ namespace skyline::gpu::interconnect {
         };
 
         struct ShaderSet : public std::array<Shader, maxwell3d::ShaderStageCount> {
-            ShaderSet() : array({
-                                  Shader{ShaderCompiler::Stage::VertexA},
-                                  Shader{ShaderCompiler::Stage::VertexB},
-                                  Shader{ShaderCompiler::Stage::TessellationControl},
-                                  Shader{ShaderCompiler::Stage::TessellationEval},
-                                  Shader{ShaderCompiler::Stage::Geometry},
-                                  Shader{ShaderCompiler::Stage::Fragment},
-                              }) {}
+            ShaderSet() : array{
+                Shader{ShaderCompiler::Stage::VertexA},
+                Shader{ShaderCompiler::Stage::VertexB},
+                Shader{ShaderCompiler::Stage::TessellationControl},
+                Shader{ShaderCompiler::Stage::TessellationEval},
+                Shader{ShaderCompiler::Stage::Geometry},
+                Shader{ShaderCompiler::Stage::Fragment},
+            } {}
 
             Shader &at(maxwell3d::ShaderStage stage) {
                 return array::at(static_cast<size_t>(stage));
@@ -692,13 +694,13 @@ namespace skyline::gpu::interconnect {
         };
 
         struct PipelineStages : public std::array<PipelineStage, maxwell3d::PipelineStageCount> {
-            PipelineStages() : array({
-                                         PipelineStage{vk::ShaderStageFlagBits::eVertex},
-                                         PipelineStage{vk::ShaderStageFlagBits::eTessellationControl},
-                                         PipelineStage{vk::ShaderStageFlagBits::eTessellationEvaluation},
-                                         PipelineStage{vk::ShaderStageFlagBits::eGeometry},
-                                         PipelineStage{vk::ShaderStageFlagBits::eFragment},
-                                     }) {}
+            PipelineStages() : array{
+                PipelineStage{vk::ShaderStageFlagBits::eVertex},
+                PipelineStage{vk::ShaderStageFlagBits::eTessellationControl},
+                PipelineStage{vk::ShaderStageFlagBits::eTessellationEvaluation},
+                PipelineStage{vk::ShaderStageFlagBits::eGeometry},
+                PipelineStage{vk::ShaderStageFlagBits::eFragment},
+            } {}
 
             PipelineStage &at(maxwell3d::PipelineStage stage) {
                 return array::at(static_cast<size_t>(stage));
@@ -714,8 +716,6 @@ namespace skyline::gpu::interconnect {
         PipelineStages pipelineStages;
 
         ShaderCompiler::RuntimeInfo runtimeInfo{};
-
-        constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
 
         constexpr static size_t PipelineUniqueDescriptorTypeCount{2}; //!< The amount of unique descriptor types that may be bound to a pipeline
         constexpr static size_t MaxPipelineDescriptorWriteCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The maxium amount of descriptors writes that are used to bind a pipeline
