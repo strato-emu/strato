@@ -74,9 +74,6 @@ include_directories("libraries/vkma/include")
 add_library(vkma STATIC libraries/vkma.cpp)
 target_compile_options(vkma PRIVATE -Wno-everything)
 
-# PugiXML (Header-only mode)
-include_directories(SYSTEM "libraries/pugixml/src")
-
 # Frozen
 include_directories(SYSTEM "libraries/frozen/include")
 

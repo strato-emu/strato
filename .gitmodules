@@ -11,9 +11,6 @@
 [submodule "Frozen"]
 	path = app/libraries/frozen
 	url = https://github.com/serge-sans-paille/frozen
-[submodule "PugiXML"]
-	path = app/libraries/pugixml
-	url = https://github.com/zeux/pugixml.git
 [submodule "tzcode"]
 	path = app/libraries/tzcode
 	url = https://github.com/skyline-emu/tz
