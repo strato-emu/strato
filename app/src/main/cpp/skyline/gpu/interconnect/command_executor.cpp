@@ -150,7 +150,10 @@ namespace skyline::gpu::interconnect {
                             subpassIndex = 0;
                         },
 
-                        NODE(NextSubpassNode),
+                        [&](NextSubpassNode &node) {
+                            node(commandBuffer, cycle, gpu);
+                            ++subpassIndex;
+                        },
                         [&](SubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, subpassIndex); },
                         [&](NextSubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, ++subpassIndex); },
 
