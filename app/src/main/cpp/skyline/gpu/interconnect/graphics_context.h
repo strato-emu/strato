@@ -48,10 +48,6 @@ namespace skyline::gpu::interconnect {
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor), pipelineCache(gpu.vkDevice, vk::PipelineCacheCreateInfo{}) {
             scissors.fill(DefaultScissor);
-            if (!gpu.quirks.supportsMultipleViewports) {
-                viewportState.viewportCount = 1;
-                viewportState.scissorCount = 1;
-            }
 
             u32 bindingIndex{};
             for (auto &vertexBuffer : vertexBuffers) {
@@ -59,8 +55,6 @@ namespace skyline::gpu::interconnect {
                 vertexBuffer.bindingDivisorDescription.binding = bindingIndex;
                 bindingIndex++;
             }
-            if (!gpu.quirks.supportsVertexAttributeDivisor)
-                vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
 
             u32 attributeIndex{};
             for (auto &vertexAttribute : vertexAttributes)
@@ -371,12 +365,6 @@ namespace skyline::gpu::interconnect {
             .extent.height = std::numeric_limits<i32>::max(),
             .extent.width = std::numeric_limits<i32>::max(),
         }; //!< A scissor which displays the entire viewport, utilized when the viewport scissor is disabled
-        vk::PipelineViewportStateCreateInfo viewportState{
-            .pViewports = viewports.data(),
-            .viewportCount = maxwell3d::ViewportCount,
-            .pScissors = scissors.data(),
-            .scissorCount = maxwell3d::ViewportCount,
-        };
 
       public:
         /**
@@ -696,7 +684,7 @@ namespace skyline::gpu::interconnect {
             bool needsRecompile{}; //!< If the shader needs to be recompiled as runtime information has changed
             ShaderCompiler::VaryingState previousStageStores{};
             u32 bindingBase{}, bindingLast{}; //!< The base and last binding for descriptors bound to this stage
-            std::optional<vk::raii::ShaderModule> vkModule;
+            std::shared_ptr<vk::raii::ShaderModule> vkModule;
 
             std::array<ConstantBuffer, maxwell3d::PipelineStageConstantBufferCount> constantBuffers{};
 
@@ -725,9 +713,6 @@ namespace skyline::gpu::interconnect {
         ShaderSet shaders;
         PipelineStages pipelineStages;
 
-        std::array<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStagesInfo{}; //!< Storage backing for the pipeline shader stage information for all shaders aside from 'VertexA' which uses the same stage as 'VertexB'
-        std::optional<vk::raii::DescriptorSetLayout> descriptorSetLayout{}; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
-
         ShaderCompiler::RuntimeInfo runtimeInfo{};
 
         constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
@@ -746,8 +731,9 @@ namespace skyline::gpu::interconnect {
          * @note The `descriptorSetWrite` will have a null `dstSet` which needs to be assigned prior to usage
          */
         struct ShaderProgramState {
-            span<vk::PipelineShaderStageCreateInfo> shaders;
-            vk::DescriptorSetLayout descriptorSetLayout;
+            boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules; //!< Shader modules for every pipeline stage
+            boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages; //!< Shader modules for every pipeline stage
+            vk::raii::DescriptorSetLayout descriptorSetLayout; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
             span<vk::WriteDescriptorSet> descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
         };
 
@@ -861,7 +847,8 @@ namespace skyline::gpu::interconnect {
             runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
             ShaderCompiler::Backend::Bindings bindings{};
 
-            size_t count{};
+            boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules;
+            boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages;
             for (auto &pipelineStage : pipelineStages) {
                 if (!pipelineStage.enabled)
                     continue;
@@ -874,7 +861,7 @@ namespace skyline::gpu::interconnect {
                 if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
                     pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
                     pipelineStage.bindingBase = bindings.unified;
-                    pipelineStage.vkModule = gpu.shader.CompileShader(runtimeInfo, program, bindings);
+                    pipelineStage.vkModule = std::make_shared<vk::raii::ShaderModule>(gpu.shader.CompileShader(runtimeInfo, program, bindings));
                     pipelineStage.bindingLast = bindings.unified;
                 }
 
@@ -951,21 +938,21 @@ namespace skyline::gpu::interconnect {
                     }
                 }
 
-                shaderStagesInfo[count++] = vk::PipelineShaderStageCreateInfo{
+                shaderModules.emplace_back(pipelineStage.vkModule);
+                shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo{
                     .stage = pipelineStage.vkStage,
                     .module = **pipelineStage.vkModule,
                     .pName = "main",
-                };
+                });
             }
 
-            descriptorSetLayout.emplace(gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
-                .pBindings = layoutBindings.data(),
-                .bindingCount = static_cast<u32>(layoutBindings.size()),
-            });
-
             return {
-                span(shaderStagesInfo.data(), count),
-                **descriptorSetLayout,
+                std::move(shaderModules),
+                std::move(shaderStages),
+                vk::raii::DescriptorSetLayout(gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
+                    .pBindings = layoutBindings.data(),
+                    .bindingCount = static_cast<u32>(layoutBindings.size()),
+                }),
                 descriptorSetWrites,
             };
         }
@@ -1384,24 +1371,12 @@ namespace skyline::gpu::interconnect {
             std::shared_ptr<BufferView> view;
         };
         std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
-        boost::container::static_vector<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindingDescriptions{};
-        boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
 
         struct VertexAttribute {
             bool enabled{};
             vk::VertexInputAttributeDescription description;
         };
         std::array<VertexAttribute, maxwell3d::VertexAttributeCount> vertexAttributes{};
-        boost::container::static_vector<vk::VertexInputAttributeDescription, maxwell3d::VertexAttributeCount> vertexAttributesDescriptions{};
-
-        vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
-            vk::PipelineVertexInputStateCreateInfo{
-                .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
-                .pVertexAttributeDescriptions = vertexAttributesDescriptions.data(),
-            }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
-                .pVertexBindingDivisors = vertexBindingDivisorsDescriptions.data(),
-            }
-        };
 
       public:
         void SetVertexBufferStride(u32 index, u32 stride) {
@@ -2078,86 +2053,21 @@ namespace skyline::gpu::interconnect {
 
         /* Draws */
       private:
-        vk::GraphicsPipelineCreateInfo pipelineState{
-            .pVertexInputState = &vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
-            .pInputAssemblyState = &inputAssemblyState,
-            .pViewportState = &viewportState,
-            .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
-            .pMultisampleState = &multisampleState,
-            .pDepthStencilState = &depthState,
-            .pColorBlendState = &blendState,
-            .pDynamicState = nullptr,
-        };
         vk::raii::PipelineCache pipelineCache;
 
       public:
         template<bool IsIndexed>
         void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
-            // Color Render Target Setup
-            boost::container::static_vector<std::scoped_lock<TextureView>, maxwell3d::RenderTargetCount> colorRenderTargetLocks;
-            boost::container::static_vector<TextureView *, maxwell3d::RenderTargetCount> activeColorRenderTargets;
-
-            for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
-                auto renderTarget{GetColorRenderTarget(index)};
-                if (renderTarget) {
-                    colorRenderTargetLocks.emplace_back(*renderTarget);
-                    activeColorRenderTargets.push_back(renderTarget);
-                }
-            }
-
-            blendState.attachmentCount = static_cast<u32>(activeColorRenderTargets.size());
-
-            // Depth/Stencil Render Target Setup
-            auto depthRenderTargetView{GetDepthRenderTarget()};
-            std::optional<std::scoped_lock<TextureView>> depthTargetLock;
-            if (depthRenderTargetView)
-                depthTargetLock.emplace(*depthRenderTargetView);
-
-            // Vertex Buffer Setup
-            std::array<vk::Buffer, maxwell3d::VertexBufferCount> vertexBufferHandles{};
-            std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> vertexBufferOffsets{};
-
-            vertexBindingDescriptions.clear();
-            vertexBindingDivisorsDescriptions.clear();
-
-            for (u32 index{}; index < maxwell3d::VertexBufferCount; index++) {
-                auto vertexBufferView{GetVertexBuffer(index)};
-                if (vertexBufferView) {
-                    auto &vertexBuffer{vertexBuffers[index]};
-                    vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
-                    vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
-
-                    std::scoped_lock vertexBufferLock(*vertexBufferView);
-                    executor.AttachBuffer(vertexBufferView);
-                    vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
-                    vertexBufferOffsets[index] = vertexBufferView->offset;
-                }
-            }
-
-            vertexState.get<vk::PipelineVertexInputStateCreateInfo>().vertexBindingDescriptionCount = static_cast<u32>(vertexBindingDescriptions.size());
-            vertexState.get<vk::PipelineVertexInputDivisorStateCreateInfoEXT>().vertexBindingDivisorCount = static_cast<u32>(vertexBindingDivisorsDescriptions.size());
-
-            // Vertex Attribute Setup
-            vertexAttributesDescriptions.clear();
-
-            for (auto &vertexAttribute : vertexAttributes)
-                if (vertexAttribute.enabled)
-                    vertexAttributesDescriptions.push_back(vertexAttribute.description);
-
-            vertexState.get<vk::PipelineVertexInputStateCreateInfo>().vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size());
-
             // Shader + Binding Setup
             auto programState{CompileShaderProgramState()};
-            pipelineState.pStages = programState.shaders.data();
-            pipelineState.stageCount = static_cast<u32>(programState.shaders.size());
 
-            auto descriptorSet{gpu.descriptor.AllocateSet(programState.descriptorSetLayout)};
+            auto descriptorSet{gpu.descriptor.AllocateSet(*programState.descriptorSetLayout)};
             for (auto &descriptorSetWrite : programState.descriptorSetWrites)
                 descriptorSetWrite.dstSet = descriptorSet;
             gpu.vkDevice.updateDescriptorSets(programState.descriptorSetWrites, nullptr);
 
             vk::raii::PipelineLayout pipelineLayout(gpu.vkDevice, vk::PipelineLayoutCreateInfo{
-                .pSetLayouts = &programState.descriptorSetLayout,
+                .pSetLayouts = &*programState.descriptorSetLayout,
                 .setLayoutCount = 1,
             });
 
@@ -2174,6 +2084,52 @@ namespace skyline::gpu::interconnect {
                 indexBufferType = indexBuffer.type;
             }
 
+            // Vertex Buffer Setup
+            std::array<vk::Buffer, maxwell3d::VertexBufferCount> vertexBufferHandles{};
+            std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> vertexBufferOffsets{};
+
+            boost::container::static_vector<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindingDescriptions{};
+            boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
+
+            for (u32 index{}; index < maxwell3d::VertexBufferCount; index++) {
+                auto vertexBufferView{GetVertexBuffer(index)};
+                if (vertexBufferView) {
+                    auto &vertexBuffer{vertexBuffers[index]};
+                    vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
+                    vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
+
+                    std::scoped_lock vertexBufferLock(*vertexBufferView);
+                    vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
+                    vertexBufferOffsets[index] = vertexBufferView->offset;
+                    executor.AttachBuffer(vertexBufferView);
+                }
+            }
+
+            // Vertex Attribute Setup
+            boost::container::static_vector<vk::VertexInputAttributeDescription, maxwell3d::VertexAttributeCount> vertexAttributesDescriptions{};
+            for (auto &vertexAttribute : vertexAttributes)
+                if (vertexAttribute.enabled)
+                    vertexAttributesDescriptions.push_back(vertexAttribute.description);
+
+            // Color Render Target + Blending Setup
+            boost::container::static_vector<TextureView *, maxwell3d::RenderTargetCount> activeColorRenderTargets;
+            for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
+                auto renderTarget{GetColorRenderTarget(index)};
+                if (renderTarget) {
+                    std::scoped_lock lock(*renderTarget);
+                    activeColorRenderTargets.push_back(renderTarget);
+                    executor.AttachTexture(renderTarget);
+                }
+            }
+
+            boost::container::static_vector<vk::PipelineColorBlendAttachmentState, maxwell3d::RenderTargetCount> blendAttachmentStates(blendState.pAttachments, blendState.pAttachments + activeColorRenderTargets.size());
+
+            // Depth/Stencil Render Target Setup
+            auto depthRenderTargetView{GetDepthRenderTarget()};
+            std::optional<std::scoped_lock<TextureView>> depthTargetLock;
+            if (depthRenderTargetView)
+                depthTargetLock.emplace(*depthRenderTargetView);
+
             // Draw Persistent Storage
             struct Storage : FenceCycleDependency {
                 vk::raii::PipelineLayout pipelineLayout;
@@ -2186,11 +2142,47 @@ namespace skyline::gpu::interconnect {
             auto storage{std::make_shared<Storage>(std::move(pipelineLayout), std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, pipelineCreateInfo = pipelineState, storage = std::move(storage), vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
-                pipelineCreateInfo.layout = *storage->pipelineLayout;
+            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.quirks.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, storage = std::move(storage), supportsVertexAttributeDivisor = gpu.quirks.supportsVertexAttributeDivisor, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+                vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
+                    vk::PipelineVertexInputStateCreateInfo{
+                        .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
+                        .vertexBindingDescriptionCount = static_cast<u32>(vertexBindingDescriptions.size()),
+                        .pVertexAttributeDescriptions = vertexAttributesDescriptions.data(),
+                        .vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size()),
+                    }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
+                        .pVertexBindingDivisors = vertexBindingDivisorsDescriptions.data(),
+                        .vertexBindingDivisorCount = static_cast<u32>(vertexBindingDivisorsDescriptions.size()),
+                    }
+                };
 
-                pipelineCreateInfo.renderPass = renderPass;
-                pipelineCreateInfo.subpass = subpassIndex;
+                if (!supportsVertexAttributeDivisor)
+                    vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
+
+                vk::PipelineViewportStateCreateInfo viewportState{
+                    .pViewports = viewports.data(),
+                    .viewportCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
+                    .pScissors = scissors.data(),
+                    .scissorCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
+                };
+
+                blendState.pAttachments = blendAttachmentStates.data();
+                blendState.attachmentCount = static_cast<u32>(blendAttachmentStates.size());
+
+                vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
+                    .pStages = shaderStages.data(),
+                    .stageCount = static_cast<u32>(shaderStages.size()),
+                    .pVertexInputState = &vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
+                    .pInputAssemblyState = &inputAssemblyState,
+                    .pViewportState = &viewportState,
+                    .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
+                    .pMultisampleState = &multisampleState,
+                    .pDepthStencilState = &depthState,
+                    .pColorBlendState = &blendState,
+                    .pDynamicState = nullptr,
+                    .layout = *storage->pipelineLayout,
+                    .renderPass = renderPass,
+                    .subpass = subpassIndex,
+                };
 
                 auto pipeline{(*vkDevice).createGraphicsPipeline(pipelineCache, pipelineCreateInfo, nullptr, *vkDevice.getDispatcher())};
                 if (pipeline.result != vk::Result::eSuccess)
