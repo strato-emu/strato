@@ -16,6 +16,7 @@ namespace skyline::gpu {
     struct FenceCycleDependency {
       private:
         std::shared_ptr<FenceCycleDependency> next{}; //!< A shared pointer to the next dependendency to form a linked list
+        FenceCycle *cycle{}; //!< A pointer to the fence cycle owning this, used to prevent attaching to the same cycle multiple times but should never be used to access the object due to not being an owning reference nor nullified on the destruction of the owning cycle
         friend FenceCycle;
     };
 
@@ -29,7 +30,7 @@ namespace skyline::gpu {
         std::atomic_flag signalled;
         const vk::raii::Device &device;
         vk::Fence fence;
-        std::shared_ptr<FenceCycleDependency> list;
+        std::shared_ptr<FenceCycleDependency> list{};
 
         /**
          * @brief Sequentially iterate through the shared_ptr linked list of dependencies and reset all pointers in a thread-safe atomic manner
@@ -108,13 +109,19 @@ namespace skyline::gpu {
          * @brief Attach the lifetime of an object to the fence being signalled
          */
         void AttachObject(const std::shared_ptr<FenceCycleDependency> &dependency) {
-            if (!signalled.test(std::memory_order_consume)) {
-                std::shared_ptr<FenceCycleDependency> next{std::atomic_load_explicit(&list, std::memory_order_consume)};
+            if (dependency->cycle != this && !signalled.test(std::memory_order_consume)) {
+                // Only try to insert if the object isn't already owned by this fence cycle and it hasn't been signalled yet
+                dependency->next = std::atomic_load_explicit(&list, std::memory_order_acquire);
+
                 do {
-                    dependency->next = next;
-                    if (!next && signalled.test(std::memory_order_consume))
+                    if (dependency->next == nullptr && signalled.test(std::memory_order_consume)) {
+                        // `list` will be nullptr after being signalled, dependencies will not be destroyed and we need to do so ourselves
+                        dependency->next.reset(); // We need to reset the dependency so it doesn't incorrectly extend the lifetime of any resources
                         return;
-                } while (std::atomic_compare_exchange_strong_explicit(&list, &next, dependency, std::memory_order_release, std::memory_order_consume));
+                    }
+                } while (!std::atomic_compare_exchange_strong_explicit(&list, &dependency->next, dependency, std::memory_order_release, std::memory_order_acquire));
+
+                dependency->cycle = this;
             }
         }
 
@@ -123,14 +130,38 @@ namespace skyline::gpu {
          */
         void AttachObjects(std::initializer_list<std::shared_ptr<FenceCycleDependency>> dependencies) {
             if (!signalled.test(std::memory_order_consume)) {
-                auto it{dependencies.begin()}, next{std::next(it)};
-                if (it != dependencies.end()) {
-                    for (; next != dependencies.end(); next++) {
-                        (*it)->next = *next;
-                        it = next;
+                {
+                    auto it{dependencies.begin()}, next{std::next(it)};
+                    if (it != dependencies.end()) {
+                        // Only try to insert if the object isn't already owned by this fence cycle
+                        for (; next != dependencies.end(); next++) {
+                            if ((*it)->cycle != this) {
+                                (*it)->next = *next;
+                                (*it)->cycle = this;
+                            }
+                            it = next;
+                        }
                     }
                 }
-                AttachObject(*dependencies.begin());
+
+                auto& dependency{*dependencies.begin()};
+                auto& lastDependency{*std::prev(dependencies.end())};
+                lastDependency->next = std::atomic_load_explicit(&list, std::memory_order_acquire);
+
+                do {
+                    if (lastDependency->next == nullptr && signalled.test(std::memory_order_consume)) {
+                        // `list` will be nullptr after being signalled, dependencies will not be destroyed and we need to do so ourselves
+
+                        auto current{dependency->next}; // We need to reset any chained dependencies before exiting
+                        while (current) {
+                            std::shared_ptr<FenceCycleDependency> next{};
+                            next.swap(current->next);
+                            current.swap(next);
+                        }
+
+                        return;
+                    }
+                } while (!std::atomic_compare_exchange_strong_explicit(&list, &dependency->next, dependency, std::memory_order_release, std::memory_order_acquire));
             }
         }
 
