@@ -1675,6 +1675,7 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_ST(ticFormat, skFormat, Float, swizzleX, swizzleY, swizzleZ, swizzleW)
 
             switch (format.Raw()) {
+                TIC_FORMAT_CASE_NORM_INT(R8, R8R001, R, Zero, Zero, OneFloat);
                 TIC_FORMAT_CASE_ST(B5G6R5, R5G6B5, Unorm, B, G, R, OneFloat);
                 TIC_FORMAT_CASE_NORM_INT(A8R8G8B8, R8G8B8A8, R, G, B, A);
                 TIC_FORMAT_CASE_NORM_INT(A8R8G8B8, A8B8G8R8, A, R, G, B);
@@ -1682,6 +1683,9 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16B16A16, R16G16B16A16, R, G, B, A);
                 TIC_FORMAT_CASE_NORM_INT(A2B10G10R10, A2B10G10R10, R, G, B, A);
                 TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm, R, G, B, A);
+                TIC_FORMAT_CASE_ST(Dxt1, Bc1, Unorm, R, G, B, A);
+                TIC_FORMAT_CASE_ST(Dxn1, Bc4111R, Unorm, OneFloat, OneFloat, OneFloat, R);
+                TIC_FORMAT_CASE_ST(Dxn1, Bc4RRR1, Unorm, R, R, R, OneFloat);
 
                 default:
                     throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));

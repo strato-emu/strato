@@ -32,10 +32,14 @@ namespace skyline::gpu::format {
     #define FORMAT_INT_FLOAT(name, bitsPerBlock, format, ...) \
             FORMAT_SUFF_INT_FLOAT(name, bitsPerBlock, format,, ##__VA_ARGS__)
 
-    #define FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format, fmtSuffix, ...) \
-            FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__);            \
+    #define FORMAT_SUFF_NORM(name, bitsPerBlock, format, fmtSuffix, ...) \
             FORMAT(name ## Unorm, bitsPerBlock, format ## Unorm ## fmtSuffix, ##__VA_ARGS__); \
             FORMAT(name ## Snorm, bitsPerBlock, format ## Snorm ## fmtSuffix, ##__VA_ARGS__)
+
+    #define FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format, fmtSuffix, ...) \
+            FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__); \
+            FORMAT_SUFF_NORM(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__)
+
 
     #define FORMAT_NORM_INT(name, bitsPerBlock, format, ...) \
             FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format,, ##__VA_ARGS__)
@@ -58,6 +62,8 @@ namespace skyline::gpu::format {
 
     // Color formats
     FORMAT_NORM_INT_SRGB(R8, 8, eR8);
+    FORMAT_NORM_INT_SRGB(R8R001, 8, eR8);
+
     FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(R5G6B5Unorm, 16, eR5G6B5UnormPack16);
@@ -90,7 +96,37 @@ namespace skyline::gpu::format {
     });
 
     // Compressed Colour Formats
-    FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block);
+    FORMAT_SUFF_UNORM_SRGB(Bc1, 64, eBc1Rgba, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+
+    FORMAT_SUFF_NORM(Bc4111R, 64, eBc4, Block,
+       .blockWidth = 4,
+       .blockHeight = 4,
+       .swizzle = {
+           .red = swc::One,
+           .green = swc::One,
+           .blue = swc::One,
+           .alpha = swc::Red
+       }
+    );
+
+    FORMAT_SUFF_NORM(Bc4RRR1, 64, eBc4, Block,
+         .blockWidth = 4,
+         .blockHeight = 4,
+         .swizzle = {
+             .red = swc::Red,
+             .green = swc::Red,
+             .blue = swc::Red,
+             .alpha = swc::One
+         }
+    );
+
+    FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
 
     // Depth/Stencil Formats
     FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth);
