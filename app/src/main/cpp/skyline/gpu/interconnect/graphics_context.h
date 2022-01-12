@@ -208,9 +208,8 @@ namespace skyline::gpu::interconnect {
                     FORMAT_NORM_INT_SRGB_CASE(R8G8B8X8, R8G8B8A8);
                     FORMAT_SAME_CASE(B8G8R8A8, Unorm);
                     FORMAT_SAME_CASE(B8G8R8A8, Srgb);
-                    /* Not supported by VK
-                      FORMAT_SAME_CASE(R10G10B10A2, Unorm);
-                      FORMAT_SAME_CASE(R10G10B10A2, Uint);*/
+                    FORMAT_SAME_CASE(A2R10G10B10, Unorm);
+                    FORMAT_SAME_CASE(A2R10G10B10, Uint);
                     FORMAT_SAME_INT_CASE(R32G32);
                     FORMAT_SAME_CASE(R32G32, Float);
                     FORMAT_SAME_CASE(R16G16B16A16, Float);
