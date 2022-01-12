@@ -38,5 +38,7 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
 
     var maxRefreshRate by sharedPreferences(context, false)
 
+    var aspectRatio by sharedPreferences(context, 0)
+
     var systemLanguage by sharedPreferences(context, 1)
 }

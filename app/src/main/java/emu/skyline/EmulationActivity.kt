@@ -12,6 +12,7 @@ import android.content.res.AssetManager
 import android.graphics.PointF
 import android.os.*
 import android.util.Log
+import android.util.Rational
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
@@ -221,9 +222,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         returnFromEmulation()
     }
 
-    /**
-     * This makes the window fullscreen, sets up the performance statistics and finally calls [executeApplication] for executing the application
-     */
     @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
@@ -236,6 +234,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
 
         binding.gameView.holder.addCallback(this)
+
+        binding.gameView.setAspectRatio(
+            when (settings.aspectRatio) {
+                0 -> Rational(16, 9)
+                1 -> Rational(21, 9)
+                else -> null
+            }
+        )
 
         if (settings.perfStats) {
             binding.perfStats.apply {

@@ -103,6 +103,12 @@
             android:summaryOn="@string/max_refresh_rate_enabled"
             app:key="max_refresh_rate"
             app:title="@string/max_refresh_rate" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/aspect_ratios"
+            app:key="aspect_ratio"
+            app:title="@string/aspect_ratio"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_input"

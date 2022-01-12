@@ -74,4 +74,9 @@
         <item>7</item>
         <item>11</item>
     </integer-array>
+    <string-array name="aspect_ratios">
+        <item>16:9 (Switch, Recommended)</item>
+        <item>21:9 (Ultrawide Mods)</item>
+        <item>Device Aspect Ratio (Stretch to fit)</item>
+    </string-array>
 </resources>
