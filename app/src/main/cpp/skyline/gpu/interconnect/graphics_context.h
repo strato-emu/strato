@@ -4,6 +4,7 @@
 #pragma once
 
 #include <boost/container/static_vector.hpp>
+#include <range/v3/algorithm.hpp>
 #include <gpu/texture/format.h>
 #include <gpu/buffer_manager.h>
 #include <soc/gm20b/channel.h>
@@ -603,6 +604,10 @@ namespace skyline::gpu::interconnect {
                 return constantBufferSelector;
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
+
+            // Ignore unmapped areas from mappings due to buggy games setting the wrong cbuf size
+            mappings.erase(ranges::find_if(mappings, [](const auto &mapping) { return !mapping.valid(); }), mappings.end());
+
             constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
 
             constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);

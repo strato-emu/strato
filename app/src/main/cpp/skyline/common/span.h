@@ -89,7 +89,7 @@ namespace skyline {
         /**
          * @return If the span is valid by not being null
          */
-        constexpr bool valid() {
+        constexpr bool valid() const {
             return this->data() != nullptr;
         }
 
