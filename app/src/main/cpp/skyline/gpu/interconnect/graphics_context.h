@@ -2052,6 +2052,151 @@ namespace skyline::gpu::interconnect {
         /* Depth */
         vk::PipelineDepthStencilStateCreateInfo depthState{};
 
+        void SetDepthTestEnabled(bool enabled) {
+            depthState.depthTestEnable = enabled;
+        }
+
+        vk::CompareOp ConvertCompareOp(maxwell3d::CompareOp op) {
+            using MaxwellOp = maxwell3d::CompareOp;
+            using VkOp = vk::CompareOp;
+            switch (op) {
+                case MaxwellOp::Never:
+                case MaxwellOp::NeverGL:
+                    return VkOp::eNever;
+
+                case MaxwellOp::Less:
+                case MaxwellOp::LessGL:
+                    return VkOp::eLess;
+
+                case MaxwellOp::Equal:
+                case MaxwellOp::EqualGL:
+                    return VkOp::eEqual;
+
+                case MaxwellOp::LessOrEqual:
+                case MaxwellOp::LessOrEqualGL:
+                    return VkOp::eLessOrEqual;
+
+                case MaxwellOp::Greater:
+                case MaxwellOp::GreaterGL:
+                    return VkOp::eGreater;
+
+                case MaxwellOp::NotEqual:
+                case MaxwellOp::NotEqualGL:
+                    return VkOp::eNotEqual;
+
+                case MaxwellOp::GreaterOrEqual:
+                case MaxwellOp::GreaterOrEqualGL:
+                    return VkOp::eGreaterOrEqual;
+
+                case MaxwellOp::Always:
+                case MaxwellOp::AlwaysGL:
+                    return VkOp::eAlways;
+            }
+        }
+
+        void SetDepthTestFunction(maxwell3d::CompareOp function) {
+            depthState.depthCompareOp = ConvertCompareOp(function);
+        }
+
+        void SetDepthWriteEnabled(bool enabled) {
+            depthState.depthWriteEnable = enabled;
+        }
+
+        void SetDepthBoundsTestEnabled(bool enabled) {
+            depthState.depthBoundsTestEnable = enabled;
+        }
+
+        void SetMinDepthBounds(float min) {
+            depthState.minDepthBounds = min;
+        }
+
+        void SetMaxDepthBounds(float max) {
+            depthState.maxDepthBounds = max;
+        }
+
+        void SetStencilTestEnabled(bool enabled) {
+            depthState.stencilTestEnable = enabled;
+        }
+
+        vk::StencilOp ConvertStencilOp(maxwell3d::StencilOp op) {
+            using MaxwellOp = maxwell3d::StencilOp;
+            using VkOp = vk::StencilOp;
+            switch (op) {
+                case MaxwellOp::Keep:
+                    return VkOp::eKeep;
+                case MaxwellOp::Zero:
+                    return VkOp::eZero;
+                case MaxwellOp::Replace:
+                    return VkOp::eReplace;
+                case MaxwellOp::IncrementAndClamp:
+                    return VkOp::eIncrementAndClamp;
+                case MaxwellOp::DecrementAndClamp:
+                    return VkOp::eDecrementAndClamp;
+                case MaxwellOp::Invert:
+                    return VkOp::eInvert;
+                case MaxwellOp::IncrementAndWrap:
+                    return VkOp::eIncrementAndWrap;
+                case MaxwellOp::DecrementAndWrap:
+                    return VkOp::eDecrementAndWrap;
+            }
+        }
+
+        void SetStencilFrontFailOp(maxwell3d::StencilOp op) {
+            depthState.front.failOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilBackFailOp(maxwell3d::StencilOp op) {
+            depthState.back.failOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilFrontPassOp(maxwell3d::StencilOp op) {
+            depthState.front.passOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilBackPassOp(maxwell3d::StencilOp op) {
+            depthState.back.passOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilFrontDepthFailOp(maxwell3d::StencilOp op) {
+            depthState.front.depthFailOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilBackDepthFailOp(maxwell3d::StencilOp op) {
+            depthState.back.depthFailOp = ConvertStencilOp(op);
+        }
+
+        void SetStencilFrontCompareOp(maxwell3d::CompareOp op) {
+            depthState.front.compareOp = ConvertCompareOp(op);
+        }
+
+        void SetStencilBackCompareOp(maxwell3d::CompareOp op) {
+            depthState.back.compareOp = ConvertCompareOp(op);
+        }
+
+        void SetStencilFrontCompareMask(u32 mask) {
+            depthState.front.compareMask = mask;
+        }
+
+        void SetStencilBackCompareMask(u32 mask) {
+            depthState.back.compareMask = mask;
+        }
+
+        void SetStencilFrontWriteMask(u32 mask) {
+            depthState.front.writeMask = mask;
+        }
+
+        void SetStencilBackWriteMask(u32 mask) {
+            depthState.back.writeMask = mask;
+        }
+
+        void SetStencilFrontReference(u32 reference) {
+            depthState.front.reference = reference;
+        }
+
+        void SetStencilBackReference(u32 reference) {
+            depthState.back.reference = reference;
+        }
+
         /* Multisampling */
         vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1,

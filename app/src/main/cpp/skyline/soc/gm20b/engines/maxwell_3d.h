@@ -95,7 +95,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x370, DepthBiasEnable> depthBiasEnable;
 
             struct StencilBackExtra {
-                u32 compareRef; // 0x3D5
+                u32 compareReference; // 0x3D5
                 u32 writeMask; // 0x3D6
                 u32 compareMask; // 0x3D7
             };
@@ -109,6 +109,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x3D9, TiledCacheSize> tiledCacheSize;
 
             Register<0x3E4, u32> commonColorWriteMask; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
+
+            Register<0x3E7, float> depthBoundsNear;
+            Register<0x3E8, float> depthBoundsFar;
+
             Register<0x3EB, u32> rtSeparateFragData;
 
             Register<0x3F8, type::Address> depthTargetAddress;
@@ -117,13 +121,16 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x3FC, u32> depthTargetLayerStride;
 
             Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributeState;
+
             Register<0x487, type::RenderTargetControl> renderTargetControl;
 
             Register<0x48A, u32> depthTargetWidth;
             Register<0x48B, u32> depthTargetHeight;
             Register<0x48C, type::RenderTargetArrayMode> depthTargetArrayMode;
 
+            Register<0x4B3, u32> depthTestEnable;
             Register<0x4B9, u32> independentBlendEnable;
+            Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareOp> depthTestFunc;
             Register<0x4C4, float> alphaTestRef;
@@ -158,13 +165,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             struct StencilFront {
                 type::StencilOp failOp; // 0x4E1
                 type::StencilOp zFailOp; // 0x4E2
-                type::StencilOp zPassOp; // 0x4E3
+                type::StencilOp passOp; // 0x4E3
 
-                struct {
-                    type::CompareOp op; // 0x4E4
-                    i32 ref; // 0x4E5
-                    u32 mask; // 0x4E6
-                } compare;
+                type::CompareOp compareOp; // 0x4E4
+                u32 compareReference; // 0x4E5
+                u32 compareMask; // 0x4E6
 
                 u32 writeMask; // 0x4E7
             };
@@ -207,7 +212,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             struct StencilBack {
                 type::StencilOp failOp; // 0x566
                 type::StencilOp zFailOp; // 0x567
-                type::StencilOp zPassOp; // 0x568
+                type::StencilOp passOp; // 0x568
                 type::CompareOp compareOp; // 0x569
             };
             Register<0x566, StencilBack> stencilBack;
@@ -238,6 +243,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportTransformEnable;
             Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
+
+            Register<0x66F, u32> depthBoundsEnable;
 
             struct ColorLogicOp {
                 u32 enable;

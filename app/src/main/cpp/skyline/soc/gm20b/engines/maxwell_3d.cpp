@@ -234,6 +234,90 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.UpdateRenderTargetControl(renderTargetControl);
                 })
 
+                MAXWELL3D_CASE(depthTestEnable, {
+                    context.SetDepthTestEnabled(depthTestEnable);
+                })
+
+                MAXWELL3D_CASE(depthTestFunc, {
+                    context.SetDepthTestFunction(depthTestFunc);
+                })
+
+                MAXWELL3D_CASE(depthWriteEnable, {
+                    context.SetDepthWriteEnabled(depthWriteEnable);
+                })
+
+                MAXWELL3D_CASE(depthBoundsEnable, {
+                    context.SetDepthBoundsTestEnabled(depthBoundsEnable);
+                })
+
+                MAXWELL3D_CASE(depthBoundsNear, {
+                    context.SetMinDepthBounds(depthBoundsNear);
+                })
+
+                MAXWELL3D_CASE(depthBoundsFar, {
+                    context.SetMaxDepthBounds(depthBoundsFar);
+                })
+
+                MAXWELL3D_CASE(stencilEnable, {
+                    context.SetStencilTestEnabled(stencilEnable);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, failOp, {
+                    context.SetStencilFrontFailOp(failOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, zFailOp, {
+                    context.SetStencilFrontDepthFailOp(zFailOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, passOp, {
+                    context.SetStencilFrontPassOp(passOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, compareOp, {
+                    context.SetStencilFrontCompareOp(compareOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, compareReference, {
+                    context.SetStencilFrontReference(compareReference);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, compareMask, {
+                    context.SetStencilFrontCompareMask(compareMask);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilFront, writeMask, {
+                    context.SetStencilFrontWriteMask(writeMask);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBack, failOp, {
+                    context.SetStencilBackFailOp(failOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBack, zFailOp, {
+                    context.SetStencilBackDepthFailOp(zFailOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBack, passOp, {
+                    context.SetStencilBackPassOp(passOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBack, compareOp, {
+                    context.SetStencilBackCompareOp(compareOp);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBackExtra, compareReference, {
+                    context.SetStencilBackReference(compareReference);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBackExtra, compareMask, {
+                    context.SetStencilBackCompareMask(compareMask);
+                })
+
+                MAXWELL3D_STRUCT_CASE(stencilBackExtra, writeMask, {
+                    context.SetStencilBackWriteMask(writeMask);
+                })
+
                 MAXWELL3D_CASE(independentBlendEnable, {
                     context.SetIndependentBlendingEnabled(independentBlendEnable);
                 })
