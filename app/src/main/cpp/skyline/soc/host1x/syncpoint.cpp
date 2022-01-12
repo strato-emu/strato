@@ -29,9 +29,12 @@ namespace skyline::soc::host1x {
         // We want to ensure the iterator still exists prior to erasing it
         // Otherwise, if an invalid iterator was passed in then it could lead to UB
         // It is important to avoid UB in that case since the deregister isn't called from a locked context
-        for (auto it{waiters.begin()}; it != waiters.end(); it++)
-            if (it == waiter)
+        for (auto it{waiters.begin()}; it != waiters.end(); it++) {
+            if (it == waiter) {
                 waiters.erase(it);
+                return;
+            }
+        }
     }
 
     u32 Syncpoint::Increment() {
