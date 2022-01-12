@@ -123,6 +123,11 @@ namespace skyline::gpu::format {
          }
     );
 
+    FORMAT_SUFF_UNORM_SRGB(Bc7, 128, eBc7, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+
     FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
         .blockWidth = 4,
         .blockHeight = 4

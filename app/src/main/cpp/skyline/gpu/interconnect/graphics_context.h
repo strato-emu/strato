@@ -1691,6 +1691,7 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_ST(Dxt1, Bc1, Unorm, R, G, B, A);
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4111R, Unorm, OneFloat, OneFloat, OneFloat, R);
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4RRR1, Unorm, R, R, R, OneFloat);
+                TIC_FORMAT_CASE_ST(BC7U, Bc7, Unorm, R, G, B, A);
 
                 default:
                     throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
