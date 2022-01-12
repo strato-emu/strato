@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <adrenotools/bcenabler.h>
 #include "quirk_manager.h"
 
 namespace skyline::gpu {
@@ -101,6 +102,31 @@ namespace skyline::gpu {
         auto &subgroupProperties{deviceProperties2.get<vk::PhysicalDeviceSubgroupProperties>()};
         supportsSubgroupVote = static_cast<bool>(subgroupProperties.supportedOperations & vk::SubgroupFeatureFlagBits::eVote);
         subgroupSize = deviceProperties2.get<vk::PhysicalDeviceSubgroupProperties>().subgroupSize;
+    }
+
+    void QuirkManager::ApplyDriverPatches(const vk::raii::Context &context) {
+        // Create an instance without validation layers in order to get pointers to the functions we need to patch from the driver
+        vk::ApplicationInfo applicationInfo{
+            .apiVersion = VK_API_VERSION_1_0,
+        };
+
+        auto instance{vk::raii::Instance(context, vk::InstanceCreateInfo{
+            .pApplicationInfo = &applicationInfo
+        })};
+
+        auto physicalDevice{std::move(instance.enumeratePhysicalDevices().front())};
+        auto properties{physicalDevice.getProperties()};
+
+        // Apply BCeNabler for Adreno devices
+        auto type{adrenotools_get_bcn_type( VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), properties.vendorID)};
+        if (type == ADRENOTOOLS_BCN_PATCH) {
+            if (adrenotools_patch_bcn(reinterpret_cast<void *>(physicalDevice.getDispatcher()->vkGetPhysicalDeviceFormatProperties)))
+                Logger::Info("Applied BCeNabler patch");
+            else
+                throw exception("Failed to apply BCeNabler patch!");
+        } else if (type == ADRENOTOOLS_BCN_BLOB) {
+            Logger::Info("BCeNabler skipped, blob BCN support is present");
+        }
     }
 
     std::string QuirkManager::Summary() {

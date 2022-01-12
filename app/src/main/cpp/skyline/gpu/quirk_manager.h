@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #include <common.h>
 
 namespace skyline::gpu {
@@ -42,6 +42,11 @@ namespace skyline::gpu {
         using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>;
 
         QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
+
+        /**
+         * @brief Applies driver specific binary patches to the driver (e.g. BCeNabler)
+         */
+        void ApplyDriverPatches(const vk::raii::Context &context);
 
         /**
          * @return A summary of all the GPU quirks as a human-readable string

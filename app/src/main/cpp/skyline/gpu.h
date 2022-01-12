@@ -13,13 +13,13 @@
 #include "gpu/shader_manager.h"
 
 namespace skyline::gpu {
+    static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
+
     /**
      * @brief An interface to host GPU structures, anything concerning host GPU/Presentation APIs is encapsulated by this
      */
     class GPU {
       public:
-        static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
-
         vk::raii::Context vkContext;
         vk::raii::Instance vkInstance;
         vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into 'GPU::DebugCallback'

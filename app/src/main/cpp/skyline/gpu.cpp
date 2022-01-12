@@ -119,7 +119,10 @@ namespace skyline::gpu {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
+    static vk::raii::Device CreateDevice(const vk::raii::Context &context,
+                                         const vk::raii::PhysicalDevice &physicalDevice,
+                                         decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex,
+                                         QuirkManager &quirks) {
         auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>()};
         decltype(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
@@ -152,6 +155,7 @@ namespace skyline::gpu {
         auto deviceProperties2{physicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>()};
 
         quirks = QuirkManager(deviceFeatures2, enabledFeatures2, deviceExtensions, enabledExtensions, deviceProperties2);
+        quirks.ApplyDriverPatches(context);
 
         std::vector<const char *> pEnabledExtensions;
         pEnabledExtensions.reserve(enabledExtensions.size());
@@ -207,7 +211,7 @@ namespace skyline::gpu {
         : vkInstance(CreateInstance(state, vkContext)),
           vkDebugReportCallback(CreateDebugReportCallback(vkInstance)),
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
-          vkDevice(CreateDevice(vkPhysicalDevice, vkQueueFamilyIndex, quirks)),
+          vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, quirks)),
           vkQueue(vkDevice, vkQueueFamilyIndex, 0),
           memory(*this),
           scheduler(*this),

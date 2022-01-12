@@ -65,7 +65,7 @@ namespace skyline::gpu::memory {
             .device = *gpu.vkDevice,
             .instance = *gpu.vkInstance,
             .pVulkanFunctions = &vulkanFunctions,
-            .vulkanApiVersion = GPU::VkApiVersion,
+            .vulkanApiVersion = VkApiVersion,
         };
         ThrowOnFail(vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator));
     }

@@ -51,3 +51,11 @@
 [submodule "Shader Compiler"]
 	path = app/libraries/shader-compiler
 	url = https://github.com/skyline-emu/shader-compiler.git
+[submodule "libadrenotools"]
+	path = app/libraries/adrenotools
+	url = https://github.com/bylaws/libadrenotools/
+	branch = master
+[submodule "app/libraries/adrenotools"]
+	path = app/libraries/adrenotools
+	url = https://github.com/bylaws/libadrenotools/
+	branch = master
