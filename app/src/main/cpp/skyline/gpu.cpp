@@ -5,7 +5,7 @@
 #include "gpu.h"
 
 namespace skyline::gpu {
-    vk::raii::Instance GPU::CreateInstance(const DeviceState &state, const vk::raii::Context &context) {
+    static vk::raii::Instance CreateInstance(const DeviceState &state, const vk::raii::Context &context) {
         vk::ApplicationInfo applicationInfo{
             .pApplicationName = "Skyline",
             .applicationVersion = static_cast<uint32_t>(state.jvm->GetVersionCode()), // Get the application version from JNI
@@ -66,14 +66,7 @@ namespace skyline::gpu {
         });
     }
 
-    vk::raii::DebugReportCallbackEXT GPU::CreateDebugReportCallback(const vk::raii::Instance &instance) {
-        return vk::raii::DebugReportCallbackEXT(instance, vk::DebugReportCallbackCreateInfoEXT{
-            .flags = vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eInformation | vk::DebugReportFlagBitsEXT::eDebug,
-            .pfnCallback = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(&DebugCallback),
-        });
-    }
-
-    VkBool32 GPU::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message) {
+    static VkBool32 DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message) {
         constexpr std::array<Logger::LogLevel, 5> severityLookup{
             Logger::LogLevel::Info,  // VK_DEBUG_REPORT_INFORMATION_BIT_EXT
             Logger::LogLevel::Warn,  // VK_DEBUG_REPORT_WARNING_BIT_EXT
@@ -115,11 +108,18 @@ namespace skyline::gpu {
         return VK_FALSE;
     }
 
-    vk::raii::PhysicalDevice GPU::CreatePhysicalDevice(const vk::raii::Instance &instance) {
+    static vk::raii::DebugReportCallbackEXT CreateDebugReportCallback(const vk::raii::Instance &instance) {
+        return vk::raii::DebugReportCallbackEXT(instance, vk::DebugReportCallbackCreateInfoEXT{
+            .flags = vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eInformation | vk::DebugReportFlagBitsEXT::eDebug,
+            .pfnCallback = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(&DebugCallback),
+        });
+    }
+
+    static vk::raii::PhysicalDevice CreatePhysicalDevice(const vk::raii::Instance &instance) {
         return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
-    vk::raii::Device GPU::CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
+    static vk::raii::Device CreateDevice(const vk::raii::PhysicalDevice &physicalDevice, decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex, QuirkManager &quirks) {
         auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features>()};
         decltype(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
