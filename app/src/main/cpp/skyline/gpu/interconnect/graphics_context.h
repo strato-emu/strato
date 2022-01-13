@@ -636,7 +636,7 @@ namespace skyline::gpu::interconnect {
             bool shouldCheckSame{false}; //!< If we should do a check for the shader being the same as before
             u32 offset{}; //!< Offset of the shader from the base IOVA
             boost::container::static_vector<u8, MaxShaderBytecodeSize> data; //!< The shader bytecode in a statically allocated vector
-            std::optional<ShaderCompiler::IR::Program> program;
+            std::shared_ptr<ShaderManager::ShaderProgram> program{};
 
             Shader(ShaderCompiler::Stage stage) : stage(stage) {}
 
@@ -689,7 +689,7 @@ namespace skyline::gpu::interconnect {
             bool enabled{false};
             vk::ShaderStageFlagBits vkStage;
 
-            std::variant<ShaderCompiler::IR::Program, std::reference_wrapper<ShaderCompiler::IR::Program>> program; //!< The shader program by value or by reference (VertexA and VertexB shaders when combined will store by value, otherwise only a reference is stored)
+            std::shared_ptr<ShaderManager::ShaderProgram> program; //!< The shader program by value or by reference (VertexA and VertexB shaders when combined will store by value, otherwise only a reference is stored)
 
             bool needsRecompile{}; //!< If the shader needs to be recompiled as runtime information has changed
             ShaderCompiler::VaryingState previousStageStores{};
@@ -817,7 +817,7 @@ namespace skyline::gpu::interconnect {
                             shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.data, shader.offset, bindlessTextureConstantBufferIndex);
 
                             if (shader.stage != ShaderCompiler::Stage::VertexA && shader.stage != ShaderCompiler::Stage::VertexB) {
-                                pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
+                                pipelineStage.program = shader.program;
                             } else if (shader.stage == ShaderCompiler::Stage::VertexA) {
                                 auto &vertexB{shaders[maxwell3d::ShaderStage::VertexB]};
 
@@ -825,15 +825,15 @@ namespace skyline::gpu::interconnect {
                                     throw exception("Enabling VertexA without VertexB is not supported");
                                 else if (!vertexB.invalidated)
                                     // If only VertexA is invalidated, we need to recombine here but we can defer it otherwise
-                                    pipelineStage.program = gpu.shader.CombineVertexShaders(*shader.program, *vertexB.program, vertexB.data);
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(shader.program, vertexB.program, vertexB.data);
                             } else if (shader.stage == ShaderCompiler::Stage::VertexB) {
                                 auto &vertexA{shaders[maxwell3d::ShaderStage::VertexA]};
 
                                 if (vertexA.enabled)
                                     // We need to combine the vertex shader stages if VertexA is enabled
-                                    pipelineStage.program = gpu.shader.CombineVertexShaders(*vertexA.program, *shader.program, shader.data);
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(vertexA.program, shader.program, shader.data);
                                 else
-                                    pipelineStage.program.emplace<std::reference_wrapper<ShaderCompiler::IR::Program>>(*shader.program);
+                                    pipelineStage.program = shader.program;
                             }
 
                             pipelineStage.enabled = true;
@@ -861,18 +861,14 @@ namespace skyline::gpu::interconnect {
                 if (!pipelineStage.enabled)
                     continue;
 
-                auto &program{std::visit(VariantVisitor{
-                    [](ShaderCompiler::IR::Program &program) -> ShaderCompiler::IR::Program & { return program; },
-                    [](std::reference_wrapper<ShaderCompiler::IR::Program> program) -> ShaderCompiler::IR::Program & { return program.get(); },
-                }, pipelineStage.program)};
-
                 if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
                     pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
                     pipelineStage.bindingBase = bindings.unified;
-                    pipelineStage.vkModule = std::make_shared<vk::raii::ShaderModule>(gpu.shader.CompileShader(runtimeInfo, program, bindings));
+                    pipelineStage.vkModule = std::make_shared<vk::raii::ShaderModule>(gpu.shader.CompileShader(runtimeInfo, pipelineStage.program, bindings));
                     pipelineStage.bindingLast = bindings.unified;
                 }
 
+                auto &program{pipelineStage.program->program};
                 runtimeInfo.previous_stage_stores = program.info.stores;
                 if (program.is_geometry_passthrough)
                     runtimeInfo.previous_stage_stores.mask |= program.info.passthrough.mask;

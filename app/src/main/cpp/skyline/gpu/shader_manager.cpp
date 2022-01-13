@@ -165,20 +165,24 @@ namespace skyline::gpu {
         }
     };
 
-    Shader::IR::Program ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex) {
+    ShaderManager::DualVertexShaderProgram::DualVertexShaderProgram(Shader::IR::Program ir, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB) : ShaderProgram{std::move(ir)}, vertexA(std::move(vertexA)), vertexB(std::move(vertexB)) {}
+
+    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex) {
+        auto program{std::make_shared<SingleShaderProgram>()};
         GraphicsEnvironment environment{stage, binary, baseOffset, bindlessTextureConstantBufferIndex};
-        Shader::Maxwell::Flow::CFG cfg(environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
+        Shader::Maxwell::Flow::CFG cfg(environment, program->flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
 
-        return Shader::Maxwell::TranslateProgram(instPool, blockPool, environment, cfg, hostTranslateInfo);
+        program->program = Shader::Maxwell::TranslateProgram(program->instructionPool, program->blockPool, environment, cfg, hostTranslateInfo);
+        return program;
     }
 
-    Shader::IR::Program ShaderManager::CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary) {
+    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::CombineVertexShaders(const std::shared_ptr<ShaderManager::ShaderProgram> &vertexA, const std::shared_ptr<ShaderManager::ShaderProgram> &vertexB, span<u8> vertexBBinary) {
         VertexBEnvironment vertexBEnvironment{vertexBBinary};
-        return Shader::Maxwell::MergeDualVertexPrograms(vertexA, vertexB, vertexBEnvironment);
+        return std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB);
     }
 
-    vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
-        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
+    vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
+        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program->program, bindings)};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),

@@ -22,22 +22,49 @@ namespace skyline::gpu {
     class ShaderManager {
       private:
         GPU &gpu;
-        Shader::ObjectPool<Shader::Maxwell::Flow::Block> flowBlockPool;
-        Shader::ObjectPool<Shader::IR::Inst> instPool;
-        Shader::ObjectPool<Shader::IR::Block> blockPool;
         Shader::HostTranslateInfo hostTranslateInfo;
         Shader::Profile profile;
 
       public:
+        struct ShaderProgram {
+            Shader::IR::Program program;
+        };
+
+      private:
+        struct SingleShaderProgram : ShaderProgram {
+            Shader::ObjectPool<Shader::Maxwell::Flow::Block> flowBlockPool;
+            Shader::ObjectPool<Shader::IR::Inst> instructionPool;
+            Shader::ObjectPool<Shader::IR::Block> blockPool;
+
+            SingleShaderProgram() = default;
+
+            SingleShaderProgram(const SingleShaderProgram &) = delete;
+
+            SingleShaderProgram &operator=(const SingleShaderProgram &) = delete;
+        };
+
+        struct DualVertexShaderProgram : ShaderProgram {
+            std::shared_ptr<ShaderProgram> vertexA;
+            std::shared_ptr<ShaderProgram> vertexB;
+
+            DualVertexShaderProgram(Shader::IR::Program program, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB);
+
+            DualVertexShaderProgram(const DualVertexShaderProgram &) = delete;
+
+            DualVertexShaderProgram &operator=(const DualVertexShaderProgram &) = delete;
+        };
+
+      public:
         ShaderManager(const DeviceState &state, GPU &gpu);
 
-        Shader::IR::Program ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex);
+        std::shared_ptr<ShaderManager::ShaderProgram> ParseGraphicsShader(Shader::Stage stage, span <u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex);
 
         /**
          * @brief Combines the VertexA and VertexB shader programs into a single program
+         * @note VertexA/VertexB shader programs must be SingleShaderProgram and not DualVertexShaderProgram
          */
-        static Shader::IR::Program CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary);
+        static std::shared_ptr<ShaderManager::ShaderProgram> CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span <u8> vertexBBinary);
 
-        vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings);
+        vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings);
     };
 }
