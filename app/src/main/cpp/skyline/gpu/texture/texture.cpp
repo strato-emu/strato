@@ -5,9 +5,22 @@
 #include <common/trace.h>
 #include <kernel/types/KProcess.h>
 #include "texture.h"
-#include "copy.h"
+#include "layout.h"
 
 namespace skyline::gpu {
+    u32 GuestTexture::GetLayerSize() {
+        switch (tileConfig.mode) {
+            case texture::TileMode::Linear:
+                return layerStride = static_cast<u32>(format->GetSize(dimensions));
+
+            case texture::TileMode::Pitch:
+                return layerStride = dimensions.height * tileConfig.pitch;
+
+            case texture::TileMode::Block:
+                return layerStride = static_cast<u32>(texture::GetBlockLinearLayerSize(*this));
+        }
+    }
+
     TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
 
     vk::ImageView TextureView::GetView() {
@@ -103,9 +116,9 @@ namespace skyline::gpu {
         }()};
 
         if (guest->tileConfig.mode == texture::TileMode::Block)
-            CopyBlockLinearToLinear(*guest, pointer, bufferData);
+            texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
         else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-            CopyPitchLinearToLinear(*guest, pointer, bufferData);
+            texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
         else if (guest->tileConfig.mode == texture::TileMode::Linear)
             std::memcpy(bufferData, pointer, size);
 
@@ -208,9 +221,9 @@ namespace skyline::gpu {
         auto guestOutput{guest->mappings[0].data()};
 
         if (guest->tileConfig.mode == texture::TileMode::Block)
-            CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
+            texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
         else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-            CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
+            texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
         else if (guest->tileConfig.mode == texture::TileMode::Linear)
             std::memcpy(hostBuffer, guestOutput, format->GetSize(dimensions));
     }

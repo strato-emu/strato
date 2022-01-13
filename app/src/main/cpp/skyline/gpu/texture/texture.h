@@ -261,7 +261,7 @@ namespace skyline::gpu {
         texture::TextureType type{};
         u16 baseArrayLayer{};
         u16 layerCount{};
-        u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available
+        u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available, GetLayerSize() should be used to retrieve this value
 
         GuestTexture() {}
 
@@ -284,6 +284,12 @@ namespace skyline::gpu {
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
               layerStride(layerStride) {}
+
+        /**
+         * @note Requires `dimensions`, `format` and `tileConfig` to be filled in
+         * @return The size of a single layer with alignment in bytes
+         */
+        u32 GetLayerSize();
     };
 
     class TextureManager;

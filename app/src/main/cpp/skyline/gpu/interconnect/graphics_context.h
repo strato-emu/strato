@@ -337,7 +337,8 @@ namespace skyline::gpu::interconnect {
                 return &*renderTarget.view;
 
             if (renderTarget.guest.mappings.empty()) {
-                auto size{std::max<u64>(renderTarget.guest.layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer), renderTarget.guest.format->GetSize(renderTarget.guest.dimensions))};
+                size_t layerStride{renderTarget.guest.GetLayerSize()};
+                size_t size{layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer)};
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.iova, size)};
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }

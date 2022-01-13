@@ -343,7 +343,9 @@ namespace skyline::service::hosbinder {
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
             }
 
-            gpu::GuestTexture guestTexture(span<u8>(nvMapHandleObj->GetPointer() + surface.offset, surface.size), gpu::texture::Dimensions(surface.width, surface.height), format, tileConfig, gpu::texture::TextureType::e2D);
+            gpu::texture::Dimensions dimensions(surface.width, surface.height);
+            gpu::GuestTexture guestTexture(span<u8>{}, dimensions, format, tileConfig, gpu::texture::TextureType::e2D);
+            guestTexture.mappings[0] = span<u8>(nvMapHandleObj->GetPointer() + surface.offset, guestTexture.GetLayerSize());
             buffer.texture = state.gpu->texture.FindOrCreate(guestTexture)->texture;
         }
 
