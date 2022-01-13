@@ -1772,17 +1772,21 @@ namespace skyline::gpu::interconnect {
 
                 size_t size; //!< The size of the texture in bytes
                 if (textureControl.headerType == TextureImageControl::HeaderType::Pitch) {
-                    u32 pitch{static_cast<u32>(textureControl.tileConfig.pitchHigh) << TextureImageControl::TileConfig::PitchAlignmentBits};
                     guest.tileConfig = {
                         .mode = texture::TileMode::Pitch,
-                        .pitch = pitch,
+                        .pitch = static_cast<u32>(textureControl.tileConfig.pitchHigh) << TextureImageControl::TileConfig::PitchAlignmentBits,
                     };
-                    size = pitch * guest.dimensions.height * guest.dimensions.depth * guest.layerCount;
+                } else if (textureControl.headerType == TextureImageControl::HeaderType::BlockLinear) {
+                    guest.tileConfig = {
+                        .mode = texture::TileMode::Block,
+                        .blockHeight = static_cast<u8>(1U << textureControl.tileConfig.tileHeightGobsLog2),
+                        .blockDepth = static_cast<u8>(1U << textureControl.tileConfig.tileDepthGobsLog2),
+                    };
                 } else {
                     throw exception("Unsupported TIC Header Type: {}", static_cast<u32>(textureControl.headerType));
                 }
 
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), size)};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), guest.GetLayerSize() * (guest.layerCount - guest.baseArrayLayer))};
                 guest.mappings.assign(mappings.begin(), mappings.end());
             } else if (auto textureView{poolTexture.view.lock()}; textureView != nullptr) {
                 // If the entry already exists and the view is still valid then we return it directly
