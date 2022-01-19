@@ -10,6 +10,20 @@ namespace skyline::soc::gm20b {
     struct ChannelContext;
 
     /**
+     * @brief Mapping of subchannel names to their corresponding subchannel IDs
+     */
+    enum class SubchannelId : u8 {
+        ThreeD = 0,
+        Compute = 1,
+        Inline2Mem = 2,
+        TwoD = 3,
+        Copy = 4,
+        Software0 = 5,
+        Software1 = 6,
+        Software2 = 7,
+    };
+
+    /**
      * @brief A GPFIFO entry as submitted through 'SubmitGpfifo'
      * @url https://nvidia.github.io/open-gpu-doc/manuals/volta/gv100/dev_pbdma.ref.txt
      * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/classes/host/clb06f.h#L155
@@ -92,7 +106,6 @@ namespace skyline::soc::gm20b {
         ChannelContext &channelCtx;
         engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
         CircularQueue<GpEntry> gpEntries;
-        std::thread thread; //!< The thread that manages processing of pushbuffers
         std::vector<u32> pushBufferData; //!< Persistent vector storing pushbuffer data to avoid constant reallocations
 
         /**
@@ -102,7 +115,7 @@ namespace skyline::soc::gm20b {
         struct MethodResumeState {
             u32 remaining; //!< The number of entries left to handle until the method is finished
             u32 address; //!< The method address in the GPU block specified by `subchannel` that is the target of the command
-            u8 subChannel;
+            SubchannelId subChannel;
 
             /**
              * @brief This is a simplified version of the full method type enum
@@ -114,12 +127,12 @@ namespace skyline::soc::gm20b {
             } state; //!< The type of method to resume
         } resumeState{};
 
+        std::thread thread; //!< The thread that manages processing of pushbuffers
 
         /**
          * @brief Sends a method call to the GPU hardware
          */
-        void Send(u32 method, u32 argument, u32 subchannel, bool lastCall);
-
+        void Send(u32 method, u32 argument, SubchannelId subchannel, bool lastCall);
 
         /**
          * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed

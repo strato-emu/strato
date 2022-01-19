@@ -7,39 +7,24 @@
 #include "maxwell_3d.h"
 
 namespace skyline::soc::gm20b::engine::maxwell3d {
-    Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : Engine(state), macroInterpreter(*this), context(*state.gpu, channelCtx, executor), channelCtx(channelCtx) {
+    Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor)
+        : MacroEngineBase(macroState),
+          syncpoints(state.soc->host1x.syncpoints),
+          context(*state.gpu, channelCtx, executor),
+          channelCtx(channelCtx) {
         InitializeRegisters();
     }
 
-    __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument, bool lastCall) {
-        Logger::Debug("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+    void Maxwell3D::CallMethodFromMacro(u32 method, u32 argument) {
+        HandleMethod(method, argument);
+    }
 
-        // Methods that are greater than the register size are for macro control
-        if (method >= RegisterCount) [[unlikely]] {
-            // Starting a new macro at index 'method - RegisterCount'
-            if (!(method & 1)) {
-                if (macroInvocation.index != -1) {
-                    // Flush the current macro as we are switching to another one
-                    macroInterpreter.Execute(macroPositions[static_cast<size_t>(macroInvocation.index)], macroInvocation.arguments);
-                    macroInvocation.arguments.clear();
-                }
+    u32 Maxwell3D::ReadMethodFromMacro(u32 method) {
+        return registers.raw[method];
+    }
 
-                // Setup for the new macro index
-                macroInvocation.index = ((method - RegisterCount) >> 1) % macroPositions.size();
-            }
-
-            macroInvocation.arguments.emplace_back(argument);
-
-            // Flush macro after all of the data in the method call has been sent
-            if (lastCall && macroInvocation.index != -1) {
-                macroInterpreter.Execute(macroPositions[static_cast<size_t>(macroInvocation.index)], macroInvocation.arguments);
-                macroInvocation.arguments.clear();
-                macroInvocation.index = -1;
-            }
-
-            // Bail out early
-            return;
-        }
+    __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {
+        Logger::Verbose("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         HandleMethod(method, argument);
     }
@@ -584,26 +569,27 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         switch (method) {
             MAXWELL3D_STRUCT_CASE(mme, instructionRamLoad, {
-                if (registers.mme->instructionRamPointer >= macroCode.size())
+                if (registers.mme->instructionRamPointer >= macroState.macroCode.size())
                     throw exception("Macro memory is full!");
 
-                macroCode[registers.mme->instructionRamPointer++] = instructionRamLoad;
+                macroState.macroCode[registers.mme->instructionRamPointer++] = instructionRamLoad;
 
                 // Wraparound writes
-                registers.mme->instructionRamPointer %= macroCode.size();
+                // This works on HW but will also generate an error interrupt
+                registers.mme->instructionRamPointer %= macroState.macroCode.size();
             })
 
             MAXWELL3D_STRUCT_CASE(mme, startAddressRamLoad, {
-                if (registers.mme->startAddressRamPointer >= macroPositions.size())
+                if (registers.mme->startAddressRamPointer >= macroState.macroPositions.size())
                     throw exception("Maximum amount of macros reached!");
 
-                macroPositions[registers.mme->startAddressRamPointer++] = startAddressRamLoad;
+                macroState.macroPositions[registers.mme->startAddressRamPointer++] = startAddressRamLoad;
             })
 
             MAXWELL3D_CASE(syncpointAction, {
                 Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Execute();
-                state.soc->host1x.syncpoints.at(syncpointAction.id).Increment();
+                syncpoints.at(syncpointAction.id).Increment();
             })
 
             MAXWELL3D_CASE(clearBuffers, {

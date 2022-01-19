@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <common/address_space.h>
-#include <soc/gm20b/engines/maxwell_3d.h>
+#include "soc/gm20b/engines/engine.h"
+#include "macro_interpreter.h"
 
-namespace skyline::soc::gm20b::engine::maxwell3d {
-    void MacroInterpreter::Execute(size_t offset, const std::vector<u32> &args) {
+namespace skyline::soc::gm20b::engine {
+    MacroInterpreter::MacroInterpreter(span<u32> macroCode) : macroCode(macroCode) {}
+
+    void MacroInterpreter::Execute(size_t offset, span<u32> args, MacroEngineBase *targetEngine) {
         // Reset the interpreter state
+        engine = targetEngine;
+        opcode = reinterpret_cast<Opcode *>(&macroCode[offset]);
         registers = {};
-        carryFlag = false;
-        methodAddress.raw = 0;
-        opcode = reinterpret_cast<Opcode *>(&maxwell3D.macroCode[offset]);
         argument = args.data();
+        methodAddress.raw = 0;
+        carryFlag = false;
 
         // The first argument is stored in register 1
         registers[1] = *argument++;
@@ -71,7 +74,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             }
 
             case Opcode::Operation::ReadImmediate: {
-                u32 result{maxwell3D.registers.raw[static_cast<size_t>(static_cast<i32>(registers[opcode->srcA]) + opcode->immediate)]};
+                u32 result{engine->ReadMethodFromMacro(static_cast<u32>(static_cast<i32>(registers[opcode->srcA]) + opcode->immediate))};
                 HandleAssignment(opcode->assignmentOperation, opcode->dest, result);
                 break;
             }
@@ -194,7 +197,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     __attribute__((always_inline)) void MacroInterpreter::Send(u32 pArgument) {
-        maxwell3D.CallMethod(methodAddress.address, pArgument, true);
+        engine->CallMethodFromMacro(methodAddress.address, pArgument);
         methodAddress.address += methodAddress.increment;
     }
 

@@ -5,8 +5,8 @@
 
 #include <common.h>
 
-namespace skyline::soc::gm20b::engine::maxwell3d {
-    class Maxwell3D; // A forward declaration of Maxwell3D as we don't want to import it here
+namespace skyline::soc::gm20b::engine {
+    struct MacroEngineBase;
 
     /**
      * @brief The MacroInterpreter class handles interpreting macros. Macros are small programs that run on the GPU and are used for things like instanced rendering
@@ -104,8 +104,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         static_assert(sizeof(MethodAddress) == sizeof(u32));
         #pragma pack(pop)
 
-        Maxwell3D &maxwell3D; //!< A reference to the parent engine object
+        span<u32> macroCode; //!< Span pointing to the global macro code memory
 
+        MacroEngineBase *engine; //!< Pointer to the target engine
         Opcode *opcode{}; //!< A pointer to the instruction that is currently being executed
         std::array<u32, 8> registers{}; //!< The state of all the general-purpose registers in the macro interpreter
         const u32 *argument{}; //!< A pointer to the argument buffer for the program, it is read from sequentially
@@ -139,11 +140,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         void WriteRegister(u8 reg, u32 value);
 
       public:
-        MacroInterpreter(Maxwell3D &maxwell3D) : maxwell3D(maxwell3D) {}
+        MacroInterpreter(span<u32> macroCode);
 
         /**
-         * @brief Executes a GPU macro from macro memory with the given arguments
+         * @brief Executes a GPU macro from macro memory with the given arguments targeting the specified engine
          */
-        void Execute(size_t offset, const std::vector<u32> &args);
+        void Execute(size_t offset, span<u32> args, MacroEngineBase *targetEngine);
     };
 }

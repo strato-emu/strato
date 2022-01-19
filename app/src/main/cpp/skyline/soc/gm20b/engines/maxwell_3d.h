@@ -6,7 +6,6 @@
 
 #include <gpu/interconnect/graphics_context.h>
 #include "engine.h"
-#include "maxwell/macro_interpreter.h"
 
 namespace skyline::soc::gm20b {
     struct ChannelContext;
@@ -16,17 +15,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     /**
      * @brief The Maxwell 3D engine handles processing 3D graphics
      */
-    class Maxwell3D : public Engine {
+    class Maxwell3D : public MacroEngineBase {
       private:
-        std::array<size_t, 0x80> macroPositions{}; //!< The positions of each individual macro in macro memory, there can be a maximum of 0x80 macros at any one time
-
-        struct {
-            i32 index{-1};
-            std::vector<u32> arguments;
-        } macroInvocation{}; //!< Data for a macro that is pending execution
-
-        MacroInterpreter macroInterpreter;
-
+        host1x::SyncpointSet &syncpoints;
         gpu::interconnect::GraphicsContext context;
 
         /**
@@ -321,15 +312,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         ChannelContext &channelCtx;
 
-        std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
 
-        Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
+        Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor);
 
         /**
          * @brief Initializes Maxwell 3D registers to their default values
          */
         void InitializeRegisters();
 
-        void CallMethod(u32 method, u32 argument, bool lastCall = false);
+        void CallMethod(u32 method, u32 argument);
+
+        void CallMethodFromMacro(u32 method, u32 argument) override;
+
+        u32 ReadMethodFromMacro(u32 method) override;
     };
 }

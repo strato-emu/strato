@@ -44,7 +44,7 @@ namespace skyline::soc::gm20b {
 
         struct {
             u16 _pad1_ : 13;
-            u8 methodSubChannel : 3;
+            SubchannelId methodSubChannel : 3;
             union {
                 TertOp tertOp : 3;
                 u16 methodCount : 13;
@@ -66,36 +66,32 @@ namespace skyline::soc::gm20b {
         gpEntries(numEntries),
         thread(std::thread(&ChannelGpfifo::Run, this)) {}
 
-    void ChannelGpfifo::Send(u32 method, u32 argument, u32 subChannel, bool lastCall) {
-        constexpr u32 ThreeDSubChannel{0};
-        constexpr u32 ComputeSubChannel{1};
-        constexpr u32 Inline2MemorySubChannel{2};
-        constexpr u32 TwoDSubChannel{3};
-        constexpr u32 CopySubChannel{4}; // HW forces a memory flush on a switch from this subchannel to others
-
+    void ChannelGpfifo::Send(u32 method, u32 argument, SubchannelId subChannel, bool lastCall) {
         Logger::Debug("Called GPU method - method: 0x{:X} argument: 0x{:X} subchannel: 0x{:X} last: {}", method, argument, subChannel, lastCall);
 
         if (method < engine::GPFIFO::RegisterCount) {
             gpfifoEngine.CallMethod(method, argument);
-        } else {
+        } else if (method < engine::EngineMethodsEnd) { [[likely]]
             switch (subChannel) {
-                case ThreeDSubChannel:
-                    channelCtx.maxwell3D->CallMethod(method, argument, lastCall);
-                    break;
-                case ComputeSubChannel:
-                    channelCtx.maxwellCompute.CallMethod(method, argument, lastCall);
-                    break;
-                case Inline2MemorySubChannel:
-                    channelCtx.keplerMemory.CallMethod(method, argument, lastCall);
-                    break;
-                case TwoDSubChannel:
-                    channelCtx.fermi2D.CallMethod(method, argument, lastCall);
-                    break;
-                case CopySubChannel:
-                    channelCtx.maxwellDma.CallMethod(method, argument, lastCall);
+                case SubchannelId::ThreeD:
+                    channelCtx.maxwell3D->CallMethod(method, argument);
                     break;
                 default:
-                    throw exception("Tried to call into a software subchannel: {}!", subChannel);
+                    Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
+                    break;
+            }
+        } else {
+            switch (subChannel) {
+                case SubchannelId::ThreeD:
+                    channelCtx.maxwell3D->HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
+                    break;
+                case SubchannelId::TwoD:
+                    // TODO: Fix this when we implement the 2D Engine
+                    Logger::Warn("Calling macros in the 2D engine is unimplemented!");
+                    break;
+                default:
+                    Logger::Warn("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
+                    break;
             }
         }
     }

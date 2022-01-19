@@ -6,7 +6,7 @@
 
 namespace skyline::soc::gm20b {
     ChannelContext::ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> asCtx, size_t numEntries) :
-        maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, executor)),
+        maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, macroState, executor)),
         gpfifo(state, *this, numEntries),
         executor(state),
         asCtx(std::move(asCtx)){}
