@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
@@ -9,15 +9,15 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="2.5dp"
-        android:paddingTop="10dp">
+        android:paddingTop="20dp">
 
         <TextView
             android:id="@+id/library_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
-            android:textSize="25sp"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+            android:textSize="32sp"
             tools:text="Skyline" />
 
         <TextView
@@ -25,6 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoLink="web"
+            android:paddingTop="6dp"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
             android:textSize="15sp"
@@ -34,10 +35,10 @@
             android:id="@+id/library_copyright"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="10dp"
+            android:paddingTop="4dp"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline4"
-            android:textSize="17sp"
+            android:textSize="15sp"
             tools:text="Copyright © 2019-2021\nSkyline Team and Contributors" />
 
         <TextView
@@ -47,11 +48,11 @@
             android:autoLink="web"
             android:justificationMode="inter_word"
             android:paddingHorizontal="15dp"
-            android:paddingTop="10dp"
+            android:paddingTop="15dp"
             android:paddingBottom="15dp"
             android:textAlignment="viewStart"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
             tools:text="@string/mpl2_license" />
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
