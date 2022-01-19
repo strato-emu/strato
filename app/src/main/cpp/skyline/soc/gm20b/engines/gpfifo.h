@@ -14,7 +14,7 @@ namespace skyline::soc::gm20b::engine {
     * @brief The GPFIFO engine handles managing macros and semaphores
     * @url https://github.com/NVIDIA/open-gpu-doc/blob/ab27fc22db5de0d02a4cabe08e555663b62db4d4/manuals/volta/gv100/dev_pbdma.ref.txt
     */
-    class GPFIFO : public Engine {
+    class GPFIFO {
       public:
         static constexpr u32 RegisterCount{0x40}; //!< The number of GPFIFO registers
 
@@ -168,11 +168,12 @@ namespace skyline::soc::gm20b::engine {
         static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
         #pragma pack(pop)
 
+        host1x::SyncpointSet &syncpoints;
         ChannelContext &channelCtx;
 
       public:
-        GPFIFO(const DeviceState &state, ChannelContext &channelCtx);
+        GPFIFO(host1x::SyncpointSet &syncpoints, ChannelContext &channelCtx);
 
-        void CallMethod(u32 method, u32 argument, bool lastCall);
+        void CallMethod(u32 method, u32 argument);
     };
 }

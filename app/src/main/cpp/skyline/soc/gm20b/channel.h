@@ -21,11 +21,7 @@ namespace skyline::soc::gm20b {
     struct ChannelContext {
         std::shared_ptr<AddressSpaceContext> asCtx;
         gpu::interconnect::CommandExecutor executor;
-        engine::Engine fermi2D;
         std::unique_ptr<engine::maxwell3d::Maxwell3D> maxwell3D; //!< TODO: fix this once graphics context is moved into a cpp file
-        engine::Engine maxwellCompute;
-        engine::Engine maxwellDma;
-        engine::Engine keplerMemory;
         ChannelGpfifo gpfifo;
 
         ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> asCtx, size_t numEntries);

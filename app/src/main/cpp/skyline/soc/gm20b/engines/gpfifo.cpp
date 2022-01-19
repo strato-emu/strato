@@ -6,9 +6,9 @@
 #include "gpfifo.h"
 
 namespace skyline::soc::gm20b::engine {
-    GPFIFO::GPFIFO(const DeviceState &state, ChannelContext &channelCtx) : Engine(state), channelCtx(channelCtx) {}
+    GPFIFO::GPFIFO(host1x::SyncpointSet &syncpoints, ChannelContext &channelCtx) : syncpoints(syncpoints), channelCtx(channelCtx) {}
 
-    void GPFIFO::CallMethod(u32 method, u32 argument, bool lastCall) {
+    void GPFIFO::CallMethod(u32 method, u32 argument) {
         Logger::Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
 
         registers.raw[method] = argument;
@@ -29,12 +29,12 @@ namespace skyline::soc::gm20b::engine {
                 if (action.operation == Registers::SyncpointOperation::Incr) {
                     Logger::Debug("Increment syncpoint: {}", +action.index);
                     channelCtx.executor.Execute();
-                    state.soc->host1x.syncpoints.at(action.index).Increment();
+                    syncpoints.at(action.index).Increment();
                 } else if (action.operation == Registers::SyncpointOperation::Wait) {
                     Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint.payload);
 
                     // Wait forever for another channel to increment
-                    state.soc->host1x.syncpoints.at(action.index).Wait(registers.syncpoint.payload, std::chrono::steady_clock::duration::max());
+                    syncpoints.at(action.index).Wait(registers.syncpoint.payload, std::chrono::steady_clock::duration::max());
                 }
             })
         }

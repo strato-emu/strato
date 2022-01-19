@@ -61,7 +61,7 @@ namespace skyline::soc::gm20b {
 
     ChannelGpfifo::ChannelGpfifo(const DeviceState &state, ChannelContext &channelCtx, size_t numEntries) :
         state(state),
-        gpfifoEngine(state, channelCtx),
+        gpfifoEngine(state.soc->host1x.syncpoints, channelCtx),
         channelCtx(channelCtx),
         gpEntries(numEntries),
         thread(std::thread(&ChannelGpfifo::Run, this)) {}
@@ -76,7 +76,7 @@ namespace skyline::soc::gm20b {
         Logger::Debug("Called GPU method - method: 0x{:X} argument: 0x{:X} subchannel: 0x{:X} last: {}", method, argument, subChannel, lastCall);
 
         if (method < engine::GPFIFO::RegisterCount) {
-            gpfifoEngine.CallMethod(method, argument, lastCall);
+            gpfifoEngine.CallMethod(method, argument);
         } else {
             switch (subChannel) {
                 case ThreeDSubChannel:
