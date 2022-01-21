@@ -2111,6 +2111,8 @@ namespace skyline::gpu::interconnect {
 
         /* Depth */
         vk::PipelineDepthStencilStateCreateInfo depthState{};
+        bool twoSideStencilEnabled{}; //!< If both sides of the stencil have different state
+        vk::StencilOpState stencilBack{}; //!< The back of the stencil when two-side stencil is enabled
 
         void SetDepthTestEnabled(bool enabled) {
             depthState.depthTestEnable = enabled;
@@ -2178,6 +2180,16 @@ namespace skyline::gpu::interconnect {
             depthState.stencilTestEnable = enabled;
         }
 
+        void SetStencilTwoSideEnabled(bool enabled) {
+            if (twoSideStencilEnabled == enabled) {
+                if (enabled)
+                    depthState.back = stencilBack;
+                else
+                    depthState.back = depthState.front;
+                twoSideStencilEnabled = enabled;
+            }
+        }
+
         vk::StencilOp ConvertStencilOp(maxwell3d::StencilOp op) {
             using MaxwellOp = maxwell3d::StencilOp;
             using VkOp = vk::StencilOp;
@@ -2203,58 +2215,86 @@ namespace skyline::gpu::interconnect {
 
         void SetStencilFrontFailOp(maxwell3d::StencilOp op) {
             depthState.front.failOp = ConvertStencilOp(op);
+            if (!twoSideStencilEnabled)
+                depthState.back.failOp = depthState.front.failOp;
         }
 
         void SetStencilBackFailOp(maxwell3d::StencilOp op) {
-            depthState.back.failOp = ConvertStencilOp(op);
+            stencilBack.failOp = ConvertStencilOp(op);
+            if (twoSideStencilEnabled)
+                depthState.back.failOp = stencilBack.failOp;
         }
 
         void SetStencilFrontPassOp(maxwell3d::StencilOp op) {
             depthState.front.passOp = ConvertStencilOp(op);
+            if (!twoSideStencilEnabled)
+                depthState.back.passOp = depthState.front.passOp;
         }
 
         void SetStencilBackPassOp(maxwell3d::StencilOp op) {
-            depthState.back.passOp = ConvertStencilOp(op);
+            stencilBack.passOp = ConvertStencilOp(op);
+            if (twoSideStencilEnabled)
+                depthState.back.passOp = stencilBack.passOp;
         }
 
         void SetStencilFrontDepthFailOp(maxwell3d::StencilOp op) {
             depthState.front.depthFailOp = ConvertStencilOp(op);
+            if (!twoSideStencilEnabled)
+                depthState.back.depthFailOp = depthState.front.depthFailOp;
         }
 
         void SetStencilBackDepthFailOp(maxwell3d::StencilOp op) {
-            depthState.back.depthFailOp = ConvertStencilOp(op);
+            stencilBack.depthFailOp = ConvertStencilOp(op);
+            if (twoSideStencilEnabled)
+                depthState.back.depthFailOp = stencilBack.depthFailOp;
         }
 
         void SetStencilFrontCompareOp(maxwell3d::CompareOp op) {
             depthState.front.compareOp = ConvertCompareOp(op);
+            if (!twoSideStencilEnabled)
+                depthState.back.compareOp = depthState.front.compareOp;
         }
 
         void SetStencilBackCompareOp(maxwell3d::CompareOp op) {
-            depthState.back.compareOp = ConvertCompareOp(op);
+            stencilBack.compareOp = ConvertCompareOp(op);
+            if (twoSideStencilEnabled)
+                depthState.back.compareOp = stencilBack.compareOp;
         }
 
         void SetStencilFrontCompareMask(u32 mask) {
             depthState.front.compareMask = mask;
+            if (!twoSideStencilEnabled)
+                depthState.back.compareMask = depthState.front.compareMask;
         }
 
         void SetStencilBackCompareMask(u32 mask) {
-            depthState.back.compareMask = mask;
+            stencilBack.compareMask = mask;
+            if (twoSideStencilEnabled)
+                depthState.back.compareMask = stencilBack.compareMask;
         }
 
         void SetStencilFrontWriteMask(u32 mask) {
             depthState.front.writeMask = mask;
+            if (!twoSideStencilEnabled)
+                depthState.back.writeMask = depthState.front.writeMask;
         }
 
         void SetStencilBackWriteMask(u32 mask) {
-            depthState.back.writeMask = mask;
+            stencilBack.writeMask = mask;
+            if (twoSideStencilEnabled)
+                depthState.back.writeMask = stencilBack.writeMask;
         }
 
         void SetStencilFrontReference(u32 reference) {
             depthState.front.reference = reference;
+            if (!twoSideStencilEnabled)
+                depthState.back.reference = depthState.front.reference;
         }
 
         void SetStencilBackReference(u32 reference) {
-            depthState.back.reference = reference;
+            stencilBack.reference = reference;
+            if (twoSideStencilEnabled)
+                depthState.back.reference = stencilBack.reference;
         }
 
         /* Multisampling */

@@ -205,7 +205,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x55D, TexturePool> texturePool;
 
-            Register<0x565, u32> stencilTwoSideEnable;
+            Register<0x565, u32> stencilTwoSideEnable; //!< Determines if the back-facing stencil state uses the front facing stencil state or independent stencil state
 
             struct StencilBack {
                 type::StencilOp failOp; // 0x566
@@ -227,7 +227,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x5F2, type::IndexBuffer> indexBuffer;
 
-            Register<0x5F7, u32> drawIndexFirst; //!< The the first element in the index buffer to draw
+            Register<0x5F7, u32> drawIndexFirst; //!< The first element in the index buffer to draw
             Register<0x5F8, u32> drawIndexCount; //!< The amount of elements to draw, calling this method triggers indexed drawing
 
             Register<0x61F, float> depthBiasClamp;

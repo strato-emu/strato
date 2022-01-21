@@ -278,6 +278,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetStencilFrontWriteMask(writeMask);
                 })
 
+                MAXWELL3D_CASE(stencilTwoSideEnable, {
+                    context.SetStencilTwoSideEnabled(stencilTwoSideEnable);
+                })
+
                 MAXWELL3D_STRUCT_CASE(stencilBack, failOp, {
                     context.SetStencilBackFailOp(failOp);
                 })
