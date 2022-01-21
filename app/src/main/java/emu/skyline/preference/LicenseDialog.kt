@@ -9,7 +9,6 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.view.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import emu.skyline.R
 import emu.skyline.databinding.LicenseDialogBinding
 
 /**
@@ -35,7 +34,6 @@ class LicenseDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.setBackgroundColor(requireContext().getColor(R.color.backgroundColor))
 
         binding.libraryTitle.text = requireArguments().getString(LicensePreference.LIBRARY_TITLE_ARG)
         binding.libraryUrl.text = requireArguments().getString(LicensePreference.LIBRARY_URL_ARG)

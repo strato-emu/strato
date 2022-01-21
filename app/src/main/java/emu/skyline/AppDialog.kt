@@ -70,7 +70,6 @@ class AppDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.setBackgroundColor(requireContext().getColor(R.color.backgroundColor))
 
         val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
 
