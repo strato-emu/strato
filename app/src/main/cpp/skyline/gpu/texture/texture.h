@@ -73,7 +73,7 @@ namespace skyline::gpu {
             SwizzleChannel blue{SwizzleChannel::Blue}; //!< Swizzle for the blue channel
             SwizzleChannel alpha{SwizzleChannel::Alpha}; //!< Swizzle for the alpha channel
 
-            constexpr operator vk::ComponentMapping() {
+            constexpr operator vk::ComponentMapping() const {
                 auto swizzleConvert{[](SwizzleChannel channel) {
                     switch (channel) {
                         case SwizzleChannel::Zero:

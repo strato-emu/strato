@@ -74,10 +74,10 @@ namespace skyline::gpu::format {
     FORMAT(B10G11R11Float, 32, eB10G11R11UfloatPack32);
     FORMAT_NORM_INT_SRGB(R8G8B8A8, 32, eR8G8B8A8);
     FORMAT_NORM_INT_SRGB(G8B8A8R8, 32, eB8G8R8A8, .swizzle = {
-        .blue = swc::Green,
-        .green = swc::Blue,
-        .red = swc::Alpha,
-        .alpha = swc::Red
+        .blue = swc::Alpha,
+        .green = swc::Red,
+        .red = swc::Green,
+        .alpha = swc::Blue
     });
     FORMAT_NORM_INT_SRGB(B8G8R8A8, 32, eB8G8R8A8);
     FORMAT_SUFF_NORM_INT(A2B10G10R10, 32, eA2B10G10R10, Pack32);
