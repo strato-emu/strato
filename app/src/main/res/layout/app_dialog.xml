@@ -14,7 +14,7 @@
         android:layout_height="150dp"
         android:contentDescription="@string/icon"
         android:focusable="false"
-        app:shapeAppearanceOverlay="@style/RoundedAppImage"
+        app:shapeAppearance="?attr/shapeAppearanceMediumComponent"
         tools:src="@drawable/default_icon" />
 
     <androidx.constraintlayout.widget.ConstraintLayout

@@ -9,7 +9,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/card_content_padding">
+        android:padding="@dimen/cornerRadiusMedium">
 
         <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/radio_button"
