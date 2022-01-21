@@ -3,7 +3,7 @@
 
     <style name="RoundedAppImage">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">6dp</item>
+        <item name="cornerSize">@dimen/corner_radius</item>
     </style>
 
     <style name="ChipChoice.Material">

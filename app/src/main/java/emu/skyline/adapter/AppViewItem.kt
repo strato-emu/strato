@@ -97,6 +97,10 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.textTitle.text = item.title
         binding.textVersion.text = item.version ?: item.loaderResultString(binding.root.context)
         binding.textAuthor.text = item.author
+        // Make text views selected for marquee to work
+        binding.textTitle.isSelected = true
+        binding.textVersion.isSelected = true
+        binding.textAuthor.isSelected = true
 
         binding.icon.setImageBitmap(item.icon ?: missingIcon)
 

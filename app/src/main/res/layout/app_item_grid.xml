@@ -35,8 +35,9 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
+        android:textAppearance="?android:attr/textAppearanceListItem"
         android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp"
+        android:textSize="14sp"
         tools:text="Title" />
 
     <TextView
@@ -48,6 +49,8 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
+        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="12sp"
         tools:text="Version" />
 
@@ -61,6 +64,8 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
+        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="12sp"
-        tools:text="Subtitle" />
+        tools:text="Author" />
 </LinearLayout>

@@ -3,4 +3,5 @@
     <dimen name="grid_padding">8dp</dimen>
     <dimen name="onScreenItemHorizontalMargin">10dp</dimen>
     <dimen name="card_content_padding">12dp</dimen>
+    <dimen name="corner_radius">8dp</dimen>
 </resources>
