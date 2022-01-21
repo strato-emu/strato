@@ -166,6 +166,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x4E1, StencilFront> stencilFront;
 
+            struct WindowOriginMode {
+                bool isOriginLowerLeft : 1;
+                u8 _pad_ : 3;
+                bool flipFrontFace : 1;
+            };
+            Register<0x4EB, WindowOriginMode> windowOriginMode;
+
             Register<0x4EC, float> lineWidthSmooth;
             Register<0x4ED, float> lineWidthAliased;
 

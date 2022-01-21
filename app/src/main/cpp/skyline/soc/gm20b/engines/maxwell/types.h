@@ -176,7 +176,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             NegativeW = 7,
         };
 
-        struct {
+        ENUM_STRING(Swizzle, {
+            ENUM_CASE_PAIR(PositiveX, "+X");
+            ENUM_CASE_PAIR(NegativeX, "-X");
+            ENUM_CASE_PAIR(PositiveY, "+Y");
+            ENUM_CASE_PAIR(NegativeY, "-Y");
+            ENUM_CASE_PAIR(PositiveZ, "+Z");
+            ENUM_CASE_PAIR(NegativeZ, "-Z");
+            ENUM_CASE_PAIR(PositiveW, "+W");
+            ENUM_CASE_PAIR(NegativeW, "-W");
+        })
+
+        struct Swizzles {
             Swizzle x : 3;
             u8 _pad0_ : 1;
             Swizzle y : 3;

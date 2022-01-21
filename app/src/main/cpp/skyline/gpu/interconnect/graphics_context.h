@@ -365,6 +365,8 @@ namespace skyline::gpu::interconnect {
 
         /* Viewport */
       private:
+        bool viewportOriginLowerLeft{}; //!< If the viewport origin follows the lower left convention (OpenGL) as opposed to upper left (Vulkan/Direct3D)
+        std::array<bool, maxwell3d::ViewportCount> viewportsFlipY{}; //!< If the Y axis of a viewport has been flipped via a viewport swizzle
         std::array<vk::Viewport, maxwell3d::ViewportCount> viewports;
         std::array<vk::Rect2D, maxwell3d::ViewportCount> scissors; //!< The scissors applied to viewports/render targets for masking writes during draws or clears
         constexpr static vk::Rect2D DefaultScissor{
@@ -387,12 +389,44 @@ namespace skyline::gpu::interconnect {
             auto &viewport{viewports.at(index)};
             viewport.y = translate - scale; // Counteract the addition of the half of the height (p_y/2 is center) to the host translation (o_y)
             viewport.height = scale * 2.0f; // Counteract the division of the height (p_y) by 2 for the host scale
+            if (viewportOriginLowerLeft ^ viewportsFlipY[index]) {
+                // Flip the viewport given that the viewport origin is lower left or the viewport Y has been flipped via a swizzle but not if both are active at the same time
+                viewport.y += viewport.height;
+                viewport.height = -viewport.height;
+            }
         }
 
         void SetViewportZ(size_t index, float scale, float translate) {
             auto &viewport{viewports.at(index)};
             viewport.minDepth = translate; // minDepth (o_z) directly corresponds to the host translation
             viewport.maxDepth = scale + translate; // Counteract the subtraction of the maxDepth (p_z - o_z) by minDepth (o_z) for the host scale
+        }
+
+        void SetViewportSwizzle(size_t index, maxwell3d::ViewportTransform::Swizzle x, maxwell3d::ViewportTransform::Swizzle y, maxwell3d::ViewportTransform::Swizzle z, maxwell3d::ViewportTransform::Swizzle w) {
+            using Swizzle = maxwell3d::ViewportTransform::Swizzle;
+            if (x != Swizzle::PositiveX && y != Swizzle::PositiveY && y != Swizzle::NegativeY && z != Swizzle::PositiveZ && w != Swizzle::PositiveW)
+                throw exception("Unsupported viewport swizzle: {}x{}x{}", maxwell3d::ViewportTransform::ToString(x), maxwell3d::ViewportTransform::ToString(y), maxwell3d::ViewportTransform::ToString(z));
+
+            bool shouldFlipY{y == Swizzle::NegativeY};
+
+            auto &viewportFlipY{viewportsFlipY[index]};
+            if (viewportFlipY != shouldFlipY) {
+                auto &viewport{viewports[index]};
+                viewport.y += viewport.height;
+                viewport.height = -viewport.height;
+
+                viewportFlipY = shouldFlipY;
+            }
+        }
+
+        void SetViewportOrigin(bool isLowerLeft) {
+            if (viewportOriginLowerLeft != isLowerLeft) {
+                for (auto &viewport : viewports) {
+                    viewport.y += viewport.height;
+                    viewport.height = -viewport.height;
+                }
+                viewportOriginLowerLeft = isLowerLeft;
+            }
         }
 
         void SetScissor(size_t index, std::optional<maxwell3d::Scissor> scissor) {

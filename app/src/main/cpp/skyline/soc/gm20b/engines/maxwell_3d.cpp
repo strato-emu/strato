@@ -132,7 +132,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetDepthRenderTargetArrayMode(depthTargetArrayMode);
                 })
 
-                #define VIEWPORT_TRANSFORM_CALLBACKS(z, index, data)                                      \
+                #define VIEWPORT_TRANSFORM_CALLBACKS(_z, index, data)                                      \
                 MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                          \
                     context.SetViewportX(index, scaleX, registers.viewportTransforms[index].translateX);  \
                 })                                                                                        \
@@ -150,6 +150,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })                                                                                        \
                 MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, translateZ, {                      \
                     context.SetViewportZ(index, registers.viewportTransforms[index].scaleZ, translateZ);  \
+                })                                                                                        \
+                MAXWELL3D_ARRAY_STRUCT_CASE(viewportTransforms, index, swizzles, {                        \
+                    context.SetViewportSwizzle(index, swizzles.x, swizzles.y, swizzles.z, swizzles.w);    \
                 })
 
                 BOOST_PP_REPEAT(16, VIEWPORT_TRANSFORM_CALLBACKS, 0)
@@ -301,6 +304,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 MAXWELL3D_STRUCT_CASE(stencilBackExtra, writeMask, {
                     context.SetStencilBackWriteMask(writeMask);
+                })
+
+                MAXWELL3D_CASE(windowOriginMode, {
+                    context.SetViewportOrigin(windowOriginMode.isOriginLowerLeft);
                 })
 
                 MAXWELL3D_CASE(independentBlendEnable, {
