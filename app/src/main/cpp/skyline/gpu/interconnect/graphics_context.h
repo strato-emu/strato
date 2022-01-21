@@ -1043,6 +1043,7 @@ namespace skyline::gpu::interconnect {
         vk::CullModeFlags cullMode{}; //!< The current cull mode regardless of it being enabled or disabled
         vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT provokingVertexState{};
         bool depthBiasPoint{}, depthBiasLine{}, depthBiasFill{};
+        bool frontFaceFlip{}; //!< If the front face has to be flipped from what is supplied in SetFrontFace()
 
       public:
         void SetDepthClampEnabled(bool enabled) {
@@ -1078,14 +1079,27 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetFrontFace(maxwell3d::FrontFace face) {
-            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().frontFace = [face]() {
+            rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().frontFace = [&]() {
                 switch (face) {
                     case maxwell3d::FrontFace::Clockwise:
-                        return vk::FrontFace::eClockwise;
+                        return frontFaceFlip ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;
                     case maxwell3d::FrontFace::CounterClockwise:
-                        return vk::FrontFace::eCounterClockwise;
+                        return frontFaceFlip ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
                 }
             }();
+        }
+
+        void SetFrontFaceFlipEnabled(bool enabled) {
+            if (enabled != frontFaceFlip) {
+                auto &face{rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().frontFace};
+                if (face == vk::FrontFace::eClockwise)
+                    face = vk::FrontFace::eCounterClockwise;
+                else if (face == vk::FrontFace::eCounterClockwise)
+                    face = vk::FrontFace::eClockwise;
+
+                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
+                frontFaceFlip = enabled;
+            }
         }
 
         void SetCullFace(maxwell3d::CullFace face) {

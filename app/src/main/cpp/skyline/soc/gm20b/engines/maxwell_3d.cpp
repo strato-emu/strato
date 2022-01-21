@@ -308,6 +308,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 MAXWELL3D_CASE(windowOriginMode, {
                     context.SetViewportOrigin(windowOriginMode.isOriginLowerLeft);
+                    context.SetFrontFaceFlipEnabled(windowOriginMode.flipFrontFace);
                 })
 
                 MAXWELL3D_CASE(independentBlendEnable, {
