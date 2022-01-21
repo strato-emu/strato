@@ -1686,6 +1686,8 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_NORM_INT(A2B10G10R10, A2B10G10R10, R, G, B, A);
                 TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm, R, G, B, A);
                 TIC_FORMAT_CASE_ST(Dxt1, Bc1, Unorm, R, G, B, A);
+                TIC_FORMAT_CASE_ST(Dxt23, Bc2, Unorm, R, G, B, A);
+                TIC_FORMAT_CASE_ST(Dxt45, Bc3, Unorm, R, G, B, A);
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4111R, Unorm, OneFloat, OneFloat, OneFloat, R);
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4RRR1, Unorm, R, R, R, OneFloat);
                 TIC_FORMAT_CASE_ST(BC7U, Bc7, Unorm, R, G, B, A);

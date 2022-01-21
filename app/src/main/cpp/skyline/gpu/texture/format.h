@@ -101,6 +101,16 @@ namespace skyline::gpu::format {
         .blockHeight = 4
     );
 
+    FORMAT_SUFF_UNORM_SRGB(Bc2, 64, eBc2, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+
+    FORMAT_SUFF_UNORM_SRGB(Bc3, 64, eBc3, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+
     FORMAT_SUFF_NORM(Bc4111R, 64, eBc4, Block,
        .blockWidth = 4,
        .blockHeight = 4,
