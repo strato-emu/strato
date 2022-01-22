@@ -35,7 +35,6 @@ namespace skyline::audio {
         std::lock_guard trackGuard(trackLock);
 
         audioTracks.erase(std::remove(audioTracks.begin(), audioTracks.end(), track), audioTracks.end());
-        track.reset();
     }
 
     oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {

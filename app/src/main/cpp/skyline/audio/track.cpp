@@ -16,11 +16,18 @@ namespace skyline::audio {
     }
 
     void AudioTrack::Stop() {
-        while (!identifiers.end()->released);
+        auto allSamplesReleased{[&]() {
+            std::scoped_lock lock{bufferLock};
+            return identifiers.empty() || identifiers.end()->released;
+        }};
+
+        while (!allSamplesReleased());
         playbackState = AudioOutState::Stopped;
     }
 
     bool AudioTrack::ContainsBuffer(u64 tag) {
+        std::scoped_lock lock(bufferLock);
+
         // Iterate from front of queue as we don't want released samples
         for (auto identifier{identifiers.crbegin()}; identifier != identifiers.crend(); identifier++) {
             if (identifier->released)
@@ -35,7 +42,7 @@ namespace skyline::audio {
 
     std::vector<u64> AudioTrack::GetReleasedBuffers(u32 max) {
         std::vector<u64> bufferIds;
-        std::lock_guard trackGuard(bufferLock);
+        std::scoped_lock lock(bufferLock);
 
         for (u32 index{}; index < max; index++) {
             if (identifiers.empty() || !identifiers.back().released)
@@ -48,13 +55,13 @@ namespace skyline::audio {
     }
 
     void AudioTrack::AppendBuffer(u64 tag, span<i16> buffer) {
+        std::scoped_lock lock(bufferLock);
+
         BufferIdentifier identifier{
             .released = false,
             .tag = tag,
             .finalSample = identifiers.empty() ? (buffer.size()) : (buffer.size() + identifiers.front().finalSample)
         };
-
-        std::lock_guard guard(bufferLock);
 
         identifiers.push_front(identifier);
         samples.Append(buffer);
