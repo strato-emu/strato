@@ -7,6 +7,7 @@
 namespace skyline::gpu {
     QuirkManager::QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) {
         bool hasCustomBorderColorExtension{}, hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelper{};
+        bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
         for (auto &extension : deviceExtensions) {
             #define EXT_SET(name, property)                                                          \
@@ -40,6 +41,7 @@ namespace skyline::gpu {
                 EXT_SET("VK_KHR_shader_atomic_int64", hasShaderAtomicInt64);
                 EXT_SET("VK_KHR_shader_float16_int8", hasShaderFloat16Int8Ext);
                 EXT_SET("VK_KHR_shader_float_controls", supportsFloatControls);
+                EXT_SET("VK_KHR_uniform_buffer_standard_layout", supportsUniformBufferStandardLayout);
             }
 
             #undef EXT_SET
@@ -93,6 +95,14 @@ namespace skyline::gpu {
             FEAT_SET(vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, shaderDemoteToHelperInvocation, supportsShaderDemoteToHelper)
         else
             enabledFeatures2.unlink<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>();
+
+
+        if (supportsUniformBufferStandardLayout) {
+            FEAT_SET(vk::PhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout, supportsUniformBufferStandardLayout)
+        }else {
+            enabledFeatures2.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
+            Logger::Warn("Cannot find VK_KHR_uniform_buffer_standard_layout, assuming implicit support");
+        }
 
         #undef FEAT_SET
 
