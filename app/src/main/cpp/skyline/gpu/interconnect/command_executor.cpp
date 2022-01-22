@@ -169,13 +169,13 @@ namespace skyline::gpu::interconnect {
                     buffer->SynchronizeGuestWithCycle(cycle);
 
                 commandBuffer.end();
-
                 gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
+
+                nodes.clear();
+                syncTextures.clear();
+
                 cycle = activeCommandBuffer.Reset();
             }
-
-            nodes.clear();
-            syncTextures.clear();
         }
     }
 }
