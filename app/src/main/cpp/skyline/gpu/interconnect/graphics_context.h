@@ -949,7 +949,6 @@ namespace skyline::gpu::interconnect {
                         .pImageInfo = imageInfo.data() + imageInfo.size(),
                     });
 
-                    u32 descriptorIndex{};
                     for (auto &texture : program.info.texture_descriptors) {
                         layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
                             .binding = bindingIndex++,
@@ -965,7 +964,7 @@ namespace skyline::gpu::interconnect {
                                 u32 textureIndex : 20;
                                 u32 samplerIndex : 12;
                             };
-                        } handle{constantBuffer.Read<u32>(texture.cbuf_offset + (descriptorIndex++ << texture.size_shift))};
+                        } handle{constantBuffer.Read<u32>(texture.cbuf_offset)};
 
                         auto sampler{GetSampler(handle.samplerIndex)};
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
