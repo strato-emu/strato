@@ -203,6 +203,7 @@ namespace skyline::gpu::interconnect {
                     FORMAT_SAME_CASE(B5G6R5, Unorm);
                     FORMAT_SAME_CASE(B5G5R5A1, Unorm);
                     FORMAT_SAME_INT_FLOAT_CASE(R32);
+                    FORMAT_SAME_CASE(R11G11B10, Float);
                     FORMAT_SAME_NORM_INT_FLOAT_CASE(R16G16);
                     FORMAT_SAME_CASE(R8G8B8A8, Unorm);
                     FORMAT_SAME_CASE(R8G8B8A8, Srgb);
@@ -253,6 +254,8 @@ namespace skyline::gpu::interconnect {
                         return format::D32Float;
                     case MaxwellDepthRtFormat::S8D24Unorm:
                         return format::S8D24Unorm;
+                    case MaxwellDepthRtFormat::D24S8Unorm:
+                        return format::D24S8Unorm;
                     default:
                         throw exception("Cannot translate the supplied depth RT format: 0x{:X}", static_cast<u32>(format));
                 }

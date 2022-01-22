@@ -72,6 +72,11 @@ namespace skyline::gpu::format {
     FORMAT_INT_FLOAT(R32, 32, eR32);
     FORMAT_NORM_INT_FLOAT(R16G16, 32, eR16G16);
     FORMAT(B10G11R11Float, 32, eB10G11R11UfloatPack32);
+    FORMAT(R11G11B10Float, 32, eB10G11R11UfloatPack32, .swizzle = {
+        .red = swc::Blue,
+        .green = swc::Green,
+        .blue = swc::Red,
+   });
     FORMAT_NORM_INT_SRGB(R8G8B8A8, 32, eR8G8B8A8);
     FORMAT_NORM_INT_SRGB(G8B8A8R8, 32, eB8G8R8A8, .swizzle = {
         .blue = swc::Alpha,
@@ -149,6 +154,9 @@ namespace skyline::gpu::format {
     FORMAT(S8D24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
     }); // TODO: Swizzle Depth/Stencil
+    FORMAT(D24S8Unorm, 32, eD24UnormS8Uint, .vkAspect = {
+        vka::eStencil | vka::eDepth
+    });
 
     #undef FORMAT
     #undef FORMAT_SUFF_UNORM_SRGB
