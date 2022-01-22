@@ -67,7 +67,7 @@ namespace skyline::gpu::interconnect {
             for (auto &rtBlendState : independentRtBlendState)
                 rtBlendState.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
-            if (!gpu.quirks.supportsLastProvokingVertex)
+            if (!gpu.traits.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
         }
 
@@ -1121,7 +1121,7 @@ namespace skyline::gpu::interconnect {
 
         void SetProvokingVertex(bool isLast) {
             if (isLast) {
-                if (!gpu.quirks.supportsLastProvokingVertex)
+                if (!gpu.traits.supportsLastProvokingVertex)
                     Logger::Warn("Cannot set provoking vertex to last without host GPU support");
                 rasterizerState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = vk::ProvokingVertexModeEXT::eLastVertex;
             } else {
@@ -1167,7 +1167,7 @@ namespace skyline::gpu::interconnect {
 
       public:
         void SetBlendLogicOpEnable(bool enabled) {
-            if (!gpu.quirks.supportsLogicOp && enabled) {
+            if (!gpu.traits.supportsLogicOp && enabled) {
                 Logger::Warn("Cannot enable framebuffer logical operation without host GPU support");
                 return;
             }
@@ -1468,9 +1468,9 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetVertexBufferDivisor(u32 index, u32 divisor) {
-            if (!gpu.quirks.supportsVertexAttributeDivisor)
+            if (!gpu.traits.supportsVertexAttributeDivisor)
                 Logger::Warn("Cannot set vertex attribute divisor without host GPU support");
-            else if (divisor == 0 && !gpu.quirks.supportsVertexAttributeZeroDivisor)
+            else if (divisor == 0 && !gpu.traits.supportsVertexAttributeZeroDivisor)
                 Logger::Warn("Cannot set vertex attribute divisor to zero without host GPU support");
             vertexBuffers[index].bindingDivisorDescription.divisor = divisor;
         }
@@ -2007,7 +2007,7 @@ namespace skyline::gpu::interconnect {
 
             auto convertAddressModeWithCheck{[&](TextureSamplerControl::AddressMode mode) {
                 auto vkMode{ConvertSamplerAddressMode(mode)};
-                if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !gpu.quirks.supportsSamplerMirrorClampToEdge) [[unlikely]] {
+                if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !gpu.traits.supportsSamplerMirrorClampToEdge) [[unlikely]] {
                     Logger::Warn("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
                     return vk::SamplerAddressMode::eClampToEdge; // We use a normal clamp to edge to approximate it
                 }
@@ -2039,11 +2039,11 @@ namespace skyline::gpu::interconnect {
                 },
             };
 
-            if (!gpu.quirks.supportsSamplerReductionMode)
+            if (!gpu.traits.supportsSamplerReductionMode)
                 samplerInfo.unlink<vk::SamplerReductionModeCreateInfoEXT>();
 
             vk::BorderColor &borderColor{samplerInfo.get<vk::SamplerCreateInfo>().borderColor};
-            if (gpu.quirks.supportsCustomBorderColor) {
+            if (gpu.traits.supportsCustomBorderColor) {
                 borderColor = ConvertBorderColorWithCustom(samplerControl.borderColorR, samplerControl.borderColorG, samplerControl.borderColorB, samplerControl.borderColorA);
                 if (borderColor != vk::BorderColor::eFloatCustomEXT)
                     samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
@@ -2090,7 +2090,7 @@ namespace skyline::gpu::interconnect {
                 }
             }();
 
-            if (indexBuffer.type == vk::IndexType::eUint8EXT && !gpu.quirks.supportsUint8Indices)
+            if (indexBuffer.type == vk::IndexType::eUint8EXT && !gpu.traits.supportsUint8Indices)
                 throw exception("Cannot use U8 index buffer without host GPU support");
 
             indexBuffer.view.reset();
@@ -2395,7 +2395,7 @@ namespace skyline::gpu::interconnect {
             auto storage{std::make_shared<Storage>(std::move(pipelineLayout), std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.quirks.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, storage = std::move(storage), supportsVertexAttributeDivisor = gpu.quirks.supportsVertexAttributeDivisor, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, storage = std::move(storage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
                     vk::PipelineVertexInputStateCreateInfo{
                         .pVertexBindingDescriptions = vertexBindingDescriptions.data(),

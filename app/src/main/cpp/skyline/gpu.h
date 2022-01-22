@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "gpu/quirk_manager.h"
+#include "gpu/trait_manager.h"
 #include "gpu/memory_manager.h"
 #include "gpu/command_scheduler.h"
 #include "gpu/presentation_engine.h"
@@ -25,7 +25,7 @@ namespace skyline::gpu {
         vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into 'GPU::DebugCallback'
         vk::raii::PhysicalDevice vkPhysicalDevice;
         u32 vkQueueFamilyIndex{};
-        QuirkManager quirks;
+        TraitManager traits;
         vk::raii::Device vkDevice;
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations

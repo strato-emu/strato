@@ -8,9 +8,9 @@
 
 namespace skyline::gpu {
     /**
-     * @brief Checks and stores all the quirks of the host GPU discovered at runtime
+     * @brief Checks and stores all the traits of the host GPU discovered at runtime
      */
-    class QuirkManager {
+    class TraitManager {
       public:
         bool supportsUint8Indices{}; //!< If the device supports using uint8 indices in index buffers (with VK_EXT_index_type_uint8)
         bool supportsSamplerMirrorClampToEdge{}; //!< If the device supports a mirrored clamp to edge as a sampler address mode (with VK_KHR_sampler_mirror_clamp_to_edge)
@@ -35,13 +35,13 @@ namespace skyline::gpu {
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
-        QuirkManager() = default;
+        TraitManager() = default;
 
         using DeviceProperties2 = vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>;
 
         using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>;
 
-        QuirkManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
+        TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
 
         /**
          * @brief Applies driver specific binary patches to the driver (e.g. BCeNabler)
@@ -49,7 +49,7 @@ namespace skyline::gpu {
         void ApplyDriverPatches(const vk::raii::Context &context);
 
         /**
-         * @return A summary of all the GPU quirks as a human-readable string
+         * @return A summary of all the GPU traits as a human-readable string
          */
         std::string Summary();
     };
