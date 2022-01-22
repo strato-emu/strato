@@ -64,7 +64,7 @@ namespace skyline::gpu::interconnect::node {
         vk::Rect2D renderArea;
         std::vector<vk::ClearValue> clearValues;
 
-        RenderPassNode(vk::Rect2D renderArea) : storage(std::make_shared<Storage>()), renderArea(renderArea) {}
+        RenderPassNode(vk::Rect2D renderArea);
 
         /**
          * @note Any preservation of attachments from previous subpasses is automatically handled by this

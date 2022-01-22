@@ -4,6 +4,20 @@
 #include "command_nodes.h"
 
 namespace skyline::gpu::interconnect::node {
+    RenderPassNode::RenderPassNode(vk::Rect2D renderArea) : subpassDependencies(
+        {
+            // We assume all past commands have been executed when this RP starts
+            vk::SubpassDependency{
+                .srcSubpass = VK_SUBPASS_EXTERNAL,
+                .dstSubpass = 0,
+                .srcStageMask = vk::PipelineStageFlagBits::eAllGraphics,
+                .dstStageMask = vk::PipelineStageFlagBits::eAllGraphics,
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+            }
+        }
+    ), storage(std::make_shared<Storage>()), renderArea(renderArea) {}
+
     RenderPassNode::Storage::~Storage() {
         if (device) {
             if (framebuffer)
