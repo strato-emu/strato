@@ -2358,7 +2358,8 @@ namespace skyline::gpu::interconnect {
                 if (vertexBufferView) {
                     auto &vertexBuffer{vertexBuffers[index]};
                     vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
-                    vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
+                    if (vertexBuffer.bindingDescription.inputRate == vk::VertexInputRate::eInstance)
+                        vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
 
                     std::scoped_lock vertexBufferLock(*vertexBufferView);
                     vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
@@ -2417,7 +2418,7 @@ namespace skyline::gpu::interconnect {
                     }
                 };
 
-                if (!supportsVertexAttributeDivisor)
+                if (!supportsVertexAttributeDivisor || vertexBindingDivisorsDescriptions.empty())
                     vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
 
                 vk::PipelineViewportStateCreateInfo viewportState{
