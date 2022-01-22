@@ -41,7 +41,7 @@ namespace skyline::service::audio {
     }
 
     Result IAudioDevice::GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(constant::ChannelCount);
+        response.Push<u32>(constant::StereoChannelCount);
         return {};
     }
 }

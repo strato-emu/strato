@@ -79,13 +79,13 @@ namespace skyline::service::audio::IAudioRenderer {
         if (sampleRate != constant::SampleRate)
             samples = resampler.ResampleBuffer(samples, static_cast<double>(sampleRate) / constant::SampleRate, channelCount);
 
-        if (channelCount == 1 && constant::ChannelCount != channelCount) {
+        if (channelCount == 1 && constant::StereoChannelCount != channelCount) {
             auto originalSize{samples.size()};
-            samples.resize((originalSize / channelCount) * constant::ChannelCount);
+            samples.resize((originalSize / channelCount) * constant::StereoChannelCount);
 
             for (auto monoIndex{originalSize - 1}, targetIndex{samples.size()}; monoIndex > 0; monoIndex--) {
                 auto sample{samples[monoIndex]};
-                for (u8 i{}; i < constant::ChannelCount; i++)
+                for (u8 i{}; i < constant::StereoChannelCount; i++)
                     samples[--targetIndex] = sample;
             }
         }
@@ -105,9 +105,9 @@ namespace skyline::service::audio::IAudioRenderer {
         }
 
         outOffset = sampleOffset;
-        outSize = std::min(maxSamples * constant::ChannelCount, static_cast<u32>(samples.size() - sampleOffset));
+        outSize = std::min(maxSamples * constant::StereoChannelCount, static_cast<u32>(samples.size() - sampleOffset));
 
-        output.playedSamplesCount += outSize / constant::ChannelCount;
+        output.playedSamplesCount += outSize / constant::StereoChannelCount;
         sampleOffset += outSize;
 
         if (sampleOffset == samples.size()) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "downmixer.h"
 #include "track.h"
 
 namespace skyline::audio {
@@ -11,7 +12,7 @@ namespace skyline::audio {
         if (sampleRate != constant::SampleRate)
             throw exception("Unsupported audio sample rate: {}", sampleRate);
 
-        if (channelCount != constant::ChannelCount)
+        if (channelCount != constant::StereoChannelCount && channelCount != constant::SurroundChannelCount)
             throw exception("Unsupported quantity of audio channels: {}", channelCount);
     }
 
@@ -64,7 +65,13 @@ namespace skyline::audio {
         };
 
         identifiers.push_front(identifier);
-        samples.Append(buffer);
+
+        if (channelCount == constant::SurroundChannelCount) {
+            auto stereoBuffer{DownMix(buffer.cast<Surround51Sample>())};
+            samples.Append(span(stereoBuffer).cast<i16>());
+        } else {
+            samples.Append(buffer);
+        }
     }
 
     void AudioTrack::CheckReleasedBuffers() {

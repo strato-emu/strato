@@ -20,7 +20,7 @@ namespace skyline::audio {
         u32 sampleRate;
 
       public:
-        CircularBuffer<i16, constant::SampleRate * constant::ChannelCount * 10> samples; //!< A circular buffer with all appended audio samples
+        CircularBuffer<i16, constant::SampleRate * constant::StereoChannelCount * 10> samples; //!< A circular buffer with all appended audio samples
         std::mutex bufferLock; //!< Synchronizes appending to audio buffers
 
         AudioOutState playbackState{AudioOutState::Stopped}; //!< The current state of playback

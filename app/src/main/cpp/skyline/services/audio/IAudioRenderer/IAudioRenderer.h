@@ -69,7 +69,7 @@ namespace skyline {
             std::vector<MemoryPool> memoryPools;
             std::vector<Effect> effects;
             std::vector<Voice> voices;
-            std::array<i16, constant::MixBufferSize * constant::ChannelCount> sampleBuffer{}; //!< The final output data that is appended to the stream
+            std::array<i16, constant::MixBufferSize * constant::StereoChannelCount> sampleBuffer{}; //!< The final output data that is appended to the stream
             skyline::audio::AudioOutState playbackState{skyline::audio::AudioOutState::Stopped};
 
             /**

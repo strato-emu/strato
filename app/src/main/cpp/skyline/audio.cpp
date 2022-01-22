@@ -5,7 +5,7 @@
 
 namespace skyline::audio {
     Audio::Audio(const DeviceState &state) : oboe::AudioStreamCallback() {
-        builder.setChannelCount(constant::ChannelCount);
+        builder.setChannelCount(constant::StereoChannelCount);
         builder.setSampleRate(constant::SampleRate);
         builder.setFormat(constant::PcmFormat);
         builder.setFramesPerCallback(constant::MixBufferSize);

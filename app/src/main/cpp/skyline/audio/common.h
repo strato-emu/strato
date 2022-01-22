@@ -9,9 +9,10 @@
 namespace skyline {
     namespace constant {
         constexpr u16 SampleRate{48000}; //!< The common sampling rate to use for audio output
-        constexpr u8 ChannelCount{2}; //!< The common amount of channels to use for audio output
-        constexpr u16 MixBufferSize{960}; //!< The size of the mix buffer by default
-        constexpr auto PcmFormat{oboe::AudioFormat::I16}; //!< The common PCM data format to use for audio output
+        constexpr u8 StereoChannelCount{2}; //!< Channels to use for stereo audio output
+        constexpr u8 SurroundChannelCount{6}; //!< Channels to use for surround audio output (downsampled by backend)
+        constexpr u16 MixBufferSize{960}; //!< Default size of the audren mix buffer
+        constexpr auto PcmFormat{oboe::AudioFormat::I16}; //!< PCM data format to use for audio output
     }
 
     namespace audio {

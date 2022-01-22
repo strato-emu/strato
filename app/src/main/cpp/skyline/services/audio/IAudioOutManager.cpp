@@ -14,20 +14,26 @@ namespace skyline::service::audio {
     }
 
     Result IAudioOutManager::OpenAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto sampleRate{request.Pop<u32>()};
-        auto channelCount{static_cast<u16>(request.Pop<u32>())};
+        struct AudioInputParams {
+            u32 sampleRate;
+            u16 channelCount;
+            u16 _pad_;
+        };
+        auto &inputParams{request.Pop<AudioInputParams>()};
 
-        Logger::Debug("Opening an IAudioOut with sample rate: {}, channel count: {}", sampleRate, channelCount);
-
-        sampleRate = sampleRate ? sampleRate : constant::SampleRate;
-        channelCount = channelCount ? channelCount : constant::ChannelCount;
-        manager.RegisterService(std::make_shared<IAudioOut>(state, manager, channelCount, sampleRate), session, response);
-
-        response.Push<u32>(sampleRate);
-        response.Push<u16>(channelCount);
-        response.Push<u16>(0);
+        inputParams.sampleRate = inputParams.sampleRate ? inputParams.sampleRate : constant::SampleRate;
+        inputParams.channelCount = inputParams.channelCount <= constant::StereoChannelCount ? constant::StereoChannelCount : constant::SurroundChannelCount;
+        inputParams._pad_ = 0;
+        Logger::Debug("Opening an IAudioOut with sample rate: {}, channel count: {}", inputParams.sampleRate, inputParams.channelCount);
+        manager.RegisterService(std::make_shared<IAudioOut>(state, manager, inputParams.channelCount, inputParams.sampleRate), session, response);
+        response.Push<AudioInputParams>(inputParams);
         response.Push(static_cast<u32>(skyline::audio::AudioFormat::Int16));
         response.Push(static_cast<u32>(skyline::audio::AudioOutState::Stopped));
+
+        if (request.inputBuf.at(0).empty() || !request.inputBuf.at(0)[0])
+            request.outputBuf.at(0).copy_from(constant::DefaultAudioOutName);
+        else
+            request.outputBuf.at(0).copy_from(request.inputBuf.at(0));
 
         return {};
     }
