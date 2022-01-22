@@ -144,6 +144,7 @@ namespace skyline::gpu::format {
     );
 
     // Depth/Stencil Formats
+    FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth);
     FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth);
     FORMAT(S8D24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth

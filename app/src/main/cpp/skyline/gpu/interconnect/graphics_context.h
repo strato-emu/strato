@@ -247,6 +247,8 @@ namespace skyline::gpu::interconnect {
             depthRenderTarget.guest.format = [&]() -> texture::Format {
                 using MaxwellDepthRtFormat = maxwell3d::DepthRtFormat;
                 switch (format) {
+                    case MaxwellDepthRtFormat::D16Unorm:
+                        return format::D16Unorm;
                     case MaxwellDepthRtFormat::D32Float:
                         return format::D32Float;
                     case MaxwellDepthRtFormat::S8D24Unorm:
@@ -1691,6 +1693,7 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4111R, Unorm, OneFloat, OneFloat, OneFloat, R);
                 TIC_FORMAT_CASE_ST(Dxn1, Bc4RRR1, Unorm, R, R, R, OneFloat);
                 TIC_FORMAT_CASE_ST(BC7U, Bc7, Unorm, R, G, B, A);
+                TIC_FORMAT_CASE_ST(ZF32, D32, Float, R, R, R, OneFloat);
 
                 default:
                     throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
