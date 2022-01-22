@@ -5,7 +5,7 @@
 #include "trait_manager.h"
 
 namespace skyline::gpu {
-    TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) {
+    TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) : quirks(deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties, deviceProperties2.get<vk::PhysicalDeviceDriverProperties>()) {
         bool hasCustomBorderColorExtension{}, hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelper{};
         bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
@@ -48,11 +48,13 @@ namespace skyline::gpu {
             #undef EXT_SET_V
         }
 
-        #define FEAT_SET(structName, feature, property)        \
-        if (deviceFeatures2.get<structName>().feature) {       \
-            property = true;                                   \
-            enabledFeatures2.get<structName>().feature = true; \
-        }
+        #define FEAT_SET(structName, feature, property)            \
+        do {                                                       \
+            if (deviceFeatures2.get<structName>().feature) {       \
+                property = true;                                   \
+                enabledFeatures2.get<structName>().feature = true; \
+            }                                                      \
+        } while(false);
 
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.logicOp, supportsLogicOp)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.multiViewport, supportsMultipleViewports)
@@ -96,10 +98,9 @@ namespace skyline::gpu {
         else
             enabledFeatures2.unlink<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>();
 
-
         if (supportsUniformBufferStandardLayout) {
             FEAT_SET(vk::PhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout, supportsUniformBufferStandardLayout)
-        }else {
+        } else {
             enabledFeatures2.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
             Logger::Warn("Cannot find VK_KHR_uniform_buffer_standard_layout, assuming implicit support");
         }
@@ -118,6 +119,25 @@ namespace skyline::gpu {
         return fmt::format(
             "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports Shader Invocation Demotion: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}",
             supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsShaderDemoteToHelper, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsSubgroupVote, subgroupSize
+        );
+    }
+
+    TraitManager::QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &deviceProperties, const vk::PhysicalDeviceDriverProperties &driverProperties) {
+        switch (driverProperties.driverID) {
+            case vk::DriverId::eQualcommProprietary: {
+                needsTextureBindingPadding = true;
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    std::string TraitManager::QuirkManager::Summary() {
+        return fmt::format(
+            "\n* Needs Texture Binding Padding: {}",
+            needsTextureBindingPadding
         );
     }
 

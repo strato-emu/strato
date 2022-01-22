@@ -942,18 +942,27 @@ namespace skyline::gpu::interconnect {
                 }
 
                 if (!program.info.texture_descriptors.empty()) {
-                    descriptorSetWrites.push_back(vk::WriteDescriptorSet{
-                        .dstBinding = bindingIndex,
-                        .descriptorCount = static_cast<u32>(program.info.texture_descriptors.size()),
-                        .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                        .pImageInfo = imageInfo.data() + imageInfo.size(),
-                    });
+                    if (!gpu.traits.quirks.needsTextureBindingPadding)
+                        descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                            .dstBinding = bindingIndex,
+                            .descriptorCount = static_cast<u32>(program.info.texture_descriptors.size()),
+                            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                            .pImageInfo = imageInfo.data() + imageInfo.size(),
+                        });
 
                     for (auto &texture : program.info.texture_descriptors) {
+                        if (gpu.traits.quirks.needsTextureBindingPadding)
+                            descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                                .dstBinding = bindingIndex,
+                                .descriptorCount = 1,
+                                .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                                .pImageInfo = imageInfo.data() + imageInfo.size(),
+                            });
+
                         layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
                             .binding = bindingIndex++,
                             .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                            .descriptorCount = 1,
+                            .descriptorCount = gpu.traits.quirks.needsTextureBindingPadding ? 1U : 2U,
                             .stageFlags = pipelineStage.vkStage,
                         });
 

@@ -35,9 +35,25 @@ namespace skyline::gpu {
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
+        /**
+         * @brief Manages a list of any vendor/device-specific errata in the host GPU
+         */
+        struct QuirkManager {
+            bool needsTextureBindingPadding{}; //!< [Adreno Proprietary] A bug that requires a padding descriptor slot for VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+
+            QuirkManager() = default;
+
+            QuirkManager(const vk::PhysicalDeviceProperties& deviceProperties, const vk::PhysicalDeviceDriverProperties& driverProperties);
+
+            /**
+             * @return A summary of all the GPU quirks as a human-readable string
+             */
+            std::string Summary();
+        } quirks;
+
         TraitManager() = default;
 
-        using DeviceProperties2 = vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>;
+        using DeviceProperties2 = vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceDriverProperties, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>;
 
         using DeviceFeatures2 = vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>;
 
