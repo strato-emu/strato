@@ -4,4 +4,5 @@
     <color name="backgroundColor">#FF121212</color>
     <color name="backgroundColorVariant">#323232</color>
     <color name="dividerColor">@android:color/white</color>
+    <color name="onBackgroundLight">#1AFFFFFF</color>
 </resources>

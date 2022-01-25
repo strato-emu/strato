@@ -8,8 +8,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="2.5dp"
-        android:paddingTop="20dp">
+        android:paddingHorizontal="2.5dp">
+
+        <emu.skyline.views.DragIndicatorView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="8dp" />
 
         <TextView
             android:id="@+id/library_title"
@@ -29,6 +33,7 @@
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
             android:textSize="15sp"
+            tools:ignore="TouchTargetSizeCheck"
             tools:text="https://github.com/skyline-emu/skyline" />
 
         <TextView
