@@ -58,48 +58,6 @@ namespace skyline::gpu {
             }
         };
 
-        enum class SwizzleChannel : u8 {
-            Zero, //!< Write 0 to the channel
-            One, //!< Write 1 to the channel
-            Red, //!< Red color channel
-            Green, //!< Green color channel
-            Blue, //!< Blue color channel
-            Alpha, //!< Alpha channel
-        };
-
-        struct Swizzle {
-            SwizzleChannel red{SwizzleChannel::Red}; //!< Swizzle for the red channel
-            SwizzleChannel green{SwizzleChannel::Green}; //!< Swizzle for the green channel
-            SwizzleChannel blue{SwizzleChannel::Blue}; //!< Swizzle for the blue channel
-            SwizzleChannel alpha{SwizzleChannel::Alpha}; //!< Swizzle for the alpha channel
-
-            constexpr operator vk::ComponentMapping() const {
-                auto swizzleConvert{[](SwizzleChannel channel) {
-                    switch (channel) {
-                        case SwizzleChannel::Zero:
-                            return vk::ComponentSwizzle::eZero;
-                        case SwizzleChannel::One:
-                            return vk::ComponentSwizzle::eOne;
-                        case SwizzleChannel::Red:
-                            return vk::ComponentSwizzle::eR;
-                        case SwizzleChannel::Green:
-                            return vk::ComponentSwizzle::eG;
-                        case SwizzleChannel::Blue:
-                            return vk::ComponentSwizzle::eB;
-                        case SwizzleChannel::Alpha:
-                            return vk::ComponentSwizzle::eA;
-                    }
-                }};
-
-                return vk::ComponentMapping{
-                    .r = swizzleConvert(red),
-                    .g = swizzleConvert(green),
-                    .b = swizzleConvert(blue),
-                    .a = swizzleConvert(alpha),
-                };
-            }
-        };
-
         /**
          * @note Blocks refers to the atomic unit of a compressed format (IE: The minimum amount of data that can be decompressed)
          */
@@ -107,9 +65,9 @@ namespace skyline::gpu {
             u8 bpb{}; //!< Bytes Per Block, this is used instead of bytes per pixel as that might not be a whole number for compressed formats
             vk::Format vkFormat{vk::Format::eUndefined};
             vk::ImageAspectFlags vkAspect{vk::ImageAspectFlagBits::eColor};
-            Swizzle swizzle{};
             u16 blockHeight{1}; //!< The height of a block in pixels
             u16 blockWidth{1}; //!< The width of a block in pixels
+            bool swapRedBlue{}; //!< Swap the red and blue channels, ignored on depth formats
 
             constexpr bool IsCompressed() const {
                 return (blockHeight != 1) || (blockWidth != 1);
@@ -153,6 +111,10 @@ namespace skyline::gpu {
              */
             constexpr bool IsCompatible(const FormatBase &other) const {
                 return bpb == other.bpb && blockHeight == other.blockHeight && blockWidth == other.blockWidth;
+            }
+
+            constexpr bool IsDepthOrStencil() const {
+                return bool(vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil));
             }
         };
 
@@ -262,6 +224,7 @@ namespace skyline::gpu {
         u16 baseArrayLayer{};
         u16 layerCount{};
         u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available, GetLayerSize() should be used to retrieve this value
+        vk::ComponentMapping swizzle{}; //!< Component swizzle derived from format requirements and the guest supplied swizzle
 
         GuestTexture() {}
 

@@ -203,15 +203,15 @@ namespace skyline::gpu::interconnect {
                     FORMAT_SAME_CASE(B5G6R5, Unorm);
                     FORMAT_SAME_CASE(B5G5R5A1, Unorm);
                     FORMAT_SAME_INT_FLOAT_CASE(R32);
-                    FORMAT_SAME_CASE(R11G11B10, Float);
+                    FORMAT_SAME_CASE(B10G11R11, Float);
                     FORMAT_SAME_NORM_INT_FLOAT_CASE(R16G16);
                     FORMAT_SAME_CASE(R8G8B8A8, Unorm);
                     FORMAT_SAME_CASE(R8G8B8A8, Srgb);
                     FORMAT_NORM_INT_SRGB_CASE(R8G8B8X8, R8G8B8A8);
                     FORMAT_SAME_CASE(B8G8R8A8, Unorm);
                     FORMAT_SAME_CASE(B8G8R8A8, Srgb);
-                    FORMAT_SAME_CASE(A2R10G10B10, Unorm);
-                    FORMAT_SAME_CASE(A2R10G10B10, Uint);
+                    FORMAT_SAME_CASE(A2B10G10R10, Unorm);
+                    FORMAT_SAME_CASE(A2B10G10R10, Uint);
                     FORMAT_SAME_INT_CASE(R32G32);
                     FORMAT_SAME_CASE(R32G32, Float);
                     FORMAT_SAME_CASE(R16G16B16A16, Float);
@@ -253,9 +253,11 @@ namespace skyline::gpu::interconnect {
                     case MaxwellDepthRtFormat::D32Float:
                         return format::D32Float;
                     case MaxwellDepthRtFormat::S8D24Unorm:
-                        return format::S8D24Unorm;
+                        return format::S8UintD24Unorm;
                     case MaxwellDepthRtFormat::D24S8Unorm:
-                        return format::D24S8Unorm;
+                        return format::D24UnormS8Uint;
+                    case MaxwellDepthRtFormat::D32S8X24Float:
+                        return format::D32FloatS8Uint;
                     default:
                         throw exception("Cannot translate the supplied depth RT format: 0x{:X}", static_cast<u32>(format));
                 }
@@ -1704,55 +1706,77 @@ namespace skyline::gpu::interconnect {
       private:
         texture::Format ConvertTicFormat(TextureImageControl::FormatWord format) {
             using TIC = TextureImageControl;
-            #define TIC_FORMAT(format, componentR, componentG, componentB, componentA, swizzleX, swizzleY, swizzleZ, swizzleW) \
-                TIC::FormatWord{TIC::ImageFormat::format,                                                                                                           \
-                                TIC::ImageComponent::componentR, TIC::ImageComponent::componentG, TIC::ImageComponent::componentB, TIC::ImageComponent::componentA, \
-                                TIC::ImageSwizzle::swizzleX, TIC::ImageSwizzle::swizzleY, TIC::ImageSwizzle::swizzleZ, TIC::ImageSwizzle::swizzleW}.Raw()
+            #define TIC_FORMAT(format, componentR, componentG, componentB, componentA) \
+                TIC::FormatWord{TIC::ImageFormat::format,                              \
+                                TIC::ImageComponent::componentR, TIC::ImageComponent::componentG, TIC::ImageComponent::componentB, TIC::ImageComponent::componentA}.Raw()
 
             // For formats where all components are of the same type
-            #define TIC_FORMAT_ST(format, component, swizzleX, swizzleY, swizzleZ, swizzleW) \
-                TIC_FORMAT(format, component, component, component, component, swizzleX, swizzleY, swizzleZ, swizzleW)
+            #define TIC_FORMAT_ST(format, component) \
+                TIC_FORMAT(format, component, component, component, component)
 
-            #define TIC_FORMAT_CASE(ticFormat, skFormat, componentR, componentG, componentB, componentA, swizzleX, swizzleY, swizzleZ, swizzleW)  \
-                case TIC_FORMAT(ticFormat, component, component, component, component, swizzleX, swizzleY, swizzleZ, swizzleW): \
+            #define TIC_FORMAT_CASE(ticFormat, skFormat, componentR, componentG, componentB, componentA)  \
+                case TIC_FORMAT(ticFormat, componentR, componentG, componentB, componentA): \
                     return format::skFormat
 
-            #define TIC_FORMAT_CASE_ST(ticFormat, skFormat, component, swizzleX, swizzleY, swizzleZ, swizzleW)  \
-                case TIC_FORMAT_ST(ticFormat, component, swizzleX, swizzleY, swizzleZ, swizzleW): \
+            #define TIC_FORMAT_CASE_ST(ticFormat, skFormat, component)  \
+                case TIC_FORMAT_ST(ticFormat, component): \
                     return format::skFormat ## component
 
-            #define TIC_FORMAT_CASE_NORM(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW)  \
-                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Unorm, swizzleX, swizzleY, swizzleZ, swizzleW); \
-                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Snorm, swizzleX, swizzleY, swizzleZ, swizzleW)
+            #define TIC_FORMAT_CASE_NORM(ticFormat, skFormat)  \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Unorm); \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Snorm)
 
-            #define TIC_FORMAT_CASE_INT(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW)  \
-                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Uint, swizzleX, swizzleY, swizzleZ, swizzleW); \
-                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Sint, swizzleX, swizzleY, swizzleZ, swizzleW)
+            #define TIC_FORMAT_CASE_INT(ticFormat, skFormat)  \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Uint); \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Sint)
 
-            #define TIC_FORMAT_CASE_NORM_INT(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW) \
-                TIC_FORMAT_CASE_NORM(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW); \
-                TIC_FORMAT_CASE_INT(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW)
+            #define TIC_FORMAT_CASE_NORM_INT(ticFormat, skFormat) \
+                TIC_FORMAT_CASE_NORM(ticFormat, skFormat); \
+                TIC_FORMAT_CASE_INT(ticFormat, skFormat)
 
-            #define TIC_FORMAT_CASE_NORM_INT_FLOAT(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW) \
-                TIC_FORMAT_CASE_NORM_INT(ticFormat, skFormat, swizzleX, swizzleY, swizzleZ, swizzleW); \
-                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Float, swizzleX, swizzleY, swizzleZ, swizzleW)
+            #define TIC_FORMAT_CASE_NORM_INT_FLOAT(ticFormat, skFormat) \
+                TIC_FORMAT_CASE_NORM_INT(ticFormat, skFormat); \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Float)
 
-            switch (format.Raw()) {
-                TIC_FORMAT_CASE_NORM_INT(R8, R8R001, R, Zero, Zero, OneFloat);
-                TIC_FORMAT_CASE_ST(B5G6R5, R5G6B5, Unorm, B, G, R, OneFloat);
-                TIC_FORMAT_CASE_NORM_INT(A8R8G8B8, R8G8B8A8, R, G, B, A);
-                TIC_FORMAT_CASE_NORM_INT(A8R8G8B8, A8B8G8R8, A, R, G, B);
-                TIC_FORMAT_CASE_NORM_INT(A8R8G8B8, G8B8A8R8, G, B, A, R);
-                TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16B16A16, R16G16B16A16, R, G, B, A);
-                TIC_FORMAT_CASE_NORM_INT(A2B10G10R10, A2B10G10R10, R, G, B, A);
-                TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm, R, G, B, A);
-                TIC_FORMAT_CASE_ST(Dxt1, Bc1, Unorm, R, G, B, A);
-                TIC_FORMAT_CASE_ST(Dxt23, Bc2, Unorm, R, G, B, A);
-                TIC_FORMAT_CASE_ST(Dxt45, Bc3, Unorm, R, G, B, A);
-                TIC_FORMAT_CASE_ST(Dxn1, Bc4111R, Unorm, OneFloat, OneFloat, OneFloat, R);
-                TIC_FORMAT_CASE_ST(Dxn1, Bc4RRR1, Unorm, R, R, R, OneFloat);
-                TIC_FORMAT_CASE_ST(BC7U, Bc7, Unorm, R, G, B, A);
-                TIC_FORMAT_CASE_ST(ZF32, D32, Float, R, R, R, OneFloat);
+            #define TIC_FORMAT_CASE_INT_FLOAT(ticFormat, skFormat) \
+                TIC_FORMAT_CASE_INT(ticFormat, skFormat); \
+                TIC_FORMAT_CASE_ST(ticFormat, skFormat, Float)
+
+            // Ignore the swizzle components of the format word
+            switch (format.Raw() & TextureImageControl::FormatWord::FormatColorComponentMask) {
+                TIC_FORMAT_CASE_NORM_INT(R8, R8);
+
+                TIC_FORMAT_CASE_NORM_INT_FLOAT(R16, R16);
+                TIC_FORMAT_CASE_ST(D16, D16, Unorm);
+                TIC_FORMAT_CASE_NORM_INT(R8G8, R8G8);
+                TIC_FORMAT_CASE_ST(B5G6R5, B5G6R5, Unorm);
+                TIC_FORMAT_CASE_ST(A1B5G5R5, A1B5G5R5, Unorm);
+
+                TIC_FORMAT_CASE_INT_FLOAT(R32, R32);
+                TIC_FORMAT_CASE_ST(D32, D32, Float);
+                TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16, R16G16);
+                TIC_FORMAT_CASE(R8G24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
+                TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Uint, Uint);
+                TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
+                TIC_FORMAT_CASE_ST(B10G11R11, B10G11R11, Float);
+                TIC_FORMAT_CASE_NORM_INT(A8B8G8R8, A8B8G8R8);
+                TIC_FORMAT_CASE_NORM_INT(A2B10G10R10, A2B10G10R10);
+                TIC_FORMAT_CASE_ST(E5B9G9R9, E5B9G9R9, Float);
+
+                TIC_FORMAT_CASE_ST(BC1, BC1, Unorm);
+                TIC_FORMAT_CASE_NORM(BC4, BC4);
+                TIC_FORMAT_CASE_INT_FLOAT(R32G32, R32G32);
+                TIC_FORMAT_CASE(D32S8, D32FloatS8Uint, Float, Uint, Uint, Unorm);
+                TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16B16A16, R16G16B16A16);
+
+                TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm);
+                TIC_FORMAT_CASE_ST(BC2, BC2, Unorm);
+                TIC_FORMAT_CASE_ST(BC3, BC3, Unorm);
+                TIC_FORMAT_CASE_NORM(BC5, BC5);
+                TIC_FORMAT_CASE(Bc6HUfloat, Bc6HUfloat, Float, Float, Float, Float);
+                TIC_FORMAT_CASE(Bc6HSfloat, Bc6HSfloat, Float, Float, Float, Float);
+                TIC_FORMAT_CASE_ST(BC7, BC7, Unorm);
+                TIC_FORMAT_CASE_INT_FLOAT(R32G32B32A32, R32G32B32A32);
 
                 default:
                     throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
@@ -1766,6 +1790,40 @@ namespace skyline::gpu::interconnect {
             #undef TIC_FORMAT_CASE_INT
             #undef TIC_FORMAT_CASE_NORM_INT
             #undef TIC_FORMAT_CASE_NORM_INT_FLOAT
+        }
+
+        /**
+         * @tparam ConvGR Converts all green component
+         * @tparam SwapBR Swaps blue and red components
+         */
+        template <bool ConvGR, bool SwapBR>
+        vk::ComponentMapping ConvertTicSwizzleMapping(TextureImageControl::FormatWord format) {
+            auto convertComponentSwizzle{[](TextureImageControl::ImageSwizzle swizzle) {
+                switch (swizzle) {
+                    case TextureImageControl::ImageSwizzle::R:
+                        return SwapBR ? vk::ComponentSwizzle::eB : vk::ComponentSwizzle::eR;
+                    case TextureImageControl::ImageSwizzle::G:
+                        return ConvGR ? vk::ComponentSwizzle::eR : vk::ComponentSwizzle::eG;
+                    case TextureImageControl::ImageSwizzle::B:
+                        return SwapBR ? vk::ComponentSwizzle::eR : vk::ComponentSwizzle::eB;
+                    case TextureImageControl::ImageSwizzle::A:
+                        return vk::ComponentSwizzle::eA;
+                    case TextureImageControl::ImageSwizzle::Zero:
+                        return vk::ComponentSwizzle::eZero;
+                    case TextureImageControl::ImageSwizzle::OneFloat:
+                    case TextureImageControl::ImageSwizzle::OneInt:
+                        return vk::ComponentSwizzle::eOne;
+                    default:
+                        throw exception("Invalid swizzle: {:X}", static_cast<u32>(swizzle));
+                }
+            }};
+
+            return vk::ComponentMapping{
+                .r = convertComponentSwizzle(format.swizzleX),
+                .g = convertComponentSwizzle(format.swizzleY),
+                .b = convertComponentSwizzle(format.swizzleZ),
+                .a = convertComponentSwizzle(format.swizzleW)
+            };
         }
 
         std::shared_ptr<TextureView> GetPoolTextureView(u32 index) {
@@ -1783,6 +1841,13 @@ namespace skyline::gpu::interconnect {
                 // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
                 auto &guest{poolTexture.guest};
                 guest.format = ConvertTicFormat(textureControl.formatWord);
+
+                if (guest.format->IsDepthOrStencil()) // G/R are equivalent for depth/stencil
+                    guest.swizzle = ConvertTicSwizzleMapping<true, false>(textureControl.formatWord);
+                else if (guest.format->swapRedBlue)
+                    guest.swizzle = ConvertTicSwizzleMapping<false, true>(textureControl.formatWord);
+                else
+                    guest.swizzle = ConvertTicSwizzleMapping<false, false>(textureControl.formatWord);
 
                 constexpr size_t CubeFaceCount{6}; //!< The amount of faces of a cube
 

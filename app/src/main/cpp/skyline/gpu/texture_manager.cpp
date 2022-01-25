@@ -51,7 +51,7 @@ namespace skyline::gpu {
                         .aspectMask = guestTexture.format->vkAspect,
                         .levelCount = texture->mipLevels,
                         .layerCount = texture->layerCount,
-                    }, guestTexture.format, guestTexture.format->swizzle);
+                    }, guestTexture.format, guestTexture.swizzle);
                 }
             } /* else if (mappingMatch) {
                 // We've gotten a partial match with a certain subset of contiguous mappings matching, we need to check if this is a meaningful overlap
@@ -82,6 +82,6 @@ namespace skyline::gpu {
             .aspectMask = guestTexture.format->vkAspect,
             .levelCount = texture->mipLevels,
             .layerCount = texture->layerCount,
-        }, guestTexture.format, guestTexture.format->swizzle);
+        }, guestTexture.format, guestTexture.swizzle);
     }
 }

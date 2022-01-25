@@ -9,7 +9,6 @@ namespace skyline::gpu::format {
     // @fmt:off
 
     using vka = vk::ImageAspectFlagBits;
-    using swc = gpu::texture::SwizzleChannel;
 
     #define FORMAT(name, bitsPerBlock, format, ...) \
             constexpr gpu::texture::FormatBase name{bitsPerBlock / 8, vk::Format::format, ##__VA_ARGS__}
@@ -40,7 +39,6 @@ namespace skyline::gpu::format {
             FORMAT_SUFF_INT(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__); \
             FORMAT_SUFF_NORM(name, bitsPerBlock, format, fmtSuffix, ##__VA_ARGS__)
 
-
     #define FORMAT_NORM_INT(name, bitsPerBlock, format, ...) \
             FORMAT_SUFF_NORM_INT(name, bitsPerBlock, format,, ##__VA_ARGS__)
 
@@ -58,105 +56,85 @@ namespace skyline::gpu::format {
     #define FORMAT_NORM_INT_FLOAT(name, bitsPerBlock, format, ...) \
             FORMAT_SUFF_NORM_INT_FLOAT(name, bitsPerBlock, format,, ##__VA_ARGS__)
 
-    // These are ordered according to Size -> Component Count -> R/G/B/A Order
+    // These are ordered according to Size -> Component Count -> R/G/B/A/E Order
 
     // Color formats
     FORMAT_NORM_INT_SRGB(R8, 8, eR8);
-    FORMAT_NORM_INT_SRGB(R8R001, 8, eR8);
 
     FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(R5G6B5Unorm, 16, eR5G6B5UnormPack16);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
     FORMAT(B5G5R5A1Unorm, 16, eB5G5R5A1UnormPack16);
+    FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swapRedBlue = true);
+
     FORMAT_INT_FLOAT(R32, 32, eR32);
     FORMAT_NORM_INT_FLOAT(R16G16, 32, eR16G16);
-    FORMAT(R11G11B10Float, 32, eB10G11R11UfloatPack32, .swizzle = {
-        .red = swc::Blue,
-        .green = swc::Green,
-        .blue = swc::Red,
-   });
     FORMAT(B10G11R11Float, 32, eB10G11R11UfloatPack32);
     FORMAT_NORM_INT_SRGB(R8G8B8A8, 32, eR8G8B8A8);
-    FORMAT_NORM_INT_SRGB(G8B8A8R8, 32, eB8G8R8A8, .swizzle = {
-        .blue = swc::Alpha,
-        .green = swc::Red,
-        .red = swc::Green,
-        .alpha = swc::Blue
-    });
     FORMAT_NORM_INT_SRGB(B8G8R8A8, 32, eB8G8R8A8);
     FORMAT_SUFF_NORM_INT(A2B10G10R10, 32, eA2B10G10R10, Pack32);
-    FORMAT_SUFF_NORM_INT(A2R10G10B10, 32, eA2B10G10R10, Pack32, .swizzle = {
-        .blue = swc::Red,
-        .red = swc::Blue
-    });
-
     FORMAT_SUFF_NORM_INT_SRGB(A8B8G8R8, 32, eA8B8G8R8, Pack32);
+    FORMAT(E5B9G9R9Float, 32, eE5B9G9R9UfloatPack32);
+
     FORMAT_INT_FLOAT(R32G32, 32 * 2, eR32G32);
     FORMAT_NORM_INT_FLOAT(R16G16B16A16, 16 * 4, eR16G16B16A16);
+
     FORMAT_INT_FLOAT(R32G32B32A32, 32 * 4, eR32G32B32A32);
-    FORMAT_INT_FLOAT(R32B32G32A32, 32 * 4, eR32G32B32A32, .swizzle = {
-        .blue = swc::Green,
-        .green = swc::Blue,
-    });
 
     // Compressed Colour Formats
-    FORMAT_SUFF_UNORM_SRGB(Bc1, 64, eBc1Rgba, Block,
+    FORMAT_SUFF_UNORM_SRGB(BC1, 64, eBc1Rgba, Block,
         .blockWidth = 4,
         .blockHeight = 4
     );
-
-    FORMAT_SUFF_UNORM_SRGB(Bc2, 64, eBc2, Block,
+    FORMAT_SUFF_UNORM_SRGB(BC2, 64, eBc2, Block,
         .blockWidth = 4,
         .blockHeight = 4
     );
-
-    FORMAT_SUFF_UNORM_SRGB(Bc3, 64, eBc3, Block,
+    FORMAT_SUFF_UNORM_SRGB(BC3, 64, eBc3, Block,
         .blockWidth = 4,
         .blockHeight = 4
     );
-
-    FORMAT_SUFF_NORM(Bc4111R, 64, eBc4, Block,
-       .blockWidth = 4,
-       .blockHeight = 4,
-       .swizzle = {
-           .red = swc::One,
-           .green = swc::One,
-           .blue = swc::One,
-           .alpha = swc::Red
-       }
-    );
-
-    FORMAT_SUFF_NORM(Bc4RRR1, 64, eBc4, Block,
-         .blockWidth = 4,
-         .blockHeight = 4,
-         .swizzle = {
-             .red = swc::Red,
-             .green = swc::Red,
-             .blue = swc::Red,
-             .alpha = swc::One
-         }
-    );
-
-    FORMAT_SUFF_UNORM_SRGB(Bc7, 128, eBc7, Block,
+    FORMAT_SUFF_NORM(BC4, 64, eBc4, Block,
         .blockWidth = 4,
-        .blockHeight = 4
+        .blockHeight = 4,
     );
 
     FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
         .blockWidth = 4,
         .blockHeight = 4
     );
+    FORMAT_SUFF_NORM(BC5, 128, eBc5, Block,
+        .blockWidth = 4,
+        .blockHeight = 4,
+    );
+    FORMAT(Bc6HUfloat, 128, eBc6HUfloatBlock,
+        .blockWidth = 4,
+        .blockHeight = 4,
+    );
+    FORMAT(Bc6HSfloat, 128, eBc6HSfloatBlock,
+        .blockWidth = 4,
+        .blockHeight = 4,
+    );
+    FORMAT_SUFF_UNORM_SRGB(BC7, 128, eBc7, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
 
     // Depth/Stencil Formats
     FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth);
+
     FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth);
-    FORMAT(S8D24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
-        vka::eStencil | vka::eDepth
-    }); // TODO: Swizzle Depth/Stencil
-    FORMAT(D24S8Unorm, 32, eD24UnormS8Uint, .vkAspect = {
+    FORMAT(D24UnormS8Uint, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
     });
+    FORMAT(D32FloatS8Uint, 32, eD32SfloatS8Uint, .vkAspect = {
+        vka::eStencil | vka::eDepth
+    });
+    FORMAT(S8UintD24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
+        vka::eStencil | vka::eDepth
+    }); // TODO: Swizzle Depth/Stencil
+
 
     #undef FORMAT
     #undef FORMAT_SUFF_UNORM_SRGB
