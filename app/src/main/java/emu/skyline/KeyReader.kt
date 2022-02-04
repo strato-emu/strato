@@ -37,7 +37,7 @@ object KeyReader {
         tmpOutputFile.bufferedWriter().use { writer ->
             val valid = inputStream!!.bufferedReader().useLines {
                 for (line in it) {
-                    if (line.startsWith(";")) continue
+                    if (line.startsWith(";") || line.isBlank()) continue
 
                     val pair = line.split("=")
                     if (pair.size != 2)
