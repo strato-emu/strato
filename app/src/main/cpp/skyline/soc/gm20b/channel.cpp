@@ -2,6 +2,7 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include "engines/maxwell_3d.h" //TODO: remove
+#include "engines/fermi_2d.h" //TODO: remove
 #include "channel.h"
 
 namespace skyline::soc::gm20b {
@@ -9,6 +10,7 @@ namespace skyline::soc::gm20b {
         : asCtx(std::move(pAsCtx)),
           executor(state),
           maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, macroState, executor)),
+          fermi2D(std::make_unique<engine::fermi2d::Fermi2D>(state, *this, macroState, executor)),
           maxwellDma(state, *this, executor),
           keplerCompute(state, *this),
           inline2Memory(asCtx),

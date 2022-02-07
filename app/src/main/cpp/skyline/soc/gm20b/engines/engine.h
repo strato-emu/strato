@@ -41,7 +41,7 @@ namespace skyline::soc::gm20b::engine {
         u32 high;
         u32 low;
 
-        operator u64() {
+        operator u64() const {
             return (static_cast<u64>(high) << 32) | low;
         }
     };

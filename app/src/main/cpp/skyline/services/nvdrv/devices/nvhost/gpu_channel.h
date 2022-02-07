@@ -5,6 +5,7 @@
 
 #include <services/common/fence.h>
 #include <soc/gm20b/engines/maxwell_3d.h> // TODO: remove
+#include <soc/gm20b/engines/fermi_2d.h> // TODO: remove
 #include <soc/gm20b/channel.h>
 #include <services/nvdrv/devices/nvdevice.h>
 #include "as_gpu.h"
