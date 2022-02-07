@@ -126,7 +126,7 @@ namespace skyline::gpu {
                                          const vk::raii::PhysicalDevice &physicalDevice,
                                          decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex,
                                          TraitManager &traits) {
-        auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>()};
+        auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures, vk::PhysicalDeviceShaderDrawParametersFeatures>()};
         decltype(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
         #define FEAT_REQ(structName, feature)                                            \
@@ -137,6 +137,7 @@ namespace skyline::gpu {
 
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.independentBlend);
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.shaderImageGatherExtended);
+        FEAT_REQ(vk::PhysicalDeviceShaderDrawParametersFeatures, shaderDrawParameters);
 
         #undef FEAT_REQ
 
