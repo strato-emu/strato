@@ -18,4 +18,11 @@ class SettingsValues(pref: PreferenceSettings) : Serializable {
      * Updates settings in libskyline during emulation
      */
     external fun updateNative()
+
+    companion object {
+        /**
+         * Setter for native log level
+         */
+        external fun setLogLevel(logLevel : Int)
+    }
 }

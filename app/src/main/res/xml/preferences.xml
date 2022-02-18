@@ -34,7 +34,7 @@
             android:summaryOn="@string/perf_stats_desc_on"
             app:key="perf_stats"
             app:title="@string/perf_stats" />
-        <emu.skyline.preference.IntegerListPreference
+        <emu.skyline.preference.LogLevelPreference
             android:defaultValue="2"
             android:entries="@array/log_level"
             app:key="log_level"

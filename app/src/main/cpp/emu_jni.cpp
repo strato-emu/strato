@@ -237,3 +237,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_SettingsValues_updateNa
         return; // We don't mind if we miss settings updates while settings haven't been initialized
     settings->Update();
 }
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_SettingsValues_00024Companion_setLogLevel(JNIEnv *, jobject, jint logLevel) {
+    skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
+}
