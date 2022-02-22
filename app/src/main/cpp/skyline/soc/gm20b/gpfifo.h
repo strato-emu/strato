@@ -130,9 +130,14 @@ namespace skyline::soc::gm20b {
         std::thread thread; //!< The thread that manages processing of pushbuffers
 
         /**
-         * @brief Sends a method call to the GPU hardware
+         * @brief Sends a method call to the appropriate subchannel and handles macro and GPFIFO methods
          */
-        void Send(u32 method, u32 argument, SubchannelId subchannel, bool lastCall);
+        void SendFull(u32 method, u32 argument, SubchannelId subchannel, bool lastCall);
+
+        /**
+         * @brief Sends a method call to the appropriate subchannel, macro and GPFIFO methods are not handled
+         */
+        void SendPure(u32 method, u32 argument, SubchannelId subchannel);
 
         /**
          * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed
