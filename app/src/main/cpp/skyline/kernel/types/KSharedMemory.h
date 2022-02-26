@@ -22,7 +22,7 @@ namespace skyline::kernel::type {
             constexpr bool Valid() {
                 return ptr && size;
             }
-        } host, guest{}; //!< We keep two mirrors of the underlying shared memory for guest access and host access, the host mirror is persistently mapped and should be used by anything accessing the memory on the host
+        } host{}, guest{}; //!< We keep two mirrors of the underlying shared memory for guest access and host access, the host mirror is persistently mapped and should be used by anything accessing the memory on the host
 
         KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 

@@ -11,7 +11,7 @@ namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type)
         : memoryState(memState),
           KMemory(state, type) {
-        fd = ASharedMemory_create("KSharedMemory", size);
+        fd = ASharedMemory_create(type == KType::KSharedMemory ? "HOS-KSharedMemory" : "HOS-KTransferMemory", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
@@ -49,18 +49,19 @@ namespace skyline::kernel::type {
     }
 
     void KSharedMemory::Unmap(u8 *ptr, u64 size) {
-        if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
+        auto &memoryManager{state.process->memory};
+        if (!memoryManager.base.IsInside(ptr) || !memoryManager.base.IsInside(ptr + size))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
         if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
             throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
         if (guest.ptr != ptr && guest.size != size)
             throw exception("Unmapping KSharedMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
 
-        if (mmap(ptr, size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, 0, 0) == MAP_FAILED)
+        if (mmap(ptr, size, PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(ptr - memoryManager.base.address)) == MAP_FAILED)
             throw exception("An error occurred while unmapping shared memory in guest: {}", strerror(errno));
 
         guest = {};
-        state.process->memory.InsertChunk(ChunkDescriptor{
+        memoryManager.InsertChunk(ChunkDescriptor{
             .ptr = ptr,
             .size = size,
             .state = memory::states::Unmapped,
@@ -90,8 +91,11 @@ namespace skyline::kernel::type {
 
     KSharedMemory::~KSharedMemory() {
         if (state.process && guest.Valid()) {
+            auto &memoryManager{state.process->memory};
             if (objectType != KType::KTransferMemory) {
-                mmap(guest.ptr, guest.size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); // It doesn't particularly matter if this fails as it shouldn't really affect anything
+                if (mmap(guest.ptr, guest.size, PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.ptr - memoryManager.base.address)) == MAP_FAILED)
+                    Logger::Warn("An error occurred while unmapping shared memory: {}", strerror(errno));
+
                 state.process->memory.InsertChunk(ChunkDescriptor{
                     .ptr = guest.ptr,
                     .size = guest.size,
@@ -101,8 +105,8 @@ namespace skyline::kernel::type {
                 // KTransferMemory remaps the region with R/W permissions during destruction
                 constexpr memory::Permission UnborrowPermission{true, true, false};
 
-                if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED)
-                    Logger::Warn("An error occurred while remapping transfer memory as anonymous memory in guest: {}", strerror(errno));
+                if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.ptr - memoryManager.base.address)) == MAP_FAILED)
+                    Logger::Warn("An error occurred while remapping transfer memory: {}", strerror(errno));
                 else if (!host.Valid())
                     Logger::Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
 

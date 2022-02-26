@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <android/sharedmem.h>
 #include "memory.h"
 #include "types/KProcess.h"
 
@@ -61,7 +62,11 @@ namespace skyline::kernel {
         if (!base.address)
             throw exception("Cannot find a suitable carveout for the guest address space");
 
-        auto result{mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)};
+        memoryFd = ASharedMemory_create("HOS-AS", base.size);
+        if (memoryFd < 0)
+            throw exception("Failed to create shared memory for guest address space: {}", strerror(errno));
+
+        auto result{mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_FIXED | MAP_SHARED, memoryFd, 0)};
         if (result == MAP_FAILED)
             throw exception("Failed to mmap guest address space: {}", strerror(errno));
 
@@ -133,6 +138,22 @@ namespace skyline::kernel {
 
         Logger::Debug("Region Map:\nVMM Base: 0x{:X}\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", base.address, code.address, code.address + code.size, code.size, alias.address, alias.address + alias.size, alias.size, heap.address, heap
             .address + heap.size, heap.size, stack.address, stack.address + stack.size, stack.size, tlsIo.address, tlsIo.address + tlsIo.size, tlsIo.size);
+    }
+
+    span<u8> MemoryManager::CreateMirror(u8 *pointer, size_t size) {
+        auto address{reinterpret_cast<u64>(pointer)};
+        if (address < base.address || address + size > base.address + base.size)
+            throw exception("Mapping is outside of VMM base: 0x{:X} - 0x{:X}", address, address + size);
+
+        size_t offset{address - base.address};
+        if (!util::IsPageAligned(offset) || !util::IsPageAligned(size))
+            throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", address, address + size, offset);
+
+        auto mirror{mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, memoryFd, static_cast<off_t>(offset))};
+        if (mirror == MAP_FAILED)
+            throw exception("Failed to create mirror mapping at 0x{:X}-0x{:X} (0x{:X}): {}", address, address + size, offset, strerror(errno));
+
+        return span<u8>{reinterpret_cast<u8 *>(mirror), size};
     }
 
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {

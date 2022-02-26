@@ -210,7 +210,7 @@ namespace skyline {
         };
 
         /**
-         * @brief MemoryManager keeps track of guest virtual memory and its related attributes
+         * @brief MemoryManager allocates and keeps track of guest virtual memory and its related attributes
          */
         class MemoryManager {
           private:
@@ -226,6 +226,8 @@ namespace skyline {
             memory::Region stack{};
             memory::Region tlsIo{}; //!< TLS/IO
 
+            int memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
+
             std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
             MemoryManager(const DeviceState &state);
@@ -238,6 +240,13 @@ namespace skyline {
             void InitializeVmm(memory::AddressSpaceType type);
 
             void InitializeRegions(u8 *codeStart, u64 size);
+
+            /**
+             * @brief Mirrors a page-aligned mapping in the guest address space to the host address space
+             * @return A span to the host address space mirror mapped as RWX, unmapping it is the responsibility of the caller
+             * @note The supplied mapping **must** be page-aligned and inside the guest address space
+             */
+            span<u8> CreateMirror(u8* pointer, size_t size);
 
             void InsertChunk(const ChunkDescriptor &chunk);
 
