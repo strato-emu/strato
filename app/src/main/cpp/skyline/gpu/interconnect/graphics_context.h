@@ -579,7 +579,7 @@ namespace skyline::gpu::interconnect {
              * @note This must only be called when the GuestBuffer is resolved correctly
              */
             template<typename T>
-            T Read(size_t offset) {
+            T Read(size_t offset) const {
                 T object;
                 size_t objectOffset{};
                 for (auto &mapping : guest.mappings) {
@@ -788,6 +788,23 @@ namespace skyline::gpu::interconnect {
             }
         }
 
+        BufferView GetSsboViewFromDescriptor(const ::Shader::StorageBufferDescriptor &descriptor, const std::array<ConstantBuffer, maxwell3d::PipelineStageConstantBufferCount> &constantBuffers) {
+            struct SsboDescriptor {
+                IOVA iova;
+                u32 size;
+            };
+
+            auto &cbuf{constantBuffers[descriptor.cbuf_index]};
+            auto ssbo{cbuf.Read<SsboDescriptor>(descriptor.cbuf_offset)};
+
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(ssbo.iova, ssbo.size)};
+
+            GuestBuffer guestBuffer;
+            guestBuffer.mappings.assign(mappings.begin(), mappings.end());
+
+            return gpu.buffer.FindOrCreate(guestBuffer);
+        }
+
         /**
          * @note The return value of previous calls will be invalidated on a call to this as values are provided by reference
          * @note Any bound resources will automatically be attached to the CommandExecutor, there's no need to manually attach them
@@ -899,6 +916,8 @@ namespace skyline::gpu::interconnect {
                     runtimeInfo.previous_stage_stores.mask |= program.info.passthrough.mask;
                 bindings.unified = pipelineStage.bindingLast;
 
+                // The different descriptors types must be written in the correct order.
+
                 u32 bindingIndex{pipelineStage.bindingBase};
                 if (!program.info.constant_buffer_descriptors.empty()) {
                     descriptorSetWrites.push_back(vk::WriteDescriptorSet{
@@ -917,7 +936,7 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
-                        std::scoped_lock lock(view);
+                        std::scoped_lock lock{view};
                         bufferInfo.push_back(vk::DescriptorBufferInfo{
                             .buffer = view.buffer->GetBacking(),
                             .offset = view->offset,
@@ -926,6 +945,40 @@ namespace skyline::gpu::interconnect {
                         executor.AttachBuffer(view);
                     }
                 }
+
+
+                if (!program.info.storage_buffers_descriptors.empty()) {
+                    descriptorSetWrites.push_back({
+                        .dstBinding = bindingIndex,
+                        .descriptorCount = static_cast<u32>(program.info.storage_buffers_descriptors.size()),
+                        .descriptorType = vk::DescriptorType::eStorageBuffer,
+                        .pBufferInfo = bufferInfo.data() + bufferInfo.size(),
+                    });
+
+                    for (auto &storageBuffer : program.info.storage_buffers_descriptors) {
+                        layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
+                            .binding = bindingIndex++,
+                            .descriptorType = vk::DescriptorType::eStorageBuffer,
+                            .descriptorCount = 1,
+                            .stageFlags = pipelineStage.vkStage,
+                        });
+
+                        auto view{GetSsboViewFromDescriptor(storageBuffer, pipelineStage.constantBuffers)};
+                        std::scoped_lock lock{view};
+                        bufferInfo.push_back(vk::DescriptorBufferInfo{
+                            .buffer = view.buffer->GetBacking(),
+                            .offset = view->offset,
+                            .range = view->range,
+                        });
+                        executor.AttachBuffer(view);
+                    }
+                }
+
+                if (!program.info.texture_buffer_descriptors.empty())
+                    Logger::Warn("Found {} texture buffer descriptor", program.info.texture_buffer_descriptors.size());
+
+                if (!program.info.image_buffer_descriptors.empty())
+                    Logger::Warn("Found {} image buffer descriptor", program.info.image_buffer_descriptors.size());
 
                 if (!program.info.texture_descriptors.empty()) {
                     if (!gpu.traits.quirks.needsIndividualTextureBindingWrites)
@@ -976,6 +1029,9 @@ namespace skyline::gpu::interconnect {
                         executor.AttachDependency(std::move(sampler));
                     }
                 }
+
+                if (!program.info.image_descriptors.empty())
+                    Logger::Warn("Found {} image descriptor", program.info.image_descriptors.size());
 
                 shaderModules.emplace_back(pipelineStage.vkModule);
                 shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo{
