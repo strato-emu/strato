@@ -272,7 +272,7 @@ namespace skyline::gpu {
           layerCount(guest->layerCount),
           sampleCount(vk::SampleCountFlagBits::e1) {
         vk::ImageUsageFlags usage{vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled};
-        if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
+        if ((format->vkAspect & vk::ImageAspectFlagBits::eColor) && !format->IsCompressed())
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
