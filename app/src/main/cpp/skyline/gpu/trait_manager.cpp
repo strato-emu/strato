@@ -6,7 +6,7 @@
 
 namespace skyline::gpu {
     TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) : quirks(deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties, deviceProperties2.get<vk::PhysicalDeviceDriverProperties>()) {
-        bool hasCustomBorderColorExtension{}, hasShaderAtomicInt64{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelper{};
+        bool hasCustomBorderColorExt{}, hasShaderAtomicInt64Ext{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelperExt, hasVertexAttributeDivisorExt, hasProvokingVertexExt{};
         bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
         for (auto &extension : deviceExtensions) {
@@ -32,13 +32,13 @@ namespace skyline::gpu {
                 EXT_SET("VK_EXT_index_type_uint8", supportsUint8Indices);
                 EXT_SET("VK_EXT_sampler_mirror_clamp_to_edge", supportsSamplerMirrorClampToEdge);
                 EXT_SET("VK_EXT_sampler_filter_minmax", supportsSamplerReductionMode);
-                EXT_SET("VK_EXT_custom_border_color", hasCustomBorderColorExtension);
-                EXT_SET("VK_EXT_provoking_vertex", supportsLastProvokingVertex);
-                EXT_SET("VK_EXT_vertex_attribute_divisor", supportsVertexAttributeDivisor);
+                EXT_SET("VK_EXT_custom_border_color", hasCustomBorderColorExt);
+                EXT_SET("VK_EXT_provoking_vertex", hasProvokingVertexExt);
+                EXT_SET("VK_EXT_vertex_attribute_divisor", hasVertexAttributeDivisorExt);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
                 EXT_SET("VK_KHR_spirv_1_4", supportsSpirv14);
-                EXT_SET("VK_EXT_shader_demote_to_helper_invocation", hasShaderDemoteToHelper);
-                EXT_SET("VK_KHR_shader_atomic_int64", hasShaderAtomicInt64);
+                EXT_SET("VK_EXT_shader_demote_to_helper_invocation", hasShaderDemoteToHelperExt);
+                EXT_SET("VK_KHR_shader_atomic_int64", hasShaderAtomicInt64Ext);
                 EXT_SET("VK_KHR_shader_float16_int8", hasShaderFloat16Int8Ext);
                 EXT_SET("VK_KHR_shader_float_controls", supportsFloatControls);
                 EXT_SET("VK_KHR_uniform_buffer_standard_layout", supportsUniformBufferStandardLayout);
@@ -62,7 +62,7 @@ namespace skyline::gpu {
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt64, supportsInt64)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderStorageImageReadWithoutFormat, supportsImageReadWithoutFormat)
 
-        if (hasCustomBorderColorExtension) {
+        if (hasCustomBorderColorExt) {
             bool hasCustomBorderColorFeature{};
             FEAT_SET(vk::PhysicalDeviceCustomBorderColorFeaturesEXT, customBorderColors, hasCustomBorderColorFeature)
             if (hasCustomBorderColorFeature)
@@ -72,15 +72,20 @@ namespace skyline::gpu {
             enabledFeatures2.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
         }
 
-        if (supportsVertexAttributeDivisor) {
+        if (hasVertexAttributeDivisorExt) {
             FEAT_SET(vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor, supportsVertexAttributeDivisor)
             FEAT_SET(vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateZeroDivisor, supportsVertexAttributeZeroDivisor)
         } else {
             enabledFeatures2.unlink<vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
         }
 
+        if (hasProvokingVertexExt)
+            FEAT_SET(vk::PhysicalDeviceProvokingVertexFeaturesEXT, provokingVertexLast, supportsLastProvokingVertex)
+        else
+            enabledFeatures2.unlink<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
+
         auto &shaderAtomicFeatures{deviceFeatures2.get<vk::PhysicalDeviceShaderAtomicInt64Features>()};
-        if (hasShaderAtomicInt64 && shaderAtomicFeatures.shaderBufferInt64Atomics && shaderAtomicFeatures.shaderSharedInt64Atomics) {
+        if (hasShaderAtomicInt64Ext && shaderAtomicFeatures.shaderBufferInt64Atomics && shaderAtomicFeatures.shaderSharedInt64Atomics) {
             supportsAtomicInt64 = true;
         } else {
             enabledFeatures2.unlink<vk::PhysicalDeviceShaderAtomicInt64Features>();
@@ -93,7 +98,7 @@ namespace skyline::gpu {
             enabledFeatures2.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
         }
 
-        if (hasShaderDemoteToHelper)
+        if (hasShaderDemoteToHelperExt)
             FEAT_SET(vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, shaderDemoteToHelperInvocation, supportsShaderDemoteToHelper)
         else
             enabledFeatures2.unlink<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>();
