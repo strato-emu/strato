@@ -106,6 +106,15 @@ namespace skyline::util {
     }
 
     /**
+     * @return The value of division rounded up to the next integral
+     */
+    template<typename Type>
+    requires std::is_integral_v<Type>
+    constexpr Type DivideCeil(Type dividend, Type divisor) {
+        return (dividend + divisor - 1) / divisor;
+    }
+
+    /**
      * @param string The string to create a magic from
      * @return The magic of the supplied string
      */

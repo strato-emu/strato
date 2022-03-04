@@ -80,7 +80,7 @@ namespace skyline::gpu {
              * @return The size of the texture in bytes
              */
             constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) const {
-                return (((width / blockWidth) * (height / blockHeight)) * bpb) * depth;
+                return util::DivideCeil(width, u32{blockWidth}) * util::DivideCeil(height, u32{blockHeight}) * bpb * depth;
             }
 
             constexpr size_t GetSize(Dimensions dimensions) const {
