@@ -118,6 +118,17 @@ namespace skyline::soc::gm20b {
         }
     }
 
+    void ChannelGpfifo::SendPureBatchNonInc(u32 method, span<u32> arguments, SubchannelId subChannel) {
+        switch (subChannel) {
+            case SubchannelId::ThreeD:
+                channelCtx.maxwell3D->CallMethodBatchNonInc(method, arguments);
+                break;
+            default:
+                Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X} with batch args", method, subChannel);
+                break;
+        }
+    }
+
     void ChannelGpfifo::Process(GpEntry gpEntry) {
         if (!gpEntry.size) {
             // This is a GPFIFO control entry, all control entries have a zero length and contain no pushbuffers
@@ -164,6 +175,9 @@ namespace skyline::soc::gm20b {
 
         // Process more methods if the entries are still not all used up after handling resuming
         for (; entry != pushBufferData.end(); entry++) {
+            if (entry >= pushBufferData.end())
+                throw exception("GPFIFO buffer overflow!"); // This should never happen
+
             // An entry containing all zeroes is a NOP, skip over it
             if (*entry == 0)
                 continue;
@@ -207,8 +221,38 @@ namespace skyline::soc::gm20b {
                     }
                 }};
 
+                constexpr u32 BatchCutoff{4}; //!< Cutoff needed to send method calls in a batch which is espcially important for UBO updates. This helps to avoid the extra overhead batching for small packets.
+                // TODO: Only batch for specific target methods like UBO updates, since normal dispatch is generally cheaper
+
                 if (remainingEntries >= methodHeader.methodCount) {
                     if (methodHeader.Pure()) [[likely]] {
+                        if constexpr (State == MethodResumeState::State::NonInc) {
+                            // For pure noninc methods we can send all method calls as a span in one go
+                            if (methodHeader.methodCount > BatchCutoff) {
+                                if constexpr (ThreeDOnly)
+                                    channelCtx.maxwell3D->CallMethodBatchNonInc(methodHeader.methodAddress, span<u32>(&(*++entry), methodHeader.methodCount));
+                                else
+                                    SendPureBatchNonInc(methodHeader.methodAddress, span(&(*++entry), methodHeader.methodCount), methodHeader.methodSubChannel);
+
+                                entry += methodHeader.methodCount - 1;
+                                return false;
+                            }
+                        } else if constexpr (State == MethodResumeState::State::OneInc) {
+                            // For pure oneinc methods we can send the initial method then send the rest as a span in one go
+                            if (methodHeader.methodCount > (BatchCutoff + 1)) {
+                                if constexpr (ThreeDOnly) {
+                                    channelCtx.maxwell3D->CallMethod(methodHeader.methodAddress, *++entry);
+                                    channelCtx.maxwell3D->CallMethodBatchNonInc(methodHeader.methodAddress + 1, span(&(*++entry), methodHeader.methodCount - 1));
+                                } else {
+                                    SendPure(methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel);
+                                    SendPureBatchNonInc(methodHeader.methodAddress + 1, span(&(*++entry) ,methodHeader.methodCount - 1), methodHeader.methodSubChannel);
+                                }
+
+                                entry += methodHeader.methodCount - 2;
+                                return false;
+                            }
+                        }
+
                         for (u32 i{}; i < methodHeader.methodCount; i++) {
                             if constexpr (ThreeDOnly) {
                                 channelCtx.maxwell3D->CallMethod(methodHeader.methodAddress + methodOffset(i), *++entry);

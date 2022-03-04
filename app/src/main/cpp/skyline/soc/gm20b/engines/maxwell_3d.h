@@ -329,6 +329,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         void CallMethod(u32 method, u32 argument);
 
+        void CallMethodBatchNonInc(u32 method, span<u32> arguments);
+
         void CallMethodFromMacro(u32 method, u32 argument) override;
 
         u32 ReadMethodFromMacro(u32 method) override;

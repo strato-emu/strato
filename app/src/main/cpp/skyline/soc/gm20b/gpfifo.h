@@ -140,6 +140,11 @@ namespace skyline::soc::gm20b {
         void SendPure(u32 method, u32 argument, SubchannelId subchannel);
 
         /**
+         * @brief Sends a batch of method calls all directed at the same method to the appropriate subchannel, macro and GPFIFO methods are not handled
+         */
+        void SendPureBatchNonInc(u32 method, span<u32> arguments, SubchannelId subChannel);
+
+        /**
          * @brief Processes the pushbuffer contained within the given GpEntry, calling methods as needed
          */
         void Process(GpEntry gpEntry);

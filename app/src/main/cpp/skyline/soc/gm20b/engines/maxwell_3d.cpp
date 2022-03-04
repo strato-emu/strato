@@ -691,6 +691,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_CASE
     }
 
+    void Maxwell3D::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
+        for (u32 argument : arguments) {
+            CallMethod(method, argument);
+        }
+    }
+
     void Maxwell3D::WriteSemaphoreResult(u64 result) {
         struct FourWordResult {
             u64 value;
