@@ -156,6 +156,38 @@ namespace skyline::kernel {
         return span<u8>{reinterpret_cast<u8 *>(mirror), size};
     }
 
+    span<u8> MemoryManager::CreateMirrors(const std::vector<span<u8>> &regions) {
+        size_t totalSize{};
+        for (const auto &region : regions)
+            totalSize += region.size();
+
+        auto mirrorBase{mmap(nullptr, totalSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)}; // Reserve address space for all mirrors
+        if (mirrorBase == MAP_FAILED)
+            throw exception("Failed to create mirror base: {} (0x{:X} bytes)", strerror(errno), totalSize);
+
+        size_t mirrorOffset{};
+        for (const auto &region : regions) {
+            auto address{reinterpret_cast<u64>(region.data())};
+            if (address < base.address || address + region.size() > base.address + base.size)
+                throw exception("Mapping is outside of VMM base: 0x{:X} - 0x{:X}", address, address + region.size());
+
+            size_t offset{address - base.address};
+            if (!util::IsPageAligned(offset) || !util::IsPageAligned(region.size()))
+                throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", address, address + region.size(), offset);
+
+            auto mirror{mmap(reinterpret_cast<u8 *>(mirrorBase) + mirrorOffset, region.size(), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | MAP_FIXED, memoryFd, static_cast<off_t>(offset))};
+            if (mirror == MAP_FAILED)
+                throw exception("Failed to create mirror mapping at 0x{:X}-0x{:X} (0x{:X}): {}", address, address + region.size(), offset, strerror(errno));
+
+            mirrorOffset += region.size();
+        }
+
+        if (mirrorOffset != totalSize)
+            throw exception("Mirror size mismatch: 0x{:X} != 0x{:X}", mirrorOffset, totalSize);
+
+        return span<u8>{reinterpret_cast<u8 *>(mirrorBase), totalSize};
+    }
+
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {
         std::unique_lock lock(mutex);
 

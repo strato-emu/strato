@@ -248,6 +248,15 @@ namespace skyline {
              */
             span<u8> CreateMirror(u8* pointer, size_t size);
 
+            /**
+             * @brief Mirrors multiple page-aligned mapping in the guest address space to the host address space
+             * @param totalSize The total size of all the regions to be mirrored combined
+             * @return A span to the host address space mirror mapped as RWX, unmapping it is the responsibility of the caller
+             * @note The supplied mapping **must** be page-aligned and inside the guest address space
+             * @note If a single mapping is mirrored, it is recommended to use CreateMirror instead
+             */
+            span<u8> CreateMirrors(const std::vector<span<u8>>& regions);
+
             void InsertChunk(const ChunkDescriptor &chunk);
 
             std::optional<ChunkDescriptor> Get(void *ptr);
