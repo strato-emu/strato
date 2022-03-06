@@ -115,6 +115,17 @@ namespace skyline::gpu {
             alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
             mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
         }
+
+        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
+            std::lock_guard lock(*this);
+            SynchronizeGuest(true); // We can skip trapping since the caller will do it
+            WaitOnFence();
+        }, [this] {
+            std::lock_guard lock(*this);
+            SynchronizeGuest(true);
+            dirtyState = DirtyState::CpuDirty; // We need to assume the texture is dirty since we don't know what the guest is writing
+            WaitOnFence();
+        });
     }
 
     std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
@@ -266,22 +277,6 @@ namespace skyline::gpu {
         texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
-        : gpu(gpu),
-          backing(std::move(backing)),
-          layout(layout),
-          guest(std::move(guest)),
-          dimensions(dimensions),
-          format(format),
-          tiling(tiling),
-          mipLevels(mipLevels),
-          layerCount(layerCount),
-          sampleCount(sampleCount) {
-        SetupGuestMappings();
-        if (GetBacking())
-            SynchronizeHost();
-    }
-
     Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
@@ -324,43 +319,24 @@ namespace skyline::gpu {
             .initialLayout = layout,
         };
         backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
-        TransitionLayout(vk::ImageLayout::eGeneral);
-        SetupGuestMappings();
-    }
 
-    Texture::Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
-        : gpu(gpu),
-          dimensions(dimensions),
-          format(format),
-          layout(initialLayout == vk::ImageLayout::ePreinitialized ? vk::ImageLayout::ePreinitialized : vk::ImageLayout::eUndefined),
-          tiling(vk::ImageTiling::eOptimal), // Same as above
-          mipLevels(mipLevels),
-          layerCount(layerCount),
-          sampleCount(sampleCount) {
-        vk::ImageCreateInfo imageCreateInfo{
-            .imageType = dimensions.GetType(),
-            .format = *format,
-            .extent = dimensions,
-            .mipLevels = mipLevels,
-            .arrayLayers = layerCount,
-            .samples = sampleCount,
-            .tiling = tiling,
-            .usage = usage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
-            .sharingMode = vk::SharingMode::eExclusive,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
-            .initialLayout = layout,
-        };
-        backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
-        if (initialLayout != layout)
-            TransitionLayout(initialLayout);
+        SetupGuestMappings();
     }
 
     Texture::~Texture() {
         std::lock_guard lock(*this);
+        if (trapHandle)
+            gpu.state.nce->DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
+    }
+
+    void Texture::MarkGpuDirty() {
+        if (dirtyState == DirtyState::GpuDirty)
+            return;
+        gpu.state.nce->RetrapRegions(*trapHandle, false);
+        dirtyState = DirtyState::GpuDirty;
     }
 
     bool Texture::WaitOnBacking() {
@@ -420,7 +396,10 @@ namespace skyline::gpu {
             });
     }
 
-    void Texture::SynchronizeHost() {
+    void Texture::SynchronizeHost(bool rwTrap) {
+        if (dirtyState != DirtyState::CpuDirty)
+            return; // If the texture has not been modified on the CPU, there is no need to synchronize it
+
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
 
         auto stagingBuffer{SynchronizeHostImpl(nullptr)};
@@ -431,9 +410,20 @@ namespace skyline::gpu {
             lCycle->AttachObjects(stagingBuffer, shared_from_this());
             cycle = lCycle;
         }
+
+        if (rwTrap) {
+            gpu.state.nce->RetrapRegions(*trapHandle, false);
+            dirtyState = DirtyState::GpuDirty;
+        } else {
+            gpu.state.nce->RetrapRegions(*trapHandle, true); // Trap any future CPU writes to this texture
+            dirtyState = DirtyState::Clean;
+        }
     }
 
-    void Texture::SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
+    void Texture::SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
+        if (dirtyState != DirtyState::CpuDirty)
+            return;
+
         TRACE_EVENT("gpu", "Texture::SynchronizeHostWithBuffer");
 
         auto stagingBuffer{SynchronizeHostImpl(pCycle)};
@@ -442,18 +432,27 @@ namespace skyline::gpu {
             pCycle->AttachObjects(stagingBuffer, shared_from_this());
             cycle = pCycle;
         }
+
+        if (rwTrap) {
+            gpu.state.nce->RetrapRegions(*trapHandle, false);
+            dirtyState = DirtyState::GpuDirty;
+        } else {
+            gpu.state.nce->RetrapRegions(*trapHandle, true); // Trap any future CPU writes to this texture
+            dirtyState = DirtyState::Clean;
+        }
     }
 
-    void Texture::SynchronizeGuest() {
-        if (!guest)
+    void Texture::SynchronizeGuest(bool skipTrap) {
+        if (dirtyState != DirtyState::GpuDirty || layout == vk::ImageLayout::eUndefined) {
+            // We can skip syncing in two cases:
+            // * If the texture has not been used on the GPU, there is no need to synchronize it
+            // * If the state of the host texture is undefined then so can the guest
+            return;
+        } else if (!guest) {
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
-        else if (layout == vk::ImageLayout::eUndefined)
-            return; // If the state of the host texture is undefined then so can the guest
+        }
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
-
-        if (layout == vk::ImageLayout::eUndefined)
-            return; // We don't need to synchronize the image if it is in an undefined state on the host
 
         WaitOnBacking();
         WaitOnFence();
@@ -473,18 +472,22 @@ namespace skyline::gpu {
         } else {
             throw exception("Host -> Guest synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
         }
+
+        if (!skipTrap)
+            gpu.state.nce->RetrapRegions(*trapHandle, true);
+        dirtyState = DirtyState::Clean;
     }
 
     void Texture::SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
+        if (dirtyState != DirtyState::GpuDirty)
+            return;
+
         if (!guest)
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
         else if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
-
-        if (layout == vk::ImageLayout::eUndefined)
-            return;
 
         WaitOnBacking();
         if (cycle.lock() != pCycle)
@@ -504,6 +507,8 @@ namespace skyline::gpu {
         } else {
             throw exception("Host -> Guest synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
         }
+
+        dirtyState = DirtyState::Clean;
     }
 
     std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {

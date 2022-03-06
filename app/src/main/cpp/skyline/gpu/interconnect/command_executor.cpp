@@ -131,7 +131,7 @@ namespace skyline::gpu::interconnect {
                 });
 
                 for (auto texture : syncTextures)
-                    texture->SynchronizeHostWithBuffer(commandBuffer, cycle);
+                    texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
 
                 for (auto buffer : syncBuffers)
                     buffer->SynchronizeHostWithCycle(cycle);
@@ -161,9 +161,6 @@ namespace skyline::gpu::interconnect {
                     }, node);
                     #undef NODE
                 }
-
-                for (auto texture : syncTextures)
-                    texture->SynchronizeGuestWithBuffer(commandBuffer, cycle);
 
                 for (auto buffer : syncBuffers)
                     buffer->SynchronizeGuestWithCycle(cycle);

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <nce.h>
 #include <gpu/memory_manager.h>
 
 namespace skyline::gpu {
@@ -321,6 +322,13 @@ namespace skyline::gpu {
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
+        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
+        enum class DirtyState {
+            Clean, //!< The CPU mappings are in sync with the GPU texture
+            CpuDirty, //!< The CPU mappings have been modified but the GPU texture is not up to date
+            GpuDirty, //!< The GPU texture has been modified but the CPU mappings have not been updated
+        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
+
         std::vector<std::weak_ptr<TextureView>> views; //!< TextureView(s) that are backed by this Texture, used for repointing to a new Texture on deletion
 
         friend TextureManager;
@@ -377,17 +385,16 @@ namespace skyline::gpu {
         u32 layerCount; //!< The amount of array layers in the image, utilized for efficient binding (Not to be confused with the depth or faces in a cubemap)
         vk::SampleCountFlagBits sampleCount;
 
-        Texture(GPU &gpu, BackingType &&backing, GuestTexture guest, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
-
+        /**
+         * @brief Creates a texture object wrapping the supplied backing with the supplied attributes
+         * @param layout The initial layout of the texture, it **must** be eUndefined or ePreinitialized
+         */
         Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
-        Texture(GPU &gpu, GuestTexture guest);
-
         /**
-         * @brief Creates and allocates memory for the backing to creates a texture object wrapping it
-         * @param usage Usage flags that will applied aside from VK_IMAGE_USAGE_TRANSFER_SRC_BIT/VK_IMAGE_USAGE_TRANSFER_DST_BIT which are mandatory
+         * @brief Creates a texture object wrapping the guest texture with a backing that can represent the guest texture data
          */
-        Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral, vk::ImageUsageFlags usage = {}, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+        Texture(GPU &gpu, GuestTexture guest);
 
         ~Texture();
 
@@ -427,6 +434,13 @@ namespace skyline::gpu {
         }
 
         /**
+         * @brief Marks the texture as dirty on the GPU, it will be synced on the next call to SynchronizeGuest
+         * @note This **must** be called after syncing the texture to the GPU not before
+         * @note The texture **must** be locked prior to calling this
+         */
+        void MarkGpuDirty();
+
+        /**
          * @brief Waits on the texture backing to be a valid non-null Vulkan image
          * @return If the mutex could be unlocked during the function
          * @note The texture **must** be locked prior to calling this
@@ -458,25 +472,28 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified
+         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
          * @note The texture **must** be locked prior to calling this
          * @note The guest texture backing should exist prior to calling this
          */
-        void SynchronizeHost();
+        void SynchronizeHost(bool rwTrap = false);
 
         /**
          * @brief Same as SynchronizeHost but this records any commands into the supplied command buffer rather than creating one as necessary
+         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
          * @note It is more efficient to call SynchronizeHost than allocating a command buffer purely for this function as it may conditionally not record any commands
          * @note The texture **must** be locked prior to calling this
          * @note The guest texture backing should exist prior to calling this
          */
-        void SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
+        void SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, bool rwTrap = false);
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
+         * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
          * @note The texture **must** be locked prior to calling this
          * @note The guest texture should not be null prior to calling this
          */
-        void SynchronizeGuest();
+        void SynchronizeGuest(bool skipTrap = false);
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
