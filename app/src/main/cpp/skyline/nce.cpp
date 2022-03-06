@@ -76,7 +76,7 @@ namespace skyline::nce {
             auto &mctx{ctx->uc_mcontext};
             const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
 
-            if (signal == SIGSEGV && info->si_code == SEGV_ACCERR)
+            if (signal == SIGSEGV)
                 // If we get a guest access violation then we want to handle any accesses that may be from a trapped region
                 if (state.nce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
                     return;
