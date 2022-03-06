@@ -2,6 +2,8 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu.h>
+#include <kernel/memory.h>
+#include <kernel/types/KProcess.h>
 #include <common/trace.h>
 #include "buffer.h"
 
@@ -13,8 +15,48 @@ namespace skyline::gpu {
         return size;
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : size(guest.BufferSize()), backing(gpu.memory.AllocateBuffer(size)), guest(std::move(guest)) {
+    void Buffer::SetupGuestMappings() {
+        auto &mappings{guest.mappings};
+        if (mappings.size() == 1) {
+            auto mapping{mappings.front()};
+            u8 *alignedData{util::AlignDown(mapping.data(), PAGE_SIZE)};
+            size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), PAGE_SIZE) - alignedData)};
+
+            alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
+            mirror = alignedMirror.subspan(static_cast<size_t>(mapping.data() - alignedData), mapping.size());
+        } else {
+            std::vector<span<u8>> alignedMappings;
+
+            const auto &frontMapping{mappings.front()};
+            u8 *alignedData{util::AlignDown(frontMapping.data(), PAGE_SIZE)};
+            alignedMappings.emplace_back(alignedData, (frontMapping.data() + frontMapping.size()) - alignedData);
+
+            size_t totalSize{frontMapping.size()};
+            for (auto it{std::next(mappings.begin())}; it != std::prev(mappings.end()); ++it) {
+                auto mappingSize{it->size()};
+                alignedMappings.emplace_back(it->data(), mappingSize);
+                totalSize += mappingSize;
+            }
+
+            const auto &backMapping{mappings.back()};
+            totalSize += backMapping.size();
+            alignedMappings.emplace_back(backMapping.data(), util::AlignUp(backMapping.size(), PAGE_SIZE));
+
+            alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
+            mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
+        }
+    }
+
+    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), size(guest.BufferSize()), backing(gpu.memory.AllocateBuffer(size)), guest(std::move(guest)) {
+        SetupGuestMappings();
         SynchronizeHost();
+    }
+
+    Buffer::~Buffer() {
+        std::lock_guard lock(*this);
+        SynchronizeGuest(true);
+        if (alignedMirror.valid())
+            munmap(alignedMirror.data(), alignedMirror.size());
     }
 
     void Buffer::WaitOnFence() {
@@ -87,6 +129,10 @@ namespace skyline::gpu {
 
         pCycle->AttachObject(std::make_shared<BufferGuestSync>(shared_from_this()));
         cycle = pCycle;
+    }
+
+    void Buffer::Write(span<u8> data, vk::DeviceSize offset) {
+        std::memcpy(mirror.data() + offset, data.data(), data.size());
     }
 
     std::shared_ptr<BufferView> Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {

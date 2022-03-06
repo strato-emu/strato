@@ -238,7 +238,8 @@ namespace skyline::gpu {
 
 
     GPU::GPU(const DeviceState &state)
-        : vkContext(LoadVulkanDriver(state)),
+        : state(state),
+          vkContext(LoadVulkanDriver(state)),
           vkInstance(CreateInstance(state, vkContext)),
           vkDebugReportCallback(CreateDebugReportCallback(vkInstance)),
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),

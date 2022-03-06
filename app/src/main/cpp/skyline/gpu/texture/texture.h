@@ -214,7 +214,7 @@ namespace skyline::gpu {
      * @brief A descriptor for a texture present in guest memory, it can be used to create a corresponding Texture object for usage on the host
      */
     struct GuestTexture {
-        using Mappings = boost::container::small_vector<span < u8>, 3>;
+        using Mappings = boost::container::small_vector<span<u8>, 3>;
 
         Mappings mappings; //!< Spans to CPU memory for the underlying data backing this texture
         texture::Dimensions dimensions{};
@@ -319,10 +319,17 @@ namespace skyline::gpu {
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
 
+        span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
+        span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
         std::vector<std::weak_ptr<TextureView>> views; //!< TextureView(s) that are backed by this Texture, used for repointing to a new Texture on deletion
 
         friend TextureManager;
         friend TextureView;
+
+        /**
+         * @brief Sets up mirror mappings for the guest mappings
+         */
+        void SetupGuestMappings();
 
         /**
          * @brief An implementation function for guest -> host texture synchronization, it allocates and copies data into a staging buffer or directly into a linear host texture

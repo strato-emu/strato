@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu.h>
+#include <kernel/memory.h>
 #include <common/trace.h>
 #include <kernel/types/KProcess.h>
 #include "texture.h"
@@ -84,15 +85,45 @@ namespace skyline::gpu {
         }
     }
 
+    void Texture::SetupGuestMappings() {
+        auto &mappings{guest->mappings};
+        if (mappings.size() == 1) {
+            auto mapping{mappings.front()};
+            u8 *alignedData{util::AlignDown(mapping.data(), PAGE_SIZE)};
+            size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), PAGE_SIZE) - alignedData)};
+
+            alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
+            mirror = alignedMirror.subspan(static_cast<size_t>(mapping.data() - alignedData), mapping.size());
+        } else {
+            std::vector<span<u8>> alignedMappings;
+
+            const auto &frontMapping{mappings.front()};
+            u8 *alignedData{util::AlignDown(frontMapping.data(), PAGE_SIZE)};
+            alignedMappings.emplace_back(alignedData, (frontMapping.data() + frontMapping.size()) - alignedData);
+
+            size_t totalSize{frontMapping.size()};
+            for (auto it{std::next(mappings.begin())}; it != std::prev(mappings.end()); ++it) {
+                auto mappingSize{it->size()};
+                alignedMappings.emplace_back(it->data(), mappingSize);
+                totalSize += mappingSize;
+            }
+
+            const auto &backMapping{mappings.back()};
+            totalSize += backMapping.size();
+            alignedMappings.emplace_back(backMapping.data(), util::AlignUp(backMapping.size(), PAGE_SIZE));
+
+            alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
+            mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
+        }
+    }
+
     std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
         if (!guest)
             throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
         else if (guest->dimensions != dimensions)
             throw exception("Guest and host dimensions being different is not supported currently");
-        else if (guest->mappings.size() > 1)
-            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
 
-        auto pointer{guest->mappings[0].data()};
+        auto pointer{mirror.data()};
         auto size{format->GetSize(dimensions)};
 
         WaitOnBacking();
@@ -218,7 +249,7 @@ namespace skyline::gpu {
     }
 
     void Texture::CopyToGuest(u8 *hostBuffer) {
-        auto guestOutput{guest->mappings[0].data()};
+        auto guestOutput{mirror.data()};
 
         if (guest->tileConfig.mode == texture::TileMode::Block)
             texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
@@ -246,6 +277,7 @@ namespace skyline::gpu {
           mipLevels(mipLevels),
           layerCount(layerCount),
           sampleCount(sampleCount) {
+        SetupGuestMappings();
         if (GetBacking())
             SynchronizeHost();
     }
@@ -293,6 +325,7 @@ namespace skyline::gpu {
         };
         backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
         TransitionLayout(vk::ImageLayout::eGeneral);
+        SetupGuestMappings();
     }
 
     Texture::Texture(GPU &gpu, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
@@ -321,6 +354,13 @@ namespace skyline::gpu {
         backing = tiling != vk::ImageTiling::eLinear ? gpu.memory.AllocateImage(imageCreateInfo) : gpu.memory.AllocateMappedImage(imageCreateInfo);
         if (initialLayout != layout)
             TransitionLayout(initialLayout);
+    }
+
+    Texture::~Texture() {
+        std::lock_guard lock(*this);
+        SynchronizeGuest(true);
+        if (alignedMirror.valid())
+            munmap(alignedMirror.data(), alignedMirror.size());
     }
 
     bool Texture::WaitOnBacking() {
@@ -409,8 +449,6 @@ namespace skyline::gpu {
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
         else if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
-        else if (guest->mappings.size() > 1)
-            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
 
@@ -442,8 +480,6 @@ namespace skyline::gpu {
             throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
         else if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
-        else if (guest->mappings.size() > 1)
-            throw exception("Synchronizing textures across {} mappings is not supported", guest->mappings.size());
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
 
@@ -569,9 +605,5 @@ namespace skyline::gpu {
         })};
         lCycle->AttachObjects(std::move(source), shared_from_this());
         cycle = lCycle;
-    }
-
-    Texture::~Texture() {
-        WaitOnFence();
     }
 }

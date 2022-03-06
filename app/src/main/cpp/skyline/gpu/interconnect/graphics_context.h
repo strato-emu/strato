@@ -582,7 +582,7 @@ namespace skyline::gpu::interconnect {
             T Read(size_t offset) {
                 T object;
                 size_t objectOffset{};
-                for (auto &mapping: guest.mappings) {
+                for (auto &mapping : guest.mappings) {
                     if (offset < mapping.size_bytes()) {
                         auto copySize{std::min(mapping.size_bytes() - offset, sizeof(T))};
                         std::memcpy(reinterpret_cast<u8 *>(&object) + objectOffset, mapping.data() + offset, copySize);
@@ -602,21 +602,9 @@ namespace skyline::gpu::interconnect {
              * @note This must only be called when the GuestBuffer is resolved correctly
              */
             template<typename T>
-            void Write(const T &object, size_t offset) {
-                size_t objectOffset{};
-                for (auto &mapping: guest.mappings) {
-                    if (offset < mapping.size_bytes()) {
-                        auto copySize{std::min(mapping.size_bytes() - offset, sizeof(T))};
-                        std::memcpy(mapping.data() + offset, reinterpret_cast<const u8 *>(&object) + objectOffset, copySize);
-                        objectOffset += copySize;
-                        if (objectOffset == sizeof(T))
-                            return;
-                        offset = mapping.size_bytes();
-                    } else {
-                        offset -= mapping.size_bytes();
-                    }
-                }
-                throw exception("Object extent ({} + {} = {}) is larger than constant buffer size: {}", size + offset, sizeof(T), size + offset + sizeof(T), size);
+            void Write(T &object, size_t offset) {
+                std::lock_guard lock{*view};
+                view->buffer->Write(span<T>(object).template cast<u8>(), view->offset + offset);
             }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it

@@ -19,6 +19,11 @@ namespace skyline::gpu {
      * @brief An interface to host GPU structures, anything concerning host GPU/Presentation APIs is encapsulated by this
      */
     class GPU {
+      private:
+        const DeviceState &state; // We access the device state inside Texture (and Buffers) for setting up NCE memory tracking
+        friend Texture;
+        friend Buffer;
+
       public:
         vk::raii::Context vkContext;
         vk::raii::Instance vkInstance;

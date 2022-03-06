@@ -28,15 +28,23 @@ namespace skyline::gpu {
      */
     class Buffer : public std::enable_shared_from_this<Buffer>, public FenceCycleDependency {
       private:
+        GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
         vk::DeviceSize size;
         memory::Buffer backing;
         GuestBuffer guest;
 
+        span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
+        span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
         std::vector<std::weak_ptr<BufferView>> views; //!< BufferView(s) that are backed by this Buffer, used for repointing to a new Buffer on deletion
 
         friend BufferView;
         friend BufferManager;
+
+        /**
+         * @brief Sets up mirror mappings for the guest mappings
+         */
+        void SetupGuestMappings();
 
       public:
         std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
@@ -47,8 +55,10 @@ namespace skyline::gpu {
 
         Buffer(GPU &gpu, GuestBuffer guest);
 
+        ~Buffer();
+
         /**
-         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @brief Acquires an exclusive lock on the buffer for the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
         void lock() {
@@ -56,7 +66,7 @@ namespace skyline::gpu {
         }
 
         /**
-         * @brief Relinquishes an existing lock on the texture by the calling thread
+         * @brief Relinquishes an existing lock on the buffer by the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
         void unlock() {
@@ -104,6 +114,11 @@ namespace skyline::gpu {
         void SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &cycle);
 
         /**
+         * @brief Writes data at the specified offset in the buffer
+         */
+        void Write(span<u8> data, vk::DeviceSize offset);
+
+        /**
          * @return A cached or newly created view into this buffer with the supplied attributes
          */
         std::shared_ptr<BufferView> GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format = {});
@@ -121,7 +136,7 @@ namespace skyline::gpu {
         vk::Format format;
 
         /**
-         * @note A view must **NOT** be constructed directly, it should always be retrieved using Texture::GetView
+         * @note A view must **NOT** be constructed directly, it should always be retrieved using Buffer::GetView
          */
         BufferView(std::shared_ptr<Buffer> backing, vk::DeviceSize offset, vk::DeviceSize range, vk::Format format);
 
