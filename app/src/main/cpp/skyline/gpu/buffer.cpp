@@ -172,10 +172,14 @@ namespace skyline::gpu {
     }
 
     std::shared_ptr<BufferView> Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {
-        for (const auto &viewWeak : views) {
-            auto view{viewWeak.lock()};
+        for (auto viewIt{views.begin()}; viewIt != views.end();) {
+            auto view{viewIt->lock()};
             if (view && view->offset == offset && view->range == range && view->format == format)
                 return view;
+            else if (!view)
+                viewIt = views.erase(viewIt);
+            else
+                ++viewIt;
         }
 
         auto view{std::make_shared<BufferView>(shared_from_this(), offset, range, format)};

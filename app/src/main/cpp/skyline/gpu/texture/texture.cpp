@@ -515,10 +515,14 @@ namespace skyline::gpu {
     }
 
     std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {
-        for (const auto &viewWeak : views) {
-            auto view{viewWeak.lock()};
+        for (auto viewIt{views.begin()}; viewIt != views.end();) {
+            auto view{viewIt->lock()};
             if (view && type == view->type && pFormat == view->format && range == view->range && mapping == view->mapping)
                 return view;
+            else if (!view)
+                viewIt = views.erase(viewIt);
+            else
+                ++viewIt;
         }
 
         auto view{std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping)};
