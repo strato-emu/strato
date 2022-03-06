@@ -25,6 +25,7 @@
       <option name="CLASS_CONSTRUCTOR_INIT_LIST_WRAP" value="0" />
       <option name="SUPERCLASS_LIST_WRAP" value="0" />
       <option name="ALIGN_INIT_LIST_IN_COLUMNS" value="false" />
+      <option name="SPACE_BEFORE_COLON_IN_FOREACH" value="true" />
       <option name="SPACE_BEFORE_DICTIONARY_LITERAL_COLON" value="true" />
       <option name="ADD_BRIEF_TAG" value="true" />
       <option name="HEADER_GUARD_STYLE_PATTERN" value="${PROJECT_NAME}_${PROJECT_REL_PATH}_${FILE_NAME}_${EXT}" />

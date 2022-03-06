@@ -81,7 +81,6 @@
     <inspection_tool class="AssertsWithoutMessages" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssertsWithoutMessagesTestNG" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentOrReturnOfFieldWithMutableType" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="AssignmentToCatchBlockParameter" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentToForLoopParameter" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="m_checkForeachParameters" value="false" />
     </inspection_tool>
@@ -92,7 +91,6 @@
     <inspection_tool class="AssignmentToNull" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentToStaticFieldFromInstanceMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentToSuperclassField" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="AssignmentUsedAsCondition" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AutoBoxing" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoreAddedToCollection" value="false" />
     </inspection_tool>
@@ -122,7 +120,6 @@
     </inspection_tool>
     <inspection_tool class="BadOddness" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BigDecimalEquals" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="BigDecimalLegacyMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BlockMarkerComments" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BooleanExpressionMayBeConditional" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BooleanMethodNameMustStartWithQuestion" enabled="true" level="WARNING" enabled_by_default="true">
@@ -171,7 +168,7 @@
     </inspection_tool>
     <inspection_tool class="CheckedExceptionClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ClangTidy" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="clangTidyChecks" value="-*,bugprone-argument-comment,bugprone-assert-side-effect,bugprone-bad-signal-to-kill-thread,bugprone-branch-clone,bugprone-copy-constructor-init,bugprone-dangling-handle,bugprone-dynamic-static-initializers,bugprone-fold-init-type,bugprone-forward-declaration-namespace,bugprone-forwarding-reference-overload,bugprone-inaccurate-erase,bugprone-incorrect-roundings,bugprone-integer-division,bugprone-lambda-function-name,bugprone-macro-repeated-side-effects,bugprone-misplaced-operator-in-strlen-in-alloc,bugprone-misplaced-pointer-arithmetic-in-alloc,bugprone-misplaced-widening-cast,bugprone-move-forwarding-reference,bugprone-multiple-statement-macro,bugprone-no-escape,bugprone-not-null-terminated-result,bugprone-parent-virtual-call,bugprone-posix-return,bugprone-reserved-identifier,bugprone-sizeof-container,bugprone-sizeof-expression,bugprone-spuriously-wake-up-functions,bugprone-string-constructor,bugprone-string-integer-assignment,bugprone-string-literal-with-embedded-nul,bugprone-suspicious-enum-usage,bugprone-suspicious-include,bugprone-suspicious-memset-usage,bugprone-suspicious-missing-comma,bugprone-suspicious-semicolon,bugprone-suspicious-string-compare,bugprone-swapped-arguments,bugprone-terminating-continue,bugprone-throw-keyword-missing,bugprone-too-small-loop-variable,bugprone-undefined-memory-manipulation,bugprone-undelegated-constructor,bugprone-unhandled-self-assignment,bugprone-unused-raii,bugprone-unused-return-value,bugprone-use-after-move,bugprone-virtual-near-miss,cert-dcl21-cpp,cert-dcl58-cpp,cert-err34-c,cert-err52-cpp,cert-err58-cpp,cert-err60-cpp,cert-flp30-c,cert-msc50-cpp,cert-msc51-cpp,cert-str34-c,cppcoreguidelines-interfaces-global-init,cppcoreguidelines-narrowing-conversions,cppcoreguidelines-pro-type-member-init,cppcoreguidelines-pro-type-static-cast-downcast,cppcoreguidelines-slicing,google-default-arguments,google-explicit-constructor,google-runtime-operator,hicpp-exception-baseclass,hicpp-multiway-paths-covered,misc-misplaced-const,misc-new-delete-overloads,misc-no-recursion,misc-non-copyable-objects,misc-throw-by-value-catch-by-reference,misc-unconventional-assign-operator,misc-uniqueptr-reset-release,modernize-avoid-bind,modernize-concat-nested-namespaces,modernize-deprecated-ios-base-aliases,modernize-loop-convert,modernize-make-shared,modernize-make-unique,modernize-pass-by-value,modernize-raw-string-literal,modernize-redundant-void-arg,modernize-replace-auto-ptr,modernize-replace-disallow-copy-and-assign-macro,modernize-replace-random-shuffle,modernize-return-braced-init-list,modernize-shrink-to-fit,modernize-unary-static-assert,modernize-use-auto,modernize-use-bool-literals,modernize-use-emplace,modernize-use-equals-default,modernize-use-equals-delete,modernize-use-nodiscard,modernize-use-noexcept,modernize-use-nullptr,modernize-use-override,modernize-use-transparent-functors,modernize-use-uncaught-exceptions,mpi-buffer-deref,mpi-type-mismatch,openmp-use-default-none,performance-faster-string-find,performance-for-range-copy,performance-implicit-conversion-in-loop,performance-inefficient-algorithm,performance-inefficient-string-concatenation,performance-inefficient-vector-operation,performance-move-const-arg,performance-move-constructor-init,performance-no-automatic-move,performance-noexcept-move-constructor,performance-trivially-destructible,performance-type-promotion-in-math-fn,performance-unnecessary-copy-initialization,performance-unnecessary-value-param,portability-simd-intrinsics,readability-avoid-const-params-in-decls,readability-const-return-type,readability-container-size-empty,readability-convert-member-functions-to-static,readability-delete-null-pointer,readability-deleted-default,readability-inconsistent-declaration-parameter-name,readability-misleading-indentation,readability-misplaced-array-index,readability-non-const-parameter,readability-redundant-control-flow,readability-redundant-declaration,readability-redundant-function-ptr-dereference,readability-redundant-smartptr-get,readability-redundant-string-cstr,readability-redundant-string-init,readability-simplify-subscript-expr,readability-static-accessed-through-instance,readability-static-definition-in-anonymous-namespace,readability-string-compare,readability-uniqueptr-delete-release,readability-use-anyofallof" />
+      <option name="clangTidyChecks" value="-*,bugprone-argument-comment,bugprone-assert-side-effect,bugprone-bad-signal-to-kill-thread,bugprone-branch-clone,bugprone-copy-constructor-init,bugprone-dangling-handle,bugprone-dynamic-static-initializers,bugprone-fold-init-type,bugprone-forward-declaration-namespace,bugprone-forwarding-reference-overload,bugprone-inaccurate-erase,bugprone-incorrect-roundings,bugprone-integer-division,bugprone-lambda-function-name,bugprone-macro-repeated-side-effects,bugprone-misplaced-operator-in-strlen-in-alloc,bugprone-misplaced-pointer-arithmetic-in-alloc,bugprone-misplaced-widening-cast,bugprone-move-forwarding-reference,bugprone-multiple-statement-macro,bugprone-no-escape,bugprone-not-null-terminated-result,bugprone-parent-virtual-call,bugprone-posix-return,bugprone-reserved-identifier,bugprone-sizeof-container,bugprone-sizeof-expression,bugprone-spuriously-wake-up-functions,bugprone-string-constructor,bugprone-string-integer-assignment,bugprone-string-literal-with-embedded-nul,bugprone-suspicious-enum-usage,bugprone-suspicious-include,bugprone-suspicious-memset-usage,bugprone-suspicious-missing-comma,bugprone-suspicious-semicolon,bugprone-suspicious-string-compare,bugprone-swapped-arguments,bugprone-terminating-continue,bugprone-throw-keyword-missing,bugprone-too-small-loop-variable,bugprone-undefined-memory-manipulation,bugprone-undelegated-constructor,bugprone-unhandled-self-assignment,bugprone-unused-raii,bugprone-unused-return-value,bugprone-use-after-move,bugprone-virtual-near-miss,cert-dcl21-cpp,cert-dcl58-cpp,cert-err34-c,cert-err52-cpp,cert-err58-cpp,cert-err60-cpp,cert-flp30-c,cert-msc50-cpp,cert-msc51-cpp,cert-str34-c,cppcoreguidelines-interfaces-global-init,cppcoreguidelines-narrowing-conversions,cppcoreguidelines-pro-type-member-init,cppcoreguidelines-pro-type-static-cast-downcast,cppcoreguidelines-slicing,google-default-arguments,google-explicit-constructor,google-runtime-operator,hicpp-exception-baseclass,hicpp-multiway-paths-covered,misc-misplaced-const,misc-new-delete-overloads,misc-no-recursion,misc-non-copyable-objects,misc-throw-by-value-catch-by-reference,misc-unconventional-assign-operator,misc-uniqueptr-reset-release,modernize-avoid-bind,modernize-concat-nested-namespaces,modernize-deprecated-ios-base-aliases,modernize-loop-convert,modernize-make-shared,modernize-make-unique,modernize-pass-by-value,modernize-raw-string-literal,modernize-redundant-void-arg,modernize-replace-auto-ptr,modernize-replace-disallow-copy-and-assign-macro,modernize-replace-random-shuffle,modernize-return-braced-init-list,modernize-shrink-to-fit,modernize-unary-static-assert,modernize-use-auto,modernize-use-bool-literals,modernize-use-emplace,modernize-use-equals-default,modernize-use-equals-delete,modernize-use-nodiscard,modernize-use-noexcept,modernize-use-nullptr,modernize-use-override,modernize-use-transparent-functors,modernize-use-uncaught-exceptions,mpi-buffer-deref,mpi-type-mismatch,openmp-use-default-none,performance-faster-string-find,performance-for-range-copy,performance-implicit-conversion-in-loop,performance-inefficient-algorithm,performance-inefficient-string-concatenation,performance-inefficient-vector-operation,performance-move-const-arg,performance-move-constructor-init,performance-no-automatic-move,performance-noexcept-move-constructor,performance-trivially-destructible,performance-type-promotion-in-math-fn,performance-unnecessary-copy-initialization,performance-unnecessary-value-param,portability-simd-intrinsics,readability-avoid-const-params-in-decls,readability-const-return-type,readability-container-size-empty,readability-convert-member-functions-to-static,readability-delete-null-pointer,readability-deleted-default,readability-inconsistent-declaration-parameter-name,readability-misleading-indentation,readability-misplaced-array-index,readability-redundant-control-flow,readability-redundant-declaration,readability-redundant-function-ptr-dereference,readability-redundant-smartptr-get,readability-redundant-string-cstr,readability-redundant-string-init,readability-simplify-subscript-expr,readability-static-accessed-through-instance,readability-static-definition-in-anonymous-namespace,readability-string-compare,readability-uniqueptr-delete-release,readability-use-anyofallof" />
     </inspection_tool>
     <inspection_tool class="ClassComplexity" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="m_limit" value="80" />
@@ -247,7 +244,6 @@
     <inspection_tool class="CompareToUsesNonFinalVariable" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ComparisonOfShortAndChar" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ConditionSignal" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="ConditionalExpressionWithIdenticalBranches" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ConfusingFloatingPointLiteral" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ConfusingMainMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ConfusingOctalEscape" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -296,9 +292,6 @@
     <inspection_tool class="DesignForExtension" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="DisjointPackage" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="DollarSignInName" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="DoubleCheckedLocking" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="ignoreOnVolatileVariables" value="false" />
-    </inspection_tool>
     <inspection_tool class="DoubleLiteralMayBeFloatLiteral" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="DriverManagerGetConnection" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="DuplicateBooleanBranch" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -317,7 +310,6 @@
       <option name="commentsAreContent" value="true" />
     </inspection_tool>
     <inspection_tool class="EmptyDirectory" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="EmptySynchronizedStatement" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="EnumAsName" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="EnumClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="EnumerationCanBeIteration" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -363,11 +355,9 @@
     <inspection_tool class="FieldNotUsedInToString" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="FinalClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="FinalMethod" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="FinalMethodInFinalClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="Finalize" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoreTrivialFinalizers" value="true" />
     </inspection_tool>
-    <inspection_tool class="FinalizeNotProtected" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="FloatingPointEquality" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ForLoopReplaceableByWhile" enabled="true" level="INFORMATION" enabled_by_default="true">
       <option name="m_ignoreLoopsWithoutConditions" value="false" />
@@ -591,7 +581,6 @@
     <inspection_tool class="NestingDepth" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="m_limit" value="5" />
     </inspection_tool>
-    <inspection_tool class="NewClassNamingConvention" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NewExceptionWithoutArguments" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NewMethodNamingConvention" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NoDefaultBaseConstructor" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -605,7 +594,6 @@
     </inspection_tool>
     <inspection_tool class="NonExceptionNameEndsWithException" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NonFinalClone" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="NonFinalFieldInEnum" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NonFinalFieldInImmutable" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NonFinalFieldOfException" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NonFinalGuard" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -740,7 +728,6 @@
     <inspection_tool class="PreviewMultipleParameterProviders" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="PrivateMemberAccessBetweenOuterAndInnerClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ProblematicVarargsMethodOverride" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ProjectFingerprint" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="PropKeysLabel" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -750,7 +737,6 @@
       <option name="ignoreEnums" value="false" />
       <option name="ignoreInterfaces" value="false" />
     </inspection_tool>
-    <inspection_tool class="ProtectedMemberInFinalClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="PublicConstructor" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="PublicConstructorInNonPublicClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="PublicFieldAccessedInSynchronizedContext" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1025,7 +1011,6 @@
     <inspection_tool class="SystemGetenv" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="SystemOutErr" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="SystemProperties" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="SystemRunFinalizersOnExit" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="SystemSetSecurityManager" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="TemplateArgumentsIssues" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="TestCaseInProductCode" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1072,7 +1057,6 @@
       <option name="onlyWeakentoInterface" value="true" />
     </inspection_tool>
     <inspection_tool class="TypeParameterExtendsFinalClass" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="UnaryPlus" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UncheckedExceptionClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnconditionalWait" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UndeclaredTests" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1097,7 +1081,6 @@
     <inspection_tool class="UnnecessarySuperConstructor" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnnecessarySuperQualifier" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnnecessaryThis" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="UnnecessaryUnaryMinus" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnnecessaryUnicodeEscape" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnqualifiedInnerClassAccess" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoreReferencesToLocalInnerClasses" value="false" />
@@ -1159,7 +1142,6 @@
     <inspection_tool class="WaitNotInLoop" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="WaitNotifyNotInSynchronizedContext" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="WaitOrAwaitWithoutTimeout" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="WaitWhileHoldingTwoLocks" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="WaitWithoutCorrespondingNotify" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="WeakerAccess" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="SUGGEST_PACKAGE_LOCAL_FOR_MEMBERS" value="true" />
