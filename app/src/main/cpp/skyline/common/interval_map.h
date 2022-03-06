@@ -187,15 +187,19 @@ namespace skyline {
 
                                     for (const auto &entryInterval2 : recursedEntry->group->intervals) {
                                         // Similar to case (2) below but for the recursed entry
+                                        bool exclusiveIntervalEntry{true};
                                         auto alignedEntryInterval2{entryInterval2.Align(Alignment)};
 
                                         auto recursedEntry2{std::lower_bound(entries.begin(), entries.end(), alignedEntryInterval2.end)};
                                         for (; recursedEntry2 != entries.begin() && (--recursedEntry2)->start < alignedEntryInterval2.end;) {
                                             if (recursedEntry2->end > alignedEntryInterval2.start && recursedEntry2->group != recursedEntry->group && recursedEntry2->group != entry->group) {
-                                                intervals.emplace(std::lower_bound(intervals.begin(), intervals.end(), alignedEntryInterval2.end), alignedEntryInterval2);
+                                                exclusiveIntervalEntry = false;
                                                 break;
                                             }
                                         }
+
+                                        if (exclusiveIntervalEntry)
+                                            intervals.emplace(std::lower_bound(intervals.begin(), intervals.end(), alignedEntryInterval2.end), alignedEntryInterval2);
                                     }
                                 }
                             }
@@ -203,12 +207,17 @@ namespace skyline {
                             intervals.emplace(std::lower_bound(intervals.begin(), intervals.end(), alignedEntryInterval.start), alignedEntryInterval);
                         } else {
                             // Case (2) - We only want to add this interval if it only contains the entry
+                            bool exclusiveIntervalEntry{true};
+
                             for (auto recursedEntry{std::lower_bound(entries.begin(), entries.end(), alignedEntryInterval.end)}; recursedEntry != entries.begin() && (--recursedEntry)->start < alignedEntryInterval.end;) {
                                 if (recursedEntry->end > alignedEntryInterval.start && recursedEntry->group != entry->group) {
-                                    intervals.emplace(std::lower_bound(intervals.begin(), intervals.end(), alignedEntryInterval.start), alignedEntryInterval);
+                                    exclusiveIntervalEntry = false;
                                     break;
                                 }
                             }
+
+                            if (exclusiveIntervalEntry)
+                                intervals.emplace(std::lower_bound(intervals.begin(), intervals.end(), alignedEntryInterval.start), alignedEntryInterval);
                         }
                     }
                 }
