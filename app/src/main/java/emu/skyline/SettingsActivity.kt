@@ -58,7 +58,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.preferences, rootKey)
         }
 
-        override fun onDisplayPreferenceDialog(preference : Preference?) {
+        override fun onDisplayPreferenceDialog(preference : Preference) {
             if (preference is IntegerListPreference) {
                 // Check if dialog is already showing
                 if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null)

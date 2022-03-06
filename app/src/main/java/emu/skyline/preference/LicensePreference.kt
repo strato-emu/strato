@@ -16,7 +16,7 @@ import emu.skyline.R
 /**
  * This preference is used to show licenses and the source of a library
  */
-class LicensePreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : Preference(context, attrs, defStyleAttr) {
+class LicensePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : Preference(context, attrs, defStyleAttr) {
     /**
      * The [FragmentManager] is used to show the [LicenseDialog] fragment
      */

@@ -14,7 +14,7 @@ import androidx.preference.R
 /**
  * This preference is used to set the theme to Light/Dark mode
  */
-class ThemePreference @JvmOverloads constructor(context : Context?, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : ListPreference(context, attrs, defStyleAttr) {
+class ThemePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : ListPreference(context, attrs, defStyleAttr) {
     /**
      * This changes [AppCompatDelegate.sDefaultNightMode] based on what the user's selection is
      */

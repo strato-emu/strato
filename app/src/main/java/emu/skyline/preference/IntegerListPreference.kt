@@ -142,7 +142,7 @@ class IntegerListPreference @JvmOverloads constructor(
             getPersistedInt(0)
     }
 
-    override fun onSaveInstanceState() : Parcelable {
+    override fun onSaveInstanceState() : Parcelable? {
         val superState = super.onSaveInstanceState()
         if (isPersistent)
             // No need to save instance state since it's persistent
