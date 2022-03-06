@@ -377,8 +377,8 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Texture::TransitionLayout");
 
-        if (layout != pLayout)
-            cycle = gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+        if (layout != pLayout) {
+            auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eBottomOfPipe, {}, {}, {}, vk::ImageMemoryBarrier{
                     .image = GetBacking(),
                     .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
@@ -393,7 +393,10 @@ namespace skyline::gpu {
                         .layerCount = layerCount,
                     },
                 });
-            });
+            })};
+            lCycle->AttachObject(shared_from_this());
+            cycle = lCycle;
+        }
     }
 
     void Texture::SynchronizeHost(bool rwTrap) {
