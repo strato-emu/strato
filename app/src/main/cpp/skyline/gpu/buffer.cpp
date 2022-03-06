@@ -45,18 +45,37 @@ namespace skyline::gpu {
             alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
             mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
         }
+
+        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
+            std::lock_guard lock(*this);
+            SynchronizeGuest(true); // We can skip trapping since the caller will do it
+            WaitOnFence();
+        }, [this] {
+            std::lock_guard lock(*this);
+            SynchronizeGuest(true);
+            dirtyState = DirtyState::CpuDirty; // We need to assume the buffer is dirty since we don't know what the guest is writing
+            WaitOnFence();
+        });
     }
 
     Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), size(guest.BufferSize()), backing(gpu.memory.AllocateBuffer(size)), guest(std::move(guest)) {
         SetupGuestMappings();
-        SynchronizeHost();
     }
 
     Buffer::~Buffer() {
         std::lock_guard lock(*this);
+        if (trapHandle)
+            gpu.state.nce->DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
+    }
+
+    void Buffer::MarkGpuDirty() {
+        if (dirtyState == DirtyState::GpuDirty)
+            return;
+        gpu.state.nce->RetrapRegions(*trapHandle, false);
+        dirtyState = DirtyState::GpuDirty;
     }
 
     void Buffer::WaitOnFence() {
@@ -69,44 +88,58 @@ namespace skyline::gpu {
         }
     }
 
-    void Buffer::SynchronizeHost() {
+    void Buffer::SynchronizeHost(bool rwTrap) {
+        if (dirtyState != DirtyState::CpuDirty)
+            return; // If the buffer has not been modified on the CPU, there is no need to synchronize it
+
         WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHost");
 
-        auto host{backing.data()};
-        for (auto &mapping : guest.mappings) {
-            auto mappingSize{mapping.size_bytes()};
-            std::memcpy(host, mapping.data(), mappingSize);
-            host += mappingSize;
+        std::memcpy(backing.data(), mirror.data(), mirror.size());
+
+        if (rwTrap) {
+            gpu.state.nce->RetrapRegions(*trapHandle, false);
+            dirtyState = DirtyState::GpuDirty;
+        } else {
+            gpu.state.nce->RetrapRegions(*trapHandle, true);
+            dirtyState = DirtyState::Clean;
         }
     }
 
-    void Buffer::SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &pCycle) {
+    void Buffer::SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
+        if (dirtyState != DirtyState::CpuDirty)
+            return;
+
         if (pCycle != cycle.lock())
             WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHostWithCycle");
 
-        auto host{backing.data()};
-        for (auto &mapping : guest.mappings) {
-            auto mappingSize{mapping.size_bytes()};
-            std::memcpy(host, mapping.data(), mappingSize);
-            host += mappingSize;
+        std::memcpy(backing.data(), mirror.data(), mirror.size());
+
+        if (rwTrap) {
+            gpu.state.nce->RetrapRegions(*trapHandle, false);
+            dirtyState = DirtyState::GpuDirty;
+        } else {
+            gpu.state.nce->RetrapRegions(*trapHandle, true);
+            dirtyState = DirtyState::Clean;
         }
     }
 
-    void Buffer::SynchronizeGuest() {
+    void Buffer::SynchronizeGuest(bool skipTrap) {
+        if (dirtyState != DirtyState::GpuDirty)
+            return; // If the buffer has not been used on the GPU, there is no need to synchronize it
+
         WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeGuest");
 
-        auto host{backing.data()};
-        for (auto &mapping : guest.mappings) {
-            auto mappingSize{mapping.size_bytes()};
-            std::memcpy(mapping.data(), host, mappingSize);
-            host += mappingSize;
-        }
+        std::memcpy(mirror.data(), backing.data(), mirror.size());
+
+        if (!skipTrap)
+            gpu.state.nce->RetrapRegions(*trapHandle, true);
+        dirtyState = DirtyState::Clean;
     }
 
     /**
@@ -132,7 +165,10 @@ namespace skyline::gpu {
     }
 
     void Buffer::Write(span<u8> data, vk::DeviceSize offset) {
-        std::memcpy(mirror.data() + offset, data.data(), data.size());
+        if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
+            std::memcpy(mirror.data() + offset, data.data(), data.size());
+        if (dirtyState == DirtyState::GpuDirty || dirtyState == DirtyState::Clean)
+            std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
     std::shared_ptr<BufferView> Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {

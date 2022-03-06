@@ -134,7 +134,7 @@ namespace skyline::gpu::interconnect {
                     texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
 
                 for (auto buffer : syncBuffers)
-                    buffer->SynchronizeHostWithCycle(cycle);
+                    buffer->SynchronizeHostWithCycle(cycle, true);
 
                 vk::RenderPass lRenderPass;
                 u32 subpassIndex;
@@ -161,9 +161,6 @@ namespace skyline::gpu::interconnect {
                     }, node);
                     #undef NODE
                 }
-
-                for (auto buffer : syncBuffers)
-                    buffer->SynchronizeGuestWithCycle(cycle);
 
                 commandBuffer.end();
                 gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());

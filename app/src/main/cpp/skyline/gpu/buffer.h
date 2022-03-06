@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <nce.h>
 #include "memory_manager.h"
 
 namespace skyline::gpu {
@@ -36,6 +37,13 @@ namespace skyline::gpu {
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
+        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
+        enum class DirtyState {
+            Clean, //!< The CPU mappings are in sync with the GPU buffer
+            CpuDirty, //!< The CPU mappings have been modified but the GPU buffer is not up to date
+            GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
+        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+
         std::vector<std::weak_ptr<BufferView>> views; //!< BufferView(s) that are backed by this Buffer, used for repointing to a new Buffer on deletion
 
         friend BufferView;
@@ -82,6 +90,13 @@ namespace skyline::gpu {
         }
 
         /**
+         * @brief Marks the buffer as dirty on the GPU, it will be synced on the next call to SynchronizeGuest
+         * @note This **must** be called after syncing the buffer to the GPU not before
+         * @note The buffer **must** be locked prior to calling this
+         */
+        void MarkGpuDirty();
+
+        /**
          * @brief Waits on a fence cycle if it exists till it's signalled and resets it after
          * @note The buffer **must** be locked prior to calling this
          */
@@ -89,22 +104,25 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host buffer with the guest
+         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeHost();
+        void SynchronizeHost(bool rwTrap = false);
 
         /**
          * @brief Synchronizes the host buffer with the guest
          * @param cycle A FenceCycle that is checked against the held one to skip waiting on it when equal
+         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &cycle);
+        void SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &cycle, bool rwTrap = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer
+         * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeGuest();
+        void SynchronizeGuest(bool skipTrap = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer when the FenceCycle is signalled
