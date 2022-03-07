@@ -130,7 +130,7 @@ namespace skyline::gpu {
     TraitManager::QuirkManager::QuirkManager(const vk::PhysicalDeviceProperties &deviceProperties, const vk::PhysicalDeviceDriverProperties &driverProperties) {
         switch (driverProperties.driverID) {
             case vk::DriverId::eQualcommProprietary: {
-                needsTextureBindingPadding = true;
+                needsIndividualTextureBindingWrites = true;
                 break;
             }
 
@@ -141,8 +141,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::QuirkManager::Summary() {
         return fmt::format(
-            "\n* Needs Texture Binding Padding: {}",
-            needsTextureBindingPadding
+            "\n* Needs Individual Texture Binding Writes: {}",
+            needsIndividualTextureBindingWrites
         );
     }
 

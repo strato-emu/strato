@@ -39,7 +39,7 @@ namespace skyline::gpu {
          * @brief Manages a list of any vendor/device-specific errata in the host GPU
          */
         struct QuirkManager {
-            bool needsTextureBindingPadding{}; //!< [Adreno Proprietary] A bug that requires a padding descriptor slot for VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+            bool needsIndividualTextureBindingWrites{}; //!< [Adreno Proprietary] A bug that requires descriptor set writes for VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER to be done individually with descriptorCount = 1 rather than batched
 
             QuirkManager() = default;
 
