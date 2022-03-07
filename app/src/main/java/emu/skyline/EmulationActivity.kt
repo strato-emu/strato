@@ -56,6 +56,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     var returnToMain : Boolean = false
 
+    /**
+     * The desired refresh rate to present at in Hz
+     */
+    var desiredRefreshRate = 60f
+
     @Inject
     lateinit var settings : Settings
 
@@ -259,10 +264,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
 
         @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
-        if (settings.maxRefreshRate)
-            display?.supportedModes?.maxByOrNull { it.refreshRate * it.physicalHeight * it.physicalWidth }?.let { window.attributes.preferredDisplayModeId = it.modeId }
-        else
+        if (settings.maxRefreshRate) {
+            display?.supportedModes?.maxByOrNull { it.refreshRate * it.physicalHeight * it.physicalWidth }?.let { window.attributes.preferredDisplayModeId = it.modeId; desiredRefreshRate = it.refreshRate }
+        } else {
             display?.supportedModes?.minByOrNull { abs(it.refreshRate - 60f) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+        }
 
         binding.gameView.setOnTouchListener(this)
 
@@ -329,6 +335,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     override fun surfaceCreated(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceCreated Holder: $holder")
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            // Note: We need FRAME_RATE_COMPATIBILITY_FIXED_SOURCE as there will be a degradation of user experience with FRAME_RATE_COMPATIBILITY_DEFAULT due to game speed alterations when the frame rate doesn't match the display refresh rate
+            holder.surface.setFrameRate(desiredRefreshRate, if (settings.maxRefreshRate) Surface.FRAME_RATE_COMPATIBILITY_DEFAULT else Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
+
         while (emulationThread!!.isAlive)
             if (setSurface(holder.surface))
                 return
@@ -339,6 +350,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     override fun surfaceChanged(holder : SurfaceHolder, format : Int, width : Int, height : Int) {
         Log.d(Tag, "surfaceChanged Holder: $holder, Format: $format, Width: $width, Height: $height")
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            holder.surface.setFrameRate(desiredRefreshRate, if (settings.maxRefreshRate) Surface.FRAME_RATE_COMPATIBILITY_DEFAULT else Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
     }
 
     override fun surfaceDestroyed(holder : SurfaceHolder) {
