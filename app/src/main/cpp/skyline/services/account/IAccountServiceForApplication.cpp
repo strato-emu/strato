@@ -8,6 +8,11 @@
 namespace skyline::service::account {
     IAccountServiceForApplication::IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
+    Result IAccountServiceForApplication::GetUserCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(1); // We only support one user currently
+        return {};
+    }
+
     Result IAccountServiceForApplication::GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<UserId>()};
 
@@ -74,6 +79,15 @@ namespace skyline::service::account {
             return result::NullArgument;
 
         manager.RegisterService(SRVREG(IManagerForApplication), session, response);
+        return {};
+    }
+
+    Result IAccountServiceForApplication::InitializeApplicationInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IAccountServiceForApplication::IsUserAccountSwitchLocked(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(0); // We don't want to lock the user
         return {};
     }
 }

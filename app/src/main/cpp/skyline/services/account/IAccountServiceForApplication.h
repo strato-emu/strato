@@ -41,6 +41,11 @@ namespace skyline {
             IAccountServiceForApplication(const DeviceState &state, ServiceManager &manager);
 
             /**
+             * @brief Returns the amount of user accounts on the console
+             */
+            Result GetUserCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
              * @brief Checks if the given user ID exists
              */
             Result GetUserExistence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -76,14 +81,28 @@ namespace skyline {
              */
             Result GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+            /**
+             * @brief Returns if the user's account is locked or unlocked
+             */
+            Result IsUserAccountSwitchLocked(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+            /**
+            * @brief Provides information about the running application for account services to use
+            * @url https://switchbrew.org/wiki/Account_services#InitializeApplicationInfo
+            */
+            Result InitializeApplicationInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
             SERVICE_DECL(
+                SFUNC(0x0, IAccountServiceForApplication, GetUserCount),
                 SFUNC(0x1, IAccountServiceForApplication, GetUserExistence),
                 SFUNC(0x2, IAccountServiceForApplication, ListAllUsers),
                 SFUNC(0x3, IAccountServiceForApplication, ListOpenUsers),
                 SFUNC(0x4, IAccountServiceForApplication, GetLastOpenedUser),
                 SFUNC(0x5, IAccountServiceForApplication, GetProfile),
                 SFUNC(0x64, IAccountServiceForApplication, InitializeApplicationInfoV0),
-                SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication)
+                SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication),
+                SFUNC(0x8C, IAccountServiceForApplication, InitializeApplicationInfo),
+                SFUNC(0x96, IAccountServiceForApplication, IsUserAccountSwitchLocked)
             )
         };
     }
