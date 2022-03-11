@@ -9,7 +9,10 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.marginTop
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -182,13 +185,34 @@ class ControllerActivity : AppCompatActivity() {
         binding.controllerList.layoutManager = layoutManager
         binding.controllerList.adapter = adapter
 
-        binding.controllerList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView : RecyclerView, dx : Int, dy : Int) {
-                super.onScrolled(recyclerView, dx, dy)
+        var layoutDone = false // Tracks if the layout is complete to avoid retrieving invalid attributes
+        binding.coordinatorLayout.viewTreeObserver.addOnTouchModeChangeListener { isTouchMode ->
+            val layoutUpdate = { ->
+                val params = binding.controllerList.layoutParams as CoordinatorLayout.LayoutParams
+                if (!isTouchMode) {
+                    binding.titlebar.appBarLayout.setExpanded(true)
+                    params.height = binding.coordinatorLayout.height - binding.titlebar.toolbar.height
+                } else {
+                    params.height = CoordinatorLayout.LayoutParams.MATCH_PARENT
+                }
 
-                if (layoutManager.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) binding.titlebar.appBarLayout.setExpanded(false)
+                binding.controllerList.layoutParams = params
+                binding.controllerList.requestLayout()
             }
-        })
+
+            if (!layoutDone) {
+                binding.coordinatorLayout.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        // We need to wait till the layout is done to get the correct height of the toolbar
+                        binding.coordinatorLayout.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        layoutUpdate()
+                        layoutDone = true
+                    }
+                })
+            } else {
+                layoutUpdate()
+            }
+        }
 
         val dividerItemDecoration = object : DividerItemDecoration(this, DividerItemDecoration.VERTICAL) {
             override fun onDraw(canvas : Canvas, parent : RecyclerView, state : RecyclerView.State) {

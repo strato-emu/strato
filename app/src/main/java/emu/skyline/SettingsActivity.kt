@@ -8,7 +8,9 @@ package emu.skyline
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
@@ -33,8 +35,33 @@ class SettingsActivity : AppCompatActivity() {
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        window.decorView.findViewById<View>(android.R.id.content).viewTreeObserver.addOnTouchModeChangeListener { isInTouchMode ->
-            if (!isInTouchMode) binding.titlebar.appBarLayout.setExpanded(false)
+        var layoutDone = false // Tracks if the layout is complete to avoid retrieving invalid attributes
+        binding.coordinatorLayout.viewTreeObserver.addOnTouchModeChangeListener { isTouchMode ->
+            val layoutUpdate = { ->
+                val params = binding.settings.layoutParams as CoordinatorLayout.LayoutParams
+                if (!isTouchMode) {
+                    binding.titlebar.appBarLayout.setExpanded(true)
+                    params.height = binding.coordinatorLayout.height - binding.titlebar.toolbar.height
+                } else {
+                    params.height = CoordinatorLayout.LayoutParams.MATCH_PARENT
+                }
+
+                binding.settings.layoutParams = params
+                binding.settings.requestLayout()
+            }
+
+            if (!layoutDone) {
+                binding.coordinatorLayout.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        // We need to wait till the layout is done to get the correct height of the toolbar
+                        binding.coordinatorLayout.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        layoutUpdate()
+                        layoutDone = true
+                    }
+                })
+            } else {
+                layoutUpdate()
+            }
         }
 
         supportFragmentManager
