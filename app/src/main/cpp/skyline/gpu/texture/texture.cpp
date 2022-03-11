@@ -148,6 +148,8 @@ namespace skyline::gpu {
                 return stagingBuffer;
             } else if (tiling == vk::ImageTiling::eLinear) {
                 // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly into it rather than a staging buffer
+                if (layout == vk::ImageLayout::eUndefined)
+                    TransitionLayout(vk::ImageLayout::eGeneral);
                 bufferData = std::get<memory::Image>(backing).data();
                 if (cycle.lock() != pCycle)
                     WaitOnFence();
