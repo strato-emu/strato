@@ -307,6 +307,7 @@ namespace skyline::gpu {
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
         vk::ImageCreateInfo imageCreateInfo{
+            .flags = vk::ImageCreateFlagBits::eMutableFormat,
             .imageType = guest->dimensions.GetType(),
             .format = *guest->format,
             .extent = guest->dimensions,
