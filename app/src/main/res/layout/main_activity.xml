@@ -130,6 +130,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:overScrollMode="never" />
+            android:overScrollMode="ifContentScrolls"
+            android:paddingBottom="20dp"/>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
