@@ -9,14 +9,15 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDialogFragment
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.marginTop
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
@@ -54,6 +55,10 @@ class ControllerActivity : AppCompatActivity() {
      * This is a map between an axis and it's corresponding [ControllerStickViewItem] in [adapter]
      */
     val axisMap = mutableMapOf<AxisId, ControllerStickViewItem>()
+
+    val stickItems = mutableListOf<ControllerStickViewItem>()
+
+    val buttonItems = mutableListOf<ControllerButtonViewItem>()
 
     @Inject
     lateinit var settings : Settings
@@ -108,17 +113,14 @@ class ControllerActivity : AppCompatActivity() {
                 }
             }
 
-            wroteTitle = false
+            if (controller.type.sticks.isNotEmpty())
+                items.add(ControllerHeaderItem(getString(R.string.sticks)))
 
             for (stick in controller.type.sticks) {
-                if (!wroteTitle) {
-                    items.add(ControllerHeaderItem(getString(R.string.sticks)))
-                    wroteTitle = true
-                }
-
                 val stickItem = ControllerStickViewItem(id, stick, onControllerStickClick)
 
                 items.add(stickItem)
+                stickItems.add(stickItem)
                 buttonMap[stick.button] = stickItem
                 axisMap[stick.xAxis] = stickItem
                 axisMap[stick.yAxis] = stickItem
@@ -132,32 +134,26 @@ class ControllerActivity : AppCompatActivity() {
             val buttonArrays = arrayOf(dpadButtons, faceButtons, shoulderTriggerButtons, shoulderRailButtons)
 
             for (buttonArray in buttonArrays) {
-                wroteTitle = false
+                val filteredButtons = controller.type.buttons.filter { it in buttonArray.second }
 
-                for (button in controller.type.buttons.filter { it in buttonArray.second }) {
-                    if (!wroteTitle) {
-                        items.add(ControllerHeaderItem(getString(buttonArray.first)))
-                        wroteTitle = true
-                    }
+                if (filteredButtons.isNotEmpty())
+                    items.add(ControllerHeaderItem(getString(buttonArray.first)))
 
+                for (button in filteredButtons) {
                     val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
 
                     items.add(buttonItem)
+                    buttonItems.add(buttonItem)
                     buttonMap[button] = buttonItem
                 }
             }
 
-            wroteTitle = false
-
+            items.add(ControllerHeaderItem(getString(R.string.misc_buttons))) // The menu button will always exist
             for (button in controller.type.buttons.filterNot { item -> buttonArrays.any { item in it.second } }.plus(ButtonId.Menu)) {
-                if (!wroteTitle) {
-                    items.add(ControllerHeaderItem(getString(R.string.misc_buttons)))
-                    wroteTitle = true
-                }
-
                 val buttonItem = ControllerButtonViewItem(id, button, onControllerButtonClick)
 
                 items.add(buttonItem)
+                buttonItems.add(buttonItem)
                 buttonMap[button] = buttonItem
             }
         } finally {
@@ -308,6 +304,18 @@ class ControllerActivity : AppCompatActivity() {
 
             GeneralType.RumbleDevice -> {
                 RumbleDialog(item).show(supportFragmentManager, null)
+            }
+
+            GeneralType.SetupGuide -> {
+                var dialogFragment : BottomSheetDialogFragment? = null
+
+                for (buttonItem in buttonItems.reversed())
+                    dialogFragment = ButtonDialog(buttonItem, dialogFragment)
+
+                for (stickItem in stickItems.reversed())
+                    dialogFragment = StickDialog(stickItem, dialogFragment)
+
+                dialogFragment?.show(supportFragmentManager, null)
             }
         }
         Unit

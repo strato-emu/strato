@@ -161,4 +161,6 @@
     <!-- Misc -->
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>
+    <string name="setup_guide">Setup Guide</string>
+    <string name="setup_guide_description">Sequentially map every stick and button</string>
 </resources>

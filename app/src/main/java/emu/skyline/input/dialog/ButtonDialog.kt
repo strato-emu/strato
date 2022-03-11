@@ -11,6 +11,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.*
 import android.view.animation.LinearInterpolator
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.fragment.app.commit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import emu.skyline.R
@@ -25,7 +27,7 @@ import kotlin.math.abs
  *
  * @param item This is used to hold the [ControllerButtonViewItem] between instances
  */
-class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null) : BottomSheetDialogFragment() {
+class ButtonDialog @JvmOverloads constructor(private val item : ControllerButtonViewItem? = null, private val nextDialog : BottomSheetDialogFragment? = null) : BottomSheetDialogFragment() {
     private var _binding : ButtonDialogBinding? = null
     private val binding get() = _binding!!
 
@@ -42,8 +44,22 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
     override fun onStart() {
         super.onStart()
 
-        val behavior = BottomSheetBehavior.from(requireView().parent as View)
-        behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        val parentView = requireView().parent as View
+        if (parentView.layoutParams is CoordinatorLayout.LayoutParams) {
+            val behavior = BottomSheetBehavior.from(parentView)
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
+    }
+
+    private fun gotoNextOrDismiss() {
+        if (nextDialog != null) {
+            parentFragmentManager.commit {
+                remove(this@ButtonDialog)
+                add(nextDialog, null)
+            }
+        } else {
+            dismiss()
+        }
     }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
@@ -69,7 +85,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
 
                 item.update()
 
-                dismiss()
+                gotoNextOrDismiss()
             }
 
             // Ensure that layout animations are proper
@@ -131,7 +147,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
 
                         item.update()
 
-                        dismiss()
+                        gotoNextOrDismiss()
                     }
 
                     true
@@ -209,7 +225,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
 
                                     item.update()
 
-                                    dismiss()
+                                    gotoNextOrDismiss()
                                 }
 
                                 axisHandler.postDelayed(axisRunnable!!, 1000)
