@@ -94,10 +94,13 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
             binding.icon.setOnClickListener { showIconDialog(it.context, item) }
         }
 
-        binding.root.findViewById<View>(R.id.item_click_layout).apply {
-            setOnClickListener { onClick.invoke(item) }
-            setOnLongClickListener { true.also { onLongClick.invoke(item) } }
+        val handleClicks = { view : View ->
+            view.setOnClickListener { onClick.invoke(item) }
+            view.setOnLongClickListener { true.also { onLongClick.invoke(item) } }
         }
+
+        handleClicks(binding.root.findViewById(R.id.item_click_layout))
+        binding.root.findViewById<View>(R.id.item_card)?.let { handleClicks(it) }
     }
 
     private fun showIconDialog(context : Context, appItem : AppItem) {
