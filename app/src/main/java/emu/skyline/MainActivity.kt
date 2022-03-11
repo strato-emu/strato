@@ -202,23 +202,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        override fun onRequestChildFocus(parent : RecyclerView, state : RecyclerView.State, child : View, focused : View?) : Boolean {
+            binding.appBarLayout.setExpanded(false)
+            return super.onRequestChildFocus(parent, state, child, focused)
+        }
+
         override fun onFocusSearchFailed(focused : View, focusDirection : Int, recycler : RecyclerView.Recycler, state : RecyclerView.State) : View? {
             val nextFocus = super.onFocusSearchFailed(focused, focusDirection, recycler, state)
             when (focusDirection) {
                 View.FOCUS_DOWN -> {
-                    findContainingItemView(focused)?.let { focusedChild ->
-                        val current = binding.appList.indexOfChild(focusedChild)
-                        val currentSpanIndex = (focusedChild.layoutParams as LayoutParams).spanIndex
-                        for (i in current + 1 until binding.appList.size) {
-                            val candidate = getChildAt(i)!!
-                            // Return candidate when span index matches
-                            if (currentSpanIndex == (candidate.layoutParams as LayoutParams).spanIndex) return candidate
-                        }
-                        nextFocus?.let { if ((it.layoutParams as LayoutParams).spanIndex == currentSpanIndex) return nextFocus }
-
-                        binding.appBarLayout.setExpanded(false) // End of list, hide app bar, so bottom row is fully visible
-                        binding.appList.smoothScrollToPosition(adapter.itemCount)
-                    }
+                    return null
                 }
 
                 View.FOCUS_UP -> {
