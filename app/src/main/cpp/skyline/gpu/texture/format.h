@@ -63,8 +63,8 @@ namespace skyline::gpu::format {
 
     FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
-    FORMAT(R5G6B5Unorm, 16, eR5G6B5UnormPack16);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
+    FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swapRedBlue = true); // Used by SurfaceFlinger
     FORMAT(B5G5R5A1Unorm, 16, eB5G5R5A1UnormPack16);
     FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swapRedBlue = true);
 
