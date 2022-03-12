@@ -40,6 +40,7 @@ namespace skyline::gpu {
          */
         struct QuirkManager {
             bool needsIndividualTextureBindingWrites{}; //!< [Adreno Proprietary] A bug that requires descriptor set writes for VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER to be done individually with descriptorCount = 1 rather than batched
+            bool vkImageMutableFormatCostly{}; //!< [Adreno Proprietary/Freedreno] An indication that VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT is costly and should not be enabled unless absolutely necessary (Disables UBWC on Adreno GPUs)
 
             QuirkManager() = default;
 

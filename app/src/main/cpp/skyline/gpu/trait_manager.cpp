@@ -131,6 +131,12 @@ namespace skyline::gpu {
         switch (driverProperties.driverID) {
             case vk::DriverId::eQualcommProprietary: {
                 needsIndividualTextureBindingWrites = true;
+                vkImageMutableFormatCostly = true; // Disables UBWC
+                break;
+            }
+
+            case vk::DriverId::eMesaTurnip: {
+                vkImageMutableFormatCostly = true; // Disables UBWC and forces linear tiling
                 break;
             }
 
@@ -141,8 +147,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::QuirkManager::Summary() {
         return fmt::format(
-            "\n* Needs Individual Texture Binding Writes: {}",
-            needsIndividualTextureBindingWrites
+            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}",
+            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly
         );
     }
 

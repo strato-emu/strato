@@ -307,7 +307,7 @@ namespace skyline::gpu {
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
         vk::ImageCreateInfo imageCreateInfo{
-            .flags = vk::ImageCreateFlagBits::eMutableFormat,
+            .flags = gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat,
             .imageType = guest->dimensions.GetType(),
             .format = *guest->format,
             .extent = guest->dimensions,
@@ -527,6 +527,9 @@ namespace skyline::gpu {
             else
                 ++viewIt;
         }
+
+        if (gpu.traits.quirks.vkImageMutableFormatCostly && pFormat->vkFormat != format->vkFormat)
+            Logger::Warn("Creating a view of a texture with a different format without mutable format");
 
         auto view{std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping)};
         views.push_back(view);
