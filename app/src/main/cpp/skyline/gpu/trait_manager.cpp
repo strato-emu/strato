@@ -132,6 +132,7 @@ namespace skyline::gpu {
             case vk::DriverId::eQualcommProprietary: {
                 needsIndividualTextureBindingWrites = true;
                 vkImageMutableFormatCostly = true; // Disables UBWC
+                brokenDescriptorAliasing = true;
                 break;
             }
 
