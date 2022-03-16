@@ -1152,6 +1152,10 @@ namespace skyline::gpu::interconnect {
             rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().depthBiasSlopeFactor = factor;
         }
 
+        void SetDepthMode(maxwell3d::DepthMode mode) {
+            UpdateRuntimeInformation(runtimeInfo.convert_depth_mode, mode == maxwell3d::DepthMode::MinusOneToOne, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
+        }
+
         /* Color Blending */
       private:
         std::array<vk::PipelineColorBlendAttachmentState, maxwell3d::RenderTargetCount> commonRtBlendState{}, independentRtBlendState{}; //!< Per-RT blending state for common/independent blending for trivial toggling behavior

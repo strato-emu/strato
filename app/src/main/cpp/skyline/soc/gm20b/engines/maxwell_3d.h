@@ -66,6 +66,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x35D, u32> drawVertexFirst; //!< The first vertex to draw
             Register<0x35E, u32> drawVertexCount; //!< The amount of vertices to draw, calling this method triggers non-indexed drawing
 
+            Register<0x35F, type::DepthMode> depthMode;
+
             Register<0x360, std::array<u32, 4>> clearColorValue;
             Register<0x364, float> clearDepthValue;
             Register<0x368, u32> clearStencilValue;

@@ -761,5 +761,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         } format;
     };
 
+    enum class DepthMode : u32 {
+        MinusOneToOne = 0,
+        ZeroToOne = 1
+    };
+
     #pragma pack(pop)
 }
