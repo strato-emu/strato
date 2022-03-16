@@ -609,8 +609,6 @@ namespace skyline::gpu::interconnect {
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
 
-        u32 constantBufferUpdateOffset{}; //!< The offset at which any inline constant buffer updata data is written
-
       public:
         void SetConstantBufferSelectorSize(u32 size) {
             constantBufferSelector.size = size;
@@ -644,13 +642,9 @@ namespace skyline::gpu::interconnect {
             return constantBufferSelector;
         }
 
-        void SetConstantBufferUpdateOffset(u32 offset) {
-            constantBufferUpdateOffset = offset;
-        }
-
-        void ConstantBufferUpdate(u32 data) {
+        void ConstantBufferUpdate(u32 data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector().value()};
-            constantBuffer.Write(data, constantBufferUpdateOffset);
+            constantBuffer.Write(data, offset);
         }
 
         /* Shader Program */

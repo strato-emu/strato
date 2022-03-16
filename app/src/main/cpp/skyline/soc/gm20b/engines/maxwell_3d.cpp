@@ -570,10 +570,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetTexturePoolMaximumIndex(maximumIndex);
                 })
 
-                MAXWELL3D_STRUCT_CASE(constantBufferUpdate, offset, {
-                    context.SetConstantBufferUpdateOffset(offset);
-                })
-
                 default:
                     break;
             }
@@ -663,9 +659,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.raw[0xD00] = 1;
             })
 
-            #define CBUF_UPDATE_CALLBACKS(z, index, data_)                   \
-            MAXWELL3D_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, { \
-                context.ConstantBufferUpdate(data);                          \
+            #define CBUF_UPDATE_CALLBACKS(z, index, data_)                                  \
+            MAXWELL3D_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, {                \
+                context.ConstantBufferUpdate(data, registers.constantBufferUpdate->offset); \
+                registers.constantBufferUpdate->offset += 4;                                \
             })
 
             BOOST_PP_REPEAT(16, CBUF_UPDATE_CALLBACKS, 0)
