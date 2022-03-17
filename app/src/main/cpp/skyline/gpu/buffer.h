@@ -44,7 +44,18 @@ namespace skyline::gpu {
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
 
-        std::vector<std::weak_ptr<BufferView>> views; //!< BufferView(s) that are backed by this Buffer, used for repointing to a new Buffer on deletion
+        /**
+         * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
+         */
+        struct BufferViewStorage {
+          public:
+            vk::DeviceSize offset;
+            vk::DeviceSize range;
+            vk::Format format;
+
+            BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format);
+        };
+        std::list<BufferViewStorage> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
 
         friend BufferView;
         friend BufferManager;
@@ -138,8 +149,9 @@ namespace skyline::gpu {
 
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
+         * @note The buffer **must** be locked prior to calling this
          */
-        std::shared_ptr<BufferView> GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format = {});
+        BufferView GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format = {});
     };
 
     /**
@@ -147,16 +159,25 @@ namespace skyline::gpu {
      * @note The object **must** be locked prior to accessing any members as values will be mutated
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    struct BufferView : public FenceCycleDependency, public std::enable_shared_from_this<BufferView> {
+    struct BufferView {
         std::shared_ptr<Buffer> buffer;
-        vk::DeviceSize offset;
-        vk::DeviceSize range;
-        vk::Format format;
+        Buffer::BufferViewStorage *view;
 
-        /**
-         * @note A view must **NOT** be constructed directly, it should always be retrieved using Buffer::GetView
-         */
-        BufferView(std::shared_ptr<Buffer> backing, vk::DeviceSize offset, vk::DeviceSize range, vk::Format format);
+        BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view);
+
+        constexpr BufferView(nullptr_t = nullptr) : buffer(nullptr), view(nullptr) {}
+
+        constexpr operator bool() const {
+            return view != nullptr;
+        }
+
+        constexpr Buffer::BufferViewStorage *operator->() {
+            return view;
+        }
+
+        operator std::shared_ptr<FenceCycleDependency>() {
+            return buffer;
+        }
 
         /**
          * @brief Acquires an exclusive lock on the buffer for the calling thread

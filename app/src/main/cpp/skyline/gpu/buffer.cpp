@@ -171,23 +171,18 @@ namespace skyline::gpu {
             std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
-    std::shared_ptr<BufferView> Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {
-        for (auto viewIt{views.begin()}; viewIt != views.end();) {
-            auto view{viewIt->lock()};
-            if (view && view->offset == offset && view->range == range && view->format == format)
-                return view;
-            else if (!view)
-                viewIt = views.erase(viewIt);
-            else
-                ++viewIt;
-        }
+    Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) : offset(offset), range(range), format(format) {}
 
-        auto view{std::make_shared<BufferView>(shared_from_this(), offset, range, format)};
-        views.push_back(view);
-        return view;
+    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {
+        for (auto &view : views)
+            if (view.offset == offset && view.range == range && view.format == format)
+                return BufferView{shared_from_this(), &view};
+
+        views.emplace_back(offset, range, format);
+        return BufferView{shared_from_this(), &views.back()};
     }
 
-    BufferView::BufferView(std::shared_ptr<Buffer> backing, vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) : buffer(std::move(backing)), offset(offset), range(range), format(format) {}
+    BufferView::BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view) : buffer(buffer), view(view) {}
 
     void BufferView::lock() {
         auto backing{std::atomic_load(&buffer)};

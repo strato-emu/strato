@@ -37,6 +37,6 @@ namespace skyline::gpu {
         /**
          * @return A pre-existing or newly created Buffer object which covers the supplied mappings
          */
-        std::shared_ptr<BufferView> FindOrCreate(const GuestBuffer &guest);
+        BufferView FindOrCreate(const GuestBuffer &guest);
     };
 }

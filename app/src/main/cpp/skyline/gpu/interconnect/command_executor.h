@@ -44,7 +44,7 @@ namespace skyline::gpu::interconnect {
          * @note The supplied buffer **must** be locked by the calling thread
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachBuffer(BufferView *view);
+        void AttachBuffer(BufferView view);
 
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer

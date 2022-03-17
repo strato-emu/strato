@@ -572,7 +572,7 @@ namespace skyline::gpu::interconnect {
             IOVA iova;
             u32 size;
             GuestBuffer guest;
-            std::shared_ptr<BufferView> view;
+            BufferView view;
 
             /**
              * @brief Reads an object from the supplied offset in the constant buffer
@@ -603,8 +603,8 @@ namespace skyline::gpu::interconnect {
              */
             template<typename T>
             void Write(T &object, size_t offset) {
-                std::lock_guard lock{*view};
-                view->buffer->Write(span<T>(object).template cast<u8>(), view->offset + offset);
+                std::scoped_lock lock{view};
+                view.buffer->Write(span<T>(object).template cast<u8>(), view->offset + offset);
             }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
@@ -612,17 +612,17 @@ namespace skyline::gpu::interconnect {
       public:
         void SetConstantBufferSelectorSize(u32 size) {
             constantBufferSelector.size = size;
-            constantBufferSelector.view.reset();
+            constantBufferSelector.view = {};
         }
 
         void SetConstantBufferSelectorIovaHigh(u32 high) {
             constantBufferSelector.iova.high = high;
-            constantBufferSelector.view.reset();
+            constantBufferSelector.view = {};
         }
 
         void SetConstantBufferSelectorIovaLow(u32 low) {
             constantBufferSelector.iova.low = low;
-            constantBufferSelector.view.reset();
+            constantBufferSelector.view = {};
         }
 
         std::optional<ConstantBuffer> GetConstantBufferSelector() {
@@ -915,13 +915,13 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
-                        std::scoped_lock lock(*view);
+                        std::scoped_lock lock(view);
                         bufferInfo.push_back(vk::DescriptorBufferInfo{
-                            .buffer = view->buffer->GetBacking(),
+                            .buffer = view.buffer->GetBacking(),
                             .offset = view->offset,
                             .range = view->range,
                         });
-                        executor.AttachBuffer(view.get());
+                        executor.AttachBuffer(view);
                     }
                 }
 
@@ -1423,7 +1423,7 @@ namespace skyline::gpu::interconnect {
             vk::VertexInputBindingDescription bindingDescription{};
             vk::VertexInputBindingDivisorDescriptionEXT bindingDivisorDescription{};
             IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS with the vertex buffer
-            std::shared_ptr<BufferView> view;
+            BufferView view;
         };
         std::array<VertexBuffer, maxwell3d::VertexBufferCount> vertexBuffers{};
 
@@ -1445,25 +1445,25 @@ namespace skyline::gpu::interconnect {
         void SetVertexBufferStartIovaHigh(u32 index, u32 high) {
             auto &vertexBuffer{vertexBuffers[index]};
             vertexBuffer.start.high = high;
-            vertexBuffer.view.reset();
+            vertexBuffer.view = {};
         }
 
         void SetVertexBufferStartIovaLow(u32 index, u32 low) {
             auto &vertexBuffer{vertexBuffers[index]};
             vertexBuffer.start.low = low;
-            vertexBuffer.view.reset();
+            vertexBuffer.view = {};
         }
 
         void SetVertexBufferEndIovaHigh(u32 index, u32 high) {
             auto &vertexBuffer{vertexBuffers[index]};
             vertexBuffer.end.high = high;
-            vertexBuffer.view.reset();
+            vertexBuffer.view = {};
         }
 
         void SetVertexBufferEndIovaLow(u32 index, u32 low) {
             auto &vertexBuffer{vertexBuffers[index]};
             vertexBuffer.end.low = low;
-            vertexBuffer.view.reset();
+            vertexBuffer.view = {};
         }
 
         void SetVertexBufferDivisor(u32 index, u32 divisor) {
@@ -1578,19 +1578,19 @@ namespace skyline::gpu::interconnect {
             }
         }
 
-        BufferView *GetVertexBuffer(size_t index) {
+        BufferView GetVertexBuffer(size_t index) {
             auto &vertexBuffer{vertexBuffers.at(index)};
             if (vertexBuffer.start > vertexBuffer.end || vertexBuffer.start == 0 || vertexBuffer.end == 0)
                 return nullptr;
             else if (vertexBuffer.view)
-                return vertexBuffer.view.get();
+                return vertexBuffer.view;
 
             GuestBuffer guest;
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
             guest.mappings.assign(mappings.begin(), mappings.end());
 
             vertexBuffer.view = gpu.buffer.FindOrCreate(guest);
-            return vertexBuffer.view.get();
+            return vertexBuffer.view;
         }
 
         /* Input Assembly */
@@ -1638,7 +1638,7 @@ namespace skyline::gpu::interconnect {
             IOVA start{}, end{}; //!< IOVAs covering a contiguous region in GPU AS containing the index buffer (end does not represent the true extent of the index buffers, just a maximum possible extent and is set to extremely high values which cannot be used to create a buffer)
             vk::IndexType type{};
             vk::DeviceSize viewSize{}; //!< The size of the cached view
-            std::shared_ptr<BufferView> view{}; //!< A cached view tied to the IOVAs and size to allow for a faster lookup
+            BufferView view{}; //!< A cached view tied to the IOVAs and size to allow for a faster lookup
 
             vk::DeviceSize GetIndexBufferSize(u32 elementCount) {
                 switch (type) {
@@ -2120,22 +2120,22 @@ namespace skyline::gpu::interconnect {
       public:
         void SetIndexBufferStartIovaHigh(u32 high) {
             indexBuffer.start.high = high;
-            indexBuffer.view.reset();
+            indexBuffer.view = {};
         }
 
         void SetIndexBufferStartIovaLow(u32 low) {
             indexBuffer.start.low = low;
-            indexBuffer.view.reset();
+            indexBuffer.view = {};
         }
 
         void SetIndexBufferEndIovaHigh(u32 high) {
             indexBuffer.end.high = high;
-            indexBuffer.view.reset();
+            indexBuffer.view = {};
         }
 
         void SetIndexBufferEndIovaLow(u32 low) {
             indexBuffer.end.low = low;
-            indexBuffer.view.reset();
+            indexBuffer.view = {};
         }
 
         void SetIndexBufferFormat(maxwell3d::IndexBuffer::Format format) {
@@ -2155,22 +2155,22 @@ namespace skyline::gpu::interconnect {
             if (indexBuffer.type == vk::IndexType::eUint8EXT && !gpu.traits.supportsUint8Indices)
                 throw exception("Cannot use U8 index buffer without host GPU support");
 
-            indexBuffer.view.reset();
+            indexBuffer.view = {};
         }
 
-        BufferView *GetIndexBuffer(u32 elementCount) {
+        BufferView GetIndexBuffer(u32 elementCount) {
             auto size{indexBuffer.GetIndexBufferSize(elementCount)};
             if (indexBuffer.start > indexBuffer.end || indexBuffer.start == 0 || indexBuffer.end == 0 || size == 0)
                 return nullptr;
             else if (indexBuffer.view && size == indexBuffer.viewSize)
-                return indexBuffer.view.get();
+                return indexBuffer.view;
 
             GuestBuffer guestBuffer;
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(indexBuffer.start, size)};
             guestBuffer.mappings.assign(mappings.begin(), mappings.end());
 
             indexBuffer.view = gpu.buffer.FindOrCreate(guestBuffer);
-            return indexBuffer.view.get();
+            return indexBuffer.view;
         }
 
         /* Depth */
@@ -2391,10 +2391,10 @@ namespace skyline::gpu::interconnect {
             vk::IndexType indexBufferType;
             if constexpr (IsIndexed) {
                 auto indexBufferView{GetIndexBuffer(count)};
-                std::scoped_lock lock(*indexBufferView);
+                std::scoped_lock lock(indexBufferView);
                 executor.AttachBuffer(indexBufferView);
 
-                indexBufferHandle = indexBufferView->buffer->GetBacking();
+                indexBufferHandle = indexBufferView.buffer->GetBacking();
                 indexBufferOffset = indexBufferView->offset;
                 indexBufferType = indexBuffer.type;
             }
@@ -2414,8 +2414,8 @@ namespace skyline::gpu::interconnect {
                     if (vertexBuffer.bindingDescription.inputRate == vk::VertexInputRate::eInstance)
                         vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
 
-                    std::scoped_lock vertexBufferLock(*vertexBufferView);
-                    vertexBufferHandles[index] = vertexBufferView->buffer->GetBacking();
+                    std::scoped_lock vertexBufferLock(vertexBufferView);
+                    vertexBufferHandles[index] = vertexBufferView.buffer->GetBacking();
                     vertexBufferOffsets[index] = vertexBufferView->offset;
                     executor.AttachBuffer(vertexBufferView);
                 }

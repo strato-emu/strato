@@ -35,12 +35,12 @@ namespace skyline::gpu::interconnect {
         cycle->AttachObject(view->shared_from_this());
     }
 
-    void CommandExecutor::AttachBuffer(BufferView *view) {
-        auto buffer{view->buffer.get()};
+    void CommandExecutor::AttachBuffer(BufferView view) {
+        auto buffer{view.buffer.get()};
         if (!syncBuffers.contains(buffer)) {
             buffer->WaitOnFence();
             buffer->cycle = cycle;
-            cycle->AttachObject(view->shared_from_this());
+            cycle->AttachObject(view);
             syncBuffers.emplace(buffer);
         }
     }

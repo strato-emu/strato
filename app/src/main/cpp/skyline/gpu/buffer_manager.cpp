@@ -8,7 +8,7 @@
 namespace skyline::gpu {
     BufferManager::BufferManager(GPU &gpu) : gpu(gpu) {}
 
-    std::shared_ptr<BufferView> BufferManager::FindOrCreate(const GuestBuffer &guest) {
+    BufferView BufferManager::FindOrCreate(const GuestBuffer &guest) {
         auto guestMapping{guest.mappings.front()};
 
         /*
