@@ -132,9 +132,12 @@ class MainActivity : AppCompatActivity() {
             binding.logIcon.setOnClickListener {
                 val file = applicationContext.filesDir.resolve("emulation.sklog")
                 if (file.length() != 0L) {
+                    val uri = FileProvider.getUriForFile(this@MainActivity, "skyline.emu.fileprovider", file)
                     val intent = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")
-                        .putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this@MainActivity, "skyline.emu.fileprovider", file))
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        .setData(uri)
+                        .putExtra(Intent.EXTRA_STREAM, uri)
                     startActivity(Intent.createChooser(intent, getString(R.string.log_share_prompt)))
                 } else {
                     Snackbar.make(this@MainActivity.findViewById(android.R.id.content), getString(R.string.logs_not_found), Snackbar.LENGTH_SHORT).show()
