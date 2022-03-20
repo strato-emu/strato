@@ -6,6 +6,7 @@
 
 #include <gpu/interconnect/graphics_context.h>
 #include "engine.h"
+#include "inline2memory.h"
 
 namespace skyline::soc::gm20b {
     struct ChannelContext;
@@ -19,6 +20,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
       private:
         host1x::SyncpointSet &syncpoints;
         gpu::interconnect::GraphicsContext context;
+        Inline2MemoryBackend i2m;
 
         /**
          * @brief Calls the appropriate function corresponding to a certain method with the supplied argument
@@ -55,6 +57,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 type::MmeShadowRamControl shadowRamControl; // 0x49
             };
             Register<0x45, MME> mme;
+
+            Register<0x60, Inline2MemoryBackend::RegisterState> i2m;
 
             Register<0xB2, type::SyncpointAction> syncpointAction;
 

@@ -11,6 +11,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         : MacroEngineBase(macroState),
           syncpoints(state.soc->host1x.syncpoints),
           context(*state.gpu, channelCtx, executor),
+          i2m(channelCtx.asCtx),
           channelCtx(channelCtx) {
         InitializeRegisters();
     }
@@ -29,15 +30,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         HandleMethod(method, argument);
     }
 
-    void Maxwell3D::HandleMethod(u32 method, u32 argument) {
-        #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
-        #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
-        #define MAXWELL3D_STRUCT_STRUCT_OFFSET(field, member, submember) MAXWELL3D_STRUCT_OFFSET(field, member) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field->member)>, submember)
-        #define MAXWELL3D_STRUCT_ARRAY_OFFSET(field, member, index) MAXWELL3D_STRUCT_OFFSET(field, member) + ((sizeof(std::remove_reference_t<decltype(Registers::field->member[0])>) / sizeof(u32)) * index)
-        #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(std::remove_reference_t<decltype(Registers::field[0])>) / sizeof(u32)) * index)
-        #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field[0])>, member)
-        #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(decltype(Registers::field[0].member), submember)
+    #define MAXWELL3D_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
+    #define MAXWELL3D_STRUCT_OFFSET(field, member) MAXWELL3D_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
+    #define MAXWELL3D_STRUCT_STRUCT_OFFSET(field, member, submember) MAXWELL3D_STRUCT_OFFSET(field, member) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field->member)>, submember)
+    #define MAXWELL3D_STRUCT_ARRAY_OFFSET(field, member, index) MAXWELL3D_STRUCT_OFFSET(field, member) + ((sizeof(std::remove_reference_t<decltype(Registers::field->member[0])>) / sizeof(u32)) * index)
+    #define MAXWELL3D_ARRAY_OFFSET(field, index) MAXWELL3D_OFFSET(field) + ((sizeof(std::remove_reference_t<decltype(Registers::field[0])>) / sizeof(u32)) * index)
+    #define MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) MAXWELL3D_ARRAY_OFFSET(field, index) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field[0])>, member)
+    #define MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET(field, index, member, submember) MAXWELL3D_ARRAY_STRUCT_OFFSET(field, index, member) + U32_OFFSET(decltype(Registers::field[0].member), submember)
 
+    void Maxwell3D::HandleMethod(u32 method, u32 argument) {
         #define MAXWELL3D_CASE(field, content) case MAXWELL3D_OFFSET(field): {                        \
             auto field{util::BitCast<std::remove_reference_t<decltype(*registers.field)>>(argument)}; \
             content                                                                                   \
@@ -598,6 +599,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 macroState.macroPositions[registers.mme->startAddressRamPointer++] = startAddressRamLoad;
             })
 
+            MAXWELL3D_STRUCT_CASE(i2m, launchDma, {
+                i2m.LaunchDma(*registers.i2m);
+            })
+
+            MAXWELL3D_STRUCT_CASE(i2m, loadInlineData, {
+                i2m.LoadInlineData(*registers.i2m, loadInlineData);
+            })
+
             MAXWELL3D_CASE(syncpointAction, {
                 Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Execute();
@@ -676,13 +685,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 break;
         }
 
-        #undef MAXWELL3D_OFFSET
-        #undef MAXWELL3D_STRUCT_OFFSET
-        #undef MAXWELL3D_STRUCT_ARRAY_OFFSET
-        #undef MAXWELL3D_ARRAY_OFFSET
-        #undef MAXWELL3D_ARRAY_STRUCT_OFFSET
-        #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET
-
         #undef MAXWELL3D_CASE_BASE
         #undef MAXWELL3D_CASE
         #undef MAXWELL3D_STRUCT_CASE
@@ -693,10 +695,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     void Maxwell3D::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
-        for (u32 argument : arguments) {
-            CallMethod(method, argument);
+        switch (method) {
+            case MAXWELL3D_STRUCT_OFFSET(i2m, loadInlineData):
+                i2m.LoadInlineData(*registers.i2m, arguments);
+                return;
+            default:
+                break;
         }
+
+        for (u32 argument : arguments)
+            HandleMethod(method, argument);
     }
+
+    #undef MAXWELL3D_OFFSET
+    #undef MAXWELL3D_STRUCT_OFFSET
+    #undef MAXWELL3D_STRUCT_ARRAY_OFFSET
+    #undef MAXWELL3D_ARRAY_OFFSET
+    #undef MAXWELL3D_ARRAY_STRUCT_OFFSET
+    #undef MAXWELL3D_ARRAY_STRUCT_STRUCT_OFFSET
 
     void Maxwell3D::WriteSemaphoreResult(u64 result) {
         struct FourWordResult {
