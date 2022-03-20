@@ -746,7 +746,9 @@ namespace skyline::gpu::interconnect {
         ShaderSet shaders;
         PipelineStages pipelineStages;
 
-        ShaderCompiler::RuntimeInfo runtimeInfo{};
+        ShaderCompiler::RuntimeInfo runtimeInfo{
+            .convert_depth_mode = true // This is required for the default GPU register state
+        };
 
         constexpr static size_t PipelineUniqueDescriptorTypeCount{2}; //!< The amount of unique descriptor types that may be bound to a pipeline
         constexpr static size_t MaxPipelineDescriptorWriteCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The maxium amount of descriptors writes that are used to bind a pipeline

@@ -570,6 +570,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetTexturePoolMaximumIndex(maximumIndex);
                 })
 
+                MAXWELL3D_CASE(depthMode, {
+                    context.SetDepthMode(depthMode);
+                })
+
                 default:
                     break;
             }
@@ -667,10 +671,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             BOOST_PP_REPEAT(16, CBUF_UPDATE_CALLBACKS, 0)
             #undef CBUF_UPDATE_CALLBACKS
-
-            MAXWELL3D_CASE(depthMode, {
-                context.SetDepthMode(depthMode);
-            })
 
             default:
                 break;
