@@ -13,36 +13,19 @@ namespace skyline::soc::gm20b::engine {
 
         registers.raw[method] = argument;
 
-        #define GPFIFO_OFFSET(field) U32_OFFSET(Registers, field)
-        #define GPFIFO_STRUCT_OFFSET(field, member) GPFIFO_OFFSET(field) + U32_OFFSET(decltype(Registers::field), member)
-
-        #define GPFIFO_CASE_BASE(fieldName, fieldAccessor, offset, content) case offset: { \
-            auto fieldName{util::BitCast<decltype(registers.fieldAccessor)>(argument)};      \
-            content                                                                        \
-            return;                                                                        \
-        }
-        #define GPFIFO_CASE(field, content) GPFIFO_CASE_BASE(field, field, GPFIFO_OFFSET(field), content)
-        #define GPFIFO_STRUCT_CASE(field, member, content) GPFIFO_CASE_BASE(member, field.member, GPFIFO_STRUCT_OFFSET(field, member), content)
-
         switch (method) {
-            GPFIFO_STRUCT_CASE(syncpoint, action, {
-                if (action.operation == Registers::SyncpointOperation::Incr) {
+            ENGINE_STRUCT_CASE(syncpoint, action, {
+                if (action.operation == Registers::Syncpoint::Operation::Incr) {
                     Logger::Debug("Increment syncpoint: {}", +action.index);
                     channelCtx.executor.Execute();
                     syncpoints.at(action.index).Increment();
-                } else if (action.operation == Registers::SyncpointOperation::Wait) {
-                    Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint.payload);
+                } else if (action.operation == Registers::Syncpoint::Operation::Wait) {
+                    Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
 
                     // Wait forever for another channel to increment
-                    syncpoints.at(action.index).Wait(registers.syncpoint.payload, std::chrono::steady_clock::duration::max());
+                    syncpoints.at(action.index).Wait(registers.syncpoint->payload, std::chrono::steady_clock::duration::max());
                 }
             })
         }
-
-        #undef GPFIFO_STRUCT_CASE
-        #undef GPFIFO_CASE
-        #undef GPFIFO_CASE_BASE
-        #undef GPFIFO_STRUCT_OFFSET
-        #undef GPFIFO_OFFSET
     };
 }

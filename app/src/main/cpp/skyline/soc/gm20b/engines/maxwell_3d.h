@@ -34,14 +34,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         void WriteSemaphoreResult(u64 result);
 
       public:
-        static constexpr u32 RegisterCount{0xE00}; //!< The number of Maxwell 3D registers
-
         /**
          * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def
          */
         #pragma pack(push, 1)
         union Registers {
-            std::array<u32, RegisterCount> raw;
+            std::array<u32, EngineMethodsEnd> raw;
 
             template<size_t Offset, typename Type>
             using Register = util::OffsetMember<Offset, Type, u32>;
@@ -317,7 +315,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x982, u32> bindlessTextureConstantBufferIndex; //!< The index of the constant buffer containing bindless texture descriptors
         };
-        static_assert(sizeof(Registers) == (RegisterCount * sizeof(u32)));
+        static_assert(sizeof(Registers) == (EngineMethodsEnd * sizeof(u32)));
         #pragma pack(pop)
 
         Registers registers{};

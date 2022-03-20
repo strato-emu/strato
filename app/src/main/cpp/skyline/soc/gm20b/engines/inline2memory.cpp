@@ -55,19 +55,16 @@ namespace skyline::soc::gm20b::engine {
         HandleMethod(method, argument);
     }
 
-#define INLINE2MEMORY_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
-#define INLINE2MEMORY_STRUCT_OFFSET(field, member) INLINE2MEMORY_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
-
     void Inline2Memory::HandleMethod(u32 method, u32 argument) {
         registers.raw[method] = argument;
 
         switch (method) {
-            case INLINE2MEMORY_STRUCT_OFFSET(i2m, launchDma):
+            ENGINE_STRUCT_CASE(i2m, launchDma, {
                 backend.LaunchDma(*registers.i2m);
-                return;
-            case INLINE2MEMORY_STRUCT_OFFSET(i2m, loadInlineData):
+            })
+            ENGINE_STRUCT_CASE(i2m, loadInlineData, {
                 backend.LoadInlineData(*registers.i2m, argument);
-                return;
+            })
             default:
                 return;
         }
@@ -76,7 +73,7 @@ namespace skyline::soc::gm20b::engine {
 
     void Inline2Memory::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
         switch (method) {
-            case INLINE2MEMORY_STRUCT_OFFSET(i2m, loadInlineData):
+            case ENGINE_STRUCT_OFFSET(i2m, loadInlineData):
                 backend.LoadInlineData(*registers.i2m, arguments);
                 return;
             default:
@@ -86,7 +83,4 @@ namespace skyline::soc::gm20b::engine {
         for (u32 argument : arguments)
             HandleMethod(method, argument);
     }
-
-#undef INLINE2MEMORY_STRUCT_OFFSET
-#undef INLINE2MEMORY_OFFSET
 }
