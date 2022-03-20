@@ -112,6 +112,9 @@ namespace skyline::soc::gm20b {
             case SubchannelId::ThreeD:
                 channelCtx.maxwell3D->CallMethod(method, argument);
                 break;
+            case SubchannelId::Inline2Mem:
+                channelCtx.inline2Memory.CallMethod(method, argument);
+                break;
             default:
                 Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
                 break;
@@ -122,6 +125,9 @@ namespace skyline::soc::gm20b {
         switch (subChannel) {
             case SubchannelId::ThreeD:
                 channelCtx.maxwell3D->CallMethodBatchNonInc(method, arguments);
+                break;
+            case SubchannelId::Inline2Mem:
+                channelCtx.inline2Memory.CallMethodBatchNonInc(method, arguments);
                 break;
             default:
                 Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X} with batch args", method, subChannel);

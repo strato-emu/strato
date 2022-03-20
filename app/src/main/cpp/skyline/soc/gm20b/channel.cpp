@@ -5,9 +5,10 @@
 #include "channel.h"
 
 namespace skyline::soc::gm20b {
-    ChannelContext::ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> asCtx, size_t numEntries) :
-        maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, macroState, executor)),
-        gpfifo(state, *this, numEntries),
-        executor(state),
-        asCtx(std::move(asCtx)){}
+    ChannelContext::ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> pAsCtx, size_t numEntries)
+        : asCtx(std::move(pAsCtx)),
+          executor(state),
+          maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, macroState, executor)),
+          inline2Memory(asCtx),
+          gpfifo(state, *this, numEntries) {}
 }
