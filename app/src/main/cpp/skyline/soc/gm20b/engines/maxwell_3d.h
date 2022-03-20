@@ -108,7 +108,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x3EB, u32> rtSeparateFragData;
 
-            Register<0x3F8, type::Address> depthTargetAddress;
+            Register<0x3F8, Address> depthTargetAddress;
             Register<0x3FA, type::DepthRtFormat> depthTargetFormat;
             Register<0x3FB, type::RenderTargetTileMode> depthTargetTileMode;
             Register<0x3FC, u32> depthTargetLayerStride;
@@ -193,7 +193,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x54F, type::MultisampleControl> multisampleControl;
 
             struct SamplerPool {
-                type::Address address; // 0x557
+                Address address; // 0x557
                 u32 maximumIndex; // 0x559
             };
             Register<0x557, SamplerPool> samplerPool;
@@ -202,7 +202,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x55C, u32> lineSmoothEnable;
 
             struct TexturePool {
-                type::Address address; // 0x55D
+                Address address; // 0x55D
                 u32 maximumIndex; // 0x55F
             };
             Register<0x55D, TexturePool> texturePool;
@@ -220,7 +220,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x56F, float> depthBiasUnits;
 
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
-            Register<0x582, type::Address> setProgramRegion;
+            Register<0x582, Address> setProgramRegion;
 
             Register<0x585, u32> vertexEndGl; //!< Method-only register with no real value, used after calling vertexBeginGl to invoke the draw
             Register<0x586, type::VertexBeginGl> vertexBeginGl; //!< Similar to glVertexBegin semantically, supplies a primitive topology for draws alongside instancing data
@@ -256,7 +256,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorWriteMask;
 
             struct Semaphore {
-                type::Address address; // 0x6C0
+                Address address; // 0x6C0
                 u32 payload; // 0x6C2
                 type::SemaphoreInfo info; // 0x6C3
             };
@@ -270,7 +270,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                         u32 enable : 1;
                     };
                 } config;
-                type::Address iova;
+                Address iova;
                 u32 divisor;
             };
             static_assert(sizeof(VertexBuffer) == sizeof(u32) * 4);
@@ -288,7 +288,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x780, std::array<IndependentBlend, type::RenderTargetCount>> independentBlend;
 
-            Register<0x7C0, std::array<type::Address, type::VertexBufferCount>> vertexBufferLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
+            Register<0x7C0, std::array<Address, type::VertexBufferCount>> vertexBufferLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
 
             Register<0x800, std::array<type::SetProgramInfo, type::ShaderStageCount>> setProgram;
 
@@ -296,7 +296,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             struct ConstantBufferSelector {
                 u32 size;
-                type::Address address;
+                Address address;
             };
             Register<0x8E0, ConstantBufferSelector> constantBufferSelector;
 

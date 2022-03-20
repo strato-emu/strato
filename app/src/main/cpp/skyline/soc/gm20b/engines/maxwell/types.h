@@ -5,23 +5,10 @@
 #pragma once
 
 #include <common.h>
+#include <soc/gm20b/engines/engine.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d::type {
     #pragma pack(push, 1)
-
-    /**
-     * @brief A 40-bit GMMU virtual address with register-packing
-     * @note The registers pack the address with big-endian ordering (but with 32 bit words)
-     */
-    struct Address {
-        u32 high;
-        u32 low;
-
-        operator u64() {
-            return (static_cast<u64>(high) << 32) | low;
-        }
-    };
-    static_assert(sizeof(Address) == sizeof(u64));
 
     enum class MmeShadowRamControl : u32 {
         MethodTrack = 0, //!< Tracks all writes to registers in shadow RAM

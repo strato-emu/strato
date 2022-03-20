@@ -10,6 +10,20 @@ namespace skyline::soc::gm20b {
     #define U32_OFFSET(regs, field) (offsetof(regs, field) / sizeof(u32))
 
     namespace engine {
+        /**
+         * @brief A 40-bit GMMU virtual address with register-packing
+         * @note The registers pack the address with big-endian ordering (but with 32 bit words)
+         */
+        struct Address {
+            u32 high;
+            u32 low;
+
+            operator u64() {
+                return (static_cast<u64>(high) << 32) | low;
+            }
+        };
+        static_assert(sizeof(Address) == sizeof(u64));
+
         constexpr u32 EngineMethodsEnd = 0xE00; //!< All methods above this are passed to the MME on supported engines
 
         /**
