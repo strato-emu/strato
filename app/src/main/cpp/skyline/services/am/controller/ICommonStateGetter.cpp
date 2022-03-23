@@ -52,6 +52,11 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result ICommonStateGetter::IsVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(false);
+        return {};
+    }
+
     Result ICommonStateGetter::GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (operationMode == OperationMode::Handheld) {
             constexpr u16 HandheldResolutionW{1280};

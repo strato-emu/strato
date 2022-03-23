@@ -84,6 +84,12 @@ namespace skyline::service::am {
         Result GetPerformanceMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns the state of VR mode
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IsVrModeEnabled
+         */
+        Result IsVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns the current display width and height in two u32s
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution
          */
@@ -95,6 +101,7 @@ namespace skyline::service::am {
             SFUNC(0x5, ICommonStateGetter, GetOperationMode),
             SFUNC(0x6, ICommonStateGetter, GetPerformanceMode),
             SFUNC(0x9, ICommonStateGetter, GetCurrentFocusState),
+            SFUNC(0x32, ICommonStateGetter, IsVrModeEnabled),
             SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution)
         )
     };
