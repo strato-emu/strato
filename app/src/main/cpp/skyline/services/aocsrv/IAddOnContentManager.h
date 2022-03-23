@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <services/serviceman.h>
+#include <services/base_service.h>
 
 namespace skyline::service::aocsrv {
     /**
@@ -13,5 +13,11 @@ namespace skyline::service::aocsrv {
     class IAddOnContentManager : public BaseService {
       public:
         IAddOnContentManager(const DeviceState &state, ServiceManager &manager);
+
+        Result ListAddOnContent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x3, IAddOnContentManager, ListAddOnContent)
+        )
     };
 }
