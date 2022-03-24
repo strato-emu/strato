@@ -19,6 +19,20 @@ object KeyReader {
 
         companion object {
             fun parse(keyName : String) = values().first { it.keyName == keyName }
+            fun parse(documentFile : DocumentFile) = values().first { it.fileName == documentFile.name }
+            fun parseOrNull(documentFile : DocumentFile) = values().find { it.fileName == documentFile.name }
+        }
+    }
+
+    fun importFromLocation(context : Context, searchLocation : Uri) = importFromDirectory(context, DocumentFile.fromTreeUri(context, searchLocation)!!)
+
+    private fun importFromDirectory(context : Context, directory : DocumentFile) {
+        directory.listFiles().forEach { file ->
+            if (file.isDirectory) {
+                importFromDirectory(context, file)
+            } else {
+                KeyType.parseOrNull(file)?.let { import(context, file.uri, it) }
+            }
         }
     }
 
