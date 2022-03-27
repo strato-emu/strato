@@ -90,4 +90,9 @@ namespace skyline::service::account {
         response.Push<u32>(0); // We don't want to lock the user
         return {};
     }
+
+    Result IAccountServiceForApplication::IsUserRegistrationRequestPermitted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(false); // Registration isn't permitted via the application account service
+        return {};
+    }
 }
