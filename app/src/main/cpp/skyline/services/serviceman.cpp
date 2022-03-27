@@ -14,6 +14,8 @@
 #include "codec/IHardwareOpusDecoderManager.h"
 #include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
+#include "irs/IIrSensorServer.h"
+#include "irs/iirsensor_core.h"
 #include "timesrv/IStaticService.h"
 #include "glue/IStaticService.h"
 #include "glue/IWriterForSystem.h"
@@ -52,9 +54,10 @@ namespace skyline::service {
     struct GlobalServiceState {
         timesrv::core::TimeServiceObject timesrv;
         pl::SharedFontCore sharedFontCore;
+        irs::SharedIirCore sharedIirCore;
         nvdrv::Driver nvdrv;
 
-        explicit GlobalServiceState(const DeviceState &state) : timesrv(state), sharedFontCore(state), nvdrv(state) {}
+        explicit GlobalServiceState(const DeviceState &state) : timesrv(state), sharedFontCore(state), sharedIirCore(state), nvdrv(state) {}
     };
 
     ServiceManager::ServiceManager(const DeviceState &state) : state(state), smUserInterface(std::make_shared<sm::IUserInterface>(state, *this)), globalServiceState(std::make_shared<GlobalServiceState>(state)) {}
@@ -75,6 +78,7 @@ namespace skyline::service {
             SERVICE_CASE(audio::IAudioRendererManager, "audren:u")
             SERVICE_CASE(codec::IHardwareOpusDecoderManager, "hwopus")
             SERVICE_CASE(hid::IHidServer, "hid")
+            SERVICE_CASE(irs::IIrSensorServer, "irs", globalServiceState->sharedIirCore)
             SERVICE_CASE(timesrv::IStaticService, "time:s", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemPermissions) // Both of these would be registered after TimeServiceManager::Setup normally but we call that in the GlobalServiceState constructor so can just list them here directly
             SERVICE_CASE(timesrv::IStaticService, "time:su", globalServiceState->timesrv, timesrv::constant::StaticServiceSystemUpdatePermissions)
             SERVICE_CASE(glue::IStaticService, "time:a", globalServiceState->timesrv.managerServer.GetStaticServiceAsAdmin(state, *this), globalServiceState->timesrv, timesrv::constant::StaticServiceAdminPermissions)
