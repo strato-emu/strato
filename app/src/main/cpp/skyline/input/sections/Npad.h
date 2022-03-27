@@ -14,6 +14,7 @@ namespace skyline::input {
         JoyconDual    = 0b100,
         JoyconLeft    = 0b1000,
         JoyconRight   = 0b10000,
+        Gamecube      = 0b100000,
     };
     // @fmt:on
 
@@ -186,6 +187,26 @@ namespace skyline::input {
         };
     };
     static_assert(sizeof(NpadDeviceType) == 0x4);
+
+    /**
+     * @url https://switchbrew.org/wiki/HID_services#VibrationDeviceType
+     */
+    enum class NpadVibrationDeviceType : u32 {
+        Unknown,
+        LinearResonantActuator, //!< LRAs are used on devices that support HD Rumble functionality such as Joy-Cons and the Pro Controller
+        EccentricRotatingMass, //!< ERMs are mainly used in the old GameCube controllers and offer more crude rumble
+    };
+    static_assert(sizeof(NpadVibrationDeviceType) == 0x4);
+
+    /**
+     * @url https://switchbrew.org/wiki/HID_services#VibrationDevicePosition
+     */
+    enum class NpadVibrationDevicePosition : u32 {
+        None,
+        Left,
+        Right
+    };
+    static_assert(sizeof(NpadVibrationDevicePosition) == 0x4);
 
     /**
      * @url https://switchbrew.org/wiki/HID_Shared_Memory#NpadSystemProperties

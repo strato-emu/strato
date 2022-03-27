@@ -179,4 +179,34 @@ namespace skyline::service::hid {
 
         return {};
     }
+
+    Result IHidServer::StartSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IHidServer::GetVibrationDeviceInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto deviceHandle{request.Pop<NpadDeviceHandle>()};
+        auto id{deviceHandle.id};
+
+        if (id > NpadId::Player8 && id != NpadId::Handheld && id != NpadId::Unknown)
+            return result::InvalidNpadId;
+
+        auto vibrationDeviceType{NpadVibrationDeviceType::Unknown};
+        auto vibrationDevicePosition{NpadVibrationDevicePosition::None};
+
+        if (deviceHandle.GetType() == NpadControllerType::Gamecube)
+            vibrationDeviceType = NpadVibrationDeviceType::EccentricRotatingMass;
+        else
+            vibrationDeviceType = NpadVibrationDeviceType::LinearResonantActuator;
+
+        if (vibrationDeviceType == NpadVibrationDeviceType::LinearResonantActuator)
+            if (deviceHandle.isRight)
+                vibrationDevicePosition = NpadVibrationDevicePosition::Right;
+            else
+                vibrationDevicePosition = NpadVibrationDevicePosition::Left;
+
+        response.Push(NpadVibrationDeviceInfo{vibrationDeviceType, vibrationDevicePosition});
+
+        return {};
+    }
 }

@@ -134,7 +134,7 @@ namespace skyline::input {
                 section.header.singleColorStatus = NpadColorReadStatus::Success; // Single color is also written for dual controllers
                 section.header.singleColor = section.header.leftColor;           // and is set to the color of the left JC
                 break;
-
+            case NpadControllerType::Gamecube:
             case NpadControllerType::None:
                 break;
         }

@@ -7,6 +7,10 @@
 #include "IAppletResource.h"
 
 namespace skyline::service::hid {
+    namespace result {
+        constexpr Result InvalidNpadId(202, 709);
+    }
+    
     /**
      * @brief IHidServer or hid service is used to access input devices
      * @url https://switchbrew.org/wiki/HID_services#hid
@@ -31,6 +35,12 @@ namespace skyline::service::hid {
          */
         Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @brief Starts the Six Axis Sensor given an PID
+         * @url https://switchbrew.org/wiki/HID_services#CreateAppletResource
+         */
+        Result StartSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        
         /**
          * @brief Sets the style of controllers supported
          * @url https://switchbrew.org/wiki/HID_services#SetSupportedNpadStyleSet
@@ -115,6 +125,12 @@ namespace skyline::service::hid {
         Result CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns the current vibration state of a device
+         * @url https://switchbrew.org/wiki/HID_services#GetVibrationDeviceInfo
+         */
+         Result GetVibrationDeviceInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Send a single vibration value to a HID device
          * @url https://switchbrew.org/wiki/HID_services#SendVibrationValue
          */
@@ -130,6 +146,7 @@ namespace skyline::service::hid {
             SFUNC(0x0, IHidServer, CreateAppletResource),
             SFUNC(0x1, IHidServer, ActivateDebugPad),
             SFUNC(0xB, IHidServer, ActivateTouchScreen),
+            SFUNC(0x42, IHidServer, StartSixAxisSensor),
             SFUNC(0x64, IHidServer, SetSupportedNpadStyleSet),
             SFUNC(0x65, IHidServer, GetSupportedNpadStyleSet),
             SFUNC(0x66, IHidServer, SetSupportedNpadIdType),
@@ -144,6 +161,7 @@ namespace skyline::service::hid {
             SFUNC(0x7B, IHidServer, SetNpadJoyAssignmentModeSingle),
             SFUNC(0x7C, IHidServer, SetNpadJoyAssignmentModeDual),
             SFUNC(0xCB, IHidServer, CreateActiveVibrationDeviceList),
+            SFUNC(0xC8, IHidServer, GetVibrationDeviceInfo),
             SFUNC(0xC9, IHidServer, SendVibrationValue),
             SFUNC(0xCE, IHidServer, SendVibrationValues)
         )

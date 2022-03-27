@@ -83,11 +83,22 @@ namespace skyline::input {
                     return NpadControllerType::JoyconLeft;
                 case 7:
                     return NpadControllerType::JoyconRight;
+                case 8:
+                    return NpadControllerType::Gamecube;
                 default:
                     return NpadControllerType::None;
             }
         }
     };
+
+    /**
+     * @url https://switchbrew.org/wiki/HID_services#VibrationDeviceInfo
+     */
+    struct NpadVibrationDeviceInfo {
+        NpadVibrationDeviceType deviceType;
+        NpadVibrationDevicePosition position;
+    };
+    static_assert(sizeof(NpadVibrationDeviceInfo) == 0x8);
 
     /**
      * @brief The parameters to produce a vibration using an LRA
