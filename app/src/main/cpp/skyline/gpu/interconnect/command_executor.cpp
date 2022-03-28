@@ -167,6 +167,7 @@ namespace skyline::gpu::interconnect {
 
                 nodes.clear();
                 syncTextures.clear();
+                syncBuffers.clear();
 
                 cycle = activeCommandBuffer.Reset();
             }
