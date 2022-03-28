@@ -12,15 +12,18 @@ namespace skyline::gpu::interconnect {
     }
 
     bool CommandExecutor::CreateRenderPass(vk::Rect2D renderArea) {
-        if (renderPass && renderPass->renderArea != renderArea) {
+        if (renderPass && (renderPass->renderArea != renderArea || subpassCount > gpu.traits.quirks.maxSubpassCount)) {
             nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
             renderPass = nullptr;
+            subpassCount = 0;
         }
 
         bool newRenderPass{renderPass == nullptr};
         if (newRenderPass)
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
             renderPass = &std::get<node::RenderPassNode>(nodes.emplace_back(std::in_place_type_t<node::RenderPassNode>(), renderArea));
+        else
+            subpassCount++;
 
         return newRenderPass;
     }
@@ -119,6 +122,7 @@ namespace skyline::gpu::interconnect {
             if (renderPass) {
                 nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
                 renderPass = nullptr;
+                subpassCount = 0;
             }
 
             {

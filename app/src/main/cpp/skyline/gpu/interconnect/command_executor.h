@@ -18,6 +18,7 @@ namespace skyline::gpu::interconnect {
         CommandScheduler::ActiveCommandBuffer activeCommandBuffer;
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderPassNode *renderPass{};
+        size_t subpassCount{}; //!< The number of subpasses in the current render pass
         std::unordered_set<Texture *> syncTextures; //!< All textures that need to be synced prior to and after execution
 
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;

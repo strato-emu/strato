@@ -529,7 +529,7 @@ namespace skyline::gpu {
         }
 
         if (gpu.traits.quirks.vkImageMutableFormatCostly && pFormat->vkFormat != format->vkFormat)
-            Logger::Warn("Creating a view of a texture with a different format without mutable format");
+            Logger::Warn("Creating a view of a texture with a different format without mutable format: {} - {}", vk::to_string(pFormat->vkFormat), vk::to_string(format->vkFormat));
 
         auto view{std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping)};
         views.push_back(view);

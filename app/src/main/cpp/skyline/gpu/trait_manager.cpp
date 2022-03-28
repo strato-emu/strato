@@ -133,6 +133,8 @@ namespace skyline::gpu {
                 needsIndividualTextureBindingWrites = true;
                 vkImageMutableFormatCostly = true; // Disables UBWC
                 brokenDescriptorAliasing = true;
+                if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 600, 0))
+                    maxSubpassCount = 64; // Driver will segfault while destroying the renderpass and associated objects if this is exceeded on all 5xx and below drivers
                 break;
             }
 
@@ -148,8 +150,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::QuirkManager::Summary() {
         return fmt::format(
-            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}",
-            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly
+            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}\n* Broken Descriptor Aliasing: {}\n* Max Subpass Count: {}",
+            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly, brokenDescriptorAliasing, maxSubpassCount
         );
     }
 
