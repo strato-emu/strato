@@ -13,6 +13,15 @@ namespace skyline::gpu {
     }
 
     BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle) {
+        /*
+         * We align the buffer to the page boundary to ensure that:
+         * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
+         * 2) We can coalesce a lot of tiny buffers into a single large buffer covering an entire page, this is often the case for index buffers and vertex buffers
+         */
+        auto alignedStart{util::AlignDown(guestMapping.begin().base(), PAGE_SIZE)}, alignedEnd{util::AlignUp(guestMapping.end().base(), PAGE_SIZE)};
+        vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
+        guestMapping = span<u8>{alignedStart, alignedEnd};
+
         std::scoped_lock lock(mutex);
 
         // Lookup for any buffers overlapping with the supplied guest mapping
@@ -26,7 +35,7 @@ namespace skyline::gpu {
             if (buffer->guest.begin() <= guestMapping.begin() && buffer->guest.end() >= guestMapping.end()) {
                 // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
                 std::scoped_lock bufferLock{*buffer};
-                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest.begin()), guestMapping.size());
+                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest.begin()) + offset, size);
             }
         }
 
@@ -70,6 +79,6 @@ namespace skyline::gpu {
 
         buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest.end().base(), BufferLessThan), newBuffer);
 
-        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest.begin()), guestMapping.size());
+        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest.begin()) + offset, size);
     }
 }
