@@ -2626,7 +2626,7 @@ namespace skyline::gpu::interconnect {
 
                 cycle->AttachObject(fenceStorage);
             }, vk::Rect2D{
-                .extent = activeColorRenderTargets.front()->texture->dimensions,
+                .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView);
         }
 
