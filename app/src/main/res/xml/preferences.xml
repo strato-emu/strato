@@ -116,6 +116,12 @@
             app:key="aspect_ratio"
             app:title="@string/aspect_ratio"
             app:useSimpleSummaryProvider="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/respect_display_cutout_disabled"
+            android:summaryOn="@string/respect_display_cutout_enabled"
+            app:key="respect_display_cutout"
+            app:title="@string/respect_display_cutout" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_input"

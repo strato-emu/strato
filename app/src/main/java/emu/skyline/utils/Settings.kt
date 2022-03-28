@@ -44,4 +44,6 @@ class Settings @Inject constructor(@ApplicationContext private val context : Con
     var systemLanguage by sharedPreferences(context, 1)
 
     var orientation by sharedPreferences(context, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
+
+    var respectDisplayCutout by sharedPreferences(context, false)
 }

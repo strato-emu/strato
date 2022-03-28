@@ -17,6 +17,7 @@ import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
+import androidx.core.view.updateMargins
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.databinding.EmuActivityBinding
 import emu.skyline.input.*
@@ -232,13 +233,23 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = settings.orientation
+        window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         setContentView(binding.root)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android might not allow child views to overlap the system bars
+            // Override this behavior and force content to extend into the cutout area
+            window.setDecorFitsSystemWindows(false)
+
             window.insetsController?.let {
                 it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 it.hide(WindowInsets.Type.systemBars())
             }
+        }
+
+        if (settings.respectDisplayCutout) {
+            binding.perfStats.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
+            binding.onScreenControllerToggle.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
         }
 
         binding.gameView.holder.addCallback(this)
@@ -539,5 +550,18 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     fun getVersionCode() : Int {
         val (major, minor, patch) = BuildConfig.VERSION_NAME.split('.').map { it.toUInt() }
         return ((major shl 22) or (minor shl 12) or (patch)).toInt()
+    }
+
+    val insetsOrMarginHandler = View.OnApplyWindowInsetsListener { view, insets ->
+        insets.displayCutout?.let {
+            val defaultHorizontalMargin = view.resources.getDimensionPixelSize(R.dimen.onScreenItemHorizontalMargin)
+            val left = if (it.safeInsetLeft == 0) defaultHorizontalMargin else it.safeInsetLeft
+            val right = if (it.safeInsetRight == 0) defaultHorizontalMargin else it.safeInsetRight
+
+            val params = view.layoutParams as ViewGroup.MarginLayoutParams
+            params.updateMargins(left = left, right = right)
+            view.layoutParams = params
+        }
+        insets
     }
 }
