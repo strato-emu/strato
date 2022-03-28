@@ -15,8 +15,8 @@ namespace skyline::gpu::texture {
     size_t GetBlockLinearLayerSize(const GuestTexture &guest) {
         u32 blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
         u32 robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
-        u32 surfaceHeightLines{guest.dimensions.height / guest.format->blockHeight}; //!< The height of the surface in lines
-        u32 surfaceHeightRobs{util::AlignUp(surfaceHeightLines, robHeight) / robHeight}; //!< The height of the surface in ROBs (Row Of Blocks, incl. padding ROB)
+        u32 surfaceHeightLines{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})}; //!< The height of the surface in lines
+        u32 surfaceHeightRobs{util::DivideCeil(surfaceHeightLines, robHeight)}; //!< The height of the surface in ROBs (Row Of Blocks, incl. padding ROB)
 
         u32 robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
         u32 robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1, incl. padding block)
