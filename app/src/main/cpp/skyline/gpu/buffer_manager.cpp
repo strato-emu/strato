@@ -8,101 +8,68 @@
 namespace skyline::gpu {
     BufferManager::BufferManager(GPU &gpu) : gpu(gpu) {}
 
-    BufferView BufferManager::FindOrCreate(const GuestBuffer &guest) {
-        auto guestMapping{guest.mappings.front()};
+    bool BufferManager::BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer) {
+        return it->guest.begin().base() < pointer;
+    }
 
-        /*
-         * Iterate over all buffers that overlap with the first mapping of the guest buffer and compare the mappings:
-         * 1) All mappings match up perfectly, we check that the rest of the supplied mappings correspond to mappings in the buffer
-         * 1.1) If they match as well, we return a view encompassing the entire buffer
-         * 2) Only a contiguous range of mappings match, we check for the overlap bounds, it can go two ways:
-         * 2.1) If the supplied buffer is smaller than the matching buffer, we return a view encompassing the mappings into the buffer
-         * 2.2) If the matching buffer is smaller than the supplied buffer, we make the matching buffer larger and return it
-         * 3) If there's another overlap we go back to (1) with it else we go to (4)
-         * 4) Create a new buffer and insert it in the map then return it
-         */
-
+    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle) {
         std::scoped_lock lock(mutex);
-        std::shared_ptr<Buffer> match{};
-        auto mappingEnd{std::upper_bound(buffers.begin(), buffers.end(), guestMapping)}, hostMapping{mappingEnd};
-        if (hostMapping != buffers.begin() && (--hostMapping)->end() > guestMapping.begin()) {
-            auto &hostMappings{hostMapping->buffer->guest.mappings};
-            if (hostMapping->contains(guestMapping)) {
-                // We need to check that all corresponding mappings in the candidate buffer and the guest buffer match up
-                // Only the start of the first matched mapping and the end of the last mapping can not match up as this is the case for views
-                auto firstHostMapping{hostMapping->iterator};
-                auto lastGuestMapping{guest.mappings.back()};
-                auto endHostMapping{std::find_if(firstHostMapping, hostMappings.end(), [&lastGuestMapping](const span<u8> &it) {
-                    return lastGuestMapping.begin() > it.begin() && lastGuestMapping.end() > it.end();
-                })}; //!< A past-the-end iterator for the last host mapping, the final valid mapping is prior to this iterator
-                bool mappingMatch{std::equal(firstHostMapping, endHostMapping, guest.mappings.begin(), guest.mappings.end(), [](const span<u8> &lhs, const span<u8> &rhs) {
-                    return lhs.end() == rhs.end(); // We check end() here to implicitly ignore any offset from the first mapping
-                })};
 
-                auto &lastHostMapping{*std::prev(endHostMapping)};
-                if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && endHostMapping == hostMappings.end() && lastGuestMapping.end() == lastHostMapping.end()) {
-                    // We've gotten a perfect 1:1 match for *all* mappings from the start to end
-                    std::scoped_lock bufferLock(*hostMapping->buffer);
-                    return hostMapping->buffer->GetView(0, hostMapping->buffer->size);
-                } else if (mappingMatch && firstHostMapping->begin() > guestMapping.begin() && lastHostMapping.end() > lastGuestMapping.end()) {
-                    // We've gotten a guest buffer that is located entirely within a host buffer
-                    std::scoped_lock bufferLock(*hostMapping->buffer);
-                    return hostMapping->buffer->GetView(hostMapping->offset + static_cast<vk::DeviceSize>(hostMapping->begin() - guestMapping.begin()), guest.BufferSize());
-                }
+        // Lookup for any buffers overlapping with the supplied guest mapping
+        boost::container::small_vector<std::shared_ptr<Buffer>, 4> overlaps;
+        for (auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), guestMapping.end().base(), BufferLessThan)}; entryIt != buffers.begin() && (*--entryIt)->guest.begin() <= guestMapping.end();)
+            if ((*entryIt)->guest.end() > guestMapping.begin())
+                overlaps.push_back(*entryIt);
+
+        if (overlaps.size() == 1) [[likely]] {
+            auto buffer{overlaps.front()};
+            if (buffer->guest.begin() <= guestMapping.begin() && buffer->guest.end() >= guestMapping.end()) {
+                // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
+                std::scoped_lock bufferLock{*buffer};
+                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest.begin()), guestMapping.size());
             }
         }
 
-        /* TODO: Handle overlapping buffers
-        // Create a list of all overlapping buffers and update the guest mappings to fit them all
-        boost::container::small_vector<std::pair<std::shared_ptr<Buffer>, u32>, 4> overlappingBuffers;
-        GuestBuffer::Mappings newMappings;
-
-        auto guestMappingIt{guest.mappings.begin()};
-        while (true) {
-            do {
-                hostMapping->begin();
-                overlappingBuffers.emplace_back(hostMapping->buffer, 4);
-            } while (hostMapping != buffers.begin() && (--hostMapping)->end() > guestMappingIt->begin());
-
-            // Iterate over all guest mappings to find overlapping buffers, not just the first
-            auto nextGuestMappingIt{std::next(guestMappingIt)};
-            if (nextGuestMappingIt != guest.mappings.end())
-                hostMapping = std::upper_bound(buffers.begin(), buffers.end(), *nextGuestMappingIt);
-            else
-                break;
-            guestMappingIt = nextGuestMappingIt;
+        // Find the extents of the new buffer we want to create that can hold all overlapping buffers
+        auto lowestAddress{guestMapping.begin().base()}, highestAddress{guestMapping.end().base()};
+        for (const auto &overlap : overlaps) {
+            auto mapping{overlap->guest};
+            if (mapping.begin().base() < lowestAddress)
+                lowestAddress = mapping.begin().base();
+            if (mapping.end().base() > highestAddress)
+                highestAddress = mapping.end().base();
         }
 
-        // Create a buffer that can contain all the overlapping buffers
-        auto buffer{std::make_shared<Buffer>(gpu, guest)};
+        auto newBuffer{std::make_shared<Buffer>(gpu, span<u8>(lowestAddress, highestAddress))};
+        for (auto &overlap : overlaps) {
+            std::scoped_lock overlapLock{*overlap};
 
-        // Delete mappings from all overlapping buffers and repoint all buffer views
-        for (auto &overlappingBuffer : overlappingBuffers) {
-            std::scoped_lock overlappingBufferLock(*overlappingBuffer.first);
-            auto &bufferMappings{hostMapping->buffer->guest.mappings};
+            if (!overlap->cycle.owner_before(cycle))
+                overlap->WaitOnFence(); // We want to only wait on the fence cycle if it's not the current fence cycle
+            overlap->SynchronizeGuest(true, true); // Sync back the buffer before we destroy it
 
-            // Delete all mappings of the overlapping buffers
-            while ((++it) != buffer->guest.mappings.end()) {
-                guestMapping = *it;
-                auto mapping{std::upper_bound(buffers.begin(), buffers.end(), guestMapping)};
-                buffers.emplace(mapping, BufferMapping{buffer, it, offset, guestMapping});
-                offset += mapping->size_bytes();
+            buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
+
+            // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset
+            vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest.begin() - newBuffer->guest.begin())};
+            if (overlapOffset != 0)
+                for (auto &view : overlap->views)
+                    view.offset += overlapOffset;
+
+            newBuffer->views.splice(newBuffer->views.end(), overlap->views);
+
+            // Transfer all delegates references from the overlapping buffer to the new buffer
+            for (auto &delegate : overlap->delegates) {
+                atomic_exchange(&delegate->buffer, newBuffer);
+                if (delegate->usageCallback)
+                    delegate->usageCallback(*delegate->view, newBuffer);
             }
-        }
-         */
 
-        auto buffer{std::make_shared<Buffer>(gpu, guest)};
-        auto it{buffer->guest.mappings.begin()};
-        buffers.emplace(mappingEnd, BufferMapping{buffer, it, 0, guestMapping});
-
-        vk::DeviceSize offset{};
-        while ((++it) != buffer->guest.mappings.end()) {
-            guestMapping = *it;
-            auto mapping{std::upper_bound(buffers.begin(), buffers.end(), guestMapping)};
-            buffers.emplace(mapping, BufferMapping{buffer, it, offset, guestMapping});
-            offset += mapping->size_bytes();
+            newBuffer->delegates.splice(newBuffer->delegates.end(), overlap->delegates);
         }
 
-        return buffer->GetView(0, buffer->size);
+        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest.end().base(), BufferLessThan), newBuffer);
+
+        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest.begin()), guestMapping.size());
     }
 }

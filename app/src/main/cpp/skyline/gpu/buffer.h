@@ -7,18 +7,7 @@
 #include "memory_manager.h"
 
 namespace skyline::gpu {
-    /**
-     * @brief A descriptor for a GPU buffer on the guest
-     */
-    struct GuestBuffer {
-        using Mappings = boost::container::small_vector<span < u8>, 3>;
-        Mappings mappings; //!< Spans to CPU memory for the underlying data backing this buffer
-
-        /**
-         * @return The total size of the buffer by adding up the size of all mappings
-         */
-        vk::DeviceSize BufferSize() const;
-    };
+    using GuestBuffer = span<u8>; //!< The CPU mapping for the guest buffer, multiple mappings for buffers aren't supported since overlaps cannot be reconciled
 
     struct BufferView;
     class BufferManager;
@@ -31,7 +20,6 @@ namespace skyline::gpu {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
-        vk::DeviceSize size;
         memory::Buffer backing;
         GuestBuffer guest;
 
@@ -44,18 +32,45 @@ namespace skyline::gpu {
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
 
+      public:
         /**
          * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
          */
         struct BufferViewStorage {
-          public:
             vk::DeviceSize offset;
-            vk::DeviceSize range;
+            vk::DeviceSize size;
             vk::Format format;
 
-            BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format);
+            BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format);
         };
+
+      private:
         std::list<BufferViewStorage> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
+
+      public:
+        /**
+         * @brief A delegate for a strong reference to a Buffer by a BufferView which can be changed to another Buffer transparently
+         * @note This class conforms to the Lockable and BasicLockable C++ named requirements
+         */
+        struct BufferDelegate : public FenceCycleDependency {
+            std::shared_ptr<Buffer> buffer;
+            Buffer::BufferViewStorage *view;
+            std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;
+            std::list<BufferDelegate *>::iterator iterator;
+
+            BufferDelegate(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view);
+
+            ~BufferDelegate();
+
+            void lock();
+
+            void unlock();
+
+            bool try_lock();
+        };
+
+      private:
+        std::list<BufferDelegate *> delegates; //!< The reference delegates for this buffer, used to prevent the buffer from being deleted while it is still in use
 
         friend BufferView;
         friend BufferManager;
@@ -131,9 +146,10 @@ namespace skyline::gpu {
         /**
          * @brief Synchronizes the guest buffer with the host buffer
          * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
+         * @param skipFence If true, waiting on the currently attached fence will be skipped
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeGuest(bool skipTrap = false);
+        void SynchronizeGuest(bool skipTrap = false, bool skipFence = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer when the FenceCycle is signalled
@@ -141,6 +157,11 @@ namespace skyline::gpu {
          * @note The guest buffer should not be null prior to calling this
          */
         void SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &cycle);
+
+        /**
+         * @brief Reads data at the specified offset in the buffer
+         */
+        void Read(span<u8> data, vk::DeviceSize offset);
 
         /**
          * @brief Writes data at the specified offset in the buffer
@@ -151,7 +172,7 @@ namespace skyline::gpu {
          * @return A cached or newly created view into this buffer with the supplied attributes
          * @note The buffer **must** be locked prior to calling this
          */
-        BufferView GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format = {});
+        BufferView GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format = {});
     };
 
     /**
@@ -160,41 +181,70 @@ namespace skyline::gpu {
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
     struct BufferView {
-        std::shared_ptr<Buffer> buffer;
-        Buffer::BufferViewStorage *view;
+        std::shared_ptr<Buffer::BufferDelegate> bufferDelegate;
 
         BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view);
 
-        constexpr BufferView(nullptr_t = nullptr) : buffer(nullptr), view(nullptr) {}
-
-        constexpr operator bool() const {
-            return view != nullptr;
-        }
-
-        constexpr Buffer::BufferViewStorage *operator->() {
-            return view;
-        }
-
-        operator std::shared_ptr<FenceCycleDependency>() {
-            return buffer;
-        }
+        constexpr BufferView(nullptr_t = nullptr) : bufferDelegate(nullptr) {}
 
         /**
          * @brief Acquires an exclusive lock on the buffer for the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void lock();
+        void lock() const {
+            bufferDelegate->lock();
+        }
 
         /**
          * @brief Relinquishes an existing lock on the buffer by the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void unlock();
+        void unlock() const {
+            bufferDelegate->unlock();
+        }
 
         /**
          * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
          * @note Naming is in accordance to the Lockable named requirement
          */
-        bool try_lock();
+        bool try_lock() const {
+            return bufferDelegate->try_lock();
+        }
+
+        constexpr operator bool() const {
+            return bufferDelegate != nullptr;
+        }
+
+        /**
+         * @note The buffer **must** be locked prior to calling this
+         */
+        Buffer::BufferDelegate *operator->() const {
+            return bufferDelegate.get();
+        }
+
+        /**
+         * @brief Attaches a fence cycle to the underlying buffer in a way that it will be synchronized with the latest backing buffer
+         * @note The view **must** be locked prior to calling this
+         */
+        void AttachCycle(const std::shared_ptr<FenceCycle> &cycle);
+
+        /**
+         * @brief Registers a callback for a usage of this view, it may be called multiple times due to the view being recreated with different backings
+         * @note The callback will be automatically called the first time after registration
+         * @note The view **must** be locked prior to calling this
+         */
+        void RegisterUsage(const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
+
+        /**
+         * @brief Reads data at the specified offset in the view
+         * @note The view **must** be locked prior to calling this
+         */
+        void Read(span<u8> data, vk::DeviceSize offset) const;
+
+        /**
+         * @brief Writes data at the specified offset in the view
+         * @note The view **must** be locked prior to calling this
+         */
+        void Write(span<u8> data, vk::DeviceSize offset) const;
     };
 }

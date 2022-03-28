@@ -8,45 +8,14 @@
 #include "buffer.h"
 
 namespace skyline::gpu {
-    vk::DeviceSize GuestBuffer::BufferSize() const {
-        vk::DeviceSize size{};
-        for (const auto &buffer : mappings)
-            size += buffer.size_bytes();
-        return size;
-    }
-
     void Buffer::SetupGuestMappings() {
-        auto &mappings{guest.mappings};
-        if (mappings.size() == 1) {
-            auto mapping{mappings.front()};
-            u8 *alignedData{util::AlignDown(mapping.data(), PAGE_SIZE)};
-            size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), PAGE_SIZE) - alignedData)};
+        u8 *alignedData{util::AlignDown(guest.data(), PAGE_SIZE)};
+        size_t alignedSize{static_cast<size_t>(util::AlignUp(guest.data() + guest.size(), PAGE_SIZE) - alignedData)};
 
-            alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
-            mirror = alignedMirror.subspan(static_cast<size_t>(mapping.data() - alignedData), mapping.size());
-        } else {
-            std::vector<span<u8>> alignedMappings;
+        alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
+        mirror = alignedMirror.subspan(static_cast<size_t>(guest.data() - alignedData), guest.size());
 
-            const auto &frontMapping{mappings.front()};
-            u8 *alignedData{util::AlignDown(frontMapping.data(), PAGE_SIZE)};
-            alignedMappings.emplace_back(alignedData, (frontMapping.data() + frontMapping.size()) - alignedData);
-
-            size_t totalSize{frontMapping.size()};
-            for (auto it{std::next(mappings.begin())}; it != std::prev(mappings.end()); ++it) {
-                auto mappingSize{it->size()};
-                alignedMappings.emplace_back(it->data(), mappingSize);
-                totalSize += mappingSize;
-            }
-
-            const auto &backMapping{mappings.back()};
-            totalSize += backMapping.size();
-            alignedMappings.emplace_back(backMapping.data(), util::AlignUp(backMapping.size(), PAGE_SIZE));
-
-            alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
-            mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
-        }
-
-        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
+        trapHandle = gpu.state.nce->TrapRegions(guest, true, [this] {
             std::lock_guard lock(*this);
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
             WaitOnFence();
@@ -58,7 +27,7 @@ namespace skyline::gpu {
         });
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), size(guest.BufferSize()), backing(gpu.memory.AllocateBuffer(size)), guest(std::move(guest)) {
+    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
         SetupGuestMappings();
     }
 
@@ -111,7 +80,7 @@ namespace skyline::gpu {
         if (dirtyState != DirtyState::CpuDirty)
             return;
 
-        if (pCycle != cycle.lock())
+        if (!cycle.owner_before(pCycle))
             WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHostWithCycle");
@@ -127,11 +96,12 @@ namespace skyline::gpu {
         }
     }
 
-    void Buffer::SynchronizeGuest(bool skipTrap) {
+    void Buffer::SynchronizeGuest(bool skipTrap, bool skipFence) {
         if (dirtyState != DirtyState::GpuDirty)
             return; // If the buffer has not been used on the GPU, there is no need to synchronize it
 
-        WaitOnFence();
+        if (!skipFence)
+            WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeGuest");
 
@@ -157,11 +127,18 @@ namespace skyline::gpu {
     };
 
     void Buffer::SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &pCycle) {
-        if (pCycle != cycle.lock())
+        if (!cycle.owner_before(pCycle))
             WaitOnFence();
 
         pCycle->AttachObject(std::make_shared<BufferGuestSync>(shared_from_this()));
         cycle = pCycle;
+    }
+
+    void Buffer::Read(span<u8> data, vk::DeviceSize offset) {
+        if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
+            std::memcpy(data.data(), mirror.data() + offset, data.size());
+        else if (dirtyState == DirtyState::GpuDirty)
+            std::memcpy(data.data(), backing.data() + offset, data.size());
     }
 
     void Buffer::Write(span<u8> data, vk::DeviceSize offset) {
@@ -171,51 +148,89 @@ namespace skyline::gpu {
             std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
-    Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) : offset(offset), range(range), format(format) {}
+    Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
 
-    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize range, vk::Format format) {
-        for (auto &view : views)
-            if (view.offset == offset && view.range == range && view.format == format)
-                return BufferView{shared_from_this(), &view};
-
-        views.emplace_back(offset, range, format);
-        return BufferView{shared_from_this(), &views.back()};
+    Buffer::BufferDelegate::BufferDelegate(std::shared_ptr<Buffer> pBuffer, Buffer::BufferViewStorage *view) : buffer(std::move(pBuffer)), view(view) {
+        iterator = buffer->delegates.emplace(buffer->delegates.end(), this);
     }
 
-    BufferView::BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view) : buffer(buffer), view(view) {}
+    Buffer::BufferDelegate::~BufferDelegate() {
+        std::scoped_lock lock(*this);
+        buffer->delegates.erase(iterator);
+    }
 
-    void BufferView::lock() {
-        auto backing{std::atomic_load(&buffer)};
+    void Buffer::BufferDelegate::lock() {
+        auto lBuffer{std::atomic_load(&buffer)};
         while (true) {
-            backing->lock();
+            lBuffer->lock();
 
             auto latestBacking{std::atomic_load(&buffer)};
-            if (backing == latestBacking)
+            if (lBuffer == latestBacking)
                 return;
 
-            backing->unlock();
-            backing = latestBacking;
+            lBuffer->unlock();
+            lBuffer = latestBacking;
         }
     }
 
-    void BufferView::unlock() {
+    void Buffer::BufferDelegate::unlock() {
         buffer->unlock();
     }
 
-    bool BufferView::try_lock() {
-        auto backing{std::atomic_load(&buffer)};
+    bool Buffer::BufferDelegate::try_lock() {
+        auto lBuffer{std::atomic_load(&buffer)};
         while (true) {
-            bool success{backing->try_lock()};
+            bool success{lBuffer->try_lock()};
 
-            auto latestBacking{std::atomic_load(&buffer)};
-            if (backing == latestBacking)
+            auto latestBuffer{std::atomic_load(&buffer)};
+            if (lBuffer == latestBuffer)
                 // We want to ensure that the try_lock() was on the latest backing and not on an outdated one
                 return success;
 
             if (success)
                 // We only unlock() if the try_lock() was successful and we acquired the mutex
-                backing->unlock();
-            backing = latestBacking;
+                lBuffer->unlock();
+            lBuffer = latestBuffer;
         }
+    }
+
+    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
+        for (auto &view : views)
+            if (view.offset == offset && view.size == size && view.format == format)
+                return BufferView{shared_from_this(), &view};
+
+        views.emplace_back(offset, size, format);
+        return BufferView{shared_from_this(), &views.back()};
+    }
+
+    BufferView::BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
+
+    void BufferView::AttachCycle(const std::shared_ptr<FenceCycle> &cycle) {
+        auto buffer{bufferDelegate->buffer.get()};
+        if (!buffer->cycle.owner_before(cycle)) {
+            buffer->WaitOnFence();
+            buffer->cycle = cycle;
+            cycle->AttachObject(bufferDelegate);
+        }
+    }
+
+    void BufferView::RegisterUsage(const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
+        usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
+        if (!bufferDelegate->usageCallback) {
+            bufferDelegate->usageCallback = usageCallback;
+        } else {
+            bufferDelegate->usageCallback = [usageCallback, oldCallback = std::move(bufferDelegate->usageCallback)](const Buffer::BufferViewStorage &pView, const std::shared_ptr<Buffer> &buffer) {
+                oldCallback(pView, buffer);
+                usageCallback(pView, buffer);
+            };
+        }
+    }
+
+    void BufferView::Read(span<u8> data, vk::DeviceSize offset) const {
+        bufferDelegate->buffer->Read(data, offset + bufferDelegate->view->offset);
+    }
+
+    void BufferView::Write(span<u8> data, vk::DeviceSize offset) const {
+        bufferDelegate->buffer->Write(data, offset + bufferDelegate->view->offset);
     }
 }

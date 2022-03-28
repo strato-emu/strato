@@ -11,25 +11,14 @@ namespace skyline::gpu {
      */
     class BufferManager {
       private:
-        /**
-         * @brief A single contiguous mapping of a buffer in the CPU address space
-         */
-        struct BufferMapping : span<u8> {
-            std::shared_ptr<Buffer> buffer;
-            GuestBuffer::Mappings::iterator iterator; //!< An iterator to the mapping in the buffer's GuestBufferMappings corresponding to this mapping
-            vk::DeviceSize offset; //!< Offset of this mapping relative to the start of the buffer
-
-            template<typename... Args>
-            BufferMapping(std::shared_ptr<Buffer> buffer, GuestBuffer::Mappings::iterator iterator, vk::DeviceSize offset, Args &&... args)
-                : span<u8>(std::forward<Args>(args)...),
-                  buffer(std::move(buffer)),
-                  iterator(iterator),
-                  offset(offset) {}
-        };
-
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes access to the buffer mappings
-        std::vector<BufferMapping> buffers; //!< A sorted vector of all buffer mappings
+        std::vector<std::shared_ptr<Buffer>> buffers; //!< A sorted vector of all buffer mappings
+
+        /**
+         * @return If the end of the supplied buffer is less than the supplied pointer
+         */
+        static bool BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer);
 
       public:
         BufferManager(GPU &gpu);
@@ -37,6 +26,6 @@ namespace skyline::gpu {
         /**
          * @return A pre-existing or newly created Buffer object which covers the supplied mappings
          */
-        BufferView FindOrCreate(const GuestBuffer &guest);
+        BufferView FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle = nullptr);
     };
 }

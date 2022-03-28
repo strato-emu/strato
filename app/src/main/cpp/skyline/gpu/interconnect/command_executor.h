@@ -16,11 +16,12 @@ namespace skyline::gpu::interconnect {
       private:
         GPU &gpu;
         CommandScheduler::ActiveCommandBuffer activeCommandBuffer;
-        std::shared_ptr<FenceCycle> cycle;
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderPassNode *renderPass{};
         std::unordered_set<Texture *> syncTextures; //!< All textures that need to be synced prior to and after execution
-        std::unordered_set<Buffer *> syncBuffers; //!< All buffers that need to be synced prior to and after execution
+
+        using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
+        std::unordered_set<SharedBufferDelegate> syncBuffers; //!< All buffers that need to be synced prior to and after execution
 
         /**
          * @return If a new render pass was created by the function or the current one was reused as it was compatible
@@ -28,6 +29,8 @@ namespace skyline::gpu::interconnect {
         bool CreateRenderPass(vk::Rect2D renderArea);
 
       public:
+        std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
+
         CommandExecutor(const DeviceState &state);
 
         ~CommandExecutor();
@@ -44,7 +47,7 @@ namespace skyline::gpu::interconnect {
          * @note The supplied buffer **must** be locked by the calling thread
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachBuffer(BufferView view);
+        void AttachBuffer(BufferView &view);
 
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer

@@ -571,7 +571,6 @@ namespace skyline::gpu::interconnect {
         struct ConstantBuffer {
             IOVA iova;
             u32 size;
-            GuestBuffer guest;
             BufferView view;
 
             /**
@@ -581,20 +580,9 @@ namespace skyline::gpu::interconnect {
             template<typename T>
             T Read(size_t offset) const {
                 T object;
-                size_t objectOffset{};
-                for (auto &mapping : guest.mappings) {
-                    if (offset < mapping.size_bytes()) {
-                        auto copySize{std::min(mapping.size_bytes() - offset, sizeof(T))};
-                        std::memcpy(reinterpret_cast<u8 *>(&object) + objectOffset, mapping.data() + offset, copySize);
-                        objectOffset += copySize;
-                        if (objectOffset == sizeof(T))
-                            return object;
-                        offset = mapping.size_bytes();
-                    } else {
-                        offset -= mapping.size_bytes();
-                    }
-                }
-                throw exception("Object extent ({} + {} = {}) is larger than constant buffer size: {}", size + offset, sizeof(T), size + offset + sizeof(T), size);
+                std::scoped_lock lock{view};
+                view.Read(span<T>(object).template cast<u8>(), offset);
+                return object;
             }
 
             /**
@@ -604,7 +592,7 @@ namespace skyline::gpu::interconnect {
             template<typename T>
             void Write(T &object, size_t offset) {
                 std::scoped_lock lock{view};
-                view.buffer->Write(span<T>(object).template cast<u8>(), view->offset + offset);
+                view.Write(span<T>(object).template cast<u8>(), offset);
             }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
@@ -633,12 +621,7 @@ namespace skyline::gpu::interconnect {
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
 
-            // Ignore unmapped areas from mappings due to buggy games setting the wrong cbuf size
-            mappings.erase(ranges::find_if(mappings, [](const auto &mapping) { return !mapping.valid(); }), mappings.end());
-
-            constantBufferSelector.guest.mappings.assign(mappings.begin(), mappings.end());
-
-            constantBufferSelector.view = gpu.buffer.FindOrCreate(constantBufferSelector.guest);
+            constantBufferSelector.view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
             return constantBufferSelector;
         }
 
@@ -750,14 +733,11 @@ namespace skyline::gpu::interconnect {
             .convert_depth_mode = true // This is required for the default GPU register state
         };
 
-        constexpr static size_t PipelineUniqueDescriptorTypeCount{2}; //!< The amount of unique descriptor types that may be bound to a pipeline
-        constexpr static size_t MaxPipelineDescriptorWriteCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The maxium amount of descriptors writes that are used to bind a pipeline
+        constexpr static size_t PipelineUniqueDescriptorTypeCount{3}; //!< The amount of unique descriptor types that may be bound to a pipeline
+        constexpr static size_t PipelineDescriptorWritesReservedCount{maxwell3d::PipelineStageCount * PipelineUniqueDescriptorTypeCount}; //!< The amount of descriptors writes reserved in advance to bind a pipeline, this is not a hard limit due to the Adreno descriptor quirk
         constexpr static size_t MaxPipelineDescriptorCount{100}; //!< The maxium amount of descriptors we support being bound to a pipeline
 
-        boost::container::static_vector<vk::WriteDescriptorSet, MaxPipelineDescriptorWriteCount> descriptorSetWrites;
         boost::container::static_vector<vk::DescriptorSetLayoutBinding, MaxPipelineDescriptorCount> layoutBindings;
-        boost::container::static_vector<vk::DescriptorBufferInfo, MaxPipelineDescriptorCount> bufferInfo;
-        boost::container::static_vector<vk::DescriptorImageInfo, MaxPipelineDescriptorCount> imageInfo;
 
         /**
          * @brief All state concerning the shader programs and their bindings
@@ -767,7 +747,18 @@ namespace skyline::gpu::interconnect {
             boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules; //!< Shader modules for every pipeline stage
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages; //!< Shader modules for every pipeline stage
             vk::raii::DescriptorSetLayout descriptorSetLayout; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
-            span<vk::WriteDescriptorSet> descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
+
+            struct DescriptorSetWrites {
+                std::vector<vk::WriteDescriptorSet> writes; //!< The descriptor set writes for the pipeline
+                std::vector<vk::DescriptorBufferInfo> bufferDescriptors; //!< The storage for buffer descriptors
+                std::vector<vk::DescriptorImageInfo> imageDescriptors; //!< The storage for image descriptors
+
+                std::vector<vk::WriteDescriptorSet> &operator*() {
+                    return writes;
+                }
+            };
+
+            std::unique_ptr<DescriptorSetWrites> descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
         };
 
         /**
@@ -798,11 +789,10 @@ namespace skyline::gpu::interconnect {
             auto ssbo{cbuf.Read<SsboDescriptor>(descriptor.cbuf_offset)};
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(ssbo.iova, ssbo.size)};
+            if (mappings.size() != 1)
+                Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            GuestBuffer guestBuffer;
-            guestBuffer.mappings.assign(mappings.begin(), mappings.end());
-
-            return gpu.buffer.FindOrCreate(guestBuffer);
+            return gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
         }
 
         /**
@@ -889,14 +879,29 @@ namespace skyline::gpu::interconnect {
                 }
             }
 
-            descriptorSetWrites.clear();
+            auto descriptorSetWrites{std::make_unique<ShaderProgramState::DescriptorSetWrites>()};
+            auto &descriptorWrites{**descriptorSetWrites};
+            descriptorWrites.reserve(PipelineDescriptorWritesReservedCount);
+
+            auto &bufferDescriptors{descriptorSetWrites->bufferDescriptors};
+            auto &imageDescriptors{descriptorSetWrites->imageDescriptors};
+            size_t bufferCount{}, imageCount{};
+            for (auto &pipelineStage : pipelineStages) {
+                if (pipelineStage.enabled) {
+                    auto &program{pipelineStage.program->program};
+                    bufferCount += program.info.constant_buffer_descriptors.size() + program.info.storage_buffers_descriptors.size();
+                    imageCount += program.info.texture_descriptors.size();
+                }
+            }
+            bufferDescriptors.resize(bufferCount);
+            imageDescriptors.resize(imageCount);
+
             layoutBindings.clear();
-            bufferInfo.clear();
-            imageInfo.clear();
 
             runtimeInfo.previous_stage_stores.mask.set(); // First stage should always have all bits set
             ShaderCompiler::Backend::Bindings bindings{};
 
+            size_t bufferIndex{}, imageIndex{};
             boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules;
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages;
             for (auto &pipelineStage : pipelineStages) {
@@ -920,11 +925,11 @@ namespace skyline::gpu::interconnect {
 
                 u32 bindingIndex{pipelineStage.bindingBase};
                 if (!program.info.constant_buffer_descriptors.empty()) {
-                    descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                    descriptorWrites.push_back(vk::WriteDescriptorSet{
                         .dstBinding = bindingIndex,
                         .descriptorCount = static_cast<u32>(program.info.constant_buffer_descriptors.size()),
                         .descriptorType = vk::DescriptorType::eUniformBuffer,
-                        .pBufferInfo = bufferInfo.data() + bufferInfo.size(),
+                        .pBufferInfo = bufferDescriptors.data() + bufferIndex,
                     });
 
                     for (auto &constantBuffer : program.info.constant_buffer_descriptors) {
@@ -936,23 +941,24 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
-                        std::scoped_lock lock{view};
-                        bufferInfo.push_back(vk::DescriptorBufferInfo{
-                            .buffer = view.buffer->GetBacking(),
-                            .offset = view->offset,
-                            .range = view->range,
+                        std::scoped_lock lock(view);
+                        view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            *descriptor = vk::DescriptorBufferInfo{
+                                .buffer = buffer->GetBacking(),
+                                .offset = view.offset,
+                                .range = view.size,
+                            };
                         });
                         executor.AttachBuffer(view);
                     }
                 }
 
-
                 if (!program.info.storage_buffers_descriptors.empty()) {
-                    descriptorSetWrites.push_back({
+                    descriptorWrites.push_back(vk::WriteDescriptorSet{
                         .dstBinding = bindingIndex,
                         .descriptorCount = static_cast<u32>(program.info.storage_buffers_descriptors.size()),
                         .descriptorType = vk::DescriptorType::eStorageBuffer,
-                        .pBufferInfo = bufferInfo.data() + bufferInfo.size(),
+                        .pBufferInfo = bufferDescriptors.data() + bufferIndex,
                     });
 
                     for (auto &storageBuffer : program.info.storage_buffers_descriptors) {
@@ -965,10 +971,12 @@ namespace skyline::gpu::interconnect {
 
                         auto view{GetSsboViewFromDescriptor(storageBuffer, pipelineStage.constantBuffers)};
                         std::scoped_lock lock{view};
-                        bufferInfo.push_back(vk::DescriptorBufferInfo{
-                            .buffer = view.buffer->GetBacking(),
-                            .offset = view->offset,
-                            .range = view->range,
+                        view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            *descriptor = vk::DescriptorBufferInfo{
+                                .buffer = buffer->GetBacking(),
+                                .offset = view.offset,
+                                .range = view.size,
+                            };
                         });
                         executor.AttachBuffer(view);
                     }
@@ -982,22 +990,22 @@ namespace skyline::gpu::interconnect {
 
                 if (!program.info.texture_descriptors.empty()) {
                     if (!gpu.traits.quirks.needsIndividualTextureBindingWrites)
-                        descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                        descriptorWrites.push_back(vk::WriteDescriptorSet{
                             .dstBinding = bindingIndex,
                             .descriptorCount = static_cast<u32>(program.info.texture_descriptors.size()),
                             .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                            .pImageInfo = imageInfo.data() + imageInfo.size(),
+                            .pImageInfo = imageDescriptors.data() + imageIndex,
                         });
                     else
-                        descriptorSetWrites.reserve(descriptorSetWrites.size() + program.info.texture_descriptors.size());
+                        descriptorWrites.reserve(descriptorWrites.size() + program.info.texture_descriptors.size());
 
                     for (auto &texture : program.info.texture_descriptors) {
                         if (gpu.traits.quirks.needsIndividualTextureBindingWrites)
-                            descriptorSetWrites.push_back(vk::WriteDescriptorSet{
+                            descriptorWrites.push_back(vk::WriteDescriptorSet{
                                 .dstBinding = bindingIndex,
                                 .descriptorCount = 1,
                                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                                .pImageInfo = imageInfo.data() + imageInfo.size(),
+                                .pImageInfo = imageDescriptors.data() + imageIndex,
                             });
 
                         layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
@@ -1020,11 +1028,11 @@ namespace skyline::gpu::interconnect {
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
 
                         std::scoped_lock lock(*textureView);
-                        imageInfo.push_back(vk::DescriptorImageInfo{
+                        imageDescriptors[imageIndex++] = vk::DescriptorImageInfo{
                             .sampler = **sampler,
                             .imageView = textureView->GetView(),
                             .imageLayout = textureView->texture->layout,
-                        });
+                        };
                         executor.AttachTexture(textureView.get());
                         executor.AttachDependency(std::move(sampler));
                     }
@@ -1048,7 +1056,7 @@ namespace skyline::gpu::interconnect {
                     .pBindings = layoutBindings.data(),
                     .bindingCount = static_cast<u32>(layoutBindings.size()),
                 }),
-                descriptorSetWrites,
+                std::move(descriptorSetWrites),
             };
         }
 
@@ -1643,11 +1651,11 @@ namespace skyline::gpu::interconnect {
             else if (vertexBuffer.view)
                 return vertexBuffer.view;
 
-            GuestBuffer guest;
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
-            guest.mappings.assign(mappings.begin(), mappings.end());
+            if (mappings.size() != 1)
+                Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            vertexBuffer.view = gpu.buffer.FindOrCreate(guest);
+            vertexBuffer.view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
             return vertexBuffer.view;
         }
 
@@ -1842,7 +1850,7 @@ namespace skyline::gpu::interconnect {
          * @tparam ConvGR Converts all green component
          * @tparam SwapBR Swaps blue and red components
          */
-        template <bool ConvGR, bool SwapBR>
+        template<bool ConvGR, bool SwapBR>
         vk::ComponentMapping ConvertTicSwizzleMapping(TextureImageControl::FormatWord format) {
             auto convertComponentSwizzle{[](TextureImageControl::ImageSwizzle swizzle) {
                 switch (swizzle) {
@@ -2223,11 +2231,12 @@ namespace skyline::gpu::interconnect {
             else if (indexBuffer.view && size == indexBuffer.viewSize)
                 return indexBuffer.view;
 
-            GuestBuffer guestBuffer;
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(indexBuffer.start, size)};
-            guestBuffer.mappings.assign(mappings.begin(), mappings.end());
+            if (mappings.size() != 1)
+                Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            indexBuffer.view = gpu.buffer.FindOrCreate(guestBuffer);
+            auto mapping{mappings.front()};
+            indexBuffer.view = gpu.buffer.FindOrCreate(span<u8>(mapping.data(), size), executor.cycle);
             return indexBuffer.view;
         }
 
@@ -2433,33 +2442,43 @@ namespace skyline::gpu::interconnect {
         void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
             // Shader + Binding Setup
             auto programState{CompileShaderProgramState()};
-
             auto descriptorSet{gpu.descriptor.AllocateSet(*programState.descriptorSetLayout)};
-            for (auto &descriptorSetWrite : programState.descriptorSetWrites)
+            for (auto &descriptorSetWrite : **programState.descriptorSetWrites)
                 descriptorSetWrite.dstSet = descriptorSet;
-            gpu.vkDevice.updateDescriptorSets(programState.descriptorSetWrites, nullptr);
 
             vk::raii::PipelineLayout pipelineLayout(gpu.vkDevice, vk::PipelineLayoutCreateInfo{
                 .pSetLayouts = &*programState.descriptorSetLayout,
                 .setLayoutCount = 1,
             });
 
-            vk::Buffer indexBufferHandle;
-            vk::DeviceSize indexBufferOffset;
-            vk::IndexType indexBufferType;
+            struct BoundIndexBuffer {
+                vk::Buffer handle{};
+                vk::DeviceSize offset{};
+                vk::IndexType type{};
+            };
+
+            auto boundIndexBuffer{std::make_shared<BoundIndexBuffer>()};
             if constexpr (IsIndexed) {
                 auto indexBufferView{GetIndexBuffer(count)};
-                std::scoped_lock lock(indexBufferView);
-                executor.AttachBuffer(indexBufferView);
+                {
+                    std::scoped_lock lock(indexBufferView);
 
-                indexBufferHandle = indexBufferView.buffer->GetBacking();
-                indexBufferOffset = indexBufferView->offset;
-                indexBufferType = indexBuffer.type;
+                    boundIndexBuffer->type = indexBuffer.type;
+                    indexBufferView.RegisterUsage([=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        boundIndexBuffer->handle = buffer->GetBacking();
+                        boundIndexBuffer->offset = view.offset;
+                    });
+
+                    executor.AttachBuffer(indexBufferView);
+                }
             }
 
             // Vertex Buffer Setup
-            std::array<vk::Buffer, maxwell3d::VertexBufferCount> vertexBufferHandles{};
-            std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> vertexBufferOffsets{};
+            struct BoundVertexBuffers {
+                std::array<vk::Buffer, maxwell3d::VertexBufferCount> handles{};
+                std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> offsets{};
+            };
+            auto boundVertexBuffers{std::make_shared<BoundVertexBuffers>()};
 
             boost::container::static_vector<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindingDescriptions{};
             boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
@@ -2473,8 +2492,11 @@ namespace skyline::gpu::interconnect {
                         vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
 
                     std::scoped_lock vertexBufferLock(vertexBufferView);
-                    vertexBufferHandles[index] = vertexBufferView.buffer->GetBacking();
-                    vertexBufferOffsets[index] = vertexBufferView->offset;
+                    vertexBufferView.RegisterUsage([handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        *handle = buffer->GetBacking();
+                        *offset = view.offset;
+                    });
+
                     executor.AttachBuffer(vertexBufferView);
                 }
             }
@@ -2505,18 +2527,29 @@ namespace skyline::gpu::interconnect {
                 depthTargetLock.emplace(*depthRenderTargetView);
 
             // Draw Persistent Storage
-            struct Storage : FenceCycleDependency {
+            struct DrawStorage {
+                vk::raii::DescriptorSetLayout descriptorSetLayout;
+                std::unique_ptr<ShaderProgramState::DescriptorSetWrites> descriptorSetWrites;
                 vk::raii::PipelineLayout pipelineLayout;
-                std::optional<vk::raii::Pipeline> pipeline;
-                DescriptorAllocator::ActiveDescriptorSet descriptorSet;
 
-                Storage(vk::raii::PipelineLayout &&pipelineLayout, DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : pipelineLayout(std::move(pipelineLayout)), descriptorSet(std::move(descriptorSet)) {}
+                DrawStorage(vk::raii::DescriptorSetLayout &&descriptorSetLayout, std::unique_ptr<ShaderProgramState::DescriptorSetWrites> &&descriptorSetWrites, vk::raii::PipelineLayout &&pipelineLayout) : descriptorSetLayout(std::move(descriptorSetLayout)), descriptorSetWrites(std::move(descriptorSetWrites)), pipelineLayout(std::move(pipelineLayout)) {}
             };
 
-            auto storage{std::make_shared<Storage>(std::move(pipelineLayout), std::move(descriptorSet))};
+            auto drawStorage{std::make_shared<DrawStorage>(std::move(programState.descriptorSetLayout), std::move(programState.descriptorSetWrites), std::move(pipelineLayout))};
+
+            // Command Buffer Persistent Storage
+            struct FenceStorage : FenceCycleDependency {
+                std::optional<vk::raii::Pipeline> pipeline;
+                DescriptorAllocator::ActiveDescriptorSet descriptorSet;
+                std::shared_ptr<DrawStorage> drawStorage{};
+
+                FenceStorage(DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : descriptorSet(std::move(descriptorSet)) {}
+            };
+
+            auto fenceStorage{std::make_shared<FenceStorage>(std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, storage = std::move(storage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, vertexBufferHandles = std::move(vertexBufferHandles), vertexBufferOffsets = std::move(vertexBufferOffsets), pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, drawStorage = std::move(drawStorage), fenceStorage = std::move(fenceStorage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
                     vk::PipelineVertexInputStateCreateInfo{
                         .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
@@ -2553,7 +2586,7 @@ namespace skyline::gpu::interconnect {
                     .pDepthStencilState = &depthState,
                     .pColorBlendState = &blendState,
                     .pDynamicState = nullptr,
-                    .layout = *storage->pipelineLayout,
+                    .layout = *drawStorage->pipelineLayout,
                     .renderPass = renderPass,
                     .subpass = subpassIndex,
                 };
@@ -2564,6 +2597,7 @@ namespace skyline::gpu::interconnect {
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.value);
 
+                auto &vertexBufferHandles{boundVertexBuffers->handles};
                 for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
                     // We need to bind all non-null vertex buffers while skipping any null ones
                     if (vertexBufferHandles[bindingIndex]) {
@@ -2572,24 +2606,26 @@ namespace skyline::gpu::interconnect {
                             bindingEndIndex++;
 
                         u32 bindingCount{bindingEndIndex - bindingIndex};
-                        commandBuffer.bindVertexBuffers(bindingIndex, span(vertexBufferHandles.data() + bindingIndex, bindingCount), span(vertexBufferOffsets.data() + bindingIndex, bindingCount));
+                        commandBuffer.bindVertexBuffers(bindingIndex, span(vertexBufferHandles.data() + bindingIndex, bindingCount), span(boundVertexBuffers->offsets.data() + bindingIndex, bindingCount));
                     }
                 }
 
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *storage->pipelineLayout, 0, storage->descriptorSet, nullptr);
+                vkDevice.updateDescriptorSets(**drawStorage->descriptorSetWrites, nullptr);
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, fenceStorage->descriptorSet, nullptr);
 
                 if constexpr (IsIndexed) {
-                    commandBuffer.bindIndexBuffer(indexBufferHandle, indexBufferOffset, indexBufferType);
+                    commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
                     commandBuffer.drawIndexed(count, 1, first, vertexOffset, 0);
                 } else {
                     commandBuffer.draw(count, 1, first, 0);
                 }
 
-                storage->pipeline = vk::raii::Pipeline(vkDevice, pipeline.value);
+                fenceStorage->drawStorage = drawStorage;
+                fenceStorage->pipeline = vk::raii::Pipeline(vkDevice, pipeline.value);
 
-                cycle->AttachObject(storage);
+                cycle->AttachObject(fenceStorage);
             }, vk::Rect2D{
-                .extent = activeColorRenderTargets[0]->texture->dimensions,
+                .extent = activeColorRenderTargets.front()->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView);
         }
 

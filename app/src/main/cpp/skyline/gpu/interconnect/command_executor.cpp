@@ -35,13 +35,10 @@ namespace skyline::gpu::interconnect {
         cycle->AttachObject(view->shared_from_this());
     }
 
-    void CommandExecutor::AttachBuffer(BufferView view) {
-        auto buffer{view.buffer.get()};
-        if (!syncBuffers.contains(buffer)) {
-            buffer->WaitOnFence();
-            buffer->cycle = cycle;
-            cycle->AttachObject(view);
-            syncBuffers.emplace(buffer);
+    void CommandExecutor::AttachBuffer(BufferView &view) {
+        if (!syncBuffers.contains(view.bufferDelegate)) {
+            view.AttachCycle(cycle);
+            syncBuffers.emplace(view.bufferDelegate);
         }
     }
 
@@ -133,8 +130,10 @@ namespace skyline::gpu::interconnect {
                 for (auto texture : syncTextures)
                     texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
 
-                for (auto buffer : syncBuffers)
-                    buffer->SynchronizeHostWithCycle(cycle, true);
+                for (const auto& delegate : syncBuffers) {
+                    delegate->buffer->SynchronizeHostWithCycle(cycle, true);
+                    delegate->usageCallback = nullptr;
+                }
 
                 vk::RenderPass lRenderPass;
                 u32 subpassIndex;
