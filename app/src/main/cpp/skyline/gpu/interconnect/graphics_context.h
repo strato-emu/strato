@@ -81,7 +81,8 @@ namespace skyline::gpu::interconnect {
             std::shared_ptr<TextureView> view;
 
             RenderTarget() {
-                guest.dimensions = texture::Dimensions(1, 1, 1); // We want the depth to be 1 by default (It cannot be set by the application)
+                guest.dimensions = texture::Dimensions(1, 1, 1);
+                guest.layerCount = 1;
             }
         };
 
@@ -301,7 +302,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetRenderTargetArrayMode(RenderTarget &renderTarget, maxwell3d::RenderTargetArrayMode mode) {
-            renderTarget.guest.layerCount = mode.layerCount;
+            renderTarget.guest.dimensions.depth = mode.layerCount;
             renderTarget.view.reset();
         }
 
@@ -1917,7 +1918,7 @@ namespace skyline::gpu::interconnect {
                         guest.layerCount = 1;
                         break;
                     case TicType::e1DArray:
-                        guest.type = TexType::e1D;
+                        guest.type = TexType::e1DArray;
                         guest.layerCount = depth;
                         break;
                     case TicType::e1DBuffer:
@@ -1929,7 +1930,7 @@ namespace skyline::gpu::interconnect {
                         guest.layerCount = 1;
                         break;
                     case TicType::e2DArray:
-                        guest.type = TexType::e2D;
+                        guest.type = TexType::e2DArray;
                         guest.layerCount = depth;
                         break;
 
@@ -1940,11 +1941,11 @@ namespace skyline::gpu::interconnect {
                         break;
 
                     case TicType::eCubemap:
-                        guest.type = TexType::e2D;
+                        guest.type = TexType::eCube;
                         guest.layerCount = CubeFaceCount;
                         break;
                     case TicType::eCubeArray:
-                        guest.type = TexType::e2D;
+                        guest.type = TexType::eCubeArray;
                         guest.layerCount = depth * CubeFaceCount;
                         break;
                 }

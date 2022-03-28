@@ -28,20 +28,9 @@ namespace skyline::gpu {
         if (view)
             return **view;
 
-        auto viewType{[&]() {
-            switch (texture->dimensions.GetType()) {
-                case vk::ImageType::e1D:
-                    return range.layerCount > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
-                case vk::ImageType::e2D:
-                    return range.layerCount > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
-                case vk::ImageType::e3D:
-                    return vk::ImageViewType::e3D;
-            }
-        }()};
-
         vk::ImageViewCreateInfo createInfo{
             .image = texture->GetBacking(),
-            .viewType = viewType,
+            .viewType = type,
             .format = format ? *format : *texture->format,
             .components = mapping,
             .subresourceRange = range,
@@ -135,7 +124,7 @@ namespace skyline::gpu {
             throw exception("Guest and host dimensions being different is not supported currently");
 
         auto pointer{mirror.data()};
-        auto size{format->GetSize(dimensions)};
+        auto size{format->GetSize(dimensions) * layerCount};
 
         WaitOnBacking();
 
@@ -306,8 +295,16 @@ namespace skyline::gpu {
         if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
+        vk::ImageCreateFlags flags{gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat};
+
+        if (guest->dimensions.GetType() == vk::ImageType::e2D && dimensions.width == dimensions.height && layerCount >= 6)
+            flags |= vk::ImageCreateFlagBits::eCubeCompatible;
+        else if (guest->dimensions.GetType() == vk::ImageType::e3D)
+            flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
+
+
         vk::ImageCreateInfo imageCreateInfo{
-            .flags = gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat,
+            .flags = flags,
             .imageType = guest->dimensions.GetType(),
             .format = *guest->format,
             .extent = guest->dimensions,
