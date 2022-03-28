@@ -71,4 +71,19 @@ namespace skyline::service::am {
         }
         return {};
     }
+
+    Result ICommonStateGetter::SetCpuBoostMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        cpuBoostMode = request.Pop<CpuBoostMode>();
+        switch (cpuBoostMode) {
+            case CpuBoostMode::Normal:
+            case CpuBoostMode::FastLoad:
+            case CpuBoostMode::PowerSaving:
+                Logger::Info("Set CPU boost mode to {}", ToString(cpuBoostMode));
+                return {};
+            default:
+                Logger::Error("Unknown CPU boost mode value: 0x{:X}", cpuBoostMode);
+                return result::InvalidParameters;
+        }
+        return {};
+    }
 }
