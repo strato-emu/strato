@@ -9,7 +9,7 @@ android {
     namespace 'emu.skyline'
 
     compileSdkVersion 31
-    buildToolsVersion '31.0.0'
+    buildToolsVersion '33.0.0-rc2'
     defaultConfig {
         applicationId "skyline.emu"
 
@@ -65,7 +65,7 @@ android {
     }
 
     /* NDK */
-    ndkVersion '24.0.7856742'
+    ndkVersion '25.0.8221429'
     externalNativeBuild {
         cmake {
             version '3.18.1+'
