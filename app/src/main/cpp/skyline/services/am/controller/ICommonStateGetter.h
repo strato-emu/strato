@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <deque>
 #include <kernel/types/KEvent.h>
 #include <services/serviceman.h>
 #include <common/macros.h>

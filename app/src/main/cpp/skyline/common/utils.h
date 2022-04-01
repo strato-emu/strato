@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <random>
 #include <span>
 #include <frozen/unordered_map.h>

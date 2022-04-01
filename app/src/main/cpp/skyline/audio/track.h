@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <deque>
 #include <kernel/types/KEvent.h>
 #include <common/circular_buffer.h>
 #include "common.h"
