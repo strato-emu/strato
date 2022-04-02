@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include <common.h>
 #include <sys/mman.h>
+#include <common.h>
+#include <common/file_descriptor.h>
 
 namespace skyline {
     namespace memory {
@@ -226,7 +227,7 @@ namespace skyline {
             memory::Region stack{};
             memory::Region tlsIo{}; //!< TLS/IO
 
-            int memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
+            FileDescriptor memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
 
             std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
