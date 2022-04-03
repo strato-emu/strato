@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <boost/functional/hash.hpp>
 #include <boost/container/static_vector.hpp>
 #include <range/v3/algorithm.hpp>
 #include <gpu/texture/format.h>
@@ -614,15 +615,58 @@ namespace skyline::gpu::interconnect {
             constantBufferSelector.view = {};
         }
 
+        /**
+         * @brief Simple hashmap cache for constant buffers to avoid the constant overhead of TranslateRange and GetView that would otherwise be present
+         * @note TODO: This doesn't currently evict views but that can be fixed later when we encounter a performance issue
+         */
+        class ConstantBufferCache {
+          private:
+            struct Key {
+                u32 size;
+                u64 iova;
+
+                auto operator<=>(const Key &) const = default;
+            };
+
+            struct KeyHash {
+                size_t operator()(const Key &entry) const noexcept {
+                    size_t seed = 0;
+                    boost::hash_combine(seed, entry.size);
+                    boost::hash_combine(seed, entry.iova);
+
+                    return seed;
+                }
+            };
+
+            std::unordered_map<Key, BufferView, KeyHash> cache;
+
+          public:
+            std::optional<BufferView> Lookup(u32 size, u64 iova) {
+                if (auto it{cache.find({size, iova})}; it != cache.end())
+                    return it->second;
+
+                return std::nullopt;
+            }
+
+            void Insert(u32 size, u64 iova, BufferView &view) {
+                cache[Key{size, iova}] = view;
+            }
+        } constantBufferCache;
+
         std::optional<ConstantBuffer> GetConstantBufferSelector() {
             if (constantBufferSelector.size == 0)
                 return std::nullopt;
             else if (constantBufferSelector.view)
                 return constantBufferSelector;
 
-            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
+            auto view{constantBufferCache.Lookup(constantBufferSelector.size, constantBufferSelector.iova)};
+            if (!view) {
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
+                view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
+                constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
+            }
 
-            constantBufferSelector.view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
+            constantBufferSelector.view = *view;
             return constantBufferSelector;
         }
 
