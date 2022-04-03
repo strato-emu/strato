@@ -64,6 +64,15 @@ namespace skyline::nce {
          */
         static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
 
+        /**
+         * @brief Handles signals for any host threads which may access NCE trapped memory
+         * @note Any untrapped SIGSEGVs will emit SIGTRAP when a debugger is attached rather than throwing an exception
+         */
+        static void HostSignalHandler(int signal, siginfo *info, ucontext *ctx);
+
+        /**
+         * @note There should only be one instance of NCE concurrently
+         */
         NCE(const DeviceState &state);
 
         struct PatchData {

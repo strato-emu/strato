@@ -107,35 +107,44 @@ namespace skyline::nce {
 
             *tls = nullptr;
         } else { // If TLS wasn't restored then this occurred in host code
-            if (signal == SIGSEGV) {
-                bool runningUnderDebugger{[]() {
-                    static std::ifstream status("/proc/self/status");
-                    status.seekg(0);
-
-                    constexpr std::string_view TracerPidTag{"TracerPid:"};
-                    for (std::string line; std::getline(status, line);) {
-                        if (line.starts_with(TracerPidTag)) {
-                            line = line.substr(TracerPidTag.size());
-
-                            for (char character : line)
-                                if (std::isspace(character))
-                                    continue;
-                                else
-                                    return character != '0';
-
-                            return false;
-                        }
-                    }
-
-                    return false;
-                }()};
-
-                if (runningUnderDebugger)
-                    raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
-            }
-
-            signal::ExceptionalSignalHandler(signal, info, ctx); //!< Delegate throwing a host exception to the exceptional signal handler
+            HostSignalHandler(signal, info, ctx);
         }
+    }
+
+    static NCE* staticNce{nullptr}; //!< A static instance of NCE for use in the signal handler
+
+    void NCE::HostSignalHandler(int signal, siginfo *info, ucontext *ctx) {
+        if (signal == SIGSEGV) {
+            if (staticNce && staticNce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
+                return;
+
+            bool runningUnderDebugger{[]() {
+                static std::ifstream status("/proc/self/status");
+                status.seekg(0);
+
+                constexpr std::string_view TracerPidTag{"TracerPid:"};
+                for (std::string line; std::getline(status, line);) {
+                    if (line.starts_with(TracerPidTag)) {
+                        line = line.substr(TracerPidTag.size());
+
+                        for (char character : line)
+                            if (std::isspace(character))
+                                continue;
+                            else
+                                return character != '0';
+
+                        return false;
+                    }
+                }
+
+                return false;
+            }()};
+
+            if (runningUnderDebugger)
+                raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
+        }
+
+        signal::ExceptionalSignalHandler(signal, info, ctx); // Delegate throwing a host exception to the exceptional signal handler
     }
 
     void *NceTlsRestorer() {
@@ -149,6 +158,7 @@ namespace skyline::nce {
 
     NCE::NCE(const DeviceState &state) : state(state) {
         signal::SetTlsRestorer(&NceTlsRestorer);
+        staticNce = this;
     }
 
     constexpr u8 MainSvcTrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
