@@ -93,12 +93,14 @@ namespace skyline::nce {
          * @param writeOnly If the trap is optimally for write-only accesses initially, this is not guarenteed
          * @note The handle **must** be deleted using DeleteTrap before the NCE instance is destroyed
          * @note It is UB to supply a region of host memory rather than guest memory
+         * @note Any regions trapped without writeOnly may have their data (except border pages) paged out and it needs to be paged back in inside the callbacks
          */
         TrapHandle TrapRegions(span<span<u8>> regions, bool writeOnly, const TrapCallback& readCallback, const TrapCallback& writeCallback);
 
         /**
          * @brief Re-traps a region of memory after protections were removed
          * @param writeOnly If the trap is optimally for write-only accesses, this is not guarenteed
+         * @note Any regions trapped without writeOnly may have their data (except border pages) paged out and it needs to be paged back in inside the callbacks
          */
         void RetrapRegions(TrapHandle handle, bool writeOnly);
 

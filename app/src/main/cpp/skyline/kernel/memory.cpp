@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <android/sharedmem.h>
+#include <asm-generic/unistd.h>
+#include <fcntl.h>
 #include "memory.h"
 #include "types/KProcess.h"
 
@@ -62,11 +63,14 @@ namespace skyline::kernel {
         if (!base.address)
             throw exception("Cannot find a suitable carveout for the guest address space");
 
-        memoryFd = ASharedMemory_create("HOS-AS", base.size);
-        if (memoryFd < 0)
-            throw exception("Failed to create shared memory for guest address space: {}", strerror(errno));
+        memoryFd = static_cast<int>(syscall(__NR_memfd_create, "HOS-AS", MFD_CLOEXEC)); // We need to use memfd directly as ASharedMemory doesn't always use it while we depend on it for FreeMemory (using FALLOC_FL_PUNCH_HOLE) to work
+        if (memoryFd == -1)
+            throw exception("Failed to create memfd for guest address space: {}", strerror(errno));
 
-        auto result{mmap(reinterpret_cast<void *>(base.address), base.size, PROT_NONE, MAP_FIXED | MAP_SHARED, memoryFd, 0)};
+        if (ftruncate(memoryFd, static_cast<off_t>(base.size)) == -1)
+            throw exception("Failed to resize memfd for guest address space: {}", strerror(errno));
+
+        auto result{mmap(reinterpret_cast<void *>(base.address), base.size, PROT_WRITE, MAP_FIXED | MAP_SHARED, memoryFd, 0)};
         if (result == MAP_FAILED)
             throw exception("Failed to mmap guest address space: {}", strerror(errno));
 
@@ -186,6 +190,20 @@ namespace skyline::kernel {
             throw exception("Mirror size mismatch: 0x{:X} != 0x{:X}", mirrorOffset, totalSize);
 
         return span<u8>{reinterpret_cast<u8 *>(mirrorBase), totalSize};
+    }
+
+    void MemoryManager::FreeMemory(u8 *pointer, size_t size) {
+        auto address{reinterpret_cast<u64>(pointer)};
+        if (address < base.address || address + size > base.address + base.size)
+            throw exception("Mapping is outside of VMM base: 0x{:X} - 0x{:X}", address, address + size);
+
+        size_t offset{address - base.address};
+        if (!util::IsPageAligned(offset) || !util::IsPageAligned(size))
+            throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", address, address + size, offset);
+
+        // We need to use fallocate(FALLOC_FL_PUNCH_HOLE) to free the backing memory rather than madvise(MADV_REMOVE) as the latter fails when the memory doesn't have write permissions, we generally need to free memory after reprotecting it to disallow accesses between the two calls which would cause UB
+        if (fallocate(*memoryFd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, static_cast<off_t>(offset), static_cast<off_t>(size)) != 0)
+            throw exception("Failed to free memory at 0x{:X}-0x{:X} (0x{:X}): {}", address, address + size, offset, strerror(errno));
     }
 
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {

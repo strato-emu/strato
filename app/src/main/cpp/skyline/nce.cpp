@@ -383,7 +383,7 @@ namespace skyline::nce {
                     if (entryProtection > lowestProtection) {
                         lowestProtection = entryProtection;
                         if (entryProtection == TrapProtection::ReadWrite)
-                            return PROT_EXEC;
+                            return PROT_NONE;
                     }
                 }
 
@@ -393,7 +393,7 @@ namespace skyline::nce {
                     case TrapProtection::WriteOnly:
                         return PROT_READ | PROT_EXEC;
                     case TrapProtection::ReadWrite:
-                        return PROT_EXEC;
+                        return PROT_NONE;
                 }
             });
         } else if (protection == TrapProtection::WriteOnly) {
@@ -401,14 +401,24 @@ namespace skyline::nce {
                 auto entries{trapMap.GetRange(region)};
                 for (const auto &entry : entries)
                     if (entry.get().protection == TrapProtection::ReadWrite)
-                        return PROT_EXEC;
+                        return PROT_NONE;
 
                 return PROT_READ | PROT_EXEC;
             });
-        } else {
+        } else if (protection == TrapProtection::ReadWrite) {
             reprotectIntervalsWithFunction([&](auto region) {
-                return PROT_EXEC; // No checks are needed as this is already the highest level of protection
+                return PROT_NONE; // No checks are needed as this is already the highest level of protection
             });
+
+            // Page out regions that are no longer accessible, these should be paged back in by a callback
+            for (auto region : intervals) {
+                auto freeStart{util::AlignUp(region.start, PAGE_SIZE)}, freeEnd{util::AlignDown(region.end, PAGE_SIZE)}; // We want to avoid the first and last page as they may contain data that won't be paged back in by the callback
+                ssize_t freeSize{freeEnd - freeStart};
+
+                constexpr ssize_t MinimumPageoutSize{PAGE_SIZE}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
+                if (freeSize > MinimumPageoutSize)
+                    state.process->memory.FreeMemory(freeStart, static_cast<size_t>(freeSize));
+            }
         }
     }
 

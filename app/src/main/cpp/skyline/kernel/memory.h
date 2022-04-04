@@ -258,6 +258,12 @@ namespace skyline {
              */
             span<u8> CreateMirrors(const std::vector<span<u8>>& regions);
 
+            /**
+             * @brief Frees the underlying physical memory for a page-aligned mapping in the guest address space
+             * @note All subsequent accesses to freed memory will return 0s
+             */
+            void FreeMemory(u8* pointer, size_t size);
+
             void InsertChunk(const ChunkDescriptor &chunk);
 
             std::optional<ChunkDescriptor> Get(void *ptr);
