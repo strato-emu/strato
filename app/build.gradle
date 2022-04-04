@@ -64,7 +64,7 @@ android {
         disable 'IconLocation'
     }
 
-    /* NDK */
+    /* NDK and CMake */
     ndkVersion '25.0.8221429'
     externalNativeBuild {
         cmake {

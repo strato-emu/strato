@@ -38,6 +38,11 @@ set(LIBCXXABI_LIBCXX_INCLUDES "${LIBCXX_TARGET_INCLUDE_DIRECTORY}" CACHE STRING 
 add_subdirectory("libraries/llvm/libcxxabi")
 link_libraries(cxxabi_static)
 
+# Skyline's Boost fork
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+add_subdirectory("libraries/boost")
+
 # {fmt}
 add_subdirectory("libraries/fmt")
 
@@ -93,11 +98,6 @@ target_compile_definitions(opus PRIVATE OPUS_WILL_BE_SLOW=1) # libopus will warn
 include_directories(SYSTEM "libraries/perfetto/sdk")
 add_library(perfetto STATIC libraries/perfetto/sdk/perfetto.cc)
 target_compile_options(perfetto PRIVATE -Wno-everything)
-
-# Boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-add_subdirectory("libraries/boost")
 
 # C++ Range v3
 add_subdirectory("libraries/range")
