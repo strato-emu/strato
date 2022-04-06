@@ -218,7 +218,7 @@ namespace skyline::gpu {
             ADRENOTOOLS_DRIVER_CUSTOM,
             nullptr, // We require Android 10 so don't need to supply
             state.os->nativeLibraryPath.c_str(),
-            (state.os->appFilesPath + "turnip/").c_str(),
+            (state.os->publicAppFilesPath + "gpu/turnip/").c_str(),
             "libvulkan_freedreno.so",
             nullptr)};
         if (!libvulkanHandle) {
@@ -228,7 +228,7 @@ namespace skyline::gpu {
                 state.os->nativeLibraryPath.c_str(),
                 nullptr,
                 nullptr,
-                (state.os->appFilesPath + "vk_file_redirect/").c_str());
+                (state.os->publicAppFilesPath + "gpu/vk_file_redirect/").c_str());
             if (!libvulkanHandle)
                 libvulkanHandle = dlopen("libvulkan.so", RTLD_NOW);
         }

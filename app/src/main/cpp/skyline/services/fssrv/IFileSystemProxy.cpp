@@ -17,7 +17,7 @@ namespace skyline::service::fssrv {
     }
 
     Result IFileSystemProxy::OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch/sdmc/"), state, manager), session, response);
+        manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->publicAppFilesPath + "/switch/sdmc/"), state, manager), session, response);
         return {};
     }
 
@@ -57,7 +57,7 @@ namespace skyline::service::fssrv {
             }
         }()};
 
-        manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->appFilesPath + "/switch" + saveDataPath), state, manager), session, response);
+        manager.RegisterService(std::make_shared<IFileSystem>(std::make_shared<vfs::OsFileSystem>(state.os->publicAppFilesPath + "/switch" + saveDataPath), state, manager), session, response);
         return {};
     }
 

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <files-path path="/" name="Skyline" />
+    <files-path path="/" name="Skyline Internal" />
+    <external-files-path path="/" name="Skyline External" />
 </paths>

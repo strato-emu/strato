@@ -128,7 +128,7 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
 
     init {
         context.contentResolver.openFileDescriptor(uri, "r")!!.use {
-            result = LoaderResult.get(populate(format.ordinal, it.fd, context.filesDir.canonicalPath + "/", systemLanguage))
+            result = LoaderResult.get(populate(format.ordinal, it.fd, "${context.filesDir.canonicalPath}/keys/", systemLanguage))
         }
 
         appEntry = applicationName?.let { name ->

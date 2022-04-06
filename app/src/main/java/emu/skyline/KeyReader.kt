@@ -45,7 +45,10 @@ object KeyReader {
         if (!DocumentFile.isDocumentUri(context, uri))
             return false
 
-        val tmpOutputFile = File("${context.filesDir.canonicalFile}/${keyType.fileName}.tmp")
+        val outputDirectory = File("${context.filesDir.canonicalFile}/keys/")
+        if (!outputDirectory.exists())
+            outputDirectory.mkdirs()
+        val tmpOutputFile = File(outputDirectory, "${keyType.fileName}.tmp")
 
         context.contentResolver.openInputStream(uri).use { inputStream ->
             tmpOutputFile.bufferedWriter().use { writer ->

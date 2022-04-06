@@ -62,7 +62,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
 ) {
     std::string appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
     skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
-    skyline::Logger::LoaderContext.Initialize(appFilesPath + "loader.sklog");
+    skyline::Logger::LoaderContext.Initialize(appFilesPath + "logs/loader.sklog");
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
@@ -73,7 +73,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     jint romFd,
     jint preferenceFd,
     jint systemLanguage,
-    jstring appFilesPathJstring,
+    jstring publicAppFilesPathJstring,
+    jstring privateAppFilesPathJstring,
     jstring nativeLibraryPathJstring,
     jobject assetManager
 ) {
@@ -87,8 +88,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
     close(preferenceFd);
 
-    skyline::JniString appFilesPath(env, appFilesPathJstring);
-    skyline::Logger::EmulationContext.Initialize(appFilesPath + "emulation.sklog");
+    skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
+    skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.sklog");
 
     auto start{std::chrono::steady_clock::now()};
 
@@ -100,11 +101,13 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     try {
         skyline::JniString nativeLibraryPath(env, nativeLibraryPathJstring);
+        skyline::JniString privateAppFilesPath{env, privateAppFilesPathJstring};
 
         auto os{std::make_shared<skyline::kernel::OS>(
             jvmManager,
             settings,
-            appFilesPath,
+            publicAppFilesPath,
+            privateAppFilesPath,
             nativeLibraryPath,
             GetTimeZoneName(),
             static_cast<skyline::language::SystemLanguage>(systemLanguage),

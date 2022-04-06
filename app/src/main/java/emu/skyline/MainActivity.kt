@@ -21,7 +21,6 @@ import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import androidx.core.view.size
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -130,13 +129,12 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchBar.apply {
             binding.logIcon.setOnClickListener {
-                val file = applicationContext.filesDir.resolve("emulation.sklog")
-                if (file.length() != 0L) {
+                val file = applicationContext.getPublicFilesDir().resolve("logs/emulation.sklog")
+                if (file.exists() && file.length() != 0L) {
                     val uri = FileProvider.getUriForFile(this@MainActivity, "skyline.emu.fileprovider", file)
                     val intent = Intent(Intent.ACTION_SEND)
-                        .setType("text/plain")
+                        .setDataAndType(uri, "text/plain")
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        .setData(uri)
                         .putExtra(Intent.EXTRA_STREAM, uri)
                     startActivity(Intent.createChooser(intent, getString(R.string.log_share_prompt)))
                 } else {

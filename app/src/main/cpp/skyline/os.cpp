@@ -16,13 +16,15 @@ namespace skyline::kernel {
     OS::OS(
         std::shared_ptr<JvmManager> &jvmManager,
         std::shared_ptr<Settings> &settings,
-        std::string appFilesPath,
+        std::string publicAppFilesPath,
+        std::string privateAppFilesPath,
         std::string nativeLibraryPath,
         std::string deviceTimeZone,
         language::SystemLanguage systemLanguage,
         std::shared_ptr<vfs::FileSystem> assetFileSystem)
         : nativeLibraryPath(std::move(nativeLibraryPath)),
-          appFilesPath(std::move(appFilesPath)),
+          publicAppFilesPath(std::move(publicAppFilesPath)),
+          privateAppFilesPath(std::move(privateAppFilesPath)),
           state(this, jvmManager, settings),
           deviceTimeZone(std::move(deviceTimeZone)),
           assetFileSystem(std::move(assetFileSystem)),
@@ -31,7 +33,7 @@ namespace skyline::kernel {
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
-        auto keyStore{std::make_shared<crypto::KeyStore>(appFilesPath)};
+        auto keyStore{std::make_shared<crypto::KeyStore>(privateAppFilesPath + "keys/")};
 
         state.loader = [&]() -> std::shared_ptr<loader::Loader> {
             switch (romType) {
