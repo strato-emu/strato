@@ -8,6 +8,7 @@ package emu.skyline.input
 import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import emu.skyline.R
 import java.io.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,7 +45,7 @@ class InputManager @Inject constructor(@ApplicationContext context : Context) {
             }
 
             controllers = hashMapOf(
-                    0 to Controller(0, ControllerType.HandheldProController),
+                    0 to Controller(0, ControllerType.HandheldProController, Controller.BuiltinRumbleDeviceDescriptor, context.getString(R.string.builtin_vibrator)),
                     1 to Controller(1, ControllerType.None),
                     2 to Controller(2, ControllerType.None),
                     3 to Controller(3, ControllerType.None),
