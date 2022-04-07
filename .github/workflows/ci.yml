@@ -15,20 +15,16 @@ jobs:
           submodules: recursive
 
       - name: Restore Gradle Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /root/.gradle/
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: Restore CXX Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: app/.cxx/
           key: ${{ runner.os }}-cxx-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cxx-
 
       - name: Install Ninja Build
         run: |
