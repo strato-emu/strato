@@ -119,10 +119,14 @@ namespace skyline::service::hid {
         Result SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Returns an instance of #IActiveVibrationDeviceList
-         * @url https://switchbrew.org/wiki/HID_services#CreateActiveVibrationDeviceList
+         * @url https://switchbrew.org/wiki/HID_services#SetNpadHandheldActivationMode
          */
-        Result CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result SetNpadHandheldActivationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/HID_services#GetNpadHandheldActivationMode
+         */
+        Result GetNpadHandheldActivationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Returns the current vibration state of a device
@@ -135,6 +139,12 @@ namespace skyline::service::hid {
          * @url https://switchbrew.org/wiki/HID_services#SendVibrationValue
          */
         Result SendVibrationValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Returns an instance of #IActiveVibrationDeviceList
+         * @url https://switchbrew.org/wiki/HID_services#CreateActiveVibrationDeviceList
+         */
+        Result CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Send vibration values to a HID device
@@ -160,6 +170,8 @@ namespace skyline::service::hid {
             SFUNC(0x7A, IHidServer, SetNpadJoyAssignmentModeSingleByDefault),
             SFUNC(0x7B, IHidServer, SetNpadJoyAssignmentModeSingle),
             SFUNC(0x7C, IHidServer, SetNpadJoyAssignmentModeDual),
+            SFUNC(0x80, IHidServer, SetNpadHandheldActivationMode),
+            SFUNC(0x81, IHidServer, GetNpadHandheldActivationMode),
             SFUNC(0xCB, IHidServer, CreateActiveVibrationDeviceList),
             SFUNC(0xC8, IHidServer, GetVibrationDeviceInfo),
             SFUNC(0xC9, IHidServer, SendVibrationValue),

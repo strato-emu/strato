@@ -8,6 +8,15 @@
 
 namespace skyline::input {
     /**
+     * @brief How many joycons must be attached for handheld mode to be triggered
+     */
+    enum class NpadHandheldActivationMode : u64 {
+        Dual = 0,
+        Single = 1,
+        None = 2,
+    };
+
+    /**
      * @brief The orientations the Joy-Con(s) can be held in
      */
     enum class NpadJoyOrientation : i64 {

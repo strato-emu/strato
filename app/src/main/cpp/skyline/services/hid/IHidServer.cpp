@@ -25,6 +25,10 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::StartSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet{request.Pop<NpadStyleSet>()};
         std::lock_guard lock(state.input->npad.mutex);
@@ -137,8 +141,45 @@ namespace skyline::service::hid {
         return {};
     }
 
-    Result IHidServer::CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(IActiveVibrationDeviceList), session, response);
+    Result IHidServer::SetNpadHandheldActivationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        request.Skip<u64>();
+        auto activationMode{request.Pop<NpadHandheldActivationMode>()};
+
+        std::scoped_lock lock{state.input->npad.mutex};
+        state.input->npad.handheldActivationMode = activationMode;
+        return {};
+    }
+
+    Result IHidServer::GetNpadHandheldActivationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::scoped_lock lock{state.input->npad.mutex};
+        response.Push(state.input->npad.handheldActivationMode);
+        return {};
+    }
+
+
+    Result IHidServer::GetVibrationDeviceInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto deviceHandle{request.Pop<NpadDeviceHandle>()};
+        auto id{deviceHandle.id};
+
+        if (id > NpadId::Player8 && id != NpadId::Handheld && id != NpadId::Unknown)
+            return result::InvalidNpadId;
+
+        auto vibrationDeviceType{NpadVibrationDeviceType::Unknown};
+        auto vibrationDevicePosition{NpadVibrationDevicePosition::None};
+
+        if (deviceHandle.GetType() == NpadControllerType::Gamecube)
+            vibrationDeviceType = NpadVibrationDeviceType::EccentricRotatingMass;
+        else
+            vibrationDeviceType = NpadVibrationDeviceType::LinearResonantActuator;
+
+        if (vibrationDeviceType == NpadVibrationDeviceType::LinearResonantActuator)
+            if (deviceHandle.isRight)
+                vibrationDevicePosition = NpadVibrationDevicePosition::Right;
+            else
+                vibrationDevicePosition = NpadVibrationDevicePosition::Left;
+
+        response.Push(NpadVibrationDeviceInfo{vibrationDeviceType, vibrationDevicePosition});
+
         return {};
     }
 
@@ -151,6 +192,11 @@ namespace skyline::service::hid {
             device.VibrateSingle(handle.isRight, value);
         }
 
+        return {};
+    }
+
+    Result IHidServer::CreateActiveVibrationDeviceList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IActiveVibrationDeviceList), session, response);
         return {};
     }
 
@@ -176,36 +222,6 @@ namespace skyline::service::hid {
                 }
             }
         }
-
-        return {};
-    }
-
-    Result IHidServer::StartSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return {};
-    }
-
-    Result IHidServer::GetVibrationDeviceInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto deviceHandle{request.Pop<NpadDeviceHandle>()};
-        auto id{deviceHandle.id};
-
-        if (id > NpadId::Player8 && id != NpadId::Handheld && id != NpadId::Unknown)
-            return result::InvalidNpadId;
-
-        auto vibrationDeviceType{NpadVibrationDeviceType::Unknown};
-        auto vibrationDevicePosition{NpadVibrationDevicePosition::None};
-
-        if (deviceHandle.GetType() == NpadControllerType::Gamecube)
-            vibrationDeviceType = NpadVibrationDeviceType::EccentricRotatingMass;
-        else
-            vibrationDeviceType = NpadVibrationDeviceType::LinearResonantActuator;
-
-        if (vibrationDeviceType == NpadVibrationDeviceType::LinearResonantActuator)
-            if (deviceHandle.isRight)
-                vibrationDevicePosition = NpadVibrationDevicePosition::Right;
-            else
-                vibrationDevicePosition = NpadVibrationDevicePosition::Left;
-
-        response.Push(NpadVibrationDeviceInfo{vibrationDeviceType, vibrationDevicePosition});
 
         return {};
     }
