@@ -59,6 +59,8 @@ namespace skyline::service::am {
             ENUM_CASE_PAIR(PowerSaving, "Power Saving");
         })
 
+        std::shared_ptr<type::KEvent> defaultDisplayResolutionChangeEvent; //!< Signalled when the default display resolution changes,
+
         /**
          * @brief Queues a message for the application to read via ReceiveMessage
          * @param message The message to queue
@@ -111,6 +113,11 @@ namespace skyline::service::am {
         Result GetDefaultDisplayResolution(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolutionChangeEvent
+         */
+        Result GetDefaultDisplayResolutionChangeEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Sets the CPU boost mode to the supplied value
          * @url https://switchbrew.org/wiki/Applet_Manager_services#SetCpuBoostMode
          */
@@ -124,6 +131,7 @@ namespace skyline::service::am {
             SFUNC(0x9, ICommonStateGetter, GetCurrentFocusState),
             SFUNC(0x32, ICommonStateGetter, IsVrModeEnabled),
             SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution),
+            SFUNC(0x3D, ICommonStateGetter, GetDefaultDisplayResolutionChangeEvent),
             SFUNC(0x42, ICommonStateGetter, SetCpuBoostMode)
         )
     };

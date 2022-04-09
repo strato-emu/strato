@@ -11,7 +11,10 @@ namespace skyline::service::am {
         messageEvent->Signal();
     }
 
-    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager) : messageEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {
+    ICommonStateGetter::ICommonStateGetter(const DeviceState &state, ServiceManager &manager)
+        : BaseService(state, manager),
+          messageEvent(std::make_shared<type::KEvent>(state, false)),
+          defaultDisplayResolutionChangeEvent(std::make_shared<type::KEvent>(state, false)) {
         operationMode = static_cast<OperationMode>(state.settings->operationMode);
         Logger::Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
         QueueMessage(Message::FocusStateChange);
@@ -69,6 +72,15 @@ namespace skyline::service::am {
             response.Push<u32>(DockedResolutionW);
             response.Push<u32>(DockedResolutionH);
         }
+        return {};
+    }
+
+    Result ICommonStateGetter::GetDefaultDisplayResolutionChangeEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        // TODO: Implement properly when we support listeners for settings
+        auto handle{state.process->InsertItem(defaultDisplayResolutionChangeEvent)};
+        Logger::Debug("Default Display Resolution Change Event Handle: 0x{:X}", handle);
+
+        response.copyHandles.push_back(handle);
         return {};
     }
 
