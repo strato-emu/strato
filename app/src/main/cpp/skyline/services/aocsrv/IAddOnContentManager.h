@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 
 namespace skyline::service::aocsrv {
@@ -11,13 +12,22 @@ namespace skyline::service::aocsrv {
      * @url https://switchbrew.org/wiki/NS_Services#aoc:u
      */
     class IAddOnContentManager : public BaseService {
+      private:
+        std::shared_ptr<kernel::type::KEvent> addOnContentListChangedEvent; //!< This KEvent is triggered when the add-on content list changes
+
       public:
         IAddOnContentManager(const DeviceState &state, ServiceManager &manager);
 
+        Result CountAddOnContent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         Result ListAddOnContent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetAddOnContentListChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x3, IAddOnContentManager, ListAddOnContent)
+            SFUNC(0x2, IAddOnContentManager, CountAddOnContent),
+            SFUNC(0x3, IAddOnContentManager, ListAddOnContent),
+            SFUNC(0x8, IAddOnContentManager, GetAddOnContentListChangedEvent)
         )
     };
 }
