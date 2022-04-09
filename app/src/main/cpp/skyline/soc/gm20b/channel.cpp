@@ -9,6 +9,7 @@ namespace skyline::soc::gm20b {
         : asCtx(std::move(pAsCtx)),
           executor(state),
           maxwell3D(std::make_unique<engine::maxwell3d::Maxwell3D>(state, *this, macroState, executor)),
+          maxwellDma(state, *this),
           keplerCompute(state, *this),
           inline2Memory(asCtx),
           gpfifo(state, *this, numEntries) {}
