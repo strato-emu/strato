@@ -99,7 +99,7 @@ namespace skyline::service::am {
             SFUNC(0x1, IApplicationFunctions, PopLaunchParameter),
             SFUNC(0x14, IApplicationFunctions, EnsureSaveData),
             SFUNC(0x15, IApplicationFunctions, GetDesiredLanguage),
-            SFUNC(0x16, IApplicationFunctions, GetDisplayVersion),
+            SFUNC(0x17, IApplicationFunctions, GetDisplayVersion),
             SFUNC(0x28, IApplicationFunctions, NotifyRunning),
             SFUNC(0x32, IApplicationFunctions, GetPseudoDeviceId),
             SFUNC(0x42, IApplicationFunctions, InitializeGamePlayRecording),
