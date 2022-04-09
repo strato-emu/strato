@@ -2,6 +2,7 @@
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <kernel/types/KProcess.h>
+#include <audio/downmixer.h>
 #include "voice.h"
 
 namespace skyline::service::audio::IAudioRenderer {
@@ -36,7 +37,7 @@ namespace skyline::service::audio::IAudioRenderer {
             format = input.format;
             sampleRate = input.sampleRate;
 
-            if (input.channelCount > (input.format == skyline::audio::AudioFormat::ADPCM ? 1 : 2))
+            if (input.channelCount > (input.format == skyline::audio::AudioFormat::ADPCM ? 1 : 6))
                 throw exception("Unsupported voice channel count: {}", input.channelCount);
 
             channelCount = static_cast<u8>(input.channelCount);
@@ -88,6 +89,11 @@ namespace skyline::service::audio::IAudioRenderer {
                 for (u8 i{}; i < constant::StereoChannelCount; i++)
                     samples[--targetIndex] = sample;
             }
+        }
+
+        if (channelCount == constant::SurroundChannelCount) {
+            span(samples).copy_from(span(skyline::audio::DownMix(span(samples).cast<skyline::audio::Surround51Sample>())));
+            samples.resize((samples.size() / constant::SurroundChannelCount) * constant::StereoChannelCount);
         }
     }
 

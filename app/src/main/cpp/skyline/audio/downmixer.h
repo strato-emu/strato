@@ -30,7 +30,7 @@ namespace skyline::audio {
     /**
      * @brief Downmixes a buffer of 5.1 surround audio to stereo
      */
-    std::vector<StereoSample> DownMix(span<Surround51Sample> surroundSamples) {
+    inline std::vector<StereoSample> DownMix(span<Surround51Sample> surroundSamples) {
         constexpr i16 FixedPointMultiplier{1000}; //!< Avoids using floating point maths
         constexpr i16 Attenuation3Db{707}; //! 10^(-3/20)
         constexpr i16 Attenuation6Db{501}; //! 10^(-6/20)
