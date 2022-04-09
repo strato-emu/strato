@@ -70,8 +70,6 @@ namespace skyline::kernel::type {
             return nullptr;
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
             mainThreadStack = std::make_shared<KPrivateMemory>(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), state.process->npdm.meta.mainThreadStackSize, memory::Permission{true, true, false}, memory::states::Stack);
-            if (mprotect(mainThreadStack->ptr, PAGE_SIZE, PROT_NONE))
-                throw exception("Failed to create guard page for thread stack at 0x{:X}", mainThreadStack->ptr);
             stackTop = mainThreadStack->ptr + mainThreadStack->size;
         }
         auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
