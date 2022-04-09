@@ -2569,8 +2569,10 @@ namespace skyline::gpu::interconnect {
             // Depth/Stencil Render Target Setup
             auto depthRenderTargetView{GetDepthRenderTarget()};
             std::optional<std::scoped_lock<TextureView>> depthTargetLock;
-            if (depthRenderTargetView)
+            if (depthRenderTargetView) {
                 depthTargetLock.emplace(*depthRenderTargetView);
+                executor.AttachTexture(depthRenderTargetView);
+            }
 
             // Draw Persistent Storage
             struct DrawStorage {
