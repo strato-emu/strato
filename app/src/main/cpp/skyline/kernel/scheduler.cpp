@@ -85,6 +85,13 @@ namespace skyline::kernel {
     void Scheduler::InsertThread(const std::shared_ptr<type::KThread> &thread) {
         auto &core{cores.at(thread->coreId)};
         std::unique_lock lock(core.mutex);
+
+        if (thread->isPaused) {
+            // We cannot insert a thread that is paused, so we need to wait until it has been resumed
+            thread->insertThreadOnResume = false;
+            thread->scheduleCondition.wait(lock, [&]() { return !thread->isPaused; });
+        }
+
         auto nextThread{std::upper_bound(core.queue.begin(), core.queue.end(), thread->priority.load(), type::KThread::IsHigherPriority)};
         if (nextThread == core.queue.begin()) {
             if (nextThread != core.queue.end()) {
@@ -342,5 +349,42 @@ namespace skyline::kernel {
                 parkedThread->scheduleCondition.notify_one();
             }
         }
+    }
+
+    void Scheduler::PauseThread(const std::shared_ptr<type::KThread> &thread) {
+        CoreContext *core{&cores.at(thread->coreId)};
+        std::unique_lock lock{core->mutex};
+
+        thread->isPaused = true;
+
+        auto it{std::find(core->queue.begin(), core->queue.end(), thread)};
+        if (it != core->queue.end()) {
+            thread->insertThreadOnResume = true; // If we're handling removing the thread then we need to be responsible for inserting it back inside ResumeThread
+
+            it = core->queue.erase(it);
+            if (it == core->queue.begin() && it != core->queue.end())
+                (*it)->scheduleCondition.notify_one();
+
+            if (it == core->queue.begin() && !thread->pendingYield) {
+                // We need to send a yield signal to the thread if it's currently running
+                thread->SendSignal(YieldSignal);
+                thread->pendingYield = true;
+                thread->forceYield = true;
+            }
+        } else {
+            // If removal of the thread was performed by a lock/sleep/etc then we don't need to handle inserting it back ourselves inside ResumeThread
+            // It'll be automatically re-inserted when the lock/sleep is completed and InsertThread will block till the thread is resumed
+            thread->insertThreadOnResume = false;
+        }
+    }
+
+    void Scheduler::ResumeThread(const std::shared_ptr<type::KThread> &thread) {
+        thread->isPaused = false;
+        if (thread->insertThreadOnResume)
+            // If we handled removing the thread then we need to be responsible for inserting it back as well
+            InsertThread(thread);
+        else
+            // If we're not inserting the thread back into the queue ourselves then we need to notify the thread inserting it about the updated pause state
+            thread->scheduleCondition.notify_one();
     }
 }

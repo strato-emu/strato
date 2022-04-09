@@ -137,6 +137,18 @@ namespace skyline {
              * @note We will only wake a thread if it's determined to be a better pick than the thread which would be run on this core next
              */
             void WakeParkedThread();
+
+            /**
+             * @brief Pauses the supplied thread till a corresponding call to ResumeThread has been made
+             * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
+             */
+            void PauseThread(const std::shared_ptr<type::KThread> &thread);
+
+            /**
+             * @brief Resumes a thread which was previously paused by a call to PauseThread
+             * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
+             */
+            void ResumeThread(const std::shared_ptr<type::KThread> &thread);
         };
 
         /**

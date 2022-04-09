@@ -223,6 +223,12 @@ namespace skyline::kernel::svc {
     void UnmapPhysicalMemory(const DeviceState &state);
 
     /**
+     * @brief Sets if a thread is runnable or paused
+     * @url https://switchbrew.org/wiki/SVC#SetThreadActivity
+     */
+    void SetThreadActivity(const DeviceState &state);
+
+    /**
      * @brief Waits on an address based on the value of the address
      * @url https://switchbrew.org/wiki/SVC#WaitForAddress
      */
@@ -305,7 +311,7 @@ namespace skyline::kernel::svc {
         SVC_NONE, // 0x2F
         SVC_NONE, // 0x30
         SVC_NONE, // 0x31
-        SVC_NONE, // 0x32
+        SVC_ENTRY(SetThreadActivity), // 0x32
         SVC_NONE, // 0x33
         SVC_ENTRY(WaitForAddress), // 0x34
         SVC_ENTRY(SignalToAddress), // 0x35

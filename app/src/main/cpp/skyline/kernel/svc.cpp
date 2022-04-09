@@ -1085,6 +1085,61 @@ namespace skyline::kernel::svc {
         state.ctx->gpr.w0 = Result{};
     }
 
+    void SetThreadActivity(const DeviceState &state) {
+        u32 activityValue{static_cast<u32>(state.ctx->gpr.w1)};
+        enum class ThreadActivity : u32 {
+            Runnable = 0,
+            Paused = 1,
+        } activity{static_cast<ThreadActivity>(activityValue)};
+
+        switch (activity) {
+            case ThreadActivity::Runnable:
+            case ThreadActivity::Paused:
+                break;
+
+            default:
+                Logger::Warn("Invalid thread activity: {}", static_cast<u32>(activity));
+                state.ctx->gpr.w0 = result::InvalidEnumValue;
+                return;
+        }
+
+        KHandle threadHandle{state.ctx->gpr.w0};
+        try {
+            auto thread{state.process->GetHandle<type::KThread>(threadHandle)};
+            if (thread == state.thread) {
+                Logger::Warn("Thread setting own activity: {} (Thread: 0x{:X})", static_cast<u32>(activity), threadHandle);
+                state.ctx->gpr.w0 = result::Busy;
+                return;
+            }
+
+            std::scoped_lock guard{thread->coreMigrationMutex};
+            if (activity == ThreadActivity::Runnable) {
+                if (thread->running && thread->isPaused) {
+                    Logger::Debug("Resuming Thread: 0x{:X}", threadHandle);
+                    state.scheduler->ResumeThread(thread);
+                } else {
+                    Logger::Warn("Attempting to resume thread which is already runnable (Thread: 0x{:X})", threadHandle);
+                    state.ctx->gpr.w0 = result::InvalidState;
+                    return;
+                }
+            } else if (activity == ThreadActivity::Paused) {
+                if (thread->running && !thread->isPaused) {
+                    Logger::Debug("Pausing Thread: 0x{:X}", threadHandle);
+                    state.scheduler->PauseThread(thread);
+                } else {
+                    Logger::Warn("Attempting to pause thread which is already paused (Thread: 0x{:X})", threadHandle);
+                    state.ctx->gpr.w0 = result::InvalidState;
+                    return;
+                }
+            }
+
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::out_of_range &) {
+            Logger::Warn("'handle' invalid: 0x{:X}", static_cast<u32>(threadHandle));
+            state.ctx->gpr.w0 = result::InvalidHandle;
+        }
+    }
+
     void WaitForAddress(const DeviceState &state) {
         auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
         if (!util::IsWordAligned(address)) [[unlikely]] {
