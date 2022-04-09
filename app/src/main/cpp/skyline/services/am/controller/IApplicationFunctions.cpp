@@ -65,6 +65,11 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result IApplicationFunctions::GetDisplayVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(state.loader->nacp->nacpContents.displayVersion);
+        return {};
+    }
+
     Result IApplicationFunctions::NotifyRunning(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u8>(1);
         return {};

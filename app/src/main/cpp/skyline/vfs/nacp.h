@@ -27,7 +27,9 @@ namespace skyline::vfs {
             std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
             u8 _pad0_[0x2C];
             u32 supportedLanguageFlag; //!< A bitmask containing the game's supported languages
-            u8 _pad1_[0x48];
+            u8 _pad1_[0x30];
+            std::array<char, 0x10> displayVersion; //!< The user-readable version of the application
+            u8 _pad4_[0x8];
             u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
             u8 _pad2_[0x78];
             std::array<u8, 8> seedForPseudoDeviceId; //!< Seed that is combined with the device seed for generating the pseudo-device ID
