@@ -22,6 +22,8 @@ namespace skyline::soc::gm20b::engine {
 
         void LaunchDma();
 
+        void CopyPitchToBlockLinear();
+
       public:
         /**
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/master/classes/dma-copy/clb0b5.h
@@ -187,19 +189,42 @@ namespace skyline::soc::gm20b::engine {
                 u8 _pad5_ : 2;
                 u8 numDstComponentsMinusOne : 2;
                 u8 _pad6_ : 6;
+
+                u8 ComponentSize() {
+                    return componentSizeMinusOne + 1;
+                }
+
+                u8 NumSrcComponents() {
+                    return numSrcComponentsMinusOne + 1;
+                }
+
+                u8 NumDstComponents() {
+                    return numDstComponentsMinusOne + 1;
+                }
             };
             static_assert(sizeof(RemapComponents) == 0xC);
 
             Register<0x1C2, RemapComponents> remapComponents;
 
             struct Surface {
-                // Nvidias docs here differ from other emus and deko3d so go with what they say
                 struct {
-                    u8 width : 4;
-                    u8 height : 4;
-                    u8 depth : 4;
+                    u8 widthLog2 : 4;
+                    u8 heightLog2 : 4;
+                    u8 depthLog2 : 4;
                     u8 gobHeight : 4;
                     u16 _pad_;
+
+                    u8 Width() {
+                        return static_cast<u8>(1 << widthLog2);
+                    }
+
+                    u8 Height() {
+                        return static_cast<u8>(1 << heightLog2);
+                    }
+
+                    u8 Depth() {
+                        return static_cast<u8>(1 << depthLog2);
+                    }
                 } blockSize;
                 u32 width;
                 u32 height;

@@ -12,7 +12,7 @@ namespace skyline::gpu::texture {
     constexpr u8 GobWidth{64}; // The width of a GOB in bytes
     constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
-    size_t GetBlockLinearLayerSize(const GuestTexture &guest) {
+    inline size_t GetBlockLinearLayerSize(const GuestTexture &guest) {
         u32 blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
         u32 robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
         u32 surfaceHeightLines{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})}; //!< The height of the surface in lines
@@ -27,7 +27,7 @@ namespace skyline::gpu::texture {
     /**
      * @brief Copies pixel data between a linear and blocklinear texture
      */
-     template <typename CopyFunction>
+    template<typename CopyFunction>
     void CopyBlockLinearInternal(const GuestTexture &guest, u8 *blockLinear, u8 *linear, CopyFunction copyFunction) {
         u32 blockHeight{guest.tileConfig.blockHeight};
         u32 robHeight{GobHeight * blockHeight};
@@ -99,15 +99,15 @@ namespace skyline::gpu::texture {
     /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
      */
-    void CopyBlockLinearToLinear(const GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
+    inline void CopyBlockLinearToLinear(const GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
         CopyBlockLinearInternal(guest, guestInput, linearOutput, std::memcpy);
     }
 
     /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
      */
-    void CopyLinearToBlockLinear(const GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
-        CopyBlockLinearInternal(guest, guestOutput, linearInput, [](u8* src, u8* dst, size_t size) {
+    inline void CopyLinearToBlockLinear(const GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
+        CopyBlockLinearInternal(guest, guestOutput, linearInput, [](u8 *src, u8 *dst, size_t size) {
             std::memcpy(dst, src, size);
         });
     }
@@ -115,7 +115,7 @@ namespace skyline::gpu::texture {
     /**
      * @brief Copies the contents of a pitch-linear guest texture to a linear output buffer
      */
-    void CopyPitchLinearToLinear(const GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
+    inline void CopyPitchLinearToLinear(const GuestTexture &guest, u8 *guestInput, u8 *linearOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
         auto sizeStride{guest.tileConfig.pitch}; //!< The size of a single stride of pixel data
 
@@ -132,7 +132,7 @@ namespace skyline::gpu::texture {
     /**
      * @brief Copies the contents of a linear buffer to a pitch-linear guest texture
      */
-    void CopyLinearToPitchLinear(const GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
+    inline void CopyLinearToPitchLinear(const GuestTexture &guest, u8 *linearInput, u8 *guestOutput) {
         auto sizeLine{guest.format->GetSize(guest.dimensions.width, 1)}; //!< The size of a single line of pixel data
         auto sizeStride{guest.tileConfig.pitch}; //!< The size of a single stride of pixel data
 

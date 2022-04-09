@@ -150,4 +150,22 @@ namespace skyline::gpu::format {
     #undef FORMAT_NORM_INT_FLOAT
 
     // @fmt:on
+
+    inline const gpu::texture::FormatBase &GetFormatForBpp(u32 bytesPerPixel) {
+        switch (bytesPerPixel) {
+            case 1:
+                return R8Uint;
+            case 2:
+                return R8G8Uint;
+            case 4:
+                return R8G8B8A8Uint;
+            case 8:
+                return R16G16B16A16Uint;
+            case 16:
+                return R32G32B32A32Uint;
+            default:
+                Logger::Error("Couldn't convert bytes per pixel: {}", bytesPerPixel);
+                return R8Uint;
+        }
+    }
 }
