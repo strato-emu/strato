@@ -295,17 +295,32 @@ namespace skyline::gpu {
         if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
+        //  First attempt to derive type from dimensions
+        auto imageType{guest->dimensions.GetType()};
+
+        // Try to ensure that the image type is compatible with the given image view type since we can't create a 2D image view from a 1D image
+        if (imageType == vk::ImageType::e1D && guest->type != texture::TextureType::e1D && guest->type != texture::TextureType::e1DArray) {
+            switch (guest->type) {
+                case texture::TextureType::e3D:
+                    imageType = vk::ImageType::e3D;
+                    break;
+                default:
+                    imageType = vk::ImageType::e2D;
+                    break;
+            }
+        }
+
         vk::ImageCreateFlags flags{gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat};
 
-        if (guest->dimensions.GetType() == vk::ImageType::e2D && dimensions.width == dimensions.height && layerCount >= 6)
+        if (imageType == vk::ImageType::e2D && dimensions.width == dimensions.height && layerCount >= 6)
             flags |= vk::ImageCreateFlagBits::eCubeCompatible;
-        else if (guest->dimensions.GetType() == vk::ImageType::e3D)
+        else if (imageType == vk::ImageType::e3D)
             flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
 
 
         vk::ImageCreateInfo imageCreateInfo{
             .flags = flags,
-            .imageType = guest->dimensions.GetType(),
+            .imageType = imageType,
             .format = *guest->format,
             .extent = guest->dimensions,
             .mipLevels = 1,
