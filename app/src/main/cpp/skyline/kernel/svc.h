@@ -229,6 +229,12 @@ namespace skyline::kernel::svc {
     void SetThreadActivity(const DeviceState &state);
 
     /**
+     * @brief Gets the context structure of a paused thread
+     * @url https://switchbrew.org/wiki/SVC#GetThreadContext3
+     */
+    void GetThreadContext3(const DeviceState &state);
+
+    /**
      * @brief Waits on an address based on the value of the address
      * @url https://switchbrew.org/wiki/SVC#WaitForAddress
      */
@@ -312,7 +318,7 @@ namespace skyline::kernel::svc {
         SVC_NONE, // 0x30
         SVC_NONE, // 0x31
         SVC_ENTRY(SetThreadActivity), // 0x32
-        SVC_NONE, // 0x33
+        SVC_ENTRY(GetThreadContext3), // 0x33
         SVC_ENTRY(WaitForAddress), // 0x34
         SVC_ENTRY(SignalToAddress), // 0x35
         SVC_NONE, // 0x36

@@ -1140,6 +1140,63 @@ namespace skyline::kernel::svc {
         }
     }
 
+    void GetThreadContext3(const DeviceState &state) {
+        KHandle threadHandle{state.ctx->gpr.w1};
+        try {
+            auto thread{state.process->GetHandle<type::KThread>(threadHandle)};
+            if (thread == state.thread) {
+                Logger::Warn("Thread attempting to retrieve own context: 0x{:X}", threadHandle);
+                state.ctx->gpr.w0 = result::Busy;
+                return;
+            }
+
+            std::scoped_lock guard{thread->coreMigrationMutex};
+            if (!thread->isPaused) {
+                Logger::Warn("Attemping to get context of running thread: 0x{:X}", threadHandle);
+                state.ctx->gpr.w0 = result::InvalidState;
+                return;
+            }
+
+            struct ThreadContext {
+                std::array<u64, 29> gpr;
+                u64 fp;
+                u64 lr;
+                u64 sp;
+                u64 pc;
+                u32 pstate;
+                u32 _pad_;
+                std::array<u128, 32> vreg;
+                u32 fpcr;
+                u32 fpsr;
+                u64 tpidr;
+            };
+            static_assert(sizeof(ThreadContext) == 0x320);
+
+            auto &context{*reinterpret_cast<ThreadContext *>(state.ctx->gpr.x0)};
+            context = {}; // Zero-initialize the contents of the context as not all fields are set
+
+            auto& targetContext{thread->ctx};
+            for (size_t i{}; i < targetContext.gpr.regs.size(); i++)
+                context.gpr[i] = targetContext.gpr.regs[i];
+
+            for (size_t i{}; i < targetContext.fpr.regs.size(); i++)
+                context.vreg[i] = targetContext.fpr.regs[i];
+
+            context.fpcr = targetContext.fpr.fpcr;
+            context.fpsr = targetContext.fpr.fpsr;
+
+            context.tpidr = reinterpret_cast<u64>(targetContext.tpidrEl0);
+
+            // Note: We don't write the whole context as we only store the parts required according to the ARMv8 ABI for syscall handling
+            Logger::Debug("Written partial context for thread 0x{:X}", threadHandle);
+
+            state.ctx->gpr.w0 = Result{};
+        } catch (const std::out_of_range &) {
+            Logger::Warn("'handle' invalid: 0x{:X}", threadHandle);
+            state.ctx->gpr.w0 = result::InvalidHandle;
+        }
+    }
+
     void WaitForAddress(const DeviceState &state) {
         auto address{reinterpret_cast<u32 *>(state.ctx->gpr.x0)};
         if (!util::IsWordAligned(address)) [[unlikely]] {
