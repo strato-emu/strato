@@ -24,6 +24,8 @@ namespace skyline::soc::gm20b::engine {
 
         void CopyPitchToBlockLinear();
 
+        void CopyBlockLinearToPitch();
+
       public:
         /**
          * @url https://github.com/NVIDIA/open-gpu-doc/blob/master/classes/dma-copy/clb0b5.h
