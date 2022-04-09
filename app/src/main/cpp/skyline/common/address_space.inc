@@ -342,7 +342,69 @@ namespace skyline {
                 blockWriteSize = std::min(successor->virt - predecessor->virt, size);
             }
         }
+    }
 
+    MM_MEMBER(void)::Copy(VaType dst, VaType src, VaType size) {
+        TRACE_EVENT("containers", "FlatMemoryManager::Copy");
+
+        std::scoped_lock lock(this->blockMutex);
+
+        VaType srcEnd{src + size};
+        VaType dstEnd{dst + size};
+
+        auto srcSuccessor{std::upper_bound(this->blocks.begin(), this->blocks.end(), src, [] (auto virt, const auto &block) {
+            return virt < block.virt;
+        })};
+
+        auto dstSuccessor{std::upper_bound(this->blocks.begin(), this->blocks.end(), dst, [] (auto virt, const auto &block) {
+            return virt < block.virt;
+        })};
+
+        auto srcPredecessor{std::prev(srcSuccessor)};
+        auto dstPredecessor{std::prev(dstSuccessor)};
+
+        u8 *srcBlockPhys{srcPredecessor->phys + (src - srcPredecessor->virt)};
+        u8 *dstBlockPhys{dstPredecessor->phys + (dst - dstPredecessor->virt)};
+
+        VaType srcBlockRemainingSize{srcSuccessor->virt - src};
+        VaType dstBlockRemainingSize{dstSuccessor->virt - dst};
+
+        VaType blockCopySize{std::min({srcBlockRemainingSize, dstBlockRemainingSize, size})};
+
+        // Writes may span across multiple individual blocks
+        while (size) {
+            if (srcPredecessor->phys == nullptr) {
+                throw exception("Page fault at 0x{:X}", srcPredecessor->virt);
+            } else if (dstPredecessor->phys == nullptr) {
+                throw exception("Page fault at 0x{:X}", dstPredecessor->virt);
+            } else { [[likely]]
+                    if (srcPredecessor->extraInfo.sparseMapped)
+                        std::memset(dstBlockPhys, 0, blockCopySize);
+                    else [[likely]]
+                        std::memcpy(dstBlockPhys, srcBlockPhys, blockCopySize);
+            }
+
+            dstBlockPhys += blockCopySize;
+            srcBlockPhys += blockCopySize;
+            size -= blockCopySize;
+            srcBlockRemainingSize -= blockCopySize;
+            dstBlockRemainingSize -= blockCopySize;
+
+            if (size) {
+                if (!srcBlockRemainingSize) {
+                    srcPredecessor = srcSuccessor++;
+                    srcBlockPhys = srcPredecessor->phys;
+                    srcBlockRemainingSize = srcSuccessor->virt - srcPredecessor->virt;
+                    blockCopySize = std::min({srcBlockRemainingSize, dstBlockRemainingSize, size});
+                }
+                if (!dstBlockRemainingSize) {
+                    dstPredecessor = dstSuccessor++;
+                    dstBlockPhys = dstPredecessor->phys;
+                    dstBlockRemainingSize = dstSuccessor->virt - dstPredecessor->virt;
+                    blockCopySize = std::min({srcBlockRemainingSize, dstBlockRemainingSize, size});
+                }
+            }
+        }
     }
 
     ALLOC_MEMBER()::FlatAllocator(VaType vaStart, VaType vaLimit) : Base(vaLimit), vaStart(vaStart), currentLinearAllocEnd(vaStart) {}

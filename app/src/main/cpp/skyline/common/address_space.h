@@ -197,6 +197,8 @@ namespace skyline {
         void Write(VaType virt, T source) {
             Write(virt, reinterpret_cast<u8 *>(&source), sizeof(T));
         }
+
+        void Copy(VaType dst, VaType src, VaType size);
     };
 
     /**
