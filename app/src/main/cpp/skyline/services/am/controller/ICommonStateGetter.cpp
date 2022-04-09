@@ -98,4 +98,8 @@ namespace skyline::service::am {
         }
         return {};
     }
+
+    Result ICommonStateGetter::SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

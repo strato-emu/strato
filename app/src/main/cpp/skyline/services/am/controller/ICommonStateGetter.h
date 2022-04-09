@@ -123,6 +123,11 @@ namespace skyline::service::am {
          */
         Result SetCpuBoostMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled
+         */
+        Result SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, ICommonStateGetter, GetEventHandle),
             SFUNC(0x1, ICommonStateGetter, ReceiveMessage),
@@ -132,7 +137,8 @@ namespace skyline::service::am {
             SFUNC(0x32, ICommonStateGetter, IsVrModeEnabled),
             SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution),
             SFUNC(0x3D, ICommonStateGetter, GetDefaultDisplayResolutionChangeEvent),
-            SFUNC(0x42, ICommonStateGetter, SetCpuBoostMode)
+            SFUNC(0x42, ICommonStateGetter, SetCpuBoostMode),
+            SFUNC(0x384, ICommonStateGetter, SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled)
         )
     };
 }
