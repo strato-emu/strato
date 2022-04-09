@@ -43,11 +43,17 @@ namespace skyline::service::nifm {
          */
         Result Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Network_Interface_services#GetAppletInfo
+         */
+        Result GetAppletInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IRequest, GetRequestState),
             SFUNC(0x1, IRequest, GetResult),
             SFUNC(0x2, IRequest, GetSystemEventReadableHandles),
-            SFUNC(0x4, IRequest, Submit)
-        )
+            SFUNC(0x4, IRequest, Submit),
+            SFUNC(0x15, IRequest, GetAppletInfo)
+      )
     };
 }

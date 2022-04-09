@@ -5,6 +5,10 @@
 #include "IRequest.h"
 
 namespace skyline::service::nifm {
+    namespace result {
+        constexpr Result AppletLaunchNotRequired{110, 180};
+    }
+
     IRequest::IRequest(const DeviceState &state, ServiceManager &manager)
         : event0(std::make_shared<type::KEvent>(state, false)),
           event1(std::make_shared<type::KEvent>(state, false)),
@@ -34,5 +38,9 @@ namespace skyline::service::nifm {
 
     Result IRequest::Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
+    }
+
+    Result IRequest::GetAppletInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return result::AppletLaunchNotRequired;
     }
 }
