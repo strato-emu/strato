@@ -2,6 +2,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 // Copyright © 2022 yuzu Emulator Project (https://github.com/yuzu-emu/yuzu/)
 
+#include <gpu/interconnect/command_executor.h>
 #include <gpu/texture/format.h>
 #include <gpu/texture/layout.h>
 #include <soc.h>
@@ -10,8 +11,8 @@
 #include "maxwell_dma.h"
 
 namespace skyline::soc::gm20b::engine {
-    MaxwellDma::MaxwellDma(const DeviceState &state, ChannelContext &channelCtx)
-        : channelCtx(channelCtx), syncpoints(state.soc->host1x.syncpoints) {}
+    MaxwellDma::MaxwellDma(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor)
+        : channelCtx(channelCtx), syncpoints(state.soc->host1x.syncpoints), executor(executor) {}
 
     __attribute__((always_inline)) void MaxwellDma::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in Maxwell DMA: 0x{:X} args: 0x{:X}", method, argument);
@@ -35,6 +36,7 @@ namespace skyline::soc::gm20b::engine {
             return;
         }
 
+        executor.Execute();
         if (registers.launchDma->multiLineEnable) {
             if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch &&
                   registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)

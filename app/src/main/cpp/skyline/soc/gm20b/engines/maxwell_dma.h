@@ -5,6 +5,10 @@
 
 #include "engine.h"
 
+namespace skyline::gpu::interconnect {
+    class CommandExecutor;
+}
+
 namespace skyline::soc::gm20b {
     struct ChannelContext;
 }
@@ -17,6 +21,7 @@ namespace skyline::soc::gm20b::engine {
       private:
         host1x::SyncpointSet &syncpoints;
         ChannelContext &channelCtx;
+        gpu::interconnect::CommandExecutor &executor;
 
         void HandleMethod(u32 method, u32 argument);
 
@@ -246,7 +251,7 @@ namespace skyline::soc::gm20b::engine {
         static_assert(sizeof(Registers) == (EngineMethodsEnd * 0x4));
         #pragma pack(pop)
 
-        MaxwellDma(const DeviceState &state, ChannelContext &channelCtx);
+        MaxwellDma(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
 
         void CallMethod(u32 method, u32 argument);
 
