@@ -48,6 +48,11 @@ namespace skyline::service::am {
         Result GetLibraryAppletLaunchableEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetScreenShotPermission
+         */
+        Result SetScreenShotPermission(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief This function takes a u8 bool flag and no output (Stubbed)
          * @url https://switchbrew.org/wiki/Applet_Manager_services#SetOperationModeChangedNotification
          */
@@ -78,6 +83,11 @@ namespace skyline::service::am {
         Result SetOutOfFocusSuspendingEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetAlbumImageOrientation
+         */
+        Result SetAlbumImageOrientation(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns an output u64 LayerId
          * @url https://switchbrew.org/wiki/Applet_Manager_services#CreateManagedDisplayLayer
          */
@@ -100,11 +110,13 @@ namespace skyline::service::am {
             SFUNC(0x1, ISelfController, LockExit),
             SFUNC(0x2, ISelfController, UnlockExit),
             SFUNC(0x9, ISelfController, GetLibraryAppletLaunchableEvent),
+            SFUNC(0xA, ISelfController, SetScreenShotPermission),
             SFUNC(0xB, ISelfController, SetOperationModeChangedNotification),
             SFUNC(0xC, ISelfController, SetPerformanceModeChangedNotification),
             SFUNC(0xD, ISelfController, SetFocusHandlingMode),
             SFUNC(0xE, ISelfController, SetRestartMessageEnabled),
             SFUNC(0x10, ISelfController, SetOutOfFocusSuspendingEnabled),
+            SFUNC(0x13, ISelfController, SetAlbumImageOrientation),
             SFUNC(0x28, ISelfController, CreateManagedDisplayLayer),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
             SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent)
