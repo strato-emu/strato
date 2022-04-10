@@ -241,8 +241,12 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/controller/ISelfController.cpp
         ${source_DIR}/skyline/services/am/controller/IWindowController.cpp
         ${source_DIR}/skyline/services/am/storage/IStorage.cpp
+        ${source_DIR}/skyline/services/am/storage/VectorIStorage.cpp
+        ${source_DIR}/skyline/services/am/storage/TransferMemoryIStorage.cpp
         ${source_DIR}/skyline/services/am/storage/IStorageAccessor.cpp
         ${source_DIR}/skyline/services/am/applet/ILibraryAppletAccessor.cpp
+        ${source_DIR}/skyline/services/am/applet/IApplet.cpp
+        ${source_DIR}/skyline/applet/applet_creator.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoder.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoderManager.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp

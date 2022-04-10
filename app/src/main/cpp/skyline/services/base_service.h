@@ -40,7 +40,7 @@ namespace skyline::service {
     /**
      * @brief The base class for the HOS service interfaces hosted by sysmodules
      */
-    class BaseService {
+    class BaseService : public std::enable_shared_from_this<BaseService> {
       private:
         std::string name; //!< The name of the service, it's only assigned after GetName is called and shouldn't be used directly
 

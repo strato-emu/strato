@@ -4,6 +4,8 @@
 #pragma once
 
 #include <common.h>
+#include "types/KSession.h"
+#include "types/KProcess.h"
 
 namespace skyline {
     namespace constant {
@@ -229,6 +231,20 @@ namespace skyline {
                 else
                     payloadOffset += view.length();
                 return view;
+            }
+
+            /**
+             * @brief Pops a Service object from the response as a domain or kernel handle
+             */
+            template<typename ServiceType>
+            std::shared_ptr<ServiceType> PopService(u32 id, type::KSession &session) {
+                std::shared_ptr<service::BaseService> serviceObject;
+                if (session.isDomain)
+                    serviceObject = session.domains.at(domainObjects.at(id));
+                else
+                    serviceObject = session.state.process->GetHandle<kernel::type::KSession>(moveHandles.at(id))->serviceObject;
+
+                return std::static_pointer_cast<ServiceType>(serviceObject);
             }
 
             /**

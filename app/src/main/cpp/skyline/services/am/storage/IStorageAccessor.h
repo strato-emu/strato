@@ -7,6 +7,7 @@
 
 namespace skyline::service::am {
     namespace result {
+        constexpr Result ObjectInvalid(128, 500);
         constexpr Result OutOfBounds(128, 503);
     }
 

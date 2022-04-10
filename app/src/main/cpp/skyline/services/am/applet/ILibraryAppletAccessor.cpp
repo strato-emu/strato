@@ -1,47 +1,73 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2020 Ryujinx Team and Contributors
 
 #include <kernel/types/KProcess.h>
 #include <services/account/IAccountServiceForApplication.h>
-#include <services/am/storage/IStorage.h>
+#include <services/am/storage/VectorIStorage.h>
+#include <applet/applet_creator.h>
 #include "ILibraryAppletAccessor.h"
 
 namespace skyline::service::am {
-    ILibraryAppletAccessor::ILibraryAppletAccessor(const DeviceState &state, ServiceManager &manager) : stateChangeEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
+    ILibraryAppletAccessor::ILibraryAppletAccessor(const DeviceState &state, ServiceManager &manager, skyline::applet::AppletId appletId, applet::LibraryAppletMode appletMode)
+        : BaseService(state, manager),
+          stateChangeEvent(std::make_shared<type::KEvent>(state, false)),
+          popNormalOutDataEvent((std::make_shared<type::KEvent>(state, false))),
+          popInteractiveOutDataEvent((std::make_shared<type::KEvent>(state, false))),
+          applet(skyline::applet::CreateApplet(state, manager, appletId, stateChangeEvent, popNormalOutDataEvent, popInteractiveOutDataEvent, appletMode)) {
+        stateChangeEventHandle = state.process->InsertItem(stateChangeEvent);
+        popNormalOutDataEventHandle = state.process->InsertItem(popNormalOutDataEvent);
+        popInteractiveOutDataEventHandle = state.process->InsertItem(popInteractiveOutDataEvent);
+        Logger::Debug("Applet accessor for {} ID created with appletMode 0x{:X}", ToString(appletId), appletMode);
+    }
 
     Result ILibraryAppletAccessor::GetAppletStateChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        stateChangeEvent->Signal();
-
-        KHandle handle{state.process->InsertItem(stateChangeEvent)};
-        Logger::Debug("Applet State Change Event Handle: 0x{:X}", handle);
-
-        response.copyHandles.push_back(handle);
+        Logger::Debug("Applet State Change Event Handle: 0x{:X}", stateChangeEventHandle);
+        response.copyHandles.push_back(stateChangeEventHandle);
         return {};
     }
 
     Result ILibraryAppletAccessor::Start(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return {};
+        return applet->Start();
     }
 
     Result ILibraryAppletAccessor::GetResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return {};
+        return applet->GetResult();
     }
 
     Result ILibraryAppletAccessor::PushInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        applet->PushNormalDataToApplet(request.PopService<IStorage>(0, session));
+        return {};
+    }
+
+    Result ILibraryAppletAccessor::PushInteractiveInData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        applet->PushInteractiveDataToApplet(request.PopService<IStorage>(0, session));
         return {};
     }
 
     Result ILibraryAppletAccessor::PopOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
-        constexpr size_t LaunchParameterSize{0x88}; //!< The size of the launch parameter IStorage
+        if (auto outIStorage{applet->PopNormalAndClear()}) {
+            manager.RegisterService(outIStorage, session, response);
+            return {};
+        }
+        return result::NotAvailable;
+    }
 
-        auto storageService{std::make_shared<IStorage>(state, manager, LaunchParameterSize)};
+    Result ILibraryAppletAccessor::PopInteractiveOutData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (auto outIStorage = applet->PopInteractiveAndClear()) {
+            manager.RegisterService(outIStorage, session, response);
+            return {};
+        }
+        return result::NotAvailable;
+    }
 
-        storageService->Push<u32>(LaunchParameterMagic);
-        storageService->Push<u32>(1);
-        storageService->Push(constant::DefaultUserId);
+    Result ILibraryAppletAccessor::GetPopOutDataEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.copyHandles.push_back(popNormalOutDataEventHandle);
+        return {};
+    }
 
-        manager.RegisterService(storageService, session, response);
+    Result ILibraryAppletAccessor::GetPopInteractiveOutDataEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.copyHandles.push_back(popInteractiveOutDataEventHandle);
         return {};
     }
 }

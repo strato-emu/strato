@@ -7,7 +7,7 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <services/account/IAccountServiceForApplication.h>
-#include <services/am/storage/IStorage.h>
+#include <services/am/storage/VectorIStorage.h>
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
@@ -29,7 +29,7 @@ namespace skyline::service::am {
                 return result::NotAvailable;
 
             case LaunchParameterKind::PreselectedUser: {
-                storageService = std::make_shared<IStorage>(state, manager, LaunchParameterSize);
+                storageService = std::make_shared<VectorIStorage>(state, manager, LaunchParameterSize);
 
                 storageService->Push<u32>(LaunchParameterMagic);
                 storageService->Push<u32>(1);
