@@ -14,7 +14,12 @@ namespace skyline::signal {
         std::rethrow_exception(SignalExceptionPtr);
     }
 
-    std::terminate_handler terminateHandler{};
+    void SleepTillExit() {
+        // We don't want to actually exit the process ourselves as it'll automatically be restarted gracefully due to a timeout after being unable to exit within a fixed duration
+        Logger::EmulationContext.TryFlush(); // We want to attempt to flush logs before exiting
+        while (true)
+            sleep(std::numeric_limits<int>::max()); // We just trigger the timeout wait by sleeping forever
+    }
 
     inline StackFrame *SafeFrameRecurse(size_t depth, StackFrame *frame) {
         if (frame) {
@@ -22,17 +27,17 @@ namespace skyline::signal {
                 if (frame->lr && frame->next)
                     frame = frame->next;
                 else
-                    terminateHandler();
+                    SleepTillExit();
             }
         } else {
-            terminateHandler();
+            SleepTillExit();
         }
         return frame;
     }
 
     void TerminateHandler() {
         auto exception{std::current_exception()};
-        if (terminateHandler && exception && exception == SignalExceptionPtr) {
+        if (exception && exception == SignalExceptionPtr) {
             StackFrame *frame;
             asm("MOV %0, FP" : "=r"(frame));
             frame = SafeFrameRecurse(2, frame); // We unroll past 'std::terminate'
@@ -56,17 +61,14 @@ namespace skyline::signal {
                         frame = SafeFrameRecurse(2, lookupFrame);
                         hasAdvanced = true;
                     } else {
-                        Logger::EmulationContext.TryFlush();
-                        terminateHandler(); // We presumably have no exception handlers left on the stack to consume the exception, it's time to quit
+                        SleepTillExit(); // We presumably have no exception handlers left on the stack to consume the exception, it's time to quit
                     }
                 }
                 lookupFrame = lookupFrame->next;
             }
 
-            if (!frame->next) {
-                Logger::EmulationContext.TryFlush(); // We want to attempt to flush all logs before quitting
-                terminateHandler(); // We don't know the frame's stack boundaries, the only option is to quit
-            }
+            if (!frame->next)
+                SleepTillExit(); // We don't know the frame's stack boundaries, the only option is to quit
 
             asm("MOV SP, %x0\n\t" // Stack frame is the first item on a function's stack, it's used to calculate calling function's stack pointer
                 "MOV LR, %x1\n\t"
@@ -76,7 +78,7 @@ namespace skyline::signal {
 
             __builtin_unreachable();
         } else {
-            terminateHandler();
+            SleepTillExit(); // We don't want to delegate to the older terminate handler as it might cause an exit
         }
     }
 
@@ -97,11 +99,7 @@ namespace skyline::signal {
         SignalExceptionPtr = std::make_exception_ptr(signalException);
         context->uc_mcontext.pc = reinterpret_cast<u64>(&ExceptionThrow);
 
-        auto handler{std::get_terminate()};
-        if (handler != TerminateHandler) {
-            terminateHandler = handler;
-            std::set_terminate(TerminateHandler);
-        }
+        std::set_terminate(TerminateHandler);
 
         Logger::EmulationContext.TryFlush(); // We want to attempt to flush all logs in case exception handling fails and infloops
     }
