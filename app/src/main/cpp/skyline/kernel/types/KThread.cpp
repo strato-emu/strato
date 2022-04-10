@@ -177,6 +177,7 @@ namespace skyline::kernel::type {
             __builtin_unreachable();
         } catch (const std::exception &e) {
             Logger::Error(e.what());
+            Logger::EmulationContext.Flush();
             if (id) {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
@@ -186,6 +187,7 @@ namespace skyline::kernel::type {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 Logger::Error(e.what());
+                Logger::EmulationContext.Flush();
                 if (id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);

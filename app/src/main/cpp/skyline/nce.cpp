@@ -41,10 +41,14 @@ namespace skyline::nce {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 Logger::ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
+                Logger::EmulationContext.Flush();
+
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
                 }
+            } else {
+                Logger::EmulationContext.Flush();
             }
             abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
             std::longjmp(state.thread->originalCtx, true);
@@ -59,6 +63,8 @@ namespace skyline::nce {
                 Logger::ErrorNoPrefix("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace());
             else
                 Logger::ErrorNoPrefix("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svcId, state.loader->GetStackTrace());
+
+            Logger::EmulationContext.Flush();
 
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
@@ -94,6 +100,7 @@ namespace skyline::nce {
                     cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
 
                 Logger::Error("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
+                Logger::EmulationContext.Flush();
 
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});

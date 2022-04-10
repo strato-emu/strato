@@ -126,11 +126,13 @@ namespace skyline::soc::host1x {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+                Logger::EmulationContext.Flush();
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
         } catch (const std::exception &e) {
             Logger::Error(e.what());
+            Logger::EmulationContext.Flush();
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }
