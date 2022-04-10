@@ -120,10 +120,15 @@ namespace skyline::gpu {
         else if (capabilities.minImageExtent.height > extent.height || capabilities.minImageExtent.width > extent.width || capabilities.maxImageExtent.height < extent.height || capabilities.maxImageExtent.width < extent.width)
             throw exception("Cannot update swapchain to accomodate image extent: {}x{} ({}x{}-{}x{})", extent.width, extent.height, capabilities.minImageExtent.width, capabilities.minImageExtent.height, capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
+        vk::Format vkFormat{*format};
+        if (vkFormat == vk::Format::eB5G6R5UnormPack16 && format->swapRedBlue)
+            // B5G6R5 isn't generally supported by the swapchain and the format is used for R5G6B5 with swapped R/B channels to avoid aliasing so we reverse that by using R5G6B5 as the underlying Vulkan format for the swapchain which should be automatically handled by the driver for any copies from B5G6R5 textures and the data representation should be the same as B5G6R5 with swapped R/B channels so not reporting the correct texture::Format should be fine
+            vkFormat = vk::Format::eR5G6B5UnormPack16;
+
         if (swapchainFormat != format) {
             auto formats{gpu.vkPhysicalDevice.getSurfaceFormatsKHR(**vkSurface)};
-            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{*format, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
-                throw exception("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(*format), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
+            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{vkFormat, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
+                Logger::Warn("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(vkFormat), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
         }
 
         constexpr vk::ImageUsageFlags presentUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
@@ -138,7 +143,7 @@ namespace skyline::gpu {
         vkSwapchain.emplace(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
             .minImageCount = minImageCount,
-            .imageFormat = *format,
+            .imageFormat = vkFormat,
             .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
             .imageExtent = extent,
             .imageArrayLayers = 1,
