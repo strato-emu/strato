@@ -109,7 +109,7 @@ add_subdirectory("libraries/sirit")
 add_subdirectory("libraries/adrenotools")
 
 # Build Skyline with full debugging data and -Og for debug builds
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer")
 
 # Include headers from libraries as system headers to silence warnings from them
 function(target_link_libraries_system target)
@@ -135,6 +135,7 @@ add_library(skyline SHARED
         ${source_DIR}/emu_jni.cpp
         ${source_DIR}/loader_jni.cpp
         ${source_DIR}/skyline/common.cpp
+        ${source_DIR}/skyline/common/exception.cpp
         ${source_DIR}/skyline/common/logger.cpp
         ${source_DIR}/skyline/common/settings.cpp
         ${source_DIR}/skyline/common/signal.cpp

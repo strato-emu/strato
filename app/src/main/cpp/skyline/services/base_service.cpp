@@ -31,6 +31,9 @@ namespace skyline::service {
         TRACE_EVENT("service", perfetto::StaticString{function.name});
         try {
             return function(session, request, response);
+        } catch (exception &e) {
+            // We need to forward any skyline::exception objects without modification even though they inherit from std::exception
+            std::rethrow_exception(std::current_exception());
         } catch (const std::exception &e) {
             throw exception("{} (Service: {})", e.what(), function.name);
         }

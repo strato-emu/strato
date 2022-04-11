@@ -10,6 +10,7 @@
 #include <frozen/string.h>
 #include <xxhash.h>
 #include "base.h"
+#include "exception.h"
 
 namespace skyline::util {
     /**

@@ -50,6 +50,7 @@ namespace skyline::nce {
             } else {
                 Logger::EmulationContext.Flush();
             }
+
             abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
             std::longjmp(state.thread->originalCtx, true);
         } catch (const ExitException &e) {
@@ -57,6 +58,19 @@ namespace skyline::nce {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
+
+            abi::__cxa_end_catch();
+            std::longjmp(state.thread->originalCtx, true);
+        } catch (const exception &e) {
+            Logger::ErrorNoPrefix("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            Logger::EmulationContext.Flush();
+
+            if (state.thread->id) {
+                signal::BlockSignal({SIGINT});
+                state.process->Kill(false);
+            }
+
+            abi::__cxa_end_catch();
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             if (svc)
@@ -70,6 +84,7 @@ namespace skyline::nce {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
+
             abi::__cxa_end_catch();
             std::longjmp(state.thread->originalCtx, true);
         }

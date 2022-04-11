@@ -350,6 +350,11 @@ namespace skyline::soc::gm20b {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
+        } catch (const exception &e) {
+            Logger::ErrorNoPrefix("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            Logger::EmulationContext.Flush();
+            signal::BlockSignal({SIGINT});
+            state.process->Kill(false);
         } catch (const std::exception &e) {
             Logger::Error(e.what());
             Logger::EmulationContext.Flush();

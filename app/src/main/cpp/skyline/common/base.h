@@ -71,15 +71,6 @@ namespace skyline {
     }
 
     /**
-     * @brief A wrapper over std::runtime_error with {fmt} formatting
-     */
-    class exception : public std::runtime_error {
-      public:
-        template<typename S, typename... Args>
-        exception(const S &formatStr, Args &&... args) : runtime_error(util::Format(formatStr, args...)) {}
-    };
-
-    /**
      * @brief A deduction guide for overloads required for std::visit with std::variant
      */
     template<class... Ts>
