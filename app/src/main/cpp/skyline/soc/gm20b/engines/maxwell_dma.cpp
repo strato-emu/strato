@@ -108,7 +108,7 @@ namespace skyline::soc::gm20b::engine {
             return;
         }
 
-        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, *registers.offsetIn, dstTexture.dimensions.width, dstTexture.dimensions.height, dstLayerAddress);
+        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, u64{*registers.offsetIn}, dstTexture.dimensions.width, dstTexture.dimensions.height, dstLayerAddress);
 
         gpu::texture::CopyLinearToBlockLinear(dstTexture, srcTexture.mappings.front().data(), dstTexture.mappings.front().data());
     }
@@ -165,7 +165,7 @@ namespace skyline::soc::gm20b::engine {
             return;
         }
 
-        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, *registers.offsetIn, dstTexture.dimensions.width, dstTexture.dimensions.height,  *registers.offsetOut);
+        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, u64{*registers.offsetIn}, dstTexture.dimensions.width, dstTexture.dimensions.height,  u64{*registers.offsetOut});
 
         gpu::texture::CopyBlockLinearToLinear(srcTexture, srcTexture.mappings.front().data(), dstTexture.mappings.front().data());
     }
