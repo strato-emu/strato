@@ -13,6 +13,8 @@
 #include "skyline/jvm.h"
 
 extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
+    skyline::signal::ScopedStackBlocker stackBlocker;
+
     skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
 
     skyline::Logger::SetContext(&skyline::Logger::LoaderContext);
