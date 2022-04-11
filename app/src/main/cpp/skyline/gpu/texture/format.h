@@ -65,6 +65,7 @@ namespace skyline::gpu::format {
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
     FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swapRedBlue = true); // Used by SurfaceFlinger
+    FORMAT(R4G4B4A4Unorm, 16, eR4G4B4A4UnormPack16);
     FORMAT(B5G5R5A1Unorm, 16, eB5G5R5A1UnormPack16);
     FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swapRedBlue = true);
 
@@ -87,20 +88,29 @@ namespace skyline::gpu::format {
         .blockWidth = 4,
         .blockHeight = 4
     );
-    FORMAT_SUFF_UNORM_SRGB(BC2, 128, eBc2, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
-    );
-    FORMAT_SUFF_UNORM_SRGB(BC3, 128, eBc3, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
-    );
     FORMAT_SUFF_NORM(BC4, 64, eBc4, Block,
         .blockWidth = 4,
         .blockHeight = 4,
     );
 
     FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc6x6, 128, eAstc6x6, Block,
+       .blockWidth = 6,
+       .blockHeight = 6
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc8x8, 128, eAstc8x8, Block,
+       .blockWidth = 8,
+       .blockHeight = 8
+    );
+
+    FORMAT_SUFF_UNORM_SRGB(BC2, 128, eBc2, Block,
+        .blockWidth = 4,
+        .blockHeight = 4
+    );
+    FORMAT_SUFF_UNORM_SRGB(BC3, 128, eBc3, Block,
         .blockWidth = 4,
         .blockHeight = 4
     );

@@ -39,7 +39,7 @@ namespace skyline::gpu::interconnect {
             R32 = 0x0F,
             Bc6HSfloat = 0x10,
             Bc6HUfloat = 0x11,
-            R4G4B4A = 0x12,
+            R4G4B4A4 = 0x12,
             A5B5G5R1 = 0x13,
             A1B5G5R5 = 0x14,
             B5G6R5 = 0x15,
