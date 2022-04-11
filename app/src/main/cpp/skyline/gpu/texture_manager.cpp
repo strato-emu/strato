@@ -48,7 +48,7 @@ namespace skyline::gpu {
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && matchGuestTexture.dimensions == guestTexture.dimensions && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
                     return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
-                        .aspectMask = guestTexture.format->vkAspect,
+                        .aspectMask = guestTexture.aspect,
                         .levelCount = texture->mipLevels,
                         .layerCount = texture->layerCount,
                     }, guestTexture.format, guestTexture.swizzle);
@@ -80,7 +80,7 @@ namespace skyline::gpu {
         }
 
         return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
-            .aspectMask = guestTexture.format->vkAspect,
+            .aspectMask = guestTexture.aspect,
             .levelCount = texture->mipLevels,
             .layerCount = texture->layerCount,
         }, guestTexture.format, guestTexture.swizzle);

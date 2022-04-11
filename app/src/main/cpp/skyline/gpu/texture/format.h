@@ -143,7 +143,7 @@ namespace skyline::gpu::format {
     });
     FORMAT(S8UintD24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
-    }); // TODO: Swizzle Depth/Stencil
+    }, .stencilFirst = true); // TODO: Swizzle Depth/Stencil
 
 
     #undef FORMAT

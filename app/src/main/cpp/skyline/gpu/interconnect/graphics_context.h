@@ -268,6 +268,9 @@ namespace skyline::gpu::interconnect {
                 #undef FORMAT_SAME_NORM_INT_FLOAT_CASE
             }();
 
+            if (renderTarget.guest.format)
+                renderTarget.guest.aspect = renderTarget.guest.format->vkAspect;
+
             if (renderTarget.guest.tileConfig.mode == texture::TileMode::Linear && renderTarget.guest.format)
                 renderTarget.guest.dimensions.width = renderTarget.widthBytes / renderTarget.guest.format->bpb;
 
@@ -293,6 +296,9 @@ namespace skyline::gpu::interconnect {
                         throw exception("Cannot translate the supplied depth RT format: 0x{:X}", static_cast<u32>(format));
                 }
             }();
+
+            if (depthRenderTarget.guest.format)
+                depthRenderTarget.guest.aspect = depthRenderTarget.guest.format->vkAspect;
 
             if (depthRenderTarget.guest.tileConfig.mode == texture::TileMode::Linear && depthRenderTarget.guest.format)
                 depthRenderTarget.guest.dimensions.width = depthRenderTarget.widthBytes / depthRenderTarget.guest.format->bpb;
@@ -1999,6 +2005,7 @@ namespace skyline::gpu::interconnect {
                 // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
                 auto &guest{poolTexture.guest};
                 guest.format = ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb);
+                guest.aspect = guest.format->Aspect(textureControl.formatWord.swizzleX == TextureImageControl::ImageSwizzle::R);
 
                 if (guest.format->IsDepthOrStencil()) // G/R are equivalent for depth/stencil
                     guest.swizzle = ConvertTicSwizzleMapping<true, false>(textureControl.formatWord);

@@ -69,6 +69,7 @@ namespace skyline::gpu {
             u16 blockHeight{1}; //!< The height of a block in pixels
             u16 blockWidth{1}; //!< The width of a block in pixels
             bool swapRedBlue{}; //!< Swap the red and blue channels, ignored on depth formats
+            bool stencilFirst{}; //!< If the stencil channel is the first channel in the format
 
             constexpr bool IsCompressed() const {
                 return (blockHeight != 1) || (blockWidth != 1);
@@ -115,7 +116,21 @@ namespace skyline::gpu {
             }
 
             constexpr bool IsDepthOrStencil() const {
-                return bool(vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil));
+                return bool{vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)};
+            }
+
+            /**
+             * @brief Determines the image aspect to use based off of the format and the first swizzle component
+             */
+            constexpr vk::ImageAspectFlags Aspect(bool first) const {
+                if (vkAspect & vk::ImageAspectFlagBits::eDepth && vkAspect & vk::ImageAspectFlagBits::eStencil) {
+                    if (first)
+                        return stencilFirst ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth;
+                    else
+                        return stencilFirst ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eStencil;
+                } else {
+                    return vkAspect;
+                }
             }
         };
 
@@ -226,6 +241,7 @@ namespace skyline::gpu {
         u16 layerCount{};
         u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available, GetLayerSize() should be used to retrieve this value
         vk::ComponentMapping swizzle{}; //!< Component swizzle derived from format requirements and the guest supplied swizzle
+        vk::ImageAspectFlags aspect{};
 
         GuestTexture() {}
 
@@ -237,7 +253,8 @@ namespace skyline::gpu {
               type(type),
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
-              layerStride(layerStride) {}
+              layerStride(layerStride),
+              aspect(format->vkAspect) {}
 
         GuestTexture(span <u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0)
             : mappings(1, mapping),
@@ -247,7 +264,8 @@ namespace skyline::gpu {
               type(type),
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
-              layerStride(layerStride) {}
+              layerStride(layerStride),
+              aspect(format->vkAspect) {}
 
         /**
          * @note Requires `dimensions`, `format` and `tileConfig` to be filled in
