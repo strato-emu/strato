@@ -202,7 +202,7 @@ namespace skyline::gpu::interconnect {
 
         // 0x00
         struct FormatWord {
-            static constexpr u32 FormatColorComponentMask{0b111'111'111'111'1111111}; //!< Mask for the format and component fields
+            static constexpr u32 FormatColorComponentPadMask{(1U << 31) | 0b111'111'111'111'1111111U}; //!< Mask for the format, component and pad fields
 
             ImageFormat format : 7;
             ImageComponent componentR : 3;
@@ -219,8 +219,8 @@ namespace skyline::gpu::interconnect {
 
             constexpr u32 Raw() const {
                 if (std::is_constant_evaluated()) {
-                    u32 raw{};
-                    raw <<= 1;
+                    u32 raw{_pad_};
+                    raw <<= 3;
                     raw |= static_cast<u32>(swizzleW);
                     raw <<= 3;
                     raw |= static_cast<u32>(swizzleZ);

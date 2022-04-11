@@ -1803,23 +1803,34 @@ namespace skyline::gpu::interconnect {
         }
 
       private:
-        texture::Format ConvertTicFormat(TextureImageControl::FormatWord format) {
+        texture::Format ConvertTicFormat(TextureImageControl::FormatWord format, bool srgb) {
             using TIC = TextureImageControl;
-            #define TIC_FORMAT(format, componentR, componentG, componentB, componentA) \
-                TIC::FormatWord{TIC::ImageFormat::format,                              \
-                                TIC::ImageComponent::componentR, TIC::ImageComponent::componentG, TIC::ImageComponent::componentB, TIC::ImageComponent::componentA}.Raw()
+            #define TIC_FORMAT(fmt, compR, compG, compB, compA, srgb) \
+                TIC::FormatWord{ .format = TIC::ImageFormat::fmt,          \
+                                 .componentR = TIC::ImageComponent::compR, \
+                                 .componentG = TIC::ImageComponent::compG, \
+                                 .componentB = TIC::ImageComponent::compB, \
+                                 .componentA = TIC::ImageComponent::compA, \
+                                 ._pad_ = srgb }.Raw() // Reuse _pad_ to store if the texture is sRGB
 
             // For formats where all components are of the same type
             #define TIC_FORMAT_ST(format, component) \
-                TIC_FORMAT(format, component, component, component, component)
+                TIC_FORMAT(format, component, component, component, component, false)
+
+            #define TIC_FORMAT_ST_SRGB(format, component) \
+                TIC_FORMAT(format, component, component, component, component, true)
 
             #define TIC_FORMAT_CASE(ticFormat, skFormat, componentR, componentG, componentB, componentA)  \
-                case TIC_FORMAT(ticFormat, componentR, componentG, componentB, componentA): \
+                case TIC_FORMAT(ticFormat, componentR, componentG, componentB, componentA, false): \
                     return format::skFormat
 
             #define TIC_FORMAT_CASE_ST(ticFormat, skFormat, component)  \
                 case TIC_FORMAT_ST(ticFormat, component): \
                     return format::skFormat ## component
+
+            #define TIC_FORMAT_CASE_ST_SRGB(ticFormat, skFormat, component)  \
+                case TIC_FORMAT_ST_SRGB(ticFormat, component): \
+                    return format::skFormat ## Srgb
 
             #define TIC_FORMAT_CASE_NORM(ticFormat, skFormat)  \
                 TIC_FORMAT_CASE_ST(ticFormat, skFormat, Unorm); \
@@ -1842,7 +1853,8 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_ST(ticFormat, skFormat, Float)
 
             // Ignore the swizzle components of the format word
-            switch (format.Raw() & TextureImageControl::FormatWord::FormatColorComponentMask) {
+            format._pad_ = srgb; // Reuse the _pad_ field to store the srgb flag
+            switch ((format.Raw() & TextureImageControl::FormatWord::FormatColorComponentPadMask)) {
                 TIC_FORMAT_CASE_NORM_INT(R8, R8);
 
                 TIC_FORMAT_CASE_NORM_INT_FLOAT(R16, R16);
@@ -1860,10 +1872,12 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
                 TIC_FORMAT_CASE_ST(B10G11R11, B10G11R11, Float);
                 TIC_FORMAT_CASE_NORM_INT(A8B8G8R8, A8B8G8R8);
+                TIC_FORMAT_CASE_ST_SRGB(A8B8G8R8, A8B8G8R8, Unorm);
                 TIC_FORMAT_CASE_NORM_INT(A2B10G10R10, A2B10G10R10);
                 TIC_FORMAT_CASE_ST(E5B9G9R9, E5B9G9R9, Float);
 
                 TIC_FORMAT_CASE_ST(BC1, BC1, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(BC1, BC1, Unorm);
                 TIC_FORMAT_CASE_NORM(BC4, BC4);
                 TIC_FORMAT_CASE_INT_FLOAT(R32G32, R32G32);
                 TIC_FORMAT_CASE(D32S8, D32FloatS8Uint, Float, Uint, Uint, Unorm);
@@ -1871,14 +1885,20 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16B16A16, R16G16B16A16);
 
                 TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(Astc4x4, Astc4x4, Unorm);
                 TIC_FORMAT_CASE_ST(Astc6x6, Astc6x6, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(Astc6x6, Astc6x6, Unorm);
                 TIC_FORMAT_CASE_ST(Astc8x8, Astc8x8, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(Astc8x8, Astc8x8, Unorm);
                 TIC_FORMAT_CASE_ST(BC2, BC2, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(BC2, BC2, Unorm);
                 TIC_FORMAT_CASE_ST(BC3, BC3, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(BC3, BC3, Unorm);
                 TIC_FORMAT_CASE_NORM(BC5, BC5);
                 TIC_FORMAT_CASE(Bc6HUfloat, Bc6HUfloat, Float, Float, Float, Float);
                 TIC_FORMAT_CASE(Bc6HSfloat, Bc6HSfloat, Float, Float, Float, Float);
                 TIC_FORMAT_CASE_ST(BC7, BC7, Unorm);
+                TIC_FORMAT_CASE_ST_SRGB(BC7, BC7, Unorm);
                 TIC_FORMAT_CASE_INT_FLOAT(R32G32B32A32, R32G32B32A32);
 
                 default:
@@ -1943,7 +1963,7 @@ namespace skyline::gpu::interconnect {
             if (textureIt.second) {
                 // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
                 auto &guest{poolTexture.guest};
-                guest.format = ConvertTicFormat(textureControl.formatWord);
+                guest.format = ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb);
 
                 if (guest.format->IsDepthOrStencil()) // G/R are equivalent for depth/stencil
                     guest.swizzle = ConvertTicSwizzleMapping<true, false>(textureControl.formatWord);
