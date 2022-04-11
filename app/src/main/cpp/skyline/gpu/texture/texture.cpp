@@ -415,8 +415,8 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost(bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty)
-            return; // If the texture has not been modified on the CPU, there is no need to synchronize it
+        if (dirtyState != DirtyState::CpuDirty || !guest)
+            return; // If the texture has not been modified on the CPU or has no mappings, there is no need to synchronize it
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
 
@@ -439,7 +439,7 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty)
+        if (dirtyState != DirtyState::CpuDirty || !guest)
             return;
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHostWithBuffer");
@@ -461,13 +461,12 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeGuest(bool skipTrap) {
-        if (dirtyState != DirtyState::GpuDirty || layout == vk::ImageLayout::eUndefined) {
-            // We can skip syncing in two cases:
+        if (dirtyState != DirtyState::GpuDirty || layout == vk::ImageLayout::eUndefined || !guest) {
+            // We can skip syncing in three cases:
             // * If the texture has not been used on the GPU, there is no need to synchronize it
             // * If the state of the host texture is undefined then so can the guest
+            // * If there is no guest texture to synchronise
             return;
-        } else if (!guest) {
-            throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
         }
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
@@ -497,12 +496,10 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle) {
-        if (dirtyState != DirtyState::GpuDirty)
+        if (dirtyState != DirtyState::GpuDirty || !guest)
             return;
 
-        if (!guest)
-            throw exception("Synchronization of guest textures requires a valid guest texture to synchronize to");
-        else if (layout == vk::ImageLayout::eUndefined)
+        if (layout == vk::ImageLayout::eUndefined)
             return; // If the state of the host texture is undefined then so can the guest
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
@@ -530,6 +527,9 @@ namespace skyline::gpu {
     }
 
     std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {
+        if (!pFormat)
+            pFormat = format;
+
         for (auto viewIt{views.begin()}; viewIt != views.end();) {
             auto view{viewIt->lock()};
             if (view && type == view->type && pFormat == view->format && range == view->range && mapping == view->mapping)

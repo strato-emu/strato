@@ -70,6 +70,35 @@ namespace skyline::gpu::interconnect {
 
             if (!gpu.traits.supportsLastProvokingVertex)
                 rasterizerState.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
+
+            // Set of default parameters for null image which we use instead of a null descriptor since not all devices support that extension
+            constexpr texture::Format NullImageFormat{format::R8G8B8A8Unorm};
+            constexpr texture::Dimensions NullImageDimensions{1, 1, 1};
+            constexpr vk::ImageLayout NullImageInitialLayout{vk::ImageLayout::eUndefined};
+            constexpr vk::ImageTiling NullImageTiling{vk::ImageTiling::eOptimal};
+
+            auto vkImage{gpu.memory.AllocateImage({
+                .imageType = vk::ImageType::e2D,
+                .format = NullImageFormat->vkFormat,
+                .extent = NullImageDimensions,
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = vk::SampleCountFlagBits::e1,
+                .tiling = NullImageTiling,
+                .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+                .sharingMode = vk::SharingMode::eExclusive,
+                .queueFamilyIndexCount = 1,
+                .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
+                .initialLayout = NullImageInitialLayout
+            })};
+
+            auto nullTexture{std::make_shared<Texture>(gpu, std::move(vkImage),  NullImageDimensions, NullImageFormat, NullImageInitialLayout, NullImageTiling)};
+            nullTexture->TransitionLayout(vk::ImageLayout::eGeneral);
+            nullTextureView = nullTexture->GetView(vk::ImageViewType::e2D, vk::ImageSubresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .levelCount = 1,
+                .layerCount = 1,
+            });
         }
 
         /* Render Targets + Render Target Control */
@@ -1769,6 +1798,7 @@ namespace skyline::gpu::interconnect {
         /* Textures */
       private:
         u32 bindlessTextureConstantBufferIndex{};
+        std::shared_ptr<TextureView> nullTextureView; //!< View used instead of a null descriptor when an empty TIC is encountered, this avoids the need for the nullDescriptor VK feature
 
         struct PoolTexture : public FenceCycleDependency {
             GuestTexture guest;
@@ -1961,6 +1991,11 @@ namespace skyline::gpu::interconnect {
             auto textureIt{texturePool.textures.insert({textureControl, {}})};
             auto &poolTexture{textureIt.first->second};
             if (textureIt.second) {
+                if (textureControl.formatWord.format == TextureImageControl::ImageFormat::Invalid) {
+                    poolTexture.view = nullTextureView;
+                    return nullTextureView;
+                }
+
                 // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
                 auto &guest{poolTexture.guest};
                 guest.format = ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb);

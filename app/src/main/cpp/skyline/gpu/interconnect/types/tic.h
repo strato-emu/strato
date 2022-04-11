@@ -22,6 +22,7 @@ namespace skyline::gpu::interconnect {
          * @note An underscore may be used to describe a different block in a format
          */
         enum class ImageFormat : u32 {
+            Invalid = 0x0,
             R32G32B32A32 = 0x01,
             R32G32B32 = 0x02,
             R16G16B16A16 = 0x03,
