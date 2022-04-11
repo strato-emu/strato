@@ -118,7 +118,7 @@ namespace skyline::nce {
         }
     }
 
-    static NCE* staticNce{nullptr}; //!< A static instance of NCE for use in the signal handler
+    static NCE *staticNce{nullptr}; //!< A static instance of NCE for use in the signal handler
 
     void NCE::HostSignalHandler(int signal, siginfo *info, ucontext *ctx) {
         if (signal == SIGSEGV) {
@@ -166,6 +166,10 @@ namespace skyline::nce {
     NCE::NCE(const DeviceState &state) : state(state) {
         signal::SetTlsRestorer(&NceTlsRestorer);
         staticNce = this;
+    }
+
+    NCE::~NCE() {
+        staticNce = nullptr;
     }
 
     constexpr u8 MainSvcTrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
