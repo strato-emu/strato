@@ -64,10 +64,21 @@ namespace skyline::gpu::format {
     FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
-    FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swapRedBlue = true); // Used by SurfaceFlinger
-    FORMAT(R4G4B4A4Unorm, 16, eR4G4B4A4UnormPack16);
+    FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swizzleMapping = {
+        .r = vk::ComponentSwizzle::eB,
+        .b = vk::ComponentSwizzle::eR
+    }); // Used by SurfaceFlinger
+    FORMAT(R4G4B4A4Unorm, 16, eR4G4B4A4UnormPack16, .swizzleMapping = {
+        .r = vk::ComponentSwizzle::eA,
+        .g = vk::ComponentSwizzle::eB,
+        .b = vk::ComponentSwizzle::eG,
+        .a = vk::ComponentSwizzle::eR
+    });
     FORMAT(B5G5R5A1Unorm, 16, eB5G5R5A1UnormPack16);
-    FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swapRedBlue = true);
+    FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swizzleMapping = {
+        .r = vk::ComponentSwizzle::eB,
+        .b = vk::ComponentSwizzle::eR
+    });
 
     FORMAT_INT_FLOAT(R32, 32, eR32);
     FORMAT_NORM_INT_FLOAT(R16G16, 32, eR16G16);
@@ -132,18 +143,29 @@ namespace skyline::gpu::format {
     );
 
     // Depth/Stencil Formats
-    FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth);
+    // All of these have a G->R swizzle
+    FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth, .swizzleMapping = {
+        .g = vk::ComponentSwizzle::eR
+    });
 
-    FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth);
+    FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth, .swizzleMapping = {
+        .g = vk::ComponentSwizzle::eR
+    });
     FORMAT(D24UnormS8Uint, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
+    }, .swizzleMapping = {
+        .g = vk::ComponentSwizzle::eR
     });
     FORMAT(D32FloatS8Uint, 32, eD32SfloatS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
+    }, .swizzleMapping = {
+        .g = vk::ComponentSwizzle::eR
     });
     FORMAT(S8UintD24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
-    }, .stencilFirst = true); // TODO: Swizzle Depth/Stencil
+    }, .swizzleMapping = {
+        .g = vk::ComponentSwizzle::eR
+    });
 
 
     #undef FORMAT

@@ -1951,22 +1951,17 @@ namespace skyline::gpu::interconnect {
             #undef TIC_FORMAT_CASE_NORM_INT_FLOAT
         }
 
-        /**
-         * @tparam ConvGR Converts all green component
-         * @tparam SwapBR Swaps blue and red components
-         */
-        template<bool ConvGR, bool SwapBR>
-        vk::ComponentMapping ConvertTicSwizzleMapping(TextureImageControl::FormatWord format) {
-            auto convertComponentSwizzle{[](TextureImageControl::ImageSwizzle swizzle) {
+        vk::ComponentMapping ConvertTicSwizzleMapping(TextureImageControl::FormatWord format, vk::ComponentMapping swizzleMapping) {
+            auto convertComponentSwizzle{[swizzleMapping](TextureImageControl::ImageSwizzle swizzle) {
                 switch (swizzle) {
                     case TextureImageControl::ImageSwizzle::R:
-                        return SwapBR ? vk::ComponentSwizzle::eB : vk::ComponentSwizzle::eR;
+                        return swizzleMapping.r;
                     case TextureImageControl::ImageSwizzle::G:
-                        return ConvGR ? vk::ComponentSwizzle::eR : vk::ComponentSwizzle::eG;
+                        return swizzleMapping.g;
                     case TextureImageControl::ImageSwizzle::B:
-                        return SwapBR ? vk::ComponentSwizzle::eR : vk::ComponentSwizzle::eB;
+                        return swizzleMapping.b;
                     case TextureImageControl::ImageSwizzle::A:
-                        return vk::ComponentSwizzle::eA;
+                        return swizzleMapping.a;
                     case TextureImageControl::ImageSwizzle::Zero:
                         return vk::ComponentSwizzle::eZero;
                     case TextureImageControl::ImageSwizzle::OneFloat:
@@ -2006,13 +2001,7 @@ namespace skyline::gpu::interconnect {
                 auto &guest{poolTexture.guest};
                 guest.format = ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb);
                 guest.aspect = guest.format->Aspect(textureControl.formatWord.swizzleX == TextureImageControl::ImageSwizzle::R);
-
-                if (guest.format->IsDepthOrStencil()) // G/R are equivalent for depth/stencil
-                    guest.swizzle = ConvertTicSwizzleMapping<true, false>(textureControl.formatWord);
-                else if (guest.format->swapRedBlue)
-                    guest.swizzle = ConvertTicSwizzleMapping<false, true>(textureControl.formatWord);
-                else
-                    guest.swizzle = ConvertTicSwizzleMapping<false, false>(textureControl.formatWord);
+                guest.swizzle = ConvertTicSwizzleMapping(textureControl.formatWord, guest.format->swizzleMapping);
 
                 constexpr size_t CubeFaceCount{6}; //!< The amount of faces of a cube
 

@@ -68,7 +68,12 @@ namespace skyline::gpu {
             vk::ImageAspectFlags vkAspect{vk::ImageAspectFlagBits::eColor};
             u16 blockHeight{1}; //!< The height of a block in pixels
             u16 blockWidth{1}; //!< The width of a block in pixels
-            bool swapRedBlue{}; //!< Swap the red and blue channels, ignored on depth formats
+            vk::ComponentMapping swizzleMapping{
+                .r = vk::ComponentSwizzle::eR,
+                .g = vk::ComponentSwizzle::eG,
+                .b = vk::ComponentSwizzle::eB,
+                .a = vk::ComponentSwizzle::eA
+            };
             bool stencilFirst{}; //!< If the stencil channel is the first channel in the format
 
             constexpr bool IsCompressed() const {
@@ -113,10 +118,6 @@ namespace skyline::gpu {
              */
             constexpr bool IsCompatible(const FormatBase &other) const {
                 return bpb == other.bpb && blockHeight == other.blockHeight && blockWidth == other.blockWidth;
-            }
-
-            constexpr bool IsDepthOrStencil() const {
-                return bool{vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)};
             }
 
             /**
