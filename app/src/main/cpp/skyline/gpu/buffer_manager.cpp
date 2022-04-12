@@ -9,7 +9,7 @@ namespace skyline::gpu {
     BufferManager::BufferManager(GPU &gpu) : gpu(gpu) {}
 
     bool BufferManager::BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer) {
-        return it->guest.begin().base() < pointer;
+        return it->guest->begin().base() < pointer;
     }
 
     BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle) {
@@ -26,23 +26,23 @@ namespace skyline::gpu {
 
         // Lookup for any buffers overlapping with the supplied guest mapping
         boost::container::small_vector<std::shared_ptr<Buffer>, 4> overlaps;
-        for (auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), guestMapping.end().base(), BufferLessThan)}; entryIt != buffers.begin() && (*--entryIt)->guest.begin() <= guestMapping.end();)
-            if ((*entryIt)->guest.end() > guestMapping.begin())
+        for (auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), guestMapping.end().base(), BufferLessThan)}; entryIt != buffers.begin() && (*--entryIt)->guest->begin() <= guestMapping.end();)
+            if ((*entryIt)->guest->end() > guestMapping.begin())
                 overlaps.push_back(*entryIt);
 
         if (overlaps.size() == 1) [[likely]] {
             auto buffer{overlaps.front()};
-            if (buffer->guest.begin() <= guestMapping.begin() && buffer->guest.end() >= guestMapping.end()) {
+            if (buffer->guest->begin() <= guestMapping.begin() && buffer->guest->end() >= guestMapping.end()) {
                 // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
                 std::scoped_lock bufferLock{*buffer};
-                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest.begin()) + offset, size);
+                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
             }
         }
 
         // Find the extents of the new buffer we want to create that can hold all overlapping buffers
         auto lowestAddress{guestMapping.begin().base()}, highestAddress{guestMapping.end().base()};
         for (const auto &overlap : overlaps) {
-            auto mapping{overlap->guest};
+            auto mapping{*overlap->guest};
             if (mapping.begin().base() < lowestAddress)
                 lowestAddress = mapping.begin().base();
             if (mapping.end().base() > highestAddress)
@@ -60,7 +60,7 @@ namespace skyline::gpu {
             buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
 
             // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset
-            vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest.begin() - newBuffer->guest.begin())};
+            vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest->begin() - newBuffer->guest->begin())};
             if (overlapOffset != 0)
                 for (auto &view : overlap->views)
                     view.offset += overlapOffset;
@@ -77,8 +77,8 @@ namespace skyline::gpu {
             newBuffer->delegates.splice(newBuffer->delegates.end(), overlap->delegates);
         }
 
-        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest.end().base(), BufferLessThan), newBuffer);
+        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest->end().base(), BufferLessThan), newBuffer);
 
-        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest.begin()) + offset, size);
+        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest->begin()) + offset, size);
     }
 }

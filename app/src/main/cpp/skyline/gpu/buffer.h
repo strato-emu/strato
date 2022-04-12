@@ -21,7 +21,7 @@ namespace skyline::gpu {
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
         memory::Buffer backing;
-        GuestBuffer guest;
+        std::optional<GuestBuffer> guest;
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
@@ -88,6 +88,12 @@ namespace skyline::gpu {
         }
 
         Buffer(GPU &gpu, GuestBuffer guest);
+
+        /**
+         * @brief Creates a host-only Buffer which isn't backed by any guest buffer
+         * @note The created buffer won't have a mirror so any operations cannot depend on a mirror existing
+         */
+        Buffer(GPU &gpu, vk::DeviceSize size);
 
         ~Buffer();
 

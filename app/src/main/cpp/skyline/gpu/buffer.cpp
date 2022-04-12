@@ -9,13 +9,13 @@
 
 namespace skyline::gpu {
     void Buffer::SetupGuestMappings() {
-        u8 *alignedData{util::AlignDown(guest.data(), PAGE_SIZE)};
-        size_t alignedSize{static_cast<size_t>(util::AlignUp(guest.data() + guest.size(), PAGE_SIZE) - alignedData)};
+        u8 *alignedData{util::AlignDown(guest->data(), PAGE_SIZE)};
+        size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), PAGE_SIZE) - alignedData)};
 
         alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
-        mirror = alignedMirror.subspan(static_cast<size_t>(guest.data() - alignedData), guest.size());
+        mirror = alignedMirror.subspan(static_cast<size_t>(guest->data() - alignedData), guest->size());
 
-        trapHandle = gpu.state.nce->TrapRegions(guest, true, [this] {
+        trapHandle = gpu.state.nce->TrapRegions(*guest, true, [this] {
             std::lock_guard lock(*this);
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
             WaitOnFence();
@@ -29,6 +29,10 @@ namespace skyline::gpu {
 
     Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
         SetupGuestMappings();
+    }
+
+    Buffer::Buffer(GPU &gpu, vk::DeviceSize size) : gpu(gpu), backing(gpu.memory.AllocateBuffer(size)) {
+        dirtyState = DirtyState::Clean; // Since this is a host-only buffer it's always going to be clean
     }
 
     Buffer::~Buffer() {
@@ -58,8 +62,8 @@ namespace skyline::gpu {
     }
 
     void Buffer::SynchronizeHost(bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty)
-            return; // If the buffer has not been modified on the CPU, there is no need to synchronize it
+        if (dirtyState != DirtyState::CpuDirty || !guest)
+            return; // If the buffer has not been modified on the CPU or there's no guest buffer, there is no need to synchronize it
 
         WaitOnFence();
 
@@ -77,7 +81,7 @@ namespace skyline::gpu {
     }
 
     void Buffer::SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty)
+        if (dirtyState != DirtyState::CpuDirty || !guest)
             return;
 
         if (!cycle.owner_before(pCycle))
@@ -97,8 +101,8 @@ namespace skyline::gpu {
     }
 
     void Buffer::SynchronizeGuest(bool skipTrap, bool skipFence) {
-        if (dirtyState != DirtyState::GpuDirty)
-            return; // If the buffer has not been used on the GPU, there is no need to synchronize it
+        if (dirtyState != DirtyState::GpuDirty || !guest)
+            return; // If the buffer has not been used on the GPU or there's no guest buffer, there is no need to synchronize it
 
         if (!skipFence)
             WaitOnFence();
