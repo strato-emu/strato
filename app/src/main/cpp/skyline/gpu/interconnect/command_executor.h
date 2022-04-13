@@ -74,6 +74,11 @@ namespace skyline::gpu::interconnect {
         void AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value);
 
         /**
+         * @brief Adds a non graphics pass that can be used to execute arbitrary commands outside of a render pass
+         */
+        void AddNonGraphicsPass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
          */
         void Execute();

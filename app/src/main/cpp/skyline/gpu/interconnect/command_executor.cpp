@@ -58,6 +58,17 @@ namespace skyline::gpu::interconnect {
             nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), std::forward<std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>>(function));
     }
 
+    void CommandExecutor::AddNonGraphicsPass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
+        // End render pass
+        if (renderPass) {
+            nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
+            renderPass = nullptr;
+            subpassCount = 0;
+        }
+
+        nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
         bool newRenderPass{CreateRenderPass(vk::Rect2D{
             .extent = attachment->texture->dimensions,
