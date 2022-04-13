@@ -48,31 +48,31 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define RENDER_TARGET_ARRAY(z, index, data)                               \
-                ENGINE_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, high, { \
+                ENGINE_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, high, {    \
                     context.SetColorRenderTargetAddressHigh(index, high);                 \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, low, {  \
+                ENGINE_ARRAY_STRUCT_STRUCT_CASE(renderTargets, index, address, low, {     \
                     context.SetColorRenderTargetAddressLow(index, low);                   \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, width, {                \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, width, {                   \
                     context.SetColorRenderTargetWidth(index, width);                      \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, height, {               \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, height, {                  \
                     context.SetColorRenderTargetHeight(index, height);                    \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, format, {               \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, format, {                  \
                     context.SetColorRenderTargetFormat(index, format);                    \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, tileMode, {             \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, tileMode, {                \
                     context.SetColorRenderTargetTileMode(index, tileMode);                \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, arrayMode, {            \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, arrayMode, {               \
                     context.SetColorRenderTargetArrayMode(index, arrayMode);              \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, layerStrideLsr2, {      \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, layerStrideLsr2, {         \
                     context.SetColorRenderTargetLayerStride(index, layerStrideLsr2);      \
                 })                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, baseLayer, {            \
+                ENGINE_ARRAY_STRUCT_CASE(renderTargets, index, baseLayer, {               \
                     context.SetColorRenderTargetBaseLayer(index, baseLayer);              \
                 })
 
@@ -108,26 +108,26 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetDepthRenderTargetArrayMode(depthTargetArrayMode);
                 })
 
-                #define VIEWPORT_TRANSFORM_CALLBACKS(_z, index, data)                                      \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                          \
+                #define VIEWPORT_TRANSFORM_CALLBACKS(_z, index, data)                                     \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                             \
                     context.SetViewportX(index, scaleX, registers.viewportTransforms[index].translateX);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateX, {                      \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateX, {                         \
                     context.SetViewportX(index, registers.viewportTransforms[index].scaleX, translateX);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleY, {                          \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleY, {                             \
                     context.SetViewportY(index, scaleY, registers.viewportTransforms[index].translateY);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateY, {                      \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateY, {                         \
                     context.SetViewportY(index, registers.viewportTransforms[index].scaleY, translateY);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleZ, {                          \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleZ, {                             \
                     context.SetViewportZ(index, scaleZ, registers.viewportTransforms[index].translateZ);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateZ, {                      \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, translateZ, {                         \
                     context.SetViewportZ(index, registers.viewportTransforms[index].scaleZ, translateZ);  \
                 })                                                                                        \
-                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, swizzles, {                        \
+                ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, swizzles, {                           \
                     context.SetViewportSwizzle(index, swizzles.x, swizzles.y, swizzles.z, swizzles.w);    \
                 })
 
@@ -136,7 +136,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 #undef VIEWPORT_TRANSFORM_CALLBACKS
 
                 #define COLOR_CLEAR_CALLBACKS(z, index, data)              \
-                ENGINE_ARRAY_CASE(clearColorValue, index, {             \
+                ENGINE_ARRAY_CASE(clearColorValue, index, {                \
                     context.UpdateClearColorValue(index, clearColorValue); \
                 })
 
@@ -169,13 +169,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define SCISSOR_CALLBACKS(z, index, data)                                                           \
-                ENGINE_ARRAY_STRUCT_CASE(scissors, index, enable, {                                              \
+                ENGINE_ARRAY_STRUCT_CASE(scissors, index, enable, {                                                 \
                     context.SetScissor(index, enable ? registers.scissors[index] : std::optional<type::Scissor>{}); \
                 })                                                                                                  \
-                ENGINE_ARRAY_STRUCT_CASE(scissors, index, horizontal, {                                          \
+                ENGINE_ARRAY_STRUCT_CASE(scissors, index, horizontal, {                                             \
                     context.SetScissorHorizontal(index, horizontal);                                                \
                 })                                                                                                  \
-                ENGINE_ARRAY_STRUCT_CASE(scissors, index, vertical, {                                            \
+                ENGINE_ARRAY_STRUCT_CASE(scissors, index, vertical, {                                               \
                     context.SetScissorVertical(index, vertical);                                                    \
                 })
 
@@ -300,7 +300,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define SET_COLOR_BLEND_CONSTANT_CALLBACK(z, index, data) \
-                ENGINE_ARRAY_CASE(blendConstant, index, {              \
+                ENGINE_ARRAY_CASE(blendConstant, index, {                 \
                     context.SetColorBlendConstant(index, blendConstant);  \
                 })
 
@@ -337,7 +337,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define SET_COLOR_BLEND_ENABLE_CALLBACK(z, index, data) \
-                ENGINE_ARRAY_CASE(rtBlendEnable, index, {            \
+                ENGINE_ARRAY_CASE(rtBlendEnable, index, {               \
                     context.SetColorBlendEnabled(index, rtBlendEnable); \
                 })
 
@@ -396,7 +396,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define SET_COLOR_WRITE_MASK_CALLBACK(z, index, data)              \
-                ENGINE_ARRAY_CASE(colorWriteMask, index, {                      \
+                ENGINE_ARRAY_CASE(colorWriteMask, index, {                         \
                     if (*registers.commonColorWriteMask)                           \
                         if (index == 0)                                            \
                             for (u32 idx{}; idx != type::RenderTargetCount; idx++) \
@@ -422,25 +422,25 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 })
 
                 #define VERTEX_BUFFER_CALLBACKS(z, index, data)                            \
-                ENGINE_ARRAY_STRUCT_CASE(vertexBuffers, index, config, {                \
+                ENGINE_ARRAY_STRUCT_CASE(vertexBuffers, index, config, {                   \
                     context.SetVertexBufferStride(index, config.stride);                   \
                 })                                                                         \
-                ENGINE_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, high, {     \
+                ENGINE_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, high, {        \
                     context.SetVertexBufferStartIovaHigh(index, high);                     \
                 })                                                                         \
-                ENGINE_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, low, {      \
+                ENGINE_ARRAY_STRUCT_STRUCT_CASE(vertexBuffers, index, iova, low, {         \
                     context.SetVertexBufferStartIovaLow(index, low);                       \
                 })                                                                         \
-                ENGINE_ARRAY_STRUCT_CASE(vertexBuffers, index, divisor, {               \
+                ENGINE_ARRAY_STRUCT_CASE(vertexBuffers, index, divisor, {                  \
                     context.SetVertexBufferDivisor(index, divisor);                        \
                 })                                                                         \
-                ENGINE_ARRAY_CASE(isVertexInputRatePerInstance, index, {                \
+                ENGINE_ARRAY_CASE(isVertexInputRatePerInstance, index, {                   \
                     context.SetVertexBufferInputRate(index, isVertexInputRatePerInstance); \
                 })                                                                         \
-                ENGINE_ARRAY_STRUCT_CASE(vertexBufferLimits, index, high, {             \
+                ENGINE_ARRAY_STRUCT_CASE(vertexBufferLimits, index, high, {                \
                     context.SetVertexBufferEndIovaHigh(index, high);                       \
                 })                                                                         \
-                ENGINE_ARRAY_STRUCT_CASE(vertexBufferLimits, index, low, {              \
+                ENGINE_ARRAY_STRUCT_CASE(vertexBufferLimits, index, low, {                 \
                     context.SetVertexBufferEndIovaLow(index, low);                         \
                 })
 
@@ -449,7 +449,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 #undef VERTEX_BUFFER_CALLBACKS
 
                 #define VERTEX_ATTRIBUTES_CALLBACKS(z, index, data)               \
-                ENGINE_ARRAY_CASE(vertexAttributeState, index, {               \
+                ENGINE_ARRAY_CASE(vertexAttributeState, index, {                  \
                     context.SetVertexAttributeState(index, vertexAttributeState); \
                 })
 
@@ -458,22 +458,22 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 #undef VERTEX_BUFFER_CALLBACKS
 
                 #define SET_INDEPENDENT_COLOR_BLEND_CALLBACKS(z, index, data)          \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorOp, {        \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorOp, {           \
                     context.SetColorBlendOp(index, colorOp);                           \
                 })                                                                     \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorSrcFactor, { \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorSrcFactor, {    \
                     context.SetSrcColorBlendFactor(index, colorSrcFactor);             \
                 })                                                                     \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorDstFactor, { \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, colorDstFactor, {    \
                     context.SetDstColorBlendFactor(index, colorDstFactor);             \
                 })                                                                     \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaOp, {        \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaOp, {           \
                     context.SetAlphaBlendOp(index, alphaOp);                           \
                 })                                                                     \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaSrcFactor, { \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaSrcFactor, {    \
                     context.SetSrcAlphaBlendFactor(index, alphaSrcFactor);             \
                 })                                                                     \
-                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaDstFactor, { \
+                ENGINE_ARRAY_STRUCT_CASE(independentBlend, index, alphaDstFactor, {    \
                     context.SetDstAlphaBlendFactor(index, alphaDstFactor);             \
                 })
 
@@ -630,7 +630,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             #define SHADER_CALLBACKS(z, index, data)                                        \
-                ENGINE_ARRAY_STRUCT_CASE(setProgram, index, offset, {                    \
+                ENGINE_ARRAY_STRUCT_CASE(setProgram, index, offset, {                       \
                     context.SetShaderOffset(static_cast<type::ShaderStage>(index), offset); \
                 })
 
@@ -639,7 +639,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             #undef SHADER_CALLBACKS
 
             #define PIPELINE_CALLBACKS(z, idx, data)                                                                                       \
-                ENGINE_ARRAY_STRUCT_CASE(bind, idx, constantBuffer, {                                                                   \
+                ENGINE_ARRAY_STRUCT_CASE(bind, idx, constantBuffer, {                                                                      \
                     context.BindPipelineConstantBuffer(static_cast<type::PipelineStage>(idx), constantBuffer.valid, constantBuffer.index); \
                 })
 
@@ -652,7 +652,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             #define CBUF_UPDATE_CALLBACKS(z, index, data_)                                  \
-            ENGINE_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, {                \
+            ENGINE_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, {                   \
                 context.ConstantBufferUpdate(data, registers.constantBufferUpdate->offset); \
                 registers.constantBufferUpdate->offset += 4;                                \
             })
