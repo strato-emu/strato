@@ -145,10 +145,10 @@ namespace skyline::gpu {
             std::memcpy(data.data(), backing.data() + offset, data.size());
     }
 
-    void Buffer::Write(span<u8> data, vk::DeviceSize offset) {
+    void Buffer::Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite) {
         if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
             std::memcpy(mirror.data() + offset, data.data(), data.size());
-        if (dirtyState == DirtyState::GpuDirty || dirtyState == DirtyState::Clean)
+        if ((!skipCleanHostWrite && dirtyState == DirtyState::Clean) || dirtyState == DirtyState::GpuDirty)
             std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
@@ -234,7 +234,7 @@ namespace skyline::gpu {
         bufferDelegate->buffer->Read(data, offset + bufferDelegate->view->offset);
     }
 
-    void BufferView::Write(span<u8> data, vk::DeviceSize offset) const {
-        bufferDelegate->buffer->Write(data, offset + bufferDelegate->view->offset);
+    void BufferView::Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite) const {
+        bufferDelegate->buffer->Write(data, offset + bufferDelegate->view->offset, skipCleanHostWrite);
     }
 }

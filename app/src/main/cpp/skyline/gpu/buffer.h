@@ -171,8 +171,9 @@ namespace skyline::gpu {
 
         /**
          * @brief Writes data at the specified offset in the buffer
+         * @param skipCleanHostWrite Skip writing to the host buffer if it's clean, assumes the buffer data will be synchronised externally
          */
-        void Write(span<u8> data, vk::DeviceSize offset);
+        void Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite = false);
 
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
@@ -250,7 +251,8 @@ namespace skyline::gpu {
         /**
          * @brief Writes data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
+         * @param skipCleanHostWrite Skip writing to the host buffer if it's clean, assumes the buffer data will be synchronised externally
          */
-        void Write(span<u8> data, vk::DeviceSize offset) const;
+        void Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite = false) const;
     };
 }
