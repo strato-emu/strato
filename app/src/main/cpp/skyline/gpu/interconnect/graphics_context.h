@@ -1743,6 +1743,33 @@ namespace skyline::gpu::interconnect {
       private:
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
 
+        void ValidatePrimitiveRestartState() {
+            if (inputAssemblyState.primitiveRestartEnable) {
+                switch (inputAssemblyState.topology) {
+                    case vk::PrimitiveTopology::eLineStrip:
+                    case vk::PrimitiveTopology::eTriangleStrip:
+                    case vk::PrimitiveTopology::eTriangleFan:
+                    case vk::PrimitiveTopology::eLineStripWithAdjacency:
+                    case vk::PrimitiveTopology::eTriangleStripWithAdjacency:
+                        break; // Doesn't need any extension
+
+                    case vk::PrimitiveTopology::ePointList:
+                    case vk::PrimitiveTopology::eLineList:
+                    case vk::PrimitiveTopology::eTriangleList:
+                    case vk::PrimitiveTopology::eLineListWithAdjacency:
+                    case vk::PrimitiveTopology::eTriangleListWithAdjacency:
+                        if (!gpu.traits.supportsTopologyListRestart)
+                            Logger::Warn("GPU doesn't support primitive restart with list topologies");
+                        break;
+
+                    case vk::PrimitiveTopology::ePatchList:
+                        if (!gpu.traits.supportsTopologyPatchListRestart)
+                            Logger::Warn("GPU doesn't support primitive restart with patch list topology");
+                        break;
+                }
+            }
+        }
+
       public:
         void SetPrimitiveTopology(maxwell3d::PrimitiveTopology topology) {
             auto[vkTopology, shaderTopology] = [topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology> {
@@ -1776,6 +1803,10 @@ namespace skyline::gpu::interconnect {
 
             inputAssemblyState.topology = vkTopology;
             UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
+        }
+
+        void SetPrimitiveRestartEnabled(bool enable) {
+            inputAssemblyState.primitiveRestartEnable = enable;
         }
 
         /* Index Buffer */
@@ -2540,6 +2571,8 @@ namespace skyline::gpu::interconnect {
       public:
         template<bool IsIndexed>
         void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
+            ValidatePrimitiveRestartState();
+
             // Shader + Binding Setup
             auto programState{CompileShaderProgramState()};
             auto descriptorSet{gpu.descriptor.AllocateSet(*programState.descriptorSetLayout)};

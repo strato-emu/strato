@@ -126,7 +126,17 @@ namespace skyline::gpu {
                                          const vk::raii::PhysicalDevice &physicalDevice,
                                          decltype(vk::DeviceQueueCreateInfo::queueCount) &vkQueueFamilyIndex,
                                          TraitManager &traits) {
-        auto deviceFeatures2{physicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT, vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, vk::PhysicalDeviceShaderFloat16Int8Features, vk::PhysicalDeviceShaderAtomicInt64Features, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures, vk::PhysicalDeviceShaderDrawParametersFeatures, vk::PhysicalDeviceProvokingVertexFeaturesEXT>()};
+        auto deviceFeatures2{physicalDevice.getFeatures2<
+            vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
+            vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT,
+            vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT,
+            vk::PhysicalDeviceShaderFloat16Int8Features,
+            vk::PhysicalDeviceShaderAtomicInt64Features,
+            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
+            vk::PhysicalDeviceShaderDrawParametersFeatures,
+            vk::PhysicalDeviceProvokingVertexFeaturesEXT,
+            vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>()};
         decltype(deviceFeatures2) enabledFeatures2{}; // We only want to enable features we required due to potential overhead from unused features
 
         #define FEAT_REQ(structName, feature)                                            \
@@ -156,7 +166,11 @@ namespace skyline::gpu {
                 throw exception("Cannot find Vulkan device extension: \"{}\"", requiredExtension.data());
         }
 
-        auto deviceProperties2{physicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceDriverProperties, vk::PhysicalDeviceFloatControlsProperties, vk::PhysicalDeviceSubgroupProperties>()};
+        auto deviceProperties2{physicalDevice.getProperties2<
+            vk::PhysicalDeviceProperties2,
+            vk::PhysicalDeviceDriverProperties,
+            vk::PhysicalDeviceFloatControlsProperties,
+            vk::PhysicalDeviceSubgroupProperties>()};
 
         traits = TraitManager(deviceFeatures2, enabledFeatures2, deviceExtensions, enabledExtensions, deviceProperties2);
         traits.ApplyDriverPatches(context);

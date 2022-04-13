@@ -494,6 +494,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetPrimitiveTopology(vertexBeginGl.topology);
                 })
 
+                ENGINE_CASE(primitiveRestartEnable, {
+                    context.SetPrimitiveRestartEnabled(primitiveRestartEnable);
+                })
+
                 ENGINE_STRUCT_CASE(constantBufferSelector, size, {
                     context.SetConstantBufferSelectorSize(size);
                 })
