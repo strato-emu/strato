@@ -142,11 +142,14 @@ namespace skyline::gpu::interconnect {
                     .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
                 });
 
-                for (auto texture : syncTextures)
+                for (auto texture : syncTextures) {
                     texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
+                    texture->MarkGpuDirty();
+                }
 
                 for (const auto& delegate : syncBuffers) {
                     delegate->buffer->SynchronizeHostWithCycle(cycle, true);
+                    delegate->buffer->MarkGpuDirty();
                     delegate->usageCallback = nullptr;
                 }
 
