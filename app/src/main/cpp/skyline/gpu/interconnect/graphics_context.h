@@ -718,7 +718,7 @@ namespace skyline::gpu::interconnect {
 
             executor.AddOutsideRpCommand([view = constantBuffer.view, data, offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
                 std::scoped_lock lock{view};
-                commandBuffer.updateBuffer<u32>(view.bufferDelegate->buffer->GetBacking(), offset, vk::ArrayProxy(1, &data));
+                commandBuffer.updateBuffer<u32>(view.bufferDelegate->buffer->GetBacking(), view->view->offset + offset, vk::ArrayProxy(1, &data));
             });
         }
 
