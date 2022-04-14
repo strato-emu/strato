@@ -53,14 +53,14 @@ namespace skyline::gpu::interconnect {
         bool newRenderPass{CreateRenderPass(renderArea)};
         renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr);
         if (newRenderPass)
-            nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), std::forward<std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>>(function));
+            nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), std::forward<decltype(function)>(function));
         else
-            nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), std::forward<std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)>>(function));
+            nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), std::forward<decltype(function)>(function));
     }
 
-    void CommandExecutor::AddNonGraphicsPass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
-        // End render pass
+    void CommandExecutor::AddOutsideRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
         if (renderPass) {
+            // End render pass, if we're in one
             nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
             renderPass = nullptr;
             subpassCount = 0;
