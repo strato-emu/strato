@@ -77,22 +77,24 @@ namespace skyline::gpu::interconnect {
             constexpr vk::ImageLayout NullImageInitialLayout{vk::ImageLayout::eUndefined};
             constexpr vk::ImageTiling NullImageTiling{vk::ImageTiling::eOptimal};
 
-            auto vkImage{gpu.memory.AllocateImage({
-                                                      .imageType = vk::ImageType::e2D,
-                                                      .format = NullImageFormat->vkFormat,
-                                                      .extent = NullImageDimensions,
-                                                      .mipLevels = 1,
-                                                      .arrayLayers = 1,
-                                                      .samples = vk::SampleCountFlagBits::e1,
-                                                      .tiling = NullImageTiling,
-                                                      .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-                                                      .sharingMode = vk::SharingMode::eExclusive,
-                                                      .queueFamilyIndexCount = 1,
-                                                      .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
-                                                      .initialLayout = NullImageInitialLayout
-                                                  })};
+            auto vkImage{gpu.memory.AllocateImage(
+                {
+                    .imageType = vk::ImageType::e2D,
+                    .format = NullImageFormat->vkFormat,
+                    .extent = NullImageDimensions,
+                    .mipLevels = 1,
+                    .arrayLayers = 1,
+                    .samples = vk::SampleCountFlagBits::e1,
+                    .tiling = NullImageTiling,
+                    .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+                    .sharingMode = vk::SharingMode::eExclusive,
+                    .queueFamilyIndexCount = 1,
+                    .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
+                    .initialLayout = NullImageInitialLayout
+                }
+            )};
 
-            auto nullTexture{std::make_shared<Texture>(gpu, std::move(vkImage),  NullImageDimensions, NullImageFormat, NullImageInitialLayout, NullImageTiling)};
+            auto nullTexture{std::make_shared<Texture>(gpu, std::move(vkImage), NullImageDimensions, NullImageFormat, NullImageInitialLayout, NullImageTiling)};
             nullTexture->TransitionLayout(vk::ImageLayout::eGeneral);
             nullTextureView = nullTexture->GetView(vk::ImageViewType::e2D, vk::ImageSubresourceRange{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
