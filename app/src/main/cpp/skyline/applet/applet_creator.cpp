@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "controller_applet.h"
 #include "applet_creator.h"
 
 namespace skyline::applet {
@@ -11,6 +12,8 @@ namespace skyline::applet {
         std::shared_ptr<kernel::type::KEvent> onInteractiveDataPushFromApplet,
         service::applet::LibraryAppletMode appletMode) {
         switch (appletId) {
+            case AppletId::LibraryAppletController:
+                return std::make_shared<ControllerApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             default:
                 throw exception("Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId));
         }

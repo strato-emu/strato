@@ -248,6 +248,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/applet/ILibraryAppletAccessor.cpp
         ${source_DIR}/skyline/services/am/applet/IApplet.cpp
         ${source_DIR}/skyline/applet/applet_creator.cpp
+        ${source_DIR}/skyline/applet/controller_applet.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoder.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoderManager.cpp
         ${source_DIR}/skyline/services/hid/IHidServer.cpp
