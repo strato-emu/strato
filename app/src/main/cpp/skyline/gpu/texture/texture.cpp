@@ -348,7 +348,7 @@ namespace skyline::gpu {
     }
 
     void Texture::MarkGpuDirty() {
-        if (dirtyState == DirtyState::GpuDirty)
+        if (dirtyState == DirtyState::GpuDirty || !guest)
             return;
         gpu.state.nce->RetrapRegions(*trapHandle, false);
         dirtyState = DirtyState::GpuDirty;

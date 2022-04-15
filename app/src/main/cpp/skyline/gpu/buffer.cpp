@@ -45,7 +45,7 @@ namespace skyline::gpu {
     }
 
     void Buffer::MarkGpuDirty() {
-        if (dirtyState == DirtyState::GpuDirty || externallySynchronized) {
+        if (dirtyState == DirtyState::GpuDirty || externallySynchronized || !guest) {
             externallySynchronized = false; // We want to handle synchronize internally after the GPU work is done
             return;
         }
