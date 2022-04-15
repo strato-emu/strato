@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <boost/functional/hash.hpp>
 #include <gpu.h>
 #include <shader_compiler/common/settings.h>
 #include <shader_compiler/common/log.h>
@@ -168,17 +169,32 @@ namespace skyline::gpu {
     ShaderManager::DualVertexShaderProgram::DualVertexShaderProgram(Shader::IR::Program ir, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB) : ShaderProgram{std::move(ir)}, vertexA(std::move(vertexA)), vertexB(std::move(vertexB)) {}
 
     std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex) {
-        auto program{std::make_shared<SingleShaderProgram>()};
+        auto &program{programCache[binary]};
+        if (program)
+            return program;
+
+        program = std::make_shared<SingleShaderProgram>();
         GraphicsEnvironment environment{stage, binary, baseOffset, bindlessTextureConstantBufferIndex};
         Shader::Maxwell::Flow::CFG cfg(environment, program->flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
-
         program->program = Shader::Maxwell::TranslateProgram(program->instructionPool, program->blockPool, environment, cfg, hostTranslateInfo);
         return program;
     }
 
+    constexpr size_t ShaderManager::DualVertexProgramsHash::operator()(const std::pair<std::shared_ptr<ShaderProgram>, std::shared_ptr<ShaderProgram>> &p) const {
+        size_t hash{};
+        boost::hash_combine(hash, p.first);
+        boost::hash_combine(hash, p.second);
+        return hash;
+    }
+
     std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::CombineVertexShaders(const std::shared_ptr<ShaderManager::ShaderProgram> &vertexA, const std::shared_ptr<ShaderManager::ShaderProgram> &vertexB, span<u8> vertexBBinary) {
+        auto &program{dualProgramCache[DualVertexPrograms{vertexA, vertexB}]};
+        if (program)
+            return program;
+
         VertexBEnvironment vertexBEnvironment{vertexBBinary};
-        return std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB);
+        program = std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB);
+        return program;
     }
 
     vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {

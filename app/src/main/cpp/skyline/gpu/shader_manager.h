@@ -43,6 +43,8 @@ namespace skyline::gpu {
             SingleShaderProgram &operator=(const SingleShaderProgram &) = delete;
         };
 
+        std::unordered_map<span<u8>, std::shared_ptr<SingleShaderProgram>, SpanHash<u8>, SpanEqual<u8>> programCache; //!< A map from Maxwell bytecode to the corresponding shader program
+
         struct DualVertexShaderProgram : ShaderProgram {
             std::shared_ptr<ShaderProgram> vertexA;
             std::shared_ptr<ShaderProgram> vertexB;
@@ -54,16 +56,24 @@ namespace skyline::gpu {
             DualVertexShaderProgram &operator=(const DualVertexShaderProgram &) = delete;
         };
 
+        using DualVertexPrograms = std::pair<std::shared_ptr<ShaderProgram>, std::shared_ptr<ShaderProgram>>;
+
+        struct DualVertexProgramsHash {
+            constexpr size_t operator()(const std::pair<std::shared_ptr<ShaderProgram>, std::shared_ptr<ShaderProgram>> &p) const;
+        };
+
+        std::unordered_map<DualVertexPrograms, std::shared_ptr<DualVertexShaderProgram>, DualVertexProgramsHash> dualProgramCache; //!< A map from Vertex A and Vertex B shader programs to the corresponding dual vertex shader program
+
       public:
         ShaderManager(const DeviceState &state, GPU &gpu);
 
-        std::shared_ptr<ShaderManager::ShaderProgram> ParseGraphicsShader(Shader::Stage stage, span <u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex);
+        std::shared_ptr<ShaderManager::ShaderProgram> ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex);
 
         /**
          * @brief Combines the VertexA and VertexB shader programs into a single program
          * @note VertexA/VertexB shader programs must be SingleShaderProgram and not DualVertexShaderProgram
          */
-        static std::shared_ptr<ShaderManager::ShaderProgram> CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span <u8> vertexBBinary);
+        std::shared_ptr<ShaderManager::ShaderProgram> CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span<u8> vertexBBinary);
 
         vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings);
     };
