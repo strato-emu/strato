@@ -12,13 +12,13 @@ namespace skyline::service::am {
 
     IApplet::~IApplet() = default;
 
-    void IApplet::PushNormalDataAndSignal(const std::shared_ptr<IStorage> &data) {
-        normalOutputData.emplace(data);
+    void IApplet::PushNormalDataAndSignal(std::shared_ptr<IStorage> data) {
+        normalOutputData.emplace(std::move(data));
         onNormalDataPushFromApplet->Signal();
     }
 
-    void IApplet::PushInteractiveDataAndSignal(const std::shared_ptr<IStorage> &data) {
-        interactiveOutputData.emplace(data);
+    void IApplet::PushInteractiveDataAndSignal(std::shared_ptr<IStorage> data) {
+        interactiveOutputData.emplace(std::move(data));
         onInteractiveDataPushFromApplet->Signal();
     }
 

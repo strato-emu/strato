@@ -21,6 +21,6 @@ namespace skyline::service::am {
 
         ~TransferMemoryIStorage() override;
 
-        virtual span<u8> GetSpan() override;
+        span<u8> GetSpan() override;
     };
 }

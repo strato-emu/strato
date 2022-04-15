@@ -26,12 +26,12 @@ namespace skyline::service::am {
         /**
          * @brief Utility to send data to the guest and trigger the onNormalDataPushFromApplet event
          */
-        void PushNormalDataAndSignal(const std::shared_ptr<IStorage> &data);
+        void PushNormalDataAndSignal(std::shared_ptr<IStorage> data);
 
         /**
          * @brief Utility to send data to the guest and trigger the onInteractiveDataPushFromApplet event
          */
-        void PushInteractiveDataAndSignal(const std::shared_ptr<IStorage> &data);
+        void PushInteractiveDataAndSignal(std::shared_ptr<IStorage> data);
 
       public:
         IApplet(const DeviceState &state, ServiceManager &manager, std::shared_ptr<kernel::type::KEvent> onAppletStateChanged, std::shared_ptr<kernel::type::KEvent> onNormalDataPushFromApplet, std::shared_ptr<kernel::type::KEvent> onInteractiveDataPushFromApplet, applet::LibraryAppletMode appletMode);
