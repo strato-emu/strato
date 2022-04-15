@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <range/v3/algorithm.hpp>
 #include "npad_device.h"
 
 namespace skyline::input {
@@ -68,6 +69,16 @@ namespace skyline::input {
         constexpr NpadDevice &operator[](NpadId id) noexcept {
             return npads.operator[](Translate(id));
         }
+
+        /**
+         * @brief Counts the number of currently connected controllers
+         */
+        size_t GetConnectedControllerCount() {
+             std::scoped_lock lock{mutex};
+             return static_cast<size_t>(ranges::count_if(controllers, [](const auto &controller) {
+                 return controller.device != nullptr && controller.device->connectionState.connected;
+             }));
+         }
 
         /**
          * @brief Deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers

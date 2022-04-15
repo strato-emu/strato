@@ -69,14 +69,7 @@ namespace skyline::input {
 
         // We do this to prevent triggering the event unless there's a real change in a device's style, which would be caused if we disconnected all controllers then reconnected them
         for (auto &device : npads) {
-            bool connected{};
-            for (const auto &controller : controllers) {
-                if (controller.device == &device) {
-                    connected = true;
-                    break;
-                }
-            }
-            if (!connected)
+            if (!ranges::any_of(controllers, [&](auto &controller) { return controller.device == &device; }))
                 device.Disconnect();
         }
     }
