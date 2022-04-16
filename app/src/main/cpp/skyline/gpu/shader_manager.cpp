@@ -197,14 +197,77 @@ namespace skyline::gpu {
         return program;
     }
 
-    vk::raii::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
+    bool ShaderManager::ShaderModuleState::operator==(const ShaderModuleState &other) const {
+        if (program != other.program)
+            return false;
+
+        if (bindings.unified != other.bindings.unified || bindings.uniform_buffer != other.bindings.uniform_buffer || bindings.storage_buffer != other.bindings.storage_buffer || bindings.texture != other.bindings.texture || bindings.image != other.bindings.image || bindings.texture_scaling_index != other.bindings.texture_scaling_index || bindings.image_scaling_index != other.bindings.image_scaling_index)
+            return false;
+
+        static_assert(sizeof(Shader::Backend::Bindings) == 0x1C);
+
+        if (!std::equal(runtimeInfo.generic_input_types.begin(), runtimeInfo.generic_input_types.end(), other.runtimeInfo.generic_input_types.begin()))
+            return false;
+
+        #define NEQ(member) runtimeInfo.member != other.runtimeInfo.member
+
+        if (NEQ(previous_stage_stores.mask) || NEQ(convert_depth_mode) || NEQ(force_early_z) || NEQ(tess_primitive) || NEQ(tess_spacing) || NEQ(tess_clockwise) || NEQ(input_topology) || NEQ(fixed_state_point_size) || NEQ(alpha_test_func) || NEQ(alpha_test_reference) || NEQ(y_negate) || NEQ(glasm_use_storage_buffers))
+            return false;
+
+        #undef NEQ
+
+        if (!std::equal(runtimeInfo.xfb_varyings.begin(), runtimeInfo.xfb_varyings.end(), other.runtimeInfo.xfb_varyings.begin(), [](const Shader::TransformFeedbackVarying &a, const Shader::TransformFeedbackVarying &b) {
+            return a.buffer == b.buffer && a.stride == b.stride && a.offset == b.offset && a.components == b.components;
+        }))
+            return false;
+
+        static_assert(sizeof(Shader::RuntimeInfo) == 0x88);
+
+        return true;
+    }
+
+    constexpr size_t ShaderManager::ShaderModuleStateHash::operator()(const ShaderManager::ShaderModuleState &state) const {
+        size_t hash{};
+
+        boost::hash_combine(hash, state.program);
+
+        hash = XXH64(&state.bindings, sizeof(Shader::Backend::Bindings), hash);
+
+        #define RIH(member) boost::hash_combine(hash, state.runtimeInfo.member)
+
+        hash = XXH64(state.runtimeInfo.generic_input_types.data(), state.runtimeInfo.generic_input_types.size() * sizeof(u32), hash);
+        hash = XXH64(&state.runtimeInfo.previous_stage_stores.mask, sizeof(state.runtimeInfo.previous_stage_stores.mask), hash);
+        RIH(convert_depth_mode);
+        RIH(force_early_z);
+        RIH(tess_primitive);
+        RIH(tess_spacing);
+        RIH(tess_clockwise);
+        RIH(input_topology);
+        RIH(fixed_state_point_size.value_or(NAN));
+        RIH(alpha_test_func.value_or(Shader::CompareFunction::Never));
+        RIH(alpha_test_reference);
+        RIH(glasm_use_storage_buffers);
+        hash = XXH64(state.runtimeInfo.xfb_varyings.data(), state.runtimeInfo.xfb_varyings.size() * sizeof(Shader::TransformFeedbackVarying), hash);
+
+        static_assert(sizeof(Shader::RuntimeInfo) == 0x88);
+        #undef RIH
+
+        return hash;
+    }
+
+    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
+        auto it{shaderModuleCache.find(ShaderModuleState{program, bindings, runtimeInfo})};
+        if (it != shaderModuleCache.end())
+            return *it->second;
+
         auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program->program, bindings)};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),
             .codeSize = spirv.size() * sizeof(u32),
         };
-        vk::raii::ShaderModule shaderModule(gpu.vkDevice, createInfo);
-        return shaderModule;
+
+        auto shaderModule{shaderModuleCache.try_emplace(ShaderModuleState{program, bindings, runtimeInfo}, gpu.vkDevice, createInfo)};
+        return *shaderModule.first->second;
     }
 }

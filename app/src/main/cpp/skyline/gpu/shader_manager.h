@@ -64,6 +64,23 @@ namespace skyline::gpu {
 
         std::unordered_map<DualVertexPrograms, std::shared_ptr<DualVertexShaderProgram>, DualVertexProgramsHash> dualProgramCache; //!< A map from Vertex A and Vertex B shader programs to the corresponding dual vertex shader program
 
+        /**
+         * @brief All unique state that is required to compile a shader program, this is used as the key for the associative compiled shader program cache
+         */
+        struct ShaderModuleState {
+            std::shared_ptr<ShaderProgram> program;
+            Shader::Backend::Bindings bindings;
+            Shader::RuntimeInfo runtimeInfo;
+
+            bool operator==(const ShaderModuleState &) const;
+        };
+
+        struct ShaderModuleStateHash {
+            constexpr size_t operator()(const ShaderModuleState &state) const;
+        };
+
+        std::unordered_map<ShaderModuleState, vk::raii::ShaderModule, ShaderModuleStateHash> shaderModuleCache; //!< A map from shader module state to the corresponding Vulkan shader module
+
       public:
         ShaderManager(const DeviceState &state, GPU &gpu);
 
@@ -75,6 +92,6 @@ namespace skyline::gpu {
          */
         std::shared_ptr<ShaderManager::ShaderProgram> CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span<u8> vertexBBinary);
 
-        vk::raii::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings);
+        vk::ShaderModule CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings);
     };
 }

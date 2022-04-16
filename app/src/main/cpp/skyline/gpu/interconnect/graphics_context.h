@@ -657,7 +657,7 @@ namespace skyline::gpu::interconnect {
 
             struct KeyHash {
                 size_t operator()(const Key &entry) const noexcept {
-                    size_t seed = 0;
+                    size_t seed{};
                     boost::hash_combine(seed, entry.size);
                     boost::hash_combine(seed, entry.iova);
 
@@ -784,7 +784,7 @@ namespace skyline::gpu::interconnect {
             bool needsRecompile{}; //!< If the shader needs to be recompiled as runtime information has changed
             ShaderCompiler::VaryingState previousStageStores{};
             u32 bindingBase{}, bindingLast{}; //!< The base and last binding for descriptors bound to this stage
-            std::shared_ptr<vk::raii::ShaderModule> vkModule;
+            vk::ShaderModule vkModule;
 
             std::array<ConstantBuffer, maxwell3d::PipelineStageConstantBufferCount> constantBuffers{};
 
@@ -828,7 +828,7 @@ namespace skyline::gpu::interconnect {
          * @note The `descriptorSetWrite` will have a null `dstSet` which needs to be assigned prior to usage
          */
         struct ShaderProgramState {
-            boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules; //!< Shader modules for every pipeline stage
+            boost::container::static_vector<vk::ShaderModule, maxwell3d::PipelineStageCount> shaderModules; //!< Shader modules for every pipeline stage
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages; //!< Shader modules for every pipeline stage
             vk::raii::DescriptorSetLayout descriptorSetLayout; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
 
@@ -986,7 +986,7 @@ namespace skyline::gpu::interconnect {
             ShaderCompiler::Backend::Bindings bindings{};
 
             size_t bufferIndex{}, imageIndex{};
-            boost::container::static_vector<std::shared_ptr<vk::raii::ShaderModule>, maxwell3d::PipelineStageCount> shaderModules;
+            boost::container::static_vector<vk::ShaderModule, maxwell3d::PipelineStageCount> shaderModules;
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages;
             for (auto &pipelineStage : pipelineStages) {
                 if (!pipelineStage.enabled)
@@ -995,7 +995,7 @@ namespace skyline::gpu::interconnect {
                 if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
                     pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
                     pipelineStage.bindingBase = bindings.unified;
-                    pipelineStage.vkModule = std::make_shared<vk::raii::ShaderModule>(gpu.shader.CompileShader(runtimeInfo, pipelineStage.program, bindings));
+                    pipelineStage.vkModule = gpu.shader.CompileShader(runtimeInfo, pipelineStage.program, bindings);
                     pipelineStage.bindingLast = bindings.unified;
                 }
 
@@ -1128,7 +1128,7 @@ namespace skyline::gpu::interconnect {
                 shaderModules.emplace_back(pipelineStage.vkModule);
                 shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo{
                     .stage = pipelineStage.vkStage,
-                    .module = **pipelineStage.vkModule,
+                    .module = pipelineStage.vkModule,
                     .pName = "main",
                 });
             }
