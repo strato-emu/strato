@@ -45,10 +45,27 @@ namespace skyline::gpu {
     }
 
     void Buffer::MarkGpuDirty() {
-        if (dirtyState == DirtyState::GpuDirty)
+        if (dirtyState == DirtyState::GpuDirty || externallySynchronized) {
+            externallySynchronized = false; // We want to handle synchronize internally after the GPU work is done
             return;
+        }
         gpu.state.nce->RetrapRegions(*trapHandle, false);
         dirtyState = DirtyState::GpuDirty;
+    }
+
+    void Buffer::MarkExternallySynchronized() {
+        TRACE_EVENT("gpu", "Buffer::MarkExternallySynchronized");
+        if (externallySynchronized)
+            return;
+
+        if (dirtyState == DirtyState::GpuDirty)
+            std::memcpy(mirror.data(), backing.data(), mirror.size());
+        else if (dirtyState == DirtyState::CpuDirty)
+            std::memcpy(backing.data(), mirror.data(), mirror.size());
+
+        dirtyState = DirtyState::GpuDirty; // Any synchronization will take place on the GPU which in itself would make the buffer dirty
+        gpu.state.nce->RetrapRegions(*trapHandle, false);
+        externallySynchronized = true;
     }
 
     void Buffer::WaitOnFence() {
@@ -67,6 +84,9 @@ namespace skyline::gpu {
 
         WaitOnFence();
 
+        if (externallySynchronized)
+            return; // If the buffer is externally synchronized, we don't need to synchronize it
+
         TRACE_EVENT("gpu", "Buffer::SynchronizeHost");
 
         std::memcpy(backing.data(), mirror.data(), mirror.size());
@@ -81,11 +101,14 @@ namespace skyline::gpu {
     }
 
     void Buffer::SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty || !guest)
+        if (dirtyState != DirtyState::CpuDirty || !guest || externallySynchronized)
             return;
 
         if (!cycle.owner_before(pCycle))
             WaitOnFence();
+
+        if (externallySynchronized)
+            return;
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHostWithCycle");
 
@@ -101,11 +124,14 @@ namespace skyline::gpu {
     }
 
     void Buffer::SynchronizeGuest(bool skipTrap, bool skipFence) {
-        if (dirtyState != DirtyState::GpuDirty || !guest)
+        if (dirtyState != DirtyState::GpuDirty || !guest || externallySynchronized)
             return; // If the buffer has not been used on the GPU or there's no guest buffer, there is no need to synchronize it
 
         if (!skipFence)
             WaitOnFence();
+
+        if (externallySynchronized)
+            return; // If the buffer is externally synchronized, we don't need to synchronize it
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeGuest");
 
@@ -131,6 +157,9 @@ namespace skyline::gpu {
     };
 
     void Buffer::SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &pCycle) {
+        if (!guest)
+            return; // If there's no guest buffer, there is no need to synchronize it
+
         if (!cycle.owner_before(pCycle))
             WaitOnFence();
 
@@ -139,16 +168,16 @@ namespace skyline::gpu {
     }
 
     void Buffer::Read(span<u8> data, vk::DeviceSize offset) {
-        if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
+        if (externallySynchronized || dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
             std::memcpy(data.data(), mirror.data() + offset, data.size());
         else if (dirtyState == DirtyState::GpuDirty)
             std::memcpy(data.data(), backing.data() + offset, data.size());
     }
 
-    void Buffer::Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite) {
-        if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
+    void Buffer::Write(span<u8> data, vk::DeviceSize offset) {
+        if (externallySynchronized || dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean)
             std::memcpy(mirror.data() + offset, data.data(), data.size());
-        if ((!skipCleanHostWrite && dirtyState == DirtyState::Clean) || dirtyState == DirtyState::GpuDirty)
+        if (!externallySynchronized && ((dirtyState == DirtyState::Clean) || dirtyState == DirtyState::GpuDirty))
             std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
@@ -234,7 +263,7 @@ namespace skyline::gpu {
         bufferDelegate->buffer->Read(data, offset + bufferDelegate->view->offset);
     }
 
-    void BufferView::Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite) const {
-        bufferDelegate->buffer->Write(data, offset + bufferDelegate->view->offset, skipCleanHostWrite);
+    void BufferView::Write(span<u8> data, vk::DeviceSize offset) const {
+        bufferDelegate->buffer->Write(data, offset + bufferDelegate->view->offset);
     }
 }

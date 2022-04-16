@@ -31,6 +31,7 @@ namespace skyline::gpu {
             CpuDirty, //!< The CPU mappings have been modified but the GPU buffer is not up to date
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+        bool externallySynchronized{}; //!< Whether the host buffer is externally synchronized with the guest buffer, disables the buffer synchronization and aims to retain guest/host buffer data across buffer recreation
 
       public:
         /**
@@ -123,10 +124,17 @@ namespace skyline::gpu {
 
         /**
          * @brief Marks the buffer as dirty on the GPU, it will be synced on the next call to SynchronizeGuest
+         * @note This clears the externally synchronized flag automatically
          * @note This **must** be called after syncing the buffer to the GPU not before
          * @note The buffer **must** be locked prior to calling this
          */
         void MarkGpuDirty();
+
+        /**
+         * @brief Marks the buffer as externally synchronized and automatically synchronizes the host buffer and guest buffer, ensuring the buffer is GPU dirty by the end of the current cycle is the responsibility of the API user
+         * @note The buffer **must** be locked and have the desired fence attached prior to calling this
+         */
+        void MarkExternallySynchronized();
 
         /**
          * @brief Waits on a fence cycle if it exists till it's signalled and resets it after
@@ -166,14 +174,17 @@ namespace skyline::gpu {
 
         /**
          * @brief Reads data at the specified offset in the buffer
+         * @note The buffer **must** be locked prior to calling this
+         * @note If this buffer is externally synchronized, this will read exclusively from the guest buffer
          */
         void Read(span<u8> data, vk::DeviceSize offset);
 
         /**
          * @brief Writes data at the specified offset in the buffer
-         * @param skipCleanHostWrite Skip writing to the host buffer if it's clean, assumes the buffer data will be synchronised externally
+         * @note The buffer **must** be locked prior to calling this
+         * @note If this buffer is externally synchronized, this will write to the guest buffer and not to the host buffer
          */
-        void Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite = false);
+        void Write(span<u8> data, vk::DeviceSize offset);
 
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
@@ -245,14 +256,15 @@ namespace skyline::gpu {
         /**
          * @brief Reads data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
+         * @note If this buffer is externally synchronized, this will read exclusively from the guest buffer
          */
         void Read(span<u8> data, vk::DeviceSize offset) const;
 
         /**
          * @brief Writes data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
-         * @param skipCleanHostWrite Skip writing to the host buffer if it's clean, assumes the buffer data will be synchronised externally
+         * @note If this buffer is externally synchronized, this will write to the guest buffer and not to the host buffer
          */
-        void Write(span<u8> data, vk::DeviceSize offset, bool skipCleanHostWrite = false) const;
+        void Write(span<u8> data, vk::DeviceSize offset) const;
     };
 }

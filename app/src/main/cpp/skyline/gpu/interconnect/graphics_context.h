@@ -623,16 +623,6 @@ namespace skyline::gpu::interconnect {
                 view.Read(span<T>(object).template cast<u8>(), offset);
                 return object;
             }
-
-            /**
-             * @brief Writes an object to the supplied offset in the constant buffer
-             * @note This must only be called when the GuestBuffer is resolved correctly
-             */
-            template<typename T>
-            void Write(T &object, size_t offset) {
-                std::scoped_lock lock{view};
-                view.Write(span<T>(object).template cast<u8>(), offset, true);
-            }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
 
@@ -700,10 +690,6 @@ namespace skyline::gpu::interconnect {
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
                 view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
-                {
-                    std::scoped_lock lock{*view};
-                    view->bufferDelegate->buffer->SynchronizeHost(false);
-                }
 
                 constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
             }
@@ -714,11 +700,17 @@ namespace skyline::gpu::interconnect {
 
         void ConstantBufferUpdate(u32 data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector().value()};
-            constantBuffer.Write(data, offset);
+            auto& constantBufferView{constantBuffer.view};
+            {
+                std::scoped_lock lock{constantBufferView};
+                executor.AttachBuffer(constantBufferView);
+                constantBufferView->buffer->MarkExternallySynchronized(); // We want to handle synchronization of updated constant buffers ourselves
+                constantBufferView.Write(span<u32>(data).cast<u8>(), offset);
+            }
 
-            executor.AddOutsideRpCommand([view = constantBuffer.view, data, offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
-                std::scoped_lock lock{view};
-                commandBuffer.updateBuffer<u32>(view.bufferDelegate->buffer->GetBacking(), view->view->offset + offset, vk::ArrayProxy(1, &data));
+            executor.AddOutsideRpCommand([constantBufferView, data, offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
+                std::scoped_lock lock{constantBufferView};
+                commandBuffer.updateBuffer<u32>(constantBufferView->buffer->GetBacking(), constantBufferView->view->offset + offset, vk::ArrayProxy(1, &data));
             });
         }
 
@@ -2583,6 +2575,7 @@ namespace skyline::gpu::interconnect {
       public:
         template<bool IsIndexed>
         void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
+            // Draw state validation
             ValidatePrimitiveRestartState();
 
             // Shader + Binding Setup
