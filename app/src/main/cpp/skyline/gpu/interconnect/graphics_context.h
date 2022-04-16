@@ -698,7 +698,7 @@ namespace skyline::gpu::interconnect {
             return constantBufferSelector;
         }
 
-        void ConstantBufferUpdate(u32 data, u32 offset) {
+        void ConstantBufferUpdate(std::vector<u32> data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector().value()};
             auto& constantBufferView{constantBuffer.view};
             {
@@ -708,9 +708,9 @@ namespace skyline::gpu::interconnect {
                 constantBufferView.Write(span<u32>(data).cast<u8>(), offset);
             }
 
-            executor.AddOutsideRpCommand([constantBufferView, data, offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
+            executor.AddOutsideRpCommand([constantBufferView, data = std::move(data), offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
                 std::scoped_lock lock{constantBufferView};
-                commandBuffer.updateBuffer<u32>(constantBufferView->buffer->GetBacking(), constantBufferView->view->offset + offset, vk::ArrayProxy(1, &data));
+                commandBuffer.updateBuffer<u32>(constantBufferView->buffer->GetBacking(), constantBufferView->view->offset + offset, vk::ArrayProxy(static_cast<u32>(data.size()), data.data()));
             });
         }
 

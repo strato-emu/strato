@@ -41,6 +41,27 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         bool redundant{registers.raw[method] == argument};
         registers.raw[method] = argument;
 
+        if (batchConstantBufferUpdate.Active()) {
+            switch (method) {
+                // Add to the batch constant buffer update buffer
+                // Return early here so that any code below can rely on the fact that any cbuf updates will always be the first of a batch
+                #define CBUF_UPDATE_CALLBACKS(z, index, data_)                \
+                ENGINE_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, { \
+                    batchConstantBufferUpdate.buffer.push_back(data);         \
+                    registers.constantBufferUpdate->offset += 4;              \
+                    return;                                                   \
+                })
+
+                BOOST_PP_REPEAT(16, CBUF_UPDATE_CALLBACKS, 0)
+                #undef CBUF_UPDATE_CALLBACKS
+                default:
+                    // When a method other than constant buffer update is called submit our submit the previously built-up update as a batch
+                    context.ConstantBufferUpdate(std::move(batchConstantBufferUpdate.buffer), batchConstantBufferUpdate.startOffset);
+                    batchConstantBufferUpdate.Reset();
+                    break; // Continue on here to handle the actual method
+            }
+        }
+
         if (!redundant) {
             switch (method) {
                 ENGINE_STRUCT_CASE(mme, shadowRamControl, {
@@ -651,10 +672,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.raw[0xD00] = 1;
             })
 
-            #define CBUF_UPDATE_CALLBACKS(z, index, data_)                                  \
-            ENGINE_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, {                   \
-                context.ConstantBufferUpdate(data, registers.constantBufferUpdate->offset); \
-                registers.constantBufferUpdate->offset += 4;                                \
+            // Begin a batch constant buffer update, this case will never be reached if a batch update is currently active
+            #define CBUF_UPDATE_CALLBACKS(z, index, data_)                                      \
+            ENGINE_STRUCT_ARRAY_CASE(constantBufferUpdate, data, index, {                       \
+                batchConstantBufferUpdate.startOffset = registers.constantBufferUpdate->offset; \
+                batchConstantBufferUpdate.buffer.push_back(data);                               \
+                registers.constantBufferUpdate->offset += 4;                                    \
             })
 
             BOOST_PP_REPEAT(16, CBUF_UPDATE_CALLBACKS, 0)

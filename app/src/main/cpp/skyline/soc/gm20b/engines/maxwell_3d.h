@@ -22,6 +22,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         gpu::interconnect::GraphicsContext context;
         Inline2MemoryBackend i2m;
 
+        struct BatchConstantBufferUpdateState {
+            std::vector<u32> buffer;
+            u32 startOffset{std::numeric_limits<u32>::max()};
+
+            bool Active() {
+                return startOffset != std::numeric_limits<u32>::max();
+            }
+
+            void Reset() {
+                buffer.clear();
+                startOffset = std::numeric_limits<u32>::max();
+            }
+        } batchConstantBufferUpdate; //!< Holds state for updating constant buffer data in a batch rather than word by word
+
         /**
          * @brief Calls the appropriate function corresponding to a certain method with the supplied argument
          */
