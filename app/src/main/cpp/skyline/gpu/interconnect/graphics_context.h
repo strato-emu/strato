@@ -631,7 +631,7 @@ namespace skyline::gpu::interconnect {
             template<typename T>
             void Write(span<T> buf, size_t offset) {
                 std::scoped_lock lock{view};
-                view.Write(buf.template cast<u8>(), offset, true);
+                view.Write(buf.template cast<u8>(), offset);
             }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
@@ -700,11 +700,6 @@ namespace skyline::gpu::interconnect {
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
                 view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
-                {
-                    std::scoped_lock lock{*view};
-                    view->bufferDelegate->buffer->SynchronizeHost(false);
-                }
-
                 constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
             }
 
@@ -715,11 +710,6 @@ namespace skyline::gpu::interconnect {
         void ConstantBufferUpdate(std::vector<u32> data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector().value()};
             constantBuffer.Write<u32>(data, offset);
-
-            executor.AddOutsideRpCommand([constantBufferView = constantBuffer.view, data = std::move(data), offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
-                std::scoped_lock lock{constantBufferView};
-                commandBuffer.updateBuffer<u32>(constantBufferView->buffer->GetBacking(), constantBufferView->view->offset + offset, vk::ArrayProxy(static_cast<u32>(data.size()), data.data()));
-            });
         }
 
         /* Shader Program */
