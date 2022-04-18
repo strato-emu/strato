@@ -69,7 +69,7 @@ namespace skyline::gpu {
          */
         struct ShaderModuleState {
             std::shared_ptr<ShaderProgram> program;
-            Shader::Backend::Bindings bindings;
+            Shader::Backend::Bindings bindings; //!< The bindings prior to the shader being compiled
             Shader::RuntimeInfo runtimeInfo;
 
             bool operator==(const ShaderModuleState &) const;
@@ -79,7 +79,14 @@ namespace skyline::gpu {
             constexpr size_t operator()(const ShaderModuleState &state) const;
         };
 
-        std::unordered_map<ShaderModuleState, vk::raii::ShaderModule, ShaderModuleStateHash> shaderModuleCache; //!< A map from shader module state to the corresponding Vulkan shader module
+        struct ShaderModule {
+            vk::raii::ShaderModule vkModule;
+            Shader::Backend::Bindings bindings; //!< The bindings after the shader has been compiled
+
+            ShaderModule(const vk::raii::Device& device, const vk::ShaderModuleCreateInfo& createInfo, Shader::Backend::Bindings bindings);
+        };
+
+        std::unordered_map<ShaderModuleState, ShaderModule, ShaderModuleStateHash> shaderModuleCache; //!< A map from shader module state to the corresponding Vulkan shader module
 
       public:
         ShaderManager(const DeviceState &state, GPU &gpu);

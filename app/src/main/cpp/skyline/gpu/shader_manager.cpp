@@ -235,7 +235,7 @@ namespace skyline::gpu {
 
         #define RIH(member) boost::hash_combine(hash, state.runtimeInfo.member)
 
-        hash = XXH64(state.runtimeInfo.generic_input_types.data(), state.runtimeInfo.generic_input_types.size() * sizeof(u32), hash);
+        hash = XXH64(state.runtimeInfo.generic_input_types.data(), state.runtimeInfo.generic_input_types.size() * sizeof(Shader::AttributeType), hash);
         hash = XXH64(&state.runtimeInfo.previous_stage_stores.mask, sizeof(state.runtimeInfo.previous_stage_stores.mask), hash);
         RIH(convert_depth_mode);
         RIH(force_early_z);
@@ -255,11 +255,18 @@ namespace skyline::gpu {
         return hash;
     }
 
-    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
-        auto it{shaderModuleCache.find(ShaderModuleState{program, bindings, runtimeInfo})};
-        if (it != shaderModuleCache.end())
-            return *it->second;
+    ShaderManager::ShaderModule::ShaderModule(const vk::raii::Device &device, const vk::ShaderModuleCreateInfo &createInfo, Shader::Backend::Bindings bindings) : vkModule(device, createInfo), bindings(bindings) {}
 
+    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
+        ShaderModuleState shaderModuleState{program, bindings, runtimeInfo};
+        auto it{shaderModuleCache.find(shaderModuleState)};
+        if (it != shaderModuleCache.end()) {
+            const auto &entry{it->second};
+            bindings = entry.bindings;
+            return *entry.vkModule;
+        }
+
+        // Note: EmitSPIRV will change bindings so we explicitly have pre/post emit bindings
         auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program->program, bindings)};
 
         vk::ShaderModuleCreateInfo createInfo{
@@ -267,7 +274,7 @@ namespace skyline::gpu {
             .codeSize = spirv.size() * sizeof(u32),
         };
 
-        auto shaderModule{shaderModuleCache.try_emplace(ShaderModuleState{program, bindings, runtimeInfo}, gpu.vkDevice, createInfo)};
-        return *shaderModule.first->second;
+        auto shaderModule{shaderModuleCache.try_emplace(shaderModuleState, gpu.vkDevice, createInfo, bindings)};
+        return *(shaderModule.first->second.vkModule);
     }
 }
