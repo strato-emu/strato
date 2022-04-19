@@ -1726,19 +1726,19 @@ namespace skyline::gpu::interconnect {
             }
         }
 
-        BufferView GetVertexBuffer(size_t index) {
+        VertexBuffer *GetVertexBuffer(size_t index) {
             auto &vertexBuffer{vertexBuffers.at(index)};
             if (vertexBuffer.start > vertexBuffer.end || vertexBuffer.start == 0 || vertexBuffer.end == 0)
                 return nullptr;
             else if (vertexBuffer.view)
-                return vertexBuffer.view;
+                return &vertexBuffer;
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(vertexBuffer.start, (vertexBuffer.end + 1) - vertexBuffer.start)};
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
             vertexBuffer.view = gpu.buffer.FindOrCreate(mappings.front(), executor.cycle);
-            return vertexBuffer.view;
+            return &vertexBuffer;
         }
 
         /* Input Assembly */
@@ -2619,12 +2619,12 @@ namespace skyline::gpu::interconnect {
             boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
 
             for (u32 index{}; index < maxwell3d::VertexBufferCount; index++) {
-                auto vertexBufferView{GetVertexBuffer(index)};
-                if (vertexBufferView) {
-                    auto &vertexBuffer{vertexBuffers[index]};
-                    vertexBindingDescriptions.push_back(vertexBuffer.bindingDescription);
-                    if (vertexBuffer.bindingDescription.inputRate == vk::VertexInputRate::eInstance)
-                        vertexBindingDivisorsDescriptions.push_back(vertexBuffer.bindingDivisorDescription);
+                auto vertexBuffer{GetVertexBuffer(index)};
+                if (vertexBuffer) {
+                    auto &vertexBufferView{vertexBuffer->view};
+                    vertexBindingDescriptions.push_back(vertexBuffer->bindingDescription);
+                    if (vertexBuffer->bindingDescription.inputRate == vk::VertexInputRate::eInstance)
+                        vertexBindingDivisorsDescriptions.push_back(vertexBuffer->bindingDivisorDescription);
 
                     std::scoped_lock vertexBufferLock(vertexBufferView);
                     vertexBufferView.RegisterUsage([handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
