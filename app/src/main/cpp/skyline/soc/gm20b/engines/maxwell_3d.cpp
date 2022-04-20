@@ -618,7 +618,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             ENGINE_CASE(drawVertexCount, {
-                context.DrawVertex(drawVertexCount, *registers.drawVertexFirst);
+                if (context.needsQuadConversion)
+                    context.DrawIndexed(drawVertexCount, *registers.drawVertexFirst, 0);
+                else
+                    context.DrawVertex(drawVertexCount, *registers.drawVertexFirst);
             })
 
             ENGINE_CASE(drawIndexCount, {

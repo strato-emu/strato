@@ -15,6 +15,7 @@
 #include "command_executor.h"
 #include "types/tsc.h"
 #include "types/tic.h"
+#include "conversion/quads.h"
 
 namespace skyline::gpu::interconnect {
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
@@ -1582,6 +1583,25 @@ namespace skyline::gpu::interconnect {
         std::array<VertexAttribute, maxwell3d::VertexAttributeCount> vertexAttributes{};
 
       public:
+        bool needsQuadConversion{}; //!< Whether the current primitive topology is quads and needs conversion to triangles
+
+      private:
+        std::shared_ptr<Buffer> quadListConversionBuffer{}; //!< Index buffer used for QuadList conversion
+
+        /**
+         * @brief Retrieves an index buffer for converting a non-indexed quad list to a triangle list
+         * @result A tuple containing a view over the index buffer, the index type and the index count
+         */
+        std::tuple<BufferView, vk::IndexType, u32> GetQuadListConversionBuffer(u32 count) {
+            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize<u32>(count)};
+            if (!quadListConversionBuffer || quadListConversionBuffer->GetBackingSpan().size_bytes() < size) {
+                quadListConversionBuffer = std::make_shared<Buffer>(gpu, size);
+                conversion::quads::GenerateQuadListConversionBuffer(quadListConversionBuffer->GetBackingSpan().cast<u32>().data(), count);
+            }
+            return {quadListConversionBuffer->GetView(0, size), vk::IndexType::eUint32, conversion::quads::GetIndexCount(count)};
+        }
+
+      public:
         void SetVertexBufferStride(u32 index, u32 stride) {
             vertexBuffers[index].bindingDescription.stride = stride;
         }
@@ -1774,27 +1794,29 @@ namespace skyline::gpu::interconnect {
 
       public:
         void SetPrimitiveTopology(maxwell3d::PrimitiveTopology topology) {
-            auto[vkTopology, shaderTopology] = [topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology> {
+            auto[vkTopology, shaderTopology, isQuad] = [topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology, bool> {
                 using MaxwellTopology = maxwell3d::PrimitiveTopology;
                 using VkTopology = vk::PrimitiveTopology;
                 using ShaderTopology = ShaderCompiler::InputTopology;
                 switch (topology) {
                     // @fmt:off
 
-                    case MaxwellTopology::PointList: return {VkTopology::ePointList, ShaderTopology::Points};
+                    case MaxwellTopology::PointList: return {VkTopology::ePointList, ShaderTopology::Points, false};
 
-                    case MaxwellTopology::LineList: return {VkTopology::eLineList, ShaderTopology::Lines};
-                    case MaxwellTopology::LineStrip: return {VkTopology::eLineStrip, ShaderTopology::Lines};
-                    case MaxwellTopology::LineListWithAdjacency: return {VkTopology::eLineListWithAdjacency, ShaderTopology::LinesAdjacency};
-                    case MaxwellTopology::LineStripWithAdjacency: return {VkTopology::eLineStripWithAdjacency, ShaderTopology::LinesAdjacency};
+                    case MaxwellTopology::LineList: return {VkTopology::eLineList, ShaderTopology::Lines, false};
+                    case MaxwellTopology::LineStrip: return {VkTopology::eLineStrip, ShaderTopology::Lines, false};
+                    case MaxwellTopology::LineListWithAdjacency: return {VkTopology::eLineListWithAdjacency, ShaderTopology::LinesAdjacency, false};
+                    case MaxwellTopology::LineStripWithAdjacency: return {VkTopology::eLineStripWithAdjacency, ShaderTopology::LinesAdjacency, false};
 
-                    case MaxwellTopology::TriangleList: return {VkTopology::eTriangleList, ShaderTopology::Triangles};
-                    case MaxwellTopology::TriangleStrip: return {VkTopology::eTriangleStrip, ShaderTopology::Triangles};
-                    case MaxwellTopology::TriangleFan: return {VkTopology::eTriangleFan, ShaderTopology::Triangles};
-                    case MaxwellTopology::TriangleListWithAdjacency: return {VkTopology::eTriangleListWithAdjacency, ShaderTopology::TrianglesAdjacency};
-                    case MaxwellTopology::TriangleStripWithAdjacency: return {VkTopology::eTriangleStripWithAdjacency, ShaderTopology::TrianglesAdjacency};
+                    case MaxwellTopology::TriangleList: return {VkTopology::eTriangleList, ShaderTopology::Triangles, false};
+                    case MaxwellTopology::TriangleStrip: return {VkTopology::eTriangleStrip, ShaderTopology::Triangles, false};
+                    case MaxwellTopology::TriangleFan: return {VkTopology::eTriangleFan, ShaderTopology::Triangles, false};
+                    case MaxwellTopology::TriangleListWithAdjacency: return {VkTopology::eTriangleListWithAdjacency, ShaderTopology::TrianglesAdjacency, false};
+                    case MaxwellTopology::TriangleStripWithAdjacency: return {VkTopology::eTriangleStripWithAdjacency, ShaderTopology::TrianglesAdjacency, false};
 
-                    case MaxwellTopology::PatchList: return {VkTopology::ePatchList, ShaderTopology::Triangles};
+                    case MaxwellTopology::QuadList: return {VkTopology::eTriangleList, ShaderTopology::Triangles, true};
+
+                    case MaxwellTopology::PatchList: return {VkTopology::ePatchList, ShaderTopology::Triangles, false};
 
                     // @fmt:on
 
@@ -1804,6 +1826,7 @@ namespace skyline::gpu::interconnect {
             }();
 
             inputAssemblyState.topology = vkTopology;
+            needsQuadConversion = isQuad;
             UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
         }
 
@@ -2595,6 +2618,18 @@ namespace skyline::gpu::interconnect {
             auto boundIndexBuffer{std::make_shared<BoundIndexBuffer>()};
             if constexpr (IsIndexed) {
                 auto indexBufferView{GetIndexBuffer(count)};
+
+                if (needsQuadConversion) {
+                    if (indexBufferView) {
+                        throw exception("Indexed quad conversion is not supported");
+                    } else {
+                        auto[bufferView, indexType, indexCount] = GetQuadListConversionBuffer(count);
+                        indexBufferView = bufferView;
+                        indexBuffer.type = indexType;
+                        count = indexCount;
+                    }
+                }
+
                 {
                     std::scoped_lock lock(indexBufferView);
 

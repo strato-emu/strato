@@ -171,6 +171,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/shader_manager.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_nodes.cpp
+        ${source_DIR}/skyline/gpu/interconnect/conversion/quads.cpp
         ${source_DIR}/skyline/soc/smmu.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
         ${source_DIR}/skyline/soc/host1x/command_fifo.cpp

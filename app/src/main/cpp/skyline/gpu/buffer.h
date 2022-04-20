@@ -87,6 +87,16 @@ namespace skyline::gpu {
             return backing.vkBuffer;
         }
 
+        /**
+         * @return A span over the backing of this buffer
+         * @note This operation **must** be performed only on host-only buffers since synchronization is handled internally for guest-backed buffers
+         */
+        span<u8> GetBackingSpan() {
+            if (guest)
+                throw exception("Attempted to get a span of a guest-backed buffer");
+            return span<u8>(backing);
+        }
+
         Buffer(GPU &gpu, GuestBuffer guest);
 
         /**
