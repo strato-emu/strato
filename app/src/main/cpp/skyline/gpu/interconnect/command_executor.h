@@ -19,10 +19,10 @@ namespace skyline::gpu::interconnect {
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
-        std::unordered_set<Texture *> syncTextures; //!< All textures that need to be synced prior to and after execution
+        std::unordered_set<Texture *> attachedTextures; //!< All textures that need to be synced prior to and after execution
 
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
-        std::unordered_set<SharedBufferDelegate> syncBuffers; //!< All buffers that need to be synced prior to and after execution
+        std::unordered_set<SharedBufferDelegate> attachedBuffers; //!< All buffers that are attached to the current execution
 
         /**
          * @return If a new render pass was created by the function or the current one was reused as it was compatible

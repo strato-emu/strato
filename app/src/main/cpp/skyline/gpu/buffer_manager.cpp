@@ -6,7 +6,39 @@
 #include "buffer_manager.h"
 
 namespace skyline::gpu {
-    BufferManager::BufferManager(GPU &gpu) : gpu(gpu) {}
+    MegaBuffer::MegaBuffer(GPU &gpu) : backing(gpu.memory.AllocateBuffer(Size)), freeRegion(backing.subspan(PAGE_SIZE)) {}
+
+    void MegaBuffer::Reset() {
+        std::scoped_lock lock{mutex};
+        freeRegion = backing.subspan(PAGE_SIZE);
+    }
+
+    vk::Buffer MegaBuffer::GetBacking() const {
+        return backing.vkBuffer;
+    }
+
+    vk::DeviceSize MegaBuffer::Push(span<u8> data, bool pageAlign) {
+        std::scoped_lock lock{mutex};
+
+        if (data.size() > freeRegion.size())
+            throw exception("Ran out of megabuffer space! Alloc size: 0x{:X}", data.size());
+
+        if (pageAlign) {
+            // If page aligned data was requested then align the free
+            auto alignedFreeBase{util::AlignUp(static_cast<size_t>(freeRegion.data() - backing.data()), PAGE_SIZE)};
+            freeRegion = backing.subspan(alignedFreeBase);
+        }
+
+        // Allocate space for data from the free region
+        auto resultSpan{freeRegion.subspan(0, data.size())};
+        resultSpan.copy_from(data);
+
+        // Move the free region along
+        freeRegion = freeRegion.subspan(data.size());
+        return static_cast<vk::DeviceSize>(resultSpan.data() - backing.data());
+    }
+
+    BufferManager::BufferManager(GPU &gpu) : gpu(gpu), megaBuffer(gpu) {}
 
     bool BufferManager::BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer) {
         return it->guest->begin().base() < pointer;
@@ -49,13 +81,9 @@ namespace skyline::gpu {
                 highestAddress = mapping.end().base();
         }
 
-        auto newBuffer{std::make_shared<Buffer>(gpu, span<u8>(lowestAddress, highestAddress))};
+        auto newBuffer{std::make_shared<Buffer>(gpu, cycle, span<u8>(lowestAddress, highestAddress), overlaps)};
         for (auto &overlap : overlaps) {
             std::scoped_lock overlapLock{*overlap};
-
-            if (!overlap->cycle.owner_before(cycle))
-                overlap->WaitOnFence(); // We want to only wait on the fence cycle if it's not the current fence cycle
-            overlap->SynchronizeGuest(true, true); // Sync back the buffer before we destroy it
 
             buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
 

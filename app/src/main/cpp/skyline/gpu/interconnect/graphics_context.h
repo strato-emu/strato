@@ -618,10 +618,13 @@ namespace skyline::gpu::interconnect {
              * @note This must only be called when the GuestBuffer is resolved correctly
              */
             template<typename T>
-            T Read(size_t offset) const {
+            T Read(CommandExecutor &pExecutor, size_t dstOffset) const {
                 T object;
                 std::scoped_lock lock{view};
-                view.Read(span<T>(object).template cast<u8>(), offset);
+                view.Read(pExecutor.cycle, []() {
+                    // TODO: here we should trigger an execute, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
+                    Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
+                }, span<T>(object).template cast<u8>(), dstOffset);
                 return object;
             }
 
@@ -630,9 +633,26 @@ namespace skyline::gpu::interconnect {
              * @note This must only be called when the GuestBuffer is resolved correctly
              */
             template<typename T>
-            void Write(span<T> buf, size_t offset) {
+            void Write(CommandExecutor &pExecutor, MegaBuffer &megaBuffer, span<T> buf, size_t dstOffset) {
+                auto srcCpuBuf{buf.template cast<u8>()};
+
                 std::scoped_lock lock{view};
-                view.Write(buf.template cast<u8>(), offset);
+                view.Write(pExecutor.cycle, []() {
+                    // TODO: see Read()
+                    Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
+                }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, view = this->view]() {
+                    auto srcGpuOffset{megaBuffer.Push(srcCpuBuf)};
+                    auto srcGpuBuf{megaBuffer.GetBacking()};
+                    pExecutor.AddOutsideRpCommand([=](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+                        std::scoped_lock lock{view};
+                        vk::BufferCopy copyRegion{
+                            .size = srcCpuBuf.size_bytes(),
+                            .srcOffset = srcGpuOffset,
+                            .dstOffset = view->view->offset + dstOffset
+                        };
+                        commandBuffer.copyBuffer(srcGpuBuf, view->buffer->GetBacking(), copyRegion);
+                    });
+                }, srcCpuBuf, dstOffset);
             }
         };
         ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
@@ -710,7 +730,7 @@ namespace skyline::gpu::interconnect {
 
         void ConstantBufferUpdate(std::vector<u32> data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector().value()};
-            constantBuffer.Write<u32>(data, offset);
+            constantBuffer.Write<u32>(executor, gpu.buffer.megaBuffer, data, offset);
         }
 
         /* Shader Program */
@@ -869,7 +889,7 @@ namespace skyline::gpu::interconnect {
             };
 
             auto &cbuf{constantBuffers[descriptor.cbuf_index]};
-            auto ssbo{cbuf.Read<SsboDescriptor>(descriptor.cbuf_offset)};
+            auto ssbo{cbuf.Read<SsboDescriptor>(executor, descriptor.cbuf_offset)};
 
             auto mappings{channelCtx.asCtx->gmmu.TranslateRange(ssbo.iova, ssbo.size)};
             if (mappings.size() != 1)
@@ -1024,15 +1044,27 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
+
                         std::scoped_lock lock(view);
-                        view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
-                            *descriptor = vk::DescriptorBufferInfo{
-                                .buffer = buffer->GetBacking(),
-                                .offset = view.offset,
-                                .range = view.size,
+                        if (auto megaBufferOffset{view.AcquireMegaBuffer()}) {
+                            // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
+                            bufferDescriptors[bufferIndex] = vk::DescriptorBufferInfo{
+                                .buffer = gpu.buffer.megaBuffer.GetBacking(),
+                                .offset = megaBufferOffset,
+                                .range = view->view->size
                             };
-                        });
+                        } else {
+                            view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                                *descriptor = vk::DescriptorBufferInfo{
+                                    .buffer = buffer->GetBacking(),
+                                    .offset = view.offset,
+                                    .range = view.size,
+                                };
+                            });
+                        }
+
                         executor.AttachBuffer(view);
+                        bufferIndex++;
                     }
                 }
 
@@ -1053,7 +1085,9 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto view{GetSsboViewFromDescriptor(storageBuffer, pipelineStage.constantBuffers)};
+
                         std::scoped_lock lock{view};
+                        view->buffer->MarkGpuDirty(); // SSBOs may be written to by the GPU so mark as dirty (will also disable megabuffering)
                         view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             *descriptor = vk::DescriptorBufferInfo{
                                 .buffer = buffer->GetBacking(),
@@ -1105,7 +1139,7 @@ namespace skyline::gpu::interconnect {
                                 u32 textureIndex : 20;
                                 u32 samplerIndex : 12;
                             };
-                        } handle{constantBuffer.Read<u32>(texture.cbuf_offset)};
+                        } handle{constantBuffer.Read<u32>(executor, texture.cbuf_offset)};
 
                         auto sampler{GetSampler(handle.samplerIndex)};
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
@@ -2634,10 +2668,16 @@ namespace skyline::gpu::interconnect {
                     std::scoped_lock lock(indexBufferView);
 
                     boundIndexBuffer->type = indexBuffer.type;
-                    indexBufferView.RegisterUsage([=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
-                        boundIndexBuffer->handle = buffer->GetBacking();
-                        boundIndexBuffer->offset = view.offset;
-                    });
+                    if (auto megaBufferOffset{indexBufferView.AcquireMegaBuffer()}) {
+                        // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
+                        boundIndexBuffer->handle = gpu.buffer.megaBuffer.GetBacking();
+                        boundIndexBuffer->offset = megaBufferOffset;
+                    } else {
+                        indexBufferView.RegisterUsage([=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            boundIndexBuffer->handle = buffer->GetBacking();
+                            boundIndexBuffer->offset = view.offset;
+                        });
+                    }
 
                     executor.AttachBuffer(indexBufferView);
                 }
@@ -2662,11 +2702,17 @@ namespace skyline::gpu::interconnect {
                         vertexBindingDivisorsDescriptions.push_back(vertexBuffer->bindingDivisorDescription);
 
                     std::scoped_lock vertexBufferLock(vertexBufferView);
-                    vertexBufferView.RegisterUsage([handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
-                        *handle = buffer->GetBacking();
-                        *offset = view.offset;
-                    });
 
+                    if (auto megaBufferOffset{vertexBufferView.AcquireMegaBuffer()}) {
+                        // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
+                        boundVertexBuffers->handles[index] = gpu.buffer.megaBuffer.GetBacking();
+                        boundVertexBuffers->offsets[index] = megaBufferOffset;
+                    } else {
+                        vertexBufferView.RegisterUsage([handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            *handle = buffer->GetBacking();
+                            *offset = view.offset;
+                        });
+                    }
                     executor.AttachBuffer(vertexBufferView);
                 }
             }

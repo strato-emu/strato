@@ -32,6 +32,16 @@ namespace skyline::gpu {
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
 
+        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{0x10'000}; //!< The threshold at which the buffer is considered to be too large to be megabuffered (64KiB)
+
+        bool megaBufferingEnabled{}; //!< If megabuffering can be used for this buffer at the current moment, is set based on MegaBufferingDisableThreshold and dirty state
+        vk::DeviceSize megaBufferOffset{}; //!< The offset into the megabuffer where the current buffer contents are stored, 0 if there is no up-to-date megabuffer entry for the current buffer contents
+
+        /**
+         * @brief Resets megabuffering state based off of the buffer size
+         */
+        void TryEnableMegaBuffering();
+
       public:
         /**
          * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
@@ -100,6 +110,13 @@ namespace skyline::gpu {
         Buffer(GPU &gpu, GuestBuffer guest);
 
         /**
+         * @brief Creates a Buffer that is pre-synchronised with the contents of the input buffers
+         * @param pCycle The FenceCycle associated with the current workload, utilised for synchronising GPU dirty buffers
+         * @param srcBuffers Span of overlapping source buffers
+         */
+        Buffer(GPU &gpu, const std::shared_ptr<FenceCycle> &pCycle, GuestBuffer guest, span<std::shared_ptr<Buffer>> srcBuffers);
+
+        /**
          * @brief Creates a host-only Buffer which isn't backed by any guest buffer
          * @note The created buffer won't have a mirror so any operations cannot depend on a mirror existing
          */
@@ -145,6 +162,13 @@ namespace skyline::gpu {
         void WaitOnFence();
 
         /**
+         * @brief Polls a fence cycle if it exists and resets it if signalled
+         * @return Whether the fence cycle was signalled
+         * @note The buffer **must** be locked prior to calling this
+         */
+        bool PollFence();
+
+        /**
          * @brief Synchronizes the host buffer with the guest
          * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
          * @note The buffer **must** be locked prior to calling this
@@ -162,10 +186,10 @@ namespace skyline::gpu {
         /**
          * @brief Synchronizes the guest buffer with the host buffer
          * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
-         * @param skipFence If true, waiting on the currently attached fence will be skipped
+         * @param nonBlocking If true, the call will return immediately if the fence is not signalled, skipping the sync
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeGuest(bool skipTrap = false, bool skipFence = false);
+        void SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer when the FenceCycle is signalled
@@ -176,19 +200,40 @@ namespace skyline::gpu {
 
         /**
          * @brief Reads data at the specified offset in the buffer
+         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          */
-        void Read(span<u8> data, vk::DeviceSize offset);
+        void Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
          * @brief Writes data at the specified offset in the buffer
+         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
+         * @param gpuCopyCallback Callback to perform a GPU-side copy for this Write
          */
-        void Write(span<u8> data, vk::DeviceSize offset);
+        void Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
          * @note The buffer **must** be locked prior to calling this
          */
         BufferView GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format = {});
+
+        /**
+         * @brief Pushes the current buffer contents into the megabuffer (if necessary)
+         * @return The offset of the pushed buffer contents in the megabuffer
+         * @note The buffer **must** be locked prior to calling this
+         * @note This will only push into the megabuffer when there have been modifications after the previous acquire, otherwise the previous offset will be reused
+         * @note An implicit CPU -> GPU sync will be performed when calling this, an immediate GPU -> CPU sync will also be attempted if the buffer is GPU dirty in the hope that megabuffering can be reenabled
+         */
+        vk::DeviceSize AcquireMegaBuffer();
+
+        /**
+         * @brief Forces the buffer contents to be pushed into the megabuffer on the next AcquireMegaBuffer call
+         * @note The buffer **must** be locked prior to calling this
+         * @note This **must** be called after any modifications of the backing buffer data
+         */
+        void InvalidateMegaBuffer();
     };
 
     /**
@@ -254,13 +299,23 @@ namespace skyline::gpu {
         /**
          * @brief Reads data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
+         * @note See Buffer::Read
          */
-        void Read(span<u8> data, vk::DeviceSize offset) const;
+        void Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const;
 
         /**
          * @brief Writes data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
+         * @note See Buffer::Write
          */
-        void Write(span<u8> data, vk::DeviceSize offset) const;
+        void Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const;
+
+        /**
+         * @brief Pushes the current buffer contents into the megabuffer (if necessary)
+         * @return The offset of the pushed buffer contents in the megabuffer
+         * @note The view **must** be locked prior to calling this
+         * @note See Buffer::AcquireMegaBuffer
+         */
+        vk::DeviceSize AcquireMegaBuffer() const;
     };
 }

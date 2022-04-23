@@ -30,18 +30,20 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::AttachTexture(TextureView *view) {
         auto texture{view->texture.get()};
-        if (!syncTextures.contains(texture)) {
+        if (!attachedTextures.contains(texture)) {
             texture->WaitOnFence();
             texture->cycle = cycle;
-            syncTextures.emplace(texture);
+            attachedTextures.emplace(texture);
         }
         cycle->AttachObject(view->shared_from_this());
     }
 
     void CommandExecutor::AttachBuffer(BufferView &view) {
-        if (!syncBuffers.contains(view.bufferDelegate)) {
+        view->buffer->SynchronizeHost();
+
+        if (!attachedBuffers.contains(view.bufferDelegate)) {
             view.AttachCycle(cycle);
-            syncBuffers.emplace(view.bufferDelegate);
+            attachedBuffers.emplace(view.bufferDelegate);
         }
     }
 
@@ -142,16 +144,13 @@ namespace skyline::gpu::interconnect {
                     .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
                 });
 
-                for (auto texture : syncTextures) {
+                for (auto texture : attachedTextures) {
                     texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
                     texture->MarkGpuDirty();
                 }
 
-                for (const auto& delegate : syncBuffers) {
-                    delegate->buffer->SynchronizeHostWithCycle(cycle, true);
-                    delegate->buffer->MarkGpuDirty();
+                for (const auto& delegate : attachedBuffers)
                     delegate->usageCallback = nullptr;
-                }
 
                 vk::RenderPass lRenderPass;
                 u32 subpassIndex;
@@ -182,11 +181,16 @@ namespace skyline::gpu::interconnect {
                 commandBuffer.end();
                 gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
 
+                for (const auto& delegate : attachedBuffers)
+                    delegate->buffer->InvalidateMegaBuffer();
+
                 nodes.clear();
-                syncTextures.clear();
-                syncBuffers.clear();
+                attachedTextures.clear();
+                attachedBuffers.clear();
 
                 cycle = activeCommandBuffer.Reset();
+
+                gpu.buffer.megaBuffer.Reset();
             }
         }
     }
