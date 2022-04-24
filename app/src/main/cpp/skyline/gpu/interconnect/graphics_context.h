@@ -2897,7 +2897,7 @@ namespace skyline::gpu::interconnect {
                 cycle->AttachObject(drawStorage);
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
-            }, {}, activeColorRenderTargets, depthRenderTargetView);
+            }, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
         }
 
         void DrawVertex(u32 vertexCount, u32 firstVertex) {
