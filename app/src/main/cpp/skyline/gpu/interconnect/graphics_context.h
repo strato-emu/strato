@@ -1170,6 +1170,7 @@ namespace skyline::gpu::interconnect {
                 std::move(shaderModules),
                 std::move(shaderStages),
                 vk::raii::DescriptorSetLayout(gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
+                    .flags = gpu.traits.supportsPushDescriptors ? vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR : vk::DescriptorSetLayoutCreateFlags{},
                     .pBindings = layoutBindings.data(),
                     .bindingCount = static_cast<u32>(layoutBindings.size()),
                 }),
@@ -2847,7 +2848,7 @@ namespace skyline::gpu::interconnect {
             auto fenceStorage{std::make_shared<FenceStorage>(std::move(descriptorSet))};
 
             // Submit Draw
-            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, drawStorage = std::move(drawStorage), fenceStorage = std::move(fenceStorage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, drawStorage = std::move(drawStorage), fenceStorage = std::move(fenceStorage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, supportsPushDescriptors = gpu.traits.supportsPushDescriptors, pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
                     vk::PipelineVertexInputStateCreateInfo{
                         .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
@@ -2909,8 +2910,15 @@ namespace skyline::gpu::interconnect {
                     }
                 }
 
-                vkDevice.updateDescriptorSets(**drawStorage->descriptorSetWrites, nullptr);
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, fenceStorage->descriptorSet, nullptr);
+                if (supportsPushDescriptors) {
+                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, **drawStorage->descriptorSetWrites);
+                } else {
+                    auto descriptorSet{gpu.descriptor.AllocateSet(*drawStorage->descriptorSetLayout)};
+                    for (auto &descriptorSetWrite : **drawStorage->descriptorSetWrites)
+                        descriptorSetWrite.dstSet = descriptorSet;
+                    vkDevice.updateDescriptorSets(**drawStorage->descriptorSetWrites, nullptr);
+                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, descriptorSet, nullptr);
+                }
 
                 if constexpr (IsIndexed) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
