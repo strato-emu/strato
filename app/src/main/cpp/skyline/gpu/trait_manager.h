@@ -46,7 +46,9 @@ namespace skyline::gpu {
             bool needsIndividualTextureBindingWrites{}; //!< [Adreno Proprietary] A bug that requires descriptor set writes for VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER to be done individually with descriptorCount = 1 rather than batched
             bool vkImageMutableFormatCostly{}; //!< [Adreno Proprietary/Freedreno] An indication that VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT is costly and should not be enabled unless absolutely necessary (Disables UBWC on Adreno GPUs)
             bool brokenDescriptorAliasing{}; //!< [Adreno Proprietary] A bug that causes alised descriptor sets to be incorrectly interpreted by the shader compiler leading to it buggering up LLVM function argument types and crashing
+
             u32 maxSubpassCount{std::numeric_limits<u32>::max()}; //!< The maximum amount of subpasses within a renderpass, this is limited to 64 on older Adreno proprietary drivers
+            vk::QueueGlobalPriorityEXT maximumGlobalPriority{vk::QueueGlobalPriorityEXT::eMedium}; //!< The highest allowed global priority of the queue, drivers will not allow higher priorities to be set on queues
 
             QuirkManager() = default;
 

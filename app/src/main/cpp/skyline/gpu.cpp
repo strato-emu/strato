@@ -203,7 +203,7 @@ namespace skyline::gpu {
                 throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
             }(),
             vk::DeviceQueueGlobalPriorityCreateInfoEXT{
-                .globalPriority = vk::QueueGlobalPriorityEXT::eHigh,
+                .globalPriority = traits.quirks.maxGlobalPriority,
             }
         };
 
