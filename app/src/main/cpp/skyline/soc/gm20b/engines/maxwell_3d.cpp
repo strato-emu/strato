@@ -177,6 +177,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetPolygonModeFront(front);
                 })
 
+                ENGINE_CASE(tessellationPatchSize, {
+                    context.SetTessellationPatchSize(tessellationPatchSize);
+                })
+
+                ENGINE_CASE(tessellationMode, {
+                    context.SetTessellationMode(tessellationMode.primitive, tessellationMode.spacing, tessellationMode.winding);
+                })
+
                 ENGINE_STRUCT_CASE(depthBiasEnable, point, {
                     context.SetDepthBiasPointEnabled(point);
                 })

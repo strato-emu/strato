@@ -27,6 +27,35 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SyncpointAction) == sizeof(u32));
 
+    /**
+     * @brief The input primitive for a tessellated surface
+     */
+    enum class TessellationPrimitive : u8 {
+        Isoline = 0,
+        Triangle = 1,
+        Quad = 2,
+    };
+
+    /**
+     * @brief The spacing between tessellated vertices during primitive generation
+     */
+    enum class TessellationSpacing : u8 {
+        Equal = 0,
+        FractionalOdd = 1,
+        FractionalEven = 2,
+    };
+
+    /**
+     * @brief The winding order and connectivity of tessellated primitives during primitive generation
+     */
+    enum class TessellationWinding : u8 {
+        CounterClockwiseAndNotConnected = 0, //!< Counter-clockwise, not connected
+        ConnectedIsoline = 1, //!< Counter-clockwise, connected (Only for Isolines)
+        ClockwiseTriangle = 1, //<! Clockwise, not connected (Only for Triangles)
+        ConnectedTriangle = 2, //!< Counter-clockwise, connected (Only for Triangles)
+        ClockwiseConnectedTriangle = 3, //!< Clockwise, connected (Only for Triangles)
+    };
+
     constexpr static size_t RenderTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
 
     struct RenderTargetTileMode {

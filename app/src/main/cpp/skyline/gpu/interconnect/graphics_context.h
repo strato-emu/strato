@@ -1868,6 +1868,86 @@ namespace skyline::gpu::interconnect {
             inputAssemblyState.primitiveRestartEnable = enable;
         }
 
+        /* Tessellation */
+      private:
+        vk::PipelineTessellationStateCreateInfo tessellationState{};
+        maxwell3d::TessellationPrimitive tessellationPrimitive{};
+        maxwell3d::TessellationSpacing tessellationSpacing{};
+        bool isTessellationWindingClockwise{};
+
+        bool IsTessellationModeClockwise(maxwell3d::TessellationPrimitive primitive, maxwell3d::TessellationWinding winding) {
+            if (primitive == maxwell3d::TessellationPrimitive::Isoline)
+                return false;
+
+            switch (winding) {
+                case maxwell3d::TessellationWinding::CounterClockwiseAndNotConnected:
+                case maxwell3d::TessellationWinding::ConnectedTriangle:
+                    return false;
+
+                case maxwell3d::TessellationWinding::ClockwiseTriangle:
+                case maxwell3d::TessellationWinding::ClockwiseConnectedTriangle:
+                    return true;
+
+                default:
+                    throw exception("Unimplemented Maxwell3D Tessellation Winding: {}", winding);
+            }
+        }
+
+      public:
+        void SetTessellationPatchSize(u32 patchControlPoints) {
+            tessellationState.patchControlPoints = patchControlPoints;
+        }
+
+        void SetTessellationMode(maxwell3d::TessellationPrimitive primitive, maxwell3d::TessellationSpacing spacing, maxwell3d::TessellationWinding winding) {
+            if (tessellationPrimitive != primitive) {
+                auto shaderPrimitive{[](maxwell3d::TessellationPrimitive primitive) -> ShaderCompiler::TessPrimitive {
+                    using Primitive = maxwell3d::TessellationPrimitive;
+                    using ShaderPrimitive = ShaderCompiler::TessPrimitive;
+                    switch (primitive) {
+                        case Primitive::Isoline:
+                            return ShaderPrimitive::Isolines;
+                        case Primitive::Triangle:
+                            return ShaderPrimitive::Triangles;
+                        case Primitive::Quad:
+                            return ShaderPrimitive::Quads;
+
+                        default:
+                            throw exception("Unimplemented Maxwell3D Tessellation Primitive: {}", primitive);
+                    }
+                }(primitive)};
+
+                UpdateRuntimeInformation(runtimeInfo.tess_primitive, shaderPrimitive, maxwell3d::PipelineStage::TessellationEvaluation);
+                tessellationPrimitive = primitive;
+            }
+
+            if (tessellationSpacing != spacing) {
+                auto shaderTessellationSpacing{[](maxwell3d::TessellationSpacing spacing) -> ShaderCompiler::TessSpacing {
+                    using Spacing = maxwell3d::TessellationSpacing;
+                    using ShaderSpacing = ShaderCompiler::TessSpacing;
+                    switch (spacing) {
+                        case Spacing::Equal:
+                            return ShaderSpacing::Equal;
+                        case Spacing::FractionalEven:
+                            return ShaderSpacing::FractionalEven;
+                        case Spacing::FractionalOdd:
+                            return ShaderSpacing::FractionalOdd;
+
+                        default:
+                            throw exception("Unimplemented Maxwell3D Tessellation Spacing: {}", spacing);
+                    }
+                }(spacing)};
+
+                UpdateRuntimeInformation(runtimeInfo.tess_spacing, shaderTessellationSpacing, maxwell3d::PipelineStage::TessellationEvaluation);
+                tessellationSpacing = spacing;
+            }
+
+            bool isClockwise{IsTessellationModeClockwise(primitive, winding)};
+            if (isTessellationWindingClockwise != isClockwise) {
+                UpdateRuntimeInformation(runtimeInfo.tess_clockwise, isClockwise, maxwell3d::PipelineStage::TessellationEvaluation);
+                isTessellationWindingClockwise = isClockwise;
+            }
+        }
+
         /* Index Buffer */
       private:
         struct IndexBuffer {
@@ -2798,6 +2878,7 @@ namespace skyline::gpu::interconnect {
                     .stageCount = static_cast<u32>(shaderStages.size()),
                     .pVertexInputState = &vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
                     .pInputAssemblyState = &inputAssemblyState,
+                    .pTessellationState = &tessellationState,
                     .pViewportState = &viewportState,
                     .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
                     .pMultisampleState = &multisampleState,
