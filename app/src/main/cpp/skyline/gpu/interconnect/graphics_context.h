@@ -49,7 +49,7 @@ namespace skyline::gpu::interconnect {
         static_assert(sizeof(IOVA) == sizeof(u64));
 
       public:
-        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor), pipelineCache(gpu.vkDevice, vk::PipelineCacheCreateInfo{}) {
+        GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
             scissors.fill(DefaultScissor);
 
             u32 bindingIndex{};
@@ -849,7 +849,7 @@ namespace skyline::gpu::interconnect {
         struct ShaderProgramState {
             boost::container::static_vector<vk::ShaderModule, maxwell3d::PipelineStageCount> shaderModules; //!< Shader modules for every pipeline stage
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages; //!< Shader modules for every pipeline stage
-            vk::raii::DescriptorSetLayout descriptorSetLayout; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
+            std::vector<vk::DescriptorSetLayoutBinding> descriptorSetBindings; //!< The descriptor set layout for the pipeline (Only valid when `activeShaderStagesInfoCount` is non-zero)
 
             struct DescriptorSetWrites {
                 std::vector<vk::WriteDescriptorSet> writes; //!< The descriptor set writes for the pipeline
@@ -1169,11 +1169,7 @@ namespace skyline::gpu::interconnect {
             return {
                 std::move(shaderModules),
                 std::move(shaderStages),
-                vk::raii::DescriptorSetLayout(gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
-                    .flags = gpu.traits.supportsPushDescriptors ? vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR : vk::DescriptorSetLayoutCreateFlags{},
-                    .pBindings = layoutBindings.data(),
-                    .bindingCount = static_cast<u32>(layoutBindings.size()),
-                }),
+                {layoutBindings.begin(), layoutBindings.end()},
                 std::move(descriptorSetWrites),
             };
         }
@@ -2705,25 +2701,12 @@ namespace skyline::gpu::interconnect {
         };
 
         /* Draws */
-      private:
-        vk::raii::PipelineCache pipelineCache;
-
       public:
         template<bool IsIndexed>
         void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
             ValidatePrimitiveRestartState();
 
-            // Shader + Binding Setup
-            auto programState{CompileShaderProgramState()};
-            auto descriptorSet{gpu.descriptor.AllocateSet(*programState.descriptorSetLayout)};
-            for (auto &descriptorSetWrite : **programState.descriptorSetWrites)
-                descriptorSetWrite.dstSet = descriptorSet;
-
-            vk::raii::PipelineLayout pipelineLayout(gpu.vkDevice, vk::PipelineLayoutCreateInfo{
-                .pSetLayouts = &*programState.descriptorSetLayout,
-                .setLayoutCount = 1,
-            });
-
+            // Index Buffer Setup
             struct BoundIndexBuffer {
                 vk::Buffer handle{};
                 vk::DeviceSize offset{};
@@ -2815,7 +2798,7 @@ namespace skyline::gpu::interconnect {
                 }
             }
 
-            boost::container::static_vector<vk::PipelineColorBlendAttachmentState, maxwell3d::RenderTargetCount> blendAttachmentStates(blendState.pAttachments, blendState.pAttachments + activeColorRenderTargets.size());
+            blendState.attachmentCount = static_cast<u32>(activeColorRenderTargets.size());
 
             // Depth/Stencil Render Target Setup
             auto depthRenderTargetView{GetDepthRenderTarget()};
@@ -2825,77 +2808,59 @@ namespace skyline::gpu::interconnect {
                 executor.AttachTexture(depthRenderTargetView);
             }
 
+            // Pipeline Creation
+            vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
+                vk::PipelineVertexInputStateCreateInfo{
+                    .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
+                    .vertexBindingDescriptionCount = static_cast<u32>(vertexBindingDescriptions.size()),
+                    .pVertexAttributeDescriptions = vertexAttributesDescriptions.data(),
+                    .vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size()),
+                }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
+                    .pVertexBindingDivisors = vertexBindingDivisorsDescriptions.data(),
+                    .vertexBindingDivisorCount = static_cast<u32>(vertexBindingDivisorsDescriptions.size()),
+                }
+            };
+
+            if (!gpu.traits.supportsVertexAttributeDivisor || vertexBindingDivisorsDescriptions.empty())
+                vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
+
+            bool multiViewport{gpu.traits.supportsMultipleViewports};
+            vk::PipelineViewportStateCreateInfo viewportState{
+                .pViewports = viewports.data(),
+                .viewportCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
+                .pScissors = scissors.data(),
+                .scissorCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
+            };
+
+            auto programState{CompileShaderProgramState()};
+            auto compiledPipeline{gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
+                .shaderStages = programState.shaderStages,
+                .vertexState = vertexState,
+                .inputAssemblyState = inputAssemblyState,
+                .tessellationState = tessellationState,
+                .viewportState = viewportState,
+                .rasterizationState = rasterizerState,
+                .multisampleState = multisampleState,
+                .depthStencilState = depthState,
+                .colorBlendState = blendState,
+                .colorAttachments = activeColorRenderTargets,
+                .depthStencilAttachment = depthRenderTargetView,
+            }, programState.descriptorSetBindings)};
+
             // Draw Persistent Storage
-            struct DrawStorage {
-                vk::raii::DescriptorSetLayout descriptorSetLayout;
+            struct DrawStorage : FenceCycleDependency {
                 std::unique_ptr<ShaderProgramState::DescriptorSetWrites> descriptorSetWrites;
-                vk::raii::PipelineLayout pipelineLayout;
+                vk::DescriptorSetLayout descriptorSetLayout;
+                vk::PipelineLayout pipelineLayout;
+                vk::Pipeline pipeline;
 
-                DrawStorage(vk::raii::DescriptorSetLayout &&descriptorSetLayout, std::unique_ptr<ShaderProgramState::DescriptorSetWrites> &&descriptorSetWrites, vk::raii::PipelineLayout &&pipelineLayout) : descriptorSetLayout(std::move(descriptorSetLayout)), descriptorSetWrites(std::move(descriptorSetWrites)), pipelineLayout(std::move(pipelineLayout)) {}
+                DrawStorage(std::unique_ptr<ShaderProgramState::DescriptorSetWrites> &&descriptorSetWrites, vk::DescriptorSetLayout descriptorSetLayout, vk::PipelineLayout pipelineLayout, vk::Pipeline pipeline) : descriptorSetWrites(std::move(descriptorSetWrites)), descriptorSetLayout(descriptorSetLayout), pipelineLayout(pipelineLayout), pipeline(pipeline) {}
             };
 
-            auto drawStorage{std::make_shared<DrawStorage>(std::move(programState.descriptorSetLayout), std::move(programState.descriptorSetWrites), std::move(pipelineLayout))};
-
-            // Command Buffer Persistent Storage
-            struct FenceStorage : FenceCycleDependency {
-                std::optional<vk::raii::Pipeline> pipeline;
-                DescriptorAllocator::ActiveDescriptorSet descriptorSet;
-                std::shared_ptr<DrawStorage> drawStorage{};
-
-                FenceStorage(DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : descriptorSet(std::move(descriptorSet)) {}
-            };
-
-            auto fenceStorage{std::make_shared<FenceStorage>(std::move(descriptorSet))};
+            auto drawStorage{std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), compiledPipeline.descriptorSetLayout, compiledPipeline.pipelineLayout, compiledPipeline.pipeline)};
 
             // Submit Draw
-            executor.AddSubpass([=, &vkDevice = gpu.vkDevice, shaderModules = programState.shaderModules, shaderStages = programState.shaderStages, inputAssemblyState = inputAssemblyState, multiViewport = gpu.traits.supportsMultipleViewports, viewports = viewports, scissors = scissors, rasterizerState = rasterizerState, multisampleState = multisampleState, depthState = depthState, blendState = blendState, drawStorage = std::move(drawStorage), fenceStorage = std::move(fenceStorage), supportsVertexAttributeDivisor = gpu.traits.supportsVertexAttributeDivisor, supportsPushDescriptors = gpu.traits.supportsPushDescriptors, pipelineCache = *pipelineCache](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
-                vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState{
-                    vk::PipelineVertexInputStateCreateInfo{
-                        .pVertexBindingDescriptions = vertexBindingDescriptions.data(),
-                        .vertexBindingDescriptionCount = static_cast<u32>(vertexBindingDescriptions.size()),
-                        .pVertexAttributeDescriptions = vertexAttributesDescriptions.data(),
-                        .vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributesDescriptions.size()),
-                    }, vk::PipelineVertexInputDivisorStateCreateInfoEXT{
-                        .pVertexBindingDivisors = vertexBindingDivisorsDescriptions.data(),
-                        .vertexBindingDivisorCount = static_cast<u32>(vertexBindingDivisorsDescriptions.size()),
-                    }
-                };
-
-                if (!supportsVertexAttributeDivisor || vertexBindingDivisorsDescriptions.empty())
-                    vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
-
-                vk::PipelineViewportStateCreateInfo viewportState{
-                    .pViewports = viewports.data(),
-                    .viewportCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
-                    .pScissors = scissors.data(),
-                    .scissorCount = static_cast<u32>(multiViewport ? maxwell3d::ViewportCount : 1),
-                };
-
-                blendState.pAttachments = blendAttachmentStates.data();
-                blendState.attachmentCount = static_cast<u32>(blendAttachmentStates.size());
-
-                vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-                    .pStages = shaderStages.data(),
-                    .stageCount = static_cast<u32>(shaderStages.size()),
-                    .pVertexInputState = &vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
-                    .pInputAssemblyState = &inputAssemblyState,
-                    .pTessellationState = &tessellationState,
-                    .pViewportState = &viewportState,
-                    .pRasterizationState = &rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>(),
-                    .pMultisampleState = &multisampleState,
-                    .pDepthStencilState = &depthState,
-                    .pColorBlendState = &blendState,
-                    .pDynamicState = nullptr,
-                    .layout = *drawStorage->pipelineLayout,
-                    .renderPass = renderPass,
-                    .subpass = subpassIndex,
-                };
-
-                auto pipeline{(*vkDevice).createGraphicsPipeline(pipelineCache, pipelineCreateInfo, nullptr, *vkDevice.getDispatcher())};
-                if (pipeline.result != vk::Result::eSuccess)
-                    vk::throwResultException(pipeline.result, __builtin_FUNCTION());
-
-                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.value);
+            executor.AddSubpass([=, drawStorage = std::move(drawStorage), &vkDevice = gpu.vkDevice, supportsPushDescriptors = gpu.traits.supportsPushDescriptors](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
 
                 auto &vertexBufferHandles{boundVertexBuffers->handles};
                 for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
@@ -2911,14 +2876,16 @@ namespace skyline::gpu::interconnect {
                 }
 
                 if (supportsPushDescriptors) {
-                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, **drawStorage->descriptorSetWrites);
+                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, drawStorage->pipelineLayout, 0, **drawStorage->descriptorSetWrites);
                 } else {
-                    auto descriptorSet{gpu.descriptor.AllocateSet(*drawStorage->descriptorSetLayout)};
+                    auto descriptorSet{gpu.descriptor.AllocateSet(drawStorage->descriptorSetLayout)};
                     for (auto &descriptorSetWrite : **drawStorage->descriptorSetWrites)
                         descriptorSetWrite.dstSet = descriptorSet;
                     vkDevice.updateDescriptorSets(**drawStorage->descriptorSetWrites, nullptr);
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *drawStorage->pipelineLayout, 0, descriptorSet, nullptr);
+                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, drawStorage->pipelineLayout, 0, descriptorSet, nullptr);
                 }
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawStorage->pipeline);
 
                 if constexpr (IsIndexed) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
@@ -2927,10 +2894,7 @@ namespace skyline::gpu::interconnect {
                     commandBuffer.draw(count, 1, first, 0);
                 }
 
-                fenceStorage->drawStorage = drawStorage;
-                fenceStorage->pipeline = vk::raii::Pipeline(vkDevice, pipeline.value);
-
-                cycle->AttachObject(fenceStorage);
+                cycle->AttachObject(drawStorage);
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView);

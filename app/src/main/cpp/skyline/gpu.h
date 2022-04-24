@@ -11,6 +11,7 @@
 #include "gpu/buffer_manager.h"
 #include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
+#include "gpu/cache/graphics_pipeline_cache.h"
 
 namespace skyline::gpu {
     static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
@@ -44,6 +45,8 @@ namespace skyline::gpu {
 
         DescriptorAllocator descriptor;
         ShaderManager shader;
+
+        cache::GraphicsPipelineCache graphicsPipelineCache;
 
         GPU(const DeviceState &state);
     };

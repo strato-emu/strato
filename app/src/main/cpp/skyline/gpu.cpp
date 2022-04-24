@@ -101,6 +101,10 @@ namespace skyline::gpu {
                 IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
                 IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain"); // Same as SwapchainPreTransform
                 IGNORE_VALIDATION("UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout"); // We utilize images as VK_IMAGE_LAYOUT_GENERAL rather than optimal layouts for operations
+
+                /* Pipeline Cache isn't compliant with the Vulkan specification, it depends on driver support for a relaxed version of Vulkan specification's Render Pass Compatibility clause and this will result in validation errors regardless which we need to ignore */
+                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-renderPass-02684");
+                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-subpass-02685");
             }
 
             #undef IGNORE_TYPE
@@ -273,5 +277,6 @@ namespace skyline::gpu {
           texture(*this),
           buffer(*this),
           descriptor(*this),
-          shader(state, *this) {}
+          shader(state, *this),
+          graphicsPipelineCache(*this) {}
 }
