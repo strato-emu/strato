@@ -182,21 +182,29 @@ namespace skyline::gpu {
 
         auto queueFamilies{physicalDevice.getQueueFamilyProperties()};
         float queuePriority{1.0f}; //!< The priority of the only queue we use, it's set to the maximum of 1.0
-        vk::DeviceQueueCreateInfo queue{[&] {
-            decltype(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
-            for (const auto &queueFamily : queueFamilies) {
-                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
-                    vkQueueFamilyIndex = index;
-                    return vk::DeviceQueueCreateInfo{
-                        .queueFamilyIndex = index,
-                        .queueCount = 1,
-                        .pQueuePriorities = &queuePriority,
-                    };
+        vk::StructureChain<vk::DeviceQueueCreateInfo, vk::DeviceQueueGlobalPriorityCreateInfoEXT> queueCreateInfo{
+            [&]() -> vk::DeviceQueueCreateInfo {
+                decltype(vk::DeviceQueueCreateInfo::queueFamilyIndex) index{};
+                for (const auto &queueFamily : queueFamilies) {
+                    if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+                        vkQueueFamilyIndex = index;
+                        return vk::DeviceQueueCreateInfo{
+                            .queueFamilyIndex = index,
+                            .queueCount = 1,
+                            .pQueuePriorities = &queuePriority,
+                        };
+                    }
+                    index++;
                 }
-                index++;
+                throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
+            }(),
+            vk::DeviceQueueGlobalPriorityCreateInfoEXT{
+                .globalPriority = vk::QueueGlobalPriorityEXT::eHigh,
             }
-            throw exception("Cannot find a queue family with both eGraphics and eCompute bits set");
-        }()};
+        };
+
+        if (!traits.supportsGlobalPriority)
+            queueCreateInfo.unlink<vk::DeviceQueueGlobalPriorityCreateInfoEXT>();
 
         if (Logger::configLevel >= Logger::LogLevel::Info) {
             std::string extensionString;
@@ -220,7 +228,7 @@ namespace skyline::gpu {
         return vk::raii::Device(physicalDevice, vk::DeviceCreateInfo{
             .pNext = &enabledFeatures2,
             .queueCreateInfoCount = 1,
-            .pQueueCreateInfos = &queue,
+            .pQueueCreateInfos = &queueCreateInfo.get<vk::DeviceQueueCreateInfo>(),
             .enabledExtensionCount = static_cast<uint32_t>(pEnabledExtensions.size()),
             .ppEnabledExtensionNames = pEnabledExtensions.data(),
         });

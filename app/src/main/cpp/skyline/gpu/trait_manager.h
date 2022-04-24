@@ -20,6 +20,7 @@ namespace skyline::gpu {
         bool supportsLogicOp{}; //!< If the device supports framebuffer logical operations during blending
         bool supportsVertexAttributeDivisor{}; //!< If the device supports a divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsVertexAttributeZeroDivisor{}; //!< If the device supports a zero divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
+        bool supportsGlobalPriority{}; //!< If the device supports global priorities for queues (with VK_EXT_global_priority)
         bool supportsMultipleViewports{}; //!< If the device supports more than one viewport
         bool supportsShaderViewportIndexLayer{}; //!< If the device supports retrieving the viewport index in shaders (with VK_EXT_shader_viewport_index_layer)
         bool supportsSpirv14{}; //!< If SPIR-V 1.4 is supported (with VK_KHR_spirv_1_4)
