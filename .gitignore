@@ -98,3 +98,6 @@ libVkLayer_adreno.so
 
 # Skyline logs
 *.sklog
+
+# Android Studio Profiler Traces
+*.trace
