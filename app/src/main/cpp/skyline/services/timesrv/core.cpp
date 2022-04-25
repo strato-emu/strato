@@ -51,7 +51,7 @@ namespace skyline::service::timesrv::core {
     }
 
     TimeSpanType StandardSteadyClockCore::GetRawTimePoint() {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         auto timePoint{TimeSpanType::FromNanoseconds(util::GetTimeNs()) + rtcOffset};
         if (timePoint > cachedValue)

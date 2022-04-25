@@ -29,7 +29,7 @@ namespace skyline {
          * @return The amount of data written into the input buffer in units of Type
          */
         size_t Read(span <Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
-            std::lock_guard guard(mtx);
+            std::scoped_lock guard{mtx};
 
             if (empty)
                 return 0;
@@ -92,7 +92,7 @@ namespace skyline {
          * @brief Appends data from the specified buffer into this buffer
          */
         void Append(span <Type> buffer) {
-            std::lock_guard guard(mtx);
+            std::scoped_lock guard{mtx};
 
             Type *pointer{buffer.data()};
             ssize_t size{static_cast<ssize_t>(buffer.size())};

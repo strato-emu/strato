@@ -31,7 +31,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet{request.Pop<NpadStyleSet>()};
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.styles = styleSet;
         state.input->npad.Update();
 
@@ -47,7 +47,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::SetSupportedNpadIdType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto supportedIds{request.inputBuf.at(0).cast<NpadId>()};
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.supportedIds.assign(supportedIds.begin(), supportedIds.end());
         state.input->npad.Update();
         return {};
@@ -105,7 +105,7 @@ namespace skyline::service::hid {
     }
 
     Result IHidServer::SetNpadJoyHoldType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         request.Skip<u64>();
         state.input->npad.orientation = request.Pop<NpadJoyOrientation>();
         state.input->npad.Update();
@@ -119,7 +119,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::SetNpadJoyAssignmentModeSingleByDefault(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<NpadId>()};
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
         return {};
@@ -127,7 +127,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::SetNpadJoyAssignmentModeSingle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<NpadId>()};
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Single);
         state.input->npad.Update();
         return {};
@@ -135,7 +135,7 @@ namespace skyline::service::hid {
 
     Result IHidServer::SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<NpadId>()};
-        std::lock_guard lock(state.input->npad.mutex);
+        std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
         state.input->npad.Update();
         return {};

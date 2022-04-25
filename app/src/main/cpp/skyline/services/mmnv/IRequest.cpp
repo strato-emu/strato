@@ -25,7 +25,7 @@ namespace skyline::service::mmnv {
         request.Skip<u32>(); // Unknown unused param in HOS
         //u32 autoClear{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         AllocateRequest().request.module = module;
 
         return {};
@@ -34,7 +34,7 @@ namespace skyline::service::mmnv {
     Result IRequest::FinalizeOld(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto module{request.Pop<ModuleType>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         for (auto &req : requests) {
             if (req && req->module == module) {
                 req.reset();
@@ -49,7 +49,7 @@ namespace skyline::service::mmnv {
         auto module{request.Pop<ModuleType>()};
         u32 freqHz{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         for (auto &req : requests) {
             if (req && req->module == module) {
                 req->freqHz = freqHz;
@@ -67,7 +67,7 @@ namespace skyline::service::mmnv {
     Result IRequest::GetOld(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto module{request.Pop<ModuleType>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         for (auto &req : requests) {
             if (req && req->module == module) {
                 Logger::Debug("Get frequency for module {}: {} Hz", static_cast<u32>(module), req->freqHz);
@@ -87,7 +87,7 @@ namespace skyline::service::mmnv {
         request.Skip<u32>(); // Unknown unused param in HOS
         //u32 autoClear{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         auto req{AllocateRequest()};
         req.request.module = module;
         response.Push<u32>(req.id);
@@ -97,7 +97,7 @@ namespace skyline::service::mmnv {
     Result IRequest::Finalize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u32 id{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         if (id >= requests.size())
             return {};
 
@@ -109,7 +109,7 @@ namespace skyline::service::mmnv {
         u32 id{request.Pop<u32>()};
         u32 freqHz{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         if (id < requests.size()) {
             auto &req{requests[id]};
             if (req) {
@@ -127,7 +127,7 @@ namespace skyline::service::mmnv {
     Result IRequest::Get(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u32 id{request.Pop<u32>()};
 
-        std::lock_guard lock(requestsMutex);
+        std::scoped_lock lock{requestsMutex};
         if (id < requests.size()) {
             auto &req{requests[id]};
             if (req) {

@@ -40,7 +40,7 @@ namespace skyline::service::nvdrv::core {
     }
 
     u32 SyncpointManager::AllocateSyncpoint(bool clientManaged) {
-        std::lock_guard lock(reservationLock);
+        std::scoped_lock lock{reservationLock};
         return ReserveSyncpoint(FindFreeSyncpoint(), clientManaged);
     }
 

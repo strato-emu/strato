@@ -424,7 +424,7 @@ namespace skyline::kernel::svc {
 
             Logger::Debug("Setting thread #{}'s Ideal Core ({}) + Affinity Mask ({})", thread->id, idealCore, affinityMask);
 
-            std::lock_guard guard(thread->coreMigrationMutex);
+            std::scoped_lock guard{thread->coreMigrationMutex};
             thread->idealCore = static_cast<u8>(idealCore);
             thread->affinityMask = affinityMask;
 
@@ -451,7 +451,7 @@ namespace skyline::kernel::svc {
     }
 
     void GetCurrentProcessorNumber(const DeviceState &state) {
-        std::lock_guard guard(state.thread->coreMigrationMutex);
+        std::scoped_lock guard{state.thread->coreMigrationMutex};
         u8 coreId{state.thread->coreId};
         Logger::Debug("C{}", coreId);
         state.ctx->gpr.w0 = coreId;

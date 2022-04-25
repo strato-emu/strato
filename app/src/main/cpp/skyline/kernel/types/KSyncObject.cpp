@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::type {
     void KSyncObject::Signal() {
-        std::lock_guard lock(syncObjectMutex);
+        std::scoped_lock lock{syncObjectMutex};
         signalled = true;
         for (auto &waiter : syncObjectWaiters) {
             if (waiter->isCancellable) {
@@ -18,7 +18,7 @@ namespace skyline::kernel::type {
     }
 
     bool KSyncObject::ResetSignal() {
-        std::lock_guard lock(syncObjectMutex);
+        std::scoped_lock lock{syncObjectMutex};
         if (signalled) [[likely]] {
             signalled = false;
             return true;

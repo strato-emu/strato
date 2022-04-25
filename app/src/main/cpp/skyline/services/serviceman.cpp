@@ -116,7 +116,7 @@ namespace skyline::service {
     }
 
     std::shared_ptr<BaseService> ServiceManager::NewService(ServiceName name, type::KSession &session, ipc::IpcResponse &response) {
-        std::lock_guard serviceGuard(mutex);
+        std::scoped_lock serviceGuard{mutex};
         auto serviceObject{CreateOrGetService(name)};
         KHandle handle{};
         if (session.isDomain) {
@@ -132,7 +132,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::RegisterService(std::shared_ptr<BaseService> serviceObject, type::KSession &session, ipc::IpcResponse &response) { // NOLINT(performance-unnecessary-value-param)
-        std::lock_guard serviceGuard(mutex);
+        std::scoped_lock serviceGuard{mutex};
         KHandle handle{};
 
         if (session.isDomain) {
@@ -148,7 +148,7 @@ namespace skyline::service {
     }
 
     void ServiceManager::CloseSession(KHandle handle) {
-        std::lock_guard serviceGuard(mutex);
+        std::scoped_lock serviceGuard{mutex};
         auto session{state.process->GetHandle<type::KSession>(handle)};
         if (session->isOpen) {
             if (session->isDomain) {

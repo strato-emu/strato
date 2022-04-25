@@ -172,7 +172,7 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::UpdateSurface(jobject newSurface) {
-        std::lock_guard guard(mutex);
+        std::scoped_lock guard{mutex};
 
         auto env{state.jvm->GetEnv()};
         if (!env->IsSameObject(jSurface, nullptr)) {
@@ -295,7 +295,7 @@ namespace skyline::gpu {
             throw exception("Retrieving the next frame's ID failed with {}", result);
 
         {
-            std::lock_guard queueLock(gpu.queueMutex);
+            std::scoped_lock queueLock{gpu.queueMutex};
             std::ignore = gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
                 .swapchainCount = 1,
                 .pSwapchains = &**vkSwapchain,

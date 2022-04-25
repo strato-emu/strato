@@ -16,7 +16,7 @@ namespace skyline::service::timesrv::core {
     }
 
     ResultValue<LocationName> TimeZoneManager::GetLocationName() {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         if (!IsInitialized())
             return result::ClockUninitialized;
@@ -25,7 +25,7 @@ namespace skyline::service::timesrv::core {
     }
 
     Result TimeZoneManager::SetNewLocation(std::string_view pLocationName, span<u8> binary) {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         rule = tz_tzalloc(binary.data(), static_cast<long>(binary.size()));
         if (!rule)
@@ -37,7 +37,7 @@ namespace skyline::service::timesrv::core {
     }
 
     ResultValue<SteadyClockTimePoint> TimeZoneManager::GetUpdateTime() {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         if (!IsInitialized())
             return result::ClockUninitialized;
@@ -46,12 +46,12 @@ namespace skyline::service::timesrv::core {
     }
 
     void TimeZoneManager::SetUpdateTime(const SteadyClockTimePoint &pUpdateTime) {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
         updateTime = pUpdateTime;
     }
 
     ResultValue<int> TimeZoneManager::GetLocationCount() {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         if (!IsInitialized())
             return result::ClockUninitialized;
@@ -60,12 +60,12 @@ namespace skyline::service::timesrv::core {
     }
 
     void TimeZoneManager::SetLocationCount(int pLocationCount) {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
         locationCount = pLocationCount;
     }
 
     ResultValue<std::array<u8, 0x10>> TimeZoneManager::GetBinaryVersion() {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
 
         if (!IsInitialized())
             return result::ClockUninitialized;
@@ -74,7 +74,7 @@ namespace skyline::service::timesrv::core {
     }
 
     void TimeZoneManager::SetBinaryVersion(std::array<u8, 0x10> pBinaryVersion) {
-        std::lock_guard lock(mutex);
+        std::scoped_lock lock{mutex};
         binaryVersion = pBinaryVersion;
     }
 

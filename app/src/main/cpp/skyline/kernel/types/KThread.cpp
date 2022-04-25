@@ -51,7 +51,7 @@ namespace skyline::kernel::type {
             state.scheduler->RemoveThread();
 
             {
-                std::lock_guard lock(statusMutex);
+                std::scoped_lock lock{statusMutex};
                 running = false;
                 ready = false;
                 statusCondition.notify_all();
@@ -79,7 +79,7 @@ namespace skyline::kernel::type {
         signal::SetSignalHandler({Scheduler::YieldSignal, Scheduler::PreemptionSignal}, Scheduler::SignalHandler, false); // We want futexes to fail and their predicates rechecked
 
         {
-            std::lock_guard lock(statusMutex);
+            std::scoped_lock lock{statusMutex};
             ready = true;
             statusCondition.notify_all();
         }
@@ -202,7 +202,7 @@ namespace skyline::kernel::type {
         std::unique_lock lock(statusMutex);
         if (!running) {
             {
-                std::lock_guard migrationLock(coreMigrationMutex);
+                std::scoped_lock migrationLock{coreMigrationMutex};
                 auto thisShared{shared_from_this()};
                 coreId = state.scheduler->GetOptimalCoreForThread(thisShared).id;
                 state.scheduler->InsertThread(thisShared);
@@ -283,11 +283,11 @@ namespace skyline::kernel::type {
             } while (waitingOn->priority.compare_exchange_strong(ownerPriority, currentPriority));
 
             if (ownerPriority != currentPriority) {
-                std::lock_guard waiterLock(waitingOn->waiterMutex);
+                std::scoped_lock waiterLock{waitingOn->waiterMutex};
                 auto nextThread{waitingOn->waitThread};
                 if (nextThread) {
                     // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
-                    std::lock_guard nextWaiterLock(nextThread->waiterMutex);
+                    std::scoped_lock nextWaiterLock{nextThread->waiterMutex};
                     auto &piWaiters{nextThread->waiters};
                     piWaiters.erase(std::find(piWaiters.begin(), piWaiters.end(), waitingOn));
                     piWaiters.insert(std::upper_bound(piWaiters.begin(), piWaiters.end(), currentPriority, KThread::IsHigherPriority), waitingOn);

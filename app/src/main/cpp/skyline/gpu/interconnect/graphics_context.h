@@ -514,7 +514,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void ClearColorRt(TextureView *renderTarget, vk::Rect2D scissor, u32 layerIndex) {
-            std::lock_guard lock(*renderTarget);
+            std::scoped_lock lock{*renderTarget};
             executor.AttachTexture(renderTarget);
 
             scissor.extent.width = static_cast<u32>(std::min(static_cast<i32>(renderTarget->texture->dimensions.width) - scissor.offset.x,
@@ -546,7 +546,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void ClearDepthStencilRt(TextureView *renderTarget, vk::ImageAspectFlags aspect, u32 layerIndex) {
-            std::lock_guard lock(*renderTarget);
+            std::scoped_lock lock{*renderTarget};
             executor.AttachTexture(renderTarget);
 
             if (renderTarget->range.layerCount == 1 && layerIndex == 0) {

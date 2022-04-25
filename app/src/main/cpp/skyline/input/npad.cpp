@@ -14,7 +14,7 @@ namespace skyline::input {
         } { Activate(); /* NPads are activated by default, certain homebrew is reliant on this behavior */ }
 
     void NpadManager::Update() {
-        std::lock_guard guard(mutex);
+        std::scoped_lock guard{mutex};
 
         if (!activated)
             return;
@@ -75,7 +75,7 @@ namespace skyline::input {
     }
 
     void NpadManager::Activate() {
-        std::lock_guard guard(mutex);
+        std::scoped_lock guard{mutex};
         if (!activated) {
             supportedIds = {NpadId::Handheld, NpadId::Player1, NpadId::Player2, NpadId::Player3, NpadId::Player4, NpadId::Player5, NpadId::Player6, NpadId::Player7, NpadId::Player8};
             styles = {.proController = true, .joyconHandheld = true, .joyconDual = true, .joyconLeft = true, .joyconRight = true};
@@ -86,7 +86,7 @@ namespace skyline::input {
     }
 
     void NpadManager::Deactivate() {
-        std::lock_guard guard(mutex);
+        std::scoped_lock guard{mutex};
         if (activated) {
             supportedIds = {};
             styles = {};

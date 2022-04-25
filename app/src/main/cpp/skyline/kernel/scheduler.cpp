@@ -40,7 +40,7 @@ namespace skyline::kernel {
                     u64 timeslice{};
 
                     if (!candidateCore.queue.empty()) {
-                        std::lock_guard coreLock(candidateCore.mutex);
+                        std::scoped_lock coreLock{candidateCore.mutex};
 
                         auto threadIterator{candidateCore.queue.cbegin()};
                         if (threadIterator != candidateCore.queue.cend()) {
@@ -155,7 +155,7 @@ namespace skyline::kernel {
         auto wakeFunction{[&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
                 lock.unlock(); // If the core migration mutex is locked by a thread seeking the core mutex, it'll result in a deadlock
-                std::lock_guard migrationLock(thread->coreMigrationMutex);
+                std::scoped_lock migrationLock{thread->coreMigrationMutex};
                 lock.lock();
                 if (!thread->affinityMask.test(thread->coreId)) // We need to retest in case the thread was migrated while the core was unlocked
                     MigrateToCore(thread, core, &cores.at(thread->idealCore), lock);
@@ -168,7 +168,7 @@ namespace skyline::kernel {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
             while (!thread->scheduleCondition.wait_for(lock, loadBalanceThreshold, wakeFunction)) {
                 lock.unlock(); // We cannot call GetOptimalCoreForThread without relinquishing the core mutex
-                std::lock_guard migrationLock(thread->coreMigrationMutex);
+                std::scoped_lock migrationLock{thread->coreMigrationMutex};
                 auto newCore{&GetOptimalCoreForThread(state.thread)};
                 lock.lock();
                 if (core != newCore)
@@ -195,7 +195,7 @@ namespace skyline::kernel {
         std::unique_lock lock(core->mutex);
         if (thread->scheduleCondition.wait_for(lock, timeout, [&]() {
             if (!thread->affinityMask.test(thread->coreId)) [[unlikely]] {
-                std::lock_guard migrationLock(thread->coreMigrationMutex);
+                std::scoped_lock migrationLock{thread->coreMigrationMutex};
                 MigrateToCore(thread, core, &cores.at(thread->idealCore), lock);
             }
             return !core->queue.empty() && core->queue.front() == thread;
@@ -263,7 +263,7 @@ namespace skyline::kernel {
     }
 
     void Scheduler::UpdatePriority(const std::shared_ptr<type::KThread> &thread) {
-        std::lock_guard migrationLock(thread->coreMigrationMutex);
+        std::scoped_lock migrationLock{thread->coreMigrationMutex};
         auto *core{&cores.at(thread->coreId)};
         std::unique_lock coreLock(core->mutex);
 
@@ -304,7 +304,7 @@ namespace skyline::kernel {
 
     void Scheduler::UpdateCore(const std::shared_ptr<type::KThread> &thread) {
         auto *core{&cores.at(thread->coreId)};
-        std::lock_guard coreLock(core->mutex);
+        std::scoped_lock coreLock{core->mutex};
         if (core->queue.front() == thread)
             thread->SendSignal(YieldSignal);
         else
@@ -313,7 +313,7 @@ namespace skyline::kernel {
 
     void Scheduler::ParkThread() {
         auto &thread{state.thread};
-        std::lock_guard migrationLock(thread->coreMigrationMutex);
+        std::scoped_lock migrationLock{thread->coreMigrationMutex};
         RemoveThread();
 
         auto originalCoreId{thread->coreId};

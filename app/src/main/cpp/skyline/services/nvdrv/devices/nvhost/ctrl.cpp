@@ -102,7 +102,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (!timeout)
             return PosixResult::TryAgain;
 
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
 
         u32 slot = [&]() {
             if (allocate) {
@@ -165,7 +165,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (slot >= SyncpointEventCount)
             return PosixResult::InvalidArgument;
 
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
 
         auto &event{syncpointEvents[slot]};
         if (!event)
@@ -197,7 +197,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (slot >= SyncpointEventCount)
             return PosixResult::InvalidArgument;
 
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
 
         auto &event{syncpointEvents[slot]};
         if (event) // Recreate event if it already exists
@@ -212,7 +212,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     PosixResult Ctrl::SyncpointFreeEvent(In<u32> slot) {
         Logger::Debug("slot: {}", slot);
 
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
         return SyncpointFreeEventLocked(slot);
     }
 
@@ -222,7 +222,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         auto err{PosixResult::Success};
 
         // Avoid repeated locks/unlocks by just locking now
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
 
         for (u32 i{}; i < std::numeric_limits<u64>::digits; i++)
             if (bitmask & (1ULL << i))
@@ -242,7 +242,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         u32 syncpointId{value.eventAllocated ? static_cast<u32>(value.syncpointIdForAllocation) : value.syncpointId};
 
-        std::lock_guard lock(syncpointEventMutex);
+        std::scoped_lock lock{syncpointEventMutex};
 
         auto &event{syncpointEvents[slot]};
         if (event && event->fence.id == syncpointId)

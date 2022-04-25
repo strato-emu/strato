@@ -29,7 +29,7 @@ namespace skyline::vfs {
             if (read != size)
                 return 0;
             {
-                std::lock_guard guard(mutex);
+                std::scoped_lock guard{mutex};
                 UpdateCtr(baseOffset + offset);
                 cipher.Decrypt(output);
             }
@@ -42,7 +42,7 @@ namespace skyline::vfs {
         if (read != SectorSize)
             return 0;
         {
-            std::lock_guard guard(mutex);
+            std::scoped_lock guard{mutex};
             UpdateCtr(baseOffset + sectorStart);
             cipher.Decrypt(blockBuf);
         }

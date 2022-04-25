@@ -19,7 +19,7 @@ namespace skyline::kernel::type {
     KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
 
     KProcess::~KProcess() {
-        std::lock_guard guard(threadMutex);
+        std::scoped_lock guard{threadMutex};
         disableThreadCreation = true;
         for (const auto &thread : threads)
             thread->Kill(true);
@@ -33,7 +33,7 @@ namespace skyline::kernel::type {
         else
             alreadyKilled.store(true);
 
-        std::lock_guard guard(threadMutex);
+        std::scoped_lock guard{threadMutex};
         if (disableCreation)
             disableThreadCreation = true;
         if (all) {
@@ -52,7 +52,7 @@ namespace skyline::kernel::type {
     }
 
     u8 *KProcess::AllocateTlsSlot() {
-        std::lock_guard lock(tlsMutex);
+        std::scoped_lock lock{tlsMutex};
         u8 *slot;
         for (auto &tlsPage: tlsPages)
             if ((slot = tlsPage->ReserveSlot()))
@@ -65,7 +65,7 @@ namespace skyline::kernel::type {
     }
 
     std::shared_ptr<KThread> KProcess::CreateThread(void *entry, u64 argument, void *stackTop, std::optional<i8> priority, std::optional<u8> idealCore) {
-        std::lock_guard guard(threadMutex);
+        std::scoped_lock guard{threadMutex};
         if (disableThreadCreation)
             return nullptr;
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
@@ -122,7 +122,7 @@ namespace skyline::kernel::type {
 
         bool isHighestPriority;
         {
-            std::lock_guard lock(owner->waiterMutex);
+            std::scoped_lock lock{owner->waiterMutex};
 
             u32 value{};
             if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
@@ -153,12 +153,12 @@ namespace skyline::kernel::type {
     void KProcess::MutexUnlock(u32 *mutex) {
         TRACE_EVENT_FMT("kernel", "MutexUnlock 0x{:X}", mutex);
 
-        std::lock_guard lock(state.thread->waiterMutex);
+        std::scoped_lock lock{state.thread->waiterMutex};
         auto &waiters{state.thread->waiters};
         auto nextOwnerIt{std::find_if(waiters.begin(), waiters.end(), [mutex](const std::shared_ptr<KThread> &thread) { return thread->waitKey == mutex; })};
         if (nextOwnerIt != waiters.end()) {
             auto nextOwner{*nextOwnerIt};
-            std::lock_guard nextLock(nextOwner->waiterMutex);
+            std::scoped_lock nextLock{nextOwner->waiterMutex};
             nextOwner->waitThread = std::shared_ptr<KThread>{nullptr};
             nextOwner->waitKey = nullptr;
 
@@ -217,7 +217,7 @@ namespace skyline::kernel::type {
         TRACE_EVENT_FMT("kernel", "ConditionalVariableWait 0x{:X} (0x{:X})", key, mutex);
 
         {
-            std::lock_guard lock(syncWaiterMutex);
+            std::scoped_lock lock{syncWaiterMutex};
             auto queue{syncWaiters.equal_range(key)};
             syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {key, state.thread});
 
@@ -257,7 +257,7 @@ namespace skyline::kernel::type {
     void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
         TRACE_EVENT_FMT("kernel", "ConditionalVariableSignal 0x{:X}", key);
 
-        std::lock_guard lock(syncWaiterMutex);
+        std::scoped_lock lock{syncWaiterMutex};
         auto queue{syncWaiters.equal_range(key)};
 
         auto it{queue.first};
@@ -272,7 +272,7 @@ namespace skyline::kernel::type {
         TRACE_EVENT_FMT("kernel", "WaitForAddress 0x{:X}", address);
 
         {
-            std::lock_guard lock(syncWaiterMutex);
+            std::scoped_lock lock{syncWaiterMutex};
             if (!arbitrationFunction(address, value)) [[unlikely]]
                 return result::InvalidState;
 
@@ -284,7 +284,7 @@ namespace skyline::kernel::type {
 
         if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
             {
-                std::lock_guard lock(syncWaiterMutex);
+                std::scoped_lock lock{syncWaiterMutex};
                 auto queue{syncWaiters.equal_range(address)};
                 auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{address, state.thread})};
                 if (iterator != queue.second)
@@ -306,7 +306,7 @@ namespace skyline::kernel::type {
     Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount)) {
         TRACE_EVENT_FMT("kernel", "SignalToAddress 0x{:X}", address);
 
-        std::lock_guard lock(syncWaiterMutex);
+        std::scoped_lock lock{syncWaiterMutex};
         auto queue{syncWaiters.equal_range(address)};
 
         if (mutateFunction)

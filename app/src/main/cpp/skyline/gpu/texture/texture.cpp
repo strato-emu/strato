@@ -106,11 +106,11 @@ namespace skyline::gpu {
         }
 
         trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
-            std::lock_guard lock(*this);
+            std::scoped_lock lock{*this};
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
             WaitOnFence();
         }, [this] {
-            std::lock_guard lock(*this);
+            std::scoped_lock lock{*this};
             SynchronizeGuest(true);
             dirtyState = DirtyState::CpuDirty; // We need to assume the texture is dirty since we don't know what the guest is writing
             WaitOnFence();
@@ -339,7 +339,7 @@ namespace skyline::gpu {
     }
 
     Texture::~Texture() {
-        std::lock_guard lock(*this);
+        std::scoped_lock lock{*this};
         if (trapHandle)
             gpu.state.nce->DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
