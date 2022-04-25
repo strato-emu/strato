@@ -386,11 +386,8 @@ namespace skyline::service::hosbinder {
         fence.Wait(state.soc->host1x);
 
         {
-            auto &texture{buffer.texture};
-            std::scoped_lock textureLock(*texture);
-            texture->SynchronizeHost();
             u64 frameId;
-            state.gpu->presentation.Present(texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
+            state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
         }
 
         buffer.frameNumber = ++frameNumber;

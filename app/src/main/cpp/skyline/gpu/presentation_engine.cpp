@@ -225,6 +225,7 @@ namespace skyline::gpu {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
+        std::scoped_lock textureLock(*texture);
         if (texture->format != swapchainFormat || texture->dimensions != swapchainExtent)
             UpdateSwapchain(texture->format, texture->dimensions);
 
@@ -258,6 +259,8 @@ namespace skyline::gpu {
         }
 
         std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
+
+        texture->SynchronizeHost();
         images.at(nextImage.second)->CopyFrom(texture, vk::ImageSubresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .levelCount = 1,
