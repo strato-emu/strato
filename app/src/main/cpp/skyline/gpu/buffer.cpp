@@ -69,7 +69,7 @@ namespace skyline::gpu {
                 if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
                     // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
 
-                    // Only sync back the buffer if it's not attched to the current fence cycle, otherwise propagate the GPU dirtiness
+                    // Only sync back the buffer if it's not attached to the current fence cycle, otherwise propagate the GPU dirtiness
                     if (!srcBuffer->cycle.owner_before(pCycle)) {
                         // Perform a GPU -> CPU sync on the source then do a CPU -> GPU sync for the region occupied by the source
                         // This is required since if we were created from a two buffers: one GPU dirty in the current cycle, and one GPU dirty in the previous cycle, if we marked ourselves as CPU dirty here then the GPU dirtiness from the current cycle buffer would be ignored and cause writes to be missed
@@ -225,7 +225,7 @@ namespace skyline::gpu {
             std::memcpy(data.data(), mirror.data() + offset, data.size());
         } else if (dirtyState == DirtyState::GpuDirty) {
             // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that we read valid data
-            if (!cycle.owner_before(pCycle))
+            if (cycle.owner_before(pCycle))
                 flushHostCallback();
 
             SynchronizeGuest();
@@ -241,7 +241,7 @@ namespace skyline::gpu {
             SynchronizeHostWithCycle(pCycle); // Perform a CPU -> GPU sync to ensure correct ordering of writes
         } else if (dirtyState == DirtyState::GpuDirty) {
             // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that writes are correctly ordered
-            if (!cycle.owner_before(pCycle))
+            if (cycle.owner_before(pCycle))
                 flushHostCallback();
 
             SynchronizeGuest();
