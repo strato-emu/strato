@@ -24,10 +24,22 @@ namespace skyline::gpu::interconnect {
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
         std::unordered_set<SharedBufferDelegate> attachedBuffers; //!< All buffers that are attached to the current execution
 
+        std::vector<TextureView*> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
+        span<TextureView*> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
+        span<TextureView*> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
+        TextureView* lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
+
         /**
-         * @return If a new render pass was created by the function or the current one was reused as it was compatible
+         * @brief Create a new render pass and subpass with the specified attachments, if one doesn't already exist or the current one isn't compatible
+         * @note This also checks for subpass coalescing and will merge the new subpass with the previous one when possible
+         * @return If the next subpass must be started prior to issuing any commands
          */
-        bool CreateRenderPass(vk::Rect2D renderArea);
+        bool CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment);
+
+        /**
+         * @brief Ends a render pass if one is currently active and resets all corresponding state
+         */
+        void FinishRenderPass();
 
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
