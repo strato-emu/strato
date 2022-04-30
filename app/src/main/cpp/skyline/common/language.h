@@ -22,7 +22,7 @@ namespace skyline {
          */
         #define LANGUAGES                                               \
             LANG_ENTRY(Japanese,             ja,       0,  2, MAP)      \
-            LANG_ENTRY(AmericanEnglish,      en-us,    1,  0, MAP)      \
+            LANG_ENTRY(AmericanEnglish,      en-US,    1,  0, MAP)      \
             LANG_ENTRY(French,               fr,       2,  3, MAP)      \
             LANG_ENTRY(German,               de,       3,  4, MAP)      \
             LANG_ENTRY(Italian,              it,       4,  7, MAP)      \
