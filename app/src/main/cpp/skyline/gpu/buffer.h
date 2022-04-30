@@ -199,6 +199,14 @@ namespace skyline::gpu {
         void SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &cycle);
 
         /**
+         * @brief Synchronizes the guest buffer with the host buffer immediately, flushing GPU work if necessary
+         * @note The buffer **must** be locked prior to calling this
+         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
+         */
+        void SynchronizeGuestImmediate(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
+
+        /**
          * @brief Reads data at the specified offset in the buffer
          * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
@@ -234,6 +242,15 @@ namespace skyline::gpu {
          * @note This **must** be called after any modifications of the backing buffer data
          */
         void InvalidateMegaBuffer();
+
+        /**
+         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
+         * @return A span of the backing buffer contents
+         * @note The returned span **must** not be written to
+         * @note The buffer **must** be kept locked until the span is no longer in use
+         */
+        span<u8> GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
     };
 
     /**
@@ -317,5 +334,13 @@ namespace skyline::gpu {
          * @note See Buffer::AcquireMegaBuffer
          */
         vk::DeviceSize AcquireMegaBuffer() const;
+
+        /**
+         * @return A span of the backing buffer contents
+         * @note The returned span **must** not be written to
+         * @note The view **must** be kept locked until the span is no longer in use
+         * @note See Buffer::GetReadOnlyBackingSpan
+         */
+        span<u8> GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
     };
 }

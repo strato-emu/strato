@@ -220,32 +220,29 @@ namespace skyline::gpu {
         cycle = pCycle;
     }
 
+    void Buffer::SynchronizeGuestImmediate(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
+        // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that we read valid data
+        if (cycle.owner_before(pCycle))
+            flushHostCallback();
+
+        SynchronizeGuest();
+    }
+
     void Buffer::Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) {
-        if (dirtyState == DirtyState::CpuDirty || dirtyState == DirtyState::Clean) {
-            std::memcpy(data.data(), mirror.data() + offset, data.size());
-        } else if (dirtyState == DirtyState::GpuDirty) {
-            // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that we read valid data
-            if (cycle.owner_before(pCycle))
-                flushHostCallback();
+        if (dirtyState == DirtyState::GpuDirty)
+            SynchronizeGuestImmediate(pCycle, flushHostCallback);
 
-            SynchronizeGuest();
-
-            std::memcpy(data.data(), backing.data() + offset, data.size());
-        }
+        std::memcpy(data.data(), mirror.data() + offset, data.size());
     }
 
     void Buffer::Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) {
         InvalidateMegaBuffer(); // Since we're writing to the backing buffer the megabuffer contents will require refresh
 
-        if (dirtyState == DirtyState::CpuDirty) {
-            SynchronizeHostWithCycle(pCycle); // Perform a CPU -> GPU sync to ensure correct ordering of writes
-        } else if (dirtyState == DirtyState::GpuDirty) {
-            // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that writes are correctly ordered
-            if (cycle.owner_before(pCycle))
-                flushHostCallback();
-
-            SynchronizeGuest();
-        }
+        // Perform a syncs in both directions to ensure correct ordering of writes
+        if (dirtyState == DirtyState::CpuDirty)
+            SynchronizeHostWithCycle(pCycle);
+        else if (dirtyState == DirtyState::GpuDirty)
+            SynchronizeGuestImmediate(pCycle, flushHostCallback);
 
         if (dirtyState != DirtyState::Clean)
             Logger::Error("Attempting to write to a dirty buffer"); // This should never happen since we do syncs in both directions above
@@ -259,6 +256,41 @@ namespace skyline::gpu {
             // Fallback to a GPU-side inline update for the buffer contents to ensure correct sequencing with draws
             gpuCopyCallback();
         }
+    }
+
+    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
+        for (auto &view : views)
+            if (view.offset == offset && view.size == size && view.format == format)
+                return BufferView{shared_from_this(), &view};
+
+        views.emplace_back(offset, size, format);
+        return BufferView{shared_from_this(), &views.back()};
+    }
+
+    vk::DeviceSize Buffer::AcquireMegaBuffer() {
+        SynchronizeGuest(false, true); // First try and enable megabuffering by doing an immediate sync
+
+        if (!megaBufferingEnabled)
+            return 0; // Bail out if megabuffering is disabled for this buffer
+
+        SynchronizeHost(); // Since pushes to the megabuffer use the GPU backing contents ensure they're up-to-date by performing a CPU -> GPU sync
+
+        if (megaBufferOffset)
+            return megaBufferOffset; // If the current buffer contents haven't been changed since the last acquire, we can just return the existing offset
+
+        megaBufferOffset = gpu.buffer.megaBuffer.Push(backing, true); // Buffers are required to be page aligned in the megabuffer
+        return megaBufferOffset;
+    }
+
+    void Buffer::InvalidateMegaBuffer() {
+        megaBufferOffset = 0;
+    }
+
+    span<u8> Buffer::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
+        if (dirtyState == DirtyState::GpuDirty)
+            SynchronizeGuestImmediate(pCycle, flushHostCallback);
+
+        return mirror;
     }
 
     Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
@@ -307,34 +339,6 @@ namespace skyline::gpu {
         }
     }
 
-    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
-        for (auto &view : views)
-            if (view.offset == offset && view.size == size && view.format == format)
-                return BufferView{shared_from_this(), &view};
-
-        views.emplace_back(offset, size, format);
-        return BufferView{shared_from_this(), &views.back()};
-    }
-
-    vk::DeviceSize Buffer::AcquireMegaBuffer() {
-        SynchronizeGuest(false, true); // First try and enable megabuffering by doing an immediate sync
-
-        if (!megaBufferingEnabled)
-            return 0; // Bail out if megabuffering is disabled for this buffer
-
-        SynchronizeHost(); // Since pushes to the megabuffer use the GPU backing contents ensure they're up-to-date by performing a CPU -> GPU sync
-
-        if (megaBufferOffset)
-            return megaBufferOffset; // If the current buffer contents haven't been changed since the last acquire, we can just return the existing offset
-
-        megaBufferOffset = gpu.buffer.megaBuffer.Push(backing, true); // Buffers are required to be page aligned in the megabuffer
-        return megaBufferOffset;
-    }
-
-    void Buffer::InvalidateMegaBuffer() {
-        megaBufferOffset = 0;
-    }
-
     BufferView::BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
 
     void BufferView::AttachCycle(const std::shared_ptr<FenceCycle> &cycle) {
@@ -374,5 +378,10 @@ namespace skyline::gpu {
             return bufferOffset + bufferDelegate->view->offset;
         else
             return 0;
+    }
+
+    span<u8> BufferView::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
+        auto backing{bufferDelegate->buffer->GetReadOnlyBackingSpan(pCycle, flushHostCallback)};
+        return backing.subspan(bufferDelegate->view->offset, bufferDelegate->view->size);
     }
 }
