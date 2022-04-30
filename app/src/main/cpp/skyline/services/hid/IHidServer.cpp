@@ -29,6 +29,10 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::StopSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet{request.Pop<NpadStyleSet>()};
         std::scoped_lock lock{state.input->npad.mutex};
@@ -138,6 +142,15 @@ namespace skyline::service::hid {
         std::scoped_lock lock{state.input->npad.mutex};
         state.input->npad.at(id).SetAssignment(NpadJoyAssignment::Dual);
         state.input->npad.Update();
+        return {};
+    }
+
+    Result IHidServer::StartLrAssignmentMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        // This isn't really necessary for us due to input preconfiguration so stub it
+        return {};
+    }
+
+    Result IHidServer::StopLrAssignmentMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
 

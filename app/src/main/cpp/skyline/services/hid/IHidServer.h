@@ -36,11 +36,17 @@ namespace skyline::service::hid {
         Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
-         * @brief Starts the Six Axis Sensor given an PID
-         * @url https://switchbrew.org/wiki/HID_services#CreateAppletResource
+         * @brief Starts the Six Axis Sensor for a specific Npad
+         * @url https://switchbrew.org/wiki/HID_services#StartSixAxisSensor
          */
         Result StartSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
-        
+
+        /**
+         * @brief Stops the Six Axis Sensor for a specific Npad
+         * @url https://switchbrew.org/wiki/HID_services#StopSixAxisSensor
+         */
+        Result StopSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         /**
          * @brief Sets the style of controllers supported
          * @url https://switchbrew.org/wiki/HID_services#SetSupportedNpadStyleSet
@@ -119,6 +125,16 @@ namespace skyline::service::hid {
         Result SetNpadJoyAssignmentModeDual(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/HID_services#StartLrAssignmentMode
+         */
+        Result StartLrAssignmentMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/HID_services#StopLrAssignmentMode
+         */
+        Result StopLrAssignmentMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/HID_services#SetNpadHandheldActivationMode
          */
         Result SetNpadHandheldActivationMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -157,6 +173,7 @@ namespace skyline::service::hid {
             SFUNC(0x1, IHidServer, ActivateDebugPad),
             SFUNC(0xB, IHidServer, ActivateTouchScreen),
             SFUNC(0x42, IHidServer, StartSixAxisSensor),
+            SFUNC(0x43, IHidServer, StopSixAxisSensor),
             SFUNC(0x64, IHidServer, SetSupportedNpadStyleSet),
             SFUNC(0x65, IHidServer, GetSupportedNpadStyleSet),
             SFUNC(0x66, IHidServer, SetSupportedNpadIdType),
@@ -170,6 +187,8 @@ namespace skyline::service::hid {
             SFUNC(0x7A, IHidServer, SetNpadJoyAssignmentModeSingleByDefault),
             SFUNC(0x7B, IHidServer, SetNpadJoyAssignmentModeSingle),
             SFUNC(0x7C, IHidServer, SetNpadJoyAssignmentModeDual),
+            SFUNC(0x7E, IHidServer, StartLrAssignmentMode),
+            SFUNC(0x7F, IHidServer, StopLrAssignmentMode),
             SFUNC(0x80, IHidServer, SetNpadHandheldActivationMode),
             SFUNC(0x81, IHidServer, GetNpadHandheldActivationMode),
             SFUNC(0xCB, IHidServer, CreateActiveVibrationDeviceList),
