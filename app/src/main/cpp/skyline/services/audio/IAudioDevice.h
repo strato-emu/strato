@@ -12,7 +12,10 @@ namespace skyline::service::audio {
      */
     class IAudioDevice : public BaseService {
       private:
-        std::shared_ptr<type::KEvent> systemEvent; //!< The KEvent that is signalled on audio device changes
+        std::shared_ptr<type::KEvent> systemEvent; //!< Signalled on all audio device changes
+        std::shared_ptr<type::KEvent> inputEvent; //!< Signalled on audio input device changes
+        std::shared_ptr<type::KEvent> outputEvent; //!< Signalled on audio output device changes
+
 
       public:
         IAudioDevice(const DeviceState &state, ServiceManager &manager);
@@ -44,6 +47,10 @@ namespace skyline::service::audio {
          */
         Result GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result QueryAudioDeviceInputEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result QueryAudioDeviceOutputEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IAudioDevice, ListAudioDeviceName),
             SFUNC(0x1, IAudioDevice, SetAudioDeviceOutputVolume),
@@ -52,7 +59,9 @@ namespace skyline::service::audio {
             SFUNC(0x5, IAudioDevice, GetActiveChannelCount),
             SFUNC(0x6, IAudioDevice, ListAudioDeviceName),
             SFUNC(0x7, IAudioDevice, SetAudioDeviceOutputVolume),
-            SFUNC(0xA, IAudioDevice, GetActiveAudioDeviceName)
+            SFUNC(0xA, IAudioDevice, GetActiveAudioDeviceName),
+            SFUNC(0xB, IAudioDevice, QueryAudioDeviceInputEvent),
+            SFUNC(0xC, IAudioDevice, QueryAudioDeviceOutputEvent)
         )
     };
 }

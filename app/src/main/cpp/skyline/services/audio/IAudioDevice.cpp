@@ -6,7 +6,11 @@
 #include "IAudioDevice.h"
 
 namespace skyline::service::audio {
-    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager) : systemEvent(std::make_shared<type::KEvent>(state, true)), BaseService(state, manager) {}
+    IAudioDevice::IAudioDevice(const DeviceState &state, ServiceManager &manager)
+        : BaseService(state, manager),
+          systemEvent(std::make_shared<type::KEvent>(state, true)),
+          outputEvent(std::make_shared<type::KEvent>(state, true)),
+          inputEvent(std::make_shared<type::KEvent>(state, true)) {}
 
     Result IAudioDevice::ListAudioDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         span buffer{request.outputBuf.at(0)};
@@ -42,6 +46,20 @@ namespace skyline::service::audio {
 
     Result IAudioDevice::GetActiveChannelCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(constant::StereoChannelCount);
+        return {};
+    }
+
+    Result IAudioDevice::QueryAudioDeviceInputEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto handle{state.process->InsertItem(inputEvent)};
+        Logger::Debug("Audio Device Input Event Handle: 0x{:X}", handle);
+        response.copyHandles.push_back(handle);
+        return {};
+    }
+
+    Result IAudioDevice::QueryAudioDeviceOutputEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto handle{state.process->InsertItem(outputEvent)};
+        Logger::Debug("Audio Device Output Event Handle: 0x{:X}", handle);
+        response.copyHandles.push_back(handle);
         return {};
     }
 }
