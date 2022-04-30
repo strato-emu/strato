@@ -9,6 +9,7 @@ namespace skyline::service::audio {
     IAudioOutManager::IAudioOutManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::memset(request.outputBuf.at(0).data(), 0, request.outputBuf.at(0).size());
         request.outputBuf.at(0).copy_from(constant::DefaultAudioOutName);
         return {};
     }
@@ -29,6 +30,8 @@ namespace skyline::service::audio {
         response.Push<AudioInputParams>(inputParams);
         response.Push(static_cast<u32>(skyline::audio::AudioFormat::Int16));
         response.Push(static_cast<u32>(skyline::audio::AudioOutState::Stopped));
+
+        std::memset(request.outputBuf.at(0).data(), 0, request.outputBuf.at(0).size());
 
         if (request.inputBuf.at(0).empty() || !request.inputBuf.at(0)[0])
             request.outputBuf.at(0).copy_from(constant::DefaultAudioOutName);
