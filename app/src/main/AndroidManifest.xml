@@ -22,6 +22,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
+
+        <profileable android:shell="true"/>
+
         <activity
             android:name="emu.skyline.MainActivity"
             android:exported="true">
