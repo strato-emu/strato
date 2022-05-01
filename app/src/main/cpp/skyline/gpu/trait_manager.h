@@ -21,6 +21,7 @@ namespace skyline::gpu {
         bool supportsVertexAttributeDivisor{}; //!< If the device supports a divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsVertexAttributeZeroDivisor{}; //!< If the device supports a zero divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsPushDescriptors{}; //!< If the device supports push descriptors (with VK_KHR_push_descriptor)
+        bool supportsImagelessFramebuffers{}; //!< If the device supports imageless framebuffers (with VK_KHR_imageless_framebuffer)
         bool supportsGlobalPriority{}; //!< If the device supports global priorities for queues (with VK_EXT_global_priority)
         bool supportsMultipleViewports{}; //!< If the device supports more than one viewport
         bool supportsShaderViewportIndexLayer{}; //!< If the device supports retrieving the viewport index in shaders (with VK_EXT_shader_viewport_index_layer)
@@ -79,7 +80,8 @@ namespace skyline::gpu {
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
             vk::PhysicalDeviceShaderDrawParametersFeatures,
             vk::PhysicalDeviceProvokingVertexFeaturesEXT,
-            vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>;
+            vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+            vk::PhysicalDeviceImagelessFramebufferFeatures>;
 
         TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
 

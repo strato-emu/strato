@@ -28,19 +28,8 @@ namespace skyline::gpu::interconnect::node {
      */
     struct RenderPassNode {
       private:
-        /**
-         * @brief Storage for all resources in the VkRenderPass that have their lifetimes bond to the completion fence
-         */
-        struct Storage : public FenceCycleDependency {
-            vk::raii::Device *device{};
-            vk::Framebuffer framebuffer{};
-
-            ~Storage();
-        };
-
-        std::shared_ptr<Storage> storage;
-
         std::vector<vk::ImageView> attachments;
+        std::vector<vk::FramebufferAttachmentImageInfo> attachmentInfo;
         std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
         std::vector<vk::AttachmentReference> attachmentReferences;
@@ -69,12 +58,12 @@ namespace skyline::gpu::interconnect::node {
          * @note Any preservation of attachments from previous subpasses is automatically handled by this
          * @return The index of the attachment in the render pass which can be utilized with VkAttachmentReference
          */
-        u32 AddAttachment(TextureView *view);
+        u32 AddAttachment(TextureView *view, GPU& gpu);
 
         /**
          * @brief Creates a subpass with the attachments bound in the specified order
          */
-        void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment);
+        void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU& gpu);
 
         /**
          * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_CLEAR
@@ -82,14 +71,14 @@ namespace skyline::gpu::interconnect::node {
          * @return If the attachment could be cleared or not due to conflicts with other operations
          * @note We require a subpass to be attached during this as the clear will not take place unless it's referenced by a subpass
          */
-        bool ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value);
+        bool ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value, GPU& gpu);
 
         /**
          * @brief Clears the depth/stencil attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_CLEAR
          * @return If the attachment could be cleared or not due to conflicts with other operations
          * @note We require a subpass to be attached during this as the clear will not take place unless it's referenced by a subpass
          */
-        bool ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value);
+        bool ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value, GPU& gpu);
 
         vk::RenderPass operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu);
     };

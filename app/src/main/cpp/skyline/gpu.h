@@ -13,6 +13,7 @@
 #include "gpu/shader_manager.h"
 #include "gpu/cache/graphics_pipeline_cache.h"
 #include "gpu/cache/renderpass_cache.h"
+#include "gpu/cache/framebuffer_cache.h"
 
 namespace skyline::gpu {
     static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
@@ -49,6 +50,7 @@ namespace skyline::gpu {
 
         cache::GraphicsPipelineCache graphicsPipelineCache;
         cache::RenderPassCache renderPassCache;
+        cache::FramebufferCache framebufferCache;
 
         GPU(const DeviceState &state);
     };

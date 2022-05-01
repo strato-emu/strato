@@ -16,20 +16,26 @@ namespace skyline::gpu::interconnect::node {
                 .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
             }
         }
-    ), storage(std::make_shared<Storage>()), renderArea(renderArea) {}
+    ), renderArea(renderArea) {}
 
-    RenderPassNode::Storage::~Storage() {
-        if (device)
-            if (framebuffer)
-                (**device).destroy(framebuffer, nullptr, *device->getDispatcher());
-    }
-
-    u32 RenderPassNode::AddAttachment(TextureView *view) {
+    u32 RenderPassNode::AddAttachment(TextureView *view, GPU &gpu) {
         auto vkView{view->GetView()};
         auto attachment{std::find(attachments.begin(), attachments.end(), vkView)};
         if (attachment == attachments.end()) {
             // If we cannot find any matches for the specified attachment, we add it as a new one
             attachments.push_back(vkView);
+
+            if (gpu.traits.supportsImagelessFramebuffers)
+                attachmentInfo.push_back(vk::FramebufferAttachmentImageInfo{
+                    .flags = view->texture->flags,
+                    .usage = view->texture->usage,
+                    .width = view->texture->dimensions.width,
+                    .height = view->texture->dimensions.height,
+                    .layerCount = view->texture->layerCount,
+                    .viewFormatCount = 1,
+                    .pViewFormats = &view->format->vkFormat,
+                });
+
             attachmentDescriptions.push_back(vk::AttachmentDescription{
                 .format = *view->format,
                 .initialLayout = view->texture->layout,
@@ -109,13 +115,13 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
+    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU& gpu) {
         attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
         auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
         for (auto &attachment : inputAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = AddAttachment(attachment),
+                .attachment = AddAttachment(attachment, gpu),
                 .layout = attachment->texture->layout,
             });
         }
@@ -123,7 +129,7 @@ namespace skyline::gpu::interconnect::node {
         auto colorAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)}; // Calculate new base offset as it has changed since we pushed the input attachments
         for (auto &attachment : colorAttachments) {
             attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = AddAttachment(attachment),
+                .attachment = AddAttachment(attachment, gpu),
                 .layout = attachment->texture->layout,
             });
         }
@@ -131,7 +137,7 @@ namespace skyline::gpu::interconnect::node {
         auto depthStencilAttachmentOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
         if (depthStencilAttachment) {
             attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = AddAttachment(depthStencilAttachment),
+                .attachment = AddAttachment(depthStencilAttachment, gpu),
                 .layout = depthStencilAttachment->texture->layout,
             });
         }
@@ -149,7 +155,7 @@ namespace skyline::gpu::interconnect::node {
         });
     }
 
-    bool RenderPassNode::ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value) {
+    bool RenderPassNode::ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value, GPU& gpu) {
         auto attachmentReference{RebasePointer(attachmentReferences, subpassDescriptions.back().pColorAttachments) + colorAttachment};
         auto attachmentIndex{attachmentReference->attachment};
 
@@ -172,7 +178,7 @@ namespace skyline::gpu::interconnect::node {
         return false;
     }
 
-    bool RenderPassNode::ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value) {
+    bool RenderPassNode::ClearDepthStencilAttachment(const vk::ClearDepthStencilValue &value, GPU& gpu) {
         auto attachmentReference{RebasePointer(attachmentReferences, subpassDescriptions.back().pDepthStencilAttachment)};
         auto attachmentIndex{attachmentReference->attachment};
 
@@ -196,8 +202,6 @@ namespace skyline::gpu::interconnect::node {
     }
 
     vk::RenderPass RenderPassNode::operator()(vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu) {
-        storage->device = &gpu.vkDevice;
-
         auto preserveAttachmentIt{preserveAttachmentReferences.begin()};
         for (auto &subpassDescription : subpassDescriptions) {
             subpassDescription.pInputAttachments = RebasePointer(attachmentReferences, subpassDescription.pInputAttachments);
@@ -223,25 +227,46 @@ namespace skyline::gpu::interconnect::node {
             .pDependencies = subpassDependencies.data(),
         })};
 
-        auto framebuffer{(*gpu.vkDevice).createFramebuffer(vk::FramebufferCreateInfo{
-            .renderPass = renderPass,
-            .attachmentCount = static_cast<u32>(attachments.size()),
-            .pAttachments = attachments.data(),
-            .width = renderArea.extent.width,
-            .height = renderArea.extent.height,
-            .layers = 1,
-        }, nullptr, *gpu.vkDevice.getDispatcher())};
-        storage->framebuffer = framebuffer;
+        auto useImagelessFramebuffer{gpu.traits.supportsImagelessFramebuffers};
+        cache::FramebufferCreateInfo framebufferCreateInfo{
+            vk::FramebufferCreateInfo{
+                .flags = useImagelessFramebuffer ? vk::FramebufferCreateFlagBits::eImageless : vk::FramebufferCreateFlags{},
+                .renderPass = renderPass,
+                .attachmentCount = static_cast<u32>(attachments.size()),
+                .pAttachments = attachments.data(),
+                .width = renderArea.extent.width,
+                .height = renderArea.extent.height,
+                .layers = 1,
+            },
+            vk::FramebufferAttachmentsCreateInfo{
+                .attachmentImageInfoCount = static_cast<u32>(attachmentInfo.size()),
+                .pAttachmentImageInfos = attachmentInfo.data(),
+            }
+        };
 
-        commandBuffer.beginRenderPass(vk::RenderPassBeginInfo{
-            .renderPass = renderPass,
-            .framebuffer = framebuffer,
-            .renderArea = renderArea,
-            .clearValueCount = static_cast<u32>(clearValues.size()),
-            .pClearValues = clearValues.data(),
-        }, vk::SubpassContents::eInline);
+        if (!useImagelessFramebuffer)
+            framebufferCreateInfo.unlink<vk::FramebufferAttachmentsCreateInfo>();
 
-        cycle->AttachObject(storage);
+        auto framebuffer{gpu.framebufferCache.GetFramebuffer(framebufferCreateInfo)};
+
+        vk::StructureChain<vk::RenderPassBeginInfo, vk::RenderPassAttachmentBeginInfo> renderPassBeginInfo{
+            vk::RenderPassBeginInfo{
+                .renderPass = renderPass,
+                .framebuffer = framebuffer,
+                .renderArea = renderArea,
+                .clearValueCount = static_cast<u32>(clearValues.size()),
+                .pClearValues = clearValues.data(),
+            },
+            vk::RenderPassAttachmentBeginInfo{
+                .attachmentCount = static_cast<u32>(attachments.size()),
+                .pAttachments = attachments.data(),
+            }
+        };
+
+        if (!useImagelessFramebuffer)
+            renderPassBeginInfo.unlink<vk::RenderPassAttachmentBeginInfo>();
+
+        commandBuffer.beginRenderPass(renderPassBeginInfo.get<vk::RenderPassBeginInfo>(), vk::SubpassContents::eInline);
 
         return renderPass;
     }

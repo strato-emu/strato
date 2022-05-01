@@ -160,7 +160,7 @@ namespace skyline::gpu {
 
         for (size_t index{}; index < vkImages.size(); index++) {
             auto &slot{images[index]};
-            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format, vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal);
+            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format, vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal, vk::ImageCreateFlags{}, presentUsage);
             slot->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
         }
         for (size_t index{vkImages.size()}; index < MaxSwapchainImageCount; index++)

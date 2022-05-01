@@ -19,15 +19,15 @@ namespace skyline::gpu::interconnect {
         boost::container::stable_vector<node::NodeVariant> nodes;
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
-        std::unordered_set<Texture *> attachedTextures; //!< All textures that need to be synced prior to and after execution
 
+        std::unordered_set<Texture *> attachedTextures; //!< All textures that need to be synced prior to and after execution
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
         std::unordered_set<SharedBufferDelegate> attachedBuffers; //!< All buffers that are attached to the current execution
 
-        std::vector<TextureView*> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
-        span<TextureView*> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
-        span<TextureView*> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
-        TextureView* lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
+        std::vector<TextureView *> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
+        span<TextureView *> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
+        span<TextureView *> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
+        TextureView *lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
 
         /**
          * @brief Create a new render pass and subpass with the specified attachments, if one doesn't already exist or the current one isn't compatible

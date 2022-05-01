@@ -6,7 +6,7 @@
 
 namespace skyline::gpu {
     TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) : quirks(deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties, deviceProperties2.get<vk::PhysicalDeviceDriverProperties>()) {
-        bool hasCustomBorderColorExt{}, hasShaderAtomicInt64Ext{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelperExt{}, hasVertexAttributeDivisorExt{}, hasProvokingVertexExt{}, hasPrimitiveTopologyListRestartExt{};
+        bool hasCustomBorderColorExt{}, hasShaderAtomicInt64Ext{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelperExt{}, hasVertexAttributeDivisorExt{}, hasProvokingVertexExt{}, hasPrimitiveTopologyListRestartExt{}, hasImagelessFramebuffersExt{};
         bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
         for (auto &extension : deviceExtensions) {
@@ -36,6 +36,7 @@ namespace skyline::gpu {
                 EXT_SET("VK_EXT_provoking_vertex", hasProvokingVertexExt);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", hasVertexAttributeDivisorExt);
                 EXT_SET("VK_KHR_push_descriptor", supportsPushDescriptors);
+                EXT_SET("VK_KHR_imageless_framebuffer", hasImagelessFramebuffersExt);
                 EXT_SET("VK_EXT_global_priority", supportsGlobalPriority);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
                 EXT_SET("VK_KHR_spirv_1_4", supportsSpirv14);
@@ -120,6 +121,12 @@ namespace skyline::gpu {
             enabledFeatures2.unlink<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
         }
 
+        if (hasImagelessFramebuffersExt) {
+            FEAT_SET(vk::PhysicalDeviceImagelessFramebufferFeatures, imagelessFramebuffer, supportsImagelessFramebuffers)
+        } else {
+            enabledFeatures2.unlink<vk::PhysicalDeviceImagelessFramebufferFeatures>();
+        }
+
         #undef FEAT_SET
 
         if (supportsFloatControls)
@@ -132,8 +139,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::Summary() {
         return fmt::format(
-            "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Push Descriptors: {}\n* Supports Global Priority: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports Shader Invocation Demotion: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports List Primitive Topology Restart: {}\n* Supports Patch List Primitive Topology Restart: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}",
-            supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsPushDescriptors, supportsGlobalPriority, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsShaderDemoteToHelper, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsTopologyListRestart, supportsTopologyPatchListRestart, supportsSubgroupVote, subgroupSize
+            "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Push Descriptors: {}\n* Supports Imageless Framebuffers: {}\n* Supports Global Priority: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports Shader Invocation Demotion: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports List Primitive Topology Restart: {}\n* Supports Patch List Primitive Topology Restart: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}",
+            supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsPushDescriptors, supportsImagelessFramebuffers, supportsGlobalPriority, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsShaderDemoteToHelper, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsTopologyListRestart, supportsTopologyPatchListRestart, supportsSubgroupVote, subgroupSize
         );
     }
 

@@ -413,6 +413,8 @@ namespace skyline::gpu {
         texture::Format format;
         vk::ImageLayout layout;
         vk::ImageTiling tiling;
+        vk::ImageCreateFlags flags;
+        vk::ImageUsageFlags usage;
         u32 mipLevels;
         u32 layerCount; //!< The amount of array layers in the image, utilized for efficient binding (Not to be confused with the depth or faces in a cubemap)
         vk::SampleCountFlagBits sampleCount;
@@ -421,7 +423,7 @@ namespace skyline::gpu {
          * @brief Creates a texture object wrapping the supplied backing with the supplied attributes
          * @param layout The initial layout of the texture, it **must** be eUndefined or ePreinitialized
          */
-        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
         /**
          * @brief Creates a texture object wrapping the guest texture with a backing that can represent the guest texture data

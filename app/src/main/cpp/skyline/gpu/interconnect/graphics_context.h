@@ -77,9 +77,12 @@ namespace skyline::gpu::interconnect {
             constexpr texture::Dimensions NullImageDimensions{1, 1, 1};
             constexpr vk::ImageLayout NullImageInitialLayout{vk::ImageLayout::eUndefined};
             constexpr vk::ImageTiling NullImageTiling{vk::ImageTiling::eOptimal};
+            constexpr vk::ImageCreateFlags NullImageFlags{};
+            constexpr vk::ImageUsageFlags NullImageUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
 
             auto vkImage{gpu.memory.AllocateImage(
                 {
+                    .flags = NullImageFlags,
                     .imageType = vk::ImageType::e2D,
                     .format = NullImageFormat->vkFormat,
                     .extent = NullImageDimensions,
@@ -87,7 +90,7 @@ namespace skyline::gpu::interconnect {
                     .arrayLayers = 1,
                     .samples = vk::SampleCountFlagBits::e1,
                     .tiling = NullImageTiling,
-                    .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+                    .usage = NullImageUsage,
                     .sharingMode = vk::SharingMode::eExclusive,
                     .queueFamilyIndexCount = 1,
                     .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,
@@ -95,7 +98,7 @@ namespace skyline::gpu::interconnect {
                 }
             )};
 
-            auto nullTexture{std::make_shared<Texture>(gpu, std::move(vkImage), NullImageDimensions, NullImageFormat, NullImageInitialLayout, NullImageTiling)};
+            auto nullTexture{std::make_shared<Texture>(gpu, std::move(vkImage), NullImageDimensions, NullImageFormat, NullImageInitialLayout, NullImageTiling, NullImageFlags, NullImageUsage)};
             nullTexture->TransitionLayout(vk::ImageLayout::eGeneral);
             nullTextureView = nullTexture->GetView(vk::ImageViewType::e2D, vk::ImageSubresourceRange{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,

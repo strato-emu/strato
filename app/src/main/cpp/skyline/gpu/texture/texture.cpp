@@ -277,13 +277,15 @@ namespace skyline::gpu {
         texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
+    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
           dimensions(dimensions),
           format(format),
           layout(layout),
           tiling(tiling),
+          flags(flags),
+          usage(usage),
           mipLevels(mipLevels),
           layerCount(layerCount),
           sampleCount(sampleCount) {}
@@ -297,8 +299,9 @@ namespace skyline::gpu {
           tiling(vk::ImageTiling::eOptimal), // Force Optimal due to not adhering to host subresource layout during Linear synchronization
           mipLevels(1),
           layerCount(guest->layerCount),
-          sampleCount(vk::SampleCountFlagBits::e1) {
-        vk::ImageUsageFlags usage{vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled};
+          sampleCount(vk::SampleCountFlagBits::e1),
+          flags(gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat),
+          usage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled) {
         if ((format->vkAspect & vk::ImageAspectFlagBits::eColor) && !format->IsCompressed())
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
@@ -319,13 +322,10 @@ namespace skyline::gpu {
             }
         }
 
-        vk::ImageCreateFlags flags{gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat};
-
         if (imageType == vk::ImageType::e2D && dimensions.width == dimensions.height && layerCount >= 6)
             flags |= vk::ImageCreateFlagBits::eCubeCompatible;
         else if (imageType == vk::ImageType::e3D)
             flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
-
 
         vk::ImageCreateInfo imageCreateInfo{
             .flags = flags,

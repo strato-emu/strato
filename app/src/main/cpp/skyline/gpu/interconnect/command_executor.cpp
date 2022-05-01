@@ -13,7 +13,7 @@ namespace skyline::gpu::interconnect {
 
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         auto addSubpass{[&] {
-            renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment);
+            renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu);
 
             lastSubpassAttachments.clear();
             auto insertAttachmentRange{[this](auto &attachments) -> std::pair<size_t, size_t> {
@@ -114,7 +114,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::AddClearColorSubpass(TextureView *attachment, const vk::ClearColorValue &value) {
         bool gotoNext{CreateRenderPassWithSubpass(vk::Rect2D{.extent = attachment->texture->dimensions}, {}, attachment, nullptr)};
-        if (renderPass->ClearColorAttachment(0, value)) {
+        if (renderPass->ClearColorAttachment(0, value, gpu)) {
             if (gotoNext)
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
         } else {
@@ -139,7 +139,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::AddClearDepthStencilSubpass(TextureView *attachment, const vk::ClearDepthStencilValue &value) {
         bool gotoNext{CreateRenderPassWithSubpass(vk::Rect2D{.extent = attachment->texture->dimensions}, {}, {}, attachment)};
-        if (renderPass->ClearDepthStencilAttachment(value)) {
+        if (renderPass->ClearDepthStencilAttachment(value, gpu)) {
             if (gotoNext)
                 nodes.emplace_back(std::in_place_type_t<node::NextSubpassNode>());
         } else {
