@@ -19,12 +19,9 @@ namespace skyline::gpu::interconnect::node {
     ), storage(std::make_shared<Storage>()), renderArea(renderArea) {}
 
     RenderPassNode::Storage::~Storage() {
-        if (device) {
+        if (device)
             if (framebuffer)
                 (**device).destroy(framebuffer, nullptr, *device->getDispatcher());
-            if (renderPass)
-                (**device).destroy(renderPass, nullptr, *device->getDispatcher());
-        }
     }
 
     u32 RenderPassNode::AddAttachment(TextureView *view) {
@@ -217,15 +214,14 @@ namespace skyline::gpu::interconnect::node {
             preserveAttachmentIt++;
         }
 
-        auto renderPass{(*gpu.vkDevice).createRenderPass(vk::RenderPassCreateInfo{
+        auto renderPass{gpu.renderPassCache.GetRenderPass(vk::RenderPassCreateInfo{
             .attachmentCount = static_cast<u32>(attachmentDescriptions.size()),
             .pAttachments = attachmentDescriptions.data(),
             .subpassCount = static_cast<u32>(subpassDescriptions.size()),
             .pSubpasses = subpassDescriptions.data(),
             .dependencyCount = static_cast<u32>(subpassDependencies.size()),
             .pDependencies = subpassDependencies.data(),
-        }, nullptr, *gpu.vkDevice.getDispatcher())};
-        storage->renderPass = renderPass;
+        })};
 
         auto framebuffer{(*gpu.vkDevice).createFramebuffer(vk::FramebufferCreateInfo{
             .renderPass = renderPass,

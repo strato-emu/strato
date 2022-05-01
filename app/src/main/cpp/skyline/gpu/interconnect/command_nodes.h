@@ -34,7 +34,6 @@ namespace skyline::gpu::interconnect::node {
         struct Storage : public FenceCycleDependency {
             vk::raii::Device *device{};
             vk::Framebuffer framebuffer{};
-            vk::RenderPass renderPass{};
 
             ~Storage();
         };

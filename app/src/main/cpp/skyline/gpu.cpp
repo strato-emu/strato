@@ -278,5 +278,6 @@ namespace skyline::gpu {
           buffer(*this),
           descriptor(*this),
           shader(state, *this),
-          graphicsPipelineCache(*this) {}
+          graphicsPipelineCache(*this),
+          renderPassCache(*this) {}
 }
