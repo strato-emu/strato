@@ -24,19 +24,28 @@ namespace skyline::gpu {
 
     TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
 
+    Texture::TextureViewStorage::TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView &&vkView) : type(type), format(format), mapping(mapping), range(range), vkView(std::move(vkView)) {}
+
     vk::ImageView TextureView::GetView() {
-        if (view)
-            return **view;
+        if (vkView)
+            return vkView;
 
-        vk::ImageViewCreateInfo createInfo{
-            .image = texture->GetBacking(),
-            .viewType = type,
-            .format = format ? *format : *texture->format,
-            .components = mapping,
-            .subresourceRange = range,
-        };
+        auto it{std::find_if(texture->views.begin(), texture->views.end(), [this](const Texture::TextureViewStorage &view) {
+            return view.type == type && view.format == format && view.mapping == mapping && view.range == range;
+        })};
+        if (it == texture->views.end()) {
+            vk::ImageViewCreateInfo createInfo{
+                .image = texture->GetBacking(),
+                .viewType = type,
+                .format = format ? *format : *texture->format,
+                .components = mapping,
+                .subresourceRange = range,
+            };
 
-        return *view.emplace(texture->gpu.vkDevice, createInfo);
+            it = texture->views.emplace(texture->views.end(), type, format, mapping, range, vk::raii::ImageView{texture->gpu.vkDevice, createInfo});
+        }
+
+        return vkView = *it->vkView;
     }
 
     void TextureView::lock() {
@@ -530,22 +539,10 @@ namespace skyline::gpu {
         if (!pFormat)
             pFormat = format;
 
-        for (auto viewIt{views.begin()}; viewIt != views.end();) {
-            auto view{viewIt->lock()};
-            if (view && type == view->type && pFormat == view->format && range == view->range && mapping == view->mapping)
-                return view;
-            else if (!view)
-                viewIt = views.erase(viewIt);
-            else
-                ++viewIt;
-        }
-
         if (gpu.traits.quirks.vkImageMutableFormatCostly && pFormat->vkFormat != format->vkFormat)
             Logger::Warn("Creating a view of a texture with a different format without mutable format: {} - {}", vk::to_string(pFormat->vkFormat), vk::to_string(format->vkFormat));
 
-        auto view{std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping)};
-        views.push_back(view);
-        return view;
+        return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
 
     void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {

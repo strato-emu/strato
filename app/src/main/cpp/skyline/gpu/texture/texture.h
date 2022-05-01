@@ -284,7 +284,7 @@ namespace skyline::gpu {
      */
     class TextureView : public FenceCycleDependency, public std::enable_shared_from_this<TextureView> {
       private:
-        std::optional<vk::raii::ImageView> view;
+        vk::ImageView vkView{};
 
       public:
         std::shared_ptr<Texture> texture;
@@ -348,7 +348,20 @@ namespace skyline::gpu {
             GpuDirty, //!< The GPU texture has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
 
-        std::vector<std::weak_ptr<TextureView>> views; //!< TextureView(s) that are backed by this Texture, used for repointing to a new Texture on deletion
+        /**
+         * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
+         */
+        struct TextureViewStorage {
+            vk::ImageViewType type;
+            texture::Format format;
+            vk::ComponentMapping mapping;
+            vk::ImageSubresourceRange range;
+            vk::raii::ImageView vkView;
+
+            TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView&& vkView);
+        };
+
+        std::vector<TextureViewStorage> views;
 
         friend TextureManager;
         friend TextureView;
