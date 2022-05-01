@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "common.h"
+#include <vulkan/vulkan_raii.hpp>
+#include <common.h>
 
 namespace skyline::gpu::cache {
     using FramebufferCreateInfo = vk::StructureChain<vk::FramebufferCreateInfo, vk::FramebufferAttachmentsCreateInfo>;

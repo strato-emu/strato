@@ -6,37 +6,24 @@
 #include "renderpass_cache.h"
 
 namespace skyline::gpu::cache {
-    RenderPassCache::RenderPassCache(gpu::GPU &gpu) : gpu(gpu) {}
+    RenderPassCache::RenderPassCache(gpu::GPU &gpu) : gpu{gpu} {}
 
-    RenderPassCache::RenderPassMetadata::RenderPassMetadata(const vk::RenderPassCreateInfo &createInfo) {
-        for (const auto &attachment : span<const vk::AttachmentDescription>{createInfo.pAttachments, createInfo.attachmentCount})
-            attachments.emplace_back(attachment.format, attachment.samples);
+    #define VEC_CPY(pointer, size) description.pointer, description.pointer + description.size
 
-        subpasses.reserve(createInfo.subpassCount);
-        for (const auto &subpass : span<const vk::SubpassDescription>{createInfo.pSubpasses, createInfo.subpassCount}) {
-            auto &subpassMetadata{subpasses.emplace_back()};
+    RenderPassCache::SubpassDescription::SubpassDescription(const vk::SubpassDescription &description)
+        : flags{description.flags},
+          pipelineBindPoint{description.pipelineBindPoint},
+          inputAttachments{VEC_CPY(pInputAttachments, inputAttachmentCount)},
+          colorAttachments{VEC_CPY(pColorAttachments, colorAttachmentCount)},
+          resolveAttachments{description.pResolveAttachments, description.pResolveAttachments + (description.pResolveAttachments ? description.colorAttachmentCount : 0)},
+          depthStencilAttachment{description.pDepthStencilAttachment ? *description.pDepthStencilAttachment : std::optional<vk::AttachmentReference>{}},
+          preserveAttachments{VEC_CPY(pPreserveAttachments, preserveAttachmentCount)} {}
 
-            subpassMetadata.inputAttachments.reserve(subpass.inputAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pInputAttachments, subpass.inputAttachmentCount})
-                subpassMetadata.inputAttachments.emplace_back(reference.attachment);
+    #undef VEC_CPY
 
-            subpassMetadata.colorAttachments.reserve(subpass.colorAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pColorAttachments, subpass.colorAttachmentCount})
-                subpassMetadata.colorAttachments.emplace_back(reference.attachment);
-
-            auto resolveAttachmentCount{subpass.pResolveAttachments ? subpass.colorAttachmentCount : 0};
-            subpassMetadata.resolveAttachments.reserve(resolveAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pResolveAttachments, resolveAttachmentCount})
-                subpassMetadata.resolveAttachments.emplace_back(reference.attachment);
-
-            if (subpass.pDepthStencilAttachment)
-                subpassMetadata.depthStencilAttachment.emplace(subpass.pDepthStencilAttachment->attachment);
-
-            subpassMetadata.preserveAttachments.reserve(subpass.preserveAttachmentCount);
-            for (const auto &index : span<const u32>{subpass.pPreserveAttachments, subpass.preserveAttachmentCount})
-                subpassMetadata.resolveAttachments.emplace_back(index);
-        }
-    }
+    RenderPassCache::RenderPassMetadata::RenderPassMetadata(const vk::RenderPassCreateInfo &createInfo)
+        : attachments{createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount},
+          subpasses{createInfo.pSubpasses, createInfo.pSubpasses + createInfo.subpassCount} {}
 
     #define HASH(x) boost::hash_combine(hash, x)
 
@@ -45,27 +32,39 @@ namespace skyline::gpu::cache {
 
         HASH(key.attachments.size());
         for (const auto &attachment : key.attachments) {
+            HASH(static_cast<VkAttachmentDescriptionFlags>(attachment.flags));
             HASH(attachment.format);
-            HASH(attachment.sampleCount);
+            HASH(attachment.samples);
+            HASH(attachment.loadOp);
+            HASH(attachment.storeOp);
+            HASH(attachment.stencilLoadOp);
+            HASH(attachment.stencilStoreOp);
+            HASH(attachment.initialLayout);
+            HASH(attachment.finalLayout);
         }
 
         HASH(key.subpasses.size());
         for (const auto &subpass : key.subpasses) {
-            HASH(subpass.inputAttachments.size());
-            for (const auto &reference : subpass.inputAttachments)
-                HASH(reference);
+            HASH(static_cast<VkSubpassDescriptionFlags>(subpass.flags));
+            HASH(subpass.pipelineBindPoint);
 
-            HASH(subpass.colorAttachments.size());
-            for (const auto &reference : subpass.colorAttachments)
-                HASH(reference);
+            auto hashReferences{[&hash](const auto &references) {
+                HASH(references.size());
+                for (const auto &reference : references) {
+                    HASH(reference.attachment);
+                    HASH(reference.layout);
+                }
+            }};
 
-            HASH(subpass.resolveAttachments.size());
-            for (const auto &reference : subpass.resolveAttachments)
-                HASH(reference);
+            hashReferences(subpass.inputAttachments);
+            hashReferences(subpass.colorAttachments);
+            hashReferences(subpass.resolveAttachments);
 
             HASH(subpass.depthStencilAttachment.has_value());
-            if (subpass.depthStencilAttachment)
-                HASH(*subpass.depthStencilAttachment);
+            if (subpass.depthStencilAttachment) {
+                HASH(subpass.depthStencilAttachment->attachment);
+                HASH(subpass.depthStencilAttachment->layout);
+            }
 
             HASH(subpass.preserveAttachments.size());
             for (const auto &index : subpass.preserveAttachments)
@@ -80,28 +79,40 @@ namespace skyline::gpu::cache {
 
         HASH(key.attachmentCount);
         for (const auto &attachment : span<const vk::AttachmentDescription>{key.pAttachments, key.attachmentCount}) {
+            HASH(static_cast<VkAttachmentDescriptionFlags>(attachment.flags));
             HASH(attachment.format);
             HASH(attachment.samples);
+            HASH(attachment.loadOp);
+            HASH(attachment.storeOp);
+            HASH(attachment.stencilLoadOp);
+            HASH(attachment.stencilStoreOp);
+            HASH(attachment.initialLayout);
+            HASH(attachment.finalLayout);
         }
 
         HASH(key.subpassCount);
         for (const auto &subpass : span<const vk::SubpassDescription>{key.pSubpasses, key.subpassCount}) {
-            HASH(subpass.inputAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pInputAttachments, subpass.inputAttachmentCount})
-                HASH(reference.attachment);
+            HASH(static_cast<VkSubpassDescriptionFlags>(subpass.flags));
+            HASH(subpass.pipelineBindPoint);
 
-            HASH(subpass.colorAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pColorAttachments, subpass.colorAttachmentCount})
-                HASH(reference.attachment);
+            auto hashReferences{[&hash](const vk::AttachmentReference *data, u32 count) {
+                HASH(count);
+                for (const auto &reference : span<const vk::AttachmentReference>{data, count}) {
+                    HASH(reference.attachment);
+                    HASH(reference.layout);
+                }
+            }};
 
-            u32 resolveAttachmentCount{subpass.pResolveAttachments ? subpass.colorAttachmentCount : 0};
-            HASH(resolveAttachmentCount);
-            for (const auto &reference : span<const vk::AttachmentReference>{subpass.pResolveAttachments, resolveAttachmentCount})
-                HASH(reference.attachment);
+            hashReferences(subpass.pInputAttachments, subpass.inputAttachmentCount);
+            hashReferences(subpass.pColorAttachments, subpass.colorAttachmentCount);
+            if (subpass.pResolveAttachments)
+                hashReferences(subpass.pResolveAttachments, subpass.colorAttachmentCount);
 
             HASH(subpass.pDepthStencilAttachment != nullptr);
-            if (subpass.pDepthStencilAttachment)
+            if (subpass.pDepthStencilAttachment) {
                 HASH(subpass.pDepthStencilAttachment->attachment);
+                HASH(subpass.pDepthStencilAttachment->layout);
+            }
 
             HASH(subpass.preserveAttachmentCount);
             for (const auto &index : span<const u32>{subpass.pPreserveAttachments, subpass.preserveAttachmentCount})
@@ -119,41 +130,29 @@ namespace skyline::gpu::cache {
 
     bool RenderPassCache::RenderPassEqual::operator()(const RenderPassMetadata &lhs, const vk::RenderPassCreateInfo &rhs) const {
         #define RETF(condition) if (condition) { return false; }
+        #define RETARRNEQ(array, pointer, count) RETF(!std::equal(array.begin(), array.end(), pointer, pointer + count))
 
-        RETF(lhs.attachments.size() != rhs.attachmentCount)
-        const vk::AttachmentDescription *vkAttachment{rhs.pAttachments};
-        for (const auto &attachment : lhs.attachments) {
-            RETF(attachment.format != vkAttachment->format)
-            RETF(attachment.sampleCount != vkAttachment->samples)
-            vkAttachment++;
-        }
+        RETARRNEQ(lhs.attachments, rhs.pAttachments, rhs.attachmentCount)
 
         RETF(lhs.subpasses.size() != rhs.subpassCount)
         const vk::SubpassDescription *vkSubpass{rhs.pSubpasses};
         for (const auto &subpass : lhs.subpasses) {
-            RETF(subpass.inputAttachments.size() != vkSubpass->inputAttachmentCount)
-            const vk::AttachmentReference *vkReference{vkSubpass->pInputAttachments};
-            for (const auto &reference : subpass.inputAttachments)
-                RETF(reference != (vkReference++)->attachment)
+            RETF(subpass.flags != vkSubpass->flags)
+            RETF(subpass.pipelineBindPoint != vkSubpass->pipelineBindPoint)
 
-            RETF(subpass.colorAttachments.size() != vkSubpass->colorAttachmentCount)
-            vkReference = vkSubpass->pColorAttachments;
-            for (const auto &reference : subpass.colorAttachments)
-                RETF(reference != (vkReference++)->attachment)
+            RETARRNEQ(subpass.inputAttachments, vkSubpass->pInputAttachments, vkSubpass->inputAttachmentCount)
+            RETARRNEQ(subpass.colorAttachments, vkSubpass->pColorAttachments, vkSubpass->colorAttachmentCount)
 
             RETF(subpass.resolveAttachments.size() != (vkSubpass->pResolveAttachments ? vkSubpass->colorAttachmentCount : 0))
-            vkReference = vkSubpass->pResolveAttachments;
-            for (const auto &reference : subpass.resolveAttachments)
-                RETF(reference != (vkReference++)->attachment)
+            if (!subpass.resolveAttachments.empty())
+                RETARRNEQ(subpass.resolveAttachments, vkSubpass->pResolveAttachments, vkSubpass->colorAttachmentCount)
 
             RETF(subpass.depthStencilAttachment.has_value() != (vkSubpass->pDepthStencilAttachment != nullptr))
             if (subpass.depthStencilAttachment)
-                RETF(*subpass.depthStencilAttachment != vkSubpass->pDepthStencilAttachment->attachment)
+                RETF(subpass.depthStencilAttachment->attachment != vkSubpass->pDepthStencilAttachment->attachment &&
+                    subpass.depthStencilAttachment->layout != vkSubpass->pDepthStencilAttachment->layout)
 
-            RETF(subpass.preserveAttachments.size() != vkSubpass->preserveAttachmentCount)
-            const u32 *vkIndex{vkSubpass->pPreserveAttachments};
-            for (const auto &attachment : subpass.preserveAttachments)
-                RETF(attachment != *(vkIndex++))
+            RETARRNEQ(subpass.preserveAttachments, vkSubpass->pPreserveAttachments, vkSubpass->preserveAttachmentCount)
 
             vkSubpass++;
         }

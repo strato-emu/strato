@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "common.h"
+#include <vulkan/vulkan_raii.hpp>
+#include <common.h>
 
 namespace skyline::gpu::cache {
     /**
@@ -14,31 +15,29 @@ namespace skyline::gpu::cache {
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes access to the cache
 
-        using AttachmentReference = u32;
-
         /**
-         * @brief All unique metadata in a single subpass for a compatible render pass according to Render Pass Compatibility clause in the Vulkan specification
-         * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html#renderpass-compatibility
          * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkSubpassDescription.html
          */
-        struct SubpassMetadata {
-            std::vector<AttachmentReference> inputAttachments;
-            std::vector<AttachmentReference> colorAttachments;
-            std::vector<AttachmentReference> resolveAttachments;
-            std::optional<AttachmentReference> depthStencilAttachment;
-            std::vector<AttachmentReference> preserveAttachments;
+        struct SubpassDescription {
+            vk::SubpassDescriptionFlags flags;
+            vk::PipelineBindPoint pipelineBindPoint;
+            std::vector<vk::AttachmentReference> inputAttachments;
+            std::vector<vk::AttachmentReference> colorAttachments;
+            std::vector<vk::AttachmentReference> resolveAttachments;
+            std::optional<vk::AttachmentReference> depthStencilAttachment;
+            std::vector<u32> preserveAttachments;
 
-            bool operator==(const SubpassMetadata &rhs) const = default;
+            SubpassDescription(const vk::SubpassDescription &description);
+
+            bool operator==(const SubpassDescription &rhs) const = default;
         };
 
         /**
-         * @brief All unique metadata in a render pass for a corresponding compatible render pass according to Render Pass Compatibility clause in the Vulkan specification
-         * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html#renderpass-compatibility
          * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkRenderPassCreateInfo.html
          */
         struct RenderPassMetadata {
-            std::vector<AttachmentMetadata> attachments;
-            std::vector<SubpassMetadata> subpasses;
+            std::vector<vk::AttachmentDescription> attachments;
+            std::vector<SubpassDescription> subpasses;
 
             RenderPassMetadata(const vk::RenderPassCreateInfo &createInfo);
 

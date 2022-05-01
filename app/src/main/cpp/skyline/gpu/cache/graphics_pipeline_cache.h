@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <vulkan/vulkan_raii.hpp>
 #include <gpu/texture/texture.h>
-#include "common.h"
 
 namespace skyline::gpu::cache {
     /**
@@ -48,6 +48,24 @@ namespace skyline::gpu::cache {
         };
 
       private:
+        GPU &gpu;
+        std::mutex mutex; //!< Synchronizes accesses to the pipeline cache
+        vk::raii::PipelineCache vkPipelineCache; //!< A Vulkan Pipeline Cache which stores all unique graphics pipelines
+
+        /**
+         * @brief All unique metadata in a single attachment for a compatible render pass according to Render Pass Compatibility clause in the Vulkan specification
+         * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html#renderpass-compatibility
+         * @url https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkAttachmentDescription.html
+         */
+        struct AttachmentMetadata {
+            vk::Format format;
+            vk::SampleCountFlagBits sampleCount;
+
+            constexpr AttachmentMetadata(vk::Format format, vk::SampleCountFlagBits sampleCount) : format(format), sampleCount(sampleCount) {}
+
+            bool operator==(const AttachmentMetadata &rhs) const = default;
+        };
+
         /**
          * @brief All data in PipelineState in value form to allow cheap heterogenous lookups with reference types while still storing a value-based key in the map
          */
@@ -91,11 +109,6 @@ namespace skyline::gpu::cache {
                 return rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
             }
         };
-
-      private:
-        GPU &gpu;
-        std::mutex mutex; //!< Synchronizes accesses to the pipeline cache
-        vk::raii::PipelineCache vkPipelineCache; //!< A Vulkan Pipeline Cache which stores all unique graphics pipelines
 
         struct PipelineStateHash {
             using is_transparent = std::true_type;
