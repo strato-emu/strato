@@ -135,11 +135,12 @@ namespace skyline {
         /**
          * @brief Writes contents starting from the virtual address till the end of the span or an unmapped block has been hit or when `function` returns a non-nullopt value
          * @param function A function that is called on every block where it should return an end offset into the block when it wants to end reading or std::nullopt when it wants to continue reading
-         * @return If returning was caused by the supplied function returning a non-nullopt value or other conditions
+         * @return A span into the supplied container with the contents of the memory region
          * @note The function will **NOT** be run on any sparse block
+         * @note The function will provide no feedback on if the end has been reached or if there was an early exit
          */
         template<typename Function, typename Container>
-        bool ReadTill(Container& destination, VaType virt, Function function) {
+        span<u8> ReadTill(Container& destination, VaType virt, Function function) {
             //TRACE_EVENT("containers", "FlatMemoryManager::ReadTill");
 
             std::scoped_lock lock(this->blockMutex);
@@ -158,18 +159,15 @@ namespace skyline {
 
             while (remainingSize) {
                 if (predecessor->phys == nullptr) {
-                    destination.resize(destination.size() - remainingSize);
-                    return false;
+                    return {destination.data(), destination.size() - remainingSize};
                 } else {
                     if (predecessor->extraInfo.sparseMapped) {
                         std::memset(pointer, 0, blockReadSize);
                     } else {
                         auto end{function(span<u8>(blockPhys, blockReadSize))};
                         std::memcpy(pointer, blockPhys, end ? *end : blockReadSize);
-                        if (end) {
-                            destination.resize((destination.size() - remainingSize) + *end);
-                            return true;
-                        }
+                        if (end)
+                            return {destination.data(), (destination.size() - remainingSize) + *end};
                     }
                 }
 
@@ -183,7 +181,7 @@ namespace skyline {
                 }
             }
 
-            return false;
+            return {destination.data(), destination.size()};
         }
 
         void Write(VaType virt, u8 *source, VaType size);

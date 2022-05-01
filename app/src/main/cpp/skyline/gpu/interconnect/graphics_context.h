@@ -747,7 +747,8 @@ namespace skyline::gpu::interconnect {
             bool invalidated{true}; //!< If the shader that existed earlier has been invalidated
             bool shouldCheckSame{false}; //!< If we should do a check for the shader being the same as before
             u32 offset{}; //!< Offset of the shader from the base IOVA
-            boost::container::static_vector<u8, MaxShaderBytecodeSize> data; //!< The shader bytecode in a statically allocated vector
+            std::array<u8, MaxShaderBytecodeSize> backing; //!< The backing storage for shader bytecode in a statically allocated array
+            span<u8> bytecode{}; //!< A span of the shader bytecode inside the backing storage
             std::shared_ptr<ShaderManager::ShaderProgram> program{};
 
             Shader(ShaderCompiler::Stage stage) : stage(stage) {}
@@ -914,10 +915,10 @@ namespace skyline::gpu::interconnect {
                         // If a shader is invalidated, we need to reparse the program (given that it has changed)
 
                         bool shouldParseShader{[&]() {
-                            if (!shader.data.empty() && shader.shouldCheckSame) {
+                            if (shader.bytecode.valid() && shader.shouldCheckSame) {
                                 // A fast path to check if the shader is the same as before to avoid reparsing the shader
-                                auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.data.size())};
-                                auto originalShader{shader.data.data()};
+                                auto newIovaRanges{channelCtx.asCtx->gmmu.TranslateRange(shaderBaseIova + shader.offset, shader.bytecode.size())};
+                                auto originalShader{shader.bytecode.data()};
 
                                 for (auto &range : newIovaRanges) {
                                     if (range.data() && std::memcmp(range.data(), originalShader, range.size()) == 0) {
@@ -936,8 +937,7 @@ namespace skyline::gpu::interconnect {
 
                         if (shouldParseShader) {
                             // A pass to check if the shader has a BRA infloop opcode ending (On most commercial games)
-                            shader.data.resize(MaxShaderBytecodeSize);
-                            auto foundEnd{channelCtx.asCtx->gmmu.ReadTill(shader.data, shaderBaseIova + shader.offset, [](span<u8> data) -> std::optional<size_t> {
+                            shader.bytecode = channelCtx.asCtx->gmmu.ReadTill(shader.backing, shaderBaseIova + shader.offset, [](span<u8> data) -> std::optional<size_t> {
                                 // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
                                 // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
                                 constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
@@ -950,9 +950,9 @@ namespace skyline::gpu::interconnect {
                                         return static_cast<size_t>(std::distance(shaderInstructions.begin(), it)) * sizeof(u64);
                                 }
                                 return std::nullopt;
-                            })};
+                            });
 
-                            shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.data, shader.offset, bindlessTextureConstantBufferIndex);
+                            shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.bytecode, shader.offset, bindlessTextureConstantBufferIndex);
 
                             if (shader.stage != ShaderCompiler::Stage::VertexA && shader.stage != ShaderCompiler::Stage::VertexB) {
                                 pipelineStage.program = shader.program;
@@ -963,13 +963,13 @@ namespace skyline::gpu::interconnect {
                                     throw exception("Enabling VertexA without VertexB is not supported");
                                 else if (!vertexB.invalidated)
                                     // If only VertexA is invalidated, we need to recombine here but we can defer it otherwise
-                                    pipelineStage.program = gpu.shader.CombineVertexShaders(shader.program, vertexB.program, vertexB.data);
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(shader.program, vertexB.program, vertexB.bytecode);
                             } else if (shader.stage == ShaderCompiler::Stage::VertexB) {
                                 auto &vertexA{shaders[maxwell3d::ShaderStage::VertexA]};
 
                                 if (vertexA.enabled)
                                     // We need to combine the vertex shader stages if VertexA is enabled
-                                    pipelineStage.program = gpu.shader.CombineVertexShaders(vertexA.program, shader.program, shader.data);
+                                    pipelineStage.program = gpu.shader.CombineVertexShaders(vertexA.program, shader.program, shader.bytecode);
                                 else
                                     pipelineStage.program = shader.program;
                             }
