@@ -865,7 +865,7 @@ namespace skyline::gpu::interconnect {
                 }
             };
 
-            std::unique_ptr<DescriptorSetWrites> descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
+            DescriptorSetWrites descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
         };
 
         /**
@@ -985,12 +985,12 @@ namespace skyline::gpu::interconnect {
                 }
             }
 
-            auto descriptorSetWrites{std::make_unique<ShaderProgramState::DescriptorSetWrites>()};
-            auto &descriptorWrites{**descriptorSetWrites};
+            ShaderProgramState::DescriptorSetWrites descriptorSetWrites{};
+            auto &descriptorWrites{*descriptorSetWrites};
             descriptorWrites.reserve(PipelineDescriptorWritesReservedCount);
 
-            auto &bufferDescriptors{descriptorSetWrites->bufferDescriptors};
-            auto &imageDescriptors{descriptorSetWrites->imageDescriptors};
+            auto &bufferDescriptors{descriptorSetWrites.bufferDescriptors};
+            auto &imageDescriptors{descriptorSetWrites.imageDescriptors};
             size_t bufferCount{}, imageCount{};
             for (auto &pipelineStage : pipelineStages) {
                 if (pipelineStage.enabled) {
@@ -2852,18 +2852,23 @@ namespace skyline::gpu::interconnect {
 
             // Draw Persistent Storage
             struct DrawStorage : FenceCycleDependency {
-                std::unique_ptr<ShaderProgramState::DescriptorSetWrites> descriptorSetWrites;
-                vk::DescriptorSetLayout descriptorSetLayout;
-                vk::PipelineLayout pipelineLayout;
-                vk::Pipeline pipeline;
+                ShaderProgramState::DescriptorSetWrites descriptorSetWrites;
+                std::optional<DescriptorAllocator::ActiveDescriptorSet> descriptorSet;
 
-                DrawStorage(std::unique_ptr<ShaderProgramState::DescriptorSetWrites> &&descriptorSetWrites, vk::DescriptorSetLayout descriptorSetLayout, vk::PipelineLayout pipelineLayout, vk::Pipeline pipeline) : descriptorSetWrites(std::move(descriptorSetWrites)), descriptorSetLayout(descriptorSetLayout), pipelineLayout(pipelineLayout), pipeline(pipeline) {}
+                DrawStorage(ShaderProgramState::DescriptorSetWrites &&descriptorSetWrites) : descriptorSetWrites(std::move(descriptorSetWrites)) {}
+
+                DrawStorage(ShaderProgramState::DescriptorSetWrites &&descriptorSetWrites, DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : descriptorSetWrites(std::move(descriptorSetWrites)), descriptorSet(std::move(descriptorSet)) {}
             };
 
-            auto drawStorage{std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), compiledPipeline.descriptorSetLayout, compiledPipeline.pipelineLayout, compiledPipeline.pipeline)};
+            std::shared_ptr<DrawStorage> drawStorage{};
+            if (gpu.traits.supportsPushDescriptors)
+                drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites));
+            else {
+                drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), gpu.descriptor.AllocateSet(compiledPipeline.descriptorSetLayout));
+            }
 
             // Submit Draw
-            executor.AddSubpass([=, drawStorage = std::move(drawStorage), &vkDevice = gpu.vkDevice, supportsPushDescriptors = gpu.traits.supportsPushDescriptors](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, drawStorage = std::move(drawStorage), &vkDevice = gpu.vkDevice, pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline, supportsPushDescriptors = gpu.traits.supportsPushDescriptors](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
 
                 auto &vertexBufferHandles{boundVertexBuffers->handles};
                 for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
@@ -2879,16 +2884,15 @@ namespace skyline::gpu::interconnect {
                 }
 
                 if (supportsPushDescriptors) {
-                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, drawStorage->pipelineLayout, 0, **drawStorage->descriptorSetWrites);
+                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSetWrites);
                 } else {
-                    auto descriptorSet{gpu.descriptor.AllocateSet(drawStorage->descriptorSetLayout)};
-                    for (auto &descriptorSetWrite : **drawStorage->descriptorSetWrites)
-                        descriptorSetWrite.dstSet = descriptorSet;
-                    vkDevice.updateDescriptorSets(**drawStorage->descriptorSetWrites, nullptr);
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, drawStorage->pipelineLayout, 0, descriptorSet, nullptr);
+                    for (auto &descriptorSetWrite : *drawStorage->descriptorSetWrites)
+                        descriptorSetWrite.dstSet = *drawStorage->descriptorSet;
+                    vkDevice.updateDescriptorSets(*drawStorage->descriptorSetWrites, nullptr);
+                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSet, nullptr);
                 }
 
-                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawStorage->pipeline);
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
                 if constexpr (IsIndexed) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
