@@ -69,7 +69,7 @@ namespace skyline::gpu {
         });
     }
 
-    static VkBool32 DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char *layerPrefix, const char *message) {
+    static VkBool32 DebugCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objectType, u64 object, size_t location, i32 messageCode, const char *layerPrefix, const char *messageCStr, GPU *gpu) {
         constexpr std::array<Logger::LogLevel, 5> severityLookup{
             Logger::LogLevel::Info,  // VK_DEBUG_REPORT_INFORMATION_BIT_EXT
             Logger::LogLevel::Warn,  // VK_DEBUG_REPORT_WARNING_BIT_EXT
@@ -78,33 +78,85 @@ namespace skyline::gpu {
             Logger::LogLevel::Debug, // VK_DEBUG_REPORT_DEBUG_BIT_EXT
         };
 
-        #define IGNORE_VALIDATION(string) \
-        case util::Hash(string):          \
-            if (string == type)           \
-                return VK_FALSE;          \
-            break
+        #define IGNORE_VALIDATION_C(string, function) \
+        case util::Hash(string): {                    \
+            if (string == type) {                     \
+                function                              \
+            }                                         \
+            break;                                    \
+        }
 
-        #define DEBUG_VALIDATION(string) \
-        case util::Hash(string):         \
-            if (string == type)          \
-                raise(SIGTRAP);          \
-            break
-        // Using __builtin_debugtrap() as opposed to raise(SIGTRAP) will result in the inability to continue
+        #define IGNORE_VALIDATION_CL(string, functionName) IGNORE_VALIDATION_C(string, { if (!functionName()) return VK_FALSE; })
 
-        std::string_view type(message);
+        #define IGNORE_VALIDATION(string) IGNORE_VALIDATION_C(string, { return VK_FALSE; })
+
+        #define DEBUG_VALIDATION(string) IGNORE_VALIDATION_C(string, { raise(SIGTRAP); }) // Using __builtin_debugtrap() as opposed to raise(SIGTRAP) will result in the inability to continue
+
+        std::string_view message{messageCStr};
+
+        std::string_view type{message};
         auto first{type.find('[')};
         auto last{type.find(']', first)};
         if (first != std::string_view::npos && last != std::string_view::npos) {
             type = type.substr(first + 2, last != std::string_view::npos ? (last - first) - 3 : last);
 
+            auto returnIfBcn{[&] {
+                if (gpu->traits.hasPatchedBcn && message.find("VK_FORMAT_BC") != std::string_view::npos)
+                    return false;
+                return true;
+            }};
+
             switch (util::Hash(type)) {
-                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform"); // We handle transformation via Android APIs directly
-                IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain"); // Same as SwapchainPreTransform
-                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout"); // We utilize images as VK_IMAGE_LAYOUT_GENERAL rather than optimal layouts for operations
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-SwapchainPreTransform") // We handle transformation via Android APIs directly
+                IGNORE_VALIDATION("UNASSIGNED-GeneralParameterPerfWarn-SuboptimalSwapchain") // Same as SwapchainPreTransform
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout") // We utilize images as VK_IMAGE_LAYOUT_GENERAL rather than optimal layouts for operations
+                IGNORE_VALIDATION("VUID-VkImageViewCreateInfo-image-01762") // We allow aliasing of certain formats and handle warning in other cases ourselves
+
+                /* BCn format missing due to adrenotools */
+                IGNORE_VALIDATION_CL("VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", returnIfBcn)
+                IGNORE_VALIDATION_CL("VUID-VkImageViewCreateInfo-None-02273", returnIfBcn)
+                IGNORE_VALIDATION_CL("VUID-vkCmdDraw-magFilter-04553", returnIfBcn)
+                IGNORE_VALIDATION_CL("VUID-vkCmdDrawIndexed-magFilter-04553", returnIfBcn)
+                IGNORE_VALIDATION_C("VUID-vkCmdCopyBufferToImage-dstImage-01997", {
+                    if (!gpu->traits.hasPatchedBcn)
+                        break;
+
+                    constexpr std::string_view FormatTag{"format"}; // The format is provided as "format {}" where {} is the VkFormat value in numerical form
+                    auto formatNumber{message.find_first_of("0123456789", message.find(FormatTag) + FormatTag.size())};
+                    if (formatNumber != std::string_view::npos) {
+                        switch (static_cast<vk::Format>(std::stoi(std::string{message.substr(formatNumber)}))) {
+                            case vk::Format::eBc1RgbUnormBlock:
+                            case vk::Format::eBc1RgbSrgbBlock:
+                            case vk::Format::eBc1RgbaUnormBlock:
+                            case vk::Format::eBc1RgbaSrgbBlock:
+                            case vk::Format::eBc2UnormBlock:
+                            case vk::Format::eBc2SrgbBlock:
+                            case vk::Format::eBc3UnormBlock:
+                            case vk::Format::eBc3SrgbBlock:
+                            case vk::Format::eBc4UnormBlock:
+                            case vk::Format::eBc4SnormBlock:
+                            case vk::Format::eBc5UnormBlock:
+                            case vk::Format::eBc5SnormBlock:
+                            case vk::Format::eBc6HUfloatBlock:
+                            case vk::Format::eBc6HSfloatBlock:
+                            case vk::Format::eBc7UnormBlock:
+                            case vk::Format::eBc7SrgbBlock:
+                                return false;
+
+                            default:
+                                break;
+                        }
+                    }
+                })
+
+                /* Guest driven performance warnings, these cannot be fixed by us */
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-Shader-OutputNotConsumed")
 
                 /* Pipeline Cache isn't compliant with the Vulkan specification, it depends on driver support for a relaxed version of Vulkan specification's Render Pass Compatibility clause and this will result in validation errors regardless which we need to ignore */
-                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-renderPass-02684");
-                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-subpass-02685");
+                IGNORE_VALIDATION("VUID-vkCmdDraw-renderPass-02684")
+                IGNORE_VALIDATION("VUID-vkCmdDraw-subpass-02685")
+                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-renderPass-02684")
+                IGNORE_VALIDATION("VUID-vkCmdDrawIndexed-subpass-02685")
             }
 
             #undef IGNORE_TYPE
@@ -115,10 +167,11 @@ namespace skyline::gpu {
         return VK_FALSE;
     }
 
-    static vk::raii::DebugReportCallbackEXT CreateDebugReportCallback(const vk::raii::Instance &instance) {
+    static vk::raii::DebugReportCallbackEXT CreateDebugReportCallback(GPU *gpu, const vk::raii::Instance &instance) {
         return vk::raii::DebugReportCallbackEXT(instance, vk::DebugReportCallbackCreateInfoEXT{
             .flags = vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eInformation | vk::DebugReportFlagBitsEXT::eDebug,
             .pfnCallback = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(&DebugCallback),
+            .pUserData = gpu,
         });
     }
 
@@ -241,21 +294,25 @@ namespace skyline::gpu {
 
     static PFN_vkGetInstanceProcAddr LoadVulkanDriver(const DeviceState &state) {
         // Try turnip first, if not then fallback to regular with file redirect then plain dlopen
-        auto libvulkanHandle{adrenotools_open_libvulkan(RTLD_NOW,
+        auto libvulkanHandle{adrenotools_open_libvulkan(
+            RTLD_NOW,
             ADRENOTOOLS_DRIVER_CUSTOM,
             nullptr, // We require Android 10 so don't need to supply
             state.os->nativeLibraryPath.c_str(),
             (state.os->publicAppFilesPath + "gpu/turnip/").c_str(),
             "libvulkan_freedreno.so",
-            nullptr)};
+            nullptr
+        )};
         if (!libvulkanHandle) {
-            libvulkanHandle = adrenotools_open_libvulkan(RTLD_NOW,
+            libvulkanHandle = adrenotools_open_libvulkan(
+                RTLD_NOW,
                 ADRENOTOOLS_DRIVER_FILE_REDIRECT,
                 nullptr, // We require Android 10 so don't need to supply
                 state.os->nativeLibraryPath.c_str(),
                 nullptr,
                 nullptr,
-                (state.os->publicAppFilesPath + "gpu/vk_file_redirect/").c_str());
+                (state.os->publicAppFilesPath + "gpu/vk_file_redirect/").c_str()
+            );
             if (!libvulkanHandle)
                 libvulkanHandle = dlopen("libvulkan.so", RTLD_NOW);
         }
@@ -263,12 +320,11 @@ namespace skyline::gpu {
         return reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(libvulkanHandle, "vkGetInstanceProcAddr"));
     }
 
-
     GPU::GPU(const DeviceState &state)
         : state(state),
           vkContext(LoadVulkanDriver(state)),
           vkInstance(CreateInstance(state, vkContext)),
-          vkDebugReportCallback(CreateDebugReportCallback(vkInstance)),
+          vkDebugReportCallback(CreateDebugReportCallback(this, vkInstance)),
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
           vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, traits)),
           vkQueue(vkDevice, vkQueueFamilyIndex, 0),

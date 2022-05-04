@@ -210,6 +210,8 @@ namespace skyline::gpu {
                 Logger::Info("Applied BCeNabler patch");
             else
                 throw exception("Failed to apply BCeNabler patch!");
+
+            hasPatchedBcn = true;
         } else if (type == ADRENOTOOLS_BCN_BLOB) {
             Logger::Info("BCeNabler skipped, blob BCN support is present");
         }

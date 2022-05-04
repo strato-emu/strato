@@ -40,6 +40,8 @@ namespace skyline::gpu {
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
+        bool hasPatchedBcn{}; //!< If the device has been patched to support BCN and may not report texture support correctly
+
         /**
          * @brief Manages a list of any vendor/device-specific errata in the host GPU
          */
