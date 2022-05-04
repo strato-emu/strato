@@ -29,6 +29,8 @@ namespace skyline::gpu::interconnect {
         span<TextureView *> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
         TextureView *lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
 
+        std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
+
         /**
          * @brief Create a new render pass and subpass with the specified attachments, if one doesn't already exist or the current one isn't compatible
          * @note This also checks for subpass coalescing and will merge the new subpass with the previous one when possible
@@ -90,6 +92,11 @@ namespace skyline::gpu::interconnect {
          * @brief Adds a command that needs to be executed outside the scope of a render pass
          */
         void AddOutsideRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
+         * @brief Adds a persistent callback that will be called at the start of Execute in order to flush data required for recording
+         */
+        void AddFlushCallback(std::function<void()> &&callback);
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU

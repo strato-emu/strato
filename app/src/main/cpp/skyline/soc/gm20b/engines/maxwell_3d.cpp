@@ -13,21 +13,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
           context(*state.gpu, channelCtx, executor),
           i2m(channelCtx.asCtx),
           channelCtx(channelCtx) {
+        executor.AddFlushCallback([this]() { FlushEngineState(); });
         InitializeRegisters();
-    }
-
-    void Maxwell3D::CallMethodFromMacro(u32 method, u32 argument) {
-        HandleMethod(method, argument);
-    }
-
-    u32 Maxwell3D::ReadMethodFromMacro(u32 method) {
-        return registers.raw[method];
-    }
-
-    __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {
-        Logger::Verbose("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
-
-        HandleMethod(method, argument);
     }
 
     void Maxwell3D::HandleMethod(u32 method, u32 argument) {
@@ -707,19 +694,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         }
     }
 
-    void Maxwell3D::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
-        switch (method) {
-            case ENGINE_STRUCT_OFFSET(i2m, loadInlineData):
-                i2m.LoadInlineData(*registers.i2m, arguments);
-                return;
-            default:
-                break;
-        }
-
-        for (u32 argument : arguments)
-            HandleMethod(method, argument);
-    }
-
     void Maxwell3D::WriteSemaphoreResult(u64 result) {
         struct FourWordResult {
             u64 value;
@@ -744,5 +718,39 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 break;
             }
         }
+    }
+
+    void Maxwell3D::FlushEngineState() {
+        if (batchConstantBufferUpdate.Active()) {
+            context.ConstantBufferUpdate(std::move(batchConstantBufferUpdate.buffer), batchConstantBufferUpdate.startOffset);
+            batchConstantBufferUpdate.Reset();
+        }
+    }
+
+    __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {
+        Logger::Verbose("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+
+        HandleMethod(method, argument);
+    }
+
+    void Maxwell3D::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
+        switch (method) {
+            case ENGINE_STRUCT_OFFSET(i2m, loadInlineData):
+                i2m.LoadInlineData(*registers.i2m, arguments);
+                return;
+            default:
+                break;
+        }
+
+        for (u32 argument : arguments)
+            HandleMethod(method, argument);
+    }
+
+    void Maxwell3D::CallMethodFromMacro(u32 method, u32 argument) {
+        HandleMethod(method, argument);
+    }
+
+    u32 Maxwell3D::ReadMethodFromMacro(u32 method) {
+        return registers.raw[method];
     }
 }

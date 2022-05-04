@@ -322,15 +322,19 @@ namespace skyline::soc::gm20b {
             }};
 
             bool hitEnd{[&]() {
-                if (methodHeader.methodSubChannel == SubchannelId::ThreeD) [[likely]]
+                if (methodHeader.methodSubChannel == SubchannelId::ThreeD) { [[likely]]
                     return processMethod.operator()<true>();
-                else
+                } else {
+                    channelCtx.maxwell3D->FlushEngineState(); // Flush the 3D engine state when doing any calls to other engines
                     return processMethod.operator()<false>();
+                }
             }()};
 
             if (hitEnd)
-                return;
+                break;
         }
+
+        channelCtx.maxwell3D->FlushEngineState();
     }
 
     void ChannelGpfifo::Run() {

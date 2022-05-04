@@ -356,13 +356,17 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         ChannelContext &channelCtx;
 
-
         Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor);
 
         /**
          * @brief Initializes Maxwell 3D registers to their default values
          */
         void InitializeRegisters();
+
+        /**
+         * @brief Flushes any batched constant buffer update or instanced draw state
+         */
+        void FlushEngineState();
 
         void CallMethod(u32 method, u32 argument);
 

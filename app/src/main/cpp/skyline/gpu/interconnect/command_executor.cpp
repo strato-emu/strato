@@ -164,6 +164,10 @@ namespace skyline::gpu::interconnect {
         }
     }
 
+    void CommandExecutor::AddFlushCallback(std::function<void()> &&callback) {
+        flushCallbacks.emplace_back(std::forward<decltype(callback)>(callback));
+    }
+
     void CommandExecutor::Execute() {
         if (!nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Execute");
