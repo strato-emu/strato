@@ -150,6 +150,7 @@ namespace skyline::gpu {
                 needsIndividualTextureBindingWrites = true;
                 vkImageMutableFormatCostly = true; // Disables UBWC
                 adrenoRelaxedFormatAliasing = true;
+                adrenoBrokenFormatReport = true;
                 brokenDescriptorAliasing = true;
                 relaxedRenderPassCompatibility = true; // Adreno drivers support relaxed render pass compatibility rules
 
@@ -187,8 +188,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::QuirkManager::Summary() {
         return fmt::format(
-            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}\n* Adreno Relaxed Format Aliasing: {}\n* Broken Descriptor Aliasing: {}\n* Relaxed Render Pass Compatibility: {}\n* Max Subpass Count: {}\n* Max Global Queue Priority: {}",
-            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly, adrenoRelaxedFormatAliasing, brokenDescriptorAliasing, relaxedRenderPassCompatibility, maxSubpassCount, vk::to_string(maxGlobalPriority)
+            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}\n* Adreno Relaxed Format Aliasing: {}\n* Adreno Broken Format Reporting: {}\n* Broken Descriptor Aliasing: {}\n* Relaxed Render Pass Compatibility: {}\n* Max Subpass Count: {}\n* Max Global Queue Priority: {}",
+            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly, adrenoRelaxedFormatAliasing, adrenoBrokenFormatReport, brokenDescriptorAliasing, relaxedRenderPassCompatibility, maxSubpassCount, vk::to_string(maxGlobalPriority)
         );
     }
 
@@ -212,8 +213,6 @@ namespace skyline::gpu {
                 Logger::Info("Applied BCeNabler patch");
             else
                 throw exception("Failed to apply BCeNabler patch!");
-
-            hasPatchedBcn = true;
         } else if (type == ADRENOTOOLS_BCN_BLOB) {
             Logger::Info("BCeNabler skipped, blob BCN support is present");
         }

@@ -100,9 +100,69 @@ namespace skyline::gpu {
         if (first != std::string_view::npos && last != std::string_view::npos) {
             type = type.substr(first + 2, last != std::string_view::npos ? (last - first) - 3 : last);
 
-            auto returnIfBcn{[&] {
-                if (gpu->traits.hasPatchedBcn && message.find("VK_FORMAT_BC") != std::string_view::npos)
-                    return false;
+            auto &traits{gpu->traits.quirks};
+
+            auto returnIfBrokenFormat1{[&] {
+                if (!traits.adrenoRelaxedFormatAliasing)
+                    return true;
+
+                constexpr std::string_view FormatTag{"VK_FORMAT_"};
+                auto start{message.find(FormatTag)}, end{message.find(' ', start)};
+                if (start == std::string_view::npos || end == std::string_view::npos)
+                    return true;
+
+                std::string_view formatName{message.data() + start + FormatTag.length(), message.data() + end};
+                if (formatName.ends_with(')'))
+                    formatName.remove_suffix(1);
+
+                if (formatName.starts_with("BC") && formatName.ends_with("_BLOCK"))
+                    return false; // BCn formats
+
+                #define FMT(name) if (formatName == name) return false
+
+                FMT("B5G6R5_UNORM_PACK16");
+                FMT("R5G6B5_UNORM_PACK16");
+
+                #undef FMT
+
+                return true;
+            }};
+
+            auto returnIfBrokenFormat2{[&] {
+                if (!traits.adrenoRelaxedFormatAliasing)
+                    return true;
+
+                constexpr std::string_view FormatTag{"format"}; // The format is provided as "format {}" where {} is the VkFormat value in numerical form
+                auto formatNumber{message.find_first_of("0123456789", message.find(FormatTag) + FormatTag.size())};
+                if (formatNumber != std::string_view::npos) {
+                    auto format{static_cast<vk::Format>(std::stoi(std::string{message.substr(formatNumber)}))};
+                    switch (format) {
+                        case vk::Format::eR5G6B5UnormPack16:
+                        case vk::Format::eB5G6R5UnormPack16:
+
+                        case vk::Format::eBc1RgbUnormBlock:
+                        case vk::Format::eBc1RgbSrgbBlock:
+                        case vk::Format::eBc1RgbaUnormBlock:
+                        case vk::Format::eBc1RgbaSrgbBlock:
+                        case vk::Format::eBc2UnormBlock:
+                        case vk::Format::eBc2SrgbBlock:
+                        case vk::Format::eBc3UnormBlock:
+                        case vk::Format::eBc3SrgbBlock:
+                        case vk::Format::eBc4UnormBlock:
+                        case vk::Format::eBc4SnormBlock:
+                        case vk::Format::eBc5UnormBlock:
+                        case vk::Format::eBc5SnormBlock:
+                        case vk::Format::eBc6HUfloatBlock:
+                        case vk::Format::eBc6HSfloatBlock:
+                        case vk::Format::eBc7UnormBlock:
+                        case vk::Format::eBc7SrgbBlock:
+                            return false;
+
+                        default:
+                            return true;
+                    }
+                }
+
                 return true;
             }};
 
@@ -113,43 +173,16 @@ namespace skyline::gpu {
                 IGNORE_VALIDATION("VUID-VkImageViewCreateInfo-image-01762") // We allow aliasing of certain formats and handle warning in other cases ourselves
 
                 /* BCn format missing due to adrenotools */
-                IGNORE_VALIDATION_CL("VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", returnIfBcn)
-                IGNORE_VALIDATION_CL("VUID-VkImageViewCreateInfo-None-02273", returnIfBcn)
-                IGNORE_VALIDATION_CL("VUID-vkCmdDraw-magFilter-04553", returnIfBcn)
-                IGNORE_VALIDATION_CL("VUID-vkCmdDrawIndexed-magFilter-04553", returnIfBcn)
-                IGNORE_VALIDATION_C("VUID-vkCmdCopyBufferToImage-dstImage-01997", {
-                    if (!gpu->traits.hasPatchedBcn)
-                        break;
-
-                    constexpr std::string_view FormatTag{"format"}; // The format is provided as "format {}" where {} is the VkFormat value in numerical form
-                    auto formatNumber{message.find_first_of("0123456789", message.find(FormatTag) + FormatTag.size())};
-                    if (formatNumber != std::string_view::npos) {
-                        switch (static_cast<vk::Format>(std::stoi(std::string{message.substr(formatNumber)}))) {
-                            case vk::Format::eBc1RgbUnormBlock:
-                            case vk::Format::eBc1RgbSrgbBlock:
-                            case vk::Format::eBc1RgbaUnormBlock:
-                            case vk::Format::eBc1RgbaSrgbBlock:
-                            case vk::Format::eBc2UnormBlock:
-                            case vk::Format::eBc2SrgbBlock:
-                            case vk::Format::eBc3UnormBlock:
-                            case vk::Format::eBc3SrgbBlock:
-                            case vk::Format::eBc4UnormBlock:
-                            case vk::Format::eBc4SnormBlock:
-                            case vk::Format::eBc5UnormBlock:
-                            case vk::Format::eBc5SnormBlock:
-                            case vk::Format::eBc6HUfloatBlock:
-                            case vk::Format::eBc6HSfloatBlock:
-                            case vk::Format::eBc7UnormBlock:
-                            case vk::Format::eBc7SrgbBlock:
-                                return false;
-
-                            default:
-                                break;
-                        }
-                    }
-                })
+                IGNORE_VALIDATION_CL("VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", returnIfBrokenFormat1)
+                IGNORE_VALIDATION_CL("VUID-VkImageViewCreateInfo-None-02273", returnIfBrokenFormat1)
+                IGNORE_VALIDATION_CL("VUID-VkImageViewCreateInfo-usage-02274", returnIfBrokenFormat1)
+                IGNORE_VALIDATION_CL("VUID-vkCmdDraw-magFilter-04553", returnIfBrokenFormat1)
+                IGNORE_VALIDATION_CL("VUID-vkCmdDrawIndexed-magFilter-04553", returnIfBrokenFormat1)
+                IGNORE_VALIDATION_CL("VUID-vkCmdCopyImageToBuffer-srcImage-01998", returnIfBrokenFormat2)
+                IGNORE_VALIDATION_CL("VUID-vkCmdCopyBufferToImage-dstImage-01997", returnIfBrokenFormat2)
 
                 /* Guest driven performance warnings, these cannot be fixed by us */
+                IGNORE_VALIDATION("UNASSIGNED-CoreValidation-Shader-InputNotProduced")
                 IGNORE_VALIDATION("UNASSIGNED-CoreValidation-Shader-OutputNotConsumed")
 
                 /* Pipeline Cache isn't compliant with the Vulkan specification, it depends on driver support for a relaxed version of Vulkan specification's Render Pass Compatibility clause and this will result in validation errors regardless which we need to ignore */
