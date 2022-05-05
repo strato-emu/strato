@@ -34,13 +34,13 @@ namespace skyline::gpu::interconnect {
             lastSubpassDepthStencilAttachment = depthStencilAttachment;
         }};
 
-        if (renderPass == nullptr || (renderPass && (renderPass->renderArea != renderArea || subpassCount > gpu.traits.quirks.maxSubpassCount))) {
+        if (renderPass == nullptr || (renderPass && (renderPass->renderArea != renderArea || subpassCount >= gpu.traits.quirks.maxSubpassCount))) {
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
             if (renderPass != nullptr)
                 nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
             renderPass = &std::get<node::RenderPassNode>(nodes.emplace_back(std::in_place_type_t<node::RenderPassNode>(), renderArea));
             addSubpass();
-            subpassCount = 0;
+            subpassCount = 1;
             return false;
         } else {
             if (ranges::equal(lastSubpassInputAttachments, inputAttachments) &&
