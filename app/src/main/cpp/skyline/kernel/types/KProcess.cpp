@@ -54,7 +54,7 @@ namespace skyline::kernel::type {
     u8 *KProcess::AllocateTlsSlot() {
         std::scoped_lock lock{tlsMutex};
         u8 *slot;
-        for (auto &tlsPage: tlsPages)
+        for (auto &tlsPage : tlsPages)
             if ((slot = tlsPage->ReserveSlot()))
                 return slot;
 
@@ -268,13 +268,32 @@ namespace skyline::kernel::type {
             __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
     }
 
-    Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, bool (*arbitrationFunction)(u32 *, u32)) {
+    Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, ArbitrationType type) {
         TRACE_EVENT_FMT("kernel", "WaitForAddress 0x{:X}", address);
 
         {
             std::scoped_lock lock{syncWaiterMutex};
-            if (!arbitrationFunction(address, value)) [[unlikely]]
-                return result::InvalidState;
+
+            switch (type) {
+                case ArbitrationType::WaitIfLessThan:
+                    if (*address >= value) [[unlikely]]
+                        return result::InvalidState;
+                    break;
+
+                case ArbitrationType::DecrementAndWaitIfLessThan: {
+                    u32 userValue{__atomic_load_n(address, __ATOMIC_SEQ_CST)};
+                    do {
+                        if (value <= userValue) [[unlikely]] // We want to explicitly decrement **after** the check
+                            return result::InvalidState;
+                    } while (!__atomic_compare_exchange_n(address, &userValue, userValue - 1, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
+                    break;
+                }
+
+                case ArbitrationType::WaitIfEqual:
+                    if (*address != value) [[unlikely]]
+                        return result::InvalidState;
+                    break;
+            }
 
             auto queue{syncWaiters.equal_range(address)};
             syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {address, state.thread});
@@ -303,15 +322,36 @@ namespace skyline::kernel::type {
         return {};
     }
 
-    Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount)) {
+    Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, SignalType type) {
         TRACE_EVENT_FMT("kernel", "SignalToAddress 0x{:X}", address);
 
         std::scoped_lock lock{syncWaiterMutex};
         auto queue{syncWaiters.equal_range(address)};
 
-        if (mutateFunction)
-            if (!mutateFunction(address, value, (amount <= 0) ? 0 : std::min(static_cast<u32>(std::distance(queue.first, queue.second) - amount), 0U))) [[unlikely]]
+        if (type != SignalType::Signal) {
+            u32 newValue{value};
+            if (type == SignalType::SignalAndIncrementIfEqual) {
+                newValue++;
+            } else if (type == SignalType::SignalAndModifyBasedOnWaitingThreadCountIfEqual) {
+                if (amount <= 0) {
+                    if (queue.first != queue.second)
+                        newValue -= 2;
+                    else
+                        newValue++;
+                } else {
+                    if (queue.first != queue.second) {
+                        i32 waiterCount{static_cast<i32>(std::distance(queue.first, queue.second))};
+                        if (waiterCount < amount)
+                            newValue--;
+                    } else {
+                        newValue++;
+                    }
+                }
+            }
+
+            if (!__atomic_compare_exchange_n(address, &value, newValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) [[unlikely]]
                 return result::InvalidState;
+        }
 
         i32 waiterCount{amount};
         for (auto it{queue.first}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)

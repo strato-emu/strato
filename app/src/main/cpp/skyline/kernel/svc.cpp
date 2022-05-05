@@ -1205,11 +1205,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        enum class ArbitrationType : u32 {
-            WaitIfLessThan = 0,
-            DecrementAndWaitIfLessThan = 1,
-            WaitIfEqual = 2,
-        } arbitrationType{static_cast<ArbitrationType>(static_cast<u32>(state.ctx->gpr.w1))};
+        using ArbitrationType = type::KProcess::ArbitrationType;
+        auto arbitrationType{static_cast<ArbitrationType>(static_cast<u32>(state.ctx->gpr.w1))};
         u32 value{state.ctx->gpr.w2};
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
 
@@ -1217,28 +1214,17 @@ namespace skyline::kernel::svc {
         switch (arbitrationType) {
             case ArbitrationType::WaitIfLessThan:
                 Logger::Debug("Waiting on 0x{:X} if less than {} for {}ns", address, value, timeout);
-                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
-                    return *address < value;
-                });
+                result = state.process->WaitForAddress(address, value, timeout, ArbitrationType::WaitIfLessThan);
                 break;
 
             case ArbitrationType::DecrementAndWaitIfLessThan:
                 Logger::Debug("Waiting on and decrementing 0x{:X} if less than {} for {}ns", address, value, timeout);
-                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
-                    u32 userValue{__atomic_load_n(address, __ATOMIC_SEQ_CST)};
-                    do {
-                        if (value <= userValue) [[unlikely]] // We want to explicitly decrement **after** the check
-                            return false;
-                    } while (!__atomic_compare_exchange_n(address, &userValue, userValue - 1, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
-                    return true;
-                });
+                result = state.process->WaitForAddress(address, value, timeout, ArbitrationType::DecrementAndWaitIfLessThan);
                 break;
 
             case ArbitrationType::WaitIfEqual:
                 Logger::Debug("Waiting on 0x{:X} if equal to {} for {}ns", address, value, timeout);
-                result = state.process->WaitForAddress(address, value, timeout, [](u32 *address, u32 value) {
-                    return *address == value;
-                });
+                result = state.process->WaitForAddress(address, value, timeout, ArbitrationType::WaitIfEqual);
                 break;
 
             default:
@@ -1267,11 +1253,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        enum class SignalType : u32 {
-            Signal = 0,
-            SignalAndIncrementIfEqual = 1,
-            SignalAndModifyBasedOnWaitingThreadCountIfEqual = 2,
-        } signalType{static_cast<SignalType>(static_cast<u32>(state.ctx->gpr.w1))};
+        using SignalType = type::KProcess::SignalType;
+        auto signalType{static_cast<SignalType>(static_cast<u32>(state.ctx->gpr.w1))};
         u32 value{state.ctx->gpr.w2};
         i32 count{static_cast<i32>(state.ctx->gpr.w3)};
 
@@ -1279,21 +1262,17 @@ namespace skyline::kernel::svc {
         switch (signalType) {
             case SignalType::Signal:
                 Logger::Debug("Signalling 0x{:X} for {} waiters", address, count);
-                result = state.process->SignalToAddress(address, value, count);
+                result = state.process->SignalToAddress(address, value, count, SignalType::Signal);
                 break;
 
             case SignalType::SignalAndIncrementIfEqual:
                 Logger::Debug("Signalling 0x{:X} and incrementing if equal to {} for {} waiters", address, value, count);
-                result = state.process->SignalToAddress(address, value, count, [](u32 *address, u32 value, u32) {
-                    return __atomic_compare_exchange_n(address, &value, value + 1, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-                });
+                result = state.process->SignalToAddress(address, value, count, SignalType::SignalAndIncrementIfEqual);
                 break;
 
             case SignalType::SignalAndModifyBasedOnWaitingThreadCountIfEqual:
                 Logger::Debug("Signalling 0x{:X} and setting to waiting thread count if equal to {} for {} waiters", address, value, count);
-                result = state.process->SignalToAddress(address, value, count, [](u32 *address, u32 value, u32 waiterCount) {
-                    return __atomic_compare_exchange_n(address, &value, waiterCount, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-                });
+                result = state.process->SignalToAddress(address, value, count, SignalType::SignalAndModifyBasedOnWaitingThreadCountIfEqual);
                 break;
 
             default:

@@ -230,15 +230,27 @@ namespace skyline {
              */
             void ConditionalVariableSignal(u32 *key, i32 amount);
 
-            /**
-             * @brief Waits on the supplied address with the specified arbitration function
-             */
-            Result WaitForAddress(u32 *address, u32 value, i64 timeout, bool(*arbitrationFunction)(u32 *address, u32 value));
+            enum class ArbitrationType : u32 {
+                WaitIfLessThan = 0,
+                DecrementAndWaitIfLessThan = 1,
+                WaitIfEqual = 2,
+            };
 
             /**
-             * @brief Signals a variable amount of waiters at the supplied address
+             * @brief Waits on the supplied address with the specified arbitration type
              */
-            Result SignalToAddress(u32 *address, u32 value, i32 amount, bool(*mutateFunction)(u32 *address, u32 value, u32 waiterCount) = nullptr);
+            Result WaitForAddress(u32 *address, u32 value, i64 timeout, ArbitrationType type);
+
+            enum class SignalType : u32 {
+                Signal = 0,
+                SignalAndIncrementIfEqual = 1,
+                SignalAndModifyBasedOnWaitingThreadCountIfEqual = 2,
+            };
+
+            /**
+             * @brief Signals a variable for amount of waiters at the supplied address with the specified signal type
+             */
+            Result SignalToAddress(u32 *address, u32 value, i32 amount, SignalType type);
         };
     }
 }
