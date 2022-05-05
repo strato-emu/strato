@@ -7,6 +7,7 @@
 #include <kernel/types/KProcess.h>
 #include "texture.h"
 #include "layout.h"
+#include "adreno_aliasing.h"
 
 namespace skyline::gpu {
     u32 GuestTexture::GetLayerSize() {
@@ -539,8 +540,9 @@ namespace skyline::gpu {
         if (!pFormat)
             pFormat = format;
 
-        if (gpu.traits.quirks.vkImageMutableFormatCostly && pFormat->vkFormat != format->vkFormat)
-            Logger::Warn("Creating a view of a texture with a different format without mutable format: {} - {}", vk::to_string(pFormat->vkFormat), vk::to_string(format->vkFormat));
+        auto viewFormat{pFormat->vkFormat}, textureFormat{format->vkFormat};
+        if (gpu.traits.quirks.vkImageMutableFormatCostly && viewFormat != textureFormat && (!gpu.traits.quirks.adrenoRelaxedFormatAliasing || !texture::IsAdrenoAliasCompatible(viewFormat, textureFormat)))
+            Logger::Warn("Creating a view of a texture with a different format without mutable format: {} - {}", vk::to_string(viewFormat), vk::to_string(textureFormat));
 
         return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
