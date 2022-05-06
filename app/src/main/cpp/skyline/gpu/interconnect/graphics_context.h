@@ -1064,12 +1064,18 @@ namespace skyline::gpu::interconnect {
                 if (!pipelineStage.enabled)
                     continue;
 
+                auto fixedPointSize{runtimeInfo.fixed_state_point_size};
+                if (fixedPointSize && pipelineStage.vkStage != vk::ShaderStageFlagBits::eVertex && pipelineStage.vkStage != vk::ShaderStageFlagBits::eGeometry)
+                    runtimeInfo.fixed_state_point_size.reset(); // Only vertex/geometry stages are allowed to have a point size
+
                 if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
                     pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
                     pipelineStage.bindingBase = bindings.unified;
                     pipelineStage.vkModule = gpu.shader.CompileShader(runtimeInfo, pipelineStage.program, bindings);
                     pipelineStage.bindingLast = bindings.unified;
                 }
+
+                runtimeInfo.fixed_state_point_size = fixedPointSize;
 
                 auto &program{pipelineStage.program->program};
                 runtimeInfo.previous_stage_stores = program.info.stores;
@@ -1844,6 +1850,7 @@ namespace skyline::gpu::interconnect {
         /* Input Assembly */
       private:
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+        float pointSpriteSize{}; //!< The size of a point sprite to be defined in the shader
 
         void ValidatePrimitiveRestartState() {
             if (inputAssemblyState.primitiveRestartEnable) {
@@ -1907,11 +1914,23 @@ namespace skyline::gpu::interconnect {
 
             inputAssemblyState.topology = vkTopology;
             needsQuadConversion = isQuad;
+
+            if (shaderTopology == ShaderCompiler::InputTopology::Points)
+                UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::make_optional(pointSpriteSize), maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
+            else if (runtimeInfo.input_topology == ShaderCompiler::InputTopology::Points)
+                UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::optional<float>{}, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
+
             UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
         }
 
         void SetPrimitiveRestartEnabled(bool enable) {
             inputAssemblyState.primitiveRestartEnable = enable;
+        }
+
+        void SetPointSpriteSize(float size) {
+            pointSpriteSize = size;
+            if (runtimeInfo.input_topology == ShaderCompiler::InputTopology::Points)
+                UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::make_optional(size), maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
         }
 
         /* Tessellation */

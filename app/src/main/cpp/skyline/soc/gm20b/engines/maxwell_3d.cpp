@@ -101,6 +101,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::RenderTargetCount == 8 && type::RenderTargetCount < BOOST_PP_LIMIT_REPEAT);
                 #undef RENDER_TARGET_ARRAY
 
+                ENGINE_CASE(pointSpriteSize, {
+                    context.SetPointSpriteSize(pointSpriteSize);
+                })
+
                 ENGINE_CASE(depthTargetEnable, {
                     context.SetDepthRenderTargetEnabled(depthTargetEnable);
                 })
