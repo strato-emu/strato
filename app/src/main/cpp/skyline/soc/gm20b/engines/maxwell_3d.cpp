@@ -129,6 +129,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetDepthRenderTargetArrayMode(depthTargetArrayMode);
                 })
 
+                ENGINE_CASE(linkedTscHandle, {
+                    context.SetTscIndexLinked(linkedTscHandle);
+                });
+
                 #define VIEWPORT_TRANSFORM_CALLBACKS(_z, index, data)                                     \
                 ENGINE_ARRAY_STRUCT_CASE(viewportTransforms, index, scaleX, {                             \
                     context.SetViewportX(index, scaleX, registers.viewportTransforms[index].translateX);  \

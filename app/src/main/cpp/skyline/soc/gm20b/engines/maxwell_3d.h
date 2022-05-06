@@ -151,6 +151,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x48B, u32> depthTargetHeight;
             Register<0x48C, type::RenderTargetArrayMode> depthTargetArrayMode;
 
+            Register<0x48D, bool> linkedTscHandle; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
+
             Register<0x4B3, u32> depthTestEnable;
             Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BA, u32> depthWriteEnable;

@@ -1176,6 +1176,8 @@ namespace skyline::gpu::interconnect {
 
                         auto &constantBuffer{pipelineStage.constantBuffers[texture.cbuf_index]};
                         BindlessTextureHandle handle{constantBuffer.Read<u32>(executor, texture.cbuf_offset)};
+                        if (tscIndexLinked)
+                            handle.samplerIndex = handle.textureIndex;
 
                         auto sampler{GetSampler(handle.samplerIndex)};
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
@@ -2292,6 +2294,8 @@ namespace skyline::gpu::interconnect {
 
         /* Samplers */
       private:
+        bool tscIndexLinked{}; //!< If the TSC index in bindless texture handles is the same as the TIC index or if it's independent from the TIC index
+
         struct Sampler : public vk::raii::Sampler, public FenceCycleDependency {
             using vk::raii::Sampler::Sampler;
         };
@@ -2317,6 +2321,10 @@ namespace skyline::gpu::interconnect {
         void SetSamplerPoolMaximumIndex(u32 index) {
             samplerPool.maximumIndex = index;
             samplerPool.samplerControls = nullptr;
+        }
+
+        void SetTscIndexLinked(bool isTscIndexLinked) {
+            tscIndexLinked = isTscIndexLinked;
         }
 
       private:
