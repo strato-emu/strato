@@ -930,23 +930,34 @@ namespace skyline::gpu::interconnect {
                     auto readConstantBuffer{[&executor = executor, &constantBuffers = pipelineStage.constantBuffers](u32 index, u32 offset) {
                         return constantBuffers[index].Read<u32>(executor, offset);
                     }};
+
                     auto getTextureType{[this](u32 handle) {
                         using TicType = TextureImageControl::TextureType;
                         using ShaderType = ShaderCompiler::TextureType;
                         switch (GetTextureImageControl(BindlessTextureHandle{handle}.textureIndex).textureType) {
-                            case TicType::e1D: return ShaderType::Color1D;
-                            case TicType::e1DArray: return ShaderType::ColorArray1D;
-                            case TicType::e1DBuffer: return ShaderType::Buffer;
+                            case TicType::e1D:
+                                return ShaderType::Color1D;
+                            case TicType::e1DArray:
+                                return ShaderType::ColorArray1D;
+                            case TicType::e1DBuffer:
+                                return ShaderType::Buffer;
 
-                            case TicType::e2D: return ShaderType::Color2D;
-                            case TicType::e2DArray: return ShaderType::ColorArray2D;
+                            case TicType::e2D:
+                            case TicType::e2DNoMipmap:
+                                return ShaderType::Color2D;
+                            case TicType::e2DArray:
+                                return ShaderType::ColorArray2D;
 
-                            case TicType::e3D: return ShaderType::Color3D;
+                            case TicType::e3D:
+                                return ShaderType::Color3D;
 
-                            case TicType::eCube: return ShaderType::ColorCube;
-                            case TicType::eCubeArray: return ShaderType::ColorArrayCube;
+                            case TicType::eCube:
+                                return ShaderType::ColorCube;
+                            case TicType::eCubeArray:
+                                return ShaderType::ColorArrayCube;
                         }
                     }};
+
                     if (!shader.invalidated && shader.program)
                         shader.invalidated |= shader.program->VerifyState(readConstantBuffer, getTextureType);
 
