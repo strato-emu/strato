@@ -122,6 +122,8 @@ namespace skyline::gpu {
 
                 FMT("B5G6R5_UNORM_PACK16");
                 FMT("R5G6B5_UNORM_PACK16");
+                FMT("R32G32B32A32_SFLOAT");
+                FMT("D32_SFLOAT");
 
                 #undef FMT
 
@@ -139,6 +141,8 @@ namespace skyline::gpu {
                     switch (format) {
                         case vk::Format::eR5G6B5UnormPack16:
                         case vk::Format::eB5G6R5UnormPack16:
+                        case vk::Format::eR32G32B32A32Sfloat:
+                        case vk::Format::eD32Sfloat:
 
                         case vk::Format::eBc1RgbUnormBlock:
                         case vk::Format::eBc1RgbSrgbBlock:
