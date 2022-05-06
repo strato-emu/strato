@@ -2856,9 +2856,8 @@ namespace skyline::gpu::interconnect {
 
             // Depth/Stencil Render Target Setup
             auto depthRenderTargetView{GetDepthRenderTarget()};
-            std::optional<std::scoped_lock<TextureView>> depthTargetLock;
             if (depthRenderTargetView) {
-                depthTargetLock.emplace(*depthRenderTargetView);
+                std::scoped_lock lock(*depthRenderTargetView);
                 executor.AttachTexture(depthRenderTargetView);
             }
 
