@@ -863,6 +863,10 @@ namespace skyline::gpu::interconnect {
                 std::vector<vk::WriteDescriptorSet> &operator*() {
                     return writes;
                 }
+
+                std::vector<vk::WriteDescriptorSet> *operator->() {
+                    return &writes;
+                }
             };
 
             DescriptorSetWrites descriptorSetWrites; //!< The writes to the descriptor set that need to be done prior to executing a pipeline
@@ -2861,10 +2865,12 @@ namespace skyline::gpu::interconnect {
             };
 
             std::shared_ptr<DrawStorage> drawStorage{};
-            if (gpu.traits.supportsPushDescriptors)
-                drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites));
-            else {
-                drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), gpu.descriptor.AllocateSet(compiledPipeline.descriptorSetLayout));
+            if (!programState.descriptorSetWrites->empty()) {
+                if (gpu.traits.supportsPushDescriptors)
+                    drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites));
+                else {
+                    drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), gpu.descriptor.AllocateSet(compiledPipeline.descriptorSetLayout));
+                }
             }
 
             // Submit Draw
@@ -2883,13 +2889,17 @@ namespace skyline::gpu::interconnect {
                     }
                 }
 
-                if (supportsPushDescriptors) {
-                    commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSetWrites);
-                } else {
-                    for (auto &descriptorSetWrite : *drawStorage->descriptorSetWrites)
-                        descriptorSetWrite.dstSet = *drawStorage->descriptorSet;
-                    vkDevice.updateDescriptorSets(*drawStorage->descriptorSetWrites, nullptr);
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSet, nullptr);
+                if (drawStorage) {
+                    if (supportsPushDescriptors) {
+                        commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSetWrites);
+                    } else {
+                        for (auto &descriptorSetWrite : *drawStorage->descriptorSetWrites)
+                            descriptorSetWrite.dstSet = *drawStorage->descriptorSet;
+                        vkDevice.updateDescriptorSets(*drawStorage->descriptorSetWrites, nullptr);
+                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSet, nullptr);
+                    }
+
+                    cycle->AttachObject(drawStorage);
                 }
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
@@ -2900,8 +2910,6 @@ namespace skyline::gpu::interconnect {
                 } else {
                     commandBuffer.draw(count, 1, first, 0);
                 }
-
-                cycle->AttachObject(drawStorage);
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
