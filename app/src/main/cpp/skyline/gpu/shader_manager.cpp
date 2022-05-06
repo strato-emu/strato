@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <range/v3/algorithm.hpp>
 #include <boost/functional/hash.hpp>
 #include <gpu.h>
 #include <shader_compiler/common/settings.h>
@@ -24,7 +25,7 @@ namespace Shader::Log {
 }
 
 namespace skyline::gpu {
-    ShaderManager::ShaderManager(const DeviceState &state, GPU &gpu) : gpu(gpu) {
+    ShaderManager::ShaderManager(const DeviceState &state, GPU &gpu) : gpu{gpu} {
         auto &traits{gpu.traits};
         hostTranslateInfo = Shader::HostTranslateInfo{
             .support_float16 = traits.supportsFloat16,
@@ -87,9 +88,14 @@ namespace skyline::gpu {
         span<u8> binary;
         u32 baseOffset;
         u32 textureBufferIndex;
+        ShaderManager::ConstantBufferRead constantBufferRead;
+        ShaderManager::GetTextureType getTextureType;
 
       public:
-        GraphicsEnvironment(Shader::Stage pStage, span<u8> pBinary, u32 baseOffset, u32 textureBufferIndex) : binary(pBinary), baseOffset(baseOffset), textureBufferIndex(textureBufferIndex) {
+        std::vector<ShaderManager::ConstantBufferWord> constantBufferWords;
+        std::vector<ShaderManager::CachedTextureType> textureTypes;
+
+        GraphicsEnvironment(Shader::Stage pStage, span<u8> pBinary, u32 baseOffset, u32 textureBufferIndex, ShaderManager::ConstantBufferRead constantBufferRead, ShaderManager::GetTextureType getTextureType) : binary{pBinary}, baseOffset{baseOffset}, textureBufferIndex{textureBufferIndex}, constantBufferRead{std::move(constantBufferRead)}, getTextureType{std::move(getTextureType)} {
             stage = pStage;
             sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
             start_address = baseOffset;
@@ -102,12 +108,16 @@ namespace skyline::gpu {
             return *reinterpret_cast<u64 *>(binary.data() + address);
         }
 
-        [[nodiscard]] u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) final {
-            throw exception("Not implemented");
+        [[nodiscard]] u32 ReadCbufValue(u32 index, u32 offset) final {
+            auto value{constantBufferRead(index, offset)};
+            constantBufferWords.emplace_back(index, offset, value);
+            return value;
         }
 
-        [[nodiscard]] Shader::TextureType ReadTextureType(u32 raw_handle) final {
-            throw exception("Not implemented");
+        [[nodiscard]] Shader::TextureType ReadTextureType(u32 handle) final {
+            auto type{getTextureType(handle)};
+            textureTypes.emplace_back(handle, type);
+            return type;
         }
 
         [[nodiscard]] u32 TextureBoundBuffer() const final {
@@ -141,11 +151,11 @@ namespace skyline::gpu {
             throw exception("Not implemented");
         }
 
-        [[nodiscard]] u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) final {
+        [[nodiscard]] u32 ReadCbufValue(u32 index, u32 offset) final {
             throw exception("Not implemented");
         }
 
-        [[nodiscard]] Shader::TextureType ReadTextureType(u32 raw_handle) final {
+        [[nodiscard]] Shader::TextureType ReadTextureType(u32 handle) final {
             throw exception("Not implemented");
         }
 
@@ -166,18 +176,95 @@ namespace skyline::gpu {
         }
     };
 
-    ShaderManager::DualVertexShaderProgram::DualVertexShaderProgram(Shader::IR::Program ir, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB) : ShaderProgram{std::move(ir)}, vertexA(std::move(vertexA)), vertexB(std::move(vertexB)) {}
+    constexpr ShaderManager::ConstantBufferWord::ConstantBufferWord(u32 index, u32 offset, u32 value) : index(index), offset(offset), value(value) {}
 
-    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 bindlessTextureConstantBufferIndex) {
-        auto &program{programCache[binary]};
-        if (program)
-            return program;
+    constexpr ShaderManager::CachedTextureType::CachedTextureType(u32 handle, Shader::TextureType type) : handle(handle), type(type) {}
 
-        program = std::make_shared<SingleShaderProgram>();
-        GraphicsEnvironment environment{stage, binary, baseOffset, bindlessTextureConstantBufferIndex};
+    ShaderManager::ShaderProgram::ShaderProgram(Shader::IR::Program &&program) : program{std::move(program)} {}
+
+    bool ShaderManager::SingleShaderProgram::VerifyState(const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) const {
+        return ranges::all_of(constantBufferWords, [&](const ConstantBufferWord &word) {
+            return constantBufferRead(word.index, word.offset) == word.value;
+        }) &&
+            ranges::all_of(textureTypes, [&](const CachedTextureType &type) {
+                return getTextureType(type.handle) == type.type;
+            });
+    }
+
+    ShaderManager::GuestShaderKey::GuestShaderKey(Shader::Stage stage, span<u8> bytecode, u32 textureConstantBufferIndex, span<ConstantBufferWord> constantBufferWords, span<CachedTextureType> textureTypes) : stage{stage}, bytecode{bytecode.begin(), bytecode.end()}, textureConstantBufferIndex{textureConstantBufferIndex}, constantBufferWords{constantBufferWords}, textureTypes{textureTypes} {}
+
+    ShaderManager::GuestShaderLookup::GuestShaderLookup(Shader::Stage stage, span<u8> bytecode, u32 textureConstantBufferIndex, ConstantBufferRead constantBufferRead, GetTextureType getTextureType) : stage(stage), textureConstantBufferIndex(textureConstantBufferIndex), bytecode(bytecode), constantBufferRead(std::move(constantBufferRead)), getTextureType(std::move(getTextureType)) {}
+
+    #define HASH(member) boost::hash_combine(hash, key.member)
+
+    size_t ShaderManager::ShaderProgramHash::operator()(const GuestShaderKey &key) const noexcept {
+        size_t hash{};
+
+        HASH(stage);
+        hash = XXH64(key.bytecode.data(), key.bytecode.size(), hash);
+        HASH(textureConstantBufferIndex);
+
+        return hash;
+    }
+
+    size_t ShaderManager::ShaderProgramHash::operator()(const GuestShaderLookup &key) const noexcept {
+        size_t hash{};
+
+        HASH(stage);
+        hash = XXH64(key.bytecode.data(), key.bytecode.size(), hash);
+        HASH(textureConstantBufferIndex);
+
+        return hash;
+    }
+
+    #undef HASH
+
+    bool ShaderManager::ShaderProgramEqual::operator()(const GuestShaderKey &lhs, const GuestShaderLookup &rhs) const noexcept {
+        return lhs.stage == rhs.stage &&
+            ranges::equal(lhs.bytecode, rhs.bytecode) &&
+            lhs.textureConstantBufferIndex == rhs.textureConstantBufferIndex &&
+            ranges::all_of(lhs.constantBufferWords, [&constantBufferRead = rhs.constantBufferRead](const ConstantBufferWord &word) {
+                return constantBufferRead(word.index, word.offset) == word.value;
+            }) &&
+            ranges::all_of(lhs.textureTypes, [&getTextureType = rhs.getTextureType](const CachedTextureType &type) {
+                return getTextureType(type.handle) == type.type;
+            });
+    }
+
+    bool ShaderManager::ShaderProgramEqual::operator()(const GuestShaderKey &lhs, const GuestShaderKey &rhs) const noexcept {
+        return lhs.stage == rhs.stage &&
+            ranges::equal(lhs.bytecode, rhs.bytecode) &&
+            lhs.textureConstantBufferIndex == rhs.textureConstantBufferIndex &&
+            ranges::equal(lhs.constantBufferWords, rhs.constantBufferWords) &&
+            ranges::equal(lhs.textureTypes, rhs.textureTypes);
+    }
+
+    ShaderManager::DualVertexShaderProgram::DualVertexShaderProgram(Shader::IR::Program ir, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB) : ShaderProgram{std::move(ir)}, vertexA{std::move(vertexA)}, vertexB{std::move(vertexB)} {}
+
+    bool ShaderManager::DualVertexShaderProgram::VerifyState(const ConstantBufferRead &constantBufferRead, const GetTextureType& getTextureType) const {
+        return vertexA->VerifyState(constantBufferRead, getTextureType) && vertexB->VerifyState(constantBufferRead, getTextureType);
+    }
+
+    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
+        std::unique_lock lock{programMutex};
+
+        auto it{programCache.find(GuestShaderLookup{stage, binary, textureConstantBufferIndex, constantBufferRead, getTextureType})};
+        if (it != programCache.end())
+            return it->second;
+
+        lock.unlock();
+
+        auto program{std::make_shared<SingleShaderProgram>()};
+        GraphicsEnvironment environment{stage, binary, baseOffset, textureConstantBufferIndex, constantBufferRead, getTextureType};
         Shader::Maxwell::Flow::CFG cfg(environment, program->flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
         program->program = Shader::Maxwell::TranslateProgram(program->instructionPool, program->blockPool, environment, cfg, hostTranslateInfo);
-        return program;
+        program->constantBufferWords = std::move(environment.constantBufferWords);
+        program->textureTypes = std::move(environment.textureTypes);
+
+        lock.lock();
+
+        auto programIt{programCache.try_emplace(GuestShaderKey{stage, binary, textureConstantBufferIndex, program->constantBufferWords, program->textureTypes}, std::move(program))};
+        return programIt.first->second;
     }
 
     constexpr size_t ShaderManager::DualVertexProgramsHash::operator()(const std::pair<std::shared_ptr<ShaderProgram>, std::shared_ptr<ShaderProgram>> &p) const {
@@ -187,14 +274,20 @@ namespace skyline::gpu {
         return hash;
     }
 
-    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::CombineVertexShaders(const std::shared_ptr<ShaderManager::ShaderProgram> &vertexA, const std::shared_ptr<ShaderManager::ShaderProgram> &vertexB, span<u8> vertexBBinary) {
+    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span<u8> vertexBBinary) {
+        std::unique_lock lock{programMutex};
         auto &program{dualProgramCache[DualVertexPrograms{vertexA, vertexB}]};
         if (program)
             return program;
 
+        lock.unlock();
+
         VertexBEnvironment vertexBEnvironment{vertexBBinary};
-        program = std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB);
-        return program;
+        auto mergedProgram{std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB)};
+
+        lock.lock();
+
+        return program = std::move(mergedProgram);
     }
 
     bool ShaderManager::ShaderModuleState::operator==(const ShaderModuleState &other) const {
@@ -226,7 +319,7 @@ namespace skyline::gpu {
         return true;
     }
 
-    constexpr size_t ShaderManager::ShaderModuleStateHash::operator()(const ShaderManager::ShaderModuleState &state) const {
+    constexpr size_t ShaderManager::ShaderModuleStateHash::operator()(const ShaderModuleState &state) const {
         size_t hash{};
 
         boost::hash_combine(hash, state.program);
@@ -255,9 +348,10 @@ namespace skyline::gpu {
         return hash;
     }
 
-    ShaderManager::ShaderModule::ShaderModule(const vk::raii::Device &device, const vk::ShaderModuleCreateInfo &createInfo, Shader::Backend::Bindings bindings) : vkModule(device, createInfo), bindings(bindings) {}
+    ShaderManager::ShaderModule::ShaderModule(const vk::raii::Device &device, const vk::ShaderModuleCreateInfo &createInfo, Shader::Backend::Bindings bindings) : vkModule{device, createInfo}, bindings{bindings} {}
 
     vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
+        std::unique_lock lock{moduleMutex};
         ShaderModuleState shaderModuleState{program, bindings, runtimeInfo};
         auto it{shaderModuleCache.find(shaderModuleState)};
         if (it != shaderModuleCache.end()) {
@@ -266,6 +360,8 @@ namespace skyline::gpu {
             return *entry.vkModule;
         }
 
+        lock.unlock();
+
         // Note: EmitSPIRV will change bindings so we explicitly have pre/post emit bindings
         auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program->program, bindings)};
 
@@ -273,6 +369,8 @@ namespace skyline::gpu {
             .pCode = spirv.data(),
             .codeSize = spirv.size() * sizeof(u32),
         };
+
+        lock.lock();
 
         auto shaderModule{shaderModuleCache.try_emplace(shaderModuleState, gpu.vkDevice, createInfo, bindings)};
         return *(shaderModule.first->second.vkModule);

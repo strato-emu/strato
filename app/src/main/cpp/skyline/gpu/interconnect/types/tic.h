@@ -133,7 +133,7 @@ namespace skyline::gpu::interconnect {
             e1D = 0,
             e2D = 1,
             e3D = 2,
-            eCubemap = 3,
+            eCube = 3,
             e1DArray = 4,
             e2DArray = 5,
             e1DBuffer = 6,
@@ -331,11 +331,11 @@ namespace skyline::gpu::interconnect {
 
         bool operator==(const TextureImageControl &) const = default;
 
-        u64 Iova() {
+        u64 Iova() const {
             return (static_cast<u64>(addressHigh) << 32) | addressLow;
         }
 
-        u32 BaseLayer() {
+        u32 BaseLayer() const {
             return static_cast<u32>(viewLayerBase_0_2 | (viewLayerBase_3_7 << 3) | (viewLayerBase_8_10 << 8));
         }
     };

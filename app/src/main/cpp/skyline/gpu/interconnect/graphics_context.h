@@ -873,6 +873,17 @@ namespace skyline::gpu::interconnect {
         };
 
         /**
+         * @brief A packed handle supplied by the guest containing the index into the TIC and TSC tables
+         */
+        union BindlessTextureHandle {
+            u32 raw;
+            struct {
+                u32 textureIndex : 20;
+                u32 samplerIndex : 12;
+            };
+        };
+
+        /**
          * @brief Updates `runtimeInfo` while automatically triggering a recompilation for a stage if the value has been updated
          * @param member A member of `runtimeInfo` passed by reference which will be checked and set
          * @param value The new value of the member
@@ -915,6 +926,30 @@ namespace skyline::gpu::interconnect {
                 auto &pipelineStage{pipelineStages[shader.ToPipelineStage()]};
                 if (shader.enabled) {
                     // We only want to include the shader if it is enabled on the guest
+
+                    auto readConstantBuffer{[&executor = executor, &constantBuffers = pipelineStage.constantBuffers](u32 index, u32 offset) {
+                        return constantBuffers[index].Read<u32>(executor, offset);
+                    }};
+                    auto getTextureType{[this](u32 handle) {
+                        using TicType = TextureImageControl::TextureType;
+                        using ShaderType = ShaderCompiler::TextureType;
+                        switch (GetTextureImageControl(BindlessTextureHandle{handle}.textureIndex).textureType) {
+                            case TicType::e1D: return ShaderType::Color1D;
+                            case TicType::e1DArray: return ShaderType::ColorArray1D;
+                            case TicType::e1DBuffer: return ShaderType::Buffer;
+
+                            case TicType::e2D: return ShaderType::Color2D;
+                            case TicType::e2DArray: return ShaderType::ColorArray2D;
+
+                            case TicType::e3D: return ShaderType::Color3D;
+
+                            case TicType::eCube: return ShaderType::ColorCube;
+                            case TicType::eCubeArray: return ShaderType::ColorArrayCube;
+                        }
+                    }};
+                    if (!shader.invalidated && shader.program)
+                        shader.invalidated |= shader.program->VerifyState(readConstantBuffer, getTextureType);
+
                     if (shader.invalidated) {
                         // If a shader is invalidated, we need to reparse the program (given that it has changed)
 
@@ -956,7 +991,7 @@ namespace skyline::gpu::interconnect {
                                 return std::nullopt;
                             });
 
-                            shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.bytecode, shader.offset, bindlessTextureConstantBufferIndex);
+                            shader.program = gpu.shader.ParseGraphicsShader(shader.stage, shader.bytecode, shader.offset, bindlessTextureConstantBufferIndex, readConstantBuffer, getTextureType);
 
                             if (shader.stage != ShaderCompiler::Stage::VertexA && shader.stage != ShaderCompiler::Stage::VertexB) {
                                 pipelineStage.program = shader.program;
@@ -1140,13 +1175,7 @@ namespace skyline::gpu::interconnect {
                         });
 
                         auto &constantBuffer{pipelineStage.constantBuffers[texture.cbuf_index]};
-                        union TextureHandle {
-                            u32 raw;
-                            struct {
-                                u32 textureIndex : 20;
-                                u32 samplerIndex : 12;
-                            };
-                        } handle{constantBuffer.Read<u32>(executor, texture.cbuf_offset)};
+                        BindlessTextureHandle handle{constantBuffer.Read<u32>(executor, texture.cbuf_offset)};
 
                         auto sampler{GetSampler(handle.samplerIndex)};
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
@@ -1994,7 +2023,13 @@ namespace skyline::gpu::interconnect {
 
       public:
         void SetBindlessTextureConstantBufferIndex(u32 index) {
-            bindlessTextureConstantBufferIndex = index;
+            if (bindlessTextureConstantBufferIndex != index) {
+                bindlessTextureConstantBufferIndex = index;
+                for (auto &shader : shaders) {
+                    shader.invalidated = true;
+                    shader.shouldCheckSame = false;
+                }
+            }
         }
 
         void SetTexturePoolIovaHigh(u32 high) {
@@ -2154,7 +2189,7 @@ namespace skyline::gpu::interconnect {
             };
         }
 
-        std::shared_ptr<TextureView> GetPoolTextureView(u32 index) {
+        const TextureImageControl &GetTextureImageControl(u32 index) {
             if (!texturePool.imageControls.valid()) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(texturePool.iova, texturePool.maximumIndex * sizeof(TextureImageControl))};
                 if (mappings.size() != 1)
@@ -2162,7 +2197,11 @@ namespace skyline::gpu::interconnect {
                 texturePool.imageControls = mappings.front().cast<TextureImageControl>();
             }
 
-            TextureImageControl &textureControl{texturePool.imageControls[index]};
+            return texturePool.imageControls[index];
+        }
+
+        std::shared_ptr<TextureView> GetPoolTextureView(u32 index) {
+            auto &textureControl{GetTextureImageControl(index)};
             auto textureIt{texturePool.textures.insert({textureControl, {}})};
             auto &poolTexture{textureIt.first->second};
             if (textureIt.second) {
@@ -2213,7 +2252,7 @@ namespace skyline::gpu::interconnect {
                         guest.dimensions.depth = depth;
                         break;
 
-                    case TicType::eCubemap:
+                    case TicType::eCube:
                         guest.type = TexType::eCube;
                         guest.layerCount = CubeFaceCount;
                         break;
