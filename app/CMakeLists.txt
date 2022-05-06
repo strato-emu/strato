@@ -251,6 +251,8 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/storage/IStorageAccessor.cpp
         ${source_DIR}/skyline/services/am/applet/ILibraryAppletAccessor.cpp
         ${source_DIR}/skyline/services/am/applet/IApplet.cpp
+        ${source_DIR}/skyline/services/bcat/IServiceCreator.cpp
+        ${source_DIR}/skyline/services/bcat/IBcatService.cpp
         ${source_DIR}/skyline/applet/applet_creator.cpp
         ${source_DIR}/skyline/applet/controller_applet.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoder.cpp

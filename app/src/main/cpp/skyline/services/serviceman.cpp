@@ -11,6 +11,7 @@
 #include "am/IAllSystemAppletProxiesService.h"
 #include "audio/IAudioOutManager.h"
 #include "audio/IAudioRendererManager.h"
+#include "bcat/IServiceCreator.h"
 #include "codec/IHardwareOpusDecoderManager.h"
 #include "fatalsrv/IService.h"
 #include "hid/IHidServer.h"
@@ -109,6 +110,7 @@ namespace skyline::service {
             SERVICE_CASE(ssl::ISslService, "ssl")
             SERVICE_CASE(prepo::IPrepoService, "prepo:u")
             SERVICE_CASE(mmnv::IRequest, "mm:u")
+            SERVICE_CASE(bcat::IServiceCreator, "bcat:u")
             default:
                 std::string_view nameString(span(reinterpret_cast<char *>(&name), sizeof(name)).as_string(true));
                 throw std::out_of_range(fmt::format("CreateService called with an unknown service name: {}", nameString));
