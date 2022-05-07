@@ -162,8 +162,16 @@ namespace skyline::nce {
                 return false;
             }()};
 
-            if (runningUnderDebugger)
+            if (runningUnderDebugger) {
+                /* Variables for debugger, these are meant to be read and utilized by the debugger to break in user code with all registers intact */
+                void *pc{reinterpret_cast<void *>(ctx->uc_mcontext.pc)}; // Use 'p pc' to get the value of this and 'breakpoint set -t current -a ${value of pc}' to break in user code
+                bool shouldReturn{true}; // Set this to false to throw an exception instead of returning
+
                 raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
+
+                if (shouldReturn)
+                    return;
+            }
         }
 
         signal::ExceptionalSignalHandler(signal, info, ctx); // Delegate throwing a host exception to the exceptional signal handler
