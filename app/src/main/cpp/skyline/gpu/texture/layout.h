@@ -47,7 +47,7 @@ namespace skyline::gpu::texture {
 
         u8 *sector{blockLinear};
 
-        auto deswizzleRob{[&](u8 *linearRob, u32 paddingY) {
+        auto deswizzleRob{[&](u8 *linearRob, auto isLastRob, u32 blockPaddingY = 0, u32 blockExtentY = 0) {
             auto deswizzleBlock{[&](u8 *linearBlock, auto copySector) __attribute__((always_inline)) {
                 for (u32 gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
                     #pragma clang loop unroll_count(32)
@@ -55,7 +55,14 @@ namespace skyline::gpu::texture {
                         u32 xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
                         u32 yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
 
-                        copySector(linearBlock + (yT * robWidthUnalignedBytes) + xT, xT);
+                        if constexpr (!isLastRob) {
+                            copySector(linearBlock + (yT * robWidthUnalignedBytes) + xT, xT);
+                        } else {
+                            if (gobY != blockHeight - 1 || yT < blockExtentY)
+                                copySector(linearBlock + (yT * robWidthUnalignedBytes) + xT, xT);
+                            else
+                                sector += SectorWidth;
+                        }
                     }
 
                     linearBlock += gobYOffset; // Increment the linear GOB to the next Y-axis GOB
@@ -63,12 +70,13 @@ namespace skyline::gpu::texture {
             }};
 
             for (u32 block{}; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` blocks (excl. padding block)
-                deswizzleBlock(linearRob, [&](u8 *linearSector, u32 xT) __attribute__((always_inline)) {
+                deswizzleBlock(linearRob, [&](u8 *linearSector, u32) __attribute__((always_inline)) {
                     copyFunction(linearSector, sector, SectorWidth);
                     sector += SectorWidth; // `sectorWidth` bytes are of sequential image data
                 });
 
-                sector += paddingY; // Skip over any padding at the end of this block
+                if constexpr (isLastRob)
+                    sector += blockPaddingY; // Skip over any padding at the end of this block
                 linearRob += GobWidth; // Increment the linear block to the next block (As Block Width = 1 GOB Width)
             }
 
@@ -86,13 +94,14 @@ namespace skyline::gpu::texture {
 
         u8 *linearRob{linear};
         for (u32 rob{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs (excl. padding ROB)
-            deswizzleRob(linearRob, 0);
+            deswizzleRob(linearRob, std::false_type{});
             linearRob += robBytes; // Increment the linear block to the next ROB
         }
 
         if (surfaceHeightLines % robHeight != 0) {
             blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - (surfaceHeightRobs * robHeight)) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
-            deswizzleRob(linearRob, (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight));
+            u32 surfaceHeightLinesCeil{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})};
+            deswizzleRob(linearRob, std::true_type{}, (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight), surfaceHeightLinesCeil - util::AlignDown(surfaceHeightLinesCeil, GobHeight));
         }
     }
 
