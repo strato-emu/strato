@@ -17,6 +17,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         InitializeRegisters();
     }
 
+    void Maxwell3D::FlushDeferredDraw() {
+        if (deferredDraw.pending) {
+            if (deferredDraw.indexed)
+                context.DrawIndexed(deferredDraw.drawCount, deferredDraw.drawFirst, deferredDraw.instanceCount, deferredDraw.drawBaseVertex);
+            else
+                context.Draw(deferredDraw.drawCount, deferredDraw.drawFirst, deferredDraw.instanceCount);
+
+            deferredDraw.pending = false;
+            deferredDraw.instanceCount = 1;
+        }
+    }
+
     void Maxwell3D::HandleMethod(u32 method, u32 argument) {
         if (method != ENGINE_STRUCT_OFFSET(mme, shadowRamControl)) {
             if (shadowRegisters.mme->shadowRamControl == type::MmeShadowRamControl::MethodTrack || shadowRegisters.mme->shadowRamControl == type::MmeShadowRamControl::MethodTrackWithFilter)
@@ -46,6 +58,45 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.ConstantBufferUpdate(std::move(batchConstantBufferUpdate.buffer), batchConstantBufferUpdate.startOffset);
                     batchConstantBufferUpdate.Reset();
                     break; // Continue on here to handle the actual method
+            }
+        }
+
+        // See DeferredDrawState comment for full details
+        if (deferredDraw.pending) {
+            switch (method) {
+                ENGINE_CASE(vertexBeginGl, {
+                    if (deferredDraw.drawTopology != vertexBeginGl.topology && !vertexBeginGl.instanceContinue)
+                        Logger::Warn("Vertex topology changed partway through instanced draw!");
+
+                    if (vertexBeginGl.instanceNext) {
+                        deferredDraw.instanceCount++;
+                    } else if (vertexBeginGl.instanceContinue) {
+                        FlushDeferredDraw();
+                        break; // This instanced draw is finished, continue on to handle the actual method
+                    }
+
+                    return;
+                })
+
+                // Can be ignored since we handle drawing in draw{Vertex,Index}Count
+                ENGINE_CASE(vertexEndGl, { return; })
+
+                // Draws here can be ignored since they're just repeats of the original instanced draw
+                ENGINE_CASE(drawVertexCount, {
+                    if (!redundant)
+                        Logger::Warn("Vertex count changed partway through instanced draw!");
+                    return;
+                })
+                ENGINE_CASE(drawIndexCount, {
+                    if (!redundant)
+                        Logger::Warn("Index count changed partway through instanced draw!");
+                    return;
+                })
+
+                // Once we stop calling draw methods flush the current draw since drawing is dependent on the register state not changing
+                default:
+                    FlushDeferredDraw();
+                    break;
             }
         }
 
@@ -514,10 +565,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::ShaderStageCount == 6 && type::ShaderStageCount < BOOST_PP_LIMIT_REPEAT);
                 #undef SET_SHADER_ENABLE_CALLBACK
 
-                ENGINE_CASE(vertexBeginGl, {
-                    context.SetPrimitiveTopology(vertexBeginGl.topology);
-                })
-
                 ENGINE_CASE(primitiveRestartEnable, {
                     context.SetPrimitiveRestartEnabled(primitiveRestartEnable);
                 })
@@ -620,15 +667,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 context.ClearBuffers(clearBuffers);
             })
 
+            ENGINE_CASE(vertexBeginGl, {
+                context.SetPrimitiveTopology(vertexBeginGl.topology);
+
+                // If we reach here then we aren't in a deferred draw so theres no need to flush anything
+                if (vertexBeginGl.instanceNext)
+                    deferredDraw.instanceCount++;
+                else if (vertexBeginGl.instanceContinue)
+                    deferredDraw.instanceCount = 1;
+            })
+
             ENGINE_CASE(drawVertexCount, {
-                if (context.needsQuadConversion)
-                    context.DrawIndexed(drawVertexCount, *registers.drawVertexFirst, 0);
-                else
-                    context.DrawVertex(drawVertexCount, *registers.drawVertexFirst);
+                // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
+                deferredDraw.Set(drawVertexCount, *registers.drawVertexFirst, 0, registers.vertexBeginGl->topology, false);
             })
 
             ENGINE_CASE(drawIndexCount, {
-                context.DrawIndexed(drawIndexCount, *registers.drawIndexFirst, *registers.drawBaseVertex);
+                // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
+                deferredDraw.Set(drawIndexCount, *registers.drawIndexFirst, *registers.drawBaseVertex, registers.vertexBeginGl->topology, true);
             })
 
             ENGINE_STRUCT_CASE(semaphore, info, {
@@ -725,6 +781,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             context.ConstantBufferUpdate(std::move(batchConstantBufferUpdate.buffer), batchConstantBufferUpdate.startOffset);
             batchConstantBufferUpdate.Reset();
         }
+
+        FlushDeferredDraw();
     }
 
     __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {

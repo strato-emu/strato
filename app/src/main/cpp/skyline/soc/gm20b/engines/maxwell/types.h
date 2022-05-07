@@ -539,7 +539,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 raw;
         struct {
             PrimitiveTopology topology;
-            u16 pad : 12;
+            u16 pad : 10;
             bool instanceNext : 1;
             bool instanceContinue : 1;
         };

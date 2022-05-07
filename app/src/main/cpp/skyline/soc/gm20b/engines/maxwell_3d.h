@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 Ryujinx Team and Contributors (https://github.com/Ryujinx/)
 // Copyright © 2018-2020 fincs (https://github.com/devkitPro/deko3d)
 
 #pragma once
@@ -35,6 +36,33 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 startOffset = std::numeric_limits<u32>::max();
             }
         } batchConstantBufferUpdate; //!< Holds state for updating constant buffer data in a batch rather than word by word
+
+        /**
+         * @brief In the Maxwell 3D engine, instanced draws are implemented by repeating the exact same draw in sequence with special flag set in vertexBeginGl. This flag allows either incrementing the instance counter or resetting it, since we need to supply an instance count to the host API we defer all draws until state changes occur. If there are no state changes between draws we can skip them and count the occurences to get the number of instances to draw.
+         */
+        struct DeferredDrawState {
+            bool pending;
+            bool indexed; //!< If the deferred draw is indexed
+            type::PrimitiveTopology drawTopology; //!< Topology of draw at draw time
+            u32 instanceCount{1}; //!< Number of instances in the final draw
+            u32 drawCount; //!< indexed ? drawIndexCount : drawVertexCount
+            u32 drawFirst; //!< indexed ? drawIndexFirst : drawVertexFirst
+            i32 drawBaseVertex; //!< Only applicable to indexed draws
+
+            /**
+             * @brief Sets up the state necessary to defer a new draw
+             */
+            void Set(u32 pDrawCount, u32 pDrawFirst, i32 pDrawBaseVertex, type::PrimitiveTopology pDrawTopology, bool pIndexed) {
+                pending = true;
+                indexed = pIndexed;
+                drawTopology = pDrawTopology;
+                drawCount = pDrawCount;
+                drawFirst = pDrawFirst;
+                drawBaseVertex = pDrawBaseVertex;
+            }
+        } deferredDraw{};
+
+        void FlushDeferredDraw();
 
         /**
          * @brief Calls the appropriate function corresponding to a certain method with the supplied argument

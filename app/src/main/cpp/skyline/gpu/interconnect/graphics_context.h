@@ -2787,7 +2787,7 @@ namespace skyline::gpu::interconnect {
         /* Draws */
       public:
         template<bool IsIndexed>
-        void Draw(u32 count, u32 first, i32 vertexOffset = 0) {
+        void Draw(u32 count, u32 first, u32 instanceCount = 1, i32 vertexOffset = 0) {
             ValidatePrimitiveRestartState();
 
             // Index Buffer Setup
@@ -2982,21 +2982,24 @@ namespace skyline::gpu::interconnect {
 
                 if constexpr (IsIndexed) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
-                    commandBuffer.drawIndexed(count, 1, first, vertexOffset, 0);
+                    commandBuffer.drawIndexed(count, instanceCount, first, vertexOffset, 0);
                 } else {
-                    commandBuffer.draw(count, 1, first, 0);
+                    commandBuffer.draw(count, instanceCount, first, 0);
                 }
             }, vk::Rect2D{
                 .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
             }, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
         }
 
-        void DrawVertex(u32 vertexCount, u32 firstVertex) {
-            Draw<false>(vertexCount, firstVertex);
+        void Draw(u32 vertexCount, u32 firstVertex, u32 instanceCount) {
+            if (needsQuadConversion)
+                Draw<true>(vertexCount, firstVertex, instanceCount);
+            else
+                Draw<false>(vertexCount, firstVertex, instanceCount);
         }
 
-        void DrawIndexed(u32 indexCount, u32 firstIndex, i32 vertexOffset) {
-            Draw<true>(indexCount, firstIndex, vertexOffset);
+        void DrawIndexed(u32 indexCount, u32 firstIndex, u32 instanceCount, i32 vertexOffset) {
+            Draw<true>(indexCount, firstIndex, instanceCount, vertexOffset);
         }
     };
 }
