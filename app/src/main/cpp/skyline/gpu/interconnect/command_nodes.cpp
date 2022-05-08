@@ -71,8 +71,8 @@ namespace skyline::gpu::interconnect::node {
             }
 
             if (it == subpassDescriptions.end())
-                // We should never have a case where an attachment is bound to the render pass but not utilized by any subpass
-                throw exception("Cannot find corresponding subpass for attachment #{}", attachmentIndex);
+                // We assume an attachment is used by the latest subpass if it is not utilized by any past subpasses
+                return attachmentIndex;
 
             // We want to preserve the attachment for all subpasses till the current subpass
             auto lastUsageIt{it}; //!< The last subpass that the attachment has been used in for creating a dependency
