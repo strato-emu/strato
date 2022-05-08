@@ -485,7 +485,7 @@ namespace skyline::gpu {
         WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-            auto size{format->GetSize(dimensions)};
+            auto size{format->GetSize(dimensions) * layerCount};
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
 
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {

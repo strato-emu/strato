@@ -135,6 +135,8 @@ namespace skyline::gpu {
         [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
             return {0, 0, 0}; // Only relevant for compute shaders
         }
+
+        void Dump(u64 hash) final {}
     };
 
     /**
@@ -174,6 +176,8 @@ namespace skyline::gpu {
         [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
             return {0, 0, 0}; // Only relevant for compute shaders
         }
+
+        void Dump(u64 hash) final {}
     };
 
     constexpr ShaderManager::ConstantBufferWord::ConstantBufferWord(u32 index, u32 offset, u32 value) : index(index), offset(offset), value(value) {}
