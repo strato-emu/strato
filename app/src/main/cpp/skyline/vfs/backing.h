@@ -56,7 +56,7 @@ namespace skyline::vfs {
          */
         size_t ReadUnchecked(span <u8> output, size_t offset = 0) {
             if (!mode.read)
-                throw exception("Attempting to read a backing that is not readable");
+                Logger::Warn("Attempting to read a backing that is not readable");
 
             return ReadImpl(output, offset);
         };
@@ -75,7 +75,7 @@ namespace skyline::vfs {
                 throw exception("Trying to read past the end of a backing: 0x{:X}/0x{:X} (Offset: 0x{:X})", output.size(), size, offset);
 
             if (ReadUnchecked(output, offset) != output.size())
-                throw exception("Failed to read the requested size from backing");
+                Logger::Warn("Failed to read the requested size from backing");
 
             return size;
         };
@@ -108,13 +108,13 @@ namespace skyline::vfs {
          */
         size_t Write(span <u8> input, size_t offset = 0) {
             if (!mode.write)
-                throw exception("Attempting to write to a backing that is not writable");
+                Logger::Warn("Attempting to write to a backing that is not writable");
 
             if (input.size() > (static_cast<ssize_t>(size) - static_cast<ssize_t>(offset))) {
                 if (mode.append)
                     Resize(offset + input.size());
                 else
-                    throw exception("Trying to write past the end of a non-appendable backing: 0x{:X}/0x{:X} (Offset: 0x{:X})", input.size(), size, offset);
+                    Logger::Warn("Trying to write past the end of a non-appendable backing: 0x{:X}/0x{:X} (Offset: 0x{:X})", input.size(), size, offset);
             }
 
             return WriteImpl(input, offset);
@@ -129,7 +129,7 @@ namespace skyline::vfs {
         void WriteObject(const T &object, size_t offset = 0) {
             size_t lSize;
             if ((lSize = Write(span(reinterpret_cast<u8 *>(&object), sizeof(T)), offset)) != sizeof(T))
-                throw exception("Object wasn't written fully into output backing: {}/{}", lSize, sizeof(T));
+                Logger::Warn("Object wasn't written fully into output backing: {}/{}", lSize, sizeof(T));
         }
 
         /**
