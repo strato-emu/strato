@@ -99,9 +99,9 @@ namespace skyline::gpu::texture {
         }
 
         if (surfaceHeightLines % robHeight != 0) {
-            blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - (surfaceHeightRobs * robHeight)) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
-            u32 surfaceHeightLinesCeil{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})};
-            deswizzleRob(linearRob, std::true_type{}, (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight), surfaceHeightLinesCeil - util::AlignDown(surfaceHeightLinesCeil, GobHeight));
+            u32 robOffsetLines{surfaceHeightRobs * robHeight};
+            blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - robOffsetLines) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
+            deswizzleRob(linearRob, std::true_type{}, (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight), util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight}) - robOffsetLines);
         }
     }
 
