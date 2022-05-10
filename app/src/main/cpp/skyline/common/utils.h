@@ -237,12 +237,12 @@ namespace skyline::util {
     template<typename T>
     requires std::is_integral_v<T>
     void FillRandomBytes(std::span<T> in) {
-        std::independent_bits_engine<std::mt19937_64, std::numeric_limits<T>::digits, T> gen(detail::generator);
-        std::generate(in.begin(), in.end(), gen);
+        std::uniform_int_distribution<u64> dist(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+        std::generate(in.begin(), in.end(), [&]() { return dist(detail::generator); });
     }
 
     template<class T>
-    requires (!std::is_integral_v<T> && std::is_trivially_copyable_v<T>)
+    requires (std::is_trivially_copyable_v<T> && !requires (T v) { v.data(); })
     void FillRandomBytes(T &object) {
         FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::Type *>(&object), IntegerFor<T>::Count));
     }
