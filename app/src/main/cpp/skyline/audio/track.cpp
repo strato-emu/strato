@@ -58,10 +58,11 @@ namespace skyline::audio {
     void AudioTrack::AppendBuffer(u64 tag, span<i16> buffer) {
         std::scoped_lock lock(bufferLock);
 
+        size_t size{(channelCount == constant::SurroundChannelCount) ? (buffer.size() / sizeof(Surround51Sample)) * sizeof(StereoSample) : buffer.size()};
         BufferIdentifier identifier{
             .released = false,
             .tag = tag,
-            .finalSample = identifiers.empty() ? (buffer.size()) : (buffer.size() + identifiers.front().finalSample)
+            .finalSample = identifiers.empty() ? size : (size + identifiers.front().finalSample)
         };
 
         identifiers.push_front(identifier);
