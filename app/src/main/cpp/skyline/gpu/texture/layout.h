@@ -13,15 +13,15 @@ namespace skyline::gpu::texture {
     constexpr u8 GobHeight{8}; // The height of a GOB in lines
 
     inline size_t GetBlockLinearLayerSize(const GuestTexture &guest) {
-        u32 blockHeight{guest.tileConfig.blockHeight}; //!< The height of the blocks in GOBs
-        u32 robHeight{GobHeight * blockHeight}; //!< The height of a single ROB (Row of Blocks) in lines
+        u32 blockBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The amount of bytes in a single block
+
+        u32 robHeight{GobHeight * static_cast<u32>(guest.tileConfig.blockHeight)}; //!< The height of a single ROB (Row of Blocks) in lines
         u32 surfaceHeightLines{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})}; //!< The height of the surface in lines
         u32 surfaceHeightRobs{util::DivideCeil(surfaceHeightLines, robHeight)}; //!< The height of the surface in ROBs (Row Of Blocks, incl. padding ROB)
 
-        u32 robWidthBytes{util::AlignUp((guest.dimensions.width / guest.format->blockWidth) * guest.format->bpb, GobWidth)}; //!< The width of a ROB in bytes
-        u32 robWidthBlocks{robWidthBytes / GobWidth}; //!< The width of a ROB in blocks (and GOBs because block width == 1 on the Tegra X1, incl. padding block)
+        u32 robDepth{util::AlignUp(guest.dimensions.depth, guest.tileConfig.blockDepth)}; //!< The depth of the surface in slices, aligned to include padding Z-axis GOBs
 
-        return robWidthBytes * robHeight * surfaceHeightRobs;
+        return blockBytes * robHeight * surfaceHeightRobs * robDepth;
     }
 
     /**
@@ -29,44 +29,55 @@ namespace skyline::gpu::texture {
      */
     template<typename CopyFunction>
     void CopyBlockLinearInternal(const GuestTexture &guest, u8 *blockLinear, u8 *linear, CopyFunction copyFunction) {
+        u32 formatBpb{guest.format->bpb};
+        u32 robWidthUnalignedBytes{(guest.dimensions.width / guest.format->blockWidth) * formatBpb};
+        u32 robWidthBytes{util::AlignUp(robWidthUnalignedBytes, GobWidth)};
+        u32 robWidthBlocks{robWidthUnalignedBytes / GobWidth};
+
         u32 blockHeight{guest.tileConfig.blockHeight};
         u32 robHeight{GobHeight * blockHeight};
         u32 surfaceHeightLines{guest.dimensions.height / guest.format->blockHeight};
         u32 surfaceHeightRobs{surfaceHeightLines / robHeight}; //!< The height of the surface in ROBs excluding padding ROBs
 
-        u32 formatBpb{guest.format->bpb};
-        u32 robWidthUnalignedBytes{(guest.dimensions.width / guest.format->blockWidth) * formatBpb};
-        u32 robWidthBytes{util::AlignUp(robWidthUnalignedBytes, GobWidth)};
-        u32 robWidthBlocks{robWidthUnalignedBytes / GobWidth};
+        u32 blockDepth{std::min(guest.dimensions.depth, static_cast<u32>(guest.tileConfig.blockDepth))};
+        u32 blockPaddingZ{SectorWidth * SectorHeight * blockHeight * (guest.tileConfig.blockDepth - blockDepth)};
 
         bool hasPaddingBlock{robWidthUnalignedBytes != robWidthBytes};
         u32 blockPaddingOffset{hasPaddingBlock ? (GobWidth - (robWidthBytes - robWidthUnalignedBytes)) : 0};
 
         u32 robBytes{robWidthUnalignedBytes * robHeight};
         u32 gobYOffset{robWidthUnalignedBytes * GobHeight};
+        u32 gobZOffset{robWidthUnalignedBytes * surfaceHeightLines};
 
         u8 *sector{blockLinear};
 
         auto deswizzleRob{[&](u8 *linearRob, auto isLastRob, u32 blockPaddingY = 0, u32 blockExtentY = 0) {
             auto deswizzleBlock{[&](u8 *linearBlock, auto copySector) __attribute__((always_inline)) {
-                for (u32 gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
-                    #pragma clang loop unroll_count(32)
-                    for (u32 index{}; index < SectorWidth * SectorHeight; index++) {  // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
-                        u32 xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
-                        u32 yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
+                for (u32 gobZ{}; gobZ < blockDepth; gobZ++) { // Every Block contains `blockDepth` Z-axis GOBs (Slices)
+                    u8 *linearGob{linearBlock};
+                    for (u32 gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
+                        #pragma clang loop unroll_count(32)
+                        for (u32 index{}; index < SectorWidth * SectorHeight; index++) {  // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
+                            u32 xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
+                            u32 yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
 
-                        if constexpr (!isLastRob) {
-                            copySector(linearBlock + (yT * robWidthUnalignedBytes) + xT, xT);
-                        } else {
-                            if (gobY != blockHeight - 1 || yT < blockExtentY)
-                                copySector(linearBlock + (yT * robWidthUnalignedBytes) + xT, xT);
-                            else
-                                sector += SectorWidth;
+                            if constexpr (!isLastRob) {
+                                copySector(linearGob + (yT * robWidthUnalignedBytes) + xT, xT);
+                            } else {
+                                if (gobY != blockHeight - 1 || yT < blockExtentY)
+                                    copySector(linearGob + (yT * robWidthUnalignedBytes) + xT, xT);
+                                else
+                                    sector += SectorWidth;
+                            }
                         }
+
+                        linearGob += gobYOffset; // Increment the linear GOB to the next Y-axis GOB
                     }
 
-                    linearBlock += gobYOffset; // Increment the linear GOB to the next Y-axis GOB
+                    linearBlock += gobZOffset; // Increment the linear block to the next Z-axis GOB
                 }
+
+                sector += blockPaddingZ; // Skip over any padding Z-axis GOBs
             }};
 
             for (u32 block{}; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` blocks (excl. padding block)
@@ -95,7 +106,7 @@ namespace skyline::gpu::texture {
         u8 *linearRob{linear};
         for (u32 rob{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs (excl. padding ROB)
             deswizzleRob(linearRob, std::false_type{});
-            linearRob += robBytes; // Increment the linear block to the next ROB
+            linearRob += robBytes; // Increment the linear ROB to the next ROB
         }
 
         if (surfaceHeightLines % robHeight != 0) {
