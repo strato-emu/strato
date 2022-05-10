@@ -1306,7 +1306,9 @@ namespace skyline::gpu::interconnect {
 
         void SetCullFaceEnabled(bool enabled) {
             cullFaceEnabled = enabled;
-            if (!enabled)
+            if (enabled)
+                rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().cullMode = cullMode;
+            else
                 rasterizerState.get<vk::PipelineRasterizationStateCreateInfo>().cullMode = {};
         }
 
