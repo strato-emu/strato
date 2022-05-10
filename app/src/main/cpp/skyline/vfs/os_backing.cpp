@@ -21,11 +21,28 @@ namespace skyline::vfs {
     }
 
     size_t OsBacking::ReadImpl(span<u8> output, size_t offset) {
-        auto ret{pread64(fd, output.data(), output.size(), static_cast<off64_t>(offset))};
-        if (ret < 0)
-            throw exception("Failed to read from fd: {}", strerror(errno));
+        size_t bytesRead{};
+        while (bytesRead < output.size()) {
+            auto ret{pread64(fd, output.data() + bytesRead, output.size() - bytesRead, static_cast<off64_t>(offset + bytesRead))};
+            if (ret < 0) {
+                if (errno == EFAULT) {
+                    // If EFAULT is returned then we're reading into a trapped region so create a temporary buffer and read into that instead
+                    // This is required since pread doesn't trigger signal handlers itself
+                    std::vector<u8> buffer(output.size() - bytesRead);
+                    ret = pread64(fd, buffer.data(), buffer.size(), static_cast<off64_t>(offset + bytesRead));
+                    if (ret >= 0) {
+                        output.subspan(bytesRead).copy_from(buffer);
+                        bytesRead += static_cast<size_t>(ret);
+                        continue;
+                    }
+                }
 
-        return static_cast<size_t>(ret);
+                throw exception("Failed to read from fd: {}", strerror(errno));
+            } else {
+                bytesRead += static_cast<size_t>(ret);
+            }
+        }
+        return output.size();
     }
 
     size_t OsBacking::WriteImpl(span<u8> input, size_t offset) {
