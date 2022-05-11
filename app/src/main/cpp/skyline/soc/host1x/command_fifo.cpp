@@ -115,6 +115,8 @@ namespace skyline::soc::host1x {
 
     void ChannelCommandFifo::Run() {
         pthread_setname_np(pthread_self(), "ChannelCommandFifo");
+        Logger::UpdateTag();
+
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
             signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
