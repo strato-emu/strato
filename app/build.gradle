@@ -9,7 +9,7 @@ android {
     namespace 'emu.skyline'
 
     compileSdkVersion 31
-    buildToolsVersion '33.0.0-rc3'
+    buildToolsVersion '33.0.0-rc4'
     defaultConfig {
         applicationId "skyline.emu"
 
