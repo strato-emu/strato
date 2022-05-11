@@ -38,6 +38,8 @@ namespace skyline::vfs {
                 }
 
                 throw exception("Failed to read from fd: {}", strerror(errno));
+            } else if (ret == 0) {
+                return bytesRead;
             } else {
                 bytesRead += static_cast<size_t>(ret);
             }
