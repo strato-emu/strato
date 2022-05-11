@@ -23,6 +23,11 @@ namespace skyline::soc::host1x {
         std::queue<u32> incrQueue; //!< Queue of syncpoint IDs to be incremented when a device operation is finished, the same syncpoint may be held multiple times within the queue
         std::mutex incrMutex;
 
+        void AddIncr(u32 syncpointId) {
+            std::scoped_lock lock(incrMutex);
+            incrQueue.push(syncpointId);
+        }
+
         void SubmitPendingIncrs() {
             std::scoped_lock lock(incrMutex);
 
@@ -55,9 +60,9 @@ namespace skyline::soc::host1x {
                             break;
                         case IncrementSyncpointMethod::Condition::OpDone:
                             Logger::Debug("Queue syncpoint for OpDone: {}", incrSyncpoint.index);
-                            incrQueue.push(incrSyncpoint.index);
-
+                            AddIncr(incrSyncpoint.index);
                             SubmitPendingIncrs(); // FIXME: immediately submit the incrs as classes are not yet implemented
+                            break;
                         default:
                             Logger::Warn("Unimplemented syncpoint condition: {}", static_cast<u8>(incrSyncpoint.condition));
                             break;

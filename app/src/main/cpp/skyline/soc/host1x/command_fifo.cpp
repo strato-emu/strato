@@ -76,7 +76,7 @@ namespace skyline::soc::host1x {
                 case Host1xOpcode::SetClass:
                     targetClass = methodHeader.classId;
 
-                    for (u32 i{}; i < std::numeric_limits<u8>::max(); i++)
+                    for (u32 i{}; i < std::numeric_limits<u8>::digits; i++)
                         if (methodHeader.classMethodMask & (1 << i))
                             Send(targetClass, methodHeader.methodAddress + i, *++entry);
 
