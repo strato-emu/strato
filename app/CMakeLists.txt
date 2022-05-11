@@ -253,6 +253,9 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/am/applet/IApplet.cpp
         ${source_DIR}/skyline/services/bcat/IServiceCreator.cpp
         ${source_DIR}/skyline/services/bcat/IBcatService.cpp
+        ${source_DIR}/skyline/services/bt/IBluetoothUser.cpp
+        ${source_DIR}/skyline/services/btm/IBtmUser.cpp
+        ${source_DIR}/skyline/services/btm/IBtmUserCore.cpp
         ${source_DIR}/skyline/applet/applet_creator.cpp
         ${source_DIR}/skyline/applet/controller_applet.cpp
         ${source_DIR}/skyline/services/codec/IHardwareOpusDecoder.cpp
