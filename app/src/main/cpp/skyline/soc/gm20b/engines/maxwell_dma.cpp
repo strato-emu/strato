@@ -53,6 +53,26 @@ namespace skyline::soc::gm20b::engine {
             Logger::Debug("src: 0x{:X} dst: 0x{:X} size: 0x{:X}", u64{*registers.offsetIn}, u64{*registers.offsetOut}, *registers.lineLengthIn);
             channelCtx.asCtx->gmmu.Copy(*registers.offsetOut, *registers.offsetIn, *registers.lineLengthIn);
         }
+
+        ReleaseSemaphore();
+    }
+
+    void MaxwellDma::ReleaseSemaphore() {
+        if (registers.launchDma->reductionEnable)
+            Logger::Warn("Semaphore reduction is unimplemented!");
+
+        switch (registers.launchDma->semaphoreType) {
+            case Registers::LaunchDma::SemaphoreType::ReleaseOneWordSemaphore:
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, registers.semaphore->payload);
+                break;
+            case Registers::LaunchDma::SemaphoreType::ReleaseFourWordSemaphore:
+                // Write timestamp first to ensure correct ordering
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address + 8, GetGpuTimeTicks());
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, static_cast<u64>(registers.semaphore->payload));
+                break;
+            default:
+                break;
+        }
     }
 
     void MaxwellDma::CopyPitchToBlockLinear() {

@@ -4,6 +4,15 @@
 #include "engine.h"
 
 namespace skyline::soc::gm20b::engine {
+    u64 GetGpuTimeTicks() {
+        constexpr i64 NsToTickNumerator{384};
+        constexpr i64 NsToTickDenominator{625};
+
+        i64 nsTime{util::GetTimeNs()};
+        i64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
+        return static_cast<u64>(timestamp);
+    }
+
     MacroEngineBase::MacroEngineBase(MacroState &macroState) : macroState(macroState) {}
 
     void MacroEngineBase::HandleMacroCall(u32 macroMethodOffset, u32 argument, bool lastCall) {

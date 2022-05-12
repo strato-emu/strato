@@ -50,6 +50,11 @@ namespace skyline::soc::gm20b::engine {
     constexpr u32 EngineMethodsEnd = 0xE00; //!< All methods above this are passed to the MME on supported engines
 
     /**
+     * @brief Returns current time in GPU ticks
+     */
+    u64 GetGpuTimeTicks();
+
+    /**
      * @brief The MacroEngineBase interface provides an interface that can be used by engines to allow interfacing with the macro executer
      */
     struct MacroEngineBase {

@@ -81,16 +81,7 @@ namespace skyline::soc::gm20b::engine {
                     Unsigned = 1,
                 };
 
-                struct {
-                    u32 offsetUpper : 8;
-                    u32 _pad0_ : 24;
-                }; // 0x4
-
-                struct {
-                    u8 _pad1_ : 2;
-                    u32 offsetLower : 30;
-                }; // 0x5
-
+                Address address; // 0x4
                 u32 payload; // 0x6
 
                 struct {
@@ -104,7 +95,7 @@ namespace skyline::soc::gm20b::engine {
                     u8 _pad5_ : 2;
                     Reduction reduction : 4;
                     Format format : 1;
-                }; // 0x7
+                } action; // 0x7
             };
             static_assert(sizeof(Semaphore) == 0x10);
 

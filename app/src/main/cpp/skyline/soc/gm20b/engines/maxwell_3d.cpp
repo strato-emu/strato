@@ -688,6 +688,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             ENGINE_STRUCT_CASE(semaphore, info, {
+                if (info.reductionEnable)
+                    Logger::Warn("Semaphore reduction is unimplemented!");
+
                 switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
                         WriteSemaphoreResult(registers.semaphore->payload);
@@ -751,26 +754,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     void Maxwell3D::WriteSemaphoreResult(u64 result) {
-        struct FourWordResult {
-            u64 value;
-            u64 timestamp;
-        };
-
         switch (registers.semaphore->info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
-                channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore->address, static_cast<u32>(result));
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, static_cast<u32>(result));
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
-                // Convert the current nanosecond time to GPU ticks
-                constexpr i64 NsToTickNumerator{384};
-                constexpr i64 NsToTickDenominator{625};
-
-                i64 nsTime{util::GetTimeNs()};
-                i64 timestamp{(nsTime / NsToTickDenominator) * NsToTickNumerator + ((nsTime % NsToTickDenominator) * NsToTickNumerator) / NsToTickDenominator};
-
-                channelCtx.asCtx->gmmu.Write<FourWordResult>(registers.semaphore->address,
-                                                             FourWordResult{result, static_cast<u64>(timestamp)});
+                // Write timestamp first to ensure correct ordering
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address + 8, GetGpuTimeTicks());
+                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, result);
                 break;
             }
         }

@@ -27,6 +27,8 @@ namespace skyline::soc::gm20b::engine {
 
         void LaunchDma();
 
+        void ReleaseSemaphore();
+
         void CopyPitchToBlockLinear();
 
         void CopyBlockLinearToPitch();
