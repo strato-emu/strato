@@ -1213,7 +1213,7 @@ namespace skyline::gpu::interconnect {
                         if (tscIndexLinked)
                             handle.samplerIndex = handle.textureIndex;
 
-                        auto sampler{GetSampler(handle.samplerIndex)};
+                        auto sampler{GetSampler(handle.samplerIndex, tscIndexLinked)};
                         auto textureView{GetPoolTextureView(handle.textureIndex)};
 
                         std::scoped_lock lock(*textureView);
@@ -2374,6 +2374,7 @@ namespace skyline::gpu::interconnect {
 
         void SetTscIndexLinked(bool isTscIndexLinked) {
             tscIndexLinked = isTscIndexLinked;
+            samplerPool.samplerControls = nullptr;
         }
 
       private:
@@ -2490,9 +2491,9 @@ namespace skyline::gpu::interconnect {
                 return vk::BorderColor::eFloatTransparentBlack;
         }
 
-        std::shared_ptr<Sampler> GetSampler(u32 index) {
+        std::shared_ptr<Sampler> GetSampler(u32 index, bool tscIndexLinked) {
             if (!samplerPool.samplerControls.valid()) {
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(samplerPool.iova, samplerPool.maximumIndex * sizeof(TextureSamplerControl))};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(samplerPool.iova, (tscIndexLinked ? texturePool.maximumIndex : samplerPool.maximumIndex) * sizeof(TextureSamplerControl))};
                 if (mappings.size() != 1)
                     throw exception("Sampler pool mapping count is unexpected: {}", mappings.size());
                 samplerPool.samplerControls = mappings.front().cast<TextureSamplerControl>();
