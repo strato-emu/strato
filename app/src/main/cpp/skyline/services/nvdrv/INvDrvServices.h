@@ -54,10 +54,21 @@ namespace skyline::service::nvdrv {
         Result QueryEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns info about the usage of the transfer memory by the internal allocator
+         * @url https://switchbrew.org/wiki/NV_services#GetStatus
+         */
+        Result GetStatus(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Sets the AppletResourceUserId which matches the PID
          * @url https://switchbrew.org/wiki/NV_services#SetAruid
          */
         Result SetAruid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/NV_services#DumpStatus
+         */
+        Result DumpStatus(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Perform an IOCTL on the specified FD with an extra input buffer
@@ -83,7 +94,9 @@ namespace skyline::service::nvdrv {
             SFUNC(0x2, INvDrvServices, Close),
             SFUNC(0x3, INvDrvServices, Initialize),
             SFUNC(0x4, INvDrvServices, QueryEvent),
+            SFUNC(0x6, INvDrvServices, GetStatus),
             SFUNC(0x8, INvDrvServices, SetAruid),
+            SFUNC(0x9, INvDrvServices, DumpStatus),
             SFUNC(0xB, INvDrvServices, Ioctl2),
             SFUNC(0xC, INvDrvServices, Ioctl3),
             SFUNC(0xD, INvDrvServices, SetGraphicsFirmwareMemoryMarginEnabled)
