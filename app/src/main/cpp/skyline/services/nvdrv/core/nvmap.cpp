@@ -40,11 +40,11 @@ namespace skyline::service::nvdrv::core {
     }
 
     PosixResult NvMap::Handle::Duplicate(bool internalSession) {
+        std::scoped_lock lock(mutex);
+
         // Unallocated handles cannot be duplicated as duplication requires memory accounting (in HOS)
         if (!allocated) [[unlikely]]
             return PosixResult::InvalidArgument;
-
-        std::scoped_lock lock(mutex);
 
         // If we internally use FromId the duplication tracking of handles won't work accurately due to us not implementing
         // per-process handle refs.
