@@ -86,7 +86,7 @@ namespace skyline::soc::gm20b::engine {
                                      gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Linear },
                                      gpu::texture::TextureType::e2D};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerSize())}; mappings.size() == 1) {
+        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerStride())}; mappings.size() == 1) {
             srcTexture.mappings[0] = mappings[0];
         } else {
             Logger::Warn("DMA for split textures is unimplemented!");
@@ -100,8 +100,8 @@ namespace skyline::soc::gm20b::engine {
                                      gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Block, .blockHeight = registers.dstSurface->blockSize.Height(), .blockDepth = 1 },
                                      gpu::texture::TextureType::e2D};
 
-        u64 dstLayerAddress{*registers.offsetOut + dstTexture.GetLayerSize() * registers.dstSurface->layer};
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(dstLayerAddress, dstTexture.GetLayerSize())}; mappings.size() == 1) {
+        u64 dstLayerAddress{*registers.offsetOut + dstTexture.GetLayerStride() * registers.dstSurface->layer};
+        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(dstLayerAddress, dstTexture.GetLayerStride())}; mappings.size() == 1) {
             dstTexture.mappings[0] = mappings[0];
         } else {
             Logger::Warn("DMA for split textures is unimplemented!");
@@ -145,7 +145,7 @@ namespace skyline::soc::gm20b::engine {
                                      gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Block, .blockHeight = registers.srcSurface->blockSize.Height(), .blockDepth = 1 },
                                      gpu::texture::TextureType::e2D};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerSize())}; mappings.size() == 1) {
+        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerStride())}; mappings.size() == 1) {
             srcTexture.mappings[0] = mappings[0];
         } else {
             Logger::Warn("DMA for split textures is unimplemented!");
@@ -158,7 +158,7 @@ namespace skyline::soc::gm20b::engine {
                                      gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Linear },
                                      gpu::texture::TextureType::e2D};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, dstTexture.GetLayerSize())}; mappings.size() == 1) {
+        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, dstTexture.GetLayerStride())}; mappings.size() == 1) {
             dstTexture.mappings[0] = mappings[0];
         } else {
             Logger::Warn("DMA for split textures is unimplemented!");

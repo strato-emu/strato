@@ -238,15 +238,15 @@ namespace skyline::gpu {
         texture::Format format{};
         texture::TileConfig tileConfig{};
         texture::TextureType type{};
-        u16 baseArrayLayer{};
-        u16 layerCount{};
-        u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it will be set to 0 when not available, GetLayerSize() should be used to retrieve this value
+        u32 baseArrayLayer{};
+        u32 layerCount{};
+        u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it **should** be set to 0 when not available and should never be a non-0 value that doesn't reflect the correct layer stride
         vk::ComponentMapping swizzle{}; //!< Component swizzle derived from format requirements and the guest supplied swizzle
         vk::ImageAspectFlags aspect{};
 
         GuestTexture() {}
 
-        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0)
+        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0)
             : mappings(mappings),
               dimensions(dimensions),
               format(format),
@@ -257,7 +257,7 @@ namespace skyline::gpu {
               layerStride(layerStride),
               aspect(format->vkAspect) {}
 
-        GuestTexture(span <u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u16 baseArrayLayer = 0, u16 layerCount = 1, u32 layerStride = 0)
+        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0)
             : mappings(1, mapping),
               dimensions(dimensions),
               format(format),
@@ -269,10 +269,11 @@ namespace skyline::gpu {
               aspect(format->vkAspect) {}
 
         /**
+         * @note This should be used over accessing the `layerStride` member directly when desiring the actual layer stride for calculations as it will automatically handle it not being filled in
          * @note Requires `dimensions`, `format` and `tileConfig` to be filled in
-         * @return The size of a single layer with alignment in bytes
+         * @return The size of a single layer with layout alignment in bytes
          */
-        u32 GetLayerSize();
+        u32 GetLayerStride();
     };
 
     class TextureManager;
@@ -417,6 +418,7 @@ namespace skyline::gpu {
         vk::ImageUsageFlags usage;
         u32 mipLevels;
         u32 layerCount; //!< The amount of array layers in the image, utilized for efficient binding (Not to be confused with the depth or faces in a cubemap)
+        u32 layerStride; //!< The stride of a single array layer given linear tiling
         vk::SampleCountFlagBits sampleCount;
 
         /**

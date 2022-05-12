@@ -10,7 +10,10 @@
 #include "adreno_aliasing.h"
 
 namespace skyline::gpu {
-    u32 GuestTexture::GetLayerSize() {
+    u32 GuestTexture::GetLayerStride() {
+        if (layerStride)
+            return layerStride;
+
         switch (tileConfig.mode) {
             case texture::TileMode::Linear:
                 return layerStride = static_cast<u32>(format->GetSize(dimensions));
@@ -134,7 +137,7 @@ namespace skyline::gpu {
             throw exception("Guest and host dimensions being different is not supported currently");
 
         auto pointer{mirror.data()};
-        auto size{format->GetSize(dimensions) * layerCount};
+        auto size{layerStride * layerCount};
 
         WaitOnBacking();
 
@@ -158,12 +161,16 @@ namespace skyline::gpu {
             }
         }()};
 
-        if (guest->tileConfig.mode == texture::TileMode::Block)
-            texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
-        else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-            texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
-        else if (guest->tileConfig.mode == texture::TileMode::Linear)
-            std::memcpy(bufferData, pointer, size);
+        for (size_t layer{}; layer < layerCount; ++layer) {
+            if (guest->tileConfig.mode == texture::TileMode::Block)
+                texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
+            else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+                texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
+            else if (guest->tileConfig.mode == texture::TileMode::Linear)
+                std::memcpy(bufferData, pointer, size);
+            pointer += guest->GetLayerStride();
+            bufferData += layerStride;
+        }
 
         if (stagingBuffer && cycle.lock() != pCycle)
             WaitOnFence();
@@ -263,12 +270,16 @@ namespace skyline::gpu {
     void Texture::CopyToGuest(u8 *hostBuffer) {
         auto guestOutput{mirror.data()};
 
-        if (guest->tileConfig.mode == texture::TileMode::Block)
-            texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
-        else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-            texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
-        else if (guest->tileConfig.mode == texture::TileMode::Linear)
-            std::memcpy(hostBuffer, guestOutput, format->GetSize(dimensions));
+        for (size_t layer{}; layer < layerCount; ++layer) {
+            if (guest->tileConfig.mode == texture::TileMode::Block)
+                texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
+            else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+                texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
+            else if (guest->tileConfig.mode == texture::TileMode::Linear)
+                std::memcpy(hostBuffer, guestOutput, layerStride);
+            guestOutput += guest->layerStride;
+            hostBuffer += layerStride;
+        }
     }
 
     Texture::TextureBufferCopy::TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer) : texture(std::move(texture)), stagingBuffer(std::move(stagingBuffer)) {}
@@ -289,6 +300,7 @@ namespace skyline::gpu {
           usage(usage),
           mipLevels(mipLevels),
           layerCount(layerCount),
+          layerStride(static_cast<u32>(format->GetSize(dimensions))),
           sampleCount(sampleCount) {}
 
     Texture::Texture(GPU &pGpu, GuestTexture pGuest)
@@ -300,6 +312,7 @@ namespace skyline::gpu {
           tiling(vk::ImageTiling::eOptimal), // Force Optimal due to not adhering to host subresource layout during Linear synchronization
           mipLevels(1),
           layerCount(guest->layerCount),
+          layerStride(static_cast<u32>(format->GetSize(dimensions))),
           sampleCount(vk::SampleCountFlagBits::e1),
           flags(gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat),
           usage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled) {
@@ -485,7 +498,7 @@ namespace skyline::gpu {
         WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-            auto size{format->GetSize(dimensions) * layerCount};
+            auto size{layerStride * layerCount};
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
 
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
@@ -519,7 +532,7 @@ namespace skyline::gpu {
             WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-            auto size{format->GetSize(dimensions) * layerCount};
+            auto size{layerStride * layerCount};
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
 
             CopyIntoStagingBuffer(commandBuffer, stagingBuffer);

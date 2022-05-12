@@ -113,6 +113,7 @@ namespace skyline::gpu::interconnect {
             bool disabled{true}; //!< If this RT has been disabled and will be an unbound attachment instead
             IOVA iova{};
             u32 widthBytes{}; //!< The width in bytes for linear textures
+            u32 layerStride{}; //!< The stride of a single layer in bytes
             bool is3d{}; //!< If the RT is 3D, this controls if the RT is 3D or layered
             GuestTexture guest{};
             std::shared_ptr<TextureView> view{};
@@ -370,7 +371,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetRenderTargetLayerStride(RenderTarget &renderTarget, u32 layerStrideLsr2) {
-            renderTarget.guest.layerStride = layerStrideLsr2 << 2;
+            renderTarget.layerStride = layerStrideLsr2 << 2;
             renderTarget.view.reset();
         }
 
@@ -397,8 +398,13 @@ namespace skyline::gpu::interconnect {
             else if (renderTarget.view)
                 return &*renderTarget.view;
 
+            if (renderTarget.guest.baseArrayLayer > 0 || renderTarget.guest.layerCount > 1)
+                renderTarget.guest.layerStride = renderTarget.layerStride; // Games can supply a layer stride that may include intentional padding which can contain additional mip layers
+            else
+                renderTarget.guest.layerStride = 0; // We want to explicitly reset the stride to 0 for non-array textures
+
             if (renderTarget.guest.mappings.empty()) {
-                size_t layerStride{renderTarget.guest.GetLayerSize()};
+                size_t layerStride{renderTarget.guest.GetLayerStride()};
                 size_t size{layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer)};
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.iova, size)};
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
@@ -2323,7 +2329,7 @@ namespace skyline::gpu::interconnect {
                     throw exception("Unsupported TIC Header Type: {}", static_cast<u32>(textureControl.headerType));
                 }
 
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), guest.GetLayerSize() * (guest.layerCount - guest.baseArrayLayer))};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), guest.GetLayerStride() * (guest.layerCount - guest.baseArrayLayer))};
                 guest.mappings.assign(mappings.begin(), mappings.end());
             } else if (auto textureView{poolTexture.view.lock()}; textureView != nullptr) {
                 // If the entry already exists and the view is still valid then we return it directly
