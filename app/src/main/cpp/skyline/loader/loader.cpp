@@ -93,7 +93,7 @@ namespace skyline::loader {
             std::unique_ptr<char, decltype(&std::free)> demangled{abi::__cxa_demangle(info.dli_sname, nullptr, &length, &status), std::free};
 
             auto extractFilename{[](const char *path) {
-                const char *filename{};
+                const char *filename{path};
                 for (const char *p{path}; *p; p++)
                     if (*p == '/')
                         filename = p + 1;
