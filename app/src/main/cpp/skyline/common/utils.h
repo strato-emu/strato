@@ -14,6 +14,12 @@
 
 namespace skyline::util {
     /**
+     * @brief Concept for any trivial non-container type
+     */
+    template<typename T>
+    concept TrivialObject = std::is_trivially_copyable_v<T> && !requires(T v) { v.data(); };
+
+    /**
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
@@ -241,8 +247,7 @@ namespace skyline::util {
         std::generate(in.begin(), in.end(), [&]() { return dist(detail::generator); });
     }
 
-    template<class T>
-    requires (std::is_trivially_copyable_v<T> && !requires (T v) { v.data(); })
+    template<TrivialObject T>
     void FillRandomBytes(T &object) {
         FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::Type *>(&object), IntegerFor<T>::Count));
     }

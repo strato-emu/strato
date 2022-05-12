@@ -187,13 +187,12 @@ namespace skyline {
         void Write(VaType virt, u8 *source, VaType size);
 
         template<typename T>
-        void Write(VaType virt, span <T> source) {
+        void Write(VaType virt, span<T> source) {
             Write(virt, reinterpret_cast<u8 *>(source.data()), source.size_bytes());
         }
 
-        template<typename T>
-        void Write(VaType virt, T source) {
-            Write(virt, reinterpret_cast<u8 *>(&source), sizeof(T));
+        void Write(VaType virt, util::TrivialObject auto source) {
+            Write(virt, reinterpret_cast<u8 *>(&source), sizeof(source));
         }
 
         void Copy(VaType dst, VaType src, VaType size);

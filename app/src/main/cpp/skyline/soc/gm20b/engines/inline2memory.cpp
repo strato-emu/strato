@@ -20,7 +20,7 @@ namespace skyline::soc::gm20b::engine {
         if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch && state.lineCount == 1) {
             // TODO: we can do this with the buffer manager to avoid some overhead in the future
             Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
-            addressSpaceContext->gmmu.Write(state.offsetOut, buffer);
+            addressSpaceContext->gmmu.Write(state.offsetOut, span(buffer));
         } else {
             Logger::Warn("Non-linear I2M uploads are not supported!");
         }
