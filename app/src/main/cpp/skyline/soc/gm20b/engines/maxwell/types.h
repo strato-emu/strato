@@ -69,7 +69,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
 
     struct RenderTargetArrayMode {
-        u16 layerCount;
+        u16 depthOrlayerCount; //!< The 3D depth or layer count of the render target depending on if it's 3D or not
         bool volume : 1;
         u16 _pad_ : 15;
     };

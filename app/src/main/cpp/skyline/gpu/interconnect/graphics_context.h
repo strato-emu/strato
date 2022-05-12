@@ -111,10 +111,11 @@ namespace skyline::gpu::interconnect {
       private:
         struct RenderTarget {
             bool disabled{true}; //!< If this RT has been disabled and will be an unbound attachment instead
-            IOVA iova;
-            u32 widthBytes; //!< The width in bytes for linear textures
-            GuestTexture guest;
-            std::shared_ptr<TextureView> view;
+            IOVA iova{};
+            u32 widthBytes{}; //!< The width in bytes for linear textures
+            bool is3d{}; //!< If the RT is 3D, this controls if the RT is 3D or layered
+            GuestTexture guest{};
+            std::shared_ptr<TextureView> view{};
 
             RenderTarget() {
                 guest.dimensions = texture::Dimensions(1, 1, 1);
@@ -332,6 +333,12 @@ namespace skyline::gpu::interconnect {
                     .blockDepth = static_cast<u8>(1U << mode.blockDepthLog2),
                 };
             }
+
+            if (renderTarget.is3d != mode.is3d) {
+                std::swap(renderTarget.guest.dimensions.depth, renderTarget.guest.layerCount);
+                renderTarget.is3d = mode.is3d;
+            }
+
             renderTarget.view.reset();
         }
 
@@ -344,14 +351,18 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetRenderTargetArrayMode(RenderTarget &renderTarget, maxwell3d::RenderTargetArrayMode mode) {
-            renderTarget.guest.dimensions.depth = mode.layerCount;
+            if (renderTarget.is3d)
+                renderTarget.guest.dimensions.depth = mode.depthOrlayerCount;
+            else
+                renderTarget.guest.layerCount = mode.depthOrlayerCount;
             renderTarget.view.reset();
         }
 
         void SetColorRenderTargetArrayMode(size_t index, maxwell3d::RenderTargetArrayMode mode) {
+            auto &renderTarget{colorRenderTargets.at(index)};
             if (mode.volume)
-                throw exception("Color RT Array Volumes are not supported (with layer count = {})", mode.layerCount);
-            SetRenderTargetArrayMode(colorRenderTargets.at(index), mode);
+                throw exception("Color RT Array Volumes are not supported (with {} = {})", renderTarget.is3d ? "depth" : "layer count", mode.depthOrlayerCount);
+            SetRenderTargetArrayMode(renderTarget, mode);
         }
 
         void SetDepthRenderTargetArrayMode(maxwell3d::RenderTargetArrayMode mode) {
