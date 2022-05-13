@@ -18,4 +18,21 @@ namespace skyline::soc::gm20b {
     struct AddressSpaceContext {
         GMMU gmmu;
     };
+
+    /**
+     * @brief A host IOVA address composed of 32-bit low/high register values
+     * @note This differs from engine::Address in that it is little-endian rather than big-endian ordered for the register values
+     */
+    union IOVA {
+        u64 iova;
+        struct {
+            u32 low;
+            u32 high;
+        };
+
+        operator u64 &() {
+            return iova;
+        }
+    };
+    static_assert(sizeof(IOVA) == sizeof(u64));
 }

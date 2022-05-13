@@ -18,6 +18,7 @@
 #include "conversion/quads.h"
 
 namespace skyline::gpu::interconnect {
+    using IOVA = soc::gm20b::IOVA;
     namespace maxwell3d = soc::gm20b::engine::maxwell3d::type;
     namespace ShaderCompiler = ::Shader; //!< Namespace alias to avoid conflict with the `Shader` class
 
@@ -30,23 +31,6 @@ namespace skyline::gpu::interconnect {
         GPU &gpu;
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
-
-        /**
-         * @brief A host IOVA address composed of 32-bit low/high register values
-         * @note This differs from maxwell3d::Address in that it is little-endian rather than big-endian ordered for the register values
-         */
-        union IOVA {
-            u64 iova;
-            struct {
-                u32 low;
-                u32 high;
-            };
-
-            operator u64 &() {
-                return iova;
-            }
-        };
-        static_assert(sizeof(IOVA) == sizeof(u64));
 
       public:
         GraphicsContext(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {
