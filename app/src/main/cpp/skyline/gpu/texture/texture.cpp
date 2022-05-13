@@ -161,6 +161,7 @@ namespace skyline::gpu {
             }
         }()};
 
+        auto guestLayerStride{guest->GetLayerStride()};
         for (size_t layer{}; layer < layerCount; ++layer) {
             if (guest->tileConfig.mode == texture::TileMode::Block)
                 texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
@@ -168,7 +169,7 @@ namespace skyline::gpu {
                 texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
             else if (guest->tileConfig.mode == texture::TileMode::Linear)
                 std::memcpy(bufferData, pointer, size);
-            pointer += guest->GetLayerStride();
+            pointer += guestLayerStride;
             bufferData += layerStride;
         }
 
@@ -270,6 +271,7 @@ namespace skyline::gpu {
     void Texture::CopyToGuest(u8 *hostBuffer) {
         auto guestOutput{mirror.data()};
 
+        auto guestLayerStride{guest->GetLayerStride()};
         for (size_t layer{}; layer < layerCount; ++layer) {
             if (guest->tileConfig.mode == texture::TileMode::Block)
                 texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
@@ -277,7 +279,7 @@ namespace skyline::gpu {
                 texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
             else if (guest->tileConfig.mode == texture::TileMode::Linear)
                 std::memcpy(hostBuffer, guestOutput, layerStride);
-            guestOutput += guest->layerStride;
+            guestOutput += guestLayerStride;
             hostBuffer += layerStride;
         }
     }
