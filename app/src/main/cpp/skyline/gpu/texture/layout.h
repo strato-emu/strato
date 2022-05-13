@@ -110,9 +110,15 @@ namespace skyline::gpu::texture {
         }
 
         if (surfaceHeightLines % robHeight != 0) {
-            u32 robOffsetLines{surfaceHeightRobs * robHeight};
-            blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - robOffsetLines) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
-            deswizzleRob(linearRob, std::true_type{}, (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight), util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight}) - robOffsetLines);
+            blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - (surfaceHeightRobs * robHeight)) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
+
+            u32 alignedSurfaceLines{util::DivideCeil(guest.dimensions.height, u32{guest.format->blockHeight})};
+            deswizzleRob(
+                linearRob,
+                std::true_type{},
+                (guest.tileConfig.blockHeight - blockHeight) * (SectorWidth * SectorWidth * SectorHeight), // Calculate padding at the end of a block to skip
+                util::IsAligned(alignedSurfaceLines, GobHeight) ? GobHeight : alignedSurfaceLines - util::AlignDown(alignedSurfaceLines, GobHeight) // Calculate the line relative to the start of the last GOB that is the cut-off point for the image
+            );
         }
     }
 
