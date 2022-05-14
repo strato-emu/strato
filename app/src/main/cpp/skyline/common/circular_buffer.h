@@ -48,7 +48,7 @@ namespace skyline {
                 size = sizeBegin + sizeEnd;
             }
 
-            if (copyFunction && copyOffset) {
+            if (copyFunction && (copyOffset != 0 && copyOffset < sizeEnd)) {
                 auto sourceEnd{start + ((copyOffset != -1) ? copyOffset : sizeEnd)};
 
                 for (auto source{start}, destination{pointer}; source < sourceEnd; source++, destination++)
@@ -59,6 +59,8 @@ namespace skyline {
                     copyOffset -= sizeEnd;
                 }
             } else {
+                if (copyOffset)
+                    copyOffset -= static_cast<size_t>(sizeEnd) * sizeof(Type);
                 std::memcpy(pointer, start, static_cast<size_t>(sizeEnd) * sizeof(Type));
             }
 
