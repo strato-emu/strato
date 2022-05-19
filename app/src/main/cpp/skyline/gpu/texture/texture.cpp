@@ -22,7 +22,7 @@ namespace skyline::gpu {
                 return layerStride = dimensions.height * tileConfig.pitch;
 
             case texture::TileMode::Block:
-                return layerStride = static_cast<u32>(texture::GetBlockLinearLayerSize(*this));
+                return layerStride = static_cast<u32>(texture::GetBlockLinearLayerSize(dimensions, format->blockHeight, format->blockWidth, format->bpb, tileConfig.blockHeight, tileConfig.blockDepth));
         }
     }
 
