@@ -5,10 +5,11 @@
 
 namespace skyline::gpu::texture {
     // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
-    constexpr u8 SectorWidth{16}; // The width of a sector in bytes
-    constexpr u8 SectorHeight{2}; // The height of a sector in lines
-    constexpr u8 GobWidth{64}; // The width of a GOB in bytes
-    constexpr u8 GobHeight{8}; // The height of a GOB in lines
+    constexpr size_t SectorWidth{16}; //!< The width of a sector in bytes
+    constexpr size_t SectorHeight{2}; //!< The height of a sector in lines
+    constexpr size_t GobWidth{64}; //!< The width of a GOB in bytes
+    constexpr size_t GobHeight{8}; //!< The height of a GOB in lines
+    constexpr size_t SectorLinesInGob{(GobWidth / SectorWidth) * GobHeight}; //!< The number of lines of sectors inside a GOB
 
     size_t GetBlockLinearLayerSize(Dimensions dimensions, size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, size_t gobBlockHeight, size_t gobBlockDepth) {
         size_t robLineWidth{util::DivideCeil<size_t>(dimensions.width, formatBlockWidth)}; //!< The width of the ROB in terms of format blocks
@@ -118,8 +119,8 @@ namespace skyline::gpu::texture {
                 for (size_t gobZ{}; gobZ < blockDepth; gobZ++) { // Every Block contains `blockDepth` Z-axis GOBs (Slices)
                     u8 *linearGob{linearBlock};
                     for (size_t gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
-                        #pragma clang loop unroll_count(32)
-                        for (size_t index{}; index < SectorWidth * SectorHeight; index++) {  // Every Y-axis GOB contains `sectorWidth * sectorHeight` sectors
+                        #pragma clang loop unroll_count(SectorLinesInGob)
+                        for (size_t index{}; index < SectorLinesInGob; index++) {
                             size_t xT{((index << 3) & 0b10000) | ((index << 1) & 0b100000)}; // Morton-Swizzle on the X-axis
                             size_t yT{((index >> 1) & 0b110) | (index & 0b1)}; // Morton-Swizzle on the Y-axis
 
