@@ -39,14 +39,14 @@ namespace skyline::soc::gm20b::engine {
         executor.Execute();
         if (registers.launchDma->multiLineEnable) {
             if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch &&
-                  registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)
+                registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)
                 CopyPitchToBlockLinear();
             else if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear &&
                 registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch)
                 CopyBlockLinearToPitch();
             else
                 Logger::Warn("Unimplemented multi-line copy type: {} -> {}!",
-                              static_cast<u8>(registers.launchDma->srcMemoryLayout), static_cast<u8>(registers.launchDma->dstMemoryLayout));
+                             static_cast<u8>(registers.launchDma->srcMemoryLayout), static_cast<u8>(registers.launchDma->dstMemoryLayout));
         } else {
             // 1D buffer copy
             // TODO: implement swizzled 1D copies based on VMM 'kind'
@@ -77,117 +77,112 @@ namespace skyline::soc::gm20b::engine {
 
     void MaxwellDma::CopyPitchToBlockLinear() {
         if (registers.dstSurface->blockSize.Depth() > 1 || registers.dstSurface->depth > 1) {
-            Logger::Warn("3D DMA engine copies are unimplemented!");
+            Logger::Warn("3D DMA engine copies are unimplemented");
             return;
         }
 
         if (registers.dstSurface->blockSize.Width() != 1) {
-            Logger::Warn("DMA engine copies with block widths other than 1 are unimplemented!");
+            Logger::Warn("DMA engine copies with block widths other than 1 are unimplemented");
             return;
         }
 
         u32 bytesPerPixel{static_cast<u32>(registers.remapComponents->ComponentSize() * registers.remapComponents->NumSrcComponents())};
         if (bytesPerPixel * *registers.lineLengthIn != *registers.pitchIn) {
-            Logger::Warn("Non-linear DMA source textures are not implemented!");
+            Logger::Warn("Non-linear DMA source textures are not implemented");
             return;
         }
 
         if (registers.dstSurface->origin.x || registers.dstSurface->origin.y) {
-            Logger::Warn("Non-zero origin DMA copies are not implemented!");
+            Logger::Warn("Non-zero origin DMA copies are not implemented");
             return;
         }
 
         if (*registers.lineLengthIn != registers.dstSurface->width)
             Logger::Warn("DMA copy width mismatch: src: {} dst: {}", *registers.lineLengthIn, registers.dstSurface->width);
 
-        gpu::GuestTexture srcTexture{span<u8>{},
-                                     gpu::texture::Dimensions{*registers.lineLengthIn, *registers.lineCount, 1},
-                                     gpu::format::GetFormatForBpp(bytesPerPixel),
-                                     gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Linear },
-                                     gpu::texture::TextureType::e2D};
+        gpu::texture::Dimensions srcDimensions{*registers.lineLengthIn, *registers.lineCount, 1};
+        size_t srcStride{srcDimensions.width * srcDimensions.height * bytesPerPixel};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerStride())}; mappings.size() == 1) {
-            srcTexture.mappings[0] = mappings[0];
-        } else {
-            Logger::Warn("DMA for split textures is unimplemented!");
+        auto srcMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcStride)};
+        if (srcMappings.size() != 1) {
+            Logger::Warn("DMA for split textures is unimplemented");
             return;
         }
 
-        // This represents a single layer view into a potentially multi-layer texture
-        gpu::GuestTexture dstTexture{span<u8>{},
-                                     gpu::texture::Dimensions{*registers.lineLengthIn, registers.dstSurface->height, 1},
-                                     gpu::format::GetFormatForBpp(bytesPerPixel),
-                                     gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Block, .blockHeight = registers.dstSurface->blockSize.Height(), .blockDepth = 1 },
-                                     gpu::texture::TextureType::e2D};
+        gpu::texture::Dimensions dstDimensions{registers.dstSurface->width, registers.dstSurface->height, registers.dstSurface->depth};
+        dstDimensions.width = *registers.lineLengthIn; // We do not support copying subrects so we need the width to match on the source and destination
+        size_t dstBlockHeight{registers.dstSurface->blockSize.Height()}, dstBlockDepth{registers.dstSurface->blockSize.Depth()};
+        size_t dstLayerStride{gpu::texture::GetBlockLinearLayerSize(dstDimensions, 1, 1, bytesPerPixel, dstBlockHeight, dstBlockDepth)};
 
-        u64 dstLayerAddress{*registers.offsetOut + dstTexture.GetLayerStride() * registers.dstSurface->layer};
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(dstLayerAddress, dstTexture.GetLayerStride())}; mappings.size() == 1) {
-            dstTexture.mappings[0] = mappings[0];
-        } else {
-            Logger::Warn("DMA for split textures is unimplemented!");
+        size_t dstLayerAddress{*registers.offsetOut + (registers.dstSurface->layer * dstLayerStride)};
+        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dstLayerAddress, dstLayerStride)};
+        if (dstMappings.size() != 1) {
+            Logger::Warn("DMA for split textures is unimplemented");
             return;
         }
 
-        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, u64{*registers.offsetIn}, dstTexture.dimensions.width, dstTexture.dimensions.height, dstLayerAddress);
+        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, u64{*registers.offsetIn}, dstDimensions.width, dstDimensions.height, dstLayerAddress);
 
-        gpu::texture::CopyLinearToBlockLinear(dstTexture, srcTexture.mappings.front().data(), dstTexture.mappings.front().data());
+        gpu::texture::CopyLinearToBlockLinear(
+            dstDimensions,
+            1, 1, bytesPerPixel,
+            dstBlockHeight, dstBlockDepth,
+            srcMappings.front().data(), dstMappings.front().data()
+        );
     }
-
 
     void MaxwellDma::CopyBlockLinearToPitch() {
         if (registers.srcSurface->blockSize.Depth() > 1 || registers.srcSurface->depth > 1) {
-            Logger::Warn("3D DMA engine copies are unimplemented!");
+            Logger::Warn("3D DMA engine copies are unimplemented");
             return;
         }
 
         if (registers.srcSurface->blockSize.Width() != 1) {
-            Logger::Warn("DMA engine copies with block widths other than 1 are unimplemented!");
+            Logger::Warn("DMA engine copies with block widths other than 1 are unimplemented");
             return;
         }
 
         u32 bytesPerPixel{static_cast<u32>(registers.remapComponents->ComponentSize() * registers.remapComponents->NumSrcComponents())};
         if (bytesPerPixel * *registers.lineLengthIn != *registers.pitchOut) {
-            Logger::Warn("Non-linear DMA destination textures are not implemented!");
+            Logger::Warn("Non-linear DMA destination textures are not implemented");
             return;
         }
 
         if (registers.srcSurface->origin.x || registers.srcSurface->origin.y) {
-            Logger::Warn("Non-zero origin DMA copies are not implemented!");
+            Logger::Warn("Non-zero origin DMA copies are not implemented");
             return;
         }
 
         if (*registers.lineLengthIn != registers.srcSurface->width)
             Logger::Warn("DMA copy width mismatch: src: {} dst: {}", *registers.lineLengthIn, registers.dstSurface->width);
 
-        gpu::GuestTexture srcTexture{span<u8>{},
-                                     gpu::texture::Dimensions{registers.srcSurface->width, registers.srcSurface->height, 1},
-                                     gpu::format::GetFormatForBpp(bytesPerPixel),
-                                     gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Block, .blockHeight = registers.srcSurface->blockSize.Height(), .blockDepth = 1 },
-                                     gpu::texture::TextureType::e2D};
+        gpu::texture::Dimensions srcDimensions{registers.srcSurface->width, registers.srcSurface->height, registers.srcSurface->depth};
+        srcDimensions.width = *registers.lineLengthIn; // We do not support copying subrects so we need the width to match on the source and destination
+        size_t srcBlockHeight{registers.srcSurface->blockSize.Height()}, srcBlockDepth{registers.srcSurface->blockSize.Depth()};
+        size_t srcStride{gpu::texture::GetBlockLinearLayerSize(srcDimensions, 1, 1, bytesPerPixel, srcBlockHeight, srcBlockDepth)};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcTexture.GetLayerStride())}; mappings.size() == 1) {
-            srcTexture.mappings[0] = mappings[0];
-        } else {
-            Logger::Warn("DMA for split textures is unimplemented!");
+        auto srcMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, srcStride)};
+        if (srcMappings.size() != 1) {
+            Logger::Warn("DMA for split textures is unimplemented");
             return;
         }
 
-        gpu::GuestTexture dstTexture{span<u8>{},
-                                     gpu::texture::Dimensions{*registers.lineLengthIn, *registers.lineCount, 1},
-                                     gpu::format::GetFormatForBpp(bytesPerPixel),
-                                     gpu::texture::TileConfig{ .mode = gpu::texture::TileMode::Linear },
-                                     gpu::texture::TextureType::e2D};
+        gpu::texture::Dimensions dstDimensions{*registers.lineLengthIn, *registers.lineCount, 1};
+        size_t dstStride{dstDimensions.width * dstDimensions.height * bytesPerPixel};
 
-        if (auto mappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, dstTexture.GetLayerStride())}; mappings.size() == 1) {
-            dstTexture.mappings[0] = mappings[0];
-        } else {
-            Logger::Warn("DMA for split textures is unimplemented!");
+        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, dstStride)};
+        if (dstMappings.size() != 1) {
+            Logger::Warn("DMA for split textures is unimplemented");
             return;
         }
 
-        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcTexture.dimensions.width, srcTexture.dimensions.height, u64{*registers.offsetIn}, dstTexture.dimensions.width, dstTexture.dimensions.height,  u64{*registers.offsetOut});
+        Logger::Debug("{}x{}@0x{:X} -> {}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, u64{*registers.offsetIn}, dstDimensions.width, dstDimensions.height, u64{*registers.offsetOut});
 
-        gpu::texture::CopyBlockLinearToLinear(srcTexture, srcTexture.mappings.front().data(), dstTexture.mappings.front().data());
+        gpu::texture::CopyBlockLinearToLinear(
+            srcDimensions,
+            1, 1, bytesPerPixel,
+            srcBlockHeight, srcBlockDepth,
+            srcMappings.front().data(), dstMappings.front().data());
     }
 
     void MaxwellDma::CallMethodBatchNonInc(u32 method, span<u32> arguments) {
