@@ -22,7 +22,7 @@ namespace skyline::gpu {
                 return layerStride = dimensions.height * tileConfig.pitch;
 
             case texture::TileMode::Block:
-                return layerStride = static_cast<u32>(texture::GetBlockLinearLayerSize(dimensions, format->blockHeight, format->blockWidth, format->bpb, tileConfig.blockHeight, tileConfig.blockDepth));
+                return layerStride = static_cast<u32>(texture::GetBlockLinearLayerSize(dimensions, format->blockHeight, format->blockWidth, format->bpb, tileConfig.blockHeight, tileConfig.blockDepth, mipLevelCount, layerCount > 1));
         }
     }
 
@@ -137,7 +137,6 @@ namespace skyline::gpu {
             throw exception("Guest and host dimensions being different is not supported currently");
 
         auto pointer{mirror.data()};
-        auto size{layerStride * layerCount};
 
         WaitOnBacking();
 
@@ -145,7 +144,7 @@ namespace skyline::gpu {
         auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
             if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
                 // We need a staging buffer for all optimal copies (since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
-                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
                 bufferData = stagingBuffer->data();
                 return stagingBuffer;
             } else if (tiling == vk::ImageTiling::eLinear) {
@@ -162,15 +161,38 @@ namespace skyline::gpu {
         }()};
 
         auto guestLayerStride{guest->GetLayerStride()};
-        for (size_t layer{}; layer < layerCount; ++layer) {
-            if (guest->tileConfig.mode == texture::TileMode::Block)
-                texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
-            else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-                texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
-            else if (guest->tileConfig.mode == texture::TileMode::Linear)
-                std::memcpy(bufferData, pointer, size);
-            pointer += guestLayerStride;
-            bufferData += layerStride;
+        if (levelCount == 1) {
+            for (size_t layer{}; layer < layerCount; layer++) {
+                if (guest->tileConfig.mode == texture::TileMode::Block)
+                    texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
+                else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+                    texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
+                else if (guest->tileConfig.mode == texture::TileMode::Linear)
+                    std::memcpy(bufferData, pointer, surfaceSize);
+                pointer += guestLayerStride;
+                bufferData += layerStride;
+            }
+        } else if (levelCount > 1 && guest->tileConfig.mode == texture::TileMode::Block) {
+            // We need to generate a buffer that has all layers for a given mip level while Tegra X1 layout holds all mip levels for a given layer
+            for (size_t layer{}; layer < layerCount; layer++) {
+                auto inputLevel{pointer}, outputLevel{bufferData};
+                for (size_t level{}; level < levelCount; ++level) {
+                    const auto &mipLayout{mipLayouts[level]};
+                    texture::CopyBlockLinearToLinear(
+                        mipLayout.dimensions,
+                        guest->format->blockWidth, guest->format->blockHeight, guest->format->bpb,
+                        mipLayout.blockHeight, mipLayout.blockDepth,
+                        inputLevel, outputLevel + (layer * mipLayout.linearSize) // Offset into the current layer relative to the start of the current mip level
+                    );
+
+                    inputLevel += mipLayout.blockLinearSize; // Skip over the current mip level as we've deswizzled it
+                    outputLevel += layerCount * mipLayout.linearSize; // We need to offset the output buffer by the size of the previous mip level
+                }
+
+                pointer += guestLayerStride; // We need to offset the input buffer by the size of the previous guest layer, this can differ from inputLevel's value due to layer end padding or guest RT layer stride
+            }
+        } else if (levelCount != 0) {
+            throw exception("Mipmapped textures with tiling mode '{}' aren't supported", static_cast<int>(tiling));
         }
 
         if (stagingBuffer && cycle.lock() != pCycle)
@@ -192,21 +214,29 @@ namespace skyline::gpu {
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .subresourceRange = {
                     .aspectMask = format->vkAspect,
-                    .levelCount = mipLevels,
+                    .levelCount = levelCount,
                     .layerCount = layerCount,
                 },
             });
 
-        boost::container::static_vector<const vk::BufferImageCopy, 3> bufferImageCopies;
+        std::vector<vk::BufferImageCopy> bufferImageCopies;
         auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
-            bufferImageCopies.emplace_back(
-                vk::BufferImageCopy{
-                    .imageExtent = dimensions,
-                    .imageSubresource = {
-                        .aspectMask = aspect,
-                        .layerCount = layerCount,
-                    },
-                });
+            vk::DeviceSize bufferOffset{};
+            u32 mipLevel{};
+            for (auto &level : mipLayouts) {
+                bufferImageCopies.emplace_back(
+                    vk::BufferImageCopy{
+                        .bufferOffset = bufferOffset,
+                        .imageSubresource = {
+                            .aspectMask = aspect,
+                            .mipLevel = mipLevel++,
+                            .layerCount = layerCount,
+                        },
+                        .imageExtent = level.dimensions,
+                    }
+                );
+                bufferOffset += level.linearSize * layerCount;
+            }
         }};
 
         if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
@@ -231,21 +261,29 @@ namespace skyline::gpu {
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .subresourceRange = {
                 .aspectMask = format->vkAspect,
-                .levelCount = mipLevels,
+                .levelCount = levelCount,
                 .layerCount = layerCount,
             },
         });
 
-        boost::container::static_vector<const vk::BufferImageCopy, 3> bufferImageCopies;
+        boost::container::small_vector<vk::BufferImageCopy, 10> bufferImageCopies;
         auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
-            bufferImageCopies.emplace_back(
-                vk::BufferImageCopy{
-                    .imageExtent = dimensions,
-                    .imageSubresource = {
-                        .aspectMask = aspect,
-                        .layerCount = layerCount,
-                    },
-                });
+            vk::DeviceSize bufferOffset{};
+            u32 mipLevel{};
+            for (auto &level : mipLayouts) {
+                bufferImageCopies.emplace_back(
+                    vk::BufferImageCopy{
+                        .bufferOffset = bufferOffset,
+                        .imageSubresource = {
+                            .aspectMask = aspect,
+                            .mipLevel = mipLevel++,
+                            .layerCount = layerCount,
+                        },
+                        .imageExtent = level.dimensions,
+                    }
+                );
+                bufferOffset += level.linearSize * levelCount;
+            }
         }};
 
         if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
@@ -272,15 +310,39 @@ namespace skyline::gpu {
         auto guestOutput{mirror.data()};
 
         auto guestLayerStride{guest->GetLayerStride()};
-        for (size_t layer{}; layer < layerCount; ++layer) {
-            if (guest->tileConfig.mode == texture::TileMode::Block)
-                texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
-            else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-                texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
-            else if (guest->tileConfig.mode == texture::TileMode::Linear)
-                std::memcpy(hostBuffer, guestOutput, layerStride);
-            guestOutput += guestLayerStride;
-            hostBuffer += layerStride;
+        if (levelCount == 1) {
+            for (size_t layer{}; layer < layerCount; layer++) {
+                if (guest->tileConfig.mode == texture::TileMode::Block)
+                    texture::CopyLinearToBlockLinear(*guest, hostBuffer, guestOutput);
+                else if (guest->tileConfig.mode == texture::TileMode::Pitch)
+                    texture::CopyLinearToPitchLinear(*guest, hostBuffer, guestOutput);
+                else if (guest->tileConfig.mode == texture::TileMode::Linear)
+                    std::memcpy(hostBuffer, guestOutput, layerStride);
+                guestOutput += guestLayerStride;
+                hostBuffer += layerStride;
+            }
+        } else if (levelCount > 1 && guest->tileConfig.mode == texture::TileMode::Block) {
+            // We need to copy into the Tegra X1 layout holds all mip levels for a given layer while the input buffer has all layers for a given mip level
+            // Note: See SynchronizeHostImpl for additional comments
+            for (size_t layer{}; layer < layerCount; layer++) {
+                auto outputLevel{guestOutput}, inputLevel{hostBuffer};
+                for (size_t level{}; level < levelCount; ++level) {
+                    const auto &mipLayout{mipLayouts[level]};
+                    texture::CopyLinearToBlockLinear(
+                        mipLayout.dimensions,
+                        guest->format->blockWidth, guest->format->blockHeight, guest->format->bpb,
+                        mipLayout.blockHeight, mipLayout.blockDepth,
+                        outputLevel, inputLevel + (layer * mipLayout.linearSize)
+                    );
+
+                    outputLevel += mipLayout.blockLinearSize;
+                    inputLevel += layerCount * mipLayout.linearSize;
+                }
+
+                guestOutput += guestLayerStride;
+            }
+        } else if (levelCount != 0) {
+            throw exception("Mipmapped textures with tiling mode '{}' aren't supported", static_cast<int>(tiling));
         }
     }
 
@@ -291,7 +353,7 @@ namespace skyline::gpu {
         texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
     }
 
-    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 mipLevels, u32 layerCount, vk::SampleCountFlagBits sampleCount)
+    Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 levelCount, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
           dimensions(dimensions),
@@ -300,10 +362,16 @@ namespace skyline::gpu {
           tiling(tiling),
           flags(flags),
           usage(usage),
-          mipLevels(mipLevels),
+          levelCount(levelCount),
           layerCount(layerCount),
-          layerStride(static_cast<u32>(format->GetSize(dimensions))),
           sampleCount(sampleCount) {}
+
+    u32 CalculateLevelStride(const std::vector<texture::MipLevelLayout> &mipLayouts) {
+        u32 surfaceSize{};
+        for (const auto &level : mipLayouts)
+            surfaceSize += level.linearSize;
+        return surfaceSize;
+    }
 
     Texture::Texture(GPU &pGpu, GuestTexture pGuest)
         : gpu(pGpu),
@@ -312,9 +380,18 @@ namespace skyline::gpu {
           format(guest->format),
           layout(vk::ImageLayout::eUndefined),
           tiling(vk::ImageTiling::eOptimal), // Force Optimal due to not adhering to host subresource layout during Linear synchronization
-          mipLevels(1),
           layerCount(guest->layerCount),
           layerStride(static_cast<u32>(format->GetSize(dimensions))),
+          levelCount(guest->mipLevelCount),
+          mipLayouts(
+              texture::GetBlockLinearMipLayout(
+                  guest->dimensions,
+                  guest->format->blockHeight, guest->format->blockWidth, guest->format->bpb,
+                  guest->tileConfig.blockHeight, guest->tileConfig.blockDepth,
+                  guest->mipLevelCount
+              )
+          ),
+          surfaceSize(CalculateLevelStride(mipLayouts) * layerCount),
           sampleCount(vk::SampleCountFlagBits::e1),
           flags(gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat),
           usage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled) {
@@ -346,10 +423,10 @@ namespace skyline::gpu {
         vk::ImageCreateInfo imageCreateInfo{
             .flags = flags,
             .imageType = imageType,
-            .format = *guest->format,
-            .extent = guest->dimensions,
-            .mipLevels = 1,
-            .arrayLayers = guest->layerCount,
+            .format = *format,
+            .extent = dimensions,
+            .mipLevels = levelCount,
+            .arrayLayers = layerCount,
             .samples = vk::SampleCountFlagBits::e1,
             .tiling = tiling,
             .usage = usage,
@@ -429,7 +506,7 @@ namespace skyline::gpu {
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .subresourceRange = {
                         .aspectMask = format->vkAspect,
-                        .levelCount = mipLevels,
+                        .levelCount = levelCount,
                         .layerCount = layerCount,
                     },
                 });
@@ -500,8 +577,7 @@ namespace skyline::gpu {
         WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-            auto size{layerStride * layerCount};
-            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
 
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
@@ -534,8 +610,7 @@ namespace skyline::gpu {
             WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
-            auto size{layerStride * layerCount};
-            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(size)};
+            auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
 
             CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
             pCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this(), stagingBuffer));
@@ -616,7 +691,7 @@ namespace skyline::gpu {
                 .baseArrayLayer = subresource.baseArrayLayer,
                 .layerCount = subresource.layerCount == VK_REMAINING_ARRAY_LAYERS ? layerCount - subresource.baseArrayLayer : subresource.layerCount,
             };
-            for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? mipLevels - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
+            for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? levelCount - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
                 commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
                     .srcSubresource = subresourceLayers,
                     .dstSubresource = subresourceLayers,

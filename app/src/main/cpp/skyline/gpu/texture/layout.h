@@ -14,6 +14,23 @@ namespace skyline::gpu::texture {
                                    size_t gobBlockHeight, size_t gobBlockDepth);
 
     /**
+     * @param isMultiLayer If the texture has more than one layer, a multi-layer texture requires alignment to a block at layer end
+     * @return The size of a layer of the specified block-linear surface in bytes
+     */
+    size_t GetBlockLinearLayerSize(Dimensions dimensions,
+                                   size_t formatBlockHeight, size_t formatBlockWidth, size_t formatBpb,
+                                   size_t gobBlockHeight, size_t gobBlockDepth,
+                                   size_t levelCount, bool isMultiLayer);
+
+    /**
+     * @return A vector of metadata about every mipmapped level of the supplied block-linear surface
+     */
+    std::vector<MipLevelLayout> GetBlockLinearMipLayout(Dimensions dimensions,
+                                                        size_t formatBlockHeight, size_t formatBlockWidth, size_t formatBpb,
+                                                        size_t gobBlockHeight, size_t gobBlockDepth,
+                                                        size_t levelCount);
+
+    /**
      * @brief Copies the contents of a blocklinear texture to a linear output buffer
      */
     void CopyBlockLinearToLinear(Dimensions dimensions,

@@ -2257,6 +2257,10 @@ namespace skyline::gpu::interconnect {
                 guest.dimensions = texture::Dimensions(textureControl.widthMinusOne + 1, textureControl.heightMinusOne + 1, 1);
                 u16 depth{static_cast<u16>(textureControl.depthMinusOne + 1)};
 
+                guest.mipLevelCount = textureControl.mipMaxLevels + 1;
+                guest.viewMipBase = textureControl.viewConfig.mipMinLevel;
+                guest.viewMipCount = textureControl.viewConfig.mipMaxLevel - textureControl.viewConfig.mipMinLevel + 1;
+
                 using TicType = TextureImageControl::TextureType;
                 using TexType = texture::TextureType;
                 switch (textureControl.textureType) {
@@ -2271,8 +2275,11 @@ namespace skyline::gpu::interconnect {
                     case TicType::e1DBuffer:
                         throw exception("1D Buffers are not supported");
 
-                    case TicType::e2D:
                     case TicType::e2DNoMipmap:
+                        guest.mipLevelCount = 1;
+                        guest.viewMipBase = 0;
+                        guest.viewMipCount = 1;
+                    case TicType::e2D:
                         guest.type = TexType::e2D;
                         guest.layerCount = 1;
                         break;

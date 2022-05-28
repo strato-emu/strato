@@ -45,11 +45,12 @@ namespace skyline::gpu {
             if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && lastHostMapping == hostMappings.end() && lastGuestMapping.end() == std::prev(lastHostMapping)->end()) {
                 // We've gotten a perfect 1:1 match for *all* mappings from the start to end, we just need to check for compatibility aside from this
                 auto &matchGuestTexture{*hostMapping->texture->guest};
-                if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && matchGuestTexture.dimensions == guestTexture.dimensions && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
+                if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && (matchGuestTexture.dimensions == guestTexture.dimensions || matchGuestTexture.viewMipBase > 0) && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
                     return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
                         .aspectMask = guestTexture.aspect,
-                        .levelCount = texture->mipLevels,
+                        .baseMipLevel = guestTexture.viewMipBase,
+                        .levelCount = guestTexture.viewMipCount,
                         .layerCount = texture->layerCount,
                     }, guestTexture.format, guestTexture.swizzle);
                 }
@@ -81,7 +82,8 @@ namespace skyline::gpu {
 
         return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
             .aspectMask = guestTexture.aspect,
-            .levelCount = texture->mipLevels,
+            .baseMipLevel = guestTexture.viewMipBase,
+            .levelCount = guestTexture.viewMipCount,
             .layerCount = texture->layerCount,
         }, guestTexture.format, guestTexture.swizzle);
     }

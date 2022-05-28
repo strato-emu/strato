@@ -316,8 +316,8 @@ namespace skyline::gpu::interconnect {
         union ViewConfig {
             u32 colorKeyValue;
             struct {
-                u32 viewMipMinLevel : 4;
-                u32 viewMipMaxLevel : 4;
+                u32 mipMinLevel : 4;
+                u32 mipMaxLevel : 4;
                 MsaaMode msaaMode : 4;
                 u32 minLodClamp : 12;
                 u32 _pad2_ : 8;

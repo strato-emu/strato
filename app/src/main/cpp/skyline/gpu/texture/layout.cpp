@@ -23,8 +23,69 @@ namespace skyline::gpu::texture {
         return robLineBytes * robHeight * surfaceHeightRobs * robDepth;
     }
 
+    template<typename Type>
+    constexpr Type CalculateBlockGobs(Type blockGobs, Type surfaceGobs) {
+        if (surfaceGobs > blockGobs)
+            return blockGobs;
+        return std::bit_ceil<Type>(surfaceGobs);
+    }
+
+    size_t GetBlockLinearLayerSize(Dimensions dimensions, size_t formatBlockHeight, size_t formatBlockWidth, size_t formatBpb, size_t gobBlockHeight, size_t gobBlockDepth, size_t levelCount, bool isMultiLayer) {
+        // Calculate the size of the surface in GOBs on every axis
+        size_t gobsWidth{util::DivideCeil<size_t>(util::DivideCeil<size_t>(dimensions.width, formatBlockWidth) * formatBpb, GobWidth)};
+        size_t gobsHeight{util::DivideCeil<size_t>(util::DivideCeil<size_t>(dimensions.height, formatBlockHeight), GobHeight)};
+        size_t gobsDepth{dimensions.depth};
+
+        size_t totalSize{}, layerAlignment{GobWidth * GobHeight * gobBlockHeight * gobBlockDepth};
+        for (size_t i{}; i < levelCount; i++) {
+            // Iterate over every level, adding the size of the current level to the total size
+            totalSize += (GobWidth * gobsWidth) * (GobHeight * util::AlignUp(gobsHeight, gobBlockHeight)) * util::AlignUp(gobsDepth, gobBlockDepth);
+
+            // Successively divide every dimension by 2 until the final level is reached
+            gobsWidth = std::max(gobsWidth / 2, 1UL);
+            gobsHeight = std::max(gobsHeight / 2, 1UL);
+            gobsDepth = std::max(gobsDepth / 2, 1UL);
+
+            gobBlockHeight = CalculateBlockGobs(gobBlockHeight, gobsHeight);
+            gobBlockDepth = CalculateBlockGobs(gobBlockDepth, gobsDepth);
+        }
+
+        return isMultiLayer ? util::AlignUp(totalSize, layerAlignment) : totalSize;
+    }
+
+    std::vector<MipLevelLayout> GetBlockLinearMipLayout(Dimensions dimensions, size_t formatBlockHeight, size_t formatBlockWidth, size_t formatBpb, size_t gobBlockHeight, size_t gobBlockDepth, size_t levelCount) {
+        std::vector<MipLevelLayout> mipLevels;
+        mipLevels.reserve(levelCount);
+
+        size_t gobsWidth{util::DivideCeil<size_t>(util::DivideCeil<size_t>(dimensions.width, formatBlockWidth) * formatBpb, GobWidth)};
+        size_t gobsHeight{util::DivideCeil<size_t>(util::DivideCeil<size_t>(dimensions.height, formatBlockHeight), GobHeight)};
+        // Note: We don't need a separate gobsDepth variable here, since a GOB is always a single slice deep and the value would be the same as the depth dimension
+
+        for (size_t i{}; i < levelCount; i++) {
+            mipLevels.emplace_back(
+                dimensions,
+                util::DivideCeil<size_t>(dimensions.width, formatBlockWidth) * formatBpb * util::DivideCeil<size_t>(dimensions.height, formatBlockHeight) * dimensions.depth,
+                (GobWidth * gobsWidth) * (GobHeight * util::AlignUp(gobsHeight, gobBlockHeight)) * util::AlignUp(dimensions.depth, gobBlockDepth),
+                gobBlockHeight, gobBlockDepth
+            );
+
+            gobsWidth = std::max(gobsWidth / 2, 1UL);
+            gobsHeight = std::max(gobsHeight / 2, 1UL);
+
+            dimensions.width = std::max(dimensions.width / 2, 1U);
+            dimensions.height = std::max(dimensions.height / 2, 1U);
+            dimensions.depth = std::max(dimensions.depth / 2, 1U);
+
+            gobBlockHeight = CalculateBlockGobs(gobBlockHeight, gobsHeight);
+            gobBlockDepth = CalculateBlockGobs(gobBlockDepth, static_cast<size_t>(dimensions.depth));
+        }
+
+        return mipLevels;
+    }
+
     /**
      * @brief Copies pixel data between a linear and blocklinear texture
+     * @tparam BlockLinearToLinear Whether to copy from a blocklinear texture to a linear texture or a linear texture to a blocklinear texture
      */
     template<bool BlockLinearToLinear>
     void CopyBlockLinearInternal(Dimensions dimensions,

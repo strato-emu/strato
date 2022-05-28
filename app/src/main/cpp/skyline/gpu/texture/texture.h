@@ -222,6 +222,18 @@ namespace skyline::gpu {
             e2DArray = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
             eCubeArray = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
         };
+
+        /**
+         * @brief A description of a single mipmapped level of a block-linear surface
+         */
+        struct MipLevelLayout {
+            Dimensions dimensions; //!< The dimensions of the mipmapped level, these are exact dimensions and not aligned to a GOB
+            size_t linearSize; //!< The size of a linear image with this mipmapped level in bytes
+            size_t blockLinearSize; //!< The size of a blocklinear image with this mipmapped level in bytes
+            size_t blockHeight, blockDepth; //!< The block height and block depth set for the level
+
+            constexpr MipLevelLayout(Dimensions dimensions, size_t linearSize, size_t blockLinearSize, size_t blockHeight, size_t blockDepth) : dimensions{dimensions}, linearSize{linearSize}, blockLinearSize{blockLinearSize}, blockHeight{blockHeight}, blockDepth{blockDepth} {}
+        };
     }
 
     class Texture;
@@ -239,14 +251,17 @@ namespace skyline::gpu {
         texture::TileConfig tileConfig{};
         texture::TextureType type{};
         u32 baseArrayLayer{};
-        u32 layerCount{};
+        u32 layerCount{1};
         u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it **should** be set to 0 when not available and should never be a non-0 value that doesn't reflect the correct layer stride
+        u32 mipLevelCount{1}; //!< The total amount of mip levels in the parent image, if one exists
+        u32 viewMipBase{}; //!< The minimum mip level of the view, this is the smallest mip level that can be accessed via this view
+        u32 viewMipCount{1}; //!< The amount of mip levels starting from the base that can be accessed via this view
         vk::ComponentMapping swizzle{}; //!< Component swizzle derived from format requirements and the guest supplied swizzle
         vk::ImageAspectFlags aspect{};
 
         GuestTexture() {}
 
-        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0)
+        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
             : mappings(mappings),
               dimensions(dimensions),
               format(format),
@@ -255,9 +270,12 @@ namespace skyline::gpu {
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
               layerStride(layerStride),
+              mipLevelCount(mipLevelCount),
+              viewMipBase(viewMipBase),
+              viewMipCount(viewMipCount),
               aspect(format->vkAspect) {}
 
-        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0)
+        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
             : mappings(1, mapping),
               dimensions(dimensions),
               format(format),
@@ -266,6 +284,9 @@ namespace skyline::gpu {
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
               layerStride(layerStride),
+              mipLevelCount(mipLevelCount),
+              viewMipBase(viewMipBase),
+              viewMipCount(viewMipCount),
               aspect(format->vkAspect) {}
 
         /**
@@ -416,16 +437,18 @@ namespace skyline::gpu {
         vk::ImageTiling tiling;
         vk::ImageCreateFlags flags;
         vk::ImageUsageFlags usage;
-        u32 mipLevels;
-        u32 layerCount; //!< The amount of array layers in the image, utilized for efficient binding (Not to be confused with the depth or faces in a cubemap)
-        u32 layerStride; //!< The stride of a single array layer given linear tiling
+        u32 layerCount; //!< The amount of array layers in the image
+        u32 layerStride; //!< The stride of a single array layer given linear tiling, this does **not** consider mipmapping
+        u32 levelCount;
+        std::vector<texture::MipLevelLayout> mipLayouts; //!< The layout of each mip level in the guest texture
+        u32 surfaceSize; //!< The size of the entire surface given linear tiling, this contains all mip levels and layers
         vk::SampleCountFlagBits sampleCount;
 
         /**
          * @brief Creates a texture object wrapping the supplied backing with the supplied attributes
          * @param layout The initial layout of the texture, it **must** be eUndefined or ePreinitialized
          */
-        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 mipLevels = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+        Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 levelCount = 1, u32 layerCount = 1, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
         /**
          * @brief Creates a texture object wrapping the guest texture with a backing that can represent the guest texture data
