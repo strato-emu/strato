@@ -20,8 +20,18 @@ fun Context.getPublicFilesDir() : File = getExternalFilesDir(null) ?: filesDir
 class SkylineApplication : Application() {
     private external fun initializeLog(appFilesPath : String, logLevel : Int)
 
+    init {
+        instance = this
+    }
+
+    companion object {
+        lateinit var instance : SkylineApplication
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         System.loadLibrary("skyline")
 
         val appFilesPath = applicationContext.getPublicFilesDir().canonicalPath
