@@ -165,6 +165,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/buffer_manager.cpp
         ${source_DIR}/skyline/gpu/command_scheduler.cpp
         ${source_DIR}/skyline/gpu/descriptor_allocator.cpp
+        ${source_DIR}/skyline/gpu/texture/bc_decoder.cpp
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/texture/layout.cpp
         ${source_DIR}/skyline/gpu/buffer.cpp

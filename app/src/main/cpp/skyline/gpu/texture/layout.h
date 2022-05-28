@@ -23,10 +23,12 @@ namespace skyline::gpu::texture {
                                    size_t levelCount, bool isMultiLayer);
 
     /**
+     * @note The target format is the format of the texture after it has been decoded, if bpb is 0, the target format is the same as the source format
      * @return A vector of metadata about every mipmapped level of the supplied block-linear surface
      */
     std::vector<MipLevelLayout> GetBlockLinearMipLayout(Dimensions dimensions,
                                                         size_t formatBlockHeight, size_t formatBlockWidth, size_t formatBpb,
+                                                        size_t targetFormatBlockHeight, size_t targetFormatBlockWidth, size_t targetFormatBpb,
                                                         size_t gobBlockHeight, size_t gobBlockDepth,
                                                         size_t levelCount);
 

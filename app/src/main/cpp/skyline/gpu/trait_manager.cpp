@@ -5,7 +5,7 @@
 #include "trait_manager.h"
 
 namespace skyline::gpu {
-    TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2) : quirks(deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties, deviceProperties2.get<vk::PhysicalDeviceDriverProperties>()) {
+    TraitManager::TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice &physicalDevice) : quirks(deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties, deviceProperties2.get<vk::PhysicalDeviceDriverProperties>()) {
         bool hasCustomBorderColorExt{}, hasShaderAtomicInt64Ext{}, hasShaderFloat16Int8Ext{}, hasShaderDemoteToHelperExt{}, hasVertexAttributeDivisorExt{}, hasProvokingVertexExt{}, hasPrimitiveTopologyListRestartExt{}, hasImagelessFramebuffersExt{};
         bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
@@ -135,12 +135,28 @@ namespace skyline::gpu {
         auto &subgroupProperties{deviceProperties2.get<vk::PhysicalDeviceSubgroupProperties>()};
         supportsSubgroupVote = static_cast<bool>(subgroupProperties.supportedOperations & vk::SubgroupFeatureFlagBits::eVote);
         subgroupSize = deviceProperties2.get<vk::PhysicalDeviceSubgroupProperties>().subgroupSize;
+
+        auto isFormatSupported{[&physicalDevice](vk::Format format) {
+            auto features{physicalDevice.getFormatProperties(format)};
+            // We may get false positives here by not checking specifics but this is not seen in practice while the reverse often is of drivers (Such as Adreno 512.6xx drivers which don't report any support aside from buffer features but entirely support BC formats)
+            return static_cast<bool>(features.linearTilingFeatures) ||
+                static_cast<bool>(features.optimalTilingFeatures) ||
+                static_cast<bool>(features.bufferFeatures);
+        }};
+
+        bcnSupport[0] = isFormatSupported(vk::Format::eBc1RgbaUnormBlock) && isFormatSupported(vk::Format::eBc1RgbaSrgbBlock);
+        bcnSupport[1] = isFormatSupported(vk::Format::eBc2UnormBlock) && isFormatSupported(vk::Format::eBc2SrgbBlock);
+        bcnSupport[2] = isFormatSupported(vk::Format::eBc3UnormBlock) && isFormatSupported(vk::Format::eBc3SrgbBlock);
+        bcnSupport[3] = isFormatSupported(vk::Format::eBc4UnormBlock) && isFormatSupported(vk::Format::eBc4SnormBlock);
+        bcnSupport[4] = isFormatSupported(vk::Format::eBc5UnormBlock) && isFormatSupported(vk::Format::eBc5SnormBlock);
+        bcnSupport[5] = isFormatSupported(vk::Format::eBc6HSfloatBlock) && isFormatSupported(vk::Format::eBc6HUfloatBlock);
+        bcnSupport[6] = isFormatSupported(vk::Format::eBc7UnormBlock) && isFormatSupported(vk::Format::eBc7SrgbBlock);
     }
 
     std::string TraitManager::Summary() {
         return fmt::format(
-            "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Push Descriptors: {}\n* Supports Imageless Framebuffers: {}\n* Supports Global Priority: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports Shader Invocation Demotion: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports List Primitive Topology Restart: {}\n* Supports Patch List Primitive Topology Restart: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}",
-            supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsPushDescriptors, supportsImagelessFramebuffers, supportsGlobalPriority, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsShaderDemoteToHelper, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsTopologyListRestart, supportsTopologyPatchListRestart, supportsSubgroupVote, subgroupSize
+            "\n* Supports U8 Indices: {}\n* Supports Sampler Mirror Clamp To Edge: {}\n* Supports Sampler Reduction Mode: {}\n* Supports Custom Border Color (Without Format): {}\n* Supports Last Provoking Vertex: {}\n* Supports Logical Operations: {}\n* Supports Vertex Attribute Divisor: {}\n* Supports Vertex Attribute Zero Divisor: {}\n* Supports Push Descriptors: {}\n* Supports Imageless Framebuffers: {}\n* Supports Global Priority: {}\n* Supports Multiple Viewports: {}\n* Supports Shader Viewport Index: {}\n* Supports SPIR-V 1.4: {}\n* Supports Shader Invocation Demotion: {}\n* Supports 16-bit FP: {}\n* Supports 8-bit Integers: {}\n* Supports 16-bit Integers: {}\n* Supports 64-bit Integers: {}\n* Supports Atomic 64-bit Integers: {}\n* Supports Floating Point Behavior Control: {}\n* Supports Image Read Without Format: {}\n* Supports List Primitive Topology Restart: {}\n* Supports Patch List Primitive Topology Restart: {}\n* Supports Subgroup Vote: {}\n* Subgroup Size: {}\n* BCn Support: {}",
+            supportsUint8Indices, supportsSamplerMirrorClampToEdge, supportsSamplerReductionMode, supportsCustomBorderColor, supportsLastProvokingVertex, supportsLogicOp, supportsVertexAttributeDivisor, supportsVertexAttributeZeroDivisor, supportsPushDescriptors, supportsImagelessFramebuffers, supportsGlobalPriority, supportsMultipleViewports, supportsShaderViewportIndexLayer, supportsSpirv14, supportsShaderDemoteToHelper, supportsFloat16, supportsInt8, supportsInt16, supportsInt64, supportsAtomicInt64, supportsFloatControls, supportsImageReadWithoutFormat, supportsTopologyListRestart, supportsTopologyPatchListRestart, supportsSubgroupVote, subgroupSize, bcnSupport.to_string()
         );
     }
 
@@ -213,8 +229,10 @@ namespace skyline::gpu {
                 Logger::Info("Applied BCeNabler patch");
             else
                 throw exception("Failed to apply BCeNabler patch!");
+            bcnSupport.set();
         } else if (type == ADRENOTOOLS_BCN_BLOB) {
             Logger::Info("BCeNabler skipped, blob BCN support is present");
+            bcnSupport.set();
         }
     }
 }

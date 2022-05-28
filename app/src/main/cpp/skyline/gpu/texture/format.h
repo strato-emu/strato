@@ -90,18 +90,43 @@ namespace skyline::gpu::format {
     FORMAT(E5B9G9R9Float, 32, eE5B9G9R9UfloatPack32);
 
     FORMAT_INT_FLOAT(R32G32, 32 * 2, eR32G32);
+    FORMAT_NORM_INT_FLOAT(R16G16B16, 16 * 3, eR16G16B16);
     FORMAT_NORM_INT_FLOAT(R16G16B16A16, 16 * 4, eR16G16B16A16);
 
     FORMAT_INT_FLOAT(R32G32B32A32, 32 * 4, eR32G32B32A32);
 
     // Compressed Colour Formats
     FORMAT_SUFF_UNORM_SRGB(BC1, 64, eBc1Rgba, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
+                           .blockWidth = 4,
+                           .blockHeight = 4
     );
     FORMAT_SUFF_NORM(BC4, 64, eBc4, Block,
-        .blockWidth = 4,
-        .blockHeight = 4,
+                     .blockWidth = 4,
+                     .blockHeight = 4,
+    );
+    FORMAT_SUFF_UNORM_SRGB(BC2, 128, eBc2, Block,
+                           .blockWidth = 4,
+                           .blockHeight = 4
+    );
+    FORMAT_SUFF_UNORM_SRGB(BC3, 128, eBc3, Block,
+                           .blockWidth = 4,
+                           .blockHeight = 4
+    );
+    FORMAT_SUFF_NORM(BC5, 128, eBc5, Block,
+                     .blockWidth = 4,
+                     .blockHeight = 4,
+    );
+    FORMAT(Bc6HUfloat, 128, eBc6HUfloatBlock,
+           .blockWidth = 4,
+           .blockHeight = 4,
+    );
+    FORMAT(Bc6HSfloat, 128, eBc6HSfloatBlock,
+           .blockWidth = 4,
+           .blockHeight = 4,
+    );
+    FORMAT_SUFF_UNORM_SRGB(BC7, 128, eBc7, Block,
+                           .blockWidth = 4,
+                           .blockHeight = 4
     );
 
     FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
@@ -115,31 +140,6 @@ namespace skyline::gpu::format {
     FORMAT_SUFF_UNORM_SRGB(Astc8x8, 128, eAstc8x8, Block,
        .blockWidth = 8,
        .blockHeight = 8
-    );
-
-    FORMAT_SUFF_UNORM_SRGB(BC2, 128, eBc2, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
-    );
-    FORMAT_SUFF_UNORM_SRGB(BC3, 128, eBc3, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
-    );
-    FORMAT_SUFF_NORM(BC5, 128, eBc5, Block,
-        .blockWidth = 4,
-        .blockHeight = 4,
-    );
-    FORMAT(Bc6HUfloat, 128, eBc6HUfloatBlock,
-        .blockWidth = 4,
-        .blockHeight = 4,
-    );
-    FORMAT(Bc6HSfloat, 128, eBc6HSfloatBlock,
-        .blockWidth = 4,
-        .blockHeight = 4,
-    );
-    FORMAT_SUFF_UNORM_SRGB(BC7, 128, eBc7, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
     );
 
     // Depth/Stencil Formats

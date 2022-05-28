@@ -40,6 +40,8 @@ namespace skyline::gpu {
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
+        std::bitset<7> bcnSupport{}; //!< Bitmask of BCn texture formats supported, it is ordered as BC1, BC2, BC3, BC4, BC5, BC6H and BC7
+
         /**
          * @brief Manages a list of any vendor/device-specific errata in the host GPU
          */
@@ -85,7 +87,7 @@ namespace skyline::gpu {
             vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
             vk::PhysicalDeviceImagelessFramebufferFeatures>;
 
-        TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2);
+        TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice& physicalDevice);
 
         /**
          * @brief Applies driver specific binary patches to the driver (e.g. BCeNabler)

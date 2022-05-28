@@ -8,6 +8,8 @@
 #include "texture.h"
 #include "layout.h"
 #include "adreno_aliasing.h"
+#include "bc_decoder.h"
+#include "format.h"
 
 namespace skyline::gpu {
     u32 GuestTexture::GetLayerStride() {
@@ -160,39 +162,102 @@ namespace skyline::gpu {
             }
         }()};
 
+        std::vector<u8> deswizzleBuffer;
+        u8 *deswizzleOutput;
+        if (guest->format != format) {
+            deswizzleBuffer.resize(deswizzledSurfaceSize);
+            deswizzleOutput = deswizzleBuffer.data();
+        } else [[likely]] {
+            deswizzleOutput = bufferData;
+        }
+
         auto guestLayerStride{guest->GetLayerStride()};
         if (levelCount == 1) {
+            auto outputLayer{deswizzleOutput};
             for (size_t layer{}; layer < layerCount; layer++) {
                 if (guest->tileConfig.mode == texture::TileMode::Block)
-                    texture::CopyBlockLinearToLinear(*guest, pointer, bufferData);
+                    texture::CopyBlockLinearToLinear(*guest, pointer, outputLayer);
                 else if (guest->tileConfig.mode == texture::TileMode::Pitch)
-                    texture::CopyPitchLinearToLinear(*guest, pointer, bufferData);
+                    texture::CopyPitchLinearToLinear(*guest, pointer, outputLayer);
                 else if (guest->tileConfig.mode == texture::TileMode::Linear)
-                    std::memcpy(bufferData, pointer, surfaceSize);
+                    std::memcpy(outputLayer, pointer, surfaceSize);
                 pointer += guestLayerStride;
-                bufferData += layerStride;
+                outputLayer += deswizzledLayerStride;
             }
         } else if (levelCount > 1 && guest->tileConfig.mode == texture::TileMode::Block) {
             // We need to generate a buffer that has all layers for a given mip level while Tegra X1 layout holds all mip levels for a given layer
             for (size_t layer{}; layer < layerCount; layer++) {
-                auto inputLevel{pointer}, outputLevel{bufferData};
-                for (size_t level{}; level < levelCount; ++level) {
-                    const auto &mipLayout{mipLayouts[level]};
+                auto inputLevel{pointer}, outputLevel{deswizzleOutput};
+                for (const auto &level : mipLayouts) {
                     texture::CopyBlockLinearToLinear(
-                        mipLayout.dimensions,
+                        level.dimensions,
                         guest->format->blockWidth, guest->format->blockHeight, guest->format->bpb,
-                        mipLayout.blockHeight, mipLayout.blockDepth,
-                        inputLevel, outputLevel + (layer * mipLayout.linearSize) // Offset into the current layer relative to the start of the current mip level
+                        level.blockHeight, level.blockDepth,
+                        inputLevel, outputLevel + (layer * level.linearSize) // Offset into the current layer relative to the start of the current mip level
                     );
 
-                    inputLevel += mipLayout.blockLinearSize; // Skip over the current mip level as we've deswizzled it
-                    outputLevel += layerCount * mipLayout.linearSize; // We need to offset the output buffer by the size of the previous mip level
+                    inputLevel += level.blockLinearSize; // Skip over the current mip level as we've deswizzled it
+                    outputLevel += layerCount * level.linearSize; // We need to offset the output buffer by the size of the previous mip level
                 }
 
                 pointer += guestLayerStride; // We need to offset the input buffer by the size of the previous guest layer, this can differ from inputLevel's value due to layer end padding or guest RT layer stride
             }
         } else if (levelCount != 0) {
             throw exception("Mipmapped textures with tiling mode '{}' aren't supported", static_cast<int>(tiling));
+        }
+
+        if (!deswizzleBuffer.empty()) {
+            for (const auto &level : mipLayouts) {
+                size_t levelHeight{level.dimensions.height * layerCount}; //!< The height of an image representing all layers in the entire level
+                switch (guest->format->vkFormat) {
+                    case vk::Format::eBc1RgbaUnormBlock:
+                    case vk::Format::eBc1RgbaSrgbBlock:
+                        bcn::DecodeBc1(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, true);
+                        break;
+
+                    case vk::Format::eBc2UnormBlock:
+                    case vk::Format::eBc2SrgbBlock:
+                        bcn::DecodeBc2(deswizzleOutput, bufferData, level.dimensions.width, levelHeight);
+                        break;
+
+                    case vk::Format::eBc3UnormBlock:
+                    case vk::Format::eBc3SrgbBlock:
+                        bcn::DecodeBc3(deswizzleOutput, bufferData, level.dimensions.width, levelHeight);
+                        break;
+
+                    case vk::Format::eBc4UnormBlock:
+                        bcn::DecodeBc4(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, false);
+                        break;
+                    case vk::Format::eBc4SnormBlock:
+                        bcn::DecodeBc4(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, true);
+                        break;
+
+                    case vk::Format::eBc5UnormBlock:
+                        bcn::DecodeBc5(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, false);
+                        break;
+                    case vk::Format::eBc5SnormBlock:
+                        bcn::DecodeBc5(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, true);
+                        break;
+
+                    case vk::Format::eBc6HUfloatBlock:
+                        bcn::DecodeBc6(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, false);
+                        break;
+                    case vk::Format::eBc6HSfloatBlock:
+                        bcn::DecodeBc6(deswizzleOutput, bufferData, level.dimensions.width, levelHeight, true);
+                        break;
+
+                    case vk::Format::eBc7UnormBlock:
+                    case vk::Format::eBc7SrgbBlock:
+                        bcn::DecodeBc7(deswizzleOutput, bufferData, level.dimensions.width, levelHeight);
+                        break;
+
+                    default:
+                        throw exception("Unsupported guest format '{}'", vk::to_string(guest->format->vkFormat));
+                }
+
+                deswizzleOutput += level.linearSize * layerCount;
+                bufferData += level.targetLinearSize * layerCount;
+            }
         }
 
         if (stagingBuffer && cycle.lock() != pCycle)
@@ -235,7 +300,7 @@ namespace skyline::gpu {
                         .imageExtent = level.dimensions,
                     }
                 );
-                bufferOffset += level.linearSize * layerCount;
+                bufferOffset += level.targetLinearSize * layerCount;
             }
         }};
 
@@ -282,7 +347,7 @@ namespace skyline::gpu {
                         .imageExtent = level.dimensions,
                     }
                 );
-                bufferOffset += level.linearSize * levelCount;
+                bufferOffset += level.targetLinearSize * levelCount;
             }
         }};
 
@@ -326,17 +391,16 @@ namespace skyline::gpu {
             // Note: See SynchronizeHostImpl for additional comments
             for (size_t layer{}; layer < layerCount; layer++) {
                 auto outputLevel{guestOutput}, inputLevel{hostBuffer};
-                for (size_t level{}; level < levelCount; ++level) {
-                    const auto &mipLayout{mipLayouts[level]};
+                for (const auto &level : mipLayouts) {
                     texture::CopyLinearToBlockLinear(
-                        mipLayout.dimensions,
+                        level.dimensions,
                         guest->format->blockWidth, guest->format->blockHeight, guest->format->bpb,
-                        mipLayout.blockHeight, mipLayout.blockDepth,
-                        outputLevel, inputLevel + (layer * mipLayout.linearSize)
+                        level.blockHeight, level.blockDepth,
+                        outputLevel, inputLevel + (layer * level.linearSize)
                     );
 
-                    outputLevel += mipLayout.blockLinearSize;
-                    inputLevel += layerCount * mipLayout.linearSize;
+                    outputLevel += level.blockLinearSize;
+                    inputLevel += layerCount * level.linearSize;
                 }
 
                 guestOutput += guestLayerStride;
@@ -366,10 +430,62 @@ namespace skyline::gpu {
           layerCount(layerCount),
           sampleCount(sampleCount) {}
 
-    u32 CalculateLevelStride(const std::vector<texture::MipLevelLayout> &mipLayouts) {
-        u32 surfaceSize{};
+    texture::Format ConvertHostCompatibleFormat(texture::Format format, const TraitManager &traits) {
+        auto bcnSupport{traits.bcnSupport};
+        if (bcnSupport.all())
+            return format;
+
+        switch (format->vkFormat) {
+            case vk::Format::eBc1RgbaUnormBlock:
+                return bcnSupport[0] ? format : format::R8G8B8A8Unorm;
+            case vk::Format::eBc1RgbaSrgbBlock:
+                return bcnSupport[0] ? format : format::R8G8B8A8Srgb;
+
+            case vk::Format::eBc2UnormBlock:
+                return bcnSupport[1] ? format : format::R8G8B8A8Unorm;
+            case vk::Format::eBc2SrgbBlock:
+                return bcnSupport[1] ? format : format::R8G8B8A8Srgb;
+
+            case vk::Format::eBc3UnormBlock:
+                return bcnSupport[2] ? format : format::R8G8B8A8Unorm;
+            case vk::Format::eBc3SrgbBlock:
+                return bcnSupport[2] ? format : format::R8G8B8A8Srgb;
+
+            case vk::Format::eBc4UnormBlock:
+                return bcnSupport[3] ? format : format::R8Unorm;
+            case vk::Format::eBc4SnormBlock:
+                return bcnSupport[3] ? format : format::R8Snorm;
+
+            case vk::Format::eBc5UnormBlock:
+                return bcnSupport[4] ? format : format::R8G8Unorm;
+            case vk::Format::eBc5SnormBlock:
+                return bcnSupport[4] ? format : format::R8G8Snorm;
+
+            case vk::Format::eBc6HUfloatBlock:
+            case vk::Format::eBc6HSfloatBlock:
+                return bcnSupport[5] ? format : format::R16G16B16A16Float; // This is a signed 16-bit FP format, we don't have an unsigned 16-bit FP format
+
+            case vk::Format::eBc7UnormBlock:
+                return bcnSupport[6] ? format : format::R8G8B8A8Unorm;
+            case vk::Format::eBc7SrgbBlock:
+                return bcnSupport[6] ? format : format::R8G8B8A8Srgb;
+
+            default:
+                return format;
+        }
+    }
+
+    size_t CalculateLevelStride(const std::vector<texture::MipLevelLayout> &mipLayouts) {
+        size_t surfaceSize{};
         for (const auto &level : mipLayouts)
             surfaceSize += level.linearSize;
+        return surfaceSize;
+    }
+
+    size_t CalculateTargetLevelStride(const std::vector<texture::MipLevelLayout> &mipLayouts) {
+        size_t surfaceSize{};
+        for (const auto &level : mipLayouts)
+            surfaceSize += level.targetLinearSize;
         return surfaceSize;
     }
 
@@ -377,21 +493,24 @@ namespace skyline::gpu {
         : gpu(pGpu),
           guest(std::move(pGuest)),
           dimensions(guest->dimensions),
-          format(guest->format),
+          format(ConvertHostCompatibleFormat(guest->format, gpu.traits)),
           layout(vk::ImageLayout::eUndefined),
           tiling(vk::ImageTiling::eOptimal), // Force Optimal due to not adhering to host subresource layout during Linear synchronization
           layerCount(guest->layerCount),
-          layerStride(static_cast<u32>(format->GetSize(dimensions))),
+          deswizzledLayerStride(static_cast<u32>(guest->format->GetSize(dimensions))),
+          layerStride(format == guest->format ? deswizzledLayerStride : static_cast<u32>(format->GetSize(dimensions))),
           levelCount(guest->mipLevelCount),
           mipLayouts(
               texture::GetBlockLinearMipLayout(
                   guest->dimensions,
                   guest->format->blockHeight, guest->format->blockWidth, guest->format->bpb,
+                  format->blockHeight, format->blockWidth, format->bpb,
                   guest->tileConfig.blockHeight, guest->tileConfig.blockDepth,
                   guest->mipLevelCount
               )
           ),
-          surfaceSize(CalculateLevelStride(mipLayouts) * layerCount),
+          deswizzledSurfaceSize(CalculateLevelStride(mipLayouts) * layerCount),
+          surfaceSize(format == guest->format ? deswizzledSurfaceSize : (CalculateTargetLevelStride(mipLayouts) * layerCount)),
           sampleCount(vk::SampleCountFlagBits::e1),
           flags(gpu.traits.quirks.vkImageMutableFormatCostly ? vk::ImageCreateFlags{} : vk::ImageCreateFlagBits::eMutableFormat),
           usage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled) {
@@ -401,7 +520,7 @@ namespace skyline::gpu {
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
         //  First attempt to derive type from dimensions
-        auto imageType{guest->dimensions.GetType()};
+        auto imageType{dimensions.GetType()};
 
         // Try to ensure that the image type is compatible with the given image view type since we can't create a 2D image view from a 1D image
         if (imageType == vk::ImageType::e1D && guest->type != texture::TextureType::e1D && guest->type != texture::TextureType::e1DArray) {
@@ -450,8 +569,8 @@ namespace skyline::gpu {
     }
 
     void Texture::MarkGpuDirty() {
-        if (dirtyState == DirtyState::GpuDirty || !guest)
-            return;
+        if (dirtyState == DirtyState::GpuDirty || !guest || format != guest->format)
+            return; // In addition to other checks, we also need to skip GPU dirty if the host format and guest format differ as we don't support re-encoding compressed textures which is when this generally occurs
         gpu.state.nce->RetrapRegions(*trapHandle, false);
         dirtyState = DirtyState::GpuDirty;
     }
@@ -571,6 +690,15 @@ namespace skyline::gpu {
             return;
         }
 
+        if (layout == vk::ImageLayout::eUndefined || format != guest->format) {
+            // If the state of the host texture is undefined then so can the guest
+            // If the texture has differing formats on the guest and host, we don't support converting back in that case as it may involve recompression of a decompressed texture
+            if (!skipTrap)
+                gpu.state.nce->RetrapRegions(*trapHandle, true);
+            dirtyState = DirtyState::Clean;
+            return;
+        }
+
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
 
         WaitOnBacking();
@@ -600,8 +728,12 @@ namespace skyline::gpu {
         if (dirtyState != DirtyState::GpuDirty || !guest)
             return;
 
-        if (layout == vk::ImageLayout::eUndefined)
-            return; // If the state of the host texture is undefined then so can the guest
+        if (layout == vk::ImageLayout::eUndefined || format != guest->format) {
+            // If the state of the host texture is undefined then so can the guest
+            // If the texture has differing formats on the guest and host, we don't support converting back in that case as it may involve recompression of a decompressed texture
+            dirtyState = DirtyState::Clean;
+            return;
+        }
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
 
@@ -627,8 +759,8 @@ namespace skyline::gpu {
     }
 
     std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {
-        if (!pFormat)
-            pFormat = format;
+        if (!pFormat || pFormat == guest->format)
+            pFormat = format; // We want to use the texture's format if it isn't supplied or if the requested format matches the guest format then we want to use the host format just in case it is host incompatible and the host format differs from the guest format
 
         auto viewFormat{pFormat->vkFormat}, textureFormat{format->vkFormat};
         if (gpu.traits.quirks.vkImageMutableFormatCostly && viewFormat != textureFormat && (!gpu.traits.quirks.adrenoRelaxedFormatAliasing || !texture::IsAdrenoAliasCompatible(viewFormat, textureFormat)))

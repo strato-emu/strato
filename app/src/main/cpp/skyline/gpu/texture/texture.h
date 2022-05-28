@@ -87,7 +87,7 @@ namespace skyline::gpu {
              * @return The size of the texture in bytes
              */
             constexpr size_t GetSize(u32 width, u32 height, u32 depth = 1) const {
-                return util::DivideCeil(width, u32{blockWidth}) * util::DivideCeil(height, u32{blockHeight}) * bpb * depth;
+                return util::DivideCeil<size_t>(width, size_t{blockWidth}) * util::DivideCeil<size_t>(height, size_t{blockHeight}) * bpb * depth;
             }
 
             constexpr size_t GetSize(Dimensions dimensions) const {
@@ -229,10 +229,11 @@ namespace skyline::gpu {
         struct MipLevelLayout {
             Dimensions dimensions; //!< The dimensions of the mipmapped level, these are exact dimensions and not aligned to a GOB
             size_t linearSize; //!< The size of a linear image with this mipmapped level in bytes
+            size_t targetLinearSize; //!< The size of a linear image with this mipmapped level in bytes and using the target format, this will only differ from linearSize if the target format is supplied
             size_t blockLinearSize; //!< The size of a blocklinear image with this mipmapped level in bytes
             size_t blockHeight, blockDepth; //!< The block height and block depth set for the level
 
-            constexpr MipLevelLayout(Dimensions dimensions, size_t linearSize, size_t blockLinearSize, size_t blockHeight, size_t blockDepth) : dimensions{dimensions}, linearSize{linearSize}, blockLinearSize{blockLinearSize}, blockHeight{blockHeight}, blockDepth{blockDepth} {}
+            constexpr MipLevelLayout(Dimensions dimensions, size_t linearSize, size_t targetLinearSize, size_t blockLinearSize, size_t blockHeight, size_t blockDepth) : dimensions{dimensions}, linearSize{linearSize}, targetLinearSize{targetLinearSize}, blockLinearSize{blockLinearSize}, blockHeight{blockHeight}, blockDepth{blockDepth} {}
         };
     }
 
@@ -438,10 +439,12 @@ namespace skyline::gpu {
         vk::ImageCreateFlags flags;
         vk::ImageUsageFlags usage;
         u32 layerCount; //!< The amount of array layers in the image
-        u32 layerStride; //!< The stride of a single array layer given linear tiling, this does **not** consider mipmapping
+        size_t deswizzledLayerStride{}; //!< The stride of a single layer given linear tiling using the guest format, this does **not** consider mipmapping
+        size_t layerStride{}; //!< The stride of a single layer given linear tiling, this does **not** consider mipmapping
         u32 levelCount;
         std::vector<texture::MipLevelLayout> mipLayouts; //!< The layout of each mip level in the guest texture
-        u32 surfaceSize; //!< The size of the entire surface given linear tiling, this contains all mip levels and layers
+        size_t deswizzledSurfaceSize{}; //!< The size of the guest surface with linear tiling, calculated with the guest format which may differ from the host format
+        size_t surfaceSize{}; //!< The size of the entire surface given linear tiling, this contains all mip levels and layers
         vk::SampleCountFlagBits sampleCount;
 
         /**

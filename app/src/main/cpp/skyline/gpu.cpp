@@ -268,7 +268,7 @@ namespace skyline::gpu {
             vk::PhysicalDeviceFloatControlsProperties,
             vk::PhysicalDeviceSubgroupProperties>()};
 
-        traits = TraitManager(deviceFeatures2, enabledFeatures2, deviceExtensions, enabledExtensions, deviceProperties2);
+        traits = TraitManager{deviceFeatures2, enabledFeatures2, deviceExtensions, enabledExtensions, deviceProperties2, physicalDevice};
         traits.ApplyDriverPatches(context);
 
         std::vector<const char *> pEnabledExtensions;
