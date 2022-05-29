@@ -7,12 +7,26 @@
 
 namespace skyline::input {
     /**
+     * @brief Indicates if touch point has started or ended
+     * @url https://switchbrew.org/wiki/HID_services#TouchAttribute
+     */
+    union TouchAttribute {
+        u32 raw{};
+        struct {
+            bool start : 1;
+            bool end : 1;
+        };
+    };
+    static_assert(sizeof(TouchAttribute) == 0x4);
+
+    /**
      * @brief A descriptor for a single point on the touch screen
      * @url https://switchbrew.org/wiki/HID_Shared_Memory#TouchScreenStateData
      */
     struct TouchScreenStateData {
         u64 timestamp; //!< The timestamp in samples
-        u32 _pad0_;
+
+        TouchAttribute attribute;
 
         u32 index; //!< The index of this touch
 

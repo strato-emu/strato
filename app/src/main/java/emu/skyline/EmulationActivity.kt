@@ -467,8 +467,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view : View, event : MotionEvent) : Boolean {
-        val count = if (event.action != MotionEvent.ACTION_UP && event.action != MotionEvent.ACTION_CANCEL) event.pointerCount else 0
-        val points = IntArray(count * 5) // This is an array of skyline::input::TouchScreenPoint in C++ as that allows for efficient transfer of values to it
+        val count = event.pointerCount
+        val points = IntArray(count * 7) // This is an array of skyline::input::TouchScreenPoint in C++ as that allows for efficient transfer of values to it
         var offset = 0
         for (index in 0 until count) {
             val pointer = MotionEvent.PointerCoords()
@@ -477,6 +477,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             val x = 0f.coerceAtLeast(pointer.x * 1280 / view.width).toInt()
             val y = 0f.coerceAtLeast(pointer.y * 720 / view.height).toInt()
 
+            val attribute = when (event.action) {
+                MotionEvent.ACTION_DOWN -> 1
+                MotionEvent.ACTION_UP -> 2
+                else -> 0
+            }
+
+            points[offset++] = attribute
+            points[offset++] = event.getPointerId(index)
             points[offset++] = x
             points[offset++] = y
             points[offset++] = pointer.touchMinor.toInt()

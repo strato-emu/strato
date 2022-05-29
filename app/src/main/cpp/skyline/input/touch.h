@@ -13,6 +13,8 @@ namespace skyline::input {
      * @note This structure corresponds to TouchScreenStateData, see that for details
      */
     struct TouchScreenPoint {
+        jint attribute;
+        jint id;
         jint x;
         jint y;
         jint minor;
@@ -37,6 +39,6 @@ namespace skyline::input {
 
         void Activate();
 
-        void SetState(const span<TouchScreenPoint> &points);
+        void SetState(span<TouchScreenPoint> touchPoints);
     };
 }
