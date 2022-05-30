@@ -57,23 +57,28 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew --stacktrace assemble
 
+      - name: Rename APKs
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
+          mv app/build/outputs/apk/release/app-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
+
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: app-debug.apk
-          path: app/build/outputs/apk/debug/
+          name: skyline-${{ github.run_number }}-debug.apk
+          path: skyline-${{ github.run_number }}-debug.apk
 
       - name: Upload Release APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: app-release.apk
-          path: app/build/outputs/apk/release/
+          name: skyline-${{ github.run_number }}-release.apk
+          path: skyline-${{ github.run_number }}-release.apk
 
       - name: Upload R8 Mapping
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: mapping.txt
-          path: app/build/outputs/mapping/release/
+          name: r8-mapping.txt
+          path: app/build/outputs/mapping/release/mapping.txt
 
       - name: Delete Build Folder
         run: rm -rf app/build/
