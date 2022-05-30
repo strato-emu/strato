@@ -16,6 +16,7 @@
         android:allowBackup="true"
         android:extractNativeLibs="true"
         android:fullBackupContent="@xml/backup_descriptor"
+        android:hasFragileUserData="true"
         android:icon="@drawable/logo_skyline"
         android:isGame="true"
         android:label="@string/app_name"
@@ -23,7 +24,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
-        <profileable android:shell="true"/>
+        <profileable android:shell="true" />
 
         <activity
             android:name="emu.skyline.MainActivity"
@@ -117,8 +118,8 @@
         <provider
             android:name="emu.skyline.provider.DocumentsProvider"
             android:authorities="emu.skyline.provider"
-            android:grantUriPermissions="true"
             android:exported="true"
+            android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter>
                 <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
