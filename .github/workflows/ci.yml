@@ -34,17 +34,6 @@ jobs:
       - name: Install CMake & Android NDK
         run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.18.1" "ndk;25.0.8221429" --channel=3 | grep -v = || true
 
-      - name: Android Lint
-        run: |
-          chmod +x gradlew
-          ./gradlew --stacktrace lint
-
-      - name: Upload Lint Report
-        uses: actions/upload-artifact@v2
-        with:
-          name: lint-result.html
-          path: app/build/reports/lint-results-debug.html
-
       - name: Decode Keystore
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
@@ -73,12 +62,6 @@ jobs:
         with:
           name: skyline-${{ github.run_number }}-release.apk
           path: skyline-${{ github.run_number }}-release.apk
-
-      - name: Upload R8 Mapping
-        uses: actions/upload-artifact@v3
-        with:
-          name: r8-mapping.txt
-          path: app/build/outputs/mapping/release/mapping.txt
 
       - name: Delete Build Folder
         run: rm -rf app/build/
