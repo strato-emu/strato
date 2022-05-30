@@ -6,6 +6,10 @@
         <emu.skyline.preference.FolderPickerPreference
             app:key="search_location"
             app:title="@string/search_location" />
+        <emu.skyline.preference.DocumentsProviderPreference
+            app:key="document_provider"
+            app:title="@string/open_data_directory"
+            app:summary="@string/open_data_directory_summary"/>
         <emu.skyline.preference.ThemePreference
             android:defaultValue="2"
             android:entries="@array/app_theme"

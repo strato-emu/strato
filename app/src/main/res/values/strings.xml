@@ -24,6 +24,9 @@
     <!-- Settings - Emulator -->
     <string name="emulator">Emulator</string>
     <string name="search_location">Search Location</string>
+    <string name="open_data_directory">View Internal Directory</string>
+    <string name="open_data_directory_summary">Opens Skyline\'s internal directory in a file manager</string>
+    <string name="failed_open_directory">Cannot find an external file manager to open Skyline\'s internal directory</string>
     <string name="theme">Theme</string>
     <string name="layout_type">Game Display Layout</string>
     <string name="select_action">Always Show Game Information</string>
@@ -73,6 +76,8 @@
     <string name="osc_not_shown">On-Screen Controls won\'t be shown</string>
     <string name="osc_shown">On-Screen Controls will be shown</string>
     <string name="osc_edit">Edit On-Screen Controls layout</string>
+    <string name="setup_guide">Setup Guide</string>
+    <string name="setup_guide_description">Sequentially map every stick and button</string>
     <string name="joystick">Joystick</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
@@ -164,6 +169,4 @@
     <!-- Misc -->
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>
-    <string name="setup_guide">Setup Guide</string>
-    <string name="setup_guide_description">Sequentially map every stick and button</string>
 </resources>
