@@ -23,7 +23,9 @@ jobs:
       - name: Restore CXX Cache
         uses: actions/cache@v3
         with:
-          path: app/.cxx/
+          path: |
+            app/.cxx/
+            app/build/intermediates/cxx/
           key: ${{ runner.os }}-cxx-${{ hashFiles('**/CMakeLists.txt') }}
 
       - name: Install Ninja Build
