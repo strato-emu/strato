@@ -17,7 +17,7 @@ jobs:
       - name: Restore Gradle Cache
         uses: actions/cache@v3
         with:
-          path: /root/.gradle/
+          path: ~/.gradle/
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}
 
       - name: Restore CXX Cache
@@ -46,7 +46,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: ./gradlew --stacktrace assemble
+        run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assemble
 
       - name: Rename APKs
         run: |
