@@ -18,7 +18,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.gradle/
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-${{ hashFiles('app/**.kt', 'app/**.java') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
+            ${{ runner.os }}-gradle-
 
       - name: Restore CXX Cache
         uses: actions/cache@v3
@@ -26,7 +30,10 @@ jobs:
           path: |
             app/.cxx/
             app/build/intermediates/cxx/
-          key: ${{ runner.os }}-cxx-${{ hashFiles('**/CMakeLists.txt') }}
+          key: ${{ runner.os }}-cxx-${{ hashFiles('app/**/CMakeLists.txt') }}-${{ hashFiles('app/**/*.h', 'app/**/*.hpp', 'app/**/*.cpp', 'app/**/*.S') }}
+          restore-keys: |
+            ${{ runner.os }}-cxx-${{ hashFiles('app/**/CMakeLists.txt') }}-
+            ${{ runner.os }}-cxx-
 
       - name: Install Ninja Build
         run: |
