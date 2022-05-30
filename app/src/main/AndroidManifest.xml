@@ -116,7 +116,7 @@
 
         <provider
             android:name="emu.skyline.provider.DocumentsProvider"
-            android:authorities="emu.skyline.provider.documents"
+            android:authorities="emu.skyline.provider"
             android:grantUriPermissions="true"
             android:exported="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">

@@ -19,6 +19,7 @@ import java.io.*
 
 class DocumentsProvider : DocumentsProvider() {
     private val baseDirectory = File(SkylineApplication.instance.getPublicFilesDir().canonicalPath)
+    private val applicationName = SkylineApplication.instance.applicationInfo.loadLabel(SkylineApplication.instance.packageManager).toString()
 
     companion object {
         private val DEFAULT_ROOT_PROJECTION : Array<String> = arrayOf(
@@ -40,6 +41,10 @@ class DocumentsProvider : DocumentsProvider() {
             DocumentsContract.Document.COLUMN_FLAGS,
             DocumentsContract.Document.COLUMN_SIZE
         )
+
+        const val AUTHORITY : String = "emu.skyline.provider"
+
+        const val ROOT_ID : String = "root"
     }
 
     override fun onCreate() : Boolean {
@@ -50,29 +55,31 @@ class DocumentsProvider : DocumentsProvider() {
      * @return The [File] that corresponds to the document ID supplied by [getDocumentId]
      */
     private fun getFile(documentId : String) : File {
-        val file = File(documentId)
-        if (!file.exists()) throw FileNotFoundException(file.absolutePath + " not found")
-        return file
+        if (documentId.startsWith(ROOT_ID)) {
+            val file = baseDirectory.resolve(documentId.drop(ROOT_ID.length + 1))
+            if (!file.exists()) throw FileNotFoundException("${file.absolutePath} ($documentId) not found")
+            return file
+        } else {
+            throw FileNotFoundException("'$documentId' is not in any known root")
+        }
     }
 
     /**
      * @return A unique ID for the provided [File]
      */
-    private fun getDocumentId(file : File) : Any? {
-        return file.absolutePath
+    private fun getDocumentId(file : File) : String {
+        return "$ROOT_ID/${file.toRelativeString(baseDirectory)}"
     }
 
     override fun queryRoots(projection : Array<out String>?) : Cursor {
         val cursor = MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)
-        val applicationTitle = SkylineApplication.instance.applicationInfo.loadLabel(SkylineApplication.instance.packageManager).toString()
-        val baseDirectoryDocumentId = getDocumentId(baseDirectory)
 
         cursor.newRow().apply {
-            add(DocumentsContract.Root.COLUMN_ROOT_ID, baseDirectoryDocumentId)
+            add(DocumentsContract.Root.COLUMN_ROOT_ID, ROOT_ID)
             add(DocumentsContract.Root.COLUMN_SUMMARY, null)
             add(DocumentsContract.Root.COLUMN_FLAGS, DocumentsContract.Root.FLAG_SUPPORTS_CREATE or DocumentsContract.Root.FLAG_SUPPORTS_IS_CHILD)
-            add(DocumentsContract.Root.COLUMN_TITLE, applicationTitle)
-            add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, baseDirectoryDocumentId)
+            add(DocumentsContract.Root.COLUMN_TITLE, applicationName)
+            add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, getDocumentId(baseDirectory))
             add(DocumentsContract.Root.COLUMN_MIME_TYPES, "*/*")
             add(DocumentsContract.Root.COLUMN_AVAILABLE_BYTES, baseDirectory.freeSpace)
             add(DocumentsContract.Root.COLUMN_ICON, R.drawable.logo_skyline)
@@ -91,10 +98,11 @@ class DocumentsProvider : DocumentsProvider() {
     }
 
     override fun createDocument(parentDocumentId : String?, mimeType : String?, displayName : String) : String? {
-        var newFile = File(parentDocumentId, displayName)
+        val parentFile = getFile(parentDocumentId!!)
         var noConflictId = 1 // Makes sure two files don't have the same name by adding a number to the end
+        var newFile = parentFile.resolve(displayName)
         while (newFile.exists())
-            newFile = File(parentDocumentId, "$displayName (${noConflictId++})")
+            newFile = parentFile.resolve("$displayName (${noConflictId++})")
 
         try {
             if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
@@ -108,7 +116,7 @@ class DocumentsProvider : DocumentsProvider() {
             throw FileNotFoundException("Couldn't create document '${newFile.path}': ${e.message}")
         }
 
-        return newFile.path
+        return getDocumentId(newFile)
     }
 
     override fun deleteDocument(documentId : String?) {
@@ -140,7 +148,7 @@ class DocumentsProvider : DocumentsProvider() {
 
         val sourceFile = getFile(documentId!!)
         val sourceParentFile = sourceFile.parentFile ?: throw FileNotFoundException("Couldn't rename document '$documentId' as it has no parent")
-        val destFile = File(sourceParentFile.path, displayName)
+        val destFile = sourceParentFile.resolve(displayName)
 
         try {
             if (!sourceFile.renameTo(destFile))
@@ -148,7 +156,8 @@ class DocumentsProvider : DocumentsProvider() {
         } catch (e : Exception) {
             throw FileNotFoundException("Couldn't rename document from '${sourceFile.name}' to '${destFile.name}': ${e.message}")
         }
-        return getDocumentId(destFile).toString()
+
+        return getDocumentId(destFile)
     }
 
     private fun copyDocument(
@@ -164,7 +173,7 @@ class DocumentsProvider : DocumentsProvider() {
     override fun copyDocument(sourceDocumentId : String, targetParentDocumentId : String?) : String? {
         val parent = getFile(targetParentDocumentId!!)
         val oldFile = getFile(sourceDocumentId)
-        val newFile = File(parent.path, oldFile.name)
+        val newFile = parent.resolve(oldFile.name)
         try {
             if (!(newFile.createNewFile() && newFile.setWritable(true) && newFile.setReadable(true)))
                 throw IOException("Couldn't create new file")
@@ -178,7 +187,7 @@ class DocumentsProvider : DocumentsProvider() {
             throw FileNotFoundException("Couldn't copy document '$sourceDocumentId': ${e.message}")
         }
 
-        return getDocumentId(newFile).toString()
+        return getDocumentId(newFile)
     }
 
     override fun moveDocument(
@@ -198,8 +207,8 @@ class DocumentsProvider : DocumentsProvider() {
     }
 
     private fun includeFile(cursor : MatrixCursor, documentId : String?, file : File?) : MatrixCursor {
-        val localDocumentId = documentId ?: file?.let { getDocumentId(it) } as String?
-        val localFile = file ?: getFile(documentId.toString())
+        val localDocumentId = documentId ?: file?.let { getDocumentId(it) }
+        val localFile = file ?: getFile(documentId!!)
 
         var flags = 0
         if (localFile.isDirectory && localFile.canWrite()) {
@@ -214,16 +223,15 @@ class DocumentsProvider : DocumentsProvider() {
             flags = flags or DocumentsContract.Document.FLAG_SUPPORTS_RENAME
         }
 
-        val displayName = localFile.name
-        val mimeType = getTypeForFile(localFile)
-
         cursor.newRow().apply {
             add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, localDocumentId)
-            add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, displayName)
+            add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, if (localFile == baseDirectory) applicationName else localFile.name)
             add(DocumentsContract.Document.COLUMN_SIZE, localFile.length())
-            add(DocumentsContract.Document.COLUMN_MIME_TYPE, mimeType)
+            add(DocumentsContract.Document.COLUMN_MIME_TYPE, getTypeForFile(localFile))
             add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, localFile.lastModified())
             add(DocumentsContract.Document.COLUMN_FLAGS, flags)
+            if (localFile == baseDirectory)
+                add(DocumentsContract.Root.COLUMN_ICON, R.drawable.logo_skyline)
         }
 
         return cursor
