@@ -45,7 +45,16 @@ jobs:
           name: lint-result.html
           path: app/build/reports/lint-results-debug.html
 
+      - name: Decode Keystore
+        env:
+          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
+        run: echo $KEYSTORE_ENCODED | base64 --decode > "$HOME/keystore.jks"
+
       - name: Android Assemble
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew --stacktrace assemble
 
       - name: Upload Debug APK
