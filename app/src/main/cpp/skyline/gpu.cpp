@@ -241,7 +241,6 @@ namespace skyline::gpu {
             throw exception("Vulkan device doesn't support required feature: " #feature)
 
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.independentBlend);
-        FEAT_REQ(vk::PhysicalDeviceFeatures2, features.samplerAnisotropy);
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.shaderImageGatherExtended);
         FEAT_REQ(vk::PhysicalDeviceShaderDrawParametersFeatures, shaderDrawParameters);
 

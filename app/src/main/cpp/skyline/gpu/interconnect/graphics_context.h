@@ -2514,7 +2514,7 @@ namespace skyline::gpu::interconnect {
                     .addressModeV = convertAddressModeWithCheck(samplerControl.addressModeV),
                     .addressModeW = convertAddressModeWithCheck(samplerControl.addressModeP),
                     .mipLodBias = samplerControl.MipLodBias(),
-                    .anisotropyEnable = maxAnisotropy > 1.0f,
+                    .anisotropyEnable = gpu.traits.supportsAnisotropicFiltering && maxAnisotropy > 1.0f,
                     .maxAnisotropy = maxAnisotropy,
                     .compareEnable = samplerControl.depthCompareEnable,
                     .compareOp = ConvertSamplerCompareOp(samplerControl.depthCompareOp),
