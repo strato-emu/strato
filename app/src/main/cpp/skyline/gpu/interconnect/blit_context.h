@@ -123,8 +123,12 @@ namespace skyline::gpu::interconnect {
             auto srcTextureView{gpu.texture.FindOrCreate(srcGuestTexture)};
             auto dstTextureView{gpu.texture.FindOrCreate(dstGuestTexture)};
 
-            executor.AttachTexture(&*srcTextureView);
-            executor.AttachTexture(&*dstTextureView);
+            {
+                std::scoped_lock lock{*srcTextureView, *dstTextureView};
+
+                executor.AttachTexture(&*srcTextureView);
+                executor.AttachTexture(&*dstTextureView);
+            }
 
             auto getSubresourceLayers{[](const vk::ImageSubresourceRange &range, vk::ImageAspectFlags aspect) {
                 return vk::ImageSubresourceLayers{
