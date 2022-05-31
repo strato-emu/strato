@@ -402,7 +402,15 @@ namespace skyline::gpu::interconnect {
                 renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
             }
 
-            renderTarget.guest.type = static_cast<texture::TextureType>(renderTarget.guest.dimensions.GetType());
+            renderTarget.guest.viewType = [&]() {
+                if (renderTarget.is3d)
+                    return vk::ImageViewType::e2DArray; // We can't render to 3D textures, so render to a 2D array view of a 3D texture (since layerCount is 1 and depth is >1 the texture manager will create the underlying texture as such)
+
+                if (renderTarget.guest.layerCount > 1)
+                    return vk::ImageViewType::e2DArray;
+
+                return vk::ImageViewType::e2D;
+            }();
 
             renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest);
             return renderTarget.view.get();
@@ -2270,14 +2278,13 @@ namespace skyline::gpu::interconnect {
                 guest.viewMipCount = textureControl.viewConfig.mipMaxLevel - textureControl.viewConfig.mipMinLevel + 1;
 
                 using TicType = TextureImageControl::TextureType;
-                using TexType = texture::TextureType;
                 switch (textureControl.textureType) {
                     case TicType::e1D:
-                        guest.type = TexType::e1D;
+                        guest.viewType = vk::ImageViewType::e1D;
                         guest.layerCount = 1;
                         break;
                     case TicType::e1DArray:
-                        guest.type = TexType::e1DArray;
+                        guest.viewType = vk::ImageViewType::e1DArray;
                         guest.layerCount = depth;
                         break;
                     case TicType::e1DBuffer:
@@ -2288,26 +2295,26 @@ namespace skyline::gpu::interconnect {
                         guest.viewMipBase = 0;
                         guest.viewMipCount = 1;
                     case TicType::e2D:
-                        guest.type = TexType::e2D;
+                        guest.viewType = vk::ImageViewType::e2D;
                         guest.layerCount = 1;
                         break;
                     case TicType::e2DArray:
-                        guest.type = TexType::e2DArray;
+                        guest.viewType = vk::ImageViewType::e2DArray;
                         guest.layerCount = depth;
                         break;
 
                     case TicType::e3D:
-                        guest.type = TexType::e3D;
+                        guest.viewType = vk::ImageViewType::e3D;
                         guest.layerCount = 1;
                         guest.dimensions.depth = depth;
                         break;
 
                     case TicType::eCube:
-                        guest.type = TexType::eCube;
+                        guest.viewType = vk::ImageViewType::eCube;
                         guest.layerCount = CubeFaceCount;
                         break;
                     case TicType::eCubeArray:
-                        guest.type = TexType::eCubeArray;
+                        guest.viewType = vk::ImageViewType::eCubeArray;
                         guest.layerCount = depth * CubeFaceCount;
                         break;
                 }

@@ -85,16 +85,15 @@ namespace skyline::gpu::interconnect {
             texture.aspect = texture.format->vkAspect;
             texture.baseArrayLayer = 0;
             texture.layerCount = 1;
+            texture.viewType = vk::ImageViewType::e2D;
 
             if (surface.memoryLayout == fermi2d::MemoryLayout::Pitch) {
-                texture.type = gpu::texture::TextureType::e2D;
                 texture.dimensions = gpu::texture::Dimensions{surface.stride / texture.format->bpb, surface.height, 1};
                 texture.tileConfig = gpu::texture::TileConfig{
                     .mode = gpu::texture::TileMode::Pitch,
                     .pitch = surface.stride
                 };
             } else {
-                texture.type = gpu::texture::TextureType::e2D;
                 texture.dimensions = gpu::texture::Dimensions{surface.width, surface.height, surface.depth};
                 texture.tileConfig = gpu::texture::TileConfig{
                     .mode = gpu::texture::TileMode::Block,

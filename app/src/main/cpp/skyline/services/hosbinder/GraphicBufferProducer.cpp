@@ -344,7 +344,7 @@ namespace skyline::service::hosbinder {
             }
 
             gpu::texture::Dimensions dimensions(surface.width, surface.height);
-            gpu::GuestTexture guestTexture(span<u8>{}, dimensions, format, tileConfig, gpu::texture::TextureType::e2D);
+            gpu::GuestTexture guestTexture(span<u8>{}, dimensions, format, tileConfig, vk::ImageViewType::e2D);
             guestTexture.mappings[0] = span<u8>(nvMapHandleObj->GetPointer() + surface.offset, guestTexture.GetLayerStride());
             buffer.texture = state.gpu->texture.FindOrCreate(guestTexture)->texture;
         }

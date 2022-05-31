@@ -45,13 +45,18 @@ namespace skyline::gpu {
             if (firstHostMapping == hostMappings.begin() && firstHostMapping->begin() == guestMapping.begin() && mappingMatch && lastHostMapping == hostMappings.end() && lastGuestMapping.end() == std::prev(lastHostMapping)->end()) {
                 // We've gotten a perfect 1:1 match for *all* mappings from the start to end, we just need to check for compatibility aside from this
                 auto &matchGuestTexture{*hostMapping->texture->guest};
-                if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && (matchGuestTexture.dimensions == guestTexture.dimensions || matchGuestTexture.viewMipBase > 0) && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
+                if (matchGuestTexture.format->IsCompatible(*guestTexture.format) &&
+                     ((matchGuestTexture.dimensions.width == guestTexture.dimensions.width &&
+                       matchGuestTexture.dimensions.height == guestTexture.dimensions.height &&
+                       matchGuestTexture.dimensions.depth == guestTexture.GetViewDepth())
+                      || matchGuestTexture.viewMipBase > 0)
+                     && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
-                    return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
+                    return texture->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
                         .aspectMask = guestTexture.aspect,
                         .baseMipLevel = guestTexture.viewMipBase,
                         .levelCount = guestTexture.viewMipCount,
-                        .layerCount = texture->layerCount,
+                        .layerCount = guestTexture.GetViewLayerCount(),
                     }, guestTexture.format, guestTexture.swizzle);
                 }
             } /* else if (mappingMatch) {
@@ -80,11 +85,11 @@ namespace skyline::gpu {
             textures.emplace(mapping, TextureMapping{texture, it, guestMapping});
         }
 
-        return texture->GetView(static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
+        return texture->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
             .aspectMask = guestTexture.aspect,
             .baseMipLevel = guestTexture.viewMipBase,
             .levelCount = guestTexture.viewMipCount,
-            .layerCount = texture->layerCount,
+            .layerCount = guestTexture.GetViewLayerCount(),
         }, guestTexture.format, guestTexture.swizzle);
     }
 }

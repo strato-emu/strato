@@ -27,15 +27,6 @@ namespace skyline::gpu {
 
             auto operator<=>(const Dimensions &) const = default;
 
-            constexpr vk::ImageType GetType() const {
-                if (depth > 1)
-                    return vk::ImageType::e3D;
-                else if (height > 1)
-                    return vk::ImageType::e2D;
-                else
-                    return vk::ImageType::e1D;
-            }
-
             constexpr operator vk::Extent2D() const {
                 return vk::Extent2D{
                     .width = width,
@@ -209,21 +200,6 @@ namespace skyline::gpu {
         };
 
         /**
-         * @brief The type of a texture to determine the access patterns for it
-         * @note This is effectively the Tegra X1 texture types with the 1DBuffer + 2DNoMipmap removed as those are handled elsewhere
-         * @note We explicitly utilize Vulkan types here as it provides the most efficient conversion while not exposing Vulkan to the outer API
-         */
-        enum class TextureType {
-            e1D = VK_IMAGE_VIEW_TYPE_1D,
-            e2D = VK_IMAGE_VIEW_TYPE_2D,
-            e3D = VK_IMAGE_VIEW_TYPE_3D,
-            eCube = VK_IMAGE_VIEW_TYPE_CUBE,
-            e1DArray = VK_IMAGE_VIEW_TYPE_1D_ARRAY,
-            e2DArray = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-            eCubeArray = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
-        };
-
-        /**
          * @brief A description of a single mipmapped level of a block-linear surface
          */
         struct MipLevelLayout {
@@ -250,7 +226,7 @@ namespace skyline::gpu {
         texture::Dimensions dimensions{};
         texture::Format format{};
         texture::TileConfig tileConfig{};
-        texture::TextureType type{};
+        vk::ImageViewType viewType{};
         u32 baseArrayLayer{};
         u32 layerCount{1};
         u32 layerStride{}; //!< An optional hint regarding the size of a single layer, it **should** be set to 0 when not available and should never be a non-0 value that doesn't reflect the correct layer stride
@@ -262,12 +238,12 @@ namespace skyline::gpu {
 
         GuestTexture() {}
 
-        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
+        GuestTexture(Mappings mappings, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, vk::ImageViewType viewType, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
             : mappings(mappings),
               dimensions(dimensions),
               format(format),
               tileConfig(tileConfig),
-              type(type),
+              viewType(viewType),
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
               layerStride(layerStride),
@@ -276,12 +252,12 @@ namespace skyline::gpu {
               viewMipCount(viewMipCount),
               aspect(format->vkAspect) {}
 
-        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, texture::TextureType type, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
+        GuestTexture(span<u8> mapping, texture::Dimensions dimensions, texture::Format format, texture::TileConfig tileConfig, vk::ImageViewType viewType, u32 baseArrayLayer = 0, u32 layerCount = 1, u32 layerStride = 0, u32 mipLevelCount = 1, u32 viewMipBase = 0, u32 viewMipCount = 1)
             : mappings(1, mapping),
               dimensions(dimensions),
               format(format),
               tileConfig(tileConfig),
-              type(type),
+              viewType(viewType),
               baseArrayLayer(baseArrayLayer),
               layerCount(layerCount),
               layerStride(layerStride),
@@ -296,6 +272,15 @@ namespace skyline::gpu {
          * @return The size of a single layer with layout alignment in bytes
          */
         u32 GetLayerStride();
+
+        /**
+         * @return The most appropriate backing image type for this texture
+         */
+        vk::ImageType GetImageType() const;
+
+        u32 GetViewLayerCount() const;
+
+        u32 GetViewDepth() const;
     };
 
     class TextureManager;

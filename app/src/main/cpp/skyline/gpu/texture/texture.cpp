@@ -28,6 +28,40 @@ namespace skyline::gpu {
         }
     }
 
+    vk::ImageType GuestTexture::GetImageType() const {
+        switch (viewType) {
+            case vk::ImageViewType::e1D:
+            case vk::ImageViewType::e1DArray:
+                return vk::ImageType::e1D;
+            case vk::ImageViewType::e2D:
+            case vk::ImageViewType::e2DArray:
+                // If depth is > 1 this is a 2D view into a 3D texture so the underlying image needs to be created as 3D yoo
+                if (dimensions.depth > 1)
+                    return vk::ImageType::e3D;
+                else
+                    return vk::ImageType::e2D;
+            case vk::ImageViewType::eCube:
+            case vk::ImageViewType::eCubeArray:
+                return vk::ImageType::e2D;
+            case vk::ImageViewType::e3D:
+                return vk::ImageType::e3D;
+        }
+    }
+
+    u32 GuestTexture::GetViewLayerCount() const {
+        if (GetImageType() == vk::ImageType::e3D && viewType != vk::ImageViewType::e3D)
+            return dimensions.depth;
+        else
+            return layerCount;
+    }
+
+    u32 GuestTexture::GetViewDepth() const {
+        if (GetImageType() == vk::ImageType::e3D && viewType != vk::ImageViewType::e3D)
+            return layerCount;
+        else
+            return dimensions.depth;
+    }
+
     TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
 
     Texture::TextureViewStorage::TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView &&vkView) : type(type), format(format), mapping(mapping), range(range), vkView(std::move(vkView)) {}
@@ -519,21 +553,7 @@ namespace skyline::gpu {
         if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
-        //  First attempt to derive type from dimensions
-        auto imageType{dimensions.GetType()};
-
-        // Try to ensure that the image type is compatible with the given image view type since we can't create a 2D image view from a 1D image
-        if (imageType == vk::ImageType::e1D && guest->type != texture::TextureType::e1D && guest->type != texture::TextureType::e1DArray) {
-            switch (guest->type) {
-                case texture::TextureType::e3D:
-                    imageType = vk::ImageType::e3D;
-                    break;
-                default:
-                    imageType = vk::ImageType::e2D;
-                    break;
-            }
-        }
-
+        auto imageType{guest->GetImageType()};
         if (imageType == vk::ImageType::e2D && dimensions.width == dimensions.height && layerCount >= 6)
             flags |= vk::ImageCreateFlagBits::eCubeCompatible;
         else if (imageType == vk::ImageType::e3D)
