@@ -116,19 +116,19 @@ namespace skyline {
         /**
          * @return A vector of all physical ranges inside of the given virtual range
          */
-        std::vector<span<u8>> TranslateRange(VaType virt, VaType size);
+        std::vector<span<u8>> TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
 
-        void Read(u8 *destination, VaType virt, VaType size);
+        void Read(u8 *destination, VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
 
         template<typename T>
-        void Read(span <T> destination, VaType virt) {
-            Read(reinterpret_cast<u8 *>(destination.data()), virt, destination.size_bytes());
+        void Read(span <T> destination, VaType virt, std::function<void(span<u8>)> cpuAccessCallback = {}) {
+            Read(reinterpret_cast<u8 *>(destination.data()), virt, destination.size_bytes(), cpuAccessCallback);
         }
 
         template<typename T>
-        T Read(VaType virt) {
+        T Read(VaType virt, std::function<void(span<u8>)> cpuAccessCallback = {}) {
             T obj;
-            Read(reinterpret_cast<u8 *>(&obj), virt, sizeof(T));
+            Read(reinterpret_cast<u8 *>(&obj), virt, sizeof(T), cpuAccessCallback);
             return obj;
         }
 
@@ -140,7 +140,7 @@ namespace skyline {
          * @note The function will provide no feedback on if the end has been reached or if there was an early exit
          */
         template<typename Function, typename Container>
-        span<u8> ReadTill(Container& destination, VaType virt, Function function) {
+        span<u8> ReadTill(Container& destination, VaType virt, Function function, std::function<void(span<u8>)> cpuAccessCallback = {}) {
             //TRACE_EVENT("containers", "FlatMemoryManager::ReadTill");
 
             std::scoped_lock lock(this->blockMutex);
@@ -164,7 +164,11 @@ namespace skyline {
                     if (predecessor->extraInfo.sparseMapped) {
                         std::memset(pointer, 0, blockReadSize);
                     } else {
-                        auto end{function(span<u8>(blockPhys, blockReadSize))};
+                        span<u8> cpuBlock{blockPhys, blockReadSize};
+                        if (cpuAccessCallback)
+                            cpuAccessCallback(cpuBlock);
+
+                        auto end{function(cpuBlock)};
                         std::memcpy(pointer, blockPhys, end ? *end : blockReadSize);
                         if (end)
                             return {destination.data(), (destination.size() - remainingSize) + *end};
@@ -184,18 +188,18 @@ namespace skyline {
             return {destination.data(), destination.size()};
         }
 
-        void Write(VaType virt, u8 *source, VaType size);
+        void Write(VaType virt, u8 *source, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
 
         template<typename T>
-        void Write(VaType virt, span<T> source) {
+        void Write(VaType virt, span<T> source, std::function<void(span<u8>)> cpuAccessCallback = {}) {
             Write(virt, reinterpret_cast<u8 *>(source.data()), source.size_bytes());
         }
 
-        void Write(VaType virt, util::TrivialObject auto source) {
-            Write(virt, reinterpret_cast<u8 *>(&source), sizeof(source));
+        void Write(VaType virt, util::TrivialObject auto source, std::function<void(span<u8>)> cpuAccessCallback = {}) {
+            Write(virt, reinterpret_cast<u8 *>(&source), sizeof(source), cpuAccessCallback);
         }
 
-        void Copy(VaType dst, VaType src, VaType size);
+        void Copy(VaType dst, VaType src, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
     };
 
     /**
