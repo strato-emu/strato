@@ -322,6 +322,10 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/nifm/IGeneralService.cpp
         ${source_DIR}/skyline/services/nifm/IScanRequest.cpp
         ${source_DIR}/skyline/services/nifm/IRequest.cpp
+        ${source_DIR}/skyline/services/nim/IShopServiceAccessor.cpp
+        ${source_DIR}/skyline/services/nim/IShopServiceAccessServer.cpp
+        ${source_DIR}/skyline/services/nim/IShopServiceAccessServerInterface.cpp
+        ${source_DIR}/skyline/services/nim/IShopServiceAsync.cpp
         ${source_DIR}/skyline/services/socket/bsd/IClient.cpp
         ${source_DIR}/skyline/services/spl/IRandomInterface.cpp
         ${source_DIR}/skyline/services/ssl/ISslService.cpp

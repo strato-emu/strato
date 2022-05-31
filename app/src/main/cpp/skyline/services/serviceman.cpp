@@ -37,6 +37,7 @@
 #include "friends/IServiceCreator.h"
 #include "nfp/IUserManager.h"
 #include "nifm/IStaticService.h"
+#include "nim/IShopServiceAccessServerInterface.h"
 #include "socket/bsd/IClient.h"
 #include "spl/IRandomInterface.h"
 #include "ssl/ISslService.h"
@@ -115,6 +116,7 @@ namespace skyline::service {
             SERVICE_CASE(bcat::IServiceCreator, "bcat:u")
             SERVICE_CASE(bt::IBluetoothUser, "bt")
             SERVICE_CASE(btm::IBtmUser, "btm:u")
+            SERVICE_CASE(nim::IShopServiceAccessServerInterface, "nim:eca")
             default:
                 std::string_view nameString(span(reinterpret_cast<char *>(&name), sizeof(name)).as_string(true));
                 throw std::out_of_range(fmt::format("CreateService called with an unknown service name: {}", nameString));
