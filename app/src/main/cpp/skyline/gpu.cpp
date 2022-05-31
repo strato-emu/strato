@@ -242,6 +242,7 @@ namespace skyline::gpu {
 
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.independentBlend);
         FEAT_REQ(vk::PhysicalDeviceFeatures2, features.shaderImageGatherExtended);
+        FEAT_REQ(vk::PhysicalDeviceFeatures2, features.depthBiasClamp);
         FEAT_REQ(vk::PhysicalDeviceShaderDrawParametersFeatures, shaderDrawParameters);
 
         #undef FEAT_REQ
