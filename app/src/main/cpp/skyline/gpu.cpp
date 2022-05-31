@@ -124,6 +124,7 @@ namespace skyline::gpu {
                 FMT("R5G6B5_UNORM_PACK16");
                 FMT("R32G32B32A32_SFLOAT");
                 FMT("D32_SFLOAT");
+                FMT("R32_SFLOAT");
 
                 #undef FMT
 
