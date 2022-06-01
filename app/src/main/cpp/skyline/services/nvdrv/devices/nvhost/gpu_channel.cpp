@@ -108,12 +108,12 @@ namespace skyline::service::nvdrv::device::nvhost {
             }
         }
 
-        channelCtx->gpfifo.Push(gpEntries.subspan(0, numEntries));
-
         fence.id = channelSyncpoint;
 
         u32 increment{(flags.fenceIncrement ? 2 : 0) + (flags.incrementWithValue ? fence.threshold : 0)};
         fence.threshold = core.syncpointManager.IncrementSyncpointMaxExt(channelSyncpoint, increment);
+
+        channelCtx->gpfifo.Push(gpEntries.subspan(0, numEntries));
 
         if (flags.fenceIncrement) {
             // Wraparound
