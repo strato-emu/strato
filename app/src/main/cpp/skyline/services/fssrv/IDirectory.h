@@ -17,6 +17,7 @@ namespace skyline::service::fssrv {
       private:
         std::shared_ptr<vfs::Directory> backing; //!< Backing directory of the IDirectory
         std::shared_ptr<vfs::FileSystem> backingFs; //!< Backing filesystem of the IDirectory
+        u32 remainingReadCount{};
 
       public:
         IDirectory(std::shared_ptr<vfs::Directory> backing, std::shared_ptr<vfs::FileSystem> backingFs, const DeviceState &state, ServiceManager &manager);
@@ -26,8 +27,14 @@ namespace skyline::service::fssrv {
          */
         Result Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Filesystem_services#GetEntryCount
+         */
+        Result GetEntryCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IDirectory, Read),
+            SFUNC(0x1, IDirectory, GetEntryCount)
         )
     };
 }

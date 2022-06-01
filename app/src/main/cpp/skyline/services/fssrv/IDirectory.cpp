@@ -40,7 +40,14 @@ namespace skyline::service::fssrv {
             span(outputEntries[i].name).copy_from(entry.name);
         }
 
+        remainingReadCount += i;
         response.Push<u64>(i);
+        return {};
+    }
+
+    Result IDirectory::GetEntryCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto entries{backing->Read()};
+        response.Push<u64>(entries.size() - remainingReadCount);
         return {};
     }
 }
