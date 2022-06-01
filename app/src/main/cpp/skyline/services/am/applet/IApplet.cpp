@@ -13,16 +13,19 @@ namespace skyline::service::am {
     IApplet::~IApplet() = default;
 
     void IApplet::PushNormalDataAndSignal(std::shared_ptr<IStorage> data) {
+        std::scoped_lock lock{outputDataMutex};
         normalOutputData.emplace(std::move(data));
         onNormalDataPushFromApplet->Signal();
     }
 
     void IApplet::PushInteractiveDataAndSignal(std::shared_ptr<IStorage> data) {
+        std::scoped_lock lock{interactiveOutputDataMutex};
         interactiveOutputData.emplace(std::move(data));
         onInteractiveDataPushFromApplet->Signal();
     }
 
     std::shared_ptr<IStorage> IApplet::PopNormalAndClear() {
+        std::scoped_lock lock{outputDataMutex};
         if (normalOutputData.empty())
             return {};
         std::shared_ptr<IStorage> data(normalOutputData.front());
@@ -32,6 +35,7 @@ namespace skyline::service::am {
     }
 
     std::shared_ptr<IStorage> IApplet::PopInteractiveAndClear() {
+        std::scoped_lock lock{interactiveOutputDataMutex};
         if (interactiveOutputData.empty())
             return {};
         std::shared_ptr<IStorage> data(interactiveOutputData.front());

@@ -98,10 +98,12 @@ namespace skyline::applet {
         };
         static_assert(sizeof(ControllerSupportResultInfo) == 0xC);
 
+        std::mutex inputDataMutex;
         std::queue<std::shared_ptr<service::am::IStorage>> normalInputData;
 
         template<typename T>
         T PopNormalInput() {
+            std::scoped_lock lock{inputDataMutex};
             auto data{normalInputData.front()->GetSpan().as<T>()};
             normalInputData.pop();
             return static_cast<T>(data);

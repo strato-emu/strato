@@ -17,11 +17,13 @@ namespace skyline::service::am {
       private:
         std::shared_ptr<kernel::type::KEvent> onNormalDataPushFromApplet;
         std::shared_ptr<kernel::type::KEvent> onInteractiveDataPushFromApplet;
+        std::mutex outputDataMutex;
+        std::queue<std::shared_ptr<IStorage>> normalOutputData; //!< Stores data sent by the applet so the guest can read it when it needs to
+        std::mutex interactiveOutputDataMutex;
+        std::queue<std::shared_ptr<IStorage>> interactiveOutputData; //!< Stores interactive data sent by the applet so the guest can read it when it needs to
 
       protected:
         std::shared_ptr<kernel::type::KEvent> onAppletStateChanged;
-        std::queue<std::shared_ptr<IStorage>> normalOutputData; //!< Stores data sent by the applet so the guest can read it when it needs to
-        std::queue<std::shared_ptr<IStorage>> interactiveOutputData; //!< Stores interactive data sent by the applet so the guest can read it when it needs to
 
         /**
          * @brief Utility to send data to the guest and trigger the onNormalDataPushFromApplet event

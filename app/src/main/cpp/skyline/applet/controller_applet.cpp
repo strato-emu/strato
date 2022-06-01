@@ -21,12 +21,12 @@ namespace skyline::applet {
         // Generic macro due to both versions of arguments sharing the same fields but having different layouts
         auto handle{[&](auto controllerSupportModeArg) {
             Logger::InfoNoPrefix("Controller Support: "
-                         "Player Count: {} - {}, "
-                         "Take Over Connection: {}, Left Justify: {}, Dual Joy-Con Allowed: {}, Single Mode Enabled: {}, "
-                         "Identification Color Enabled: {}, Explain Text Enabled: {}",
-                         controllerSupportModeArg.playerCountMin, controllerSupportModeArg.playerCountMax,
-                         controllerSupportModeArg.enableTakeOverConnection, controllerSupportModeArg.enableLeftJustify, controllerSupportModeArg.enablePermitJoyDual, controllerSupportModeArg.enableSingleMode,
-                         controllerSupportModeArg.enableIdentificationColor, controllerSupportModeArg.enableExplainText);
+                                 "Player Count: {} - {}, "
+                                 "Take Over Connection: {}, Left Justify: {}, Dual Joy-Con Allowed: {}, Single Mode Enabled: {}, "
+                                 "Identification Color Enabled: {}, Explain Text Enabled: {}",
+                                 controllerSupportModeArg.playerCountMin, controllerSupportModeArg.playerCountMax,
+                                 controllerSupportModeArg.enableTakeOverConnection, controllerSupportModeArg.enableLeftJustify, controllerSupportModeArg.enablePermitJoyDual, controllerSupportModeArg.enableSingleMode,
+                                 controllerSupportModeArg.enableIdentificationColor, controllerSupportModeArg.enableExplainText);
 
             // Here is where we would trigger the applet UI
 
@@ -62,6 +62,7 @@ namespace skyline::applet {
                 break;
         }
     }
+
     Result ControllerApplet::Start() {
         auto commonArg{PopNormalInput<service::applet::CommonArguments>()};
         ControllerAppletVersion appletVersion{commonArg.apiVersion};
@@ -81,6 +82,7 @@ namespace skyline::applet {
             }
         }
 
+        std::scoped_lock lock{inputDataMutex};
         switch (argPrivate.mode) {
             case ControllerSupportMode::ShowControllerSupport:
                 HandleShowControllerSupport(argPrivate.styleSet, appletVersion, normalInputData.front()->GetSpan());
@@ -105,6 +107,7 @@ namespace skyline::applet {
     }
 
     void ControllerApplet::PushNormalDataToApplet(std::shared_ptr<service::am::IStorage> data) {
+        std::scoped_lock lock{inputDataMutex};
         normalInputData.emplace(std::move(data));
     }
 
