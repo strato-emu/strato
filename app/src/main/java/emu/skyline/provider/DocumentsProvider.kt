@@ -97,12 +97,24 @@ class DocumentsProvider : DocumentsProvider() {
         return documentId?.startsWith(parentDocumentId!!) ?: false
     }
 
+    /**
+     * @return A new [File] with a unique name based off the supplied [name], not conflicting with any existing file
+     */
+    fun File.resolveWithoutConflict(name: String): File {
+        var file = resolve(name)
+        if (file.exists()) {
+            var noConflictId = 1 // Makes sure two files don't have the same name by adding a number to the end
+            val extension = name.substringAfterLast('.')
+            val baseName = name.substringBeforeLast('.')
+            while (file.exists())
+                file = resolve("$baseName (${noConflictId++}).$extension")
+        }
+        return file
+    }
+
     override fun createDocument(parentDocumentId : String?, mimeType : String?, displayName : String) : String? {
         val parentFile = getFile(parentDocumentId!!)
-        var noConflictId = 1 // Makes sure two files don't have the same name by adding a number to the end
-        var newFile = parentFile.resolve(displayName)
-        while (newFile.exists())
-            newFile = parentFile.resolve("$displayName (${noConflictId++})")
+        val newFile = parentFile.resolveWithoutConflict(displayName)
 
         try {
             if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
@@ -129,12 +141,7 @@ class DocumentsProvider : DocumentsProvider() {
         val parent = getFile(parentDocumentId!!)
         val file = getFile(documentId)
 
-        var doesFileParentMatch = false
-        val fileParent = file.parentFile
-
-        if (fileParent == null || fileParent.equals(parent))
-            doesFileParentMatch = true
-        if (parent == file || doesFileParentMatch) {
+        if (parent == file || file.parentFile == null || file.parentFile!! == parent) {
             if (!file.delete())
                 throw FileNotFoundException("Couldn't delete document with ID '$documentId'")
         } else {
@@ -173,7 +180,8 @@ class DocumentsProvider : DocumentsProvider() {
     override fun copyDocument(sourceDocumentId : String, targetParentDocumentId : String?) : String? {
         val parent = getFile(targetParentDocumentId!!)
         val oldFile = getFile(sourceDocumentId)
-        val newFile = parent.resolve(oldFile.name)
+        val newFile = parent.resolveWithoutConflict(oldFile.name)
+
         try {
             if (!(newFile.createNewFile() && newFile.setWritable(true) && newFile.setReadable(true)))
                 throw IOException("Couldn't create new file")
