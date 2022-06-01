@@ -20,6 +20,10 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
+    PosixResult CtrlGpu::ZbcSetTable(In<ZbcColorValue> colorDs, In<ZbcColorValue> colorL2, In<u32> depth, In<u32> format, In<u32> type) {
+        return PosixResult::Success;
+    }
+
     PosixResult CtrlGpu::GetCharacteristics(InOut<u64> size, In<u64> userAddress, Out<GpuCharacteristics> characteristics) {
         characteristics = {};
         size = sizeof(GpuCharacteristics);
@@ -70,6 +74,8 @@ namespace skyline::service::nvdrv::device::nvhost {
                         ZCullGetCtxSize,    ARGS(Out<u32>))
         IOCTL_CASE_ARGS(OUT,   SIZE(0x28), MAGIC(CtrlGpuMagic), FUNC(0x2),
                         ZCullGetInfo,       ARGS(Out<ZCullInfo>))
+        IOCTL_CASE_ARGS(IN,    SIZE(0x2C), MAGIC(CtrlGpuMagic), FUNC(0x3),
+                        ZbcSetTable,        ARGS(In<ZbcColorValue>, In<ZbcColorValue>, In<u32>, In<u32>, In<u32>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0xB0), MAGIC(CtrlGpuMagic), FUNC(0x5),
                         GetCharacteristics, ARGS(InOut<u64>, In<u64>, Out<GpuCharacteristics>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(CtrlGpuMagic), FUNC(0x6),

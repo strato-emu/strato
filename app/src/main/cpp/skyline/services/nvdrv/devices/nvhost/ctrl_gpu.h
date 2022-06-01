@@ -73,6 +73,8 @@ namespace skyline::service::nvdrv::device::nvhost {
             u32 subregionCount{0x10};
         };
 
+        using ZbcColorValue = std::array<u32, 4>;
+
         CtrlGpu(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx);
 
         /**
@@ -86,6 +88,12 @@ namespace skyline::service::nvdrv::device::nvhost {
          * @url https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZCULL_GET_INFO
          */
         PosixResult ZCullGetInfo(Out<ZCullInfo> info);
+
+        /**
+         * @brief Sets the zero bandwidth clear parameters
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_ZBC_SET_TABLE
+         */
+        PosixResult ZbcSetTable(In<ZbcColorValue> colorDs, In<ZbcColorValue> colorL2, In<u32> depth, In<u32> format, In<u32> type);
 
         /**
          * @brief Returns a struct with certain GPU characteristics
