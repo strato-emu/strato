@@ -11,7 +11,7 @@ namespace skyline::vfs {
      */
     class Directory {
       public:
-        enum class EntryType : u32 {
+        enum class EntryType : u8 {
             Directory = 0x0,
             File = 0x1,
         };
