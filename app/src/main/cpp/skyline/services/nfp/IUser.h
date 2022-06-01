@@ -7,26 +7,27 @@
 
 namespace skyline::service::nfp {
     /**
-     * @brief IUser is used by applications to access NFP (Near Field Proximity) devices
+     * @brief IUser is used by applications to access NFP (Nintendo Figurine Protocol) devices
      * @url https://switchbrew.org/wiki/NFC_services#IUser_3
      */
     class IUser : public BaseService {
+      private:
+        enum class State : u32 {
+            NotInitialized = 0,
+            Initialized = 1
+        } state{State::NotInitialized};
+
       public:
         IUser(const DeviceState &state, ServiceManager &manager);
 
-        /**
-         * @brief Initializes an NFP session
-         */
         Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /*
-         * @brief Lists available NFP devices
          * @url https://switchbrew.org/wiki/NFC_services#ListDevices
          */
         Result ListDevices(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /*
-         * @brief Return the state of the NFP service
          * @url https://switchbrew.org/wiki/NFC_services#GetState_2
          */
         Result GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);

@@ -8,6 +8,7 @@ namespace skyline::service::nfp {
     IUser::IUser(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IUser::Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        state = State::Initialized;
         return {};
     }
 
@@ -17,7 +18,7 @@ namespace skyline::service::nfp {
     }
 
     Result IUser::GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u32>(0);
+        response.Push(state);
         return {};
     }
 }
