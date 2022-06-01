@@ -106,16 +106,6 @@
         </activity>
 
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="emu.skyline.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/filepaths" />
-        </provider>
-
-        <provider
             android:name="emu.skyline.provider.DocumentsProvider"
             android:authorities="emu.skyline.provider"
             android:exported="true"

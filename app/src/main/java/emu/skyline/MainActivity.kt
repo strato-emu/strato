@@ -10,17 +10,18 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
+import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -34,6 +35,7 @@ import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
+import emu.skyline.provider.DocumentsProvider
 import emu.skyline.utils.Settings
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -129,13 +131,12 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchBar.apply {
             binding.logIcon.setOnClickListener {
-                val file = applicationContext.getPublicFilesDir().resolve("logs/emulation.sklog")
+                val file = DocumentFile.fromSingleUri(this@MainActivity, DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/logs/emulation.sklog"))!!
                 if (file.exists() && file.length() != 0L) {
-                    val uri = FileProvider.getUriForFile(this@MainActivity, "skyline.emu.fileprovider", file)
                     val intent = Intent(Intent.ACTION_SEND)
-                        .setDataAndType(uri, "text/plain")
+                        .setDataAndType(file.uri, "text/plain")
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        .putExtra(Intent.EXTRA_STREAM, uri)
+                        .putExtra(Intent.EXTRA_STREAM, file.uri)
                     startActivity(Intent.createChooser(intent, getString(R.string.log_share_prompt)))
                 } else {
                     Snackbar.make(this@MainActivity.findViewById(android.R.id.content), getString(R.string.logs_not_found), Snackbar.LENGTH_SHORT).show()
