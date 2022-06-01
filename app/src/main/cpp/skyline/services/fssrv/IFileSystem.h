@@ -24,6 +24,11 @@ namespace skyline::service::fssrv {
         Result CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Creates a directory at the specified path in the filesystem
+         */
+        Result CreateDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Queries the DirectoryEntryType of the given path
          * @url https://switchbrew.org/wiki/Filesystem_services#GetEntryType
          */
@@ -48,6 +53,7 @@ namespace skyline::service::fssrv {
 
         SERVICE_DECL(
             SFUNC(0x0, IFileSystem, CreateFile),
+            SFUNC(0x2, IFileSystem, CreateDirectory),
             SFUNC(0x7, IFileSystem, GetEntryType),
             SFUNC(0x8, IFileSystem, OpenFile),
             SFUNC(0x9, IFileSystem, OpenDirectory),

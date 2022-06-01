@@ -10,11 +10,17 @@ namespace skyline::service::fssrv {
     IFileSystem::IFileSystem(std::shared_ptr<vfs::FileSystem> backing, const DeviceState &state, ServiceManager &manager) : backing(std::move(backing)), BaseService(state, manager) {}
 
     Result IFileSystem::CreateFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        std::string path(request.inputBuf.at(0).as_string(true));
+        std::string path{request.inputBuf.at(0).as_string(true)};
         auto mode{request.Pop<u64>()};
         auto size{request.Pop<u32>()};
 
         return backing->CreateFile(path, size) ? Result{} : result::PathDoesNotExist;
+    }
+
+    Result IFileSystem::CreateDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::string path{request.inputBuf.at(0).as_string(true)};
+
+        return backing->CreateDirectory(path, true) ? Result{} : result::PathDoesNotExist;
     }
 
     Result IFileSystem::GetEntryType(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
