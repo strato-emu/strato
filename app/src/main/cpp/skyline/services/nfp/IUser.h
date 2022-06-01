@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kernel/types/KEvent.h>
 #include <services/base_service.h>
 
 namespace skyline::service::nfp {
@@ -12,10 +13,12 @@ namespace skyline::service::nfp {
      */
     class IUser : public BaseService {
       private:
+        std::shared_ptr<type::KEvent> attachAvailabilityChangeEvent; //!< Signalled on NFC device availability changes
+
         enum class State : u32 {
             NotInitialized = 0,
             Initialized = 1
-        } state{State::NotInitialized};
+        } nfpState{State::NotInitialized};
 
       public:
         IUser(const DeviceState &state, ServiceManager &manager);
@@ -32,10 +35,16 @@ namespace skyline::service::nfp {
          */
         Result GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /*
+         * @url https://switchbrew.org/wiki/NFC_services#AttachAvailabilityChangeEvent
+         */
+        Result AttachAvailabilityChangeEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IUser, Initialize),
             SFUNC(0x2, IUser, ListDevices),
-            SFUNC(0x13, IUser, GetState)
+            SFUNC(0x13, IUser, GetState),
+            SFUNC(0x17, IUser, AttachAvailabilityChangeEvent)
         )
     };
 }
