@@ -39,14 +39,16 @@ namespace skyline::vfs {
     }
 
     bool OsFileSystem::CreateDirectoryImpl(const std::string &path, bool parents) {
+        auto fullPath{basePath + path};
+
         if (!parents) {
-            int ret{mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
+            int ret{mkdir(fullPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
             return ret == 0 || errno == EEXIST;
         }
 
-        for (auto dir{basePath.begin()}; dir != basePath.end(); dir++) {
-            auto nextDir{std::find(dir, basePath.end(), '/')};
-            auto nextPath{"/" + std::string(basePath.begin(), nextDir)};
+        for (auto dir{fullPath.begin()}; dir != fullPath.end(); dir++) {
+            auto nextDir{std::find(dir, fullPath.end(), '/')};
+            auto nextPath{"/" + std::string(fullPath.begin(), nextDir)};
 
             int ret{mkdir(nextPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
             if (ret < 0 && errno != EEXIST && errno != EPERM)
