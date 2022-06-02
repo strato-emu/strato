@@ -414,6 +414,11 @@ namespace skyline::gpu {
             ~TextureBufferCopy();
         };
 
+        /**
+         * @return A vector of all the buffer image copies that need to be done for every aspect of every level of every layer of the texture
+         */
+        boost::container::small_vector<vk::BufferImageCopy, 10> GetBufferImageCopies();
+
       public:
         std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
         std::optional<GuestTexture> guest;

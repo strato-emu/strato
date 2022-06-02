@@ -300,25 +300,9 @@ namespace skyline::gpu {
         return stagingBuffer;
     }
 
-    void Texture::CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
-        auto image{GetBacking()};
-        if (layout == vk::ImageLayout::eUndefined)
-            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                .image = image,
-                .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
-                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .oldLayout = std::exchange(layout, vk::ImageLayout::eGeneral),
-                .newLayout = vk::ImageLayout::eGeneral,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .subresourceRange = {
-                    .aspectMask = format->vkAspect,
-                    .levelCount = levelCount,
-                    .layerCount = layerCount,
-                },
-            });
+    boost::container::small_vector<vk::BufferImageCopy, 10> Texture::GetBufferImageCopies() {
+        boost::container::small_vector<vk::BufferImageCopy, 10> bufferImageCopies;
 
-        std::vector<vk::BufferImageCopy> bufferImageCopies;
         auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
             vk::DeviceSize bufferOffset{};
             u32 mipLevel{};
@@ -345,6 +329,28 @@ namespace skyline::gpu {
         if (format->vkAspect & vk::ImageAspectFlagBits::eStencil)
             pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eStencil);
 
+        return bufferImageCopies;
+    }
+
+    void Texture::CopyFromStagingBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<memory::StagingBuffer> &stagingBuffer) {
+        auto image{GetBacking()};
+        if (layout == vk::ImageLayout::eUndefined)
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                .image = image,
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
+                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .oldLayout = std::exchange(layout, vk::ImageLayout::eGeneral),
+                .newLayout = vk::ImageLayout::eGeneral,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .subresourceRange = {
+                    .aspectMask = format->vkAspect,
+                    .levelCount = levelCount,
+                    .layerCount = layerCount,
+                },
+            });
+
+        auto bufferImageCopies{GetBufferImageCopies()};
         commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, layout, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
     }
 
@@ -365,33 +371,7 @@ namespace skyline::gpu {
             },
         });
 
-        boost::container::small_vector<vk::BufferImageCopy, 10> bufferImageCopies;
-        auto pushBufferImageCopyWithAspect{[&](vk::ImageAspectFlagBits aspect) {
-            vk::DeviceSize bufferOffset{};
-            u32 mipLevel{};
-            for (auto &level : mipLayouts) {
-                bufferImageCopies.emplace_back(
-                    vk::BufferImageCopy{
-                        .bufferOffset = bufferOffset,
-                        .imageSubresource = {
-                            .aspectMask = aspect,
-                            .mipLevel = mipLevel++,
-                            .layerCount = layerCount,
-                        },
-                        .imageExtent = level.dimensions,
-                    }
-                );
-                bufferOffset += level.targetLinearSize * levelCount;
-            }
-        }};
-
-        if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
-            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eColor);
-        if (format->vkAspect & vk::ImageAspectFlagBits::eDepth)
-            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eDepth);
-        if (format->vkAspect & vk::ImageAspectFlagBits::eStencil)
-            pushBufferImageCopyWithAspect(vk::ImageAspectFlagBits::eStencil);
-
+        auto bufferImageCopies{GetBufferImageCopies()};
         commandBuffer.copyImageToBuffer(image, layout, stagingBuffer->vkBuffer, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
 
         commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eHost, {}, {}, vk::BufferMemoryBarrier{
