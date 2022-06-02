@@ -61,7 +61,7 @@ namespace skyline::kernel::type {
         if (mprotect(ptr, size, PROT_NONE) < 0)
             throw exception("An occurred while remapping private memory: {}", strerror(errno));
 
-        if (mprotect(nPtr, nSize, PROT_NONE) < 0)
+        if (mprotect(nPtr, nSize, PROT_READ | PROT_WRITE | PROT_EXEC) < 0)
             throw exception("An occurred while remapping private memory: {}", strerror(errno));
     }
 
