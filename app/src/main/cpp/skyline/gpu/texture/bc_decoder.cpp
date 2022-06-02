@@ -42,9 +42,9 @@ namespace {
             }
 
             for (int j = 0; j < BlockHeight && (y + j) < dstH; j++) {
-                int dstOffset = j * dstPitch;
-                int idxOffset = j * BlockHeight;
-                for (int i = 0; i < BlockWidth && (x + i) < dstW; i++, idxOffset++, dstOffset += dstBpp) {
+                size_t dstOffset = j * dstPitch;
+                size_t idxOffset = j * BlockHeight;
+                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++, idxOffset++, dstOffset += dstBpp) {
                     *reinterpret_cast<unsigned int *>(dst + dstOffset) = c[getIdx(idxOffset)].pack8888();
                 }
             }
@@ -107,8 +107,8 @@ namespace {
             int c[4];
         };
 
-        unsigned int getIdx(int i) const {
-            int offset = i << 1;  // 2 bytes per index
+        size_t getIdx(int i) const {
+            size_t offset = i << 1;  // 2 bytes per index
             return (idx & (0x3 << offset)) >> offset;
         }
 
@@ -1392,22 +1392,23 @@ namespace {
                         }
 
                         Color output;
-                        output.rgb.r = interpolate(subset[0].rgb.r, subset[1].rgb.r, colorIdx);
+                        // Note: We flip r and b channels past this point as the texture storage is BGR while the output is RGB
+                        output.rgb.r = interpolate(subset[0].rgb.b, subset[1].rgb.b, colorIdx);
                         output.rgb.g = interpolate(subset[0].rgb.g, subset[1].rgb.g, colorIdx);
-                        output.rgb.b = interpolate(subset[0].rgb.b, subset[1].rgb.b, colorIdx);
+                        output.rgb.b = interpolate(subset[0].rgb.r, subset[1].rgb.r, colorIdx);
                         output.a = interpolate(subset[0].a, subset[1].a, alphaIdx);
 
                         switch (Get(mode.Rotation())) {
                             default:
                                 break;
                             case 1:
-                                std::swap(output.a, output.rgb.r);
+                                std::swap(output.a, output.rgb.b);
                                 break;
                             case 2:
                                 std::swap(output.a, output.rgb.g);
                                 break;
                             case 3:
-                                std::swap(output.a, output.rgb.b);
+                                std::swap(output.a, output.rgb.r);
                                 break;
                         }
 
