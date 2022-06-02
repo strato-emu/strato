@@ -699,7 +699,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     case type::SemaphoreInfo::Op::Counter: {
                         switch (info.counterType) {
                             case type::SemaphoreInfo::CounterType::Zero:
-                                WriteSemaphoreResult(0);
+                                WriteSemaphoreResult(registers.semaphore->payload);
                                 break;
 
                             default:
