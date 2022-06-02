@@ -1017,21 +1017,26 @@ namespace skyline::kernel::svc {
         size_t size{state.ctx->gpr.x1};
 
         if (!util::IsPageAligned(pointer)) {
+            Logger::Warn("Pointer 0x{:X} is not page aligned", pointer);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
         if (!size || !util::IsPageAligned(size)) {
+            Logger::Warn("Size 0x{:X} is not page aligned", size);
             state.ctx->gpr.w0 = result::InvalidSize;
             return;
         }
 
         if (!state.process->memory.alias.IsInside(pointer) || !state.process->memory.alias.IsInside(pointer + size)) {
+            Logger::Warn("Memory region 0x{:X} - 0x{:X} (0x{:X}) is invalid", pointer, pointer + size, size);
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             return;
         }
 
         state.process->NewHandle<type::KPrivateMemory>(pointer, size, memory::Permission{true, true, false}, memory::states::Heap);
+
+        Logger::Debug("Mapped physical memory at 0x{:X} - 0x{:X} (0x{:X})", pointer, pointer + size, size);
 
         state.ctx->gpr.w0 = Result{};
     }
@@ -1041,19 +1046,24 @@ namespace skyline::kernel::svc {
         size_t size{state.ctx->gpr.x1};
 
         if (!util::IsPageAligned(pointer)) {
+            Logger::Warn("Pointer 0x{:X} is not page aligned", pointer);
             state.ctx->gpr.w0 = result::InvalidAddress;
             return;
         }
 
         if (!size || !util::IsPageAligned(size)) {
+            Logger::Warn("Size 0x{:X} is not page aligned", size);
             state.ctx->gpr.w0 = result::InvalidSize;
             return;
         }
 
         if (!state.process->memory.alias.IsInside(pointer) || !state.process->memory.alias.IsInside(pointer + size)) {
+            Logger::Warn("Memory region 0x{:X} - 0x{:X} (0x{:X}) is invalid", pointer, pointer + size, size);
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             return;
         }
+
+        Logger::Debug("Unmapped physical memory at 0x{:X} - 0x{:X} (0x{:X})", pointer, pointer + size, size);
 
         auto end{pointer + size};
         while (pointer < end) {
