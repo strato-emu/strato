@@ -754,15 +754,21 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     void Maxwell3D::WriteSemaphoreResult(u64 result) {
+        u64 address{registers.semaphore->address};
+
         switch (registers.semaphore->info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, static_cast<u32>(result));
+                channelCtx.asCtx->gmmu.Write(address, static_cast<u32>(result));
+                Logger::Debug("address: 0x{:X} payload: {}", address, result);
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
                 // Write timestamp first to ensure correct ordering
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address + 8, GetGpuTimeTicks());
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, result);
+                u64 timestamp{GetGpuTimeTicks()};
+                channelCtx.asCtx->gmmu.Write(address + 8, timestamp);
+                channelCtx.asCtx->gmmu.Write(address, result);
+                Logger::Debug("address: 0x{:X} payload: {} timestamp: {}", address, result, timestamp);
+
                 break;
             }
         }

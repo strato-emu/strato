@@ -30,16 +30,19 @@ namespace skyline::soc::gm20b::engine {
             })
 
             ENGINE_STRUCT_CASE(semaphore, action, {
+                u64 address{registers.semaphore->address};
+
                 // Write timestamp first to ensure ordering
                 if (action.releaseSize == Registers::Semaphore::ReleaseSize::SixteenBytes) {
-                    channelCtx.asCtx->gmmu.Write<u32>(registers.semaphore->address + 4, 0);
-                    channelCtx.asCtx->gmmu.Write(registers.semaphore->address + 8, GetGpuTimeTicks());
+                    channelCtx.asCtx->gmmu.Write<u32>(address + 4, 0);
+                    channelCtx.asCtx->gmmu.Write(address + 8, GetGpuTimeTicks());
                 }
 
                 if (action.operation == Registers::Semaphore::Operation::Release) {
-                    channelCtx.asCtx->gmmu.Write(registers.semaphore->address, registers.semaphore->payload);
+                    channelCtx.asCtx->gmmu.Write(address, registers.semaphore->payload);
+                    Logger::Debug("SemaphoreRelease: address: 0x{:X} payload: {}", address, registers.semaphore->payload);
                 } else if (action.operation == Registers::Semaphore::Operation::Reduction) {
-                    u32 origVal{channelCtx.asCtx->gmmu.Read<u32>(registers.semaphore->address)};
+                    u32 origVal{channelCtx.asCtx->gmmu.Read<u32>(address)};
                     bool isSigned{action.format == Registers::Semaphore::Format::Signed};
 
                     // https://github.com/NVIDIA/open-gpu-doc/blob/b7d1bd16fe62135ebaec306b39dfdbd9e5657827/manuals/turing/tu104/dev_pbdma.ref.txt#L3549
@@ -72,8 +75,10 @@ namespace skyline::soc::gm20b::engine {
                                 return (origVal == 0 || origVal > payload) ? payload : origVal - 1;
                         }
                     }(registers.semaphore->action.reduction, origVal, registers.semaphore->payload, isSigned)};
+                    Logger::Debug("SemaphoreReduction: address: 0x{:X} op: {} payload: {} original value: {} reduced value: {}",
+                                  address, static_cast<u8>(registers.semaphore->action.reduction), registers.semaphore->payload, origVal, val);
 
-                    channelCtx.asCtx->gmmu.Write(registers.semaphore->address, val);
+                    channelCtx.asCtx->gmmu.Write(address, val);
                 } else {
                     Logger::Warn("Unimplemented semaphore operation: 0x{:X}", static_cast<u8>(registers.semaphore->action.operation));
                 }

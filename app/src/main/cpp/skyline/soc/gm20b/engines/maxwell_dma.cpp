@@ -61,15 +61,21 @@ namespace skyline::soc::gm20b::engine {
         if (registers.launchDma->reductionEnable)
             Logger::Warn("Semaphore reduction is unimplemented!");
 
+        u64 address{registers.semaphore->address};
+        u64 payload{registers.semaphore->payload};
         switch (registers.launchDma->semaphoreType) {
             case Registers::LaunchDma::SemaphoreType::ReleaseOneWordSemaphore:
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, registers.semaphore->payload);
+                channelCtx.asCtx->gmmu.Write(address, registers.semaphore->payload);
+                Logger::Debug("address: 0x{:X} payload: {}", address, payload);
                 break;
-            case Registers::LaunchDma::SemaphoreType::ReleaseFourWordSemaphore:
+            case Registers::LaunchDma::SemaphoreType::ReleaseFourWordSemaphore: {
                 // Write timestamp first to ensure correct ordering
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address + 8, GetGpuTimeTicks());
-                channelCtx.asCtx->gmmu.Write(registers.semaphore->address, static_cast<u64>(registers.semaphore->payload));
+                u64 timestamp{GetGpuTimeTicks()};
+                channelCtx.asCtx->gmmu.Write(address + 8, timestamp);
+                channelCtx.asCtx->gmmu.Write(address, static_cast<u64>(payload));
+                Logger::Debug("address: 0x{:X} payload: {} timestamp: {}", address, payload, timestamp);
                 break;
+            }
             default:
                 break;
         }
