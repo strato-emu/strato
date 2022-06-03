@@ -120,7 +120,6 @@ namespace skyline::gpu::interconnect {
 
         void SetRenderTargetAddressHigh(RenderTarget &renderTarget, u32 high) {
             renderTarget.iova.high = high;
-            renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
 
@@ -134,7 +133,6 @@ namespace skyline::gpu::interconnect {
 
         void SetRenderTargetAddressLow(RenderTarget &renderTarget, u32 low) {
             renderTarget.iova.low = low;
-            renderTarget.guest.mappings.clear();
             renderTarget.view.reset();
         }
 
@@ -152,7 +150,6 @@ namespace skyline::gpu::interconnect {
                 value /= renderTarget.guest.format->bpb; // Width is in bytes rather than format units for linear textures
             renderTarget.guest.dimensions.width = value;
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetColorRenderTargetWidth(size_t index, u32 value) {
@@ -166,7 +163,6 @@ namespace skyline::gpu::interconnect {
         void SetRenderTargetHeight(RenderTarget &renderTarget, u32 value) {
             renderTarget.guest.dimensions.height = value;
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetColorRenderTargetHeight(size_t index, u32 value) {
@@ -270,7 +266,6 @@ namespace skyline::gpu::interconnect {
 
             renderTarget.disabled = !renderTarget.guest.format;
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetDepthRenderTargetFormat(maxwell3d::DepthRtFormat format) {
@@ -299,7 +294,6 @@ namespace skyline::gpu::interconnect {
                 depthRenderTarget.guest.dimensions.width = depthRenderTarget.widthBytes / depthRenderTarget.guest.format->bpb;
 
             depthRenderTarget.view.reset();
-            depthRenderTarget.guest.mappings.clear();
         }
 
         void SetRenderTargetTileMode(RenderTarget &renderTarget, maxwell3d::RenderTargetTileMode mode) {
@@ -329,7 +323,6 @@ namespace skyline::gpu::interconnect {
             }
 
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetColorRenderTargetTileMode(size_t index, maxwell3d::RenderTargetTileMode mode) {
@@ -346,7 +339,6 @@ namespace skyline::gpu::interconnect {
             else
                 renderTarget.guest.layerCount = mode.depthOrlayerCount;
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetColorRenderTargetArrayMode(size_t index, maxwell3d::RenderTargetArrayMode mode) {
@@ -363,7 +355,6 @@ namespace skyline::gpu::interconnect {
         void SetRenderTargetLayerStride(RenderTarget &renderTarget, u32 layerStrideLsr2) {
             renderTarget.layerStride = layerStrideLsr2 << 2;
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         void SetColorRenderTargetLayerStride(size_t index, u32 layerStrideLsr2) {
@@ -381,7 +372,6 @@ namespace skyline::gpu::interconnect {
 
             renderTarget.guest.baseArrayLayer = static_cast<u16>(baseArrayLayer);
             renderTarget.view.reset();
-            renderTarget.guest.mappings.clear();
         }
 
         TextureView *GetRenderTarget(RenderTarget &renderTarget) {
@@ -395,12 +385,8 @@ namespace skyline::gpu::interconnect {
             else
                 renderTarget.guest.layerStride = 0; // We want to explicitly reset the stride to 0 for non-array textures
 
-            if (renderTarget.guest.mappings.empty()) {
-                size_t layerStride{renderTarget.guest.GetLayerStride()};
-                size_t size{layerStride * (renderTarget.guest.layerCount - renderTarget.guest.baseArrayLayer)};
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.iova, size)};
-                renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
-            }
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(renderTarget.iova, renderTarget.guest.GetSize())};
+            renderTarget.guest.mappings.assign(mappings.begin(), mappings.end());
 
             renderTarget.guest.viewType = [&]() {
                 if (renderTarget.is3d)
