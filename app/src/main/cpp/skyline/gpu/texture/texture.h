@@ -281,6 +281,8 @@ namespace skyline::gpu {
         u32 GetViewLayerCount() const;
 
         u32 GetViewDepth() const;
+
+        size_t GetSize();
     };
 
     class TextureManager;

@@ -2335,7 +2335,7 @@ namespace skyline::gpu::interconnect {
                     throw exception("Unsupported TIC Header Type: {}", static_cast<u32>(textureControl.headerType));
                 }
 
-                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), guest.GetLayerStride() * (guest.layerCount - guest.baseArrayLayer))};
+                auto mappings{channelCtx.asCtx->gmmu.TranslateRange(textureControl.Iova(), guest.GetSize())};
                 guest.mappings.assign(mappings.begin(), mappings.end());
             } else if (auto textureView{poolTexture.view.lock()}; textureView != nullptr) {
                 // If the entry already exists and the view is still valid then we return it directly

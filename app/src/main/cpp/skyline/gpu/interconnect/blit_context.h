@@ -103,8 +103,7 @@ namespace skyline::gpu::interconnect {
             }
 
             IOVA iova{surface.address};
-            size_t size{texture.GetLayerStride() * (texture.layerCount - texture.baseArrayLayer)};
-            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(iova, size)};
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(iova, texture.GetSize())};
             texture.mappings.assign(mappings.begin(), mappings.end());
 
             return texture;
