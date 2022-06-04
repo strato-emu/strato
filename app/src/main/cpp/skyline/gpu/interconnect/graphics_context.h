@@ -237,7 +237,7 @@ namespace skyline::gpu::interconnect {
                     FORMAT_SAME_CASE(R32G32, Float);
                     FORMAT_SAME_CASE(R16G16B16A16, Float);
                     FORMAT_NORM_INT_FLOAT_CASE(R16G16B16X16, R16G16B16A16);
-                    FORMAT_SAME_CASE(R32G32B32A32, Float);
+                    FORMAT_SAME_INT_FLOAT_CASE(R32G32B32A32);
                     FORMAT_INT_FLOAT_CASE(R32G32B32X32, R32G32B32A32);
 
                     default:
