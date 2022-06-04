@@ -11,6 +11,7 @@ namespace skyline::service::audio {
     Result IAudioOutManager::ListAudioOuts(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::memset(request.outputBuf.at(0).data(), 0, request.outputBuf.at(0).size());
         request.outputBuf.at(0).copy_from(constant::DefaultAudioOutName);
+        response.Push<u32>(1); // One audio out
         return {};
     }
 
