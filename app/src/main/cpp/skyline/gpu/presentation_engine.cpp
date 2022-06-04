@@ -121,10 +121,6 @@ namespace skyline::gpu {
             throw exception("Cannot update swapchain to accomodate image extent: {}x{} ({}x{}-{}x{})", extent.width, extent.height, capabilities.minImageExtent.width, capabilities.minImageExtent.height, capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
         vk::Format vkFormat{*format};
-        if (format == gpu::format::R5G6B5Unorm)
-            // B5G6R5 isn't generally supported by the swapchain and the format is used for R5G6B5 with swapped R/B channels to avoid aliasing so we reverse that by using R5G6B5 as the underlying Vulkan format for the swapchain which should be automatically handled by the driver for any copies from B5G6R5 textures and the data representation should be the same as B5G6R5 with swapped R/B channels so not reporting the correct texture::Format should be fine
-            vkFormat = vk::Format::eR5G6B5UnormPack16;
-
         if (swapchainFormat != format) {
             auto formats{gpu.vkPhysicalDevice.getSurfaceFormatsKHR(**vkSurface)};
             if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{vkFormat, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())

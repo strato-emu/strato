@@ -64,10 +64,7 @@ namespace skyline::gpu::format {
     FORMAT_NORM_INT_FLOAT(R16, 16, eR16);
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
-    FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swizzleMapping = {
-           .r = vk::ComponentSwizzle::eB,
-           .b = vk::ComponentSwizzle::eR
-    }); // Used by SurfaceFlinger
+    FORMAT(R5G6B5Unorm, 16, eR5G6B5UnormPack16);
     FORMAT(R4G4B4A4Unorm, 16, eR4G4B4A4UnormPack16, .swizzleMapping = {
            .r = vk::ComponentSwizzle::eA,
            .g = vk::ComponentSwizzle::eB,
