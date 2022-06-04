@@ -306,11 +306,12 @@ namespace skyline::service::hosbinder {
                 case AndroidPixelFormat::RGBX8888:
                     format = gpu::format::R8G8B8A8Unorm;
                     break;
-
+                case AndroidPixelFormat::BGRA8888:
+                    format = gpu::format::B8G8R8A8Unorm;
+                    break;
                 case AndroidPixelFormat::RGB565:
                     format = gpu::format::R5G6B5Unorm;
                     break;
-
                 default:
                     throw exception("Unknown format in buffer: '{}' ({})", ToString(handle.format), static_cast<u32>(handle.format));
             }
