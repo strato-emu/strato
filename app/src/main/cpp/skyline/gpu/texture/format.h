@@ -154,6 +154,11 @@ namespace skyline::gpu::format {
     FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth, .swizzleMapping = {
         .g = vk::ComponentSwizzle::eR
     });
+    FORMAT(D24UnormX8Uint, 32, eX8D24UnormPack32, .vkAspect = {
+           vka::eDepth
+    }, .swizzleMapping = {
+           .g = vk::ComponentSwizzle::eR
+    });
     FORMAT(D24UnormS8Uint, 32, eD24UnormS8Uint, .vkAspect = {
         vka::eStencil | vka::eDepth
     }, .swizzleMapping = {

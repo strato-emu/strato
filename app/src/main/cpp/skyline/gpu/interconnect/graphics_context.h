@@ -278,6 +278,8 @@ namespace skyline::gpu::interconnect {
                         return format::D32Float;
                     case MaxwellDepthRtFormat::S8D24Unorm:
                         return format::S8UintD24Unorm;
+                    case MaxwellDepthRtFormat::D24X8Unorm:
+                        return format::D24UnormX8Uint;
                     case MaxwellDepthRtFormat::D24S8Unorm:
                         return format::D24UnormS8Uint;
                     case MaxwellDepthRtFormat::D32S8X24Float:
