@@ -1789,6 +1789,9 @@ namespace skyline::gpu::interconnect {
                 /* 10-bit RGB, 2-bit A */
                 FORMAT_NORM_INT_SCALED_CASE(e10_10_10_2, eA2B10G10R10, Pack32);
 
+                /* 11-bit G and R, 10-bit B */
+                FORMAT_CASE(e11_11_10, Float, Ufloat, eB10G11R11, Pack32);
+
                 /* Unknown */
                 case 0x12F: return vk::Format::eUndefined; // Issued by Maxwell3D::InitializeRegisters()
 
