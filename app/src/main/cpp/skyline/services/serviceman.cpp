@@ -9,6 +9,7 @@
 #include "apm/IManager.h"
 #include "am/IApplicationProxyService.h"
 #include "am/IAllSystemAppletProxiesService.h"
+#include "audio/IAudioInManager.h"
 #include "audio/IAudioOutManager.h"
 #include "audio/IAudioRendererManager.h"
 #include "bcat/IServiceCreator.h"
@@ -78,6 +79,7 @@ namespace skyline::service {
             SERVICE_CASE(apm::IManager, "apm")
             SERVICE_CASE(am::IApplicationProxyService, "appletOE")
             SERVICE_CASE(am::IAllSystemAppletProxiesService, "appletAE")
+            SERVICE_CASE(audio::IAudioInManager, "audin:u")
             SERVICE_CASE(audio::IAudioOutManager, "audout:u")
             SERVICE_CASE(audio::IAudioRendererManager, "audren:u")
             SERVICE_CASE(codec::IHardwareOpusDecoderManager, "hwopus")
