@@ -120,6 +120,7 @@ namespace skyline::vfs {
                 });
             }
         }
+        closedir(directory);
 
         return outputEntries;
     }
