@@ -11,7 +11,10 @@
 #include "IApplicationFunctions.h"
 
 namespace skyline::service::am {
-    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager) : gpuErrorEvent(std::make_shared<type::KEvent>(state, false)), BaseService(state, manager) {}
+    IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager)
+        : BaseService(state, manager),
+          gpuErrorEvent(std::make_shared<type::KEvent>(state, false)),
+          friendInvitationStorageChannelEvent(std::make_shared<type::KEvent>(state, false)) {}
 
     Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
@@ -140,6 +143,13 @@ namespace skyline::service::am {
     Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(gpuErrorEvent)};
         Logger::Debug("GPU Error Event Handle: 0x{:X}", handle);
+        response.copyHandles.push_back(handle);
+        return {};
+    }
+
+    Result IApplicationFunctions::GetFriendInvitationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto handle{state.process->InsertItem(friendInvitationStorageChannelEvent)};
+        Logger::Debug("Friend Invitiation Storage Channel Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

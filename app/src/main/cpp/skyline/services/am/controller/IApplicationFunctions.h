@@ -20,6 +20,7 @@ namespace skyline::service::am {
     class IApplicationFunctions : public BaseService {
       private:
         std::shared_ptr<type::KEvent> gpuErrorEvent; //!< The event signalled on GPU errors
+        std::shared_ptr<type::KEvent> friendInvitationStorageChannelEvent; //!< The event signalled on friend invitations
 
       public:
         IApplicationFunctions(const DeviceState &state, ServiceManager &manager);
@@ -95,6 +96,11 @@ namespace skyline::service::am {
          */
         Result GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetFriendInvitationStorageChannelEvent
+         */
+        Result GetFriendInvitationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x1, IApplicationFunctions, PopLaunchParameter),
             SFUNC(0x14, IApplicationFunctions, EnsureSaveData),
@@ -107,7 +113,8 @@ namespace skyline::service::am {
             SFUNC(0x64, IApplicationFunctions, InitializeApplicationCopyrightFrameBuffer),
             SFUNC(0x65, IApplicationFunctions, SetApplicationCopyrightImage),
             SFUNC(0x66, IApplicationFunctions, SetApplicationCopyrightVisibility),
-            SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent)
+            SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent),
+            SFUNC(0x8C, IApplicationFunctions, GetFriendInvitationStorageChannelEvent)
         )
 
     };
