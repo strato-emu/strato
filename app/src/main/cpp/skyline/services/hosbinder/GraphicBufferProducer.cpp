@@ -573,6 +573,9 @@ namespace skyline::service::hosbinder {
             else if (surface.layout == NvSurfaceLayout::Tiled)
                 throw exception("Legacy 16Bx16 tiled surfaces are not supported");
 
+            defaultFormat = graphicBuffer->format;
+            defaultWidth = graphicBuffer->width;
+            defaultHeight = graphicBuffer->height;
             Logger::Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         } else {
             Logger::Debug("#{} - No GraphicBuffer", slot);
