@@ -65,19 +65,19 @@ namespace skyline::gpu::format {
     FORMAT_NORM_INT_SRGB(R8G8, 16, eR8G8);
     FORMAT(B5G6R5Unorm, 16, eB5G6R5UnormPack16);
     FORMAT(R5G6B5Unorm, 16, eB5G6R5UnormPack16, .swizzleMapping = {
-        .r = vk::ComponentSwizzle::eB,
-        .b = vk::ComponentSwizzle::eR
+           .r = vk::ComponentSwizzle::eB,
+           .b = vk::ComponentSwizzle::eR
     }); // Used by SurfaceFlinger
     FORMAT(R4G4B4A4Unorm, 16, eR4G4B4A4UnormPack16, .swizzleMapping = {
-        .r = vk::ComponentSwizzle::eA,
-        .g = vk::ComponentSwizzle::eB,
-        .b = vk::ComponentSwizzle::eG,
-        .a = vk::ComponentSwizzle::eR
+           .r = vk::ComponentSwizzle::eA,
+           .g = vk::ComponentSwizzle::eB,
+           .b = vk::ComponentSwizzle::eG,
+           .a = vk::ComponentSwizzle::eR
     });
     FORMAT(B5G5R5A1Unorm, 16, eB5G5R5A1UnormPack16);
     FORMAT(A1B5G5R5Unorm, 16, eA1R5G5B5UnormPack16, .swizzleMapping = {
-        .r = vk::ComponentSwizzle::eB,
-        .b = vk::ComponentSwizzle::eR
+           .r = vk::ComponentSwizzle::eB,
+           .b = vk::ComponentSwizzle::eR
     });
 
     FORMAT_INT_FLOAT(R32, 32, eR32);
@@ -85,8 +85,8 @@ namespace skyline::gpu::format {
     FORMAT(B10G11R11Float, 32, eB10G11R11UfloatPack32);
     FORMAT_NORM_INT_SRGB(R8G8B8A8, 32, eR8G8B8A8);
     FORMAT_NORM_INT_SRGB(B8G8R8A8, 32, eR8G8B8A8, .swizzleMapping = {
-        .r = vk::ComponentSwizzle::eB,
-        .b = vk::ComponentSwizzle::eR
+                         .r = vk::ComponentSwizzle::eB,
+                         .b = vk::ComponentSwizzle::eR
     }); // Used by SurfaceFlinger
     FORMAT_SUFF_NORM_INT(A2B10G10R10, 32, eA2B10G10R10, Pack32);
     FORMAT_SUFF_NORM_INT_SRGB(A8B8G8R8, 32, eA8B8G8R8, Pack32);
@@ -133,26 +133,26 @@ namespace skyline::gpu::format {
     );
 
     FORMAT_SUFF_UNORM_SRGB(Astc4x4, 128, eAstc4x4, Block,
-        .blockWidth = 4,
-        .blockHeight = 4
+                           .blockWidth = 4,
+                           .blockHeight = 4
     );
     FORMAT_SUFF_UNORM_SRGB(Astc6x6, 128, eAstc6x6, Block,
-       .blockWidth = 6,
-       .blockHeight = 6
+                           .blockWidth = 6,
+                           .blockHeight = 6
     );
     FORMAT_SUFF_UNORM_SRGB(Astc8x8, 128, eAstc8x8, Block,
-       .blockWidth = 8,
-       .blockHeight = 8
+                           .blockWidth = 8,
+                           .blockHeight = 8
     );
 
     // Depth/Stencil Formats
     // All of these have a G->R swizzle
     FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth, .swizzleMapping = {
-        .g = vk::ComponentSwizzle::eR
+           .g = vk::ComponentSwizzle::eR
     });
 
     FORMAT(D32Float, 32, eD32Sfloat, vka::eDepth, .swizzleMapping = {
-        .g = vk::ComponentSwizzle::eR
+           .g = vk::ComponentSwizzle::eR
     });
     FORMAT(D24UnormX8Uint, 32, eX8D24UnormPack32, .vkAspect = {
            vka::eDepth
@@ -160,19 +160,19 @@ namespace skyline::gpu::format {
            .g = vk::ComponentSwizzle::eR
     });
     FORMAT(D24UnormS8Uint, 32, eD24UnormS8Uint, .vkAspect = {
-        vka::eStencil | vka::eDepth
+           vka::eStencil | vka::eDepth
     }, .swizzleMapping = {
-        .g = vk::ComponentSwizzle::eR
+           .g = vk::ComponentSwizzle::eR
     });
     FORMAT(D32FloatS8Uint, 32, eD32SfloatS8Uint, .vkAspect = {
-        vka::eStencil | vka::eDepth
+           vka::eStencil | vka::eDepth
     }, .swizzleMapping = {
-        .g = vk::ComponentSwizzle::eR
+           .g = vk::ComponentSwizzle::eR
     });
     FORMAT(S8UintD24Unorm, 32, eD24UnormS8Uint, .vkAspect = {
-        vka::eStencil | vka::eDepth
+            vka::eStencil | vka::eDepth
     }, .swizzleMapping = {
-        .g = vk::ComponentSwizzle::eR
+           .g = vk::ComponentSwizzle::eR
     });
 
 
