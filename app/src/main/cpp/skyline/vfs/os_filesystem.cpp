@@ -39,7 +39,7 @@ namespace skyline::vfs {
     }
 
     bool OsFileSystem::CreateDirectoryImpl(const std::string &path, bool parents) {
-        auto fullPath{basePath + path};
+        auto fullPath{basePath + path + "/"};
 
         if (!parents) {
             int ret{mkdir(fullPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)};
