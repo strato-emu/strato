@@ -136,6 +136,10 @@ namespace skyline::gpu::format {
                            .blockWidth = 4,
                            .blockHeight = 4
     );
+    FORMAT_SUFF_UNORM_SRGB(Astc5x5, 128, eAstc5x5, Block,
+                           .blockWidth = 5,
+                           .blockHeight = 5
+    );
     FORMAT_SUFF_UNORM_SRGB(Astc6x6, 128, eAstc6x6, Block,
                            .blockWidth = 6,
                            .blockHeight = 6
@@ -143,6 +147,10 @@ namespace skyline::gpu::format {
     FORMAT_SUFF_UNORM_SRGB(Astc8x8, 128, eAstc8x8, Block,
                            .blockWidth = 8,
                            .blockHeight = 8
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc10x10, 128, eAstc10x10, Block,
+                           .blockWidth = 10,
+                           .blockHeight = 10
     );
 
     // Depth/Stencil Formats
