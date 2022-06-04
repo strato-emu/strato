@@ -65,10 +65,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         if (deferredDraw.pending) {
             switch (method) {
                 ENGINE_CASE(vertexBeginGl, {
-                    if (deferredDraw.drawTopology != vertexBeginGl.topology && !vertexBeginGl.instanceContinue)
-                        Logger::Warn("Vertex topology changed partway through instanced draw!");
-
                     if (vertexBeginGl.instanceNext) {
+                        if (deferredDraw.drawTopology != vertexBeginGl.topology && !vertexBeginGl.instanceContinue)
+                            Logger::Warn("Vertex topology changed partway through instanced draw!");
+
                         deferredDraw.instanceCount++;
                     } else if (vertexBeginGl.instanceContinue) {
                         FlushDeferredDraw();
