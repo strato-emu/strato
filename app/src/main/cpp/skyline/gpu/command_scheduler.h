@@ -23,12 +23,6 @@ namespace skyline::gpu {
             std::shared_ptr<FenceCycle> cycle; //!< The latest cycle on the fence, all waits must be performed through this
 
             CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool);
-
-            /**
-             * @brief Attempts to allocate the buffer if it is free (Not being recorded/executing)
-             * @return If the allocation was successful or not
-             */
-            static bool AllocateIfFree(CommandBufferSlot &slot);
         };
 
         GPU &gpu;
