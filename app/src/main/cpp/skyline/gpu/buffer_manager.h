@@ -60,13 +60,15 @@ namespace skyline::gpu {
      */
     class MegaBuffer {
       private:
-        BufferManager::MegaBufferSlot &slot;
+        BufferManager::MegaBufferSlot *slot;
         span<u8> freeRegion; //!< The unallocated space in the megabuffer
 
       public:
         MegaBuffer(BufferManager::MegaBufferSlot &slot);
 
         ~MegaBuffer();
+
+        MegaBuffer &operator=(MegaBuffer &&other);
 
         /**
          * @brief Resets the free region of the megabuffer to its initial state, data is left intact but may be overwritten

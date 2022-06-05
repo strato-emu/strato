@@ -46,29 +46,38 @@ namespace skyline::gpu {
          */
         class ActiveCommandBuffer {
           private:
-            CommandBufferSlot &slot;
+            CommandBufferSlot *slot;
 
           public:
-            constexpr ActiveCommandBuffer(CommandBufferSlot &slot) : slot(slot) {}
+            constexpr ActiveCommandBuffer(CommandBufferSlot &slot) : slot{&slot} {}
+
+            constexpr ActiveCommandBuffer &operator=(ActiveCommandBuffer &&other) {
+                if (slot)
+                    slot->active.clear(std::memory_order_release);
+                slot = other.slot;
+                other.slot = nullptr;
+                return *this;
+            }
 
             ~ActiveCommandBuffer() {
-                slot.active.clear(std::memory_order_release);
+                if (slot)
+                    slot->active.clear(std::memory_order_release);
             }
 
             vk::Fence GetFence() {
-                return *slot.fence;
+                return *slot->fence;
             }
 
             std::shared_ptr<FenceCycle> GetFenceCycle() {
-                return slot.cycle;
+                return slot->cycle;
             }
 
             vk::raii::CommandBuffer &operator*() {
-                return slot.commandBuffer;
+                return slot->commandBuffer;
             }
 
             vk::raii::CommandBuffer *operator->() {
-                return &slot.commandBuffer;
+                return &slot->commandBuffer;
             }
 
             /**
@@ -76,10 +85,10 @@ namespace skyline::gpu {
              * @note This should be used when a single allocated command buffer is used for all submissions from a component
              */
             std::shared_ptr<FenceCycle> Reset() {
-                slot.cycle->Wait();
-                slot.cycle = std::make_shared<FenceCycle>(slot.device, *slot.fence);
-                slot.commandBuffer.reset();
-                return slot.cycle;
+                slot->cycle->Wait();
+                slot->cycle = std::make_shared<FenceCycle>(slot->device, *slot->fence);
+                slot->commandBuffer.reset();
+                return slot->cycle;
             }
         };
 
