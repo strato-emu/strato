@@ -43,6 +43,12 @@ namespace skyline::gpu::interconnect {
          */
         void FinishRenderPass();
 
+        /**
+         * @brief Execute all the nodes and submit the resulting command buffer to the GPU
+         * @note It is the responsibility of the caller to handle resetting of command buffers, fence cycle and megabuffers
+         */
+        void SubmitInternal();
+
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         MegaBuffer megaBuffer; //!< The megabuffer used to temporarily store buffer modifications allowing them to be replayed in-sequence on the GPU
@@ -102,6 +108,11 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
          */
-        void Execute();
+        void Submit();
+
+        /**
+         * @brief Execute all the nodes and submit the resulting command buffer to the GPU then wait for the completion of the command buffer
+         */
+        void SubmitWithFlush();
     };
 }

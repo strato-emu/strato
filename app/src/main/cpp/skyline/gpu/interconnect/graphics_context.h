@@ -630,7 +630,7 @@ namespace skyline::gpu::interconnect {
                 T object;
                 std::scoped_lock lock{view};
                 view.Read(pExecutor.cycle, []() {
-                    // TODO: here we should trigger an execute, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
+                    // TODO: here we should trigger a SubmitWithFlush, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, span<T>(object).template cast<u8>(), dstOffset);
                 return object;

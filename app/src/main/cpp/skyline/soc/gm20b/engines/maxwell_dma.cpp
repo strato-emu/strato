@@ -36,7 +36,7 @@ namespace skyline::soc::gm20b::engine {
             return;
         }
 
-        executor.Execute();
+        executor.SubmitWithFlush();
         if (registers.launchDma->multiLineEnable) {
             if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch &&
                 registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)

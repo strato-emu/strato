@@ -5,7 +5,7 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu), activeCommandBuffer(gpu.scheduler.AllocateCommandBuffer()), cycle(activeCommandBuffer.GetFenceCycle()), megaBuffer(gpu.buffer.AcquireMegaBuffer(cycle)) {}
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu{*state.gpu}, activeCommandBuffer{gpu.scheduler.AllocateCommandBuffer()}, cycle{activeCommandBuffer.GetFenceCycle()}, megaBuffer{gpu.buffer.AcquireMegaBuffer(cycle)} {}
 
     CommandExecutor::~CommandExecutor() {
         cycle->Cancel();
@@ -168,67 +168,78 @@ namespace skyline::gpu::interconnect {
         flushCallbacks.emplace_back(std::forward<decltype(callback)>(callback));
     }
 
-    void CommandExecutor::Execute() {
-        if (!nodes.empty()) {
-            TRACE_EVENT("gpu", "CommandExecutor::Execute");
+    void CommandExecutor::SubmitInternal() {
+        if (renderPass)
+            FinishRenderPass();
 
-            if (renderPass)
-                FinishRenderPass();
+        {
+            auto &commandBuffer{*activeCommandBuffer};
+            commandBuffer.begin(vk::CommandBufferBeginInfo{
+                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+            });
 
-            {
-                auto &commandBuffer{*activeCommandBuffer};
-                commandBuffer.begin(vk::CommandBufferBeginInfo{
-                    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-                });
+            for (auto texture : attachedTextures) {
+                texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
+                texture->MarkGpuDirty();
+            }
 
-                for (auto texture : attachedTextures) {
-                    texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
-                    texture->MarkGpuDirty();
-                }
+            for (const auto &delegate : attachedBuffers)
+                delegate->usageCallback = nullptr;
 
-                for (const auto &delegate : attachedBuffers)
-                    delegate->usageCallback = nullptr;
+            vk::RenderPass lRenderPass;
+            u32 subpassIndex;
 
-                vk::RenderPass lRenderPass;
-                u32 subpassIndex;
+            using namespace node;
+            for (NodeVariant &node : nodes) {
+                #define NODE(name) [&](name& node) { node(commandBuffer, cycle, gpu); }
+                std::visit(VariantVisitor{
+                    NODE(FunctionNode),
 
-                using namespace node;
-                for (NodeVariant &node : nodes) {
-                    #define NODE(name) [&](name& node) { node(commandBuffer, cycle, gpu); }
-                    std::visit(VariantVisitor{
-                        NODE(FunctionNode),
+                    [&](RenderPassNode &node) {
+                        lRenderPass = node(commandBuffer, cycle, gpu);
+                        subpassIndex = 0;
+                    },
 
-                        [&](RenderPassNode &node) {
-                            lRenderPass = node(commandBuffer, cycle, gpu);
-                            subpassIndex = 0;
-                        },
+                    [&](NextSubpassNode &node) {
+                        node(commandBuffer, cycle, gpu);
+                        ++subpassIndex;
+                    },
+                    [&](SubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, subpassIndex); },
+                    [&](NextSubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, ++subpassIndex); },
 
-                        [&](NextSubpassNode &node) {
-                            node(commandBuffer, cycle, gpu);
-                            ++subpassIndex;
-                        },
-                        [&](SubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, subpassIndex); },
-                        [&](NextSubpassFunctionNode &node) { node(commandBuffer, cycle, gpu, lRenderPass, ++subpassIndex); },
+                    NODE(RenderPassEndNode),
+                }, node);
+                #undef NODE
+            }
 
-                        NODE(RenderPassEndNode),
-                    }, node);
-                    #undef NODE
-                }
-
-                commandBuffer.end();
-                gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
+            commandBuffer.end();
+            gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
 
                 for (const auto &delegate : attachedBuffers)
                     delegate->view->megabufferOffset = 0;
 
-                nodes.clear();
-                attachedTextures.clear();
-                attachedBuffers.clear();
+            nodes.clear();
+            attachedTextures.clear();
+            attachedBuffers.clear();
+        }
+    }
 
-                cycle = activeCommandBuffer.Reset();
+    void CommandExecutor::Submit() {
+        if (!nodes.empty()) {
+            TRACE_EVENT("gpu", "CommandExecutor::Submit");
+            SubmitInternal();
+            activeCommandBuffer = gpu.scheduler.AllocateCommandBuffer();
+            cycle = activeCommandBuffer.GetFenceCycle();
+            megaBuffer = gpu.buffer.AcquireMegaBuffer(cycle);
+        }
+    }
 
-                megaBuffer.Reset();
-            }
+    void CommandExecutor::SubmitWithFlush() {
+        if (!nodes.empty()) {
+            TRACE_EVENT("gpu", "CommandExecutor::SubmitWithFlush");
+            SubmitInternal();
+            cycle = activeCommandBuffer.Reset();
+            megaBuffer.Reset();
         }
     }
 }
