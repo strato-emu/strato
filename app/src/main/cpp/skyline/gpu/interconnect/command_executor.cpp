@@ -5,7 +5,7 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu), activeCommandBuffer(gpu.scheduler.AllocateCommandBuffer()), cycle(activeCommandBuffer.GetFenceCycle()) {}
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu(*state.gpu), activeCommandBuffer(gpu.scheduler.AllocateCommandBuffer()), cycle(activeCommandBuffer.GetFenceCycle()), megaBuffer(gpu.buffer.AcquireMegaBuffer(cycle)) {}
 
     CommandExecutor::~CommandExecutor() {
         cycle->Cancel();
@@ -227,7 +227,7 @@ namespace skyline::gpu::interconnect {
 
                 cycle = activeCommandBuffer.Reset();
 
-                gpu.buffer.megaBuffer.Reset();
+                megaBuffer.Reset();
             }
         }
     }

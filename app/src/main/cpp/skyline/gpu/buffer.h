@@ -11,6 +11,7 @@ namespace skyline::gpu {
 
     struct BufferView;
     class BufferManager;
+    class MegaBuffer;
 
     /**
      * @brief A buffer which is backed by host constructs while being synchronized with the underlying guest buffer
@@ -234,7 +235,7 @@ namespace skyline::gpu {
          * @note This will only push into the megabuffer when there have been modifications after the previous acquire, otherwise the previous offset will be reused
          * @note An implicit CPU -> GPU sync will be performed when calling this, an immediate GPU -> CPU sync will also be attempted if the buffer is GPU dirty in the hope that megabuffering can be reenabled
          */
-        vk::DeviceSize AcquireMegaBuffer();
+        vk::DeviceSize AcquireMegaBuffer(MegaBuffer& megaBuffer);
 
         /**
          * @brief Forces the buffer contents to be pushed into the megabuffer on the next AcquireMegaBuffer call
@@ -333,7 +334,7 @@ namespace skyline::gpu {
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::AcquireMegaBuffer
          */
-        vk::DeviceSize AcquireMegaBuffer() const;
+        vk::DeviceSize AcquireMegaBuffer(MegaBuffer& megaBuffer) const;
 
         /**
          * @return A span of the backing buffer contents

@@ -267,7 +267,7 @@ namespace skyline::gpu {
         return BufferView{shared_from_this(), &views.back()};
     }
 
-    vk::DeviceSize Buffer::AcquireMegaBuffer() {
+    vk::DeviceSize Buffer::AcquireMegaBuffer(MegaBuffer& megaBuffer) {
         SynchronizeGuest(false, true); // First try and enable megabuffering by doing an immediate sync
 
         if (!megaBufferingEnabled)
@@ -278,7 +278,7 @@ namespace skyline::gpu {
         if (megaBufferOffset)
             return megaBufferOffset; // If the current buffer contents haven't been changed since the last acquire, we can just return the existing offset
 
-        megaBufferOffset = gpu.buffer.megaBuffer.Push(backing, true); // Buffers are required to be page aligned in the megabuffer
+        megaBufferOffset = megaBuffer.Push(backing, true); // Buffers are required to be page aligned in the megabuffer
         return megaBufferOffset;
     }
 
@@ -370,8 +370,8 @@ namespace skyline::gpu {
         bufferDelegate->buffer->Write(pCycle, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
 
-    vk::DeviceSize BufferView::AcquireMegaBuffer() const {
-        vk::DeviceSize bufferOffset{bufferDelegate->buffer->AcquireMegaBuffer()};
+    vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer& megaBuffer) const {
+        vk::DeviceSize bufferOffset{bufferDelegate->buffer->AcquireMegaBuffer(megaBuffer)};
 
         // Propagate 0 results since they signify that megabuffering isn't supported for a buffer
         if (bufferOffset)
