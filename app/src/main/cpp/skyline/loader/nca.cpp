@@ -41,7 +41,7 @@ namespace skyline::loader {
             offset += loadInfo.size;
         }
 
-        state.process->memory.InitializeRegions(base, offset);
+        state.process->memory.InitializeRegions(span<u8>{base, offset});
 
         return entry;
     }

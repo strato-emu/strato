@@ -180,15 +180,6 @@ namespace skyline {
             constexpr MemoryState CodeWritable{0x00402015};
         }
 
-        struct Region {
-            u64 address;
-            size_t size;
-
-            bool IsInside(void *ptr) {
-                return (address <= reinterpret_cast<u64>(ptr)) && ((address + size) > reinterpret_cast<u64>(ptr));
-            }
-        };
-
         enum class AddressSpaceType : u8 {
             AddressSpace32Bit = 0, //!< 32-bit address space used by 32-bit applications
             AddressSpace36Bit = 1, //!< 36-bit address space used by 64-bit applications before 2.0.0
@@ -219,13 +210,13 @@ namespace skyline {
             std::vector<ChunkDescriptor> chunks;
 
           public:
-            memory::Region addressSpace{}; //!< The entire address space
-            memory::Region base{}; //!< The application-accessible address space
-            memory::Region code{};
-            memory::Region alias{};
-            memory::Region heap{};
-            memory::Region stack{};
-            memory::Region tlsIo{}; //!< TLS/IO
+            span<u8> addressSpace{}; //!< The entire address space
+            span<u8> base{}; //!< The application-accessible address space
+            span<u8> code{};
+            span<u8> alias{};
+            span<u8> heap{};
+            span<u8> stack{};
+            span<u8> tlsIo{}; //!< TLS/IO
 
             FileDescriptor memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
 
@@ -240,14 +231,14 @@ namespace skyline {
              */
             void InitializeVmm(memory::AddressSpaceType type);
 
-            void InitializeRegions(u8 *codeStart, u64 size);
+            void InitializeRegions(span<u8> codeRegion);
 
             /**
              * @brief Mirrors a page-aligned mapping in the guest address space to the host address space
              * @return A span to the host address space mirror mapped as RWX, unmapping it is the responsibility of the caller
              * @note The supplied mapping **must** be page-aligned and inside the guest address space
              */
-            span<u8> CreateMirror(u8* pointer, size_t size);
+            span<u8> CreateMirror(span<u8> mapping);
 
             /**
              * @brief Mirrors multiple page-aligned mapping in the guest address space to the host address space
@@ -256,13 +247,13 @@ namespace skyline {
              * @note The supplied mapping **must** be page-aligned and inside the guest address space
              * @note If a single mapping is mirrored, it is recommended to use CreateMirror instead
              */
-            span<u8> CreateMirrors(const std::vector<span<u8>>& regions);
+            span<u8> CreateMirrors(const std::vector<span<u8>> &regions);
 
             /**
              * @brief Frees the underlying physical memory for a page-aligned mapping in the guest address space
              * @note All subsequent accesses to freed memory will return 0s
              */
-            void FreeMemory(u8* pointer, size_t size);
+            void FreeMemory(span<u8> memory);
 
             void InsertChunk(const ChunkDescriptor &chunk);
 

@@ -15,32 +15,21 @@ namespace skyline::kernel::type {
         memory::MemoryState memoryState; //!< The state of the memory as supplied initially, this is retained for any mappings
 
       public:
-        struct MapInfo {
-            u8 *ptr;
-            size_t size;
-
-            constexpr bool Valid() {
-                return ptr && size;
-            }
-        } host{}, guest{}; //!< We keep two mirrors of the underlying shared memory for guest access and host access, the host mirror is persistently mapped and should be used by anything accessing the memory on the host
+        span<u8> host; //!< We also keep a host mirror of the underlying shared memory for host access, it is persistently mapped and should be used by anything accessing the memory on the host
 
         KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState = memory::states::SharedMemory, KType type = KType::KSharedMemory);
 
         /**
          * @note 'ptr' needs to be in guest-reserved address space
          */
-        u8 *Map(u8 *ptr, u64 size, memory::Permission permission);
+        u8 *Map(span<u8> map, memory::Permission permission);
 
         /**
          * @note 'ptr' needs to be in guest-reserved address space
          */
-        void Unmap(u8 *ptr, u64 size);
+        void Unmap(span<u8> map);
 
-        span<u8> Get() override {
-            return span(guest.ptr, guest.size);
-        }
-
-        void UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) override;
+        void UpdatePermission(span<u8> map, memory::Permission permission) override;
 
         /**
          * @brief The destructor of shared memory, it deallocates the memory from all processes

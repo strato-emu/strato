@@ -21,7 +21,7 @@ namespace skyline::service::codec {
             throw exception("Work Buffer doesn't have adequate space for Opus Decoder: 0x{:X} (Required: 0x{:X})", workBufferSize, decoderOutputBufferSize);
 
         // We utilize the guest-supplied work buffer for allocating the OpusDecoder object into
-        decoderState = reinterpret_cast<OpusDecoder *>(workBuffer->host.ptr);
+        decoderState = reinterpret_cast<OpusDecoder *>(workBuffer->host.data());
 
         if (int result = opus_decoder_init(decoderState, sampleRate, channelCount) != OPUS_OK)
             throw OpusException(result);

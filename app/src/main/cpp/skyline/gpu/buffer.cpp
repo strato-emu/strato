@@ -17,7 +17,7 @@ namespace skyline::gpu {
         u8 *alignedData{util::AlignDown(guest->data(), PAGE_SIZE)};
         size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), PAGE_SIZE) - alignedData)};
 
-        alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
+        alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
         mirror = alignedMirror.subspan(static_cast<size_t>(guest->data() - alignedData), guest->size());
 
         trapHandle = gpu.state.nce->TrapRegions(*guest, true, [this] {
@@ -264,7 +264,7 @@ namespace skyline::gpu {
         return BufferView{shared_from_this(), &(*it)};
     }
 
-    vk::DeviceSize Buffer::AcquireMegaBuffer(MegaBuffer& megaBuffer) {
+    vk::DeviceSize Buffer::AcquireMegaBuffer(MegaBuffer &megaBuffer) {
         SynchronizeGuest(false, true); // First try and enable megabuffering by doing an immediate sync
 
         if (!megaBufferingEnabled)
@@ -367,7 +367,7 @@ namespace skyline::gpu {
         bufferDelegate->buffer->Write(pCycle, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
 
-    vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer& megaBuffer) const {
+    vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer &megaBuffer) const {
         vk::DeviceSize bufferOffset{bufferDelegate->buffer->AcquireMegaBuffer(megaBuffer)};
 
         // Propagate 0 results since they signify that megabuffering isn't supported for a buffer

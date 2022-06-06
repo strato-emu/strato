@@ -87,6 +87,13 @@ namespace skyline {
         }
 
         /**
+         * @return If a supplied address is located inside this span
+         */
+        constexpr bool contains(const T *address) const {
+            return this->data() <= address && this->end().base() > address;
+        }
+
+        /**
          * @return If the span is valid by not being null
          */
         constexpr bool valid() const {

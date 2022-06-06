@@ -12,8 +12,6 @@ namespace skyline::kernel::type {
      */
     class KPrivateMemory : public KMemory {
       public:
-        u8 *ptr{};
-        size_t size{};
         memory::Permission permission;
         memory::MemoryState memoryState;
 
@@ -21,7 +19,7 @@ namespace skyline::kernel::type {
          * @param permission The permissions for the allocated memory (As reported to the application, host memory permissions aren't reflected by this)
          * @note 'ptr' needs to be in guest-reserved address space
          */
-        KPrivateMemory(const DeviceState &state, u8 *ptr, size_t size, memory::Permission permission, memory::MemoryState memState);
+        KPrivateMemory(const DeviceState &state, span<u8> guest, memory::Permission permission, memory::MemoryState memState);
 
         /**
          * @note There is no check regarding if any expansions will cause the memory mapping to leak into other mappings
@@ -32,13 +30,9 @@ namespace skyline::kernel::type {
         /**
          * @note This does not copy over anything, only contents of any overlapping regions will be retained
          */
-        void Remap(u8 *ptr, size_t size);
+        void Remap(span<u8> map);
 
-        span<u8> Get() override {
-            return span(ptr, size);
-        }
-
-        void UpdatePermission(u8 *pPtr, size_t pSize, memory::Permission pPermission) override;
+        void UpdatePermission(span<u8> map, memory::Permission pPermission) override;
 
         /**
          * @brief The destructor of private memory, it deallocates the memory

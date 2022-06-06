@@ -12,12 +12,12 @@ namespace skyline::kernel::type {
      */
     class KMemory : public KObject {
       public:
-        KMemory(const DeviceState &state, KType objectType) : KObject(state, objectType) {}
+        KMemory(const DeviceState &state, KType objectType, span <u8> guest) : KObject(state, objectType), guest(guest) {}
 
         /**
          * @return A span representing the memory object on the guest
          */
-        virtual span<u8> Get() = 0;
+        span <u8> guest;
 
         /**
          * @brief Updates the permissions of a block of mapped memory
@@ -25,12 +25,7 @@ namespace skyline::kernel::type {
          * @param size The size of the partition to change the permissions of
          * @param permission The new permissions to be set for the memory
          */
-        virtual void UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) = 0;
-
-        bool IsInside(u8 *ptr) {
-            auto spn{Get()};
-            return (spn.data() <= ptr) && ((spn.data() + spn.size()) > ptr);
-        }
+        virtual void UpdatePermission(span <u8> map, memory::Permission permission) = 0;
 
         virtual ~KMemory() = default;
     };

@@ -10,34 +10,34 @@
 namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, size_t size, memory::MemoryState memState, KType type)
         : memoryState(memState),
-          KMemory(state, type) {
+          KMemory(state, type, span<u8>{}) {
         fd = ASharedMemory_create(type == KType::KSharedMemory ? "HOS-KSharedMemory" : "HOS-KTransferMemory", size);
         if (fd < 0)
             throw exception("An error occurred while creating shared memory: {}", fd);
 
-        host.ptr = static_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0));
-        if (host.ptr == MAP_FAILED)
+        auto hostPtr{static_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0))};
+        if (hostPtr == MAP_FAILED)
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
-        host.size = size;
+        host = span<u8>{hostPtr, size};
     }
 
-    u8 *KSharedMemory::Map(u8 *ptr, u64 size, memory::Permission permission) {
-        if (!state.process->memory.base.IsInside(ptr) || !state.process->memory.base.IsInside(ptr + size))
-            throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
-            throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
-        if (guest.Valid())
-            throw exception("Mapping KSharedMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
+    u8 *KSharedMemory::Map(span<u8> map, memory::Permission permission) {
+        if (!state.process->memory.base.contains(map))
+            throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
+        if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size()))
+            throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());
+        if (guest.valid())
+            throw exception("Mapping KSharedMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
 
-        guest.ptr = static_cast<u8 *>(mmap(ptr, size, permission.Get(), MAP_SHARED | (ptr ? MAP_FIXED : 0), fd, 0));
-        if (guest.ptr == MAP_FAILED)
+        auto guestPtr{static_cast<u8 *>(mmap(map.data(), map.size(), permission.Get(), MAP_SHARED | (map.data() ? MAP_FIXED : 0), fd, 0))};
+        if (guestPtr == MAP_FAILED)
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
-        guest.size = size;
+        guest = span<u8>{guestPtr, map.size()};
 
         state.process->memory.InsertChunk(ChunkDescriptor{
-            .ptr = guest.ptr,
-            .size = size,
+            .ptr = guest.data(),
+            .size = guest.size(),
             .permission = permission,
             .state = memoryState,
             .attributes = memory::MemoryAttribute{
@@ -45,41 +45,41 @@ namespace skyline::kernel::type {
             },
         });
 
-        return guest.ptr;
+        return guest.data();
     }
 
-    void KSharedMemory::Unmap(u8 *ptr, u64 size) {
+    void KSharedMemory::Unmap(span<u8> map) {
         auto &memoryManager{state.process->memory};
-        if (!memoryManager.base.IsInside(ptr) || !memoryManager.base.IsInside(ptr + size))
-            throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", ptr, ptr + size);
-        if (!util::IsPageAligned(ptr) || !util::IsPageAligned(size))
-            throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size);
-        if (guest.ptr != ptr && guest.size != size)
-            throw exception("Unmapping KSharedMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", ptr, ptr + size, size, guest.ptr, guest.ptr + guest.size, guest.size);
+        if (!memoryManager.base.contains(map))
+            throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
+        if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size()))
+            throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());
+        if (guest.data() != map.data() && guest.size() != map.size())
+            throw exception("Unmapping KSharedMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
 
-        if (mmap(ptr, size, PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(ptr - memoryManager.base.address)) == MAP_FAILED)
+        if (mmap(map.data(), map.size(), PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(map.data() - memoryManager.base.data())) == MAP_FAILED)
             throw exception("An error occurred while unmapping shared memory in guest: {}", strerror(errno));
 
-        guest = {};
+        guest = span<u8>{};
         memoryManager.InsertChunk(ChunkDescriptor{
-            .ptr = ptr,
-            .size = size,
+            .ptr = map.data(),
+            .size = map.size(),
             .state = memory::states::Unmapped,
         });
     }
 
-    void KSharedMemory::UpdatePermission(u8 *ptr, size_t size, memory::Permission permission) {
-        if (ptr && !util::IsPageAligned(ptr))
-            throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", ptr);
+    void KSharedMemory::UpdatePermission(span<u8> map, memory::Permission permission) {
+        if (map.valid() && !util::IsPageAligned(map.data()))
+            throw exception("KSharedMemory permission updated with a non-page-aligned address: 0x{:X}", map.data());
 
-        if (guest.Valid()) {
-            mprotect(ptr, size, permission.Get());
-            if (guest.ptr == MAP_FAILED)
+        if (guest.valid()) {
+            mprotect(map.data(), map.size(), permission.Get());
+            if (guest.data() == MAP_FAILED)
                 throw exception("An error occurred while updating shared memory's permissions in guest: {}", strerror(errno));
 
             state.process->memory.InsertChunk(ChunkDescriptor{
-                .ptr = ptr,
-                .size = size,
+                .ptr = map.data(),
+                .size = map.size(),
                 .permission = permission,
                 .state = memoryState,
                 .attributes = memory::MemoryAttribute{
@@ -90,31 +90,30 @@ namespace skyline::kernel::type {
     }
 
     KSharedMemory::~KSharedMemory() {
-        if (state.process && guest.Valid()) {
+        if (state.process && guest.valid()) {
             auto &memoryManager{state.process->memory};
             if (objectType != KType::KTransferMemory) {
-                if (mmap(guest.ptr, guest.size, PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.ptr - memoryManager.base.address)) == MAP_FAILED)
+                if (mmap(guest.data(), guest.size(), PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.data() - memoryManager.base.data())) == MAP_FAILED)
                     Logger::Warn("An error occurred while unmapping shared memory: {}", strerror(errno));
 
                 state.process->memory.InsertChunk(ChunkDescriptor{
-                    .ptr = guest.ptr,
-                    .size = guest.size,
+                    .ptr = guest.data(),
+                    .size = guest.size(),
                     .state = memory::states::Unmapped,
                 });
             } else {
                 // KTransferMemory remaps the region with R/W permissions during destruction
                 constexpr memory::Permission UnborrowPermission{true, true, false};
 
-                if (mmap(guest.ptr, guest.size, UnborrowPermission.Get(), MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.ptr - memoryManager.base.address)) == MAP_FAILED)
+                if (mmap(guest.data(), guest.size(), UnborrowPermission.Get(), MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.data() - memoryManager.base.data())) == MAP_FAILED)
                     Logger::Warn("An error occurred while remapping transfer memory: {}", strerror(errno));
-                else if (!host.Valid())
+                else if (!host.valid())
                     Logger::Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");
-
-                std::memcpy(guest.ptr, host.ptr, host.size);
+                guest.copy_from(host);
 
                 state.process->memory.InsertChunk(ChunkDescriptor{
-                    .ptr = guest.ptr,
-                    .size = guest.size,
+                    .ptr = guest.data(),
+                    .size = guest.size(),
                     .permission = UnborrowPermission,
                     .state = memoryState,
                     .attributes = memory::MemoryAttribute{
@@ -124,8 +123,8 @@ namespace skyline::kernel::type {
             }
         }
 
-        if (host.Valid())
-            munmap(host.ptr, host.size);
+        if (host.valid())
+            munmap(host.data(), host.size());
 
         close(fd);
     }

@@ -134,7 +134,7 @@ namespace skyline::gpu {
             u8 *alignedData{util::AlignDown(mapping.data(), PAGE_SIZE)};
             size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), PAGE_SIZE) - alignedData)};
 
-            alignedMirror = gpu.state.process->memory.CreateMirror(alignedData, alignedSize);
+            alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
             mirror = alignedMirror.subspan(static_cast<size_t>(mapping.data() - alignedData), mapping.size());
         } else {
             std::vector<span<u8>> alignedMappings;

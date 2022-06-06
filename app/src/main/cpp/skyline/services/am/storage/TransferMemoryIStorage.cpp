@@ -9,7 +9,7 @@ namespace skyline::service::am {
     TransferMemoryIStorage::TransferMemoryIStorage(const DeviceState &state, ServiceManager &manager, std::shared_ptr<kernel::type::KTransferMemory> transferMemory, bool writable) : transferMemory(std::move(transferMemory)), IStorage(state, manager, writable) {}
 
     span<u8> TransferMemoryIStorage::GetSpan() {
-        return transferMemory->Get();
+        return transferMemory->host;
     }
 
     TransferMemoryIStorage::~TransferMemoryIStorage() = default;

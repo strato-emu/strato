@@ -38,11 +38,11 @@ namespace skyline::service::pl {
             constexpr u32 SharedFontKey{SharedFontMagic ^ SharedFontResult}; //!< The XOR key for encrypting the font size
 
             auto fontsDirectory{std::make_shared<vfs::OsFileSystem>(state.os->publicAppFilesPath + "fonts/")};
-            auto ptr{reinterpret_cast<u32 *>(sharedFontMemory->host.ptr)};
+            auto ptr{reinterpret_cast<u32 *>(sharedFontMemory->host.data())};
             for (auto &font : fonts) {
                 *ptr++ = 0x18029a7f;
                 *ptr++ = util::SwapEndianness(font.length ^ 0x49621806);
-                font.offset = static_cast<u32>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(sharedFontMemory->host.ptr));
+                font.offset = static_cast<u32>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(sharedFontMemory->host.data()));
 
                 std::shared_ptr<vfs::Backing> fontFile;
                 if (fontsDirectory->FileExists(font.path))

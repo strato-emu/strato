@@ -461,7 +461,7 @@ namespace skyline::nce {
 
                 constexpr ssize_t MinimumPageoutSize{PAGE_SIZE}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
                 if (freeSize > MinimumPageoutSize)
-                    state.process->memory.FreeMemory(freeStart, static_cast<size_t>(freeSize));
+                    state.process->memory.FreeMemory(span<u8>{freeStart, static_cast<size_t>(freeSize)});
             }
         }
     }

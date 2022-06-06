@@ -13,7 +13,7 @@ namespace skyline::kernel::type {
     u8 *KProcess::TlsPage::ReserveSlot() {
         if (index == constant::TlsSlots)
             return nullptr;
-        return memory->ptr + (constant::TlsSlotSize * index++);
+        return memory->guest.data() + (constant::TlsSlotSize * index++);
     }
 
     KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
@@ -46,7 +46,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
-        heap = std::make_shared<KPrivateMemory>(state, reinterpret_cast<u8 *>(state.process->memory.heap.address), DefaultHeapSize, memory::Permission{true, true, false}, memory::states::Heap);
+        heap = std::make_shared<KPrivateMemory>(state, span<u8>{state.process->memory.heap.data(), DefaultHeapSize}, memory::Permission{true, true, false}, memory::states::Heap);
         InsertItem(heap); // Insert it into the handle table so GetMemoryObject will contain it
         tlsExceptionContext = AllocateTlsSlot();
     }
@@ -58,8 +58,8 @@ namespace skyline::kernel::type {
             if ((slot = tlsPage->ReserveSlot()))
                 return slot;
 
-        slot = tlsPages.empty() ? reinterpret_cast<u8 *>(memory.tlsIo.address) : ((*(tlsPages.end() - 1))->memory->ptr + PAGE_SIZE);
-        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, slot, PAGE_SIZE, memory::Permission(true, true, false), memory::states::ThreadLocal))};
+        slot = tlsPages.empty() ? reinterpret_cast<u8 *>(memory.tlsIo.data()) : ((*(tlsPages.end() - 1))->memory->guest.data() + PAGE_SIZE);
+        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, span<u8>{slot, PAGE_SIZE}, memory::Permission(true, true, false), memory::states::ThreadLocal))};
         tlsPages.push_back(tlsPage);
         return tlsPage->ReserveSlot();
     }
@@ -69,8 +69,8 @@ namespace skyline::kernel::type {
         if (disableThreadCreation)
             return nullptr;
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
-            mainThreadStack = std::make_shared<KPrivateMemory>(state, reinterpret_cast<u8 *>(state.process->memory.stack.address), state.process->npdm.meta.mainThreadStackSize, memory::Permission{true, true, false}, memory::states::Stack);
-            stackTop = mainThreadStack->ptr + mainThreadStack->size;
+            mainThreadStack = std::make_shared<KPrivateMemory>(state, span<u8>{state.process->memory.stack.data(), state.process->npdm.meta.mainThreadStackSize}, memory::Permission{true, true, false}, memory::states::Stack);
+            stackTop = mainThreadStack->guest.end().base();
         }
         auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
         threads.push_back(thread);
@@ -88,7 +88,7 @@ namespace skyline::kernel::type {
                     case type::KType::KSharedMemory:
                     case type::KType::KTransferMemory: {
                         auto mem{std::static_pointer_cast<type::KMemory>(object)};
-                        if (mem->IsInside(ptr))
+                        if (mem->guest.contains(ptr))
                             return std::make_optional<KProcess::HandleOut<KMemory>>({mem, constant::BaseHandleIndex + index});
                     }
 
