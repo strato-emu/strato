@@ -3,6 +3,13 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
+    id 'idea'
+}
+
+idea.module {
+    // These are not viable to index on most systems to exclude them to prevent IDE crashes
+    excludeDirs.add(file("libraries/boost"))
+    excludeDirs.add(file("libraries/llvm"))
 }
 
 android {
