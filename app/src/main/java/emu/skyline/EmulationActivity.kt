@@ -10,11 +10,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
 import android.graphics.PointF
+import android.hardware.display.DisplayManager
 import android.os.*
 import android.util.Log
 import android.util.Rational
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.updateMargins
@@ -27,8 +29,9 @@ import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
 
+
 @AndroidEntryPoint
-class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener {
+class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener, DisplayManager.DisplayListener {
     companion object {
         private val Tag = EmulationActivity::class.java.simpleName
         val ReturnToMainTag = "returnToMain"
@@ -179,6 +182,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     /**
+     * Forces a 60Hz refresh rate for the primary display when [enable] is true, otherwise selects the highest available refresh rate
+     */
+    private fun force60HzRefreshRate(enable : Boolean) {
+        // Hack for MIUI devices since they don't support the standard Android APIs
+        try {
+            val setFpsIntent = Intent("com.miui.powerkeeper.SET_ACTIVITY_FPS")
+            setFpsIntent.putExtra("package_name", "skyline.emu")
+            setFpsIntent.putExtra("isEnter", enable)
+            sendBroadcast(setFpsIntent)
+        } catch (_ : Exception) {
+        }
+
+        @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
+        if (enable)
+            display?.supportedModes?.minByOrNull { abs(it.refreshRate - 60f) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+        else
+            display?.supportedModes?.maxByOrNull { it.refreshRate }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+    }
+
+    /**
      * Return from emulation to either [MainActivity] or the activity on the back stack
      */
     fun returnFromEmulation() {
@@ -275,12 +298,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             }
         }
 
-        @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
-        if (settings.maxRefreshRate) {
-            display?.supportedModes?.maxByOrNull { it.refreshRate * it.physicalHeight * it.physicalWidth }?.let { window.attributes.preferredDisplayModeId = it.modeId; desiredRefreshRate = it.refreshRate }
-        } else {
-            display?.supportedModes?.minByOrNull { abs(it.refreshRate - 60f) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
-        }
+        force60HzRefreshRate(!settings.maxRefreshRate)
+        getSystemService<DisplayManager>()?.registerDisplayListener(this, null)
 
         binding.gameView.setOnTouchListener(this)
 
@@ -343,6 +362,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         stopEmulation(false)
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
+
+        // Stop forcing 60Hz on exit to allow the skyline UI to run at high refresh rates
+        getSystemService<DisplayManager>()?.unregisterDisplayListener(this)
+        force60HzRefreshRate(false);
     }
 
     override fun surfaceCreated(holder : SurfaceHolder) {
@@ -573,4 +596,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
         insets
     }
+
+    override fun onDisplayChanged(displayId : Int) {
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
+        if (display.displayId == displayId)
+            force60HzRefreshRate(!settings.maxRefreshRate)
+    }
+
+    override fun onDisplayAdded(displayId : Int) {}
+
+    override fun onDisplayRemoved(displayId : Int) {}
 }
