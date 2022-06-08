@@ -5,6 +5,9 @@
 
 #include <common/base.h>
 
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_enums.hpp>
+
 namespace skyline::gpu::interconnect::conversion::quads {
     constexpr u32 EmittedIndexCount{6}; //!< The number of indices needed to draw a quad with two triangles
     constexpr u32 QuadVertexCount{4}; //!< The amount of vertices a quad is composed of
@@ -18,11 +21,21 @@ namespace skyline::gpu::interconnect::conversion::quads {
 
     /**
      * @return The minimum size (in bytes) required to store the quad index buffer of the given type after conversion
-     * @tparam T The type of an element in the index buffer
+     * @param type The type of an element in the index buffer
      */
-    template<typename T>
-    constexpr size_t GetRequiredBufferSize(u32 count) {
-        return GetIndexCount(count) * sizeof(T);
+    constexpr size_t GetRequiredBufferSize(u32 count, vk::IndexType type) {
+        return GetIndexCount(count) * [&]() -> size_t {
+            switch (type) {
+                case vk::IndexType::eUint32:
+                    return sizeof(u32);
+                case vk::IndexType::eUint16:
+                    return sizeof(u16);
+                case vk::IndexType::eUint8EXT:
+                    return sizeof(u8);
+                default:
+                    return 0;
+            }
+        }();
     }
 
     /**

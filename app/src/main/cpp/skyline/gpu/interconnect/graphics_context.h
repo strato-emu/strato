@@ -1688,7 +1688,7 @@ namespace skyline::gpu::interconnect {
          * @result A tuple containing a view over the index buffer, the index type and the index count
          */
         std::tuple<BufferView, vk::IndexType, u32> GetQuadListConversionBuffer(u32 count) {
-            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize<u32>(count)};
+            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, vk::IndexType::eUint32)};
             if (!quadListConversionBuffer || quadListConversionBuffer->GetBackingSpan().size_bytes() < size) {
                 quadListConversionBuffer = std::make_shared<Buffer>(gpu, size);
                 conversion::quads::GenerateQuadListConversionBuffer(quadListConversionBuffer->GetBackingSpan().cast<u32>().data(), count);
