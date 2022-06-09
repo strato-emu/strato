@@ -82,7 +82,7 @@ namespace skyline::service::hosbinder {
         /**
          * @return If the rectangle had any defined bounds
          */
-        constexpr operator bool() {
+        constexpr operator bool() const {
             return left || top || right || bottom;
         }
 

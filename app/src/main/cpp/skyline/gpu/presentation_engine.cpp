@@ -7,6 +7,7 @@
 #include <common/signal.h>
 #include <jvm.h>
 #include <gpu.h>
+#include <soc.h>
 #include <loader/loader.h>
 #include <kernel/types/KProcess.h>
 #include "presentation_engine.h"
@@ -21,12 +22,13 @@ namespace skyline::gpu {
     using namespace service::hosbinder;
 
     PresentationEngine::PresentationEngine(const DeviceState &state, GPU &gpu)
-        : state(state),
-          gpu(gpu),
-          acquireFence(gpu.vkDevice, vk::FenceCreateInfo{}),
-          presentationTrack(static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()),
-          choreographerThread(&PresentationEngine::ChoreographerThread, this),
-          vsyncEvent(std::make_shared<kernel::type::KEvent>(state, true)) {
+        : state{state},
+          gpu{gpu},
+          acquireFence{gpu.vkDevice, vk::FenceCreateInfo{}},
+          presentationTrack{static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()},
+          choreographerThread{&PresentationEngine::ChoreographerThread, this},
+          presentationThread{&PresentationEngine::PresentationThread, this},
+          vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)} {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
@@ -73,6 +75,158 @@ namespace skyline::gpu {
             choreographerLooper = ALooper_prepare(0);
             AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), this);
             while (ALooper_pollAll(-1, nullptr, nullptr, nullptr) == ALOOPER_POLL_WAKE && !choreographerStop); // Will block and process callbacks till ALooper_wake() is called with choreographerStop set
+        } catch (const signal::SignalException &e) {
+            Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            if (state.process)
+                state.process->Kill(false);
+            else
+                std::rethrow_exception(std::current_exception());
+        } catch (const std::exception &e) {
+            Logger::Error(e.what());
+            if (state.process)
+                state.process->Kill(false);
+            else
+                std::rethrow_exception(std::current_exception());
+        }
+    }
+
+    void PresentationEngine::PresentFrame(const PresentableFrame &frame) {
+        std::unique_lock lock(mutex);
+        surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+
+        frame.fence.Wait(state.soc->host1x);
+
+        std::scoped_lock textureLock(*frame.texture);
+        if (frame.texture->format != swapchainFormat || frame.texture->dimensions != swapchainExtent)
+            UpdateSwapchain(frame.texture->format, frame.texture->dimensions);
+
+        int result;
+        if (frame.crop && frame.crop != windowCrop) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_CROP, &frame.crop)))
+                throw exception("Setting the layer crop to ({}-{})x({}-{}) failed with {}", frame.crop.left, frame.crop.right, frame.crop.top, frame.crop.bottom, result);
+            windowCrop = frame.crop;
+        }
+
+        if (frame.scalingMode != NativeWindowScalingMode::Freeze && windowScalingMode != frame.scalingMode) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(frame.scalingMode))))
+                throw exception("Setting the layer scaling mode to '{}' failed with {}", ToString(frame.scalingMode), result);
+            windowScalingMode = frame.scalingMode;
+        }
+
+        if (frame.transform != windowTransform) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(frame.transform))))
+                throw exception("Setting the buffer transform to '{}' failed with {}", ToString(frame.transform), result);
+            windowTransform = frame.transform;
+        }
+
+        gpu.vkDevice.resetFences(*acquireFence);
+
+        std::pair<vk::Result, u32> nextImage;
+        while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence), nextImage.first != vk::Result::eSuccess) [[unlikely]] {
+            if (nextImage.first == vk::Result::eSuboptimalKHR)
+                surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+            else
+                throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
+        }
+
+        std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
+
+        frame.texture->SynchronizeHost();
+        images.at(nextImage.second)->CopyFrom(frame.texture, vk::ImageSubresourceRange{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .levelCount = 1,
+            .layerCount = 1,
+        });
+
+        auto getMonotonicNsNow{[]() -> i64 {
+            timespec time;
+            if (clock_gettime(CLOCK_MONOTONIC, &time))
+                throw exception("Failed to clock_gettime with '{}'", strerror(errno));
+            return (time.tv_sec * constant::NsInSecond) + time.tv_nsec;
+        }};
+
+        i64 timestamp{frame.timestamp};
+        if (timestamp) {
+            // If the timestamp is specified, we need to convert it from the util::GetTimeNs base to the CLOCK_MONOTONIC one
+            // We do so by getting an offset from the current time in nanoseconds and then adding it to the current time in CLOCK_MONOTONIC
+            // Note: It's important we do this right before present as going past the timestamp could lead to fewer Binder IPC calls
+            i64 current{util::GetTimeNs()};
+            if (current < timestamp) {
+                timestamp = getMonotonicNsNow() + (timestamp - current);
+            } else {
+                timestamp = 0;
+            }
+        }
+
+        if (frame.swapInterval) {
+            // If we have a swap interval, we have to adjust the timestamp to emulate the swap interval
+            i64 lastFramePresentTime{util::AlignUpNpot(windowLastTimestamp, refreshCycleDuration)};
+            if (lastFramePresentTime > lastChoreographerTime)
+                // If the last frame was presented after the last choreographer callback, calculate the new frame's timestamp relative to it
+                timestamp = std::max(timestamp, lastFramePresentTime + (refreshCycleDuration * frame.swapInterval));
+            else
+                // If there has been a choreographer callback since the last frame, calculate the new frame's timestamp relative to it
+                timestamp = std::max(timestamp, lastChoreographerTime + (2 * refreshCycleDuration * frame.swapInterval));
+        }
+
+        i64 lastTimestamp{std::exchange(windowLastTimestamp, timestamp)};
+        if (!timestamp && lastTimestamp)
+            // We need to nullify the timestamp if it transitioned from being specified (non-zero) to unspecified (zero)
+            timestamp = NativeWindowTimestampAuto;
+
+        if (timestamp && (result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp)))
+            throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
+
+        u64 frameId{};
+        if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
+            throw exception("Retrieving the next frame's ID failed with {}", result);
+
+        {
+            std::scoped_lock queueLock{gpu.queueMutex};
+            std::ignore = gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
+                .swapchainCount = 1,
+                .pSwapchains = &**vkSwapchain,
+                .pImageIndices = &nextImage.second,
+            }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
+        }
+
+        timestamp = timestamp ? timestamp : getMonotonicNsNow();
+        if (frameTimestamp) {
+            i64 sampleWeight{Fps ? Fps : 1}; //!< The weight of each sample in calculating the average, we want to roughly average the past second
+
+            auto weightedAverage{[](auto weight, auto previousAverage, auto current) {
+                return (((weight - 1) * previousAverage) + current) / weight;
+            }}; //!< Modified moving average (https://en.wikipedia.org/wiki/Moving_average#Modified_moving_average)
+
+            i64 currentFrametime{timestamp - frameTimestamp};
+            averageFrametimeNs = weightedAverage(sampleWeight, averageFrametimeNs, currentFrametime);
+            AverageFrametimeMs = static_cast<jfloat>(averageFrametimeNs) / constant::NsInMillisecond;
+
+            i64 currentFrametimeDeviation{std::abs(averageFrametimeNs - currentFrametime)};
+            averageFrametimeDeviationNs = weightedAverage(sampleWeight, averageFrametimeDeviationNs, currentFrametimeDeviation);
+            AverageFrametimeDeviationMs = static_cast<jfloat>(averageFrametimeDeviationNs) / constant::NsInMillisecond;
+
+            Fps = static_cast<jint>(std::round(static_cast<float>(constant::NsInSecond) / static_cast<float>(averageFrametimeNs)));
+
+            TRACE_EVENT_INSTANT("gpu", "Present", presentationTrack, "FrameTimeNs", timestamp - frameTimestamp, "Fps", Fps);
+
+            frameTimestamp = timestamp;
+        } else {
+            frameTimestamp = timestamp;
+        }
+    }
+
+    void PresentationEngine::PresentationThread() {
+        if (int result{pthread_setname_np(pthread_self(), "Sky-Present")})
+            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+
+        try {
+            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
+
+            presentQueue.Process([this](const PresentableFrame& frame) {
+                PresentFrame(frame);
+                frame.presentCallback(); // We're calling the callback here as it's outside of all the locks in PresentFrame
+            });
         } catch (const signal::SignalException &e) {
             Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
@@ -219,115 +373,23 @@ namespace skyline::gpu {
         }
     }
 
-    void PresentationEngine::Present(const std::shared_ptr<Texture> &texture, i64 timestamp, u64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, u64 &frameId) {
+    u64 PresentationEngine::Present(const std::shared_ptr<Texture> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback) {
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
-        std::scoped_lock textureLock(*texture);
-        if (texture->format != swapchainFormat || texture->dimensions != swapchainExtent)
-            UpdateSwapchain(texture->format, texture->dimensions);
-
-        int result;
-        if (crop && crop != windowCrop) {
-            if ((result = window->perform(window, NATIVE_WINDOW_SET_CROP, &crop)))
-                throw exception("Setting the layer crop to ({}-{})x({}-{}) failed with {}", crop.left, crop.right, crop.top, crop.bottom, result);
-            windowCrop = crop;
-        }
-
-        if (scalingMode != NativeWindowScalingMode::Freeze && windowScalingMode != scalingMode) {
-            if ((result = window->perform(window, NATIVE_WINDOW_SET_SCALING_MODE, static_cast<i32>(scalingMode))))
-                throw exception("Setting the layer scaling mode to '{}' failed with {}", ToString(scalingMode), result);
-            windowScalingMode = scalingMode;
-        }
-
-        if (transform != windowTransform) {
-            if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(transform))))
-                throw exception("Setting the buffer transform to '{}' failed with {}", ToString(transform), result);
-            windowTransform = transform;
-        }
-
-        gpu.vkDevice.resetFences(*acquireFence);
-
-        std::pair<vk::Result, u32> nextImage;
-        while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), {}, *acquireFence), nextImage.first != vk::Result::eSuccess) [[unlikely]] {
-            if (nextImage.first == vk::Result::eSuboptimalKHR)
-                surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
-            else
-                throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
-        }
-
-        std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
-
-        texture->SynchronizeHost();
-        images.at(nextImage.second)->CopyFrom(texture, vk::ImageSubresourceRange{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .levelCount = 1,
-            .layerCount = 1,
+        presentQueue.Push(PresentableFrame{
+            texture,
+            fence,
+            timestamp,
+            swapInterval,
+            presentCallback,
+            nextFrameId,
+            crop,
+            scalingMode,
+            transform
         });
 
-        if (timestamp) {
-            // If the timestamp is specified, we need to convert it from the util::GetTimeNs base to the CLOCK_MONOTONIC one
-            // We do so by getting an offset from the current time in nanoseconds and then adding it to the current time in CLOCK_MONOTONIC
-            // Note: It's important we do this right before present as going past the timestamp could lead to fewer Binder IPC calls
-            i64 current{util::GetTimeNs()};
-            if (current < timestamp) {
-                timespec time;
-                if (clock_gettime(CLOCK_MONOTONIC, &time))
-                    throw exception("Failed to clock_gettime with '{}'", strerror(errno));
-                timestamp = ((time.tv_sec * constant::NsInSecond) + time.tv_nsec) + (timestamp - current);
-            } else {
-                timestamp = 0;
-            }
-        }
-
-        if (swapInterval > 1)
-            // If we have a swap interval above 1 we have to adjust the timestamp to emulate the swap interval
-            timestamp = std::max(timestamp, lastChoreographerTime + (refreshCycleDuration * static_cast<i64>(swapInterval) * 2));
-
-        auto lastTimestamp{std::exchange(windowLastTimestamp, timestamp)};
-        if (!timestamp && lastTimestamp)
-            // We need to nullify the timestamp if it transitioned from being specified (non-zero) to unspecified (zero)
-            timestamp = NativeWindowTimestampAuto;
-
-        if (timestamp && (result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp)))
-            throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
-
-        if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
-            throw exception("Retrieving the next frame's ID failed with {}", result);
-
-        {
-            std::scoped_lock queueLock{gpu.queueMutex};
-            std::ignore = gpu.vkQueue.presentKHR(vk::PresentInfoKHR{
-                .swapchainCount = 1,
-                .pSwapchains = &**vkSwapchain,
-                .pImageIndices = &nextImage.second,
-            }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
-        }
-
-        if (frameTimestamp) {
-            i64 now{util::GetTimeNs()};
-            i64 sampleWeight{swapInterval ? constant::NsInSecond / (refreshCycleDuration * static_cast<i64>(swapInterval)) : 10}; //!< The weight of each sample in calculating the average, we arbitrarily average 10 samples for unlocked FPS
-
-            auto weightedAverage{[](auto weight, auto previousAverage, auto current) {
-                return (((weight - 1) * previousAverage) + current) / weight;
-            }}; //!< Modified moving average (https://en.wikipedia.org/wiki/Moving_average#Modified_moving_average)
-
-            i64 currentFrametime{now - frameTimestamp};
-            averageFrametimeNs = weightedAverage(sampleWeight, averageFrametimeNs, currentFrametime);
-            AverageFrametimeMs = static_cast<jfloat>(averageFrametimeNs) / constant::NsInMillisecond;
-
-            i64 currentFrametimeDeviation{std::abs(averageFrametimeNs - currentFrametime)};
-            averageFrametimeDeviationNs = weightedAverage(sampleWeight, averageFrametimeDeviationNs, currentFrametimeDeviation);
-            AverageFrametimeDeviationMs = static_cast<jfloat>(averageFrametimeDeviationNs) / constant::NsInMillisecond;
-
-            Fps = static_cast<jint>(std::round(static_cast<float>(constant::NsInSecond) / static_cast<float>(averageFrametimeNs)));
-
-            TRACE_EVENT_INSTANT("gpu", "Present", presentationTrack, "FrameTimeNs", now - frameTimestamp, "Fps", Fps);
-
-            frameTimestamp = now;
-        } else {
-            frameTimestamp = util::GetTimeNs();
-        }
+        return nextFrameId++;
     }
 
     NativeWindowTransform PresentationEngine::GetTransformHint() {

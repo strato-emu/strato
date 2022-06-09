@@ -384,16 +384,15 @@ namespace skyline::service::hosbinder {
                 throw exception("Application attempting to perform unknown sticky transformation: {:#b}", static_cast<u32>(stickyTransform));
         }
 
-        fence.Wait(state.soc->host1x);
+        state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, fence, [this, &buffer] {
+            std::scoped_lock lock(mutex);
 
-        {
-            u64 frameId;
-            state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, frameId);
-        }
+            buffer.state = BufferState::Free;
+            bufferEvent->Signal();
+        });
 
+        buffer.state = BufferState::Queued;
         buffer.frameNumber = ++frameNumber;
-        buffer.state = BufferState::Free;
-        bufferEvent->Signal();
 
         width = defaultWidth;
         height = defaultHeight;
