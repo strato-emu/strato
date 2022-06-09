@@ -65,7 +65,9 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::ChoreographerThread() {
-        pthread_setname_np(pthread_self(), "Skyline-Choreographer");
+        if (int result{pthread_setname_np(pthread_self(), "Sky-Choreo")})
+            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
             choreographerLooper = ALooper_prepare(0);

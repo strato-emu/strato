@@ -340,7 +340,9 @@ namespace skyline::soc::gm20b {
     }
 
     void ChannelGpfifo::Run() {
-        pthread_setname_np(pthread_self(), "GPFIFO");
+        if (int result{pthread_setname_np(pthread_self(), "GPFIFO")})
+            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
             signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory

@@ -35,9 +35,12 @@ namespace skyline::kernel::type {
     }
 
     void KThread::StartThread() {
-        std::array<char, 16> threadName;
-        pthread_getname_np(pthread, threadName.data(), threadName.size());
-        pthread_setname_np(pthread, fmt::format("HOS-{}", id).c_str());
+        std::array<char, 16> threadName{};
+        if (int result{pthread_getname_np(pthread, threadName.data(), threadName.size())})
+            Logger::Warn("Failed to get the thread name: {}", strerror(result));
+
+        if (int result{pthread_setname_np(pthread, fmt::format("HOS-{}", id).c_str())})
+            Logger::Warn("Failed to set the thread name: {}", strerror(result));
         Logger::UpdateTag();
 
         if (!ctx.tpidrroEl0)
@@ -60,7 +63,8 @@ namespace skyline::kernel::type {
             Signal();
 
             if (threadName[0] != 'H' || threadName[1] != 'O' || threadName[2] != 'S' || threadName[3] != '-') {
-                pthread_setname_np(pthread, threadName.data());
+                if (int result{pthread_setname_np(pthread, threadName.data())})
+                    Logger::Warn("Failed to set the thread name: {}", strerror(result));
                 Logger::UpdateTag();
             }
 

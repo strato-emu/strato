@@ -114,8 +114,8 @@ namespace skyline::soc::host1x {
     }
 
     void ChannelCommandFifo::Run() {
-        pthread_setname_np(pthread_self(), "ChannelCommandFifo");
-        Logger::UpdateTag();
+        if (int result{pthread_setname_np(pthread_self(), "ChannelCmdFifo")})
+            Logger::Warn("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
