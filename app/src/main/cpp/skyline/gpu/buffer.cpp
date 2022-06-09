@@ -259,12 +259,9 @@ namespace skyline::gpu {
     }
 
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
-        for (auto &view : views)
-            if (view.offset == offset && view.size == size && view.format == format)
-                return BufferView{shared_from_this(), &view};
-
-        views.emplace_back(offset, size, format);
-        return BufferView{shared_from_this(), &views.back()};
+        // Will return an iterator to the inserted view or the already-existing view if the same view is already in the set
+        auto it{views.emplace(offset, size, format).first};
+        return BufferView{shared_from_this(), &(*it)};
     }
 
     vk::DeviceSize Buffer::AcquireMegaBuffer(MegaBuffer& megaBuffer) {
@@ -295,7 +292,7 @@ namespace skyline::gpu {
 
     Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
 
-    Buffer::BufferDelegate::BufferDelegate(std::shared_ptr<Buffer> pBuffer, Buffer::BufferViewStorage *view) : buffer(std::move(pBuffer)), view(view) {
+    Buffer::BufferDelegate::BufferDelegate(std::shared_ptr<Buffer> pBuffer, const Buffer::BufferViewStorage *view) : buffer(std::move(pBuffer)), view(view) {
         iterator = buffer->delegates.emplace(buffer->delegates.end(), this);
     }
 
@@ -339,7 +336,7 @@ namespace skyline::gpu {
         }
     }
 
-    BufferView::BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
+    BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
 
     void BufferView::AttachCycle(const std::shared_ptr<FenceCycle> &cycle) {
         auto buffer{bufferDelegate->buffer.get()};

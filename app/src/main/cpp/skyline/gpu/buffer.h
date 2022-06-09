@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <unordered_set>
+#include <boost/functional/hash.hpp>
 #include <nce.h>
 #include "memory_manager.h"
 
@@ -53,10 +55,26 @@ namespace skyline::gpu {
             vk::Format format;
 
             BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format);
+
+            auto operator<=>(const BufferViewStorage &) const = default;
         };
 
       private:
-        std::list<BufferViewStorage> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
+        /**
+         * @brief Hash function for BufferViewStorage to be used in the views set
+         */
+        struct BufferViewStorageHash {
+            size_t operator()(const BufferViewStorage &entry) const noexcept {
+                size_t seed{};
+                boost::hash_combine(seed, entry.offset);
+                boost::hash_combine(seed, entry.size);
+                boost::hash_combine(seed, entry.format);
+
+                return seed;
+            }
+        };
+
+        std::unordered_set<BufferViewStorage, BufferViewStorageHash> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
 
       public:
         /**
@@ -65,11 +83,11 @@ namespace skyline::gpu {
          */
         struct BufferDelegate : public FenceCycleDependency {
             std::shared_ptr<Buffer> buffer;
-            Buffer::BufferViewStorage *view;
+            const Buffer::BufferViewStorage *view;
             std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;
             std::list<BufferDelegate *>::iterator iterator;
 
-            BufferDelegate(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view);
+            BufferDelegate(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
 
             ~BufferDelegate();
 
@@ -262,7 +280,7 @@ namespace skyline::gpu {
     struct BufferView {
         std::shared_ptr<Buffer::BufferDelegate> bufferDelegate;
 
-        BufferView(std::shared_ptr<Buffer> buffer, Buffer::BufferViewStorage *view);
+        BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
 
         constexpr BufferView(nullptr_t = nullptr) : bufferDelegate(nullptr) {}
 

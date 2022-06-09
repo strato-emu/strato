@@ -55,13 +55,19 @@ namespace skyline::gpu {
 
             buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
 
-            // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset
+            // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset, ensuring pointer stability
             vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest->begin() - newBuffer->guest->begin())};
-            if (overlapOffset != 0)
-                for (auto &view : overlap->views)
-                    view.offset += overlapOffset;
+            if (overlapOffset != 0) {
+                // This is a slight hack as we really shouldn't be changing the underlying set elements without a rehash but without writing our own set impl this is the best we can do
+                for (auto it{overlap->views.begin()}; it != overlap->views.end(); it++)
+                    const_cast<Buffer::BufferViewStorage *>(&*it)->offset += overlapOffset;
 
-            newBuffer->views.splice(newBuffer->views.end(), overlap->views);
+                // All current hashes are invalidated by above loop so rehash the container
+                overlap->views.rehash(0);
+            }
+
+            // Merge the view sets, this will keep pointer stability hence avoiding any reallocation
+            newBuffer->views.merge(overlap->views);
 
             // Transfer all delegates references from the overlapping buffer to the new buffer
             for (auto &delegate : overlap->delegates) {
