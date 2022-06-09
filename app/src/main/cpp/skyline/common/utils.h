@@ -70,7 +70,7 @@ namespace skyline::util {
 
     /**
      * @return The value aligned up to the next multiple
-     * @note The multiple needs to be a power of 2
+     * @note The multiple **must** be a power of 2
      */
     template<typename TypeVal>
     requires IsPointerOrUnsignedIntegral<TypeVal>
@@ -80,8 +80,19 @@ namespace skyline::util {
     }
 
     /**
+     * @return The value aligned up to the next multiple, the multiple is not restricted to being a power of two (NPOT)
+     * @note This will round away from zero for negative numbers
+     * @note This is costlier to compute than the power of 2 version, it should be preferred over this when possible
+     */
+    template<typename TypeVal>
+    requires std::is_integral_v<TypeVal> || std::is_pointer_v<TypeVal>
+    constexpr TypeVal AlignUpNpot(TypeVal value, ssize_t multiple) {
+        return ValuePointer<TypeVal>(((PointerValue(value) + multiple - 1) / multiple) * multiple);
+    }
+
+    /**
      * @return The value aligned down to the previous multiple
-     * @note The multiple needs to be a power of 2
+     * @note The multiple **must** be a power of 2
      */
     template<typename TypeVal>
     requires IsPointerOrUnsignedIntegral<TypeVal>
