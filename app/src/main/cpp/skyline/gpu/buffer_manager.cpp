@@ -57,14 +57,19 @@ namespace skyline::gpu {
 
             // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset, ensuring pointer stability
             vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest->begin() - newBuffer->guest->begin())};
-            if (overlapOffset != 0) {
-                // This is a slight hack as we really shouldn't be changing the underlying set elements without a rehash but without writing our own set impl this is the best we can do
-                for (auto it{overlap->views.begin()}; it != overlap->views.end(); it++)
+            for (auto it{overlap->views.begin()}; it != overlap->views.end(); it++) {
+                if (overlapOffset)
+                    // This is a slight hack as we really shouldn't be changing the underlying non-mutable set elements without a rehash but without writing our own set impl this is the best we can do
                     const_cast<Buffer::BufferViewStorage *>(&*it)->offset += overlapOffset;
 
-                // All current hashes are invalidated by above loop so rehash the container
-                overlap->views.rehash(0);
+                // Reset the sequence number to the initial one, if the new buffer was created from any GPU dirty overlaps then the new buffer's sequence will be incremented past this thus forcing a reacquire if neccessary
+                // This is fine to do in the set since the hash and operator== do not use this value
+                it->lastAcquiredSequence = Buffer::InitialSequenceNumber;
             }
+
+            if (overlapOffset)
+                // All current hashes are invalidated by above loop if overlapOffset is nonzero so rehash the container
+                overlap->views.rehash(0);
 
             // Merge the view sets, this will keep pointer stability hence avoiding any reallocation
             newBuffer->views.merge(overlap->views);

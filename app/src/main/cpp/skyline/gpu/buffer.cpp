@@ -8,9 +8,11 @@
 #include "buffer.h"
 
 namespace skyline::gpu {
-    void Buffer::TryEnableMegaBuffering() {
-        megaBufferOffset = 0;
-        megaBufferingEnabled = backing.size() < MegaBufferingDisableThreshold;
+    bool Buffer::CheckHostImmutable() {
+        if (hostImmutableCycle && hostImmutableCycle->Poll())
+            hostImmutableCycle.reset();
+
+        return hostImmutableCycle != nullptr;
     }
 
     void Buffer::SetupGuestMappings() {
@@ -33,14 +35,11 @@ namespace skyline::gpu {
     }
 
     Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
-        TryEnableMegaBuffering();
         SetupGuestMappings();
     }
 
     Buffer::Buffer(GPU &gpu, const std::shared_ptr<FenceCycle> &pCycle, GuestBuffer guest, span<std::shared_ptr<Buffer>> srcBuffers) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
         std::scoped_lock bufLock{*this};
-
-        TryEnableMegaBuffering();
         SetupGuestMappings();
 
         // Source buffers don't necessarily fully overlap with us so we have to perform a sync here to prevent any gaps
@@ -63,8 +62,15 @@ namespace skyline::gpu {
         for (const auto &srcBuffer : srcBuffers) {
             std::scoped_lock lock{*srcBuffer};
             if (srcBuffer->guest) {
-                if (!srcBuffer->megaBufferingEnabled)
-                    megaBufferingEnabled = false;
+                if (srcBuffer->hostImmutableCycle) {
+                    // Propagate any host immutability
+                    if (hostImmutableCycle) {
+                        if (srcBuffer->hostImmutableCycle.owner_before(hostImmutableCycle))
+                            hostImmutableCycle = srcBuffer->hostImmutableCycle;
+                    } else {
+                        hostImmutableCycle = srcBuffer->hostImmutableCycle;
+                    }
+                }
 
                 if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
                     // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
@@ -80,7 +86,7 @@ namespace skyline::gpu {
                     }
                 } else if (srcBuffer->dirtyState == Buffer::DirtyState::Clean) {
                     // For clean buffers we can just copy over the GPU backing data directly
-                    // This is necessary since clean buffers may not have matching GPU/CPU data in the case of non-megabuffered inline updates
+                    // This is necessary since clean buffers may not have matching GPU/CPU data in the case of inline updates for host immutable buffers
                     copyBuffer(guest, *srcBuffer->guest, backing.data(), srcBuffer->backing.data());
                 }
 
@@ -90,7 +96,6 @@ namespace skyline::gpu {
     }
 
     Buffer::Buffer(GPU &gpu, vk::DeviceSize size) : gpu(gpu), backing(gpu.memory.AllocateBuffer(size)) {
-        TryEnableMegaBuffering();
         dirtyState = DirtyState::Clean; // Since this is a host-only buffer it's always going to be clean
     }
 
@@ -107,7 +112,7 @@ namespace skyline::gpu {
         if (dirtyState == DirtyState::GpuDirty || !guest)
             return;
 
-        megaBufferingEnabled = false; // We can no longer megabuffer this buffer after it has been written by the GPU
+        AdvanceSequence(); // The GPU will modify buffer contents so advance to the next sequence
         gpu.state.nce->RetrapRegions(*trapHandle, false);
         dirtyState = DirtyState::GpuDirty;
     }
@@ -139,13 +144,10 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHost");
 
-        // If we have performed a CPU->GPU sync and megabuffering is enabled for this buffer the megabuffer copy of the buffer will no longer be up-to-date
-        InvalidateMegaBuffer();
-
+        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         std::memcpy(backing.data(), mirror.data(), mirror.size());
 
         if (rwTrap) {
-            megaBufferingEnabled = false; // We can't megabuffer a buffer written by the GPU
             gpu.state.nce->RetrapRegions(*trapHandle, false);
             dirtyState = DirtyState::GpuDirty;
         } else {
@@ -163,13 +165,10 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHostWithCycle");
 
-        // If we have performed a CPU->GPU sync and megabuffering is enabled for this buffer the megabuffer copy of the buffer will no longer be up-to-date so force a recreation
-        InvalidateMegaBuffer();
-
+        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         std::memcpy(backing.data(), mirror.data(), mirror.size());
 
         if (rwTrap) {
-            megaBufferingEnabled = false; // We can't megabuffer a buffer written by the GPU
             gpu.state.nce->RetrapRegions(*trapHandle, false);
             dirtyState = DirtyState::GpuDirty;
         } else {
@@ -195,7 +194,6 @@ namespace skyline::gpu {
             gpu.state.nce->RetrapRegions(*trapHandle, true);
 
         dirtyState = DirtyState::Clean;
-        TryEnableMegaBuffering(); // If megaBuffering was disabled due to potential GPU dirtiness we can safely try to re-enable it now that the buffer is clean
     }
 
     /**
@@ -236,7 +234,8 @@ namespace skyline::gpu {
     }
 
     void Buffer::Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) {
-        InvalidateMegaBuffer(); // Since we're writing to the backing buffer the megabuffer contents will require refresh
+        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
+        everHadInlineUpdate = true;
 
         // Perform a syncs in both directions to ensure correct ordering of writes
         if (dirtyState == DirtyState::CpuDirty)
@@ -249,13 +248,12 @@ namespace skyline::gpu {
 
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
 
-        if (megaBufferingEnabled) {
-            // If megabuffering is enabled then we don't need to do any special sequencing here, we can write directly to the backing and the sequencing for it will be handled at usage time
-            std::memcpy(backing.data() + offset, data.data(), data.size());
-        } else {
-            // Fallback to a GPU-side inline update for the buffer contents to ensure correct sequencing with draws
+        if (CheckHostImmutable())
+            // Perform a GPU-side inline update for the buffer contents if this buffer is host immutable since we can't directly modify the backing
             gpuCopyCallback();
-        }
+        else
+            // If that's not the case we don't need to do any GPU-side sequencing here, we can write directly to the backing and the sequencing for it will be handled at usage time
+            std::memcpy(backing.data() + offset, data.data(), data.size());
     }
 
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
@@ -264,23 +262,20 @@ namespace skyline::gpu {
         return BufferView{shared_from_this(), &(*it)};
     }
 
-    vk::DeviceSize Buffer::AcquireMegaBuffer(MegaBuffer &megaBuffer) {
-        SynchronizeGuest(false, true); // First try and enable megabuffering by doing an immediate sync
+    std::pair<u64, span<u8>> Buffer::AcquireCurrentSequence() {
+        SynchronizeGuest(false, true); // First try to remove GPU dirtiness by doing an immediate sync and taking a quick shower
 
-        if (!megaBufferingEnabled)
-            return 0; // Bail out if megabuffering is disabled for this buffer
+        if (dirtyState == DirtyState::GpuDirty)
+            // Bail out if buffer is GPU dirty - since we don't know the contents ahead of time the sequence is indeterminate
+            return {};
 
-        SynchronizeHost(); // Since pushes to the megabuffer use the GPU backing contents ensure they're up-to-date by performing a CPU -> GPU sync
+        SynchronizeHost(); // Ensure that the returned mirror is fully up-to-date by performing a CPU -> GPU sync
 
-        if (megaBufferOffset)
-            return megaBufferOffset; // If the current buffer contents haven't been changed since the last acquire, we can just return the existing offset
-
-        megaBufferOffset = megaBuffer.Push(backing, true); // Buffers are required to be page aligned in the megabuffer
-        return megaBufferOffset;
+        return {sequenceNumber, mirror};
     }
 
-    void Buffer::InvalidateMegaBuffer() {
-        megaBufferOffset = 0;
+    void Buffer::AdvanceSequence() {
+        sequenceNumber++;
     }
 
     span<u8> Buffer::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
@@ -288,6 +283,10 @@ namespace skyline::gpu {
             SynchronizeGuestImmediate(pCycle, flushHostCallback);
 
         return mirror;
+    }
+
+    void Buffer::MarkHostImmutable(const std::shared_ptr<FenceCycle> &pCycle) {
+        hostImmutableCycle = pCycle;
     }
 
     Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
@@ -347,7 +346,10 @@ namespace skyline::gpu {
         }
     }
 
-    void BufferView::RegisterUsage(const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
+    void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
+        // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further writes in the current cycle to occur on the GPU
+        bufferDelegate->buffer->MarkHostImmutable(pCycle);
+
         usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
         if (!bufferDelegate->usageCallback) {
             bufferDelegate->usageCallback = usageCallback;
@@ -364,17 +366,39 @@ namespace skyline::gpu {
     }
 
     void BufferView::Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const {
+        // If megabuffering can't be enabled we have to do a GPU-side copy to ensure sequencing
+        bool gpuCopy{bufferDelegate->view->size > MegaBufferingDisableThreshold};
+        if (gpuCopy)
+            // This will force the host buffer contents to stay as is for the current cycle, requiring that write operations are instead sequenced on the GPU for the entire buffer
+            bufferDelegate->buffer->MarkHostImmutable(pCycle);
+
         bufferDelegate->buffer->Write(pCycle, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
 
     vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer &megaBuffer) const {
-        vk::DeviceSize bufferOffset{bufferDelegate->buffer->AcquireMegaBuffer(megaBuffer)};
-
-        // Propagate 0 results since they signify that megabuffering isn't supported for a buffer
-        if (bufferOffset)
-            return bufferOffset + bufferDelegate->view->offset;
-        else
+        if (!bufferDelegate->buffer->EverHadInlineUpdate())
+            // Don't megabuffer buffers that have never had inline updates since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
             return 0;
+
+        if (bufferDelegate->view->size > MegaBufferingDisableThreshold)
+            return 0;
+
+        auto[newSequence, sequenceSpan]{bufferDelegate->buffer->AcquireCurrentSequence()};
+        if (!newSequence)
+            return 0; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
+
+        // If a copy of the view for the current sequence is already in megabuffer then we can just use that
+        if (newSequence == bufferDelegate->view->lastAcquiredSequence && bufferDelegate->view->megabufferOffset)
+            return bufferDelegate->view->megabufferOffset;
+
+        // If the view is not in the megabuffer then we need to allocate a new copy
+        auto viewBackingSpan{sequenceSpan.subspan(bufferDelegate->view->offset, bufferDelegate->view->size)};
+
+        // TODO: we could optimise the alignment requirements here based on buffer usage
+        bufferDelegate->view->megabufferOffset = megaBuffer.Push(viewBackingSpan, true);
+        bufferDelegate->view->lastAcquiredSequence = newSequence;
+
+        return bufferDelegate->view->megabufferOffset; // Success!
     }
 
     span<u8> BufferView::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {

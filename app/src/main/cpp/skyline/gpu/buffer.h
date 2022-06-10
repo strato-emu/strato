@@ -35,15 +35,14 @@ namespace skyline::gpu {
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
         } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
 
-        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{0x10'000}; //!< The threshold at which the buffer is considered to be too large to be megabuffered (64KiB)
+        bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 
-        bool megaBufferingEnabled{}; //!< If megabuffering can be used for this buffer at the current moment, is set based on MegaBufferingDisableThreshold and dirty state
-        vk::DeviceSize megaBufferOffset{}; //!< The offset into the megabuffer where the current buffer contents are stored, 0 if there is no up-to-date megabuffer entry for the current buffer contents
+        std::shared_ptr<FenceCycle> hostImmutableCycle; //!< The cycle for when the buffer was last immutable, if this is signalled the buffer is no longer immutable
 
         /**
-         * @brief Resets megabuffering state based off of the buffer size
+         * @return If the buffer should be treated as host immutable
          */
-        void TryEnableMegaBuffering();
+        bool CheckHostImmutable();
 
       public:
         /**
@@ -54,10 +53,18 @@ namespace skyline::gpu {
             vk::DeviceSize size;
             vk::Format format;
 
+            // These are not accounted for in hash nor operator== since they are not an inherent property of the view, but they are required nonetheless for megabuffering on a per-view basis
+            mutable u64 lastAcquiredSequence{}; //!< The last sequence number for the attached buffer that the megabuffer copy of this view was acquired from, if this is equal to the current sequence of the attached buffer then the copy at `megabufferOffset` is still valid
+            mutable vk::DeviceSize megabufferOffset{}; //!< Offset of the current copy of the view in the megabuffer (if any), 0 if no copy exists and this is only valid if `lastAcquiredSequence` is equal to the current sequence of the attached buffer
+
             BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format);
 
-            auto operator<=>(const BufferViewStorage &) const = default;
+            bool operator==(const BufferViewStorage &other) const {
+                return other.offset == offset && other.size == size && other.format == format;
+            }
         };
+
+        static constexpr u64 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
 
       private:
         /**
@@ -70,11 +77,14 @@ namespace skyline::gpu {
                 boost::hash_combine(seed, entry.size);
                 boost::hash_combine(seed, entry.format);
 
+                // The mutable fields {lastAcquiredSequence, megabufferOffset} are deliberately ignored
                 return seed;
             }
         };
 
         std::unordered_set<BufferViewStorage, BufferViewStorageHash> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
+
+        u64 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
 
       public:
         /**
@@ -233,7 +243,7 @@ namespace skyline::gpu {
         void Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
-         * @brief Writes data at the specified offset in the buffer
+         * @brief Writes data at the specified offset in the buffer, falling back to GPU side copies if the buffer is host immutable
          * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          * @param gpuCopyCallback Callback to perform a GPU-side copy for this Write
@@ -247,20 +257,20 @@ namespace skyline::gpu {
         BufferView GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format = {});
 
         /**
-         * @brief Pushes the current buffer contents into the megabuffer (if necessary)
-         * @return The offset of the pushed buffer contents in the megabuffer
+         * @brief Attempts to return the current sequence number and prepare the buffer for read accesses from the returned span
+         * @return The current sequence number and a span of the buffers guest mirror given that the buffer is not GPU dirty, if it is then a zero sequence number is returned
+         * @note The contents of the returned span can be cached safely given the sequence number is unchanged
          * @note The buffer **must** be locked prior to calling this
-         * @note This will only push into the megabuffer when there have been modifications after the previous acquire, otherwise the previous offset will be reused
-         * @note An implicit CPU -> GPU sync will be performed when calling this, an immediate GPU -> CPU sync will also be attempted if the buffer is GPU dirty in the hope that megabuffering can be reenabled
+         * @note An implicit CPU -> GPU sync will be performed when calling this, an immediate GPU -> CPU sync will also be attempted if the buffer is GPU dirty
          */
-        vk::DeviceSize AcquireMegaBuffer(MegaBuffer& megaBuffer);
+        std::pair<u64, span<u8>> AcquireCurrentSequence();
 
         /**
-         * @brief Forces the buffer contents to be pushed into the megabuffer on the next AcquireMegaBuffer call
+         * @brief Increments the sequence number of the buffer, any futher calls to AcquireCurrentSequence will return this new sequence number. See the comment for `sequenceNumber`
          * @note The buffer **must** be locked prior to calling this
-         * @note This **must** be called after any modifications of the backing buffer data
+         * @note This **must** be called after any modifications of the backing buffer data (but not mirror)
          */
-        void InvalidateMegaBuffer();
+        void AdvanceSequence();
 
         /**
          * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
@@ -270,6 +280,14 @@ namespace skyline::gpu {
          * @note The buffer **must** be kept locked until the span is no longer in use
          */
         span<u8> GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
+
+        /**
+         * @brief Prevents any further writes to the `backing` host side buffer for the duration of the current cycle, forcing slower inline GPU updates instead
+         * @note The buffer **must** be locked prior to calling this
+         */
+        void MarkHostImmutable(const std::shared_ptr<FenceCycle> &pCycle);
+
+        bool EverHadInlineUpdate() const { return everHadInlineUpdate; }
     };
 
     /**
@@ -278,6 +296,8 @@ namespace skyline::gpu {
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
     struct BufferView {
+        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 128}; //!< The threshold at which the view is considered to be too large to be megabuffered (128KiB)
+
         std::shared_ptr<Buffer::BufferDelegate> bufferDelegate;
 
         BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
@@ -327,10 +347,11 @@ namespace skyline::gpu {
 
         /**
          * @brief Registers a callback for a usage of this view, it may be called multiple times due to the view being recreated with different backings
+         * @note This will force the buffer to be host immutable for the current cycle, preventing megabuffering and requiring slower GPU inline writes instead
          * @note The callback will be automatically called the first time after registration
          * @note The view **must** be locked prior to calling this
          */
-        void RegisterUsage(const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
+        void RegisterUsage(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
 
         /**
          * @brief Reads data at the specified offset in the view
@@ -347,12 +368,11 @@ namespace skyline::gpu {
         void Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const;
 
         /**
-         * @brief Pushes the current buffer contents into the megabuffer (if necessary)
-         * @return The offset of the pushed buffer contents in the megabuffer
+         * @brief If megabuffering is beneficial for the current buffer, pushes its contents into the megabuffer and returns the offset of the pushed data
+         * @return The offset of the pushed buffer contents in the megabuffer, or 0 if megabuffering is not to be used
          * @note The view **must** be locked prior to calling this
-         * @note See Buffer::AcquireMegaBuffer
          */
-        vk::DeviceSize AcquireMegaBuffer(MegaBuffer& megaBuffer) const;
+        vk::DeviceSize AcquireMegaBuffer(MegaBuffer &megaBuffer) const;
 
         /**
          * @return A span of the backing buffer contents

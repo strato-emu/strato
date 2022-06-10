@@ -1118,7 +1118,7 @@ namespace skyline::gpu::interconnect {
                                 .range = view->view->size
                             };
                         } else {
-                            view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            view.RegisterUsage(executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                                 *descriptor = vk::DescriptorBufferInfo{
                                     .buffer = buffer->GetBacking(),
                                     .offset = view.offset,
@@ -1151,8 +1151,10 @@ namespace skyline::gpu::interconnect {
                         auto view{GetSsboViewFromDescriptor(storageBuffer, pipelineStage.constantBuffers)};
 
                         std::scoped_lock lock{view};
-                        view->buffer->MarkGpuDirty(); // SSBOs may be written to by the GPU so mark as dirty (will also disable megabuffering)
-                        view.RegisterUsage([descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        if (storageBuffer.is_written)
+                            view->buffer->MarkGpuDirty();
+
+                        view.RegisterUsage(executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             *descriptor = vk::DescriptorBufferInfo{
                                 .buffer = buffer->GetBacking(),
                                 .offset = view.offset,
@@ -2842,7 +2844,7 @@ namespace skyline::gpu::interconnect {
                         boundIndexBuffer->handle = executor.megaBuffer.GetBacking();
                         boundIndexBuffer->offset = megaBufferOffset;
                     } else {
-                        indexBufferView.RegisterUsage([=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        indexBufferView.RegisterUsage(executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             boundIndexBuffer->handle = buffer->GetBacking();
                             boundIndexBuffer->offset = view.offset;
                         });
@@ -2877,7 +2879,7 @@ namespace skyline::gpu::interconnect {
                         boundVertexBuffers->handles[index] = executor.megaBuffer.GetBacking();
                         boundVertexBuffers->offsets[index] = megaBufferOffset;
                     } else {
-                        vertexBufferView.RegisterUsage([handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        vertexBufferView.RegisterUsage(executor.cycle, [handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             *handle = buffer->GetBacking();
                             *offset = view.offset;
                         });

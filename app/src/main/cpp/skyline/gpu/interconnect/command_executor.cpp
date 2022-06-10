@@ -219,7 +219,7 @@ namespace skyline::gpu::interconnect {
                 gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
 
                 for (const auto &delegate : attachedBuffers)
-                    delegate->buffer->InvalidateMegaBuffer();
+                    delegate->view->megabufferOffset = 0;
 
                 nodes.clear();
                 attachedTextures.clear();
