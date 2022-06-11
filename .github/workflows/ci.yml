@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JVM_OPTS: -Xmx6G
+      IS_SKYLINE_SIGNED: ${{ secrets.KEYSTORE != '' }}
 
     steps:
       - name: Git Checkout
@@ -44,33 +45,58 @@ jobs:
         run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.18.1" "ndk;25.0.8221429" --channel=3 | grep -v = || true
 
       - name: Decode Keystore
+        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
-        run: echo $KEYSTORE_ENCODED | base64 --decode > "$HOME/keystore.jks"
+        run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
 
       - name: Android Assemble
         env:
+          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assemble
 
-      - name: Rename APKs
+      - name: Rename APKs (Signed)
+        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
         run: |
           mv app/build/outputs/apk/debug/app-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
           mv app/build/outputs/apk/release/app-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
 
-      - name: Upload Debug APK
+      - name: Upload Signed Debug APK
+        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-debug.apk
           path: skyline-${{ github.run_number }}-debug.apk
 
-      - name: Upload Release APK
+      - name: Upload Signed Release APK
+        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-release.apk
           path: skyline-${{ github.run_number }}-release.apk
+
+      - name: Rename APKs (Unsigned)
+        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-debug.apk
+          mv app/build/outputs/apk/release/app-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
+
+      - name: Upload Unsigned Debug APK
+        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: skyline-${{ github.run_number }}-unsigned-debug.apk
+          path: skyline-${{ github.run_number }}-unsigned-debug.apk
+
+      - name: Upload Unsigned Release APK
+        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: skyline-${{ github.run_number }}-unsigned-release.apk
+          path: skyline-${{ github.run_number }}-unsigned-release.apk
 
       - name: Delete Build Folder
         run: rm -rf app/build/

@@ -43,7 +43,7 @@ android {
 
     signingConfigs {
         ci {
-            storeFile file("${System.getProperty("user.home")}/keystore.jks")
+            storeFile file(System.getenv("SIGNING_STORE_PATH") ?: "${System.getenv("user.home")}/keystore.jks")
             storePassword System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias System.getenv("SIGNING_KEY_ALIAS")
             keyPassword System.getenv("SIGNING_KEY_PASSWORD")
@@ -61,14 +61,14 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig = System.getenv("CI") ? signingConfigs.ci : signingConfigs.debug
+            signingConfig = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true") ? signingConfigs.ci : signingConfigs.debug
         }
 
         debug {
             debuggable true
             minifyEnabled false
             shrinkResources false
-            signingConfig = System.getenv("CI") ? signingConfigs.ci : signingConfigs.debug
+            signingConfig = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true") ? signingConfigs.ci : signingConfigs.debug
         }
     }
 
