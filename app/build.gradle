@@ -16,6 +16,8 @@ idea.module {
 android {
     namespace 'emu.skyline'
 
+    var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
+
     compileSdkVersion 31
     buildToolsVersion '33.0.0'
     defaultConfig {
@@ -30,6 +32,11 @@ android {
         ndk {
             abiFilters "arm64-v8a"
         }
+
+        if (isBuildSigned)
+            manifestPlaceholders = [shouldSaveUserData: "true"]
+        else
+            manifestPlaceholders = [shouldSaveUserData: "false"]
     }
 
     /* JVM Bytecode Options */
@@ -63,14 +70,14 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true") ? signingConfigs.ci : signingConfigs.debug
+            signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
         }
 
         debug {
             debuggable true
             minifyEnabled false
             shrinkResources false
-            signingConfig = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true") ? signingConfigs.ci : signingConfigs.debug
+            signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
         }
     }
 
