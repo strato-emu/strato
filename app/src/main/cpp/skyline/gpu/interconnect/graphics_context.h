@@ -1687,7 +1687,7 @@ namespace skyline::gpu::interconnect {
          * @brief Retrieves an index buffer for converting a non-indexed quad list to a triangle list
          * @result A tuple containing a view over the index buffer, the index type and the index count
          */
-        std::tuple<BufferView, vk::IndexType, u32> GetQuadListConversionBuffer(u32 count) {
+        std::tuple<BufferView, vk::IndexType, u32> GetNonIndexedQuadConversionBuffer(u32 count) {
             vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, vk::IndexType::eUint32)};
             if (!quadListConversionBuffer || quadListConversionBuffer->GetBackingSpan().size_bytes() < size) {
                 quadListConversionBuffer = std::make_shared<Buffer>(gpu, size);
@@ -2820,38 +2820,39 @@ namespace skyline::gpu::interconnect {
                 vk::IndexType type{};
             };
 
-            auto boundIndexBuffer{std::make_shared<BoundIndexBuffer>()};
+            std::shared_ptr<BoundIndexBuffer> boundIndexBuffer{};
             if constexpr (IsIndexed) {
+                if (needsQuadConversion)
+                    throw exception("Indexed quad conversion is not supported");
+
                 auto indexBufferView{GetIndexBuffer(count)};
 
-                if (needsQuadConversion) {
-                    if (indexBufferView) {
-                        throw exception("Indexed quad conversion is not supported");
-                    } else {
-                        auto[bufferView, indexType, indexCount] = GetQuadListConversionBuffer(count);
-                        indexBufferView = bufferView;
-                        indexBuffer.type = indexType;
-                        count = indexCount;
-                    }
+                std::scoped_lock lock(indexBufferView);
+
+                boundIndexBuffer = std::make_shared<BoundIndexBuffer>();
+                boundIndexBuffer->type = indexBuffer.type;
+                if (auto megaBufferOffset{indexBufferView.AcquireMegaBuffer(executor.megaBuffer)}) {
+                    // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
+                    boundIndexBuffer->handle = executor.megaBuffer.GetBacking();
+                    boundIndexBuffer->offset = megaBufferOffset;
+                } else {
+                    indexBufferView.RegisterUsage(executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        boundIndexBuffer->handle = buffer->GetBacking();
+                        boundIndexBuffer->offset = view.offset;
+                    });
                 }
 
-                {
-                    std::scoped_lock lock(indexBufferView);
-
-                    boundIndexBuffer->type = indexBuffer.type;
-                    if (auto megaBufferOffset{indexBufferView.AcquireMegaBuffer(executor.megaBuffer)}) {
-                        // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
-                        boundIndexBuffer->handle = executor.megaBuffer.GetBacking();
-                        boundIndexBuffer->offset = megaBufferOffset;
-                    } else {
-                        indexBufferView.RegisterUsage(executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
-                            boundIndexBuffer->handle = buffer->GetBacking();
-                            boundIndexBuffer->offset = view.offset;
-                        });
-                    }
-
-                    executor.AttachBuffer(indexBufferView);
-                }
+                executor.AttachBuffer(indexBufferView);
+            } else if (needsQuadConversion) {
+                // Convert the guest-supplied quad list to an indexed triangle list
+                auto[bufferView, indexType, indexCount] = GetNonIndexedQuadConversionBuffer(count);
+                std::scoped_lock lock(bufferView);
+                count = indexCount;
+                boundIndexBuffer = std::make_shared<BoundIndexBuffer>();
+                boundIndexBuffer->type = indexType;
+                boundIndexBuffer->handle = bufferView->buffer->GetBacking();
+                boundIndexBuffer->offset = bufferView->view->offset;
+                executor.AttachBuffer(bufferView);
             }
 
             // Vertex Buffer Setup
@@ -3003,7 +3004,7 @@ namespace skyline::gpu::interconnect {
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-                if constexpr (IsIndexed) {
+                if (IsIndexed || boundIndexBuffer) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
                     commandBuffer.drawIndexed(count, instanceCount, first, vertexOffset, 0);
                 } else {
@@ -3015,10 +3016,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void Draw(u32 vertexCount, u32 firstVertex, u32 instanceCount) {
-            if (needsQuadConversion)
-                Draw<true>(vertexCount, firstVertex, instanceCount);
-            else
-                Draw<false>(vertexCount, firstVertex, instanceCount);
+            Draw<false>(vertexCount, firstVertex, instanceCount);
         }
 
         void DrawIndexed(u32 indexCount, u32 firstIndex, u32 instanceCount, i32 vertexOffset) {
