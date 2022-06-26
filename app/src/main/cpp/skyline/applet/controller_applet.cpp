@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
-// Copyright 2020 yuzu Emulator Project
+// Copyright © 2020 yuzu Emulator Project (https://github.com/yuzu-emu/)
 
 #include <input.h>
 #include <input/npad.h>

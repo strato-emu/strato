@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-// Copyright © 2022 Ryujinx Team and Contributors (https://github.com/ryujinx/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 Ryujinx Team and Contributors (https://github.com/Ryujinx/)
 
 #include <soc.h>
 #include "fermi_2d.h"

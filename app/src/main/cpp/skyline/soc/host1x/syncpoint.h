@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
-// Copyright © 2020 Ryujinx Team and Contributors
+// Copyright © 2020 Ryujinx Team and Contributors (https://github.com/Ryujinx/)
 
 #pragma once
 
