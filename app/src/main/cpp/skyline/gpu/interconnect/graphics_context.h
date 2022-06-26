@@ -2043,7 +2043,7 @@ namespace skyline::gpu::interconnect {
         u32 bindlessTextureConstantBufferIndex{};
         std::shared_ptr<TextureView> nullTextureView; //!< View used instead of a null descriptor when an empty TIC is encountered, this avoids the need for the nullDescriptor VK feature
 
-        struct PoolTexture : public FenceCycleDependency {
+        struct PoolTexture {
             GuestTexture guest;
             std::weak_ptr<TextureView> view;
         };
@@ -2338,7 +2338,7 @@ namespace skyline::gpu::interconnect {
       private:
         bool tscIndexLinked{}; //!< If the TSC index in bindless texture handles is the same as the TIC index or if it's independent from the TIC index
 
-        struct Sampler : public vk::raii::Sampler, public FenceCycleDependency {
+        struct Sampler : public vk::raii::Sampler {
             using vk::raii::Sampler::Sampler;
         };
 
@@ -2937,7 +2937,7 @@ namespace skyline::gpu::interconnect {
             }, programState.descriptorSetBindings)};
 
             // Draw Persistent Storage
-            struct DrawStorage : FenceCycleDependency {
+            struct DrawStorage {
                 ShaderProgramState::DescriptorSetWrites descriptorSetWrites;
                 std::optional<DescriptorAllocator::ActiveDescriptorSet> descriptorSet;
 

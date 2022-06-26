@@ -20,7 +20,7 @@ namespace skyline::gpu {
      * @brief A buffer which is backed by host constructs while being synchronized with the underlying guest buffer
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class Buffer : public std::enable_shared_from_this<Buffer>, public FenceCycleDependency {
+    class Buffer : public std::enable_shared_from_this<Buffer> {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
@@ -93,7 +93,7 @@ namespace skyline::gpu {
          * @brief A delegate for a strong reference to a Buffer by a BufferView which can be changed to another Buffer transparently
          * @note This class conforms to the Lockable and BasicLockable C++ named requirements
          */
-        struct BufferDelegate : public FenceCycleDependency {
+        struct BufferDelegate {
             std::shared_ptr<Buffer> buffer;
             const Buffer::BufferViewStorage *view;
             std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;

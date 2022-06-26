@@ -114,7 +114,7 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer
          */
-        void AttachDependency(const std::shared_ptr<FenceCycleDependency> &dependency);
+        void AttachDependency(const std::shared_ptr<void> &dependency);
 
         /**
          * @brief Adds a command that needs to be executed inside a subpass configured with certain attachments

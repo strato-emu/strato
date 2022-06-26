@@ -39,7 +39,7 @@ namespace skyline::gpu::memory {
     /**
      * @brief A Buffer that can be independently attached to a fence cycle
      */
-    class StagingBuffer : public Buffer, public FenceCycleDependency {
+    class StagingBuffer : public Buffer {
         using Buffer::Buffer;
     };
 

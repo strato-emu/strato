@@ -115,7 +115,7 @@ namespace skyline::gpu::interconnect {
         return didLock;
     }
 
-    void CommandExecutor::AttachDependency(const std::shared_ptr<FenceCycleDependency> &dependency) {
+    void CommandExecutor::AttachDependency(const std::shared_ptr<void> &dependency) {
         cycle->AttachObject(dependency);
     }
 

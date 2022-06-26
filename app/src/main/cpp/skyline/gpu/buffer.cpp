@@ -198,7 +198,7 @@ namespace skyline::gpu {
     /**
      * @brief A FenceCycleDependency that synchronizes the contents of a host buffer with the guest buffer
      */
-    struct BufferGuestSync : public FenceCycleDependency {
+    struct BufferGuestSync {
         std::shared_ptr<Buffer> buffer;
 
         explicit BufferGuestSync(std::shared_ptr<Buffer> buffer) : buffer(std::move(buffer)) {}

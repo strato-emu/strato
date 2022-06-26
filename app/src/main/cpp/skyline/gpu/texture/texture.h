@@ -293,7 +293,7 @@ namespace skyline::gpu {
      * @note The object **must** be locked prior to accessing any members as values will be mutated
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class TextureView : public FenceCycleDependency, public std::enable_shared_from_this<TextureView> {
+    class TextureView : public std::enable_shared_from_this<TextureView> {
       private:
         vk::ImageView vkView{};
 
@@ -350,7 +350,7 @@ namespace skyline::gpu {
      * @brief A texture which is backed by host constructs while being synchronized with the underlying guest texture
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    class Texture : public std::enable_shared_from_this<Texture>, public FenceCycleDependency {
+    class Texture : public std::enable_shared_from_this<Texture> {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing
@@ -415,9 +415,9 @@ namespace skyline::gpu {
         void CopyToGuest(u8 *hostBuffer);
 
         /**
-         * @brief A FenceCycleDependency that copies the contents of a staging buffer or mapped image backing the texture to the guest texture
+         * @brief A fence cycle dependency that copies the contents of a staging buffer or mapped image backing the texture to the guest texture
          */
-        struct TextureBufferCopy : public FenceCycleDependency {
+        struct TextureBufferCopy {
             std::shared_ptr<Texture> texture;
             std::shared_ptr<memory::StagingBuffer> stagingBuffer;
 
