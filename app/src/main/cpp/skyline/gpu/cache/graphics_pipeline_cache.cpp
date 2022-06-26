@@ -57,6 +57,22 @@ namespace skyline::gpu::cache {
         auto &vertexInputState{key.VertexInputState()};
         HASH(vertexInputState.vertexBindingDescriptionCount);
         HASH(vertexInputState.vertexAttributeDescriptionCount);
+        HASH(static_cast<VkFlags>(vertexInputState.flags));
+
+        for (size_t i{}; i < vertexInputState.vertexBindingDescriptionCount; i++) {
+            const auto &descr{vertexInputState.pVertexBindingDescriptions[i]};
+            HASH(descr.binding);
+            HASH(descr.stride);
+            HASH(static_cast<VkVertexInputRate>(descr.inputRate));
+        }
+
+        for (size_t i{}; i < vertexInputState.vertexAttributeDescriptionCount; i++) {
+            const auto &descr{vertexInputState.pVertexAttributeDescriptions[i]};
+            HASH(descr.binding);
+            HASH(descr.offset);
+            HASH(descr.location);
+            HASH(static_cast<VkFormat>(descr.format));
+        }
 
         if (key.vertexState.template isLinked<vk::PipelineVertexInputDivisorStateCreateInfoEXT>())
             HASH(key.VertexDivisorState().vertexBindingDivisorCount);
@@ -68,6 +84,24 @@ namespace skyline::gpu::cache {
 
         HASH(key.viewportState.viewportCount);
         HASH(key.viewportState.scissorCount);
+
+        for (size_t i{}; i < key.viewportState.viewportCount; i++) {
+            const auto &viewport{key.viewportState.pViewports[i]};
+            HASH(viewport.x);
+            HASH(viewport.y);
+            HASH(viewport.width);
+            HASH(viewport.height);
+            HASH(viewport.minDepth);
+            HASH(viewport.maxDepth);
+        }
+
+        for (size_t i{}; i < key.viewportState.scissorCount; i++) {
+            const auto &scissor{key.viewportState.pScissors[i]};
+            HASH(scissor.offset.x);
+            HASH(scissor.offset.y);
+            HASH(scissor.extent.width);
+            HASH(scissor.extent.height);
+        }
 
         auto &rasterizationState{key.RasterizationState()};
         HASH(rasterizationState.depthClampEnable);
@@ -115,6 +149,19 @@ namespace skyline::gpu::cache {
         HASH(key.colorBlendState.logicOpEnable);
         HASH(key.colorBlendState.logicOp);
         HASH(key.colorBlendState.attachmentCount);
+
+        for (size_t i{}; i < key.colorBlendState.attachmentCount; i++) {
+            const auto &attachment{key.colorBlendState.pAttachments[i]};
+            HASH(static_cast<VkBool32>(attachment.blendEnable));
+
+            HASH(static_cast<VkBlendOp>(attachment.alphaBlendOp));
+            HASH(static_cast<VkBlendOp>(attachment.colorBlendOp));
+
+            HASH(static_cast<VkBlendFactor>(attachment.dstAlphaBlendFactor));
+            HASH(static_cast<VkBlendFactor>(attachment.dstColorBlendFactor));
+            HASH(static_cast<VkBlendFactor>(attachment.srcAlphaBlendFactor));
+            HASH(static_cast<VkBlendFactor>(attachment.srcColorBlendFactor));
+        }
 
         return hash;
     }
