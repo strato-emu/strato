@@ -129,15 +129,14 @@ namespace skyline::service::hosbinder {
         height = height ? height : defaultHeight;
         format = (format != AndroidPixelFormat::None) ? format : defaultFormat;
 
-        if (!buffer->graphicBuffer) {
+        auto &graphicBuffer{buffer->graphicBuffer};
+        if (!graphicBuffer)
             // Horizon OS doesn't ever allocate memory for the buffers on the GraphicBufferProducer end
             // All buffers must be preallocated on the client application and attached to an Android buffer using SetPreallocatedBuffer
             return AndroidStatus::NoMemory;
-        }
-        auto &handle{buffer->graphicBuffer->graphicHandle};
-        auto &surface{handle.surfaces.front()};
-        if (handle.format != format || surface.width != width || surface.height != height || (buffer->graphicBuffer->usage & usage) != usage) {
-            Logger::Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, surface.width, surface.height, ToString(format), ToString(buffer->graphicBuffer->format), usage, buffer->graphicBuffer->usage);
+
+        if (graphicBuffer->format != format || graphicBuffer->width != width || graphicBuffer->height != height || (graphicBuffer->usage & usage) != usage) {
+            Logger::Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, graphicBuffer->width, graphicBuffer->height, ToString(format), ToString(graphicBuffer->format), usage, graphicBuffer->usage);
             // Nintendo doesn't deallocate the slot which was picked in here and reallocate it as a compatible buffer
             // This is related to the comment above, Nintendo only allocates buffers on the client side
             return AndroidStatus::NoInit;
