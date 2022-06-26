@@ -35,6 +35,6 @@ namespace skyline::gpu {
         /**
          * @return A pre-existing or newly created Texture object which matches the specified criteria
          */
-        std::shared_ptr<TextureView> FindOrCreate(const GuestTexture &guestTexture);
+        std::shared_ptr<TextureView> FindOrCreate(const GuestTexture &guestTexture, ContextTag tag = {});
     };
 }

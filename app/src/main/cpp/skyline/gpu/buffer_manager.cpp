@@ -12,7 +12,7 @@ namespace skyline::gpu {
         return it->guest->begin().base() < pointer;
     }
 
-    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle) {
+    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag) {
         /*
          * We align the buffer to the page boundary to ensure that:
          * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
@@ -34,7 +34,7 @@ namespace skyline::gpu {
             auto buffer{overlaps.front()};
             if (buffer->guest->begin() <= guestMapping.begin() && buffer->guest->end() >= guestMapping.end()) {
                 // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
-                std::scoped_lock bufferLock{*buffer};
+                ContextLock bufferLock{tag, *buffer};
                 return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
             }
         }
@@ -49,9 +49,9 @@ namespace skyline::gpu {
                 highestAddress = mapping.end().base();
         }
 
-        auto newBuffer{std::make_shared<Buffer>(gpu, cycle, span<u8>(lowestAddress, highestAddress), overlaps)};
+        auto newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}, tag, overlaps)};
         for (auto &overlap : overlaps) {
-            std::scoped_lock overlapLock{*overlap};
+            ContextLock overlapLock{tag, *overlap};
 
             buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
 
@@ -62,7 +62,7 @@ namespace skyline::gpu {
                     // This is a slight hack as we really shouldn't be changing the underlying non-mutable set elements without a rehash but without writing our own set impl this is the best we can do
                     const_cast<Buffer::BufferViewStorage *>(&*it)->offset += overlapOffset;
 
-                // Reset the sequence number to the initial one, if the new buffer was created from any GPU dirty overlaps then the new buffer's sequence will be incremented past this thus forcing a reacquire if neccessary
+                // Reset the sequence number to the initial one, if the new buffer was created from any GPU dirty overlaps then the new buffer's sequence will be incremented past this thus forcing a reacquire if necessary
                 // This is fine to do in the set since the hash and operator== do not use this value
                 it->lastAcquiredSequence = Buffer::InitialSequenceNumber;
             }

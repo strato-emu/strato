@@ -43,15 +43,15 @@ namespace skyline::gpu {
         BufferManager(GPU &gpu);
 
         /**
+         * @return A pre-existing or newly created Buffer object which covers the supplied mappings
+         */
+        BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {});
+
+        /**
          * @return A dynamically allocated megabuffer which can be used to store buffer modifications allowing them to be replayed in-sequence on the GPU
          * @note This object **must** be destroyed to be reclaimed by the manager and prevent a memory leak
          */
         MegaBuffer AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &cycle);
-
-        /**
-         * @return A pre-existing or newly created Buffer object which covers the supplied mappings
-         */
-        BufferView FindOrCreate(GuestBuffer guestMapping, const std::shared_ptr<FenceCycle> &cycle = nullptr);
     };
 
     /**

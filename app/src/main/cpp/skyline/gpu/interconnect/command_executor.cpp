@@ -5,7 +5,7 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu{*state.gpu}, activeCommandBuffer{gpu.scheduler.AllocateCommandBuffer()}, cycle{activeCommandBuffer.GetFenceCycle()}, megaBuffer{gpu.buffer.AcquireMegaBuffer(cycle)} {}
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu{*state.gpu}, activeCommandBuffer{gpu.scheduler.AllocateCommandBuffer()}, cycle{activeCommandBuffer.GetFenceCycle()}, megaBuffer{gpu.buffer.AcquireMegaBuffer(cycle)}, tag{AllocateTag()} {}
 
     CommandExecutor::~CommandExecutor() {
         cycle->Cancel();
@@ -71,23 +71,48 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    void CommandExecutor::AttachTexture(TextureView *view) {
-        auto texture{view->texture.get()};
-        if (!attachedTextures.contains(texture)) {
-            texture->WaitOnFence();
-            texture->cycle = cycle;
-            attachedTextures.emplace(texture);
-        }
-        cycle->AttachObject(view->shared_from_this());
+    CommandExecutor::LockedTexture::LockedTexture(std::shared_ptr<Texture> texture) : texture{std::move(texture)} {}
+
+    constexpr CommandExecutor::LockedTexture::LockedTexture(CommandExecutor::LockedTexture &&other) : texture{std::exchange(other.texture, nullptr)} {}
+
+    constexpr Texture *CommandExecutor::LockedTexture::operator->() const {
+        return texture.get();
     }
 
-    void CommandExecutor::AttachBuffer(BufferView &view) {
-        view->buffer->SynchronizeHost();
+    CommandExecutor::LockedTexture::~LockedTexture() {
+        if (texture)
+            texture->unlock();
+    }
 
-        if (!attachedBuffers.contains(view.bufferDelegate)) {
-            view.AttachCycle(cycle);
-            attachedBuffers.emplace(view.bufferDelegate);
-        }
+    bool CommandExecutor::AttachTexture(TextureView *view) {
+        bool didLock{view->LockWithTag(tag)};
+        if (didLock)
+            attachedTextures.emplace_back(view->texture);
+        return didLock;
+    }
+
+    CommandExecutor::LockedBuffer::LockedBuffer(std::shared_ptr<Buffer> buffer) : buffer{std::move(buffer)} {}
+
+    constexpr CommandExecutor::LockedBuffer::LockedBuffer(CommandExecutor::LockedBuffer &&other) : buffer{std::exchange(other.buffer, nullptr)} {}
+
+    constexpr Buffer *CommandExecutor::LockedBuffer::operator->() const {
+        return buffer.get();
+    }
+
+    CommandExecutor::LockedBuffer::~LockedBuffer() {
+        if (buffer)
+            buffer->unlock();
+    }
+
+    bool CommandExecutor::AttachBuffer(BufferView &view) {
+        bool didLock{view->LockWithTag(tag)};
+        if (didLock)
+            attachedBuffers.emplace_back(view->buffer);
+
+        if (!attachedBufferDelegates.contains(view.bufferDelegate))
+            attachedBufferDelegates.emplace(view.bufferDelegate);
+
+        return didLock;
     }
 
     void CommandExecutor::AttachDependency(const std::shared_ptr<FenceCycleDependency> &dependency) {
@@ -178,12 +203,12 @@ namespace skyline::gpu::interconnect {
                 .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
             });
 
-            for (auto texture : attachedTextures) {
+            for (const auto &texture : attachedTextures) {
                 texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
                 texture->MarkGpuDirty();
             }
 
-            for (const auto &delegate : attachedBuffers)
+            for (const auto &delegate : attachedBufferDelegates)
                 delegate->usageCallback = nullptr;
 
             vk::RenderPass lRenderPass;
@@ -213,14 +238,19 @@ namespace skyline::gpu::interconnect {
             }
 
             commandBuffer.end();
+
+            for (const auto &attachedBuffer : attachedBuffers)
+                attachedBuffer->SynchronizeHost(); // Synchronize attached buffers from the CPU without using a staging buffer, this is done directly prior to submission to prevent stalls
+
             gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
 
-                for (const auto &delegate : attachedBuffers)
-                    delegate->view->megabufferOffset = 0;
+            for (const auto &delegate : attachedBufferDelegates)
+                delegate->view->megabufferOffset = 0;
 
             nodes.clear();
             attachedTextures.clear();
             attachedBuffers.clear();
+            attachedBufferDelegates.clear();
         }
     }
 

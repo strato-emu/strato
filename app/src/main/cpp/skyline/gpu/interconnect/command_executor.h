@@ -20,9 +20,46 @@ namespace skyline::gpu::interconnect {
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
 
-        std::unordered_set<Texture *> attachedTextures; //!< All textures that need to be synced prior to and after execution
+        /**
+         * @brief A wrapper of a Texture object that has been locked beforehand and must be unlocked afterwards
+         */
+        struct LockedTexture {
+            std::shared_ptr<Texture> texture;
+
+            explicit LockedTexture(std::shared_ptr<Texture> texture);
+
+            LockedTexture(const LockedTexture &) = delete;
+
+            constexpr LockedTexture(LockedTexture &&other);
+
+            constexpr Texture *operator->() const;
+
+            ~LockedTexture();
+        };
+
+        std::vector<LockedTexture> attachedTextures; //!< All textures that are attached to the current execution
+
+        /**
+         * @brief A wrapper of a Buffer object that has been locked beforehand and must be unlocked afterwards
+         */
+        struct LockedBuffer {
+            std::shared_ptr<Buffer> buffer;
+
+            LockedBuffer(std::shared_ptr<Buffer> buffer);
+
+            LockedBuffer(const LockedBuffer &) = delete;
+
+            constexpr LockedBuffer(LockedBuffer &&other);
+
+            constexpr Buffer *operator->() const;
+
+            ~LockedBuffer();
+        };
+
+        std::vector<LockedBuffer> attachedBuffers; //!< All textures that are attached to the current execution
+
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
-        std::unordered_set<SharedBufferDelegate> attachedBuffers; //!< All buffers that are attached to the current execution
+        std::unordered_set<SharedBufferDelegate> attachedBufferDelegates; //!< All buffers that are attached to the current execution
 
         std::vector<TextureView *> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
         span<TextureView *> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
@@ -52,6 +89,7 @@ namespace skyline::gpu::interconnect {
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         MegaBuffer megaBuffer; //!< The megabuffer used to temporarily store buffer modifications allowing them to be replayed in-sequence on the GPU
+        ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
 
         CommandExecutor(const DeviceState &state);
 
@@ -59,17 +97,19 @@ namespace skyline::gpu::interconnect {
 
         /**
          * @brief Attach the lifetime of the texture to the command buffer
-         * @note The supplied texture **must** be locked by the calling thread
+         * @return If this is the first usage of the backing of this resource within this execution
+         * @note The supplied texture will be locked automatically until the command buffer is submitted and must **not** be locked by the caller
          * @note This'll automatically handle syncing of the texture in the most optimal way possible
          */
-        void AttachTexture(TextureView *view);
+        bool AttachTexture(TextureView *view);
 
         /**
          * @brief Attach the lifetime of a buffer to the command buffer
-         * @note The supplied buffer **must** be locked by the calling thread
+         * @return If this is the first usage of the backing of this resource within this execution
+         * @note The supplied buffer will be locked automatically until the command buffer is submitted and must **not** be locked by the caller
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachBuffer(BufferView &view);
+        bool AttachBuffer(BufferView &view);
 
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer

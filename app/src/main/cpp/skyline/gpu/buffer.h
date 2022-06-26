@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <boost/functional/hash.hpp>
 #include <nce.h>
+#include <gpu/tag_allocator.h>
 #include "memory_manager.h"
 
 namespace skyline::gpu {
@@ -23,6 +24,7 @@ namespace skyline::gpu {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
+        std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
         memory::Buffer backing;
         std::optional<GuestBuffer> guest;
 
@@ -103,6 +105,8 @@ namespace skyline::gpu {
 
             void lock();
 
+            bool LockWithTag(ContextTag tag);
+
             void unlock();
 
             bool try_lock();
@@ -120,7 +124,7 @@ namespace skyline::gpu {
         void SetupGuestMappings();
 
       public:
-        std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
+        std::weak_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
 
         constexpr vk::Buffer GetBacking() {
             return backing.vkBuffer;
@@ -140,10 +144,10 @@ namespace skyline::gpu {
 
         /**
          * @brief Creates a Buffer that is pre-synchronised with the contents of the input buffers
-         * @param pCycle The FenceCycle associated with the current workload, utilised for synchronising GPU dirty buffers
+         * @param tag The tag to associate locking of srcBuffers with
          * @param srcBuffers Span of overlapping source buffers
          */
-        Buffer(GPU &gpu, const std::shared_ptr<FenceCycle> &pCycle, GuestBuffer guest, span<std::shared_ptr<Buffer>> srcBuffers);
+        Buffer(GPU &gpu, GuestBuffer guest, ContextTag tag, span<std::shared_ptr<Buffer>> srcBuffers);
 
         /**
          * @brief Creates a host-only Buffer which isn't backed by any guest buffer
@@ -157,25 +161,27 @@ namespace skyline::gpu {
          * @brief Acquires an exclusive lock on the buffer for the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void lock() {
-            mutex.lock();
-        }
+        void lock();
+
+        /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
+         * @return If the lock was acquired by this call rather than having the same tag as the holder
+         * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
+         */
+        bool LockWithTag(ContextTag tag);
 
         /**
          * @brief Relinquishes an existing lock on the buffer by the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void unlock() {
-            mutex.unlock();
-        }
+        void unlock();
 
         /**
          * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
          * @note Naming is in accordance to the Lockable named requirement
          */
-        bool try_lock() {
-            return mutex.try_lock();
-        }
+        bool try_lock();
 
         /**
          * @brief Marks the buffer as dirty on the GPU, it will be synced on the next call to SynchronizeGuest
@@ -310,6 +316,16 @@ namespace skyline::gpu {
          */
         void lock() const {
             bufferDelegate->lock();
+        }
+
+        /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
+         * @return If the lock was acquired without waiting (i.e. the tag was the same as the last lock)
+         * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
+         */
+        bool LockWithTag(ContextTag tag) const {
+            return bufferDelegate->LockWithTag(tag);
         }
 
         /**

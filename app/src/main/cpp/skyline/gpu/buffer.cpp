@@ -34,12 +34,11 @@ namespace skyline::gpu {
         });
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
+    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {
         SetupGuestMappings();
     }
 
-    Buffer::Buffer(GPU &gpu, const std::shared_ptr<FenceCycle> &pCycle, GuestBuffer guest, span<std::shared_ptr<Buffer>> srcBuffers) : gpu(gpu), backing(gpu.memory.AllocateBuffer(guest.size())), guest(guest) {
-        std::scoped_lock bufLock{*this};
+    Buffer::Buffer(GPU &gpu, GuestBuffer guest, ContextTag tag, span<std::shared_ptr<Buffer>> srcBuffers) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {
         SetupGuestMappings();
 
         // Source buffers don't necessarily fully overlap with us so we have to perform a sync here to prevent any gaps
@@ -60,7 +59,7 @@ namespace skyline::gpu {
 
         // Transfer data/state from source buffers
         for (const auto &srcBuffer : srcBuffers) {
-            std::scoped_lock lock{*srcBuffer};
+            ContextLock lock{tag, *srcBuffer};
             if (srcBuffer->guest) {
                 if (srcBuffer->hostImmutableCycle) {
                     // Propagate any host immutability
@@ -75,8 +74,8 @@ namespace skyline::gpu {
                 if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
                     // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
 
-                    // Only sync back the buffer if it's not attached to the current fence cycle, otherwise propagate the GPU dirtiness
-                    if (!srcBuffer->cycle.owner_before(pCycle)) {
+                    // Only sync back the buffer if it's not attached to the current context, otherwise propagate the GPU dirtiness
+                    if (lock.isFirst) {
                         // Perform a GPU -> CPU sync on the source then do a CPU -> GPU sync for the region occupied by the source
                         // This is required since if we were created from a two buffers: one GPU dirty in the current cycle, and one GPU dirty in the previous cycle, if we marked ourselves as CPU dirty here then the GPU dirtiness from the current cycle buffer would be ignored and cause writes to be missed
                         srcBuffer->SynchronizeGuest(true);
@@ -100,12 +99,12 @@ namespace skyline::gpu {
     }
 
     Buffer::~Buffer() {
-        std::scoped_lock lock{*this};
         if (trapHandle)
             gpu.state.nce->DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
+        WaitOnFence();
     }
 
     void Buffer::MarkGpuDirty() {
@@ -289,6 +288,28 @@ namespace skyline::gpu {
         hostImmutableCycle = pCycle;
     }
 
+    void Buffer::lock() {
+        mutex.lock();
+    }
+
+    bool Buffer::LockWithTag(ContextTag pTag) {
+        if (pTag && pTag == tag)
+            return false;
+
+        mutex.lock();
+        tag = pTag;
+        return true;
+    }
+
+    void Buffer::unlock() {
+        tag = ContextTag{};
+        mutex.unlock();
+    }
+
+    bool Buffer::try_lock() {
+        return mutex.try_lock();
+    }
+
     Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
 
     Buffer::BufferDelegate::BufferDelegate(std::shared_ptr<Buffer> pBuffer, const Buffer::BufferViewStorage *view) : buffer(std::move(pBuffer)), view(view) {
@@ -296,7 +317,6 @@ namespace skyline::gpu {
     }
 
     Buffer::BufferDelegate::~BufferDelegate() {
-        std::scoped_lock lock(*this);
         buffer->delegates.erase(iterator);
     }
 
@@ -310,6 +330,21 @@ namespace skyline::gpu {
                 return;
 
             lBuffer->unlock();
+            lBuffer = latestBacking;
+        }
+    }
+
+    bool Buffer::BufferDelegate::LockWithTag(ContextTag pTag) {
+        auto lBuffer{std::atomic_load(&buffer)};
+        while (true) {
+            bool didLock{lBuffer->LockWithTag(pTag)};
+
+            auto latestBacking{std::atomic_load(&buffer)};
+            if (lBuffer == latestBacking)
+                return didLock;
+
+            if (didLock)
+                lBuffer->unlock();
             lBuffer = latestBacking;
         }
     }

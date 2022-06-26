@@ -4,6 +4,7 @@
 #pragma once
 
 #include <nce.h>
+#include <gpu/tag_allocator.h>
 #include <gpu/memory_manager.h>
 
 namespace skyline::gpu {
@@ -315,6 +316,14 @@ namespace skyline::gpu {
         void lock();
 
         /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
+         * @return If the lock was acquired by this call rather than having the same tag as the holder
+         * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
+         */
+        bool LockWithTag(ContextTag tag);
+
+        /**
          * @brief Relinquishes an existing lock on the backing texture by the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
@@ -345,6 +354,7 @@ namespace skyline::gpu {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing
+        std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
         std::condition_variable backingCondition; //!< Signalled when a valid backing has been swapped in
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
@@ -467,25 +477,27 @@ namespace skyline::gpu {
          * @brief Acquires an exclusive lock on the texture for the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void lock() {
-            mutex.lock();
-        }
+        void lock();
+
+        /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
+         * @return If the lock was acquired by this call rather than having the same tag as the holder
+         * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
+         */
+        bool LockWithTag(ContextTag tag);
 
         /**
          * @brief Relinquishes an existing lock on the texture by the calling thread
          * @note Naming is in accordance to the BasicLockable named requirement
          */
-        void unlock() {
-            mutex.unlock();
-        }
+        void unlock();
 
         /**
          * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
          * @note Naming is in accordance to the Lockable named requirement
          */
-        bool try_lock() {
-            return mutex.try_lock();
-        }
+        bool try_lock();
 
         /**
          * @brief Marks the texture as dirty on the GPU, it will be synced on the next call to SynchronizeGuest

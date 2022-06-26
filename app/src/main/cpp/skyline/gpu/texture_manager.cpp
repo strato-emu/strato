@@ -6,7 +6,7 @@
 namespace skyline::gpu {
     TextureManager::TextureManager(GPU &gpu) : gpu(gpu) {}
 
-    std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture) {
+    std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture, ContextTag tag) {
         auto guestMapping{guestTexture.mappings.front()};
 
         /*
@@ -52,6 +52,7 @@ namespace skyline::gpu {
                       || matchGuestTexture.viewMipBase > 0)
                      && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
+                    ContextLock textureLock{tag, *texture};
                     return texture->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
                         .aspectMask = guestTexture.aspect,
                         .baseMipLevel = guestTexture.viewMipBase,

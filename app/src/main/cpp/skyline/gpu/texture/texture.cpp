@@ -106,6 +106,21 @@ namespace skyline::gpu {
         }
     }
 
+    bool TextureView::LockWithTag(ContextTag tag) {
+        auto backing{std::atomic_load(&texture)};
+        while (true) {
+            bool didLock{backing->LockWithTag(tag)};
+
+            auto latestBacking{std::atomic_load(&texture)};
+            if (backing == latestBacking)
+                return didLock;
+
+            if (didLock)
+                backing->unlock();
+            backing = latestBacking;
+        }
+    }
+
     void TextureView::unlock() {
         texture->unlock();
     }
@@ -564,12 +579,34 @@ namespace skyline::gpu {
     }
 
     Texture::~Texture() {
-        std::scoped_lock lock{*this};
         if (trapHandle)
             gpu.state.nce->DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
+        WaitOnFence();
+    }
+
+    void Texture::lock() {
+        mutex.lock();
+    }
+
+    bool Texture::LockWithTag(ContextTag pTag) {
+        if (pTag && pTag == tag)
+            return false;
+
+        mutex.lock();
+        tag = pTag;
+        return true;
+    }
+
+    void Texture::unlock() {
+        tag = ContextTag{};
+        mutex.unlock();
+    }
+
+    bool Texture::try_lock() {
+        return mutex.try_lock();
     }
 
     void Texture::MarkGpuDirty() {
