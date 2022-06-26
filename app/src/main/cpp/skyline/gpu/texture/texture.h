@@ -395,7 +395,7 @@ namespace skyline::gpu {
          * @brief An implementation function for guest -> host texture synchronization, it allocates and copies data into a staging buffer or directly into a linear host texture
          * @return If a staging buffer was required for the texture sync, it's returned filled with guest texture data and must be copied to the host texture by the callee
          */
-        std::shared_ptr<memory::StagingBuffer> SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle);
+        std::shared_ptr<memory::StagingBuffer> SynchronizeHostImpl();
 
         /**
          * @brief Records commands for copying data from a staging buffer to the texture's backing into the supplied command buffer
@@ -432,7 +432,7 @@ namespace skyline::gpu {
         boost::container::small_vector<vk::BufferImageCopy, 10> GetBufferImageCopies();
 
       public:
-        std::weak_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
+        std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
         std::optional<GuestTexture> guest;
         texture::Dimensions dimensions;
         texture::Format format;

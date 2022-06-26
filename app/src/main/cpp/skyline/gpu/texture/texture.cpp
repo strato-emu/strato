@@ -185,7 +185,7 @@ namespace skyline::gpu {
         });
     }
 
-    std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl(const std::shared_ptr<FenceCycle> &pCycle) {
+    std::shared_ptr<memory::StagingBuffer> Texture::SynchronizeHostImpl() {
         if (!guest)
             throw exception("Synchronization of host textures requires a valid guest texture to synchronize from");
         else if (guest->dimensions != dimensions)
@@ -207,8 +207,7 @@ namespace skyline::gpu {
                 if (layout == vk::ImageLayout::eUndefined)
                     TransitionLayout(vk::ImageLayout::eGeneral);
                 bufferData = std::get<memory::Image>(backing).data();
-                if (cycle.lock() != pCycle)
-                    WaitOnFence();
+                WaitOnFence();
                 return nullptr;
             } else {
                 throw exception("Guest -> Host synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
@@ -312,9 +311,6 @@ namespace skyline::gpu {
                 bufferData += level.targetLinearSize * layerCount;
             }
         }
-
-        if (stagingBuffer && cycle.lock() != pCycle)
-            WaitOnFence();
 
         return stagingBuffer;
     }
@@ -632,10 +628,9 @@ namespace skyline::gpu {
     void Texture::WaitOnFence() {
         TRACE_EVENT("gpu", "Texture::WaitOnFence");
 
-        auto lCycle{cycle.lock()};
-        if (lCycle) {
-            lCycle->Wait();
-            cycle.reset();
+        if (cycle) {
+            cycle->Wait();
+            cycle = nullptr;
         }
     }
 
@@ -682,12 +677,13 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
 
-        auto stagingBuffer{SynchronizeHostImpl(nullptr)};
+        auto stagingBuffer{SynchronizeHostImpl()};
         if (stagingBuffer) {
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 CopyFromStagingBuffer(commandBuffer, stagingBuffer);
             })};
             lCycle->AttachObjects(stagingBuffer, shared_from_this());
+            lCycle->ChainCycle(cycle);
             cycle = lCycle;
         }
 
@@ -706,10 +702,11 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHostWithBuffer");
 
-        auto stagingBuffer{SynchronizeHostImpl(pCycle)};
+        auto stagingBuffer{SynchronizeHostImpl()};
         if (stagingBuffer) {
             CopyFromStagingBuffer(commandBuffer, stagingBuffer);
             pCycle->AttachObjects(stagingBuffer, shared_from_this());
+            pCycle->ChainCycle(cycle);
             cycle = pCycle;
         }
 
@@ -743,7 +740,6 @@ namespace skyline::gpu {
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
 
         WaitOnBacking();
-        WaitOnFence();
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
@@ -752,9 +748,11 @@ namespace skyline::gpu {
                 CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
             })};
             lCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this(), stagingBuffer));
+            lCycle->ChainCycle(cycle);
             cycle = lCycle;
         } else if (tiling == vk::ImageTiling::eLinear) {
             // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly from it rather than using a staging buffer
+            WaitOnFence();
             CopyToGuest(std::get<memory::Image>(backing).data());
         } else {
             throw exception("Host -> Guest synchronization of images tiled as '{}' isn't implemented", vk::to_string(tiling));
@@ -779,8 +777,7 @@ namespace skyline::gpu {
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");
 
         WaitOnBacking();
-        if (cycle.lock() != pCycle)
-            WaitOnFence();
+        pCycle->ChainCycle(cycle);
 
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
@@ -812,10 +809,7 @@ namespace skyline::gpu {
 
     void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
         WaitOnBacking();
-        WaitOnFence();
-
         source->WaitOnBacking();
-        source->WaitOnFence();
 
         if (source->layout == vk::ImageLayout::eUndefined)
             throw exception("Cannot copy from image with undefined layout");
@@ -896,6 +890,7 @@ namespace skyline::gpu {
                 });
         })};
         lCycle->AttachObjects(std::move(source), shared_from_this());
+        lCycle->ChainCycle(cycle);
         cycle = lCycle;
     }
 }

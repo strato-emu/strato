@@ -64,8 +64,7 @@ namespace skyline::gpu {
                 if (srcBuffer->hostImmutableCycle) {
                     // Propagate any host immutability
                     if (hostImmutableCycle) {
-                        if (srcBuffer->hostImmutableCycle.owner_before(hostImmutableCycle))
-                            hostImmutableCycle = srcBuffer->hostImmutableCycle;
+                        srcBuffer->hostImmutableCycle->Wait();
                     } else {
                         hostImmutableCycle = srcBuffer->hostImmutableCycle;
                     }
@@ -119,17 +118,15 @@ namespace skyline::gpu {
     void Buffer::WaitOnFence() {
         TRACE_EVENT("gpu", "Buffer::WaitOnFence");
 
-        auto lCycle{cycle.lock()};
-        if (lCycle) {
-            lCycle->Wait();
-            cycle.reset();
+        if (cycle) {
+            cycle->Wait();
+            cycle = nullptr;
         }
     }
 
     bool Buffer::PollFence() {
-        auto lCycle{cycle.lock()};
-        if (lCycle && lCycle->Poll()) {
-            cycle.reset();
+        if (cycle && cycle->Poll()) {
+            cycle = nullptr;
             return true;
         }
         return false;
@@ -142,27 +139,6 @@ namespace skyline::gpu {
         WaitOnFence();
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeHost");
-
-        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
-        std::memcpy(backing.data(), mirror.data(), mirror.size());
-
-        if (rwTrap) {
-            gpu.state.nce->RetrapRegions(*trapHandle, false);
-            dirtyState = DirtyState::GpuDirty;
-        } else {
-            gpu.state.nce->RetrapRegions(*trapHandle, true);
-            dirtyState = DirtyState::Clean;
-        }
-    }
-
-    void Buffer::SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &pCycle, bool rwTrap) {
-        if (dirtyState != DirtyState::CpuDirty || !guest)
-            return;
-
-        if (!cycle.owner_before(pCycle))
-            WaitOnFence();
-
-        TRACE_EVENT("gpu", "Buffer::SynchronizeHostWithCycle");
 
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         std::memcpy(backing.data(), mirror.data(), mirror.size());
@@ -195,52 +171,30 @@ namespace skyline::gpu {
         dirtyState = DirtyState::Clean;
     }
 
-    /**
-     * @brief A FenceCycleDependency that synchronizes the contents of a host buffer with the guest buffer
-     */
-    struct BufferGuestSync {
-        std::shared_ptr<Buffer> buffer;
-
-        explicit BufferGuestSync(std::shared_ptr<Buffer> buffer) : buffer(std::move(buffer)) {}
-
-        ~BufferGuestSync() {
-            TRACE_EVENT("gpu", "Buffer::BufferGuestSync");
-            buffer->SynchronizeGuest();
-        }
-    };
-
-    void Buffer::SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &pCycle) {
-        if (!cycle.owner_before(pCycle))
-            WaitOnFence();
-
-        pCycle->AttachObject(std::make_shared<BufferGuestSync>(shared_from_this()));
-        cycle = pCycle;
-    }
-
-    void Buffer::SynchronizeGuestImmediate(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
+    void Buffer::SynchronizeGuestImmediate(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
         // If this buffer was attached to the current cycle, flush all pending host GPU work and wait to ensure that we read valid data
-        if (cycle.owner_before(pCycle))
+        if (!isFirstUsage)
             flushHostCallback();
 
         SynchronizeGuest();
     }
 
-    void Buffer::Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) {
+    void Buffer::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) {
         if (dirtyState == DirtyState::GpuDirty)
-            SynchronizeGuestImmediate(pCycle, flushHostCallback);
+            SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
         std::memcpy(data.data(), mirror.data() + offset, data.size());
     }
 
-    void Buffer::Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) {
+    void Buffer::Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
         // Perform a syncs in both directions to ensure correct ordering of writes
         if (dirtyState == DirtyState::CpuDirty)
-            SynchronizeHostWithCycle(pCycle);
+            SynchronizeHost();
         else if (dirtyState == DirtyState::GpuDirty)
-            SynchronizeGuestImmediate(pCycle, flushHostCallback);
+            SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
         if (dirtyState != DirtyState::Clean)
             Logger::Error("Attempting to write to a dirty buffer"); // This should never happen since we do syncs in both directions above
@@ -277,9 +231,9 @@ namespace skyline::gpu {
         sequenceNumber++;
     }
 
-    span<u8> Buffer::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
+    span<u8> Buffer::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
         if (dirtyState == DirtyState::GpuDirty)
-            SynchronizeGuestImmediate(pCycle, flushHostCallback);
+            SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
         return mirror;
     }
@@ -372,18 +326,9 @@ namespace skyline::gpu {
 
     BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
 
-    void BufferView::AttachCycle(const std::shared_ptr<FenceCycle> &cycle) {
-        auto buffer{bufferDelegate->buffer.get()};
-        if (!buffer->cycle.owner_before(cycle)) {
-            buffer->WaitOnFence();
-            buffer->cycle = cycle;
-            cycle->AttachObject(bufferDelegate);
-        }
-    }
-
-    void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
+    void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
         // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further writes in the current cycle to occur on the GPU
-        bufferDelegate->buffer->MarkHostImmutable(pCycle);
+        bufferDelegate->buffer->MarkHostImmutable(cycle);
 
         usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
         if (!bufferDelegate->usageCallback) {
@@ -396,18 +341,18 @@ namespace skyline::gpu {
         }
     }
 
-    void BufferView::Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const {
-        bufferDelegate->buffer->Read(pCycle, flushHostCallback, data, offset + bufferDelegate->view->offset);
+    void BufferView::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const {
+        bufferDelegate->buffer->Read(isFirstUsage, flushHostCallback, data, offset + bufferDelegate->view->offset);
     }
 
-    void BufferView::Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const {
+    void BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const {
         // If megabuffering can't be enabled we have to do a GPU-side copy to ensure sequencing
         bool gpuCopy{bufferDelegate->view->size > MegaBufferingDisableThreshold};
         if (gpuCopy)
             // This will force the host buffer contents to stay as is for the current cycle, requiring that write operations are instead sequenced on the GPU for the entire buffer
             bufferDelegate->buffer->MarkHostImmutable(pCycle);
 
-        bufferDelegate->buffer->Write(pCycle, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
+        bufferDelegate->buffer->Write(isFirstUsage, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
 
     vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer &megaBuffer) const {
@@ -436,8 +381,8 @@ namespace skyline::gpu {
         return bufferDelegate->view->megabufferOffset; // Success!
     }
 
-    span<u8> BufferView::GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback) {
-        auto backing{bufferDelegate->buffer->GetReadOnlyBackingSpan(pCycle, flushHostCallback)};
+    span<u8> BufferView::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
+        auto backing{bufferDelegate->buffer->GetReadOnlyBackingSpan(isFirstUsage, flushHostCallback)};
         return backing.subspan(bufferDelegate->view->offset, bufferDelegate->view->size);
     }
 }

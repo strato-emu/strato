@@ -124,7 +124,7 @@ namespace skyline::gpu {
         void SetupGuestMappings();
 
       public:
-        std::weak_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
+        std::shared_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
 
         constexpr vk::Buffer GetBacking() {
             return backing.vkBuffer;
@@ -211,14 +211,6 @@ namespace skyline::gpu {
         void SynchronizeHost(bool rwTrap = false);
 
         /**
-         * @brief Synchronizes the host buffer with the guest
-         * @param cycle A FenceCycle that is checked against the held one to skip waiting on it when equal
-         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
-         * @note The buffer **must** be locked prior to calling this
-         */
-        void SynchronizeHostWithCycle(const std::shared_ptr<FenceCycle> &cycle, bool rwTrap = false);
-
-        /**
          * @brief Synchronizes the guest buffer with the host buffer
          * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
          * @param nonBlocking If true, the call will return immediately if the fence is not signalled, skipping the sync
@@ -227,34 +219,27 @@ namespace skyline::gpu {
         void SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false);
 
         /**
-         * @brief Synchronizes the guest buffer with the host buffer when the FenceCycle is signalled
-         * @note The buffer **must** be locked prior to calling this
-         * @note The guest buffer should not be null prior to calling this
-         */
-        void SynchronizeGuestWithCycle(const std::shared_ptr<FenceCycle> &cycle);
-
-        /**
          * @brief Synchronizes the guest buffer with the host buffer immediately, flushing GPU work if necessary
-         * @note The buffer **must** be locked prior to calling this
-         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
+         * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeGuestImmediate(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
+        void SynchronizeGuestImmediate(bool isFirstUsage, const std::function<void()> &flushHostCallback);
 
         /**
          * @brief Reads data at the specified offset in the buffer
-         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          */
-        void Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
+        void Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
          * @brief Writes data at the specified offset in the buffer, falling back to GPU side copies if the buffer is host immutable
-         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          * @param gpuCopyCallback Callback to perform a GPU-side copy for this Write
          */
-        void Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset);
+        void Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
          * @return A cached or newly created view into this buffer with the supplied attributes
@@ -279,19 +264,19 @@ namespace skyline::gpu {
         void AdvanceSequence();
 
         /**
-         * @param pCycle The FenceCycle associated with the current workload, utilised for waiting and flushing semantics
+         * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          * @return A span of the backing buffer contents
          * @note The returned span **must** not be written to
          * @note The buffer **must** be kept locked until the span is no longer in use
          */
-        span<u8> GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
+        span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
 
         /**
          * @brief Prevents any further writes to the `backing` host side buffer for the duration of the current cycle, forcing slower inline GPU updates instead
          * @note The buffer **must** be locked prior to calling this
          */
-        void MarkHostImmutable(const std::shared_ptr<FenceCycle> &pCycle);
+        void MarkHostImmutable(const std::shared_ptr<FenceCycle> &cycle);
 
         bool EverHadInlineUpdate() const { return everHadInlineUpdate; }
     };
@@ -356,32 +341,26 @@ namespace skyline::gpu {
         }
 
         /**
-         * @brief Attaches a fence cycle to the underlying buffer in a way that it will be synchronized with the latest backing buffer
-         * @note The view **must** be locked prior to calling this
-         */
-        void AttachCycle(const std::shared_ptr<FenceCycle> &cycle);
-
-        /**
          * @brief Registers a callback for a usage of this view, it may be called multiple times due to the view being recreated with different backings
          * @note This will force the buffer to be host immutable for the current cycle, preventing megabuffering and requiring slower GPU inline writes instead
          * @note The callback will be automatically called the first time after registration
          * @note The view **must** be locked prior to calling this
          */
-        void RegisterUsage(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
+        void RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
 
         /**
          * @brief Reads data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Read
          */
-        void Read(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const;
+        void Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const;
 
         /**
          * @brief Writes data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Write
          */
-        void Write(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const;
+        void Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const;
 
         /**
          * @brief If megabuffering is beneficial for the current buffer, pushes its contents into the megabuffer and returns the offset of the pushed data
@@ -396,6 +375,6 @@ namespace skyline::gpu {
          * @note The view **must** be kept locked until the span is no longer in use
          * @note See Buffer::GetReadOnlyBackingSpan
          */
-        span<u8> GetReadOnlyBackingSpan(const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback);
+        span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
     };
 }

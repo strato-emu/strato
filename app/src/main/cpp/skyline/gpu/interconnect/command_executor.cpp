@@ -203,13 +203,18 @@ namespace skyline::gpu::interconnect {
                 .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
             });
 
+            // We need this barrier here to ensure that resources are in the state we expect them to be in, we shouldn't overwrite resources while prior commands might still be using them or read from them while they might be modified by prior commands
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
+                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                }, {}, {}
+            );
+
             for (const auto &texture : attachedTextures) {
                 texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
                 texture->MarkGpuDirty();
             }
-
-            for (const auto &delegate : attachedBufferDelegates)
-                delegate->usageCallback = nullptr;
 
             vk::RenderPass lRenderPass;
             u32 subpassIndex;
@@ -244,13 +249,30 @@ namespace skyline::gpu::interconnect {
 
             gpu.scheduler.SubmitCommandBuffer(commandBuffer, activeCommandBuffer.GetFence());
 
-            for (const auto &delegate : attachedBufferDelegates)
-                delegate->view->megabufferOffset = 0;
-
             nodes.clear();
+
+            for (const auto &attachedTexture : attachedTextures) {
+                cycle->AttachObject(attachedTexture.texture);
+                cycle->ChainCycle(attachedTexture->cycle);
+                attachedTexture->cycle = cycle;
+            }
             attachedTextures.clear();
+            textureManagerLock.reset();
+
+            for (const auto &attachedBuffer : attachedBuffers) {
+                cycle->AttachObject(attachedBuffer.buffer);
+                cycle->ChainCycle(attachedBuffer->cycle);
+                attachedBuffer->cycle = cycle;
+            }
+
+            for (const auto &delegate : attachedBufferDelegates) {
+                delegate->usageCallback = nullptr;
+                delegate->view->megabufferOffset = 0;
+            }
+
             attachedBuffers.clear();
             attachedBufferDelegates.clear();
+            bufferManagerLock.reset();
         }
     }
 

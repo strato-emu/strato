@@ -627,7 +627,7 @@ namespace skyline::gpu::interconnect {
             T Read(CommandExecutor &pExecutor, size_t dstOffset) const {
                 T object;
                 ContextLock lock{pExecutor.tag, view};
-                view.Read(pExecutor.cycle, []() {
+                view.Read(lock.isFirst, []() {
                     // TODO: here we should trigger a SubmitWithFlush, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, span<T>(object).template cast<u8>(), dstOffset);
@@ -643,7 +643,7 @@ namespace skyline::gpu::interconnect {
                 auto srcCpuBuf{buf.template cast<u8>()};
 
                 ContextLock lock{pExecutor.tag, view};
-                view.Write(pExecutor.cycle, []() {
+                view.Write(lock.isFirst, pExecutor.cycle, []() {
                     // TODO: see Read()
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, view = this->view]() {
