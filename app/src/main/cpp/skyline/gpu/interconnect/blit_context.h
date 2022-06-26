@@ -118,11 +118,12 @@ namespace skyline::gpu::interconnect {
             auto srcGuestTexture{GetGuestTexture(srcSurface)};
             auto dstGuestTexture{GetGuestTexture(dstSurface)};
 
-            auto srcTextureView{gpu.texture.FindOrCreate(srcGuestTexture, executor.tag)};
-            executor.AttachTexture(&*srcTextureView);
+            auto &textureManager{executor.AcquireTextureManager()};
+            auto srcTextureView{textureManager.FindOrCreate(srcGuestTexture, executor.tag)};
+            executor.AttachTexture(srcTextureView.get());
 
-            auto dstTextureView{gpu.texture.FindOrCreate(dstGuestTexture, executor.tag)};
-            executor.AttachTexture(&*dstTextureView);
+            auto dstTextureView{textureManager.FindOrCreate(dstGuestTexture, executor.tag)};
+            executor.AttachTexture(dstTextureView.get());
 
             auto getSubresourceLayers{[](const vk::ImageSubresourceRange &range, vk::ImageAspectFlags aspect) {
                 return vk::ImageSubresourceLayers{

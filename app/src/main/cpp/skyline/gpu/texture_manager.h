@@ -33,7 +33,26 @@ namespace skyline::gpu {
         TextureManager(GPU &gpu);
 
         /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void lock();
+
+        /**
+         * @brief Relinquishes an existing lock on the texture by the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void unlock();
+
+        /**
+         * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
+         * @note Naming is in accordance to the Lockable named requirement
+         */
+        bool try_lock();
+
+        /**
          * @return A pre-existing or newly created Texture object which matches the specified criteria
+         * @note The texture manager **must** be locked prior to calling this
          */
         std::shared_ptr<TextureView> FindOrCreate(const GuestTexture &guestTexture, ContextTag tag = {});
     };

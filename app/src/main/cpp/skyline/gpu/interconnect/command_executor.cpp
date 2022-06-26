@@ -11,6 +11,18 @@ namespace skyline::gpu::interconnect {
         cycle->Cancel();
     }
 
+    TextureManager &CommandExecutor::AcquireTextureManager() {
+        if (!textureManagerLock)
+            textureManagerLock.emplace(gpu.texture);
+        return gpu.texture;
+    }
+
+    BufferManager &CommandExecutor::AcquireBufferManager() {
+        if (!bufferManagerLock)
+            bufferManagerLock.emplace(gpu.buffer);
+        return gpu.buffer;
+    }
+
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
         auto addSubpass{[&] {
             renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu);
@@ -85,6 +97,10 @@ namespace skyline::gpu::interconnect {
     }
 
     bool CommandExecutor::AttachTexture(TextureView *view) {
+        if (!textureManagerLock)
+            // Avoids a potential deadlock with this resource being locked while acquiring the TextureManager lock while the thread owning it tries to acquire a lock on this texture
+            textureManagerLock.emplace(gpu.texture);
+
         bool didLock{view->LockWithTag(tag)};
         if (didLock)
             attachedTextures.emplace_back(view->texture);
@@ -105,6 +121,10 @@ namespace skyline::gpu::interconnect {
     }
 
     bool CommandExecutor::AttachBuffer(BufferView &view) {
+        if (!bufferManagerLock)
+            // See AttachTexture(...)
+            bufferManagerLock.emplace(gpu.buffer);
+
         bool didLock{view->LockWithTag(tag)};
         if (didLock)
             attachedBuffers.emplace_back(view->buffer);

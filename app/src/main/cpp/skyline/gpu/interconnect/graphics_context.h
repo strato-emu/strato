@@ -400,7 +400,7 @@ namespace skyline::gpu::interconnect {
                 return vk::ImageViewType::e2D;
             }();
 
-            renderTarget.view = gpu.texture.FindOrCreate(renderTarget.guest, executor.tag);
+            renderTarget.view = executor.AcquireTextureManager().FindOrCreate(renderTarget.guest, executor.tag);
             return renderTarget.view.get();
         }
 
@@ -725,7 +725,7 @@ namespace skyline::gpu::interconnect {
             auto view{constantBufferCache.Lookup(constantBufferSelector.size, constantBufferSelector.iova)};
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
-                view = gpu.buffer.FindOrCreate(mappings.front(), executor.tag);
+                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
                 constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
             }
 
@@ -916,7 +916,7 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            return gpu.buffer.FindOrCreate(mappings.front(), executor.tag);
+            return executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
         }
 
         /**
@@ -1845,7 +1845,7 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            vertexBuffer.view = gpu.buffer.FindOrCreate(mappings.front(), executor.tag);
+            vertexBuffer.view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
             return &vertexBuffer;
         }
 
@@ -2329,7 +2329,7 @@ namespace skyline::gpu::interconnect {
                 return textureView;
             }
 
-            auto textureView{gpu.texture.FindOrCreate(poolTexture.guest, executor.tag)};
+            auto textureView{executor.AcquireTextureManager().FindOrCreate(poolTexture.guest, executor.tag)};
             poolTexture.view = textureView;
             return textureView;
         }
@@ -2600,7 +2600,7 @@ namespace skyline::gpu::interconnect {
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
             auto mapping{mappings.front()};
-            indexBuffer.view = gpu.buffer.FindOrCreate(span<u8>(mapping.data(), size), executor.tag);
+            indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag);
             return indexBuffer.view;
         }
 

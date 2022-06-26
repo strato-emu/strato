@@ -17,6 +17,8 @@ namespace skyline::gpu {
         std::mutex mutex; //!< Synchronizes access to the buffer mappings
         std::vector<std::shared_ptr<Buffer>> buffers; //!< A sorted vector of all buffer mappings
 
+        std::mutex megaBufferMutex; //!< Synchronizes access to the allocated megabuffers
+
         friend class MegaBuffer;
 
         /**
@@ -26,7 +28,6 @@ namespace skyline::gpu {
             std::atomic_flag active{true}; //!< If the megabuffer is currently being utilized, we want to construct a buffer as active
             std::shared_ptr<FenceCycle> cycle; //!< The latest cycle on the fence, all waits must be performed through this
 
-            constexpr static vk::DeviceSize Size{100 * 1024 * 1024}; //!< Size in bytes of the megabuffer (100MiB)
             memory::Buffer backing; //!< The GPU buffer as the backing storage for the megabuffer
 
             MegaBufferSlot(GPU &gpu);
@@ -43,13 +44,33 @@ namespace skyline::gpu {
         BufferManager(GPU &gpu);
 
         /**
+         * @brief Acquires an exclusive lock on the texture for the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void lock();
+
+        /**
+         * @brief Relinquishes an existing lock on the texture by the calling thread
+         * @note Naming is in accordance to the BasicLockable named requirement
+         */
+        void unlock();
+
+        /**
+         * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
+         * @note Naming is in accordance to the Lockable named requirement
+         */
+        bool try_lock();
+
+        /**
          * @return A pre-existing or newly created Buffer object which covers the supplied mappings
+         * @note The buffer manager **must** be locked prior to calling this
          */
         BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {});
 
         /**
          * @return A dynamically allocated megabuffer which can be used to store buffer modifications allowing them to be replayed in-sequence on the GPU
          * @note This object **must** be destroyed to be reclaimed by the manager and prevent a memory leak
+         * @note The buffer manager **doesn't** need to be locked prior to calling this
          */
         MegaBuffer AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &cycle);
     };

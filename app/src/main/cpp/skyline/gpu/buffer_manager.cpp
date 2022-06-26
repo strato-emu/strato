@@ -12,6 +12,18 @@ namespace skyline::gpu {
         return it->guest->begin().base() < pointer;
     }
 
+    void BufferManager::lock() {
+        mutex.lock();
+    }
+
+    void BufferManager::unlock() {
+        mutex.unlock();
+    }
+
+    bool BufferManager::try_lock() {
+        return mutex.try_lock();
+    }
+
     BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag) {
         /*
          * We align the buffer to the page boundary to ensure that:
@@ -21,8 +33,6 @@ namespace skyline::gpu {
         auto alignedStart{util::AlignDown(guestMapping.begin().base(), PAGE_SIZE)}, alignedEnd{util::AlignUp(guestMapping.end().base(), PAGE_SIZE)};
         vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
         guestMapping = span<u8>{alignedStart, alignedEnd};
-
-        std::scoped_lock lock(mutex);
 
         // Lookup for any buffers overlapping with the supplied guest mapping
         boost::container::small_vector<std::shared_ptr<Buffer>, 4> overlaps;
@@ -89,7 +99,9 @@ namespace skyline::gpu {
         return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest->begin()) + offset, size);
     }
 
-    BufferManager::MegaBufferSlot::MegaBufferSlot(GPU &gpu) : backing(gpu.memory.AllocateBuffer(Size)) {}
+    constexpr static vk::DeviceSize MegaBufferSize{100 * 1024 * 1024}; //!< Size in bytes of the megabuffer (100MiB)
+
+    BufferManager::MegaBufferSlot::MegaBufferSlot(GPU &gpu) : backing(gpu.memory.AllocateBuffer(MegaBufferSize)) {}
 
     MegaBuffer::MegaBuffer(BufferManager::MegaBufferSlot &slot) : slot{&slot}, freeRegion{slot.backing.subspan(PAGE_SIZE)} {}
 
@@ -135,7 +147,7 @@ namespace skyline::gpu {
     }
 
     MegaBuffer BufferManager::AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &cycle) {
-        std::scoped_lock lock{mutex};
+        std::scoped_lock lock{megaBufferMutex};
 
         for (auto &slot : megaBuffers) {
             if (!slot.active.test_and_set(std::memory_order_acq_rel)) {

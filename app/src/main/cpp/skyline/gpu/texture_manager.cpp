@@ -6,6 +6,18 @@
 namespace skyline::gpu {
     TextureManager::TextureManager(GPU &gpu) : gpu(gpu) {}
 
+    void TextureManager::lock() {
+        mutex.lock();
+    }
+
+    void TextureManager::unlock() {
+        mutex.unlock();
+    }
+
+    bool TextureManager::try_lock() {
+        return mutex.try_lock();
+    }
+
     std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture, ContextTag tag) {
         auto guestMapping{guestTexture.mappings.front()};
 
@@ -23,7 +35,6 @@ namespace skyline::gpu {
          * 5) Create a new texture and insert it in the map then return it
          */
 
-        std::scoped_lock lock(mutex);
         std::shared_ptr<Texture> match{};
         auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping)}, hostMapping{mappingEnd};
         while (hostMapping != textures.begin() && (--hostMapping)->end() > guestMapping.begin()) {
