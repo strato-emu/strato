@@ -54,7 +54,7 @@ namespace skyline::gpu {
         bool choreographerStop{}; //!< If the Choreographer thread should stop on the next ALooper_wake()
 
         struct PresentableFrame {
-            std::shared_ptr<Texture> texture{};
+            std::shared_ptr<TextureView> textureView{};
             skyline::service::hosbinder::AndroidFence fence{}; //!< The fence that must be waited on prior to using the texture
             i64 timestamp{}; //!< The earliest timestamp (relative to ARM CPU timer) that this frame must be presented at
             i64 swapInterval{}; //!< The interval between frames in terms of 60Hz display refreshes (1/60th of a second)
@@ -120,7 +120,7 @@ namespace skyline::gpu {
          * @return The ID of this frame for correlating it with presentation timing readouts
          * @note The texture **must** be locked prior to calling this
          */
-        u64 Present(const std::shared_ptr<Texture> &texture, i64 timestamp, i64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback);
+        u64 Present(const std::shared_ptr<TextureView> &texture, i64 timestamp, i64 swapInterval, service::hosbinder::AndroidRect crop, service::hosbinder::NativeWindowScalingMode scalingMode, service::hosbinder::NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback);
 
         /**
          * @return A transform that the application should render with to elide costly transforms later

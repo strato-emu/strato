@@ -348,7 +348,7 @@ namespace skyline::service::hosbinder {
             guestTexture.mappings[0] = span<u8>(nvMapHandleObj->GetPointer() + surface.offset, guestTexture.GetLayerStride());
 
             std::scoped_lock textureLock{state.gpu->texture};
-            buffer.texture = state.gpu->texture.FindOrCreate(guestTexture)->texture;
+            buffer.texture = state.gpu->texture.FindOrCreate(guestTexture);
         }
 
         switch (transform) {

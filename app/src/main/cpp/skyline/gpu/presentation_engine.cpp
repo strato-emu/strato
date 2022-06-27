@@ -96,9 +96,10 @@ namespace skyline::gpu {
 
         frame.fence.Wait(state.soc->host1x);
 
-        std::scoped_lock textureLock(*frame.texture);
-        if (frame.texture->format != swapchainFormat || frame.texture->dimensions != swapchainExtent)
-            UpdateSwapchain(frame.texture->format, frame.texture->dimensions);
+        std::scoped_lock textureLock(*frame.textureView);
+        auto texture{frame.textureView->texture};
+        if (frame.textureView->format != swapchainFormat || texture->dimensions != swapchainExtent)
+            UpdateSwapchain(frame.textureView->format, texture->dimensions);
 
         int result;
         if (frame.crop && frame.crop != windowCrop) {
@@ -131,8 +132,8 @@ namespace skyline::gpu {
 
         std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
 
-        frame.texture->SynchronizeHost();
-        images.at(nextImage.second)->CopyFrom(frame.texture, vk::ImageSubresourceRange{
+        texture->SynchronizeHost();
+        images.at(nextImage.second)->CopyFrom(texture, vk::ImageSubresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .levelCount = 1,
             .layerCount = 1,
@@ -373,7 +374,7 @@ namespace skyline::gpu {
         }
     }
 
-    u64 PresentationEngine::Present(const std::shared_ptr<Texture> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback) {
+    u64 PresentationEngine::Present(const std::shared_ptr<TextureView> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback) {
         if (!vkSurface.has_value()) {
             // We want this function to generally (not necessarily always) block when a surface is not present to implicitly pause the game
             std::unique_lock lock(mutex);

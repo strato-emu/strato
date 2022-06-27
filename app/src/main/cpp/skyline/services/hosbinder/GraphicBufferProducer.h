@@ -11,7 +11,7 @@
 #include "native_window.h"
 
 namespace skyline::gpu {
-    class Texture;
+    class TextureView;
 }
 
 namespace skyline::service::nvdrv::core {
@@ -44,7 +44,7 @@ namespace skyline::service::hosbinder {
         u64 frameNumber{}; //!< The amount of frames that have been queued using this slot
         bool wasBufferRequested{}; //!< If GraphicBufferProducer::RequestBuffer has been called with this buffer
         bool isPreallocated{}; //!< If this slot's graphic buffer has been preallocated or attached
-        std::shared_ptr<gpu::Texture> texture{};
+        std::shared_ptr<gpu::TextureView> texture{};
         std::unique_ptr<GraphicBuffer> graphicBuffer{};
     };
 
