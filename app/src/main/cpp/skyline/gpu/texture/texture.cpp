@@ -93,32 +93,15 @@ namespace skyline::gpu {
     }
 
     void TextureView::lock() {
-        auto backing{std::atomic_load(&texture)};
-        while (true) {
-            backing->lock();
-
-            auto latestBacking{std::atomic_load(&texture)};
-            if (backing == latestBacking)
-                return;
-
-            backing->unlock();
-            backing = latestBacking;
-        }
+        texture.Lock();
     }
 
     bool TextureView::LockWithTag(ContextTag tag) {
-        auto backing{std::atomic_load(&texture)};
-        while (true) {
-            bool didLock{backing->LockWithTag(tag)};
-
-            auto latestBacking{std::atomic_load(&texture)};
-            if (backing == latestBacking)
-                return didLock;
-
-            if (didLock)
-                backing->unlock();
-            backing = latestBacking;
-        }
+        bool result{};
+        texture.Lock([tag, &result](Texture* pTexture) {
+            result = pTexture->LockWithTag(tag);
+        });
+        return result;
     }
 
     void TextureView::unlock() {
@@ -126,20 +109,7 @@ namespace skyline::gpu {
     }
 
     bool TextureView::try_lock() {
-        auto backing{std::atomic_load(&texture)};
-        while (true) {
-            bool success{backing->try_lock()};
-
-            auto latestBacking{std::atomic_load(&texture)};
-            if (backing == latestBacking)
-                // We want to ensure that the try_lock() was on the latest backing and not on an outdated one
-                return success;
-
-            if (success)
-                // We only unlock() if the try_lock() was successful and we acquired the mutex
-                backing->unlock();
-            backing = latestBacking;
-        }
+        return texture.TryLock();
     }
 
     void Texture::SetupGuestMappings() {

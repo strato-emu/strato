@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/lockable_shared_ptr.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
 #include <gpu/memory_manager.h>
@@ -298,7 +299,7 @@ namespace skyline::gpu {
         vk::ImageView vkView{};
 
       public:
-        std::shared_ptr<Texture> texture;
+        LockableSharedPtr<Texture> texture;
         vk::ImageViewType type;
         texture::Format format;
         vk::ComponentMapping mapping;

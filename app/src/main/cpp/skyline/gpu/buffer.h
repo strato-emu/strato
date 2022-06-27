@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include <boost/functional/hash.hpp>
+#include <common/lockable_shared_ptr.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
 #include "memory_manager.h"
@@ -94,7 +95,7 @@ namespace skyline::gpu {
          * @note This class conforms to the Lockable and BasicLockable C++ named requirements
          */
         struct BufferDelegate {
-            std::shared_ptr<Buffer> buffer;
+            LockableSharedPtr<Buffer> buffer;
             const Buffer::BufferViewStorage *view;
             std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;
             std::list<BufferDelegate *>::iterator iterator;

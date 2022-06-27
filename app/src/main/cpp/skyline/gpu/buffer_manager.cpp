@@ -86,7 +86,7 @@ namespace skyline::gpu {
 
             // Transfer all delegates references from the overlapping buffer to the new buffer
             for (auto &delegate : overlap->delegates) {
-                atomic_exchange(&delegate->buffer, newBuffer);
+                delegate->buffer = newBuffer;
                 if (delegate->usageCallback)
                     delegate->usageCallback(*delegate->view, newBuffer);
             }

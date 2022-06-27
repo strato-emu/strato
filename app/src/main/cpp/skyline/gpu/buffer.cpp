@@ -275,32 +275,15 @@ namespace skyline::gpu {
     }
 
     void Buffer::BufferDelegate::lock() {
-        auto lBuffer{std::atomic_load(&buffer)};
-        while (true) {
-            lBuffer->lock();
-
-            auto latestBacking{std::atomic_load(&buffer)};
-            if (lBuffer == latestBacking)
-                return;
-
-            lBuffer->unlock();
-            lBuffer = latestBacking;
-        }
+        buffer.Lock();
     }
 
     bool Buffer::BufferDelegate::LockWithTag(ContextTag pTag) {
-        auto lBuffer{std::atomic_load(&buffer)};
-        while (true) {
-            bool didLock{lBuffer->LockWithTag(pTag)};
-
-            auto latestBacking{std::atomic_load(&buffer)};
-            if (lBuffer == latestBacking)
-                return didLock;
-
-            if (didLock)
-                lBuffer->unlock();
-            lBuffer = latestBacking;
-        }
+        bool result{};
+        buffer.Lock([pTag, &result](Buffer* pBuffer) {
+            result = pBuffer->LockWithTag(pTag);
+        });
+        return result;
     }
 
     void Buffer::BufferDelegate::unlock() {
@@ -308,20 +291,7 @@ namespace skyline::gpu {
     }
 
     bool Buffer::BufferDelegate::try_lock() {
-        auto lBuffer{std::atomic_load(&buffer)};
-        while (true) {
-            bool success{lBuffer->try_lock()};
-
-            auto latestBuffer{std::atomic_load(&buffer)};
-            if (lBuffer == latestBuffer)
-                // We want to ensure that the try_lock() was on the latest backing and not on an outdated one
-                return success;
-
-            if (success)
-                // We only unlock() if the try_lock() was successful and we acquired the mutex
-                lBuffer->unlock();
-            lBuffer = latestBuffer;
-        }
+        return buffer.TryLock();
     }
 
     BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
