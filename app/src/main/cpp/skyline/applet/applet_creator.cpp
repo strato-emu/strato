@@ -4,6 +4,7 @@
 #include "controller_applet.h"
 #include "player_select_applet.h"
 #include "applet_creator.h"
+#include "swkbd/software_keyboard_applet.h"
 
 namespace skyline::applet {
     std::shared_ptr<service::am::IApplet> CreateApplet(
@@ -17,6 +18,8 @@ namespace skyline::applet {
                 return std::make_shared<ControllerApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             case AppletId::LibraryAppletPlayerSelect:
                 return std::make_shared<PlayerSelectApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
+            case AppletId::LibraryAppletSwkbd:
+                return std::make_shared<swkbd::SoftwareKeyboardApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             default:
                 throw exception("Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId));
         }

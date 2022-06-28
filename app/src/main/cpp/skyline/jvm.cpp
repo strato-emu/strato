@@ -54,12 +54,17 @@ namespace skyline {
     thread_local inline JniEnvironment env;
 
     JvmManager::JvmManager(JNIEnv *environ, jobject instance)
-        : instance(environ->NewGlobalRef(instance)),
-          instanceClass(reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))),
-          initializeControllersId(environ->GetMethodID(instanceClass, "initializeControllers", "()V")),
-          vibrateDeviceId(environ->GetMethodID(instanceClass, "vibrateDevice", "(I[J[I)V")),
-          clearVibrationDeviceId(environ->GetMethodID(instanceClass, "clearVibrationDevice", "(I)V")),
-          getVersionCodeId(environ->GetMethodID(instanceClass, "getVersionCode", "()I")) {
+        : instance{environ->NewGlobalRef(instance)},
+          instanceClass{reinterpret_cast<jclass>(environ->NewGlobalRef(environ->GetObjectClass(instance)))},
+          initializeControllersId{environ->GetMethodID(instanceClass, "initializeControllers", "()V")},
+          vibrateDeviceId{environ->GetMethodID(instanceClass, "vibrateDevice", "(I[J[I)V")},
+          clearVibrationDeviceId{environ->GetMethodID(instanceClass, "clearVibrationDevice", "(I)V")},
+          showKeyboardId{environ->GetMethodID(instanceClass, "showKeyboard", "(Ljava/nio/ByteBuffer;Ljava/lang/String;)Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;")},
+          waitForSubmitOrCancelId{environ->GetMethodID(instanceClass, "waitForSubmitOrCancel", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;)[Ljava/lang/Object;")},
+          closeKeyboardId{environ->GetMethodID(instanceClass, "closeKeyboard", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;)V")},
+          showValidationResultId{environ->GetMethodID(instanceClass, "showValidationResult", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;ILjava/lang/String;)I")},
+          getVersionCodeId{environ->GetMethodID(instanceClass, "getVersionCode", "()I")},
+          getIntegerValueId{environ->GetMethodID(environ->FindClass("java/lang/Integer"), "intValue", "()I")} {
         env.Initialize(environ);
     }
 
@@ -104,7 +109,42 @@ namespace skyline {
         env->CallVoidMethod(instance, clearVibrationDeviceId, index);
     }
 
+    jobject JvmManager::ShowKeyboard(KeyboardConfig &config, std::u16string initialText) {
+        auto buffer{env->NewDirectByteBuffer(&config, sizeof(KeyboardConfig))};
+        auto str{env->NewString(reinterpret_cast<const jchar *>(initialText.data()), static_cast<int>(initialText.length()))};
+        jobject localKeyboardDialog{env->CallObjectMethod(instance, showKeyboardId, buffer, str)};
+        env->DeleteLocalRef(buffer);
+        env->DeleteLocalRef(str);
+        auto keyboardDialog{env->NewGlobalRef(localKeyboardDialog)};
+
+        env->DeleteLocalRef(localKeyboardDialog);
+        return keyboardDialog;
+    }
+
+    std::pair<JvmManager::KeyboardCloseResult, std::u16string> JvmManager::WaitForSubmitOrCancel(jobject keyboardDialog) {
+        auto returnArray{reinterpret_cast<jobjectArray>(env->CallObjectMethod(instance, waitForSubmitOrCancelId, keyboardDialog))};
+        auto buttonInteger{env->GetObjectArrayElement(returnArray, 0)};
+        auto inputJString{reinterpret_cast<jstring>(env->GetObjectArrayElement(returnArray, 1))};
+        auto stringChars{env->GetStringChars(inputJString, nullptr)};
+        std::u16string input{stringChars, stringChars + env->GetStringLength(inputJString)};
+        env->ReleaseStringChars(inputJString, stringChars);
+
+        return {static_cast<KeyboardCloseResult>(env->CallIntMethod(buttonInteger, getIntegerValueId)), input};
+    }
+
+    void JvmManager::CloseKeyboard(jobject dialog) {
+        env->CallVoidMethod(instance, closeKeyboardId, dialog);
+        env->DeleteGlobalRef(dialog);
+    }
+
     i32 JvmManager::GetVersionCode() {
         return env->CallIntMethod(instance, getVersionCodeId);
+    }
+
+    JvmManager::KeyboardCloseResult JvmManager::ShowValidationResult(jobject dialog, KeyboardTextCheckResult checkResult, std::u16string message) {
+        auto str{env->NewString(reinterpret_cast<const jchar *>(message.data()), static_cast<int>(message.length()))};
+        auto result{static_cast<KeyboardCloseResult>(env->CallIntMethod(instance, showValidationResultId, dialog, checkResult, str))};
+        env->DeleteLocalRef(str);
+        return result;
     }
 }

@@ -166,6 +166,8 @@
     <string name="open_sans_description">Open Sans is used as our FOSS shared font replacement for Latin, Korean and Chinese</string>
     <string name="roboto_description">Roboto is used as our FOSS shared font replacement for Nintendo\'s extended character set</string>
     <string name="source_sans_pro_description">Source Sans Pro is used as our FOSS shared font replacement for Nintendo\'s extended Chinese character set</string>
+    <!-- Software Keyboard -->
+    <string name="input_hint">Input Text</string>
     <!-- Misc -->
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>

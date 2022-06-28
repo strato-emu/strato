@@ -23,6 +23,12 @@ namespace skyline {
      */
     class JvmManager {
       public:
+        using KeyboardHandle = jobject;
+        using KeyboardConfig = std::array<u8, 0x4C8>;
+        using KeyboardCloseResult = u32;
+        using KeyboardTextCheckResult = u32;
+
+
         jobject instance; //!< A reference to the activity
         jclass instanceClass; //!< The class of the activity
 
@@ -107,6 +113,26 @@ namespace skyline {
         void ClearVibrationDevice(jint index);
 
         /**
+         * @brief A call to EmulationActivity.showKeyboard in Kotlin
+         */
+        KeyboardHandle ShowKeyboard(KeyboardConfig &config, std::u16string initialText);
+
+        /**
+         * @brief A call to EmulationActivity.waitForSubmitOrCancel in Kotlin
+         */
+        std::pair<KeyboardCloseResult, std::u16string> WaitForSubmitOrCancel(KeyboardHandle dialog);
+
+        /**
+         * @brief A call to EmulationActivity.closeKeyboard in Kotlin
+         */
+        void CloseKeyboard(KeyboardHandle dialog);
+
+        /**
+         * @brief A call to EmulationActivity.showValidationResult in Kotlin
+         */
+        KeyboardCloseResult ShowValidationResult(KeyboardHandle dialog, KeyboardTextCheckResult checkResult, std::u16string message);
+
+        /**
          * @brief A call to EmulationActivity.getVersionCode in Kotlin
          * @return A version code in Vulkan's format with 14-bit patch + 10-bit major and minor components
          */
@@ -116,6 +142,12 @@ namespace skyline {
         jmethodID initializeControllersId;
         jmethodID vibrateDeviceId;
         jmethodID clearVibrationDeviceId;
+        jmethodID showKeyboardId;
+        jmethodID waitForSubmitOrCancelId;
+        jmethodID closeKeyboardId;
+        jmethodID showValidationResultId;
         jmethodID getVersionCodeId;
+
+        jmethodID getIntegerValueId;
     };
 }

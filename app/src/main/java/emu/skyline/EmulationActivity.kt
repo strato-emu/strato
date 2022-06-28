@@ -20,12 +20,20 @@ import androidx.core.content.getSystemService
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.updateMargins
+import androidx.fragment.app.FragmentTransaction
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
+import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
 import emu.skyline.databinding.EmuActivityBinding
 import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
+import emu.skyline.utils.ByteBufferSerializable
 import emu.skyline.utils.Settings
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.concurrent.FutureTask
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -365,7 +373,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         // Stop forcing 60Hz on exit to allow the skyline UI to run at high refresh rates
         getSystemService<DisplayManager>()?.unregisterDisplayListener(this)
-        force60HzRefreshRate(false);
+        force60HzRefreshRate(false)
     }
 
     override fun surfaceCreated(holder : SurfaceHolder) {
@@ -572,6 +580,50 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @Suppress("unused")
     fun clearVibrationDevice(index : Int) {
         vibrators[index]?.cancel()
+    }
+
+    @Suppress("unused")
+    fun showKeyboard(buffer : ByteBuffer, initialText : String) : SoftwareKeyboardDialog? {
+        buffer.order(ByteOrder.LITTLE_ENDIAN)
+        val config = ByteBufferSerializable.createFromByteBuffer(SoftwareKeyboardConfig::class, buffer) as SoftwareKeyboardConfig
+
+        val keyboardDialog = SoftwareKeyboardDialog.newInstance(config, initialText)
+        runOnUiThread {
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            transaction
+                .add(android.R.id.content, keyboardDialog)
+                .addToBackStack(null)
+                .commit()
+        }
+        return keyboardDialog
+    }
+
+    @Suppress("unused")
+    fun waitForSubmitOrCancel(dialog : SoftwareKeyboardDialog) : Array<Any?> {
+        return dialog.waitForSubmitOrCancel().let { arrayOf(if (it.cancelled) 1 else 0, it.text) }
+    }
+
+    @Suppress("unused")
+    fun closeKeyboard(dialog : SoftwareKeyboardDialog) {
+        runOnUiThread { dialog.dismiss() }
+    }
+
+    @Suppress("unused")
+    fun showValidationResult(dialog : SoftwareKeyboardDialog, validationResult : Int, message : String) : Int {
+        val confirm = validationResult == SoftwareKeyboardDialog.validationConfirm
+        var accepted = false
+        val validatorResult = FutureTask { return@FutureTask accepted }
+        runOnUiThread {
+            val builder = MaterialAlertDialogBuilder(dialog.requireContext())
+            builder.setMessage(message)
+            builder.setPositiveButton(if (confirm) getString(android.R.string.ok) else getString(android.R.string.cancel)) { _, _ -> accepted = confirm }
+            if (confirm)
+                builder.setNegativeButton(getString(android.R.string.cancel)) { _, _ -> }
+            builder.setOnDismissListener { validatorResult.run() }
+            builder.show()
+        }
+        return if (validatorResult.get()) 0 else 1
     }
 
     /**

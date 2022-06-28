@@ -65,7 +65,7 @@
 
         <activity
             android:name="emu.skyline.EmulationActivity"
-            android:configChanges="orientation|screenSize"
+            android:configChanges="orientation|screenSize|uiMode"
             android:exported="true"
             android:launchMode="singleTask">
             <meta-data
