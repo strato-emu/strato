@@ -4,3 +4,5 @@
 
 # Retain all classes within Skyline for traces + JNI access + Serializable classes
 -keep class emu.skyline.** { *; }
+# Keep kotlin classes so that kotlin reflection works
+-keep class kotlin.** {*;}
