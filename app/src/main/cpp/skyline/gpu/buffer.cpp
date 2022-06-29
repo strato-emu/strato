@@ -8,13 +8,6 @@
 #include "buffer.h"
 
 namespace skyline::gpu {
-    bool Buffer::CheckHostImmutable() {
-        if (hostImmutableCycle && hostImmutableCycle->Poll())
-            hostImmutableCycle.reset();
-
-        return hostImmutableCycle != nullptr;
-    }
-
     void Buffer::SetupGuestMappings() {
         u8 *alignedData{util::AlignDown(guest->data(), PAGE_SIZE)};
         size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), PAGE_SIZE) - alignedData)};
@@ -61,14 +54,11 @@ namespace skyline::gpu {
         for (const auto &srcBuffer : srcBuffers) {
             ContextLock lock{tag, *srcBuffer};
             if (srcBuffer->guest) {
-                if (srcBuffer->hostImmutableCycle) {
-                    // Propagate any host immutability
-                    if (hostImmutableCycle) {
-                        srcBuffer->hostImmutableCycle->Wait();
-                    } else {
-                        hostImmutableCycle = srcBuffer->hostImmutableCycle;
-                    }
-                }
+                if (srcBuffer->cycle && cycle != srcBuffer->cycle)
+                    if (cycle)
+                        cycle->ChainCycle(srcBuffer->cycle);
+                    else
+                        cycle = srcBuffer->cycle;
 
                 if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
                     // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
@@ -201,7 +191,7 @@ namespace skyline::gpu {
 
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
 
-        if (CheckHostImmutable())
+        if (PollFence())
             // Perform a GPU-side inline update for the buffer contents if this buffer is host immutable since we can't directly modify the backing
             gpuCopyCallback();
         else
@@ -238,10 +228,6 @@ namespace skyline::gpu {
         return mirror;
     }
 
-    void Buffer::MarkHostImmutable(const std::shared_ptr<FenceCycle> &pCycle) {
-        hostImmutableCycle = pCycle;
-    }
-
     void Buffer::lock() {
         mutex.lock();
     }
@@ -257,6 +243,7 @@ namespace skyline::gpu {
 
     void Buffer::unlock() {
         tag = ContextTag{};
+        usedByContext = false;
         mutex.unlock();
     }
 
@@ -298,7 +285,7 @@ namespace skyline::gpu {
 
     void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
         // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further writes in the current cycle to occur on the GPU
-        bufferDelegate->buffer->MarkHostImmutable(cycle);
+        bufferDelegate->buffer->MarkGpuUsed();
 
         usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
         if (!bufferDelegate->usageCallback) {
@@ -320,7 +307,7 @@ namespace skyline::gpu {
         bool gpuCopy{bufferDelegate->view->size > MegaBufferingDisableThreshold};
         if (gpuCopy)
             // This will force the host buffer contents to stay as is for the current cycle, requiring that write operations are instead sequenced on the GPU for the entire buffer
-            bufferDelegate->buffer->MarkHostImmutable(pCycle);
+            bufferDelegate->buffer->MarkGpuUsed();
 
         bufferDelegate->buffer->Write(isFirstUsage, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }

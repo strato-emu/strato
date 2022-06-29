@@ -280,9 +280,11 @@ namespace skyline::gpu::interconnect {
             textureManagerLock.reset();
 
             for (const auto &attachedBuffer : attachedBuffers) {
-                cycle->AttachObject(attachedBuffer.buffer);
-                cycle->ChainCycle(attachedBuffer->cycle);
-                attachedBuffer->cycle = cycle;
+                if (attachedBuffer->UsedByContext()) {
+                    cycle->AttachObject(attachedBuffer.buffer);
+                    cycle->ChainCycle(attachedBuffer->cycle);
+                    attachedBuffer->cycle = cycle;
+                }
             }
 
             for (const auto &delegate : attachedBufferDelegates) {

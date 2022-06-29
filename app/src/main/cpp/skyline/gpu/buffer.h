@@ -40,12 +40,7 @@ namespace skyline::gpu {
 
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 
-        std::shared_ptr<FenceCycle> hostImmutableCycle; //!< The cycle for when the buffer was last immutable, if this is signalled the buffer is no longer immutable
-
-        /**
-         * @return If the buffer should be treated as host immutable
-         */
-        bool CheckHostImmutable();
+        bool usedByContext{}; //!< If this buffer is used by the current context, this determines if a buffer needs to be bound to the cycle it is locked by or not
 
       public:
         /**
@@ -192,6 +187,27 @@ namespace skyline::gpu {
         void MarkGpuDirty();
 
         /**
+         * @brief Marks the buffer as utilized by the current context, this will be reset on unlocking the buffer
+         * @note The buffer **must** be locked prior to calling this
+         * @note This is significantly different from MarkGpuDirty in that it doesn't imply that the buffer is written to on the GPU and only used on it, this eliminates the requirement to sync-back
+         */
+        void MarkGpuUsed() {
+            usedByContext = true;
+        }
+
+        /**
+         * @return If this buffer has been utilized within the current context
+         * @note The buffer **must** be locked with a context prior to calling this
+         */
+        bool UsedByContext() const {
+            return usedByContext;
+        }
+
+        bool EverHadInlineUpdate() const {
+            return everHadInlineUpdate;
+        }
+
+        /**
          * @brief Waits on a fence cycle if it exists till it's signalled and resets it after
          * @note The buffer **must** be locked prior to calling this
          */
@@ -272,14 +288,6 @@ namespace skyline::gpu {
          * @note The buffer **must** be kept locked until the span is no longer in use
          */
         span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
-
-        /**
-         * @brief Prevents any further writes to the `backing` host side buffer for the duration of the current cycle, forcing slower inline GPU updates instead
-         * @note The buffer **must** be locked prior to calling this
-         */
-        void MarkHostImmutable(const std::shared_ptr<FenceCycle> &cycle);
-
-        bool EverHadInlineUpdate() const { return everHadInlineUpdate; }
     };
 
     /**
