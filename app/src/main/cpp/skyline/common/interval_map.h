@@ -51,7 +51,7 @@ namespace skyline {
             EntryGroup(span<span<T>> lIntervals, EntryType value) : value(std::move(value)) {
                 intervals.reserve(lIntervals.size());
                 for (const auto &interval : lIntervals)
-                    intervals.emplace_back(interval.data(), interval.data() + interval.size_bytes());
+                    intervals.emplace_back(interval.data(), interval.data() + interval.size());
             }
         };
 
@@ -115,7 +115,7 @@ namespace skyline {
         GroupHandle Insert(span<span<T>> intervals, EntryType value) requires std::is_pointer_v<AddressType> {
             GroupHandle group{groups.emplace(groups.begin(), intervals, std::move(value))};
             for (const auto &interval : intervals)
-                entries.emplace(std::lower_bound(entries.begin(), entries.end(), interval.data()), interval.data(), interval.data() + interval.size_bytes(), group);
+                entries.emplace(std::lower_bound(entries.begin(), entries.end(), interval.data()), interval.data(), interval.data() + interval.size(), group);
             return group;
         }
 
