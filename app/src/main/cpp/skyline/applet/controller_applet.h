@@ -2,6 +2,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #pragma once
+
 #include <services/am/applet/IApplet.h>
 #include <services/applet/common_arguments.h>
 #include <input/npad_device.h>
@@ -10,7 +11,7 @@ namespace skyline::applet {
     /**
      * @brief The Controller applet is responsible for notifiying the user of a games controller requirements and for allowing user management og controllers
      */
-    class ControllerApplet : public service::am::IApplet {
+    class ControllerApplet : public service::am::IApplet, service::am::EnableNormalQueue {
       private:
         /**
          * @brief The version of the controller applet interface that an application supports
@@ -97,17 +98,6 @@ namespace skyline::applet {
             Result result;
         };
         static_assert(sizeof(ControllerSupportResultInfo) == 0xC);
-
-        std::mutex inputDataMutex;
-        std::queue<std::shared_ptr<service::am::IStorage>> normalInputData;
-
-        template<typename T>
-        T PopNormalInput() {
-            std::scoped_lock lock{inputDataMutex};
-            auto data{normalInputData.front()->GetSpan().as<T>()};
-            normalInputData.pop();
-            return static_cast<T>(data);
-        }
 
         /**
          * @brief Handles the 'ShowControllerSupport' mode of the controller applet

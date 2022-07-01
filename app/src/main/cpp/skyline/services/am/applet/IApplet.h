@@ -8,7 +8,6 @@
 #include <kernel/types/KEvent.h>
 #include <services/applet/common_arguments.h>
 
-
 namespace skyline::service::am {
     /**
      * @brief The base class all Applets have to inherit from
@@ -69,5 +68,61 @@ namespace skyline::service::am {
          * @brief Used by ILibraryAppletAccessor to pop data from the interactive queue and reset the corresponding event
          */
         std::shared_ptr<IStorage> PopInteractiveAndClear();
+    };
+
+    /**
+     * @brief Utility class for applets that need to queue the normal data sent to them
+     */
+    class EnableNormalQueue {
+      protected:
+        std::mutex normalInputDataMutex;
+        std::queue<std::shared_ptr<service::am::IStorage>> normalInputData;
+
+        std::shared_ptr<service::am::IStorage> PopNormalInput() {
+            std::scoped_lock lock{normalInputDataMutex};
+            auto data{normalInputData.front()};
+            normalInputData.pop();
+            return data;
+        }
+
+        template<class T>
+        T PopNormalInput() {
+            std::scoped_lock lock{normalInputDataMutex};
+            auto data{normalInputData.front()->GetSpan().as<T>()};
+            normalInputData.pop();
+            return data;
+        }
+
+        void PushNormalInput(std::shared_ptr<service::am::IStorage> data) {
+            normalInputData.emplace(data);
+        }
+    };
+
+    /**
+     * @brief Utility class for applets that need to queue the interactive data sent to them
+     */
+    class EnableInteractiveQueue {
+      protected:
+        std::mutex interactiveInputDataMutex;
+        std::queue<std::shared_ptr<service::am::IStorage>> interactiveInputData;
+
+        std::shared_ptr<service::am::IStorage> PopInteractiveInput() {
+            std::scoped_lock lock{interactiveInputDataMutex};
+            auto data{interactiveInputData.front()};
+            interactiveInputData.pop();
+            return data;
+        }
+
+        template<class T>
+        T PopInteractiveInput() {
+            std::scoped_lock lock{interactiveInputDataMutex};
+            auto data{interactiveInputData.front()->GetSpan().as<T>()};
+            interactiveInputData.pop();
+            return data;
+        }
+
+        void PushInteractiveInput(std::shared_ptr<service::am::IStorage> data) {
+            interactiveInputData.emplace(data);
+        }
     };
 }

@@ -15,7 +15,7 @@ namespace skyline::applet {
                                        std::shared_ptr<kernel::type::KEvent> onNormalDataPushFromApplet,
                                        std::shared_ptr<kernel::type::KEvent> onInteractiveDataPushFromApplet,
                                        service::applet::LibraryAppletMode appletMode)
-        : IApplet(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode) {}
+        : IApplet{state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode} {}
 
     void ControllerApplet::HandleShowControllerSupport(input::NpadStyleSet styleSet, ControllerAppletVersion version, span<u8> arg) {
         // Generic macro due to both versions of arguments sharing the same fields but having different layouts
@@ -82,7 +82,7 @@ namespace skyline::applet {
             }
         }
 
-        std::scoped_lock lock{inputDataMutex};
+        std::scoped_lock lock{normalInputDataMutex};
         switch (argPrivate.mode) {
             case ControllerSupportMode::ShowControllerSupport:
                 HandleShowControllerSupport(argPrivate.styleSet, appletVersion, normalInputData.front()->GetSpan());
@@ -100,15 +100,14 @@ namespace skyline::applet {
         // Notify the guest that we've finished running
         onAppletStateChanged->Signal();
         return {};
-    };
+    }
 
     Result ControllerApplet::GetResult() {
         return {};
     }
 
     void ControllerApplet::PushNormalDataToApplet(std::shared_ptr<service::am::IStorage> data) {
-        std::scoped_lock lock{inputDataMutex};
-        normalInputData.emplace(std::move(data));
+        PushNormalInput(data);
     }
 
     void ControllerApplet::PushInteractiveDataToApplet(std::shared_ptr<service::am::IStorage> data) {}

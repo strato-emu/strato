@@ -74,7 +74,7 @@ namespace skyline::applet::swkbd {
     }
 
     Result SoftwareKeyboardApplet::Start() {
-        std::scoped_lock lock{inputDataMutex};
+        std::scoped_lock lock{normalInputDataMutex};
         auto commonArgs{normalInputData.front()->GetSpan().as<service::applet::CommonArguments>()};
         normalInputData.pop();
 
@@ -135,8 +135,7 @@ namespace skyline::applet::swkbd {
     }
 
     void SoftwareKeyboardApplet::PushNormalDataToApplet(std::shared_ptr<service::am::IStorage> data) {
-        std::scoped_lock lock{inputDataMutex};
-        normalInputData.emplace(data);
+        PushNormalInput(data);
     }
 
     void SoftwareKeyboardApplet::PushInteractiveDataToApplet(std::shared_ptr<service::am::IStorage> data) {

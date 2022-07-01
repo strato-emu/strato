@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include "controller_applet.h"
-#include "player_select_applet.h"
 #include "applet_creator.h"
+#include "controller_applet.h"
+#include "error_applet.h"
+#include "player_select_applet.h"
 #include "swkbd/software_keyboard_applet.h"
 
 namespace skyline::applet {
@@ -20,8 +21,10 @@ namespace skyline::applet {
                 return std::make_shared<PlayerSelectApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             case AppletId::LibraryAppletSwkbd:
                 return std::make_shared<swkbd::SoftwareKeyboardApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
+            case AppletId::LibraryAppletError:
+                return std::make_shared<ErrorApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             default:
-                throw exception("Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId));
+                throw exception{"Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId)};
         }
     }
 }

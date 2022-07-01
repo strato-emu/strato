@@ -7,7 +7,7 @@
 namespace skyline::applet::swkbd {
     KeyboardConfigVB::KeyboardConfigVB() = default;
 
-    KeyboardConfigVB::KeyboardConfigVB(const KeyboardConfigV7 &v7config) : commonConfig(v7config.commonConfig), separateTextPos(v7config.separateTextPos) {}
+    KeyboardConfigVB::KeyboardConfigVB(const KeyboardConfigV7 &v7config) : commonConfig{v7config.commonConfig}, separateTextPos{v7config.separateTextPos} {}
 
-    KeyboardConfigVB::KeyboardConfigVB(const KeyboardConfigV0 &v0config) : commonConfig(v0config.commonConfig) {}
+    KeyboardConfigVB::KeyboardConfigVB(const KeyboardConfigV0 &v0config) : commonConfig{v0config.commonConfig} {}
 }

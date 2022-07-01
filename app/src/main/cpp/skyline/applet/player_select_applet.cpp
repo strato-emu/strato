@@ -11,7 +11,7 @@ namespace skyline::applet {
                                            std::shared_ptr<kernel::type::KEvent> onNormalDataPushFromApplet,
                                            std::shared_ptr<kernel::type::KEvent> onInteractiveDataPushFromApplet,
                                            service::applet::LibraryAppletMode appletMode)
-        : IApplet(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode) {}
+        : IApplet{state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode} {}
 
     Result PlayerSelectApplet::Start() {
         // Return default user
