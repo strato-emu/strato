@@ -27,9 +27,9 @@ namespace skyline::gpu::texture {
                 FMT(B4G4R4A4UnormPack16, 4, 4, 4, 4);
                 FMT(R5G6B5UnormPack16, 5, 6, 5);
                 FMT(B5G6R5UnormPack16, 5, 6, 5);
-                FMT(R5G5B5A1UnormPack16, 5, 5, 5, 1);
-                FMT(B5G5R5A1UnormPack16, 5, 5, 5, 1);
-                FMT(A1R5G5B5UnormPack16, 1, 5, 5, 5);
+                FMT(R5G5B5A1UnormPack16, 1, 5, 5, 5);
+                FMT(B5G5R5A1UnormPack16, 1, 5, 5, 5);
+                FMT(A1R5G5B5UnormPack16, 5, 5, 5, 1);
                 FMT(R8Unorm, 8);
                 FMT(R8Snorm, 8);
                 FMT(R8Uscaled, 8);
@@ -79,18 +79,18 @@ namespace skyline::gpu::texture {
                 FMT(A8B8G8R8UintPack32, 8, 8, 8, 8);
                 FMT(A8B8G8R8SintPack32, 8, 8, 8, 8);
                 FMT(A8B8G8R8SrgbPack32, 8, 8, 8, 8);
-                FMT(A2R10G10B10UnormPack32, 2, 10, 10, 10);
-                FMT(A2R10G10B10SnormPack32, 2, 10, 10, 10);
-                FMT(A2R10G10B10UscaledPack32, 2, 10, 10, 10);
-                FMT(A2R10G10B10SscaledPack32, 2, 10, 10, 10);
-                FMT(A2R10G10B10UintPack32, 2, 10, 10, 10);
-                FMT(A2R10G10B10SintPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10UnormPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10SnormPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10UscaledPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10SscaledPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10UintPack32, 2, 10, 10, 10);
-                FMT(A2B10G10R10SintPack32, 2, 10, 10, 10);
+                FMT(A2R10G10B10UnormPack32, 10, 10, 10, 2);
+                FMT(A2R10G10B10SnormPack32, 10, 10, 10, 2);
+                FMT(A2R10G10B10UscaledPack32, 10, 10, 10, 2);
+                FMT(A2R10G10B10SscaledPack32, 10, 10, 10, 2);
+                FMT(A2R10G10B10UintPack32, 10, 10, 10, 2);
+                FMT(A2R10G10B10SintPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10UnormPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10SnormPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10UscaledPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10SscaledPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10UintPack32, 10, 10, 10, 2);
+                FMT(A2B10G10R10SintPack32, 10, 10, 10, 2);
                 FMT(R16Unorm, 16);
                 FMT(R16Snorm, 16);
                 FMT(R16Uscaled, 16);
@@ -143,7 +143,7 @@ namespace skyline::gpu::texture {
                 FMT(R64G64B64A64Uint, 64, 64, 64, 64);
                 FMT(R64G64B64A64Sint, 64, 64, 64, 64);
                 FMT(R64G64B64A64Sfloat, 64, 64, 64, 64);
-                FMT(B10G11R11UfloatPack32, 10, 11, 11);
+                FMT(B10G11R11UfloatPack32, 11, 11, 10);
 
                 default:
                     return {};
