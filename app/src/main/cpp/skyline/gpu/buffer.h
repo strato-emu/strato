@@ -36,7 +36,9 @@ namespace skyline::gpu {
             Clean, //!< The CPU mappings are in sync with the GPU buffer
             CpuDirty, //!< The CPU mappings have been modified but the GPU buffer is not up to date
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
-        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+        };
+        std::atomic<DirtyState> dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+        static_assert(std::atomic<DirtyState>::is_always_lock_free);
 
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 

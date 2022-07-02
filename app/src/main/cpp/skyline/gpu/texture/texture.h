@@ -367,7 +367,9 @@ namespace skyline::gpu {
             Clean, //!< The CPU mappings are in sync with the GPU texture
             CpuDirty, //!< The CPU mappings have been modified but the GPU texture is not up to date
             GpuDirty, //!< The GPU texture has been modified but the CPU mappings have not been updated
-        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
+        };
+        std::atomic<DirtyState> dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
+        static_assert(std::atomic<DirtyState>::is_always_lock_free);
 
         /**
          * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
