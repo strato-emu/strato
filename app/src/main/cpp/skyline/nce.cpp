@@ -406,7 +406,7 @@ namespace skyline::nce {
         }
     }
 
-    NCE::CallbackEntry::CallbackEntry(TrapProtection protection, NCE::TrapCallback readCallback, NCE::TrapCallback writeCallback) : protection(protection), readCallback(std::move(readCallback)), writeCallback(std::move(writeCallback)) {}
+    NCE::CallbackEntry::CallbackEntry(TrapProtection protection, LockCallback lockCallback, TrapCallback readCallback, TrapCallback writeCallback) : protection{protection}, lockCallback{std::move(lockCallback)}, readCallback{std::move(readCallback)}, writeCallback{std::move(writeCallback)} {}
 
     void NCE::ReprotectIntervals(const std::vector<TrapMap::Interval> &intervals, TrapProtection protection) {
         auto reprotectIntervalsWithFunction = [&intervals](auto getProtection) {
@@ -467,55 +467,68 @@ namespace skyline::nce {
     }
 
     bool NCE::TrapHandler(u8 *address, bool write) {
-        std::scoped_lock lock(trapMutex);
+        LockCallback lockCallback{};
+        while (true) {
+            if (lockCallback)
+                // We want to avoid a deadlock of holding trapMutex while locking the resource inside a callback while another thread holding the resource's mutex waits on trapMutex, we solve this by quitting the loop if a callback would be blocking and attempt to lock the resource externally
+                lockCallback();
 
-        // Check if we have a callback for this address
-        auto[entries, intervals]{trapMap.GetAlignedRecursiveRange<PAGE_SIZE>(address)};
+            std::scoped_lock lock(trapMutex);
 
-        if (entries.empty())
-            return false;
+            // Check if we have a callback for this address
+            auto[entries, intervals]{trapMap.GetAlignedRecursiveRange<PAGE_SIZE>(address)};
 
-        // Do callbacks for every entry in the intervals
-        if (write) {
-            for (auto entryRef : entries) {
-                auto &entry{entryRef.get()};
-                if (entry.protection == TrapProtection::None)
-                    // We don't need to do the callback if the entry doesn't require any protection already
-                    continue;
+            if (entries.empty())
+                return false;
 
-                entry.writeCallback();
-                entry.protection = TrapProtection::None; // We don't need to protect this entry anymore
-            }
-        } else {
-            bool allNone{true}; // If all entries require no protection, we can protect to allow all accesses
-            for (auto entryRef : entries) {
-                auto &entry{entryRef.get()};
-                if (entry.protection < TrapProtection::ReadWrite) {
-                    // We don't need to do the callback if the entry can already handle read accesses
-                    allNone = allNone && entry.protection == TrapProtection::None;
-                    continue;
+            // Do callbacks for every entry in the intervals
+            if (write) {
+                for (auto entryRef : entries) {
+                    auto &entry{entryRef.get()};
+                    if (entry.protection == TrapProtection::None)
+                        // We don't need to do the callback if the entry doesn't require any protection already
+                        continue;
+
+                    if (!entry.writeCallback()) {
+                        lockCallback = entry.lockCallback;
+                        continue;
+                    }
+                    entry.protection = TrapProtection::None; // We don't need to protect this entry anymore
                 }
+            } else {
+                bool allNone{true}; // If all entries require no protection, we can protect to allow all accesses
+                for (auto entryRef : entries) {
+                    auto &entry{entryRef.get()};
+                    if (entry.protection < TrapProtection::ReadWrite) {
+                        // We don't need to do the callback if the entry can already handle read accesses
+                        allNone = allNone && entry.protection == TrapProtection::None;
+                        continue;
+                    }
 
-                entry.readCallback();
-                entry.protection = TrapProtection::WriteOnly; // We only need to trap writes to this entry
+                    if (!entry.readCallback()) {
+                        lockCallback = entry.lockCallback;
+                        continue;
+                    }
+                    entry.protection = TrapProtection::WriteOnly; // We only need to trap writes to this entry
+                }
+                write = allNone;
             }
-            write = allNone;
+
+            int permission{PROT_READ | (write ? PROT_WRITE : 0) | PROT_EXEC};
+            for (const auto &interval : intervals)
+                // Reprotect the interval to the lowest protection level that the callbacks performed allow
+                mprotect(interval.start, interval.Size(), permission);
+
+            return true;
         }
-
-        int permission{PROT_READ | (write ? PROT_WRITE : 0) | PROT_EXEC};
-        for (const auto &interval : intervals)
-            // Reprotect the interval to the lowest protection level that the callbacks performed allow
-            mprotect(interval.start, interval.Size(), permission);
-
-        return true;
     }
 
     constexpr NCE::TrapHandle::TrapHandle(const TrapMap::GroupHandle &handle) : TrapMap::GroupHandle(handle) {}
 
-    NCE::TrapHandle NCE::TrapRegions(span<span<u8>> regions, bool writeOnly, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
+    NCE::TrapHandle NCE::TrapRegions(span<span<u8>> regions, bool writeOnly, const LockCallback& lockCallback, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
         std::scoped_lock lock(trapMutex);
         auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
-        TrapHandle handle{trapMap.Insert(regions, CallbackEntry{protection, readCallback, writeCallback})};
+        TrapHandle handle{trapMap.Insert(regions, CallbackEntry{protection, lockCallback, readCallback, writeCallback})};
         ReprotectIntervals(handle->intervals, protection);
         return handle;
     }

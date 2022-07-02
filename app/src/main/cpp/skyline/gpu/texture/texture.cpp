@@ -145,17 +145,23 @@ namespace skyline::gpu {
 
         trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
             std::scoped_lock lock{*this};
+        }, [this] {
+            std::unique_lock lock{*this, std::try_to_lock};
+            if (!lock)
+                return false;
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
-            WaitOnFence();
+            return true;
         }, [this] {
             DirtyState expectedState{DirtyState::Clean};
             if (dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
-                return; // If we can transition the texture to CPU dirty (from Clean) or if it already is CPU dirty then we can just return, we only need to do the lock and corresponding sync if the texture is GPU dirty
+                return true; // If we can transition the texture to CPU dirty (from Clean) or if it already is CPU dirty then we can just return, we only need to do the lock and corresponding sync if the texture is GPU dirty
 
-            std::scoped_lock lock{*this};
+            std::unique_lock lock{*this, std::try_to_lock};
+            if (!lock)
+                return false;
             SynchronizeGuest(true);
             dirtyState = DirtyState::CpuDirty; // We need to assume the texture is dirty since we don't know what the guest is writing
-            WaitOnFence();
+            return true;
         });
     }
 

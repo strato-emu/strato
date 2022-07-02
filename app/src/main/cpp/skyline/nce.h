@@ -24,13 +24,15 @@ namespace skyline::nce {
             ReadWrite = 2, //!< Both read and write protection are required
         };
 
-        using TrapCallback = std::function<void()>;
+        using TrapCallback = std::function<bool()>;
+        using LockCallback = std::function<void()>;
 
         struct CallbackEntry {
             TrapProtection protection; //!< The least restrictive protection that this callback needs to have
+            LockCallback lockCallback;
             TrapCallback readCallback, writeCallback;
 
-            CallbackEntry(TrapProtection protection, NCE::TrapCallback readCallback, NCE::TrapCallback writeCallback);
+            CallbackEntry(TrapProtection protection, LockCallback lockCallback, TrapCallback readCallback, TrapCallback writeCallback);
         };
 
         std::mutex trapMutex; //!< Synchronizes the accesses to the trap map
@@ -102,11 +104,14 @@ namespace skyline::nce {
         /**
          * @brief Traps a region of guest memory with a callback for when an access to it has been made
          * @param writeOnly If the trap is optimally for write-only accesses initially, this is not guarenteed
+         * @param lockCallback A callback to lock the resource that is being trapped, it must block until the resource is locked but unlock it prior to returning
+         * @param readCallback A callback for read accesses to the trapped region, it must not block and return a boolean if it would block
+         * @param writeCallback A callback for write accesses to the trapped region, it must not block and return a boolean if it would block
          * @note The handle **must** be deleted using DeleteTrap before the NCE instance is destroyed
          * @note It is UB to supply a region of host memory rather than guest memory
          * @note Any regions trapped without writeOnly may have their data (except border pages) paged out and it needs to be paged back in inside the callbacks
          */
-        TrapHandle TrapRegions(span<span<u8>> regions, bool writeOnly, const TrapCallback& readCallback, const TrapCallback& writeCallback);
+        TrapHandle TrapRegions(span<span<u8>> regions, bool writeOnly, const LockCallback& lockCallback, const TrapCallback& readCallback, const TrapCallback& writeCallback);
 
         /**
          * @brief Re-traps a region of memory after protections were removed
