@@ -97,6 +97,3 @@ jobs:
         with:
           name: skyline-${{ github.run_number }}-unsigned-release.apk
           path: skyline-${{ github.run_number }}-unsigned-release.apk
-
-      - name: Delete Build Folder
-        run: rm -rf app/build/
