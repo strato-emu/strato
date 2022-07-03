@@ -60,7 +60,7 @@
     <string name="triple_buffering_enabled">Utilize at least three swapchain buffers (Higher FPS but more input lag)</string>
     <string name="triple_buffering_disabled">Utilize at least two swapchain buffers (Lower FPS but less input lag)</string>
     <string name="disable_frame_throttling">Disable Frame Throttling</string>
-    <string name="disable_frame_throttling_enabled">Game is allowed to submit frames as fast as possible (Only for benchmarking)</string>
+    <string name="disable_frame_throttling_enabled">Game is allowed to submit frames as fast as possible (Only for benchmarking)\n\n<b>Note:</b> An alternative method is utilized to measure the FPS with this enabled, the figures must not be compared to throttled FPS figures</string>
     <string name="disable_frame_throttling_disabled">Only allow the game to submit frames at the display refresh rate</string>
     <string name="max_refresh_rate">Use Maximum Display Refresh Rate</string>
     <string name="max_refresh_rate_enabled">Sets the display refresh rate as high as possible (Will break most games)</string>

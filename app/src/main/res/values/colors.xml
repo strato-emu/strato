@@ -5,4 +5,7 @@
     <color name="backgroundColor">@android:color/white</color>
     <color name="backgroundColorVariant">#F8F8F8</color>
     <color name="dividerColor">@android:color/black</color>
+
+    <color name="colorPerfStatsPrimary">#9FFFFF00</color>
+    <color name="colorPerfStatsSecondary">#9F00FFFF</color>
 </resources>

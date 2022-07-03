@@ -27,8 +27,8 @@
         android:layout_gravity="top|left"
         android:layout_marginLeft="@dimen/onScreenItemHorizontalMargin"
         android:layout_marginTop="5dp"
-        android:textColor="#9fffff00"
-        tools:text="60 FPS \n16.7±1.20ms" />
+        tools:text="60 FPS\n16.6±0.10ms"
+        android:textColor="@color/colorPerfStatsPrimary" />
 
     <ImageButton
         android:id="@+id/on_screen_controller_toggle"

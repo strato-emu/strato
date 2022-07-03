@@ -295,6 +295,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         )
 
         if (preferenceSettings.perfStats) {
+            if (preferenceSettings.disableFrameThrottling)
+                binding.perfStats.setTextColor(getColor(R.color.colorPerfStatsSecondary))
+
             binding.perfStats.apply {
                 postDelayed(object : Runnable {
                     override fun run() {
