@@ -29,7 +29,7 @@ import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
-import emu.skyline.utils.Settings
+import emu.skyline.utils.PreferenceSettings
 import javax.inject.Inject
 
 /**
@@ -61,7 +61,7 @@ class ControllerActivity : AppCompatActivity() {
     val buttonItems = mutableListOf<ControllerButtonViewItem>()
 
     @Inject
-    lateinit var settings : Settings
+    lateinit var preferenceSettings : PreferenceSettings
 
     @Inject
     lateinit var inputManager : InputManager
@@ -84,14 +84,14 @@ class ControllerActivity : AppCompatActivity() {
                 items.add(ControllerHeaderItem(getString(R.string.osc)))
 
                 val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(settings.onScreenControl), settings.onScreenControl) { item, position ->
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(preferenceSettings.onScreenControl), preferenceSettings.onScreenControl) { item, position ->
                     item.summary = oscSummary.invoke(item.checked)
-                    settings.onScreenControl = item.checked
+                    preferenceSettings.onScreenControl = item.checked
                     adapter.notifyItemChanged(position)
                 })
 
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", settings.onScreenControlRecenterSticks) { item, position ->
-                    settings.onScreenControlRecenterSticks = item.checked
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", preferenceSettings.onScreenControlRecenterSticks) { item, position ->
+                    preferenceSettings.onScreenControlRecenterSticks = item.checked
                     adapter.notifyItemChanged(position)
                 })
 

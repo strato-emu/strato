@@ -7,7 +7,7 @@ package emu.skyline.utils
 
 import java.io.Serializable
 
-class SettingsValues(pref: Settings) : Serializable {
+class SettingsValues(pref: PreferenceSettings) : Serializable {
     var isDocked : Boolean = pref.isDocked
     var usernameValue : String = pref.usernameValue
     var systemLanguage : Int = pref.systemLanguage

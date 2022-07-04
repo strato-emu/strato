@@ -13,7 +13,7 @@ import javax.inject.Singleton
 import emu.skyline.R
 
 @Singleton
-class Settings @Inject constructor(@ApplicationContext private val context : Context) {
+class PreferenceSettings @Inject constructor(@ApplicationContext private val context : Context) {
     // Emulator
     var searchLocation by sharedPreferences(context, "")
     var appTheme by sharedPreferences(context, 2)
