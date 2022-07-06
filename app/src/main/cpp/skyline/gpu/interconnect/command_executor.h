@@ -89,6 +89,11 @@ namespace skyline::gpu::interconnect {
          */
         void SubmitInternal();
 
+        /**
+         * @brief Resets all the internal state, this must be called before starting a new submission as it clears everything from a past submission
+         */
+        void ResetInternal();
+
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         MegaBuffer megaBuffer; //!< The megabuffer used to temporarily store buffer modifications allowing them to be replayed in-sequence on the GPU

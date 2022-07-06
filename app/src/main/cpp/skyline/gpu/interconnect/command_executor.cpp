@@ -290,8 +290,6 @@ namespace skyline::gpu::interconnect {
                 cycle->ChainCycle(attachedTexture->cycle);
                 attachedTexture->cycle = cycle;
             }
-            attachedTextures.clear();
-            textureManagerLock.reset();
 
             for (const auto &attachedBuffer : attachedBuffers) {
                 if (attachedBuffer->UsedByContext()) {
@@ -300,16 +298,21 @@ namespace skyline::gpu::interconnect {
                     attachedBuffer->cycle = cycle;
                 }
             }
-
-            for (const auto &delegate : attachedBufferDelegates) {
-                delegate->usageCallback = nullptr;
-                delegate->view->megabufferOffset = 0;
-            }
-
-            attachedBuffers.clear();
-            attachedBufferDelegates.clear();
-            bufferManagerLock.reset();
         }
+    }
+
+    void CommandExecutor::ResetInternal() {
+        attachedTextures.clear();
+        textureManagerLock.reset();
+
+        for (const auto &delegate : attachedBufferDelegates) {
+            delegate->usageCallback = nullptr;
+            delegate->view->megabufferOffset = 0;
+        }
+
+        attachedBufferDelegates.clear();
+        attachedBuffers.clear();
+        bufferManagerLock.reset();
     }
 
     void CommandExecutor::Submit() {
@@ -320,6 +323,7 @@ namespace skyline::gpu::interconnect {
             cycle = activeCommandBuffer.GetFenceCycle();
             megaBuffer = gpu.buffer.AcquireMegaBuffer(cycle);
         }
+        ResetInternal();
     }
 
     void CommandExecutor::SubmitWithFlush() {
@@ -329,5 +333,6 @@ namespace skyline::gpu::interconnect {
             cycle = activeCommandBuffer.Reset();
             megaBuffer.Reset();
         }
+        ResetInternal();
     }
 }
