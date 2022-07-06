@@ -130,10 +130,14 @@ namespace skyline::gpu {
     }
 
     bool Buffer::PollFence() {
-        if (cycle && cycle->Poll()) {
+        if (!cycle)
+            return true;
+
+        if (cycle->Poll()) {
             cycle = nullptr;
             return true;
         }
+
         return false;
     }
 
