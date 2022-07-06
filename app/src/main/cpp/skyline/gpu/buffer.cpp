@@ -210,12 +210,12 @@ namespace skyline::gpu {
 
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
 
-        if (PollFence())
-            // Perform a GPU-side inline update for the buffer contents if this buffer is host immutable since we can't directly modify the backing
-            gpuCopyCallback();
-        else
-            // If that's not the case we don't need to do any GPU-side sequencing here, we can write directly to the backing and the sequencing for it will be handled at usage time
+        if (!usedByContext && PollFence())
+            // We can write directly to the backing as long as this resource isn't being actively used by a past workload (in the current context or another)
             std::memcpy(backing.data() + offset, data.data(), data.size());
+        else
+            // If this buffer is host immutable, perform a GPU-side inline update for the buffer contents since we can't directly modify the backing
+            gpuCopyCallback();
     }
 
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {

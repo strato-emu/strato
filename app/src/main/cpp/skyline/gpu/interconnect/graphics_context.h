@@ -646,7 +646,9 @@ namespace skyline::gpu::interconnect {
                 view.Write(lock.isFirst, pExecutor.cycle, []() {
                     // TODO: see Read()
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
-                }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, view = this->view]() {
+                }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, &view = this->view, &lock]() {
+                    pExecutor.AttachLockedBuffer(view, lock);
+
                     auto srcGpuOffset{megaBuffer.Push(srcCpuBuf)};
                     auto srcGpuBuf{megaBuffer.GetBacking()};
                     pExecutor.AddOutsideRpCommand([=](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
