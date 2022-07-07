@@ -316,6 +316,9 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::Submit() {
+        for (const auto &callback : flushCallbacks)
+            callback();
+
         if (!nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Submit");
             SubmitInternal();
@@ -330,6 +333,9 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::SubmitWithFlush() {
+        for (const auto &callback : flushCallbacks)
+            callback();
+
         if (!nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::SubmitWithFlush");
             SubmitInternal();

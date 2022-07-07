@@ -336,7 +336,6 @@ namespace skyline::soc::gm20b {
                 break;
         }
 
-        channelCtx.maxwell3D->FlushEngineState();
         channelCtx.executor.Submit();
     }
 
