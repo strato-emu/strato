@@ -119,6 +119,14 @@ namespace skyline::gpu {
         return *this;
     }
 
+    bool MegaBuffer::WasUsed() {
+        return freeRegion != slot->backing.subspan(PAGE_SIZE);
+    }
+
+    void MegaBuffer::ReplaceCycle(const std::shared_ptr<FenceCycle> &cycle) {
+        slot->cycle = cycle;
+    }
+
     void MegaBuffer::Reset() {
         freeRegion = slot->backing.subspan(PAGE_SIZE);
     }

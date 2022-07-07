@@ -92,6 +92,17 @@ namespace skyline::gpu {
         MegaBuffer &operator=(MegaBuffer &&other);
 
         /**
+         * @return If any allocations into the megabuffer were done at the time of the call
+         */
+        bool WasUsed();
+
+        /**
+         * @brief Replaces the cycle associated with the underlying megabuffer with the supplied cycle
+         * @note The megabuffer must **NOT** have any dependencies that aren't conveyed by the supplied cycle
+         */
+        void ReplaceCycle(const std::shared_ptr<FenceCycle> &cycle);
+
+        /**
          * @brief Resets the free region of the megabuffer to its initial state, data is left intact but may be overwritten
          */
         void Reset();

@@ -321,7 +321,10 @@ namespace skyline::gpu::interconnect {
             SubmitInternal();
             activeCommandBuffer = gpu.scheduler.AllocateCommandBuffer();
             cycle = activeCommandBuffer.GetFenceCycle();
-            megaBuffer = gpu.buffer.AcquireMegaBuffer(cycle);
+            if (megaBuffer.WasUsed())
+                megaBuffer = gpu.buffer.AcquireMegaBuffer(cycle);
+            else
+                megaBuffer.ReplaceCycle(cycle);
         }
         ResetInternal();
     }
