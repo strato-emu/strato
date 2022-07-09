@@ -12,9 +12,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
-import emu.skyline.R
+import androidx.preference.R
 import emu.skyline.di.getInputManager
 import emu.skyline.input.ControllerActivity
+import emu.skyline.R as SkylineR
 
 /**
  * This preference is used to launch [ControllerActivity] using a preference
@@ -52,7 +53,7 @@ class ControllerPreference @JvmOverloads constructor(context : Context, attrs : 
         if (key == null)
             key = "controller_$index"
 
-        title = "${context.getString(R.string.config_controller)} #${index + 1}"
+        title = "${context.getString(SkylineR.string.config_controller)} #${index + 1}"
         summaryProvider = SummaryProvider<ControllerPreference> { inputManager.controllers[index]!!.type.stringRes.let { context.getString(it) } }
     }
 

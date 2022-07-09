@@ -8,7 +8,6 @@ package emu.skyline.preference
 import android.content.Context
 import android.util.AttributeSet
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.preference.ListPreference
 import androidx.preference.R
 
 /**

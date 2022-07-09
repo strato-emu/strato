@@ -34,11 +34,10 @@ import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
-import emu.skyline.utils.PreferenceSettings
 import emu.skyline.provider.DocumentsProvider
+import emu.skyline.utils.PreferenceSettings
 import javax.inject.Inject
 import kotlin.math.ceil
-
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
