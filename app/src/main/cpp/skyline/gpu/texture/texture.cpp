@@ -809,7 +809,7 @@ namespace skyline::gpu {
             if (source->layout != vk::ImageLayout::eTransferSrcOptimal) {
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
                     .image = sourceBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                    .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
                     .dstAccessMask = vk::AccessFlagBits::eTransferRead,
                     .oldLayout = source->layout,
                     .newLayout = vk::ImageLayout::eTransferSrcOptimal,
@@ -823,7 +823,7 @@ namespace skyline::gpu {
             if (layout != vk::ImageLayout::eTransferDstOptimal) {
                 commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
                     .image = destinationBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
                     .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
                     .oldLayout = layout,
                     .newLayout = vk::ImageLayout::eTransferDstOptimal,

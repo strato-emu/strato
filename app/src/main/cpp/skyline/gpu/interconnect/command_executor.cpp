@@ -46,7 +46,7 @@ namespace skyline::gpu::interconnect {
             lastSubpassDepthStencilAttachment = depthStencilAttachment;
         }};
 
-        if (renderPass == nullptr || (renderPass && (renderPass->renderArea != renderArea || subpassCount >= gpu.traits.quirks.maxSubpassCount))) {
+        if (renderPass == nullptr || renderPass->renderArea != renderArea || subpassCount >= gpu.traits.quirks.maxSubpassCount) {
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
             if (renderPass != nullptr)
                 nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
@@ -100,6 +100,8 @@ namespace skyline::gpu::interconnect {
         if (!textureManagerLock)
             // Avoids a potential deadlock with this resource being locked while acquiring the TextureManager lock while the thread owning it tries to acquire a lock on this texture
             textureManagerLock.emplace(gpu.texture);
+
+        cycle->AttachObject(view->shared_from_this());
 
         bool didLock{view->LockWithTag(tag)};
         if (didLock)
@@ -286,7 +288,7 @@ namespace skyline::gpu::interconnect {
             nodes.clear();
 
             for (const auto &attachedTexture : attachedTextures) {
-                cycle->AttachObject(attachedTexture.texture);
+                // We don't need to attach the Texture to the cycle as a TextureView will already be attached
                 cycle->ChainCycle(attachedTexture->cycle);
                 attachedTexture->cycle = cycle;
             }
