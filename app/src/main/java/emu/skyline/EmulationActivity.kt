@@ -30,7 +30,7 @@ import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
 import emu.skyline.utils.PreferenceSettings
 import emu.skyline.utils.ByteBufferSerializable
-import emu.skyline.utils.SettingsValues
+import emu.skyline.utils.NativeSettings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.FutureTask
@@ -85,13 +85,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * @param romUri The URI of the ROM as a string, used to print out in the logs
      * @param romType The type of the ROM as an enum value
      * @param romFd The file descriptor of the ROM object
-     * @param settingsValues The SettingsValues instance
+     * @param nativeSettings The settings to be used by libskyline
      * @param publicAppFilesPath The full path to the public app files directory
      * @param privateAppFilesPath The full path to the private app files directory
      * @param nativeLibraryPath The full path to the app native library directory
      * @param assetManager The asset manager used for accessing app assets
      */
-    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, settingsValues : SettingsValues, publicAppFilesPath : String, privateAppFilesPath : String, nativeLibraryPath : String, assetManager : AssetManager)
+    private external fun executeApplication(romUri : String, romType : Int, romFd : Int, nativeSettings : NativeSettings, publicAppFilesPath : String, privateAppFilesPath : String, nativeLibraryPath : String, assetManager : AssetManager)
 
     /**
      * @param join If the function should only return after all the threads join or immediately
@@ -249,7 +249,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
         emulationThread = Thread {
-            executeApplication(rom.toString(), romType, romFd.detachFd(), SettingsValues(preferenceSettings), applicationContext.getPublicFilesDir().canonicalPath + "/", applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
+            executeApplication(rom.toString(), romType, romFd.detachFd(), NativeSettings(preferenceSettings), applicationContext.getPublicFilesDir().canonicalPath + "/", applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
             returnFromEmulation()
         }
 

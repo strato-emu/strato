@@ -5,9 +5,10 @@
 
 package emu.skyline.utils
 
-import java.io.Serializable
-
-class SettingsValues(pref: PreferenceSettings) : Serializable {
+/**
+ * The settings that will be passed to libskyline when running and executable
+ */
+class NativeSettings(pref: PreferenceSettings) {
     var isDocked : Boolean = pref.isDocked
     var usernameValue : String = pref.usernameValue
     var systemLanguage : Int = pref.systemLanguage
@@ -21,7 +22,7 @@ class SettingsValues(pref: PreferenceSettings) : Serializable {
 
     companion object {
         /**
-         * Setter for native log level
+         * Sets libskyline logger level to the given one
          */
         external fun setLogLevel(logLevel : Int)
     }
