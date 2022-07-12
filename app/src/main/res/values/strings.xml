@@ -36,9 +36,6 @@
     <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
     <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
     <string name="log_level">Log Level</string>
-    <string name="log_compact">Compact Logs</string>
-    <string name="log_compact_desc_on">Logs will be displayed in a compact form factor</string>
-    <string name="log_compact_desc_off">Logs will be displayed in a verbose form factor</string>
     <!-- Settings - System -->
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>

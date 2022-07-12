@@ -40,12 +40,6 @@
             app:key="log_level"
             app:title="@string/log_level"
             app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:summaryOff="@string/log_compact_desc_off"
-            android:summaryOn="@string/log_compact_desc_on"
-            app:key="log_compact"
-            app:title="@string/log_compact" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_keys"

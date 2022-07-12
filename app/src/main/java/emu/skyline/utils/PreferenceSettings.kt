@@ -21,7 +21,6 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     var selectAction by sharedPreferences(context, false)
     var perfStats by sharedPreferences(context, false)
     var logLevel by sharedPreferences(context, 3)
-    var logCompact by sharedPreferences(context, false)
 
     // System
     var isDocked by sharedPreferences(context, true)
