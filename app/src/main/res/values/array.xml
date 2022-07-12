@@ -7,32 +7,15 @@
         <item>Debug</item>
         <item>Verbose</item>
     </string-array>
-    <string-array name="log_level_val">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
-    </string-array>
     <string-array name="layout_type">
         <item>List</item>
         <item>Grid</item>
         <item>Grid Compact</item>
     </string-array>
-    <string-array name="layout_type_val">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-    </string-array>
     <string-array name="app_theme">
         <item>Light</item>
         <item>Dark</item>
         <item>Use System Default</item>
-    </string-array>
-    <string-array name="app_theme_val">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
     </string-array>
     <string-array name="system_languages">
         <item>American English</item>

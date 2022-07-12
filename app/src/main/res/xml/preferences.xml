@@ -13,14 +13,12 @@
         <emu.skyline.preference.ThemePreference
             android:defaultValue="2"
             android:entries="@array/app_theme"
-            android:entryValues="@array/app_theme_val"
             app:key="app_theme"
             app:title="@string/theme"
             app:useSimpleSummaryProvider="true" />
-        <ListPreference
+        <emu.skyline.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/layout_type"
-            android:entryValues="@array/layout_type_val"
             app:key="layout_type"
             app:title="@string/layout_type"
             app:useSimpleSummaryProvider="true" />
@@ -36,10 +34,9 @@
             android:summaryOn="@string/perf_stats_desc_on"
             app:key="perf_stats"
             app:title="@string/perf_stats" />
-        <ListPreference
+        <emu.skyline.preference.IntegerListPreference
             android:defaultValue="2"
             android:entries="@array/log_level"
-            android:entryValues="@array/log_level_val"
             app:key="log_level"
             app:title="@string/log_level"
             app:useSimpleSummaryProvider="true" />

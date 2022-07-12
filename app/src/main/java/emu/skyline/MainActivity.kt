@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     private val adapter = GenericAdapter()
 
-    private val layoutType get() = LayoutType.values()[settings.layoutType.toInt()]
+    private val layoutType get() = LayoutType.values()[settings.layoutType]
 
     private val missingIcon by lazy { ContextCompat.getDrawable(this, R.drawable.default_icon)!!.toBitmap(256, 256) }
 
@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState : Bundle?) {
         // Need to create new instance of settings, dependency injection happens
         AppCompatDelegate.setDefaultNightMode(
-            when ((Settings(this).appTheme.toInt())) {
+            when ((Settings(this).appTheme)) {
                 0 -> AppCompatDelegate.MODE_NIGHT_NO
                 1 -> AppCompatDelegate.MODE_NIGHT_YES
                 2 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
@@ -106,8 +106,8 @@ class MainActivity : AppCompatActivity() {
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
         adapter.apply {
-            setHeaderItems(listOf(HeaderRomFilterItem(formatOrder, if (settings.filter == 0) null else formatOrder[settings.filter - 1]) { romFormat ->
-                settings.filter = romFormat?.let { formatOrder.indexOf(romFormat) + 1 } ?: 0
+            setHeaderItems(listOf(HeaderRomFilterItem(formatOrder, if (settings.romFormatFilter == 0) null else formatOrder[settings.romFormatFilter - 1]) { romFormat ->
+                settings.romFormatFilter = romFormat?.let { formatOrder.indexOf(romFormat) + 1 } ?: 0
                 formatFilter = romFormat
                 populateAdapter()
             }))

@@ -28,7 +28,7 @@ import emu.skyline.R as sR
  * @see androidx.preference.ListPreference
  */
 @SuppressLint("RestrictedApi")
-class IntegerListPreference @JvmOverloads constructor(
+open class IntegerListPreference @JvmOverloads constructor(
     context : Context,
     attrs : AttributeSet? = null,
     defStyleAttr : Int = TypedArrayUtils.getAttr(
