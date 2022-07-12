@@ -35,6 +35,9 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     var orientation by sharedPreferences(context, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
     var respectDisplayCutout by sharedPreferences(context, false)
 
+    // GPU
+    var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER)
+
     // Input
     var onScreenControl by sharedPreferences(context, true)
     var onScreenControlRecenterSticks by sharedPreferences(context, true)
@@ -42,4 +45,8 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     // Other
     var romFormatFilter by sharedPreferences(context, 0)
     var refreshRequired by sharedPreferences(context, false)
+
+    companion object {
+        const val SYSTEM_GPU_DRIVER = "system"
+    }
 }
