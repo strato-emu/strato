@@ -150,6 +150,7 @@ namespace skyline::gpu {
             if (!lock)
                 return false;
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
+            WaitOnFence();
             return true;
         }, [this] {
             DirtyState expectedState{DirtyState::Clean};
@@ -161,6 +162,7 @@ namespace skyline::gpu {
                 return false;
             SynchronizeGuest(true);
             dirtyState = DirtyState::CpuDirty; // We need to assume the texture is dirty since we don't know what the guest is writing
+            WaitOnFence();
             return true;
         });
     }
