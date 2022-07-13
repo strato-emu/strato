@@ -559,10 +559,11 @@ namespace skyline::gpu {
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
          * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
+         * @param setDirty If true, the texture will be marked as CpuDirty rather than Clean
          * @note The texture **must** be locked prior to calling this
          * @note The guest texture should not be null prior to calling this
          */
-        void SynchronizeGuest(bool skipTrap = false);
+        void SynchronizeGuest(bool skipTrap = false, bool setDirty = false);
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified

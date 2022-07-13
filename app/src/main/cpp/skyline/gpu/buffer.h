@@ -233,9 +233,10 @@ namespace skyline::gpu {
          * @brief Synchronizes the guest buffer with the host buffer
          * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
          * @param nonBlocking If true, the call will return immediately if the fence is not signalled, skipping the sync
+         * @param setDirty If true, the buffer will be marked as CpuDirty rather than Clean
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false);
+        void SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false, bool setDirty = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer immediately, flushing GPU work if necessary

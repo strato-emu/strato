@@ -160,8 +160,7 @@ namespace skyline::gpu {
             std::unique_lock lock{*this, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true);
-            dirtyState = DirtyState::CpuDirty; // We need to assume the texture is dirty since we don't know what the guest is writing
+            SynchronizeGuest(true, true); // We need to assume the texture is dirty since we don't know what the guest is writing
             WaitOnFence();
             return true;
         });
@@ -555,9 +554,9 @@ namespace skyline::gpu {
     }
 
     Texture::~Texture() {
+        SynchronizeGuest(true);
         if (trapHandle)
             gpu.state.nce->DeleteTrap(*trapHandle);
-        SynchronizeGuest(true);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
         WaitOnFence();
@@ -705,20 +704,23 @@ namespace skyline::gpu {
         gpu.state.nce->RetrapRegions(*trapHandle, !rwTrap); // Trap any future CPU reads (optionally) + writes to this texture
     }
 
-    void Texture::SynchronizeGuest(bool skipTrap) {
+    void Texture::SynchronizeGuest(bool skipTrap, bool setDirty) {
         if (!guest)
             return;
 
         auto currentState{dirtyState.load(std::memory_order_relaxed)};
         do {
-            if (currentState != DirtyState::GpuDirty)
-                return; // If the buffer has not been used on the GPU, there is no need to synchronize it
-        } while (!dirtyState.compare_exchange_strong(currentState, DirtyState::Clean, std::memory_order_relaxed));
+            if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && setDirty))
+                return; // If the texture is synchronized (Clean/CpuDirty), there is no need to synchronize it
+        } while (!dirtyState.compare_exchange_strong(currentState, setDirty ? DirtyState::CpuDirty : DirtyState::Clean, std::memory_order_relaxed));
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuest");
 
         if (!skipTrap)
-            gpu.state.nce->RetrapRegions(*trapHandle, true);
+            gpu.state.nce->RetrapRegions(*trapHandle, !setDirty);
+
+        if (setDirty && currentState == DirtyState::Clean)
+            return; // If the texture was simply transitioned from Clean to CpuDirty, there is no need to synchronize it
 
         if (layout == vk::ImageLayout::eUndefined || format != guest->format)
             // If the state of the host texture is undefined then so can the guest
@@ -752,7 +754,7 @@ namespace skyline::gpu {
         auto currentState{dirtyState.load(std::memory_order_relaxed)};
         do {
             if (currentState != DirtyState::GpuDirty)
-                return; // If the buffer has not been used on the GPU, there is no need to synchronize it
+                return; // If the texture has not been used on the GPU, there is no need to synchronize it
         } while (!dirtyState.compare_exchange_strong(currentState, DirtyState::Clean, std::memory_order_relaxed));
 
         TRACE_EVENT("gpu", "Texture::SynchronizeGuestWithBuffer");

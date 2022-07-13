@@ -31,8 +31,7 @@ namespace skyline::gpu {
             std::unique_lock lock{*this, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true);
-            dirtyState = DirtyState::CpuDirty; // We need to assume the buffer is dirty since we don't know what the guest is writing
+            SynchronizeGuest(true, false, true); // We need to assume the buffer is dirty since we don't know what the guest is writing
             return true;
         });
     }
@@ -161,15 +160,15 @@ namespace skyline::gpu {
         gpu.state.nce->RetrapRegions(*trapHandle, !rwTrap); // Trap any future CPU reads (optionally) + writes to this buffer
     }
 
-    void Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking) {
+    void Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking, bool setDirty) {
         if (!guest)
             return;
 
         auto currentState{dirtyState.load(std::memory_order_relaxed)};
         do {
-            if (currentState != DirtyState::GpuDirty)
-                return; // If the buffer has not been used on the GPU, there is no need to synchronize it
-        } while (!dirtyState.compare_exchange_strong(currentState, DirtyState::Clean, std::memory_order_relaxed));
+            if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && setDirty))
+                return; // If the buffer is synchronized (Clean/CpuDirty), there is no need to synchronize it
+        } while (!dirtyState.compare_exchange_strong(currentState, setDirty ? DirtyState::CpuDirty : DirtyState::Clean, std::memory_order_relaxed));
 
         if (nonBlocking && !PollFence())
             return;
@@ -178,6 +177,9 @@ namespace skyline::gpu {
 
         if (!skipTrap)
             gpu.state.nce->RetrapRegions(*trapHandle, true);
+
+        if (setDirty && currentState == DirtyState::Clean)
+            return; // If the texture was simply transitioned from Clean to CpuDirty, there is no need to synchronize it
 
         if (!nonBlocking)
             WaitOnFence();
