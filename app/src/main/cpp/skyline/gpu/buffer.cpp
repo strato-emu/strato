@@ -160,18 +160,17 @@ namespace skyline::gpu {
         gpu.state.nce->RetrapRegions(*trapHandle, !rwTrap); // Trap any future CPU reads (optionally) + writes to this buffer
     }
 
-    void Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking, bool setDirty) {
+    bool Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking, bool setDirty) {
         if (!guest)
-            return;
+            return false;
 
         auto currentState{dirtyState.load(std::memory_order_relaxed)};
         do {
             if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && setDirty))
-                return; // If the buffer is synchronized (Clean/CpuDirty), there is no need to synchronize it
+                return true; // If the buffer is synchronized (Clean/CpuDirty), there is no need to synchronize it
+            else if (currentState == DirtyState::GpuDirty && nonBlocking && !PollFence())
+                return false; // If the buffer is GPU dirty and the fence is not signalled then we can't block
         } while (!dirtyState.compare_exchange_strong(currentState, setDirty ? DirtyState::CpuDirty : DirtyState::Clean, std::memory_order_relaxed));
-
-        if (nonBlocking && !PollFence())
-            return;
 
         TRACE_EVENT("gpu", "Buffer::SynchronizeGuest");
 
@@ -179,12 +178,14 @@ namespace skyline::gpu {
             gpu.state.nce->RetrapRegions(*trapHandle, true);
 
         if (setDirty && currentState == DirtyState::Clean)
-            return; // If the texture was simply transitioned from Clean to CpuDirty, there is no need to synchronize it
+            return true; // If the texture was simply transitioned from Clean to CpuDirty, there is no need to synchronize it
 
         if (!nonBlocking)
             WaitOnFence();
 
         std::memcpy(mirror.data(), backing.data(), mirror.size());
+
+        return true;
     }
 
     void Buffer::SynchronizeGuestImmediate(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
@@ -231,10 +232,8 @@ namespace skyline::gpu {
     }
 
     std::pair<u64, span<u8>> Buffer::AcquireCurrentSequence() {
-        SynchronizeGuest(false, true); // First try to remove GPU dirtiness by doing an immediate sync and taking a quick shower
-
-        if (dirtyState == DirtyState::GpuDirty)
-            // Bail out if buffer is GPU dirty - since we don't know the contents ahead of time the sequence is indeterminate
+        if (!SynchronizeGuest(false, true))
+            // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
         SynchronizeHost(); // Ensure that the returned mirror is fully up-to-date by performing a CPU -> GPU sync
