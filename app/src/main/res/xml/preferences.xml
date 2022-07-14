@@ -40,6 +40,9 @@
             app:key="log_level"
             app:title="@string/log_level"
             app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.GpuDriverPreference
+            app:key="gpu_driver"
+            app:title="@string/gpu_driver_config" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_keys"
