@@ -284,7 +284,7 @@ namespace skyline::kernel::type {
                 ownerPriority = waitingOn->priority.load();
                 if (ownerPriority <= currentPriority)
                     return;
-            } while (waitingOn->priority.compare_exchange_strong(ownerPriority, currentPriority));
+            } while (!waitingOn->priority.compare_exchange_strong(ownerPriority, currentPriority));
 
             if (ownerPriority != currentPriority) {
                 std::scoped_lock waiterLock{waitingOn->waiterMutex};
