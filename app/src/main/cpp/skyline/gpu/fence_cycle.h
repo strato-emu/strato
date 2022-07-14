@@ -68,7 +68,20 @@ namespace skyline::gpu {
         void Wait() {
             if (signalled.test(std::memory_order_consume))
                 return;
-            while (device.waitForFences(fence, false, std::numeric_limits<u64>::max()) != vk::Result::eSuccess);
+
+            vk::Result waitResult;
+            while ((waitResult = (*device).waitForFences(1, &fence, false, std::numeric_limits<u64>::max(), *device.getDispatcher())) != vk::Result::eSuccess) {
+                if (waitResult == vk::Result::eTimeout)
+                    // Retry if the waiting time out
+                    continue;
+
+                if (waitResult == vk::Result::eErrorInitializationFailed)
+                    // eErrorInitializationFailed occurs on Mali GPU drivers due to them using the ppoll() syscall which isn't correctly restarted after a signal, we need to manually retry waiting in that case
+                    continue;
+
+                throw exception("An error occurred while waiting for fence 0x{:X}: {}", static_cast<VkFence>(fence), vk::to_string(waitResult));
+            }
+
             if (!signalled.test_and_set(std::memory_order_release))
                 DestroyDependencies();
         }
@@ -80,7 +93,7 @@ namespace skyline::gpu {
         bool Wait(std::chrono::duration<u64, std::nano> timeout) {
             if (signalled.test(std::memory_order_consume))
                 return true;
-            if (device.waitForFences(fence, false, timeout.count()) == vk::Result::eSuccess) {
+            if ((*device).waitForFences(1, &fence, false, std::numeric_limits<u64>::max(), *device.getDispatcher()) == vk::Result::eSuccess) {
                 if (!signalled.test_and_set(std::memory_order_release))
                     DestroyDependencies();
                 return true;
@@ -144,8 +157,8 @@ namespace skyline::gpu {
                     }
                 }
 
-                auto& dependency{*dependencies.begin()};
-                auto& lastDependency{*std::prev(dependencies.end())};
+                auto &dependency{*dependencies.begin()};
+                auto &lastDependency{*std::prev(dependencies.end())};
                 lastDependency->next = std::atomic_load_explicit(&list, std::memory_order_acquire);
 
                 do {
