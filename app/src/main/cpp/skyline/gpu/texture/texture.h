@@ -484,8 +484,8 @@ namespace skyline::gpu {
 
         /**
          * @brief Acquires an exclusive lock on the texture for the calling thread
-         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
-         * @return If the lock was acquired by this call rather than having the same tag as the holder
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (A default initialised tag will disable this behaviour)
+         * @return If the lock was acquired by this call as opposed to the texture already being locked with the same tag
          * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
          */
         bool LockWithTag(ContextTag tag);

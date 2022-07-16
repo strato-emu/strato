@@ -137,24 +137,25 @@ namespace skyline::gpu::interconnect {
         return didLock;
     }
 
-    void CommandExecutor::AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &lock) {
+    void CommandExecutor::AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &&lock) {
         if (!bufferManagerLock)
             // See AttachTexture(...)
             bufferManagerLock.emplace(gpu.buffer);
 
-        if (lock.isFirst) {
+        if (lock.OwnsLock()) {
+            // Transfer ownership to executor so that the resource will stay locked for the period it is used on the GPU
             attachedBuffers.emplace_back(view->buffer);
-            lock.isFirst = false;
+            lock.Release(); // The executor will handle unlocking the lock so it doesn't need to be handled here
         }
 
         if (!attachedBufferDelegates.contains(view.bufferDelegate))
             attachedBufferDelegates.emplace(view.bufferDelegate);
     }
 
-    void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
-        if (lock.isFirst) {
+    void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+        if (lock.OwnsLock()) {
             attachedBuffers.emplace_back(std::move(buffer));
-            lock.isFirst = false;
+            lock.Release(); // See AttachLockedBufferView(...)
         }
     }
 

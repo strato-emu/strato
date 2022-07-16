@@ -47,27 +47,50 @@ namespace skyline::gpu {
 
     /**
      * @brief A scoped lock specially designed for classes with ContextTag-based locking
-     * @note This will unlock the tag when the scope is exited, **if** it locked the tag in the first place
+     * @note This will unlock the tag when the scope is exited, **if** it locked the tag in the first place and `Release` has not been called
      */
     template<typename T>
     class ContextLock {
       private:
         T &resource;
+        bool ownsLock; //!< If when this ContextLocked initially locked `resource`, it had never been locked for this context before
 
       public:
-        bool isFirst; //!< If this was the first lock for this context
-
-        ContextLock(ContextTag tag, T &resource) : resource{resource}, isFirst{resource.LockWithTag(tag)} {}
+        ContextLock(ContextTag tag, T &resource) : resource{resource}, ownsLock{resource.LockWithTag(tag)} {}
 
         ContextLock(const ContextLock &) = delete;
 
-        ContextLock(ContextLock &&other) noexcept : resource{other.resource}, isFirst{other.isFirst} {
-            other.isFirst = false;
+        ContextLock &operator=(const ContextLock &) = delete;
+
+        ContextLock(ContextLock &&other) noexcept : resource{other.resource}, ownsLock{other.ownsLock} {
+            other.ownsLock = false;
         }
 
         ~ContextLock() {
-            if (isFirst)
+            if (ownsLock)
                 resource.unlock();
+        }
+
+        /**
+         * @return If this lock owns the context lock on the resource, the destruction of this lock will cause the resource to be unlocked
+         */
+        constexpr bool OwnsLock() const {
+            return ownsLock;
+        }
+
+        /**
+         * @return If this lock was the first lock on the resource from this context, this effectively means if it was the first usage since prior usages would have to  lock the resource
+         */
+        constexpr bool IsFirstUsage() const {
+            return ownsLock;
+        }
+
+        /**
+         * @brief Releases the ownership of this lock, the destruction of this lock will no longer unlock the underlying resource
+         * @note This will cause IsFirstUsage() to return false regardless of if this is the first usage, this must be handled correctly
+         */
+        constexpr void Release() {
+            ownsLock = false;
         }
     };
 }

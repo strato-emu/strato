@@ -73,7 +73,7 @@ namespace skyline::gpu {
                     // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
 
                     // Only sync back the buffer if it's not attached to the current context, otherwise propagate the GPU dirtiness
-                    if (lock.isFirst) {
+                    if (lock.IsFirstUsage()) {
                         // Perform a GPU -> CPU sync on the source then do a CPU -> GPU sync for the region occupied by the source
                         // This is required since if we were created from a two buffers: one GPU dirty in the current cycle, and one GPU dirty in the previous cycle, if we marked ourselves as CPU dirty here then the GPU dirtiness from the current cycle buffer would be ignored and cause writes to be missed
                         srcBuffer->SynchronizeGuest(true);

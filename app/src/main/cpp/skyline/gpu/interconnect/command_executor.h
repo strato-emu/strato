@@ -137,7 +137,7 @@ namespace skyline::gpu::interconnect {
          * @note There must be no other external locks on the buffer aside from the supplied lock
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachLockedBufferView(BufferView &view, ContextLock<BufferView>& lock);
+        void AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &&lock);
 
         /**
          * @brief Attach the lifetime of a buffer object that's already locked to the command buffer
@@ -145,7 +145,7 @@ namespace skyline::gpu::interconnect {
          * @note There must be no other external locks on the buffer aside from the supplied lock
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer>& lock);
+        void AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock);
 
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer

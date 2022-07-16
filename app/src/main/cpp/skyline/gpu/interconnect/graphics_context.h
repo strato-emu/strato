@@ -627,7 +627,7 @@ namespace skyline::gpu::interconnect {
             T Read(CommandExecutor &pExecutor, size_t dstOffset) const {
                 T object;
                 ContextLock lock{pExecutor.tag, view};
-                view.Read(lock.isFirst, []() {
+                view.Read(lock.IsFirstUsage(), []() {
                     // TODO: here we should trigger a SubmitWithFlush, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, span<T>(object).template cast<u8>(), dstOffset);
@@ -643,11 +643,11 @@ namespace skyline::gpu::interconnect {
                 auto srcCpuBuf{buf.template cast<u8>()};
 
                 ContextLock lock{pExecutor.tag, view};
-                view.Write(lock.isFirst, pExecutor.cycle, []() {
+                view.Write(lock.IsFirstUsage(), pExecutor.cycle, []() {
                     // TODO: see Read()
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, &view = this->view, &lock]() {
-                    pExecutor.AttachLockedBufferView(view, lock);
+                    pExecutor.AttachLockedBufferView(view, std::move(lock));
 
                     auto srcGpuOffset{megaBuffer.Push(srcCpuBuf)};
                     auto srcGpuBuf{megaBuffer.GetBacking()};
@@ -727,8 +727,8 @@ namespace skyline::gpu::interconnect {
             auto view{constantBufferCache.Lookup(constantBufferSelector.size, constantBufferSelector.iova)};
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
-                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
-                    executor.AttachLockedBuffer(buffer, lock);
+                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                    executor.AttachLockedBuffer(buffer, std::move(lock));
                 });
                 constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
             }
@@ -920,8 +920,8 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            return executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
-                executor.AttachLockedBuffer(buffer, lock);
+            return executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                executor.AttachLockedBuffer(buffer, std::move(lock));
             });
         }
 
@@ -1851,8 +1851,8 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            vertexBuffer.view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
-                executor.AttachLockedBuffer(buffer, lock);
+            vertexBuffer.view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                executor.AttachLockedBuffer(buffer, std::move(lock));
             });
             return &vertexBuffer;
         }
@@ -2608,8 +2608,8 @@ namespace skyline::gpu::interconnect {
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
             auto mapping{mappings.front()};
-            indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
-                executor.AttachLockedBuffer(buffer, lock);
+            indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                executor.AttachLockedBuffer(buffer, std::move(lock));
             });
             return indexBuffer.view;
         }
