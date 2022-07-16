@@ -24,7 +24,7 @@ namespace skyline::gpu {
         return mutex.try_lock();
     }
 
-    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag) {
+    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &)> &attachBuffer) {
         /*
          * We align the buffer to the page boundary to ensure that:
          * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
@@ -60,8 +60,13 @@ namespace skyline::gpu {
         }
 
         auto newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}, tag, overlaps)};
+        ContextLock newLock{tag, *newBuffer};
+        bool hasAlreadyAttached{}; //!< If any overlapping view was already attached to the current context
         for (auto &overlap : overlaps) {
             ContextLock overlapLock{tag, *overlap};
+
+            if (!overlapLock.isFirst)
+                hasAlreadyAttached = true;
 
             buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
 
@@ -93,6 +98,10 @@ namespace skyline::gpu {
 
             newBuffer->delegates.splice(newBuffer->delegates.end(), overlap->delegates);
         }
+
+        if (hasAlreadyAttached)
+            // We need to reattach the buffer if any overlapping views were already attached to the current context
+            attachBuffer(newBuffer, newLock);
 
         buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest->end().base(), BufferLessThan), newBuffer);
 

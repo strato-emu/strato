@@ -137,7 +137,7 @@ namespace skyline::gpu::interconnect {
         return didLock;
     }
 
-    void CommandExecutor::AttachLockedBuffer(BufferView &view, ContextLock<BufferView> &lock) {
+    void CommandExecutor::AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &lock) {
         if (!bufferManagerLock)
             // See AttachTexture(...)
             bufferManagerLock.emplace(gpu.buffer);
@@ -149,6 +149,13 @@ namespace skyline::gpu::interconnect {
 
         if (!attachedBufferDelegates.contains(view.bufferDelegate))
             attachedBufferDelegates.emplace(view.bufferDelegate);
+    }
+
+    void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
+        if (lock.isFirst) {
+            attachedBuffers.emplace_back(std::move(buffer));
+            lock.isFirst = false;
+        }
     }
 
     void CommandExecutor::AttachDependency(const std::shared_ptr<void> &dependency) {

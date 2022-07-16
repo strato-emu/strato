@@ -124,7 +124,7 @@ namespace skyline::gpu::interconnect {
         BufferManager &AcquireBufferManager();
 
         /**
-         * @brief Attach the lifetime of a buffer to the command buffer
+         * @brief Attach the lifetime of a buffer view to the command buffer
          * @return If this is the first usage of the backing of this resource within this execution
          * @note The supplied buffer will be locked automatically until the command buffer is submitted and must **not** be locked by the caller
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
@@ -132,13 +132,20 @@ namespace skyline::gpu::interconnect {
         bool AttachBuffer(BufferView &view);
 
         /**
-         * @brief Attach the lifetime of a buffer that's already locked to the command buffer
-         * @return If this is the first usage of the backing of this resource within this execution
+         * @brief Attach the lifetime of a buffer view that's already locked to the command buffer
          * @note The supplied buffer **must** be locked with the executor's tag
          * @note There must be no other external locks on the buffer aside from the supplied lock
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
-        void AttachLockedBuffer(BufferView &view, ContextLock<BufferView>& lock);
+        void AttachLockedBufferView(BufferView &view, ContextLock<BufferView>& lock);
+
+        /**
+         * @brief Attach the lifetime of a buffer object that's already locked to the command buffer
+         * @note The supplied buffer **must** be locked with the executor's tag
+         * @note There must be no other external locks on the buffer aside from the supplied lock
+         * @note This'll automatically handle syncing of the buffer in the most optimal way possible
+         */
+        void AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer>& lock);
 
         /**
          * @brief Attach the lifetime of the fence cycle dependency to the command buffer

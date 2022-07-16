@@ -647,7 +647,7 @@ namespace skyline::gpu::interconnect {
                     // TODO: see Read()
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, &view = this->view, &lock]() {
-                    pExecutor.AttachLockedBuffer(view, lock);
+                    pExecutor.AttachLockedBufferView(view, lock);
 
                     auto srcGpuOffset{megaBuffer.Push(srcCpuBuf)};
                     auto srcGpuBuf{megaBuffer.GetBacking()};
@@ -727,7 +727,9 @@ namespace skyline::gpu::interconnect {
             auto view{constantBufferCache.Lookup(constantBufferSelector.size, constantBufferSelector.iova)};
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
-                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
+                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
+                    executor.AttachLockedBuffer(buffer, lock);
+                });
                 constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
             }
 
@@ -918,7 +920,9 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            return executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
+            return executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
+                executor.AttachLockedBuffer(buffer, lock);
+            });
         }
 
         /**
@@ -1847,7 +1851,9 @@ namespace skyline::gpu::interconnect {
             if (mappings.size() != 1)
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
-            vertexBuffer.view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag);
+            vertexBuffer.view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
+                executor.AttachLockedBuffer(buffer, lock);
+            });
             return &vertexBuffer;
         }
 
@@ -2602,7 +2608,9 @@ namespace skyline::gpu::interconnect {
                 Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
 
             auto mapping{mappings.front()};
-            indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag);
+            indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &lock) {
+                executor.AttachLockedBuffer(buffer, lock);
+            });
             return indexBuffer.view;
         }
 

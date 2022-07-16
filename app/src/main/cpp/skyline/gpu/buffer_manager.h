@@ -62,10 +62,11 @@ namespace skyline::gpu {
         bool try_lock();
 
         /**
+         * @param attachBuffer A function that attaches the buffer to the current context, this'll be called when coalesced buffers are merged into the current buffer
          * @return A pre-existing or newly created Buffer object which covers the supplied mappings
          * @note The buffer manager **must** be locked prior to calling this
          */
-        BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {});
+        BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {}, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &)> &attachBuffer = {});
 
         /**
          * @return A dynamically allocated megabuffer which can be used to store buffer modifications allowing them to be replayed in-sequence on the GPU
