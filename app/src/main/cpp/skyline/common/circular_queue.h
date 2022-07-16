@@ -49,9 +49,10 @@ namespace skyline {
         /**
          * @brief A blocking for-each that runs on every item and waits till new items to run on them as well
          * @param function A function that is called for each item (with the only parameter as a reference to that item)
+         * @param preWait An optional function that's called prior to waiting on more items to be queued
          */
-        template<typename F>
-        [[noreturn]] void Process(F function) {
+        template<typename F1, typename F2>
+        [[noreturn]] void Process(F1 function, F2 preWait) {
             TRACE_EVENT_BEGIN("containers", "CircularQueue::Process");
 
             while (true) {
@@ -59,6 +60,7 @@ namespace skyline {
                     std::unique_lock lock(productionMutex);
 
                     TRACE_EVENT_END("containers");
+                    preWait();
                     produceCondition.wait(lock, [this]() { return start != end; });
                     TRACE_EVENT_BEGIN("containers", "CircularQueue::Process");
                 }

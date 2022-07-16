@@ -224,10 +224,10 @@ namespace skyline::gpu {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
 
-            presentQueue.Process([this](const PresentableFrame& frame) {
+            presentQueue.Process([this](const PresentableFrame &frame) {
                 PresentFrame(frame);
                 frame.presentCallback(); // We're calling the callback here as it's outside of all the locks in PresentFrame
-            });
+            }, [] {});
         } catch (const signal::SignalException &e) {
             Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
@@ -374,7 +374,7 @@ namespace skyline::gpu {
         }
     }
 
-    u64 PresentationEngine::Present(const std::shared_ptr<TextureView> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()>& presentCallback) {
+    u64 PresentationEngine::Present(const std::shared_ptr<TextureView> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()> &presentCallback) {
         if (!vkSurface.has_value()) {
             // We want this function to generally (not necessarily always) block when a surface is not present to implicitly pause the game
             std::unique_lock lock(mutex);

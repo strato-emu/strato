@@ -124,7 +124,7 @@ namespace skyline::soc::host1x {
             gatherQueue.Process([this](span<u32> gather) {
                 Logger::Debug("Processing pushbuffer: 0x{:X}, size: 0x{:X}", gather.data(), gather.size());
                 Process(gather);
-            });
+            }, [] {});
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
