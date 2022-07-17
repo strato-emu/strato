@@ -166,7 +166,7 @@ namespace skyline::gpu {
 
         auto currentState{dirtyState.load(std::memory_order_relaxed)};
         do {
-            if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && setDirty))
+            if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && !setDirty))
                 return true; // If the buffer is synchronized (Clean/CpuDirty), there is no need to synchronize it
             else if (currentState == DirtyState::GpuDirty && nonBlocking && !PollFence())
                 return false; // If the buffer is GPU dirty and the fence is not signalled then we can't block
