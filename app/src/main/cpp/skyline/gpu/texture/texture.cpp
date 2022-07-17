@@ -803,8 +803,6 @@ namespace skyline::gpu {
             throw exception("Cannot copy from image with undefined layout");
         else if (source->dimensions != dimensions)
             throw exception("Cannot copy from image with different dimensions");
-        else if (source->format != format)
-            throw exception("Cannot copy from image with different format");
 
         TRACE_EVENT("gpu", "Texture::CopyFrom");
 
