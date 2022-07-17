@@ -141,13 +141,6 @@ namespace skyline::gpu {
         Buffer(GPU &gpu, GuestBuffer guest);
 
         /**
-         * @brief Creates a Buffer that is pre-synchronised with the contents of the input buffers
-         * @param tag The tag to associate locking of srcBuffers with
-         * @param srcBuffers Span of overlapping source buffers
-         */
-        Buffer(GPU &gpu, GuestBuffer guest, ContextTag tag, span<std::shared_ptr<Buffer>> srcBuffers);
-
-        /**
          * @brief Creates a host-only Buffer which isn't backed by any guest buffer
          * @note The created buffer won't have a mirror so any operations cannot depend on a mirror existing
          */
@@ -221,6 +214,13 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         bool PollFence();
+
+        /**
+         * @brief Invalidates the Buffer on the guest and deletes the trap that backs this buffer as it is no longer necessary
+         * @note This will not clear any views or delegates on the buffer, it will only remove guest mappings and delete the trap
+         * @note The buffer **must** be locked prior to calling this
+         */
+        void Invalidate();
 
         /**
          * @brief Synchronizes the host buffer with the guest

@@ -40,58 +40,6 @@ namespace skyline::gpu {
         SetupGuestMappings();
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest, ContextTag tag, span<std::shared_ptr<Buffer>> srcBuffers) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {
-        SetupGuestMappings();
-
-        // Source buffers don't necessarily fully overlap with us so we have to perform a sync here to prevent any gaps
-        SynchronizeHost(false);
-
-        // Copies between two buffers based off of their mappings in guest memory
-        auto copyBuffer{[](auto dstGuest, auto srcGuest, auto dstPtr, auto srcPtr) {
-            if (dstGuest.begin().base() <= srcGuest.begin().base()) {
-                size_t dstOffset{static_cast<size_t>(srcGuest.begin().base() - dstGuest.begin().base())};
-                size_t copySize{std::min(dstGuest.size() - dstOffset, srcGuest.size())};
-                std::memcpy(dstPtr + dstOffset, srcPtr, copySize);
-            } else if (dstGuest.begin().base() > srcGuest.begin().base()) {
-                size_t srcOffset{static_cast<size_t>(dstGuest.begin().base() - srcGuest.begin().base())};
-                size_t copySize{std::min(dstGuest.size(), srcGuest.size() - srcOffset)};
-                std::memcpy(dstPtr, srcPtr + srcOffset, copySize);
-            }
-        }};
-
-        // Transfer data/state from source buffers
-        for (const auto &srcBuffer : srcBuffers) {
-            ContextLock lock{tag, *srcBuffer};
-            if (srcBuffer->guest) {
-                if (srcBuffer->cycle && cycle != srcBuffer->cycle)
-                    if (cycle)
-                        cycle->ChainCycle(srcBuffer->cycle);
-                    else
-                        cycle = srcBuffer->cycle;
-
-                if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
-                    // If the source buffer is GPU dirty we cannot directly copy over its GPU backing contents
-
-                    // Only sync back the buffer if it's not attached to the current context, otherwise propagate the GPU dirtiness
-                    if (lock.IsFirstUsage()) {
-                        // Perform a GPU -> CPU sync on the source then do a CPU -> GPU sync for the region occupied by the source
-                        // This is required since if we were created from a two buffers: one GPU dirty in the current cycle, and one GPU dirty in the previous cycle, if we marked ourselves as CPU dirty here then the GPU dirtiness from the current cycle buffer would be ignored and cause writes to be missed
-                        srcBuffer->SynchronizeGuest(true);
-                        copyBuffer(guest, *srcBuffer->guest, backing.data(), srcBuffer->mirror.data());
-                    } else {
-                        MarkGpuDirty();
-                    }
-                } else if (srcBuffer->dirtyState == Buffer::DirtyState::Clean) {
-                    // For clean buffers we can just copy over the GPU backing data directly
-                    // This is necessary since clean buffers may not have matching GPU/CPU data in the case of inline updates for host immutable buffers
-                    copyBuffer(guest, *srcBuffer->guest, backing.data(), srcBuffer->backing.data());
-                }
-
-                // CPU dirty buffers are already synchronized in the initial SynchronizeHost call so don't need special handling
-            }
-        }
-    }
-
     Buffer::Buffer(GPU &gpu, vk::DeviceSize size) : gpu(gpu), backing(gpu.memory.AllocateBuffer(size)) {
         dirtyState = DirtyState::Clean; // Since this is a host-only buffer it's always going to be clean
     }
@@ -138,6 +86,16 @@ namespace skyline::gpu {
         }
 
         return false;
+    }
+
+    void Buffer::Invalidate() {
+        if (trapHandle) {
+            gpu.state.nce->DeleteTrap(*trapHandle);
+            trapHandle = {};
+        }
+
+        // Will prevent any sync operations so even if the trap handler is partway through running and hasn't yet acquired the lock it won't do anything
+        guest = {};
     }
 
     void Buffer::SynchronizeHost(bool rwTrap) {

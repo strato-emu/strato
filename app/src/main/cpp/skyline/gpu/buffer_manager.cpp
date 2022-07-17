@@ -34,17 +34,31 @@ namespace skyline::gpu {
         vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
         guestMapping = span<u8>{alignedStart, alignedEnd};
 
+        struct LockedBuffer {
+            std::shared_ptr<Buffer> buffer;
+            ContextLock<Buffer> lock;
+
+            LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer} {}
+
+            Buffer *operator->() const {
+                return buffer.get();
+            }
+
+            std::shared_ptr<Buffer> &operator*() {
+                return buffer;
+            }
+        };
+
         // Lookup for any buffers overlapping with the supplied guest mapping
-        boost::container::small_vector<std::shared_ptr<Buffer>, 4> overlaps;
+        boost::container::small_vector<LockedBuffer, 4> overlaps;
         for (auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), guestMapping.end().base(), BufferLessThan)}; entryIt != buffers.begin() && (*--entryIt)->guest->begin() <= guestMapping.end();)
             if ((*entryIt)->guest->end() > guestMapping.begin())
-                overlaps.push_back(*entryIt);
+                overlaps.emplace_back(*entryIt, tag);
 
         if (overlaps.size() == 1) [[likely]] {
-            auto buffer{overlaps.front()};
+            auto &buffer{overlaps.front()};
             if (buffer->guest->begin() <= guestMapping.begin() && buffer->guest->end() >= guestMapping.end()) {
                 // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
-                ContextLock bufferLock{tag, *buffer};
                 return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
             }
         }
@@ -59,20 +73,56 @@ namespace skyline::gpu {
                 highestAddress = mapping.end().base();
         }
 
-        auto newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}, tag, overlaps)};
-        ContextLock newLock{tag, *newBuffer};
-        bool hasAlreadyAttached{}; //!< If any overlapping view was already attached to the current context
-        for (auto &overlap : overlaps) {
-            ContextLock overlapLock{tag, *overlap};
+        LockedBuffer newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
 
-            if (!overlapLock.IsFirstUsage())
-                hasAlreadyAttached = true;
+        newBuffer->SynchronizeHost(false); // Overlaps don't necessarily fully cover the buffer so we have to perform a sync here to prevent any gaps
 
-            buffers.erase(std::find(buffers.begin(), buffers.end(), overlap));
+        auto copyBuffer{[](auto dstGuest, auto srcGuest, auto dstPtr, auto srcPtr) {
+            if (dstGuest.begin().base() <= srcGuest.begin().base()) {
+                size_t dstOffset{static_cast<size_t>(srcGuest.begin().base() - dstGuest.begin().base())};
+                size_t copySize{std::min(dstGuest.size() - dstOffset, srcGuest.size())};
+                std::memcpy(dstPtr + dstOffset, srcPtr, copySize);
+            } else if (dstGuest.begin().base() > srcGuest.begin().base()) {
+                size_t srcOffset{static_cast<size_t>(dstGuest.begin().base() - srcGuest.begin().base())};
+                size_t copySize{std::min(dstGuest.size(), srcGuest.size() - srcOffset)};
+                std::memcpy(dstPtr, srcPtr + srcOffset, copySize);
+            }
+        }}; //!< Copies between two buffers based off of their mappings in guest memory
+
+        bool shouldAttach{}; //!< If the new buffer should be attached to the current context
+        for (auto &srcBuffer : overlaps) {
+            if (!srcBuffer.lock.IsFirstUsage())
+                // If any overlapping buffer was already attached to the current context, we should also attach the current context
+                shouldAttach = true;
+
+            // All newly created buffers that have this set are guaranteed to be attached in buffer FindOrCreate, attach will then lock the buffer without resetting this flag, which will only finally be reset when the lock is released
+            newBuffer->usedByContext |= srcBuffer->usedByContext;
+            newBuffer->everHadInlineUpdate |= srcBuffer->everHadInlineUpdate;
+
+            if (srcBuffer->cycle && newBuffer->cycle != srcBuffer->cycle)
+                if (newBuffer->cycle)
+                    newBuffer->cycle->ChainCycle(srcBuffer->cycle);
+                else
+                    newBuffer->cycle = srcBuffer->cycle;
+
+            if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
+                srcBuffer->WaitOnFence();
+
+                if (srcBuffer.lock.IsFirstUsage() && newBuffer->dirtyState != Buffer::DirtyState::GpuDirty)
+                    copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->mirror.data(), srcBuffer->backing.data());
+                else
+                    newBuffer->MarkGpuDirty();
+            } else if (srcBuffer->usedByContext) {
+                if (srcBuffer->dirtyState == Buffer::DirtyState::CpuDirty)
+                    Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while being utilized by the context, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
+                // We need the backing to be stable so that any accesses within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
+                srcBuffer->WaitOnFence();
+                copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing.data(), srcBuffer->backing.data());
+            }
 
             // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset, ensuring pointer stability
-            vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(overlap->guest->begin() - newBuffer->guest->begin())};
-            for (auto it{overlap->views.begin()}; it != overlap->views.end(); it++) {
+            vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(srcBuffer->guest->begin() - newBuffer->guest->begin())};
+            for (auto it{srcBuffer->views.begin()}; it != srcBuffer->views.end(); it++) {
                 if (overlapOffset)
                     // This is a slight hack as we really shouldn't be changing the underlying non-mutable set elements without a rehash but without writing our own set impl this is the best we can do
                     const_cast<Buffer::BufferViewStorage *>(&*it)->offset += overlapOffset;
@@ -84,26 +134,28 @@ namespace skyline::gpu {
 
             if (overlapOffset)
                 // All current hashes are invalidated by above loop if overlapOffset is nonzero so rehash the container
-                overlap->views.rehash(0);
+                srcBuffer->views.rehash(0);
 
             // Merge the view sets, this will keep pointer stability hence avoiding any reallocation
-            newBuffer->views.merge(overlap->views);
+            newBuffer->views.merge(srcBuffer->views);
 
             // Transfer all delegates references from the overlapping buffer to the new buffer
-            for (auto &delegate : overlap->delegates) {
-                delegate->buffer = newBuffer;
+            for (auto &delegate : srcBuffer->delegates) {
+                delegate->buffer = *newBuffer;
                 if (delegate->usageCallback)
-                    delegate->usageCallback(*delegate->view, newBuffer);
+                    delegate->usageCallback(*delegate->view, *newBuffer);
             }
 
-            newBuffer->delegates.splice(newBuffer->delegates.end(), overlap->delegates);
+            newBuffer->delegates.splice(newBuffer->delegates.end(), srcBuffer->delegates);
+
+            srcBuffer->Invalidate(); // Invalidate the overlapping buffer so it can't be synced in the future
+            buffers.erase(std::find(buffers.begin(), buffers.end(), srcBuffer.buffer));
         }
 
-        if (hasAlreadyAttached)
-            // We need to reattach the buffer if any overlapping views were already attached to the current context
-            attachBuffer(newBuffer, std::move(newLock));
+        if (shouldAttach)
+            attachBuffer(*newBuffer, std::move(newBuffer.lock));
 
-        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest->end().base(), BufferLessThan), newBuffer);
+        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest->end().base(), BufferLessThan), *newBuffer);
 
         return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest->begin()) + offset, size);
     }
