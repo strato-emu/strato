@@ -52,23 +52,30 @@ namespace skyline::gpu {
     template<typename T>
     class ContextLock {
       private:
-        T &resource;
+        T *resource;
         bool ownsLock; //!< If when this ContextLocked initially locked `resource`, it had never been locked for this context before
 
       public:
-        ContextLock(ContextTag tag, T &resource) : resource{resource}, ownsLock{resource.LockWithTag(tag)} {}
+        ContextLock(ContextTag tag, T &resource) : resource{&resource}, ownsLock{resource.LockWithTag(tag)} {}
 
         ContextLock(const ContextLock &) = delete;
 
         ContextLock &operator=(const ContextLock &) = delete;
 
-        ContextLock(ContextLock &&other) noexcept : resource{other.resource}, ownsLock{other.ownsLock} {
+        ContextLock(ContextLock &&other) : resource{other.resource}, ownsLock{other.ownsLock} {
             other.ownsLock = false;
+        }
+
+        ContextLock &operator=(ContextLock &&other) {
+            resource = other.resource;
+            ownsLock = other.ownsLock;
+            other.ownsLock = false;
+            return *this;
         }
 
         ~ContextLock() {
             if (ownsLock)
-                resource.unlock();
+                resource->unlock();
         }
 
         /**
