@@ -15,11 +15,15 @@ namespace skyline {
             using Callback = std::function<void(const T &)>;
             std::vector<Callback> callbacks; //!< Callbacks to be called when this setting changes
             T value;
+            std::mutex valueMutex;
+            std::mutex callbackMutex;
 
             /**
              * @brief Calls all callbacks registered for this setting
+             * @note Locking of the setting value must be handled by the caller
              */
             void OnSettingChanged() {
+                std::scoped_lock lock{callbackMutex};
                 for (const auto &callback : callbacks)
                     callback(value);
             }
@@ -28,7 +32,8 @@ namespace skyline {
             /**
              * @return The underlying setting value
              */
-            const T &operator*() const {
+            const T &operator*() {
+                std::scoped_lock lock{valueMutex};
                 return value;
             }
 
@@ -36,6 +41,7 @@ namespace skyline {
              * @brief Sets the underlying setting value, signalling any callbacks if necessary
              */
             void operator=(T newValue) {
+                std::scoped_lock lock{valueMutex};
                 if (value != newValue) {
                     value = std::move(newValue);
                     OnSettingChanged();
@@ -46,6 +52,7 @@ namespace skyline {
              * @brief Register a callback to be run when this setting changes
              */
             void AddCallback(Callback callback) {
+                std::scoped_lock lock{callbackMutex};
                 callbacks.push_back(std::move(callback));
             }
         };
