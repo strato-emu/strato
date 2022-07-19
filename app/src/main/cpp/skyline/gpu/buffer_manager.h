@@ -34,6 +34,44 @@ namespace skyline::gpu {
         };
 
         /**
+         * @brief A wrapper around a Buffer which locks it with the specified ContextTag
+         */
+        struct LockedBuffer {
+            std::shared_ptr<Buffer> buffer;
+            ContextLock<Buffer> lock;
+
+            LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag);
+
+            Buffer *operator->() const;
+
+            std::shared_ptr<Buffer> &operator*();
+        };
+
+        using LockedBuffers = boost::container::small_vector<LockedBuffer, 4>;
+
+        /**
+         * @return A vector of buffers locked with the supplied tag which are contained within the supplied range
+         */
+        LockedBuffers Lookup(span<u8> range, ContextTag tag);
+
+        /**
+         * @brief Inserts the supplied buffer into the map based on its guest address
+         */
+        void InsertBuffer(std::shared_ptr<Buffer> buffer);
+
+        /**
+         * @brief Deletes the supplied buffer from the map, the lifetime of the buffer will no longer be extended by the map
+         */
+        void DeleteBuffer(const std::shared_ptr<Buffer> &buffer);
+
+        /**
+         * @brief Coalesce the supplied buffers into a single buffer encompassing the specified range and locks it with the supplied tag
+         * @param range The range of memory that the newly created buffer will cover, this will be extended to cover the entirety of the supplied buffers automatically and can be null
+         * @note The supplied buffers **must** be in the map and locked with the supplied tag
+         */
+        LockedBuffer CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag);
+
+        /**
          * @return If the end of the supplied buffer is less than the supplied pointer
          */
         static bool BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer);

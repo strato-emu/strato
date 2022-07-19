@@ -24,49 +24,43 @@ namespace skyline::gpu {
         return mutex.try_lock();
     }
 
-    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer) {
-        /*
-         * We align the buffer to the page boundary to ensure that:
-         * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
-         * 2) We can coalesce a lot of tiny buffers into a single large buffer covering an entire page, this is often the case for index buffers and vertex buffers
-         */
-        auto alignedStart{util::AlignDown(guestMapping.begin().base(), PAGE_SIZE)}, alignedEnd{util::AlignUp(guestMapping.end().base(), PAGE_SIZE)};
-        vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
-        guestMapping = span<u8>{alignedStart, alignedEnd};
+    BufferManager::LockedBuffer::LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer} {}
 
-        struct LockedBuffer {
-            std::shared_ptr<Buffer> buffer;
-            ContextLock<Buffer> lock;
+    Buffer *BufferManager::LockedBuffer::operator->() const {
+        return buffer.get();
+    }
 
-            LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer} {}
+    std::shared_ptr<Buffer> &BufferManager::LockedBuffer::operator*() {
+        return buffer;
+    }
 
-            Buffer *operator->() const {
-                return buffer.get();
-            }
-
-            std::shared_ptr<Buffer> &operator*() {
-                return buffer;
-            }
-        };
-
-        // Lookup for any buffers overlapping with the supplied guest mapping
-        boost::container::small_vector<LockedBuffer, 4> overlaps;
-        for (auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), guestMapping.end().base(), BufferLessThan)}; entryIt != buffers.begin() && (*--entryIt)->guest->begin() <= guestMapping.end();)
-            if ((*entryIt)->guest->end() > guestMapping.begin())
+    BufferManager::LockedBuffers BufferManager::Lookup(span<u8> range, ContextTag tag) {
+        LockedBuffers overlaps;
+        auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), range.end().base(), BufferLessThan)};
+        while (entryIt != buffers.begin() && (*--entryIt)->guest->begin() <= range.end())
+            if ((*entryIt)->guest->end() > range.begin())
                 overlaps.emplace_back(*entryIt, tag);
 
-        if (overlaps.size() == 1) [[likely]] {
-            auto &buffer{overlaps.front()};
-            if (buffer->guest->begin() <= guestMapping.begin() && buffer->guest->end() >= guestMapping.end()) {
-                // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
-                return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
-            }
-        }
+        return overlaps;
+    }
 
-        // Find the extents of the new buffer we want to create that can hold all overlapping buffers
-        auto lowestAddress{guestMapping.begin().base()}, highestAddress{guestMapping.end().base()};
-        for (const auto &overlap : overlaps) {
-            auto mapping{*overlap->guest};
+    void BufferManager::InsertBuffer(std::shared_ptr<Buffer> buffer) {
+        auto bufferEnd{buffer->guest->end().base()};
+        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), bufferEnd, BufferLessThan), std::move(buffer));
+    }
+
+    void BufferManager::DeleteBuffer(const std::shared_ptr<Buffer> &buffer) {
+        buffers.erase(std::find(buffers.begin(), buffers.end(), buffer));
+    }
+
+    BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
+        if (!range.valid())
+            range = span<u8>{srcBuffers.front().buffer->guest->begin(), srcBuffers.back().buffer->guest->end()};
+
+        auto lowestAddress{range.begin().base()}, highestAddress{range.end().base()};
+        for (const auto &srcBuffer : srcBuffers) {
+            // Find the extents of the new buffer we want to create that can hold all overlapping buffers
+            auto mapping{*srcBuffer->guest};
             if (mapping.begin().base() < lowestAddress)
                 lowestAddress = mapping.begin().base();
             if (mapping.end().base() > highestAddress)
@@ -89,12 +83,7 @@ namespace skyline::gpu {
             }
         }}; //!< Copies between two buffers based off of their mappings in guest memory
 
-        bool shouldAttach{}; //!< If the new buffer should be attached to the current context
-        for (auto &srcBuffer : overlaps) {
-            if (!srcBuffer.lock.IsFirstUsage())
-                // If any overlapping buffer was already attached to the current context, we should also attach the current context
-                shouldAttach = true;
-
+        for (auto &srcBuffer : srcBuffers) {
             // All newly created buffers that have this set are guaranteed to be attached in buffer FindOrCreate, attach will then lock the buffer without resetting this flag, which will only finally be reset when the lock is released
             newBuffer->usedByContext |= srcBuffer->usedByContext;
             newBuffer->everHadInlineUpdate |= srcBuffer->everHadInlineUpdate;
@@ -149,15 +138,54 @@ namespace skyline::gpu {
             newBuffer->delegates.splice(newBuffer->delegates.end(), srcBuffer->delegates);
 
             srcBuffer->Invalidate(); // Invalidate the overlapping buffer so it can't be synced in the future
-            buffers.erase(std::find(buffers.begin(), buffers.end(), srcBuffer.buffer));
         }
 
-        if (shouldAttach)
-            attachBuffer(*newBuffer, std::move(newBuffer.lock));
+        return newBuffer;
+    }
 
-        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), newBuffer->guest->end().base(), BufferLessThan), *newBuffer);
+    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer) {
+        /*
+         * We align the buffer to the page boundary to ensure that:
+         * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
+         * 2) We can coalesce a lot of tiny buffers into a single large buffer covering an entire page, this is often the case for index buffers and vertex buffers
+         */
+        auto alignedStart{util::AlignDown(guestMapping.begin().base(), PAGE_SIZE)}, alignedEnd{util::AlignUp(guestMapping.end().base(), PAGE_SIZE)};
+        vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
+        guestMapping = span<u8>{alignedStart, alignedEnd};
 
-        return newBuffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - newBuffer->guest->begin()) + offset, size);
+        auto overlaps{Lookup(guestMapping, tag)};
+        if (overlaps.size() == 1) [[likely]] {
+            // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
+            auto &firstOverlap{overlaps.front()};
+            if (firstOverlap->guest->begin() <= guestMapping.begin() && firstOverlap->guest->end() >= guestMapping.end())
+                return firstOverlap->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - firstOverlap->guest->begin()) + offset, size);
+        }
+
+        if (overlaps.empty()) {
+            // If we couldn't find any overlapping buffers, create a new buffer without coalescing
+            LockedBuffer buffer{std::make_shared<Buffer>(gpu, guestMapping), tag};
+            buffer->SynchronizeHost();
+            InsertBuffer(*buffer);
+            return buffer->GetView(offset, size);
+        } else {
+            // If the new buffer overlaps other buffers, we need to create a new buffer and coalesce all overlapping buffers into one
+            auto buffer{CoalesceBuffers(guestMapping, overlaps, tag)};
+
+            // If any overlapping buffer was already attached to the current context, we should also attach the new buffer
+            for (auto &srcBuffer : overlaps) {
+                if (!srcBuffer.lock.IsFirstUsage()) {
+                    attachBuffer(*buffer, std::move(buffer.lock));
+                    break;
+                }
+            }
+
+            // Delete older overlapping buffers and insert the new buffer into the map
+            for (auto &overlap : overlaps)
+                DeleteBuffer(*overlap);
+            InsertBuffer(*buffer);
+
+            return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
+        }
     }
 
     constexpr static vk::DeviceSize MegaBufferSize{100 * 1024 * 1024}; //!< Size in bytes of the megabuffer (100MiB)
