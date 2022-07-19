@@ -6,6 +6,7 @@
 package emu.skyline.utils
 
 import android.content.Context
+import android.util.Log
 import androidx.preference.PreferenceManager
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -30,13 +31,19 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
 
     override fun getValue(thisRef : Any, property : KProperty<*>) : T = (prefix + camelToSnakeCase(property.name)).let { keyName ->
         prefs.let {
-            @Suppress("IMPLICIT_CAST_TO_ANY")
-            when (clazz) {
-                Float::class.java, java.lang.Float::class.java -> it.getFloat(keyName, default as Float)
-                Boolean::class.java, java.lang.Boolean::class.java -> it.getBoolean(keyName, default as Boolean)
-                String::class.java, java.lang.String::class.java -> it.getString(keyName, default as String)
-                Int::class.java, java.lang.Integer::class.java -> it.getInt(keyName, default as Int)
-                else -> error("Unsupported type $clazz")
+            try {
+                @Suppress("IMPLICIT_CAST_TO_ANY")
+                when (clazz) {
+                    Float::class.java, java.lang.Float::class.java -> it.getFloat(keyName, default as Float)
+                    Boolean::class.java, java.lang.Boolean::class.java -> it.getBoolean(keyName, default as Boolean)
+                    String::class.java, java.lang.String::class.java -> it.getString(keyName, default as String)
+                    Int::class.java, java.lang.Integer::class.java -> it.getInt(keyName, default as Int)
+                    else -> error("Unsupported type $clazz")
+                }
+            } catch (e : ClassCastException) {
+                Log.w(TAG, "Found preference '$keyName' of unexpected type, removing it")
+                it.edit().remove(keyName).apply()
+                default
             }
         } as T
     }
@@ -45,6 +52,10 @@ class SharedPreferencesDelegate<T>(context : Context, private val clazz : Class<
         text.forEachIndexed { index, c ->
             if (index != 0 && c.isUpperCase()) append('_')
             append(c.lowercase())
-        }.toString()
+        }
+    }.toString()
+
+    companion object {
+        private val TAG = SharedPreferencesDelegate::class.java.simpleName
     }
 }
