@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common.h>
+#include "language.h"
 
 namespace skyline {
     /**
@@ -11,15 +11,25 @@ namespace skyline {
      */
     class Settings {
       public:
-        Logger::LogLevel logLevel; //!< The minimum level that logs need to be for them to be printed
-        std::string username; //!< The name set by the user to be supplied to the guest
+        // System
         bool operationMode; //!< If the emulated Switch should be handheld or docked
+        std::string usernameValue; //!< The name set by the user to be supplied to the guest
+        language::SystemLanguage systemLanguage; //!< The system language set by the user
+
+        // Display
         bool forceTripleBuffering; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering
         bool disableFrameThrottling; //!< Allow the guest to submit frames without any blocking calls
 
+        template<class T>
+        Settings(T settings) {
+            Update(settings);
+        }
+
         /**
-         * @param fd An FD to the preference XML file
+         * @brief Updates settings with the given values
+         * @param newSettings A platform-specific object containing the new settings' values
          */
-        Settings(int fd);
+        template<class T>
+        void Update(T newSettings);
     };
 }

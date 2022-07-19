@@ -19,6 +19,43 @@ namespace skyline {
     };
 
     /**
+     * @brief A wrapper over the `Settings` Kotlin class
+     * @note The lifetime of this class must not exceed that of the JNI environment
+     */
+    class KtSettings {
+      private:
+        JNIEnv *env; //!< A pointer to the current jni environment
+        jclass settingsClass; //!< The settings class
+        jobject settingsInstance; //!< The settings instance
+
+      public:
+        KtSettings(JNIEnv *env, jobject settingsInstance) : env(env), settingsInstance(settingsInstance), settingsClass(env->GetObjectClass(settingsInstance)) {}
+
+        /**
+         * @param key A null terminated string containing the key of the setting to get
+         */
+        template<typename T>
+        requires std::is_integral_v<T> || std::is_enum_v<T>
+        T GetInt(const std::string_view &key) {
+            return static_cast<T>(env->GetIntField(settingsInstance, env->GetFieldID(settingsClass, key.data(), "I")));
+        }
+
+        /**
+         * @param key A null terminated string containing the key of the setting to get
+         */
+        bool GetBool(const std::string_view &key) {
+            return env->GetBooleanField(settingsInstance, env->GetFieldID(settingsClass, key.data(), "Z")) == JNI_TRUE;
+        }
+
+        /**
+         * @param key A null terminated string containing the key of the setting to get
+         */
+        JniString GetString(const std::string_view &key) {
+            return {env, static_cast<jstring>(env->GetObjectField(settingsInstance, env->GetFieldID(settingsClass, key.data(), "Ljava/lang/String;")))};
+        }
+    };
+
+    /**
      * @brief The JvmManager class is used to simplify transactions with the Java component
      */
     class JvmManager {

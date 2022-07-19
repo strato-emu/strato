@@ -20,7 +20,6 @@ namespace skyline::kernel {
         std::string privateAppFilesPath,
         std::string nativeLibraryPath,
         std::string deviceTimeZone,
-        language::SystemLanguage systemLanguage,
         std::shared_ptr<vfs::FileSystem> assetFileSystem)
         : nativeLibraryPath(std::move(nativeLibraryPath)),
           publicAppFilesPath(std::move(publicAppFilesPath)),
@@ -28,8 +27,7 @@ namespace skyline::kernel {
           state(this, jvmManager, settings),
           deviceTimeZone(std::move(deviceTimeZone)),
           assetFileSystem(std::move(assetFileSystem)),
-          serviceManager(state),
-          systemLanguage(systemLanguage) {}
+          serviceManager(state) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};

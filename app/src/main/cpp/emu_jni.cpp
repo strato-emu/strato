@@ -3,7 +3,6 @@
 
 #include <csignal>
 #include <pthread.h>
-#include <unistd.h>
 #include <android/asset_manager_jni.h>
 #include <sys/system_properties.h>
 #include "skyline/common.h"
@@ -28,6 +27,7 @@ std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::audio::Audio> AudioWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
+std::weak_ptr<skyline::Settings> SettingsWeak;
 
 // https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=43;drc=master;bpv=1;bpt=1
 static std::string GetTimeZoneName() {
@@ -54,15 +54,23 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
+template<> void skyline::Settings::Update<skyline::KtSettings>(KtSettings newSettings) {
+    operationMode = newSettings.GetBool("operationMode");
+    usernameValue = newSettings.GetString("usernameValue");
+    systemLanguage = newSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
+    forceTripleBuffering = newSettings.GetBool("forceTripleBuffering");
+    disableFrameThrottling = newSettings.GetBool("disableFrameThrottling");
+}
+
 extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
     JNIEnv *env,
     jobject,
-    jstring appFilesPathJstring,
+    jstring publicAppFilesPathJstring,
     jint logLevel
 ) {
-    std::string appFilesPath{env->GetStringUTFChars(appFilesPathJstring, nullptr)};
+    skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
     skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
-    skyline::Logger::LoaderContext.Initialize(appFilesPath + "logs/loader.sklog");
+    skyline::Logger::LoaderContext.Initialize(publicAppFilesPath + "logs/loader.sklog");
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
@@ -71,8 +79,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     jstring romUriJstring,
     jint romType,
     jint romFd,
-    jint preferenceFd,
-    jint systemLanguage,
+    jobject settingsInstance,
     jstring publicAppFilesPathJstring,
     jstring privateAppFilesPathJstring,
     jstring nativeLibraryPathJstring,
@@ -85,8 +92,9 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     pthread_setname_np(pthread_self(), "EmuMain");
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
-    auto settings{std::make_shared<skyline::Settings>(preferenceFd)};
-    close(preferenceFd);
+
+    skyline::KtSettings ktSettings{env, settingsInstance};
+    auto settings{std::make_shared<skyline::Settings>(ktSettings)};
 
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
     skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.sklog");
@@ -110,13 +118,13 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
             privateAppFilesPath,
             nativeLibraryPath,
             GetTimeZoneName(),
-            static_cast<skyline::language::SystemLanguage>(systemLanguage),
             std::make_shared<skyline::vfs::AndroidAssetFileSystem>(AAssetManager_fromJava(env, assetManager))
         )};
         OsWeak = os;
         GpuWeak = os->state.gpu;
         AudioWeak = os->state.audio;
         InputWeak = os->state.input;
+        SettingsWeak = settings;
         jvmManager->InitializeControllers();
 
         skyline::Logger::InfoNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));

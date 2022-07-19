@@ -4,7 +4,7 @@
 #include <common/uuid.h>
 #include <mbedtls/sha1.h>
 #include <loader/loader.h>
-#include <os.h>
+#include <common/settings.h>
 #include <kernel/types/KProcess.h>
 #include <services/account/IAccountServiceForApplication.h>
 #include <services/am/storage/VectorIStorage.h>
@@ -58,9 +58,9 @@ namespace skyline::service::am {
     }
 
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto desiredLanguage{language::GetApplicationLanguage(state.os->systemLanguage)};
+        auto desiredLanguage{language::GetApplicationLanguage(state.settings->systemLanguage)};
 
-        // In the future we might want to trigger an UI dialog if the user selected languages is not available, for now it will use the first available
+        // In the future we might want to trigger an UI dialog if the user-selected language is not available, for now it will use the first one available
         if (((1 << static_cast<u32>(desiredLanguage)) & state.loader->nacp->nacpContents.supportedLanguageFlag) == 0)
             desiredLanguage = state.loader->nacp->GetFirstSupportedLanguage();
 
