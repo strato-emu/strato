@@ -60,8 +60,6 @@ template<> void skyline::Settings::Update<skyline::KtSettings>(KtSettings newSet
     systemLanguage = newSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
     forceTripleBuffering = newSettings.GetBool("forceTripleBuffering");
     disableFrameThrottling = newSettings.GetBool("disableFrameThrottling");
-
-    OnSettingsChanged();
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(

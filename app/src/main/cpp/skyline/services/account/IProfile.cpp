@@ -31,8 +31,8 @@ namespace skyline::service::account {
             .uid = userId,
         };
 
-        size_t usernameSize{std::min(accountProfileBase.nickname.size() - 1, state.settings->usernameValue.size())};
-        std::memcpy(accountProfileBase.nickname.data(), state.settings->usernameValue.c_str(), usernameSize);
+        size_t usernameSize{std::min(accountProfileBase.nickname.size() - 1, (*state.settings->usernameValue).size())};
+        std::memcpy(accountProfileBase.nickname.data(), (*state.settings->usernameValue).c_str(), usernameSize);
 
         response.Push(accountProfileBase);
 

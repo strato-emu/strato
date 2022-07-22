@@ -58,7 +58,7 @@ namespace skyline::service::am {
     }
 
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto desiredLanguage{language::GetApplicationLanguage(state.settings->systemLanguage)};
+        auto desiredLanguage{language::GetApplicationLanguage(*state.settings->systemLanguage)};
 
         // In the future we might want to trigger an UI dialog if the user-selected language is not available, for now it will use the first one available
         if (((1 << static_cast<u32>(desiredLanguage)) & state.loader->nacp->nacpContents.supportedLanguageFlag) == 0)

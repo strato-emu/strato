@@ -15,7 +15,7 @@ namespace skyline::service::am {
         : BaseService(state, manager),
           messageEvent(std::make_shared<type::KEvent>(state, false)),
           defaultDisplayResolutionChangeEvent(std::make_shared<type::KEvent>(state, false)) {
-        operationMode = static_cast<OperationMode>(state.settings->isDocked);
+        operationMode = static_cast<OperationMode>(*state.settings->isDocked);
         Logger::Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
         QueueMessage(Message::FocusStateChange);
     }
