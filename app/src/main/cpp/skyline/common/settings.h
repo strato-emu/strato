@@ -7,7 +7,7 @@
 
 namespace skyline {
     /**
-     * @brief The Settings class is used to access preferences set in the Kotlin component of Skyline
+     * @brief The Settings class provides a simple interface to access user-defined settings, update values and subscribe callbacks to observe changes.
      */
     class Settings {
         template<typename T>
@@ -60,16 +60,14 @@ namespace skyline {
         Setting<bool> forceTripleBuffering; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering
         Setting<bool> disableFrameThrottling; //!< Allow the guest to submit frames without any blocking calls
 
-        template<class T>
-        Settings(T settings) {
-            Update(settings);
-        }
+        Settings() = default;
+
+        virtual ~Settings() = default;
 
         /**
          * @brief Updates settings with the given values
-         * @param newSettings A platform-specific object containing the new settings' values
+         * @note This method is platform-specific and must be overridden
          */
-        template<class T>
-        void Update(T newSettings);
+        virtual void Update() = 0;
     };
 }

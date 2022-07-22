@@ -134,7 +134,6 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/common.cpp
         ${source_DIR}/skyline/common/exception.cpp
         ${source_DIR}/skyline/common/logger.cpp
-        ${source_DIR}/skyline/common/settings.cpp
         ${source_DIR}/skyline/common/signal.cpp
         ${source_DIR}/skyline/common/uuid.cpp
         ${source_DIR}/skyline/common/trace.cpp

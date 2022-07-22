@@ -21,6 +21,7 @@ namespace skyline {
     /**
      * @brief A wrapper over the `Settings` Kotlin class
      * @note The lifetime of this class must not exceed that of the JNI environment
+     * @note Copy construction of this class is disallowed to avoid issues with the JNI environment lifetime
      */
     class KtSettings {
       private:
@@ -30,6 +31,12 @@ namespace skyline {
 
       public:
         KtSettings(JNIEnv *env, jobject settingsInstance) : env(env), settingsInstance(settingsInstance), settingsClass(env->GetObjectClass(settingsInstance)) {}
+
+        KtSettings(const KtSettings &) = delete;
+
+        void operator=(const KtSettings &) = delete;
+
+        KtSettings(KtSettings &&) = default;
 
         /**
          * @param key A null terminated string containing the key of the setting to get

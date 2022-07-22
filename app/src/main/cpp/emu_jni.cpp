@@ -8,7 +8,7 @@
 #include "skyline/common.h"
 #include "skyline/common/language.h"
 #include "skyline/common/signal.h"
-#include "skyline/common/settings.h"
+#include "skyline/common/android_settings.h"
 #include "skyline/common/trace.h"
 #include "skyline/loader/loader.h"
 #include "skyline/vfs/android_asset_filesystem.h"
@@ -54,14 +54,6 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
-template<> void skyline::Settings::Update<skyline::KtSettings>(KtSettings newSettings) {
-    isDocked = newSettings.GetBool("isDocked");
-    usernameValue = newSettings.GetString("usernameValue");
-    systemLanguage = newSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
-    forceTripleBuffering = newSettings.GetBool("forceTripleBuffering");
-    disableFrameThrottling = newSettings.GetBool("disableFrameThrottling");
-}
-
 extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
     JNIEnv *env,
     jobject,
@@ -93,8 +85,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
 
-    skyline::KtSettings ktSettings{env, settingsInstance};
-    auto settings{std::make_shared<skyline::Settings>(ktSettings)};
+    std::shared_ptr<skyline::Settings> settings{std::make_shared<skyline::AndroidSettings>(env, settingsInstance)};
 
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
     skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.sklog");
@@ -240,10 +231,9 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchSta
     env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_SettingsValues_updateNative(JNIEnv *env, jobject settingsInstance) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_SettingsValues_updateNative(JNIEnv *env, jobject) {
     auto settings{SettingsWeak.lock()};
     if (!settings)
         return; // We don't mind if we miss settings updates while settings haven't been initialized
-    skyline::KtSettings ktSettings{env, settingsInstance};
-    settings->Update(ktSettings);
+    settings->Update();
 }
