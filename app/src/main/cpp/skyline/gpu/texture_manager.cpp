@@ -87,6 +87,7 @@ namespace skyline::gpu {
 
         // Create a texture as we cannot find one that matches
         auto texture{std::make_shared<Texture>(gpu, guestTexture)};
+        texture->SetupGuestMappings();
         texture->TransitionLayout(vk::ImageLayout::eGeneral);
         auto it{texture->guest->mappings.begin()};
         textures.emplace(mappingEnd, TextureMapping{texture, it, guestMapping});

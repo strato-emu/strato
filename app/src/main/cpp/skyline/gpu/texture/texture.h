@@ -390,7 +390,7 @@ namespace skyline::gpu {
         friend TextureView;
 
         /**
-         * @brief Sets up mirror mappings for the guest mappings
+         * @brief Sets up mirror mappings for the guest mappings, this must be called after construction for the mirror to be valid
          */
         void SetupGuestMappings();
 
@@ -460,6 +460,7 @@ namespace skyline::gpu {
 
         /**
          * @brief Creates a texture object wrapping the guest texture with a backing that can represent the guest texture data
+         * @note The guest mappings will not be setup until SetupGuestMappings() is called
          */
         Texture(GPU &gpu, GuestTexture guest);
 

@@ -117,7 +117,7 @@ namespace skyline::gpu {
         friend BufferManager;
 
         /**
-         * @brief Sets up mirror mappings for the guest mappings
+         * @brief Sets up mirror mappings for the guest mappings, this must be called after construction for the mirror to be valid
          */
         void SetupGuestMappings();
 
@@ -138,6 +138,10 @@ namespace skyline::gpu {
             return span<u8>(backing);
         }
 
+        /**
+         * @brief Creates a buffer object wrapping the guest buffer with a backing that can represent the guest buffer data
+         * @note The guest mappings will not be setup until SetupGuestMappings() is called
+         */
         Buffer(GPU &gpu, GuestBuffer guest);
 
         /**

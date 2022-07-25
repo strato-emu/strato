@@ -69,6 +69,7 @@ namespace skyline::gpu {
 
         LockedBuffer newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
 
+        newBuffer->SetupGuestMappings();
         newBuffer->SynchronizeHost(false); // Overlaps don't necessarily fully cover the buffer so we have to perform a sync here to prevent any gaps
 
         auto copyBuffer{[](auto dstGuest, auto srcGuest, auto dstPtr, auto srcPtr) {
@@ -164,6 +165,7 @@ namespace skyline::gpu {
         if (overlaps.empty()) {
             // If we couldn't find any overlapping buffers, create a new buffer without coalescing
             LockedBuffer buffer{std::make_shared<Buffer>(gpu, guestMapping), tag};
+            buffer->SetupGuestMappings();
             buffer->SynchronizeHost();
             InsertBuffer(*buffer);
             return buffer->GetView(offset, size);

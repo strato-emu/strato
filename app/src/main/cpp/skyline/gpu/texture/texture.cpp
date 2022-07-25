@@ -143,25 +143,40 @@ namespace skyline::gpu {
             mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);
         }
 
-        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [this] {
-            std::scoped_lock lock{*this};
-        }, [this] {
-            std::unique_lock lock{*this, std::try_to_lock};
+        // We can't just capture `this` in the lambda since the lambda could exceed the lifetime of the buffer
+        std::weak_ptr<Texture> weakThis{weak_from_this()};
+        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [weakThis] {
+            auto texture{weakThis.lock()};
+            if (!texture)
+                return;
+
+            std::scoped_lock lock{*texture};
+        }, [weakThis] {
+            auto texture{weakThis.lock()};
+            if (!texture)
+                return true;
+
+            std::unique_lock lock{*texture, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true); // We can skip trapping since the caller will do it
-            WaitOnFence();
+
+            texture->SynchronizeGuest(true); // We can skip trapping since the caller will do it
+            texture->WaitOnFence();
             return true;
-        }, [this] {
+        }, [weakThis] {
+            auto texture{weakThis.lock()};
+            if (!texture)
+                return true;
+
             DirtyState expectedState{DirtyState::Clean};
-            if (dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
+            if (texture->dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
                 return true; // If we can transition the texture to CPU dirty (from Clean) or if it already is CPU dirty then we can just return, we only need to do the lock and corresponding sync if the texture is GPU dirty
 
-            std::unique_lock lock{*this, std::try_to_lock};
+            std::unique_lock lock{*texture, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true, true); // We need to assume the texture is dirty since we don't know what the guest is writing
-            WaitOnFence();
+            texture->SynchronizeGuest(true, true); // We need to assume the texture is dirty since we don't know what the guest is writing
+            texture->WaitOnFence();
             return true;
         });
     }

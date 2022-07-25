@@ -15,23 +15,37 @@ namespace skyline::gpu {
         alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
         mirror = alignedMirror.subspan(static_cast<size_t>(guest->data() - alignedData), guest->size());
 
-        trapHandle = gpu.state.nce->TrapRegions(*guest, true, [this] {
-            std::scoped_lock lock{*this};
-        }, [this] {
-            std::unique_lock lock{*this, std::try_to_lock};
+        // We can't just capture `this` in the lambda since the lambda could exceed the lifetime of the buffer
+        std::weak_ptr<Buffer> weakThis{weak_from_this()};
+        trapHandle = gpu.state.nce->TrapRegions(*guest, true, [weakThis] {
+            auto buffer{weakThis.lock()};
+            if (!buffer)
+                return;
+            std::scoped_lock lock{*buffer};
+        }, [weakThis] {
+            auto buffer{weakThis.lock()};
+            if (!buffer)
+                return true;
+
+            std::unique_lock lock{*buffer, std::try_to_lock};
             if (!lock)
                 return false;
             SynchronizeGuest(true); // We can skip trapping since the caller will do it
+
             return true;
-        }, [this] {
+        }, [weakThis] {
+            auto buffer{weakThis.lock()};
+            if (!buffer)
+                return true;
+
             DirtyState expectedState{DirtyState::Clean};
-            if (dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
+            if (buffer->dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
                 return true; // If we can transition the buffer to CPU dirty (from Clean) or if it already is CPU dirty then we can just return, we only need to do the lock and corresponding sync if the buffer is GPU dirty
 
-            std::unique_lock lock{*this, std::try_to_lock};
+            std::unique_lock lock{*buffer, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true, false, true); // We need to assume the buffer is dirty since we don't know what the guest is writing
+            buffer->SynchronizeGuest(true, false, true); // We need to assume the buffer is dirty since we don't know what the guest is writing
             return true;
         });
     }
