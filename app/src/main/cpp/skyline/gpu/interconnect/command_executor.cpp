@@ -350,6 +350,7 @@ namespace skyline::gpu::interconnect {
             TRACE_EVENT("gpu", "CommandExecutor::SubmitWithFlush");
             SubmitInternal();
             cycle = activeCommandBuffer.Reset();
+            megaBuffer.ReplaceCycle(cycle);
             megaBuffer.Reset();
         }
         ResetInternal();
