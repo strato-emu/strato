@@ -152,6 +152,8 @@ namespace skyline::gpu {
 
             std::scoped_lock lock{*texture};
         }, [weakThis] {
+            TRACE_EVENT("gpu", "Texture::ReadTrap");
+
             auto texture{weakThis.lock()};
             if (!texture)
                 return true;
@@ -164,6 +166,8 @@ namespace skyline::gpu {
             texture->WaitOnFence();
             return true;
         }, [weakThis] {
+            TRACE_EVENT("gpu", "Texture::WriteTrap");
+
             auto texture{weakThis.lock()};
             if (!texture)
                 return true;

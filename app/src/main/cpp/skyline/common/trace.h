@@ -12,6 +12,7 @@ PERFETTO_DEFINE_CATEGORIES(
     perfetto::Category("scheduler").SetDescription("Events from the HLE scheduler"),
     perfetto::Category("kernel").SetDescription("Events from parts of the HLE kernel"),
     perfetto::Category("guest").SetDescription("Events relating to guest code"),
+    perfetto::Category("host").SetDescription("Events relating to host code"),
     perfetto::Category("gpu").SetDescription("Events from the emulated GPU"),
     perfetto::Category("service").SetDescription("Events from the HLE sysmodule implementations"),
     perfetto::Category("containers").SetDescription("Events from custom container implementations")

@@ -409,6 +409,8 @@ namespace skyline::nce {
     NCE::CallbackEntry::CallbackEntry(TrapProtection protection, LockCallback lockCallback, TrapCallback readCallback, TrapCallback writeCallback) : protection{protection}, lockCallback{std::move(lockCallback)}, readCallback{std::move(readCallback)}, writeCallback{std::move(writeCallback)} {}
 
     void NCE::ReprotectIntervals(const std::vector<TrapMap::Interval> &intervals, TrapProtection protection) {
+        TRACE_EVENT("host", "NCE::ReprotectIntervals");
+
         auto reprotectIntervalsWithFunction = [&intervals](auto getProtection) {
             for (auto region : intervals) {
                 region = region.Align(PAGE_SIZE);
@@ -455,6 +457,7 @@ namespace skyline::nce {
             });
 
             // Page out regions that are no longer accessible, these should be paged back in by a callback
+            TRACE_EVENT("host", "NCE::ReprotectIntervals::PageOut");
             for (auto region : intervals) {
                 auto freeStart{util::AlignUp(region.start, PAGE_SIZE)}, freeEnd{util::AlignDown(region.end, PAGE_SIZE)}; // We want to avoid the first and last page as they may contain data that won't be paged back in by the callback
                 ssize_t freeSize{freeEnd - freeStart};
@@ -467,6 +470,8 @@ namespace skyline::nce {
     }
 
     bool NCE::TrapHandler(u8 *address, bool write) {
+        TRACE_EVENT("host", "NCE::TrapHandler");
+
         LockCallback lockCallback{};
         while (true) {
             if (lockCallback) {
@@ -531,6 +536,7 @@ namespace skyline::nce {
     constexpr NCE::TrapHandle::TrapHandle(const TrapMap::GroupHandle &handle) : TrapMap::GroupHandle(handle) {}
 
     NCE::TrapHandle NCE::TrapRegions(span<span<u8>> regions, bool writeOnly, const LockCallback &lockCallback, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
+        TRACE_EVENT("host", "NCE::TrapRegions");
         std::scoped_lock lock(trapMutex);
         auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
         TrapHandle handle{trapMap.Insert(regions, CallbackEntry{protection, lockCallback, readCallback, writeCallback})};
@@ -539,6 +545,7 @@ namespace skyline::nce {
     }
 
     void NCE::RetrapRegions(TrapHandle handle, bool writeOnly) {
+        TRACE_EVENT("host", "NCE::RetrapRegions");
         std::scoped_lock lock(trapMutex);
         auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
         handle->value.protection = protection;
@@ -546,12 +553,14 @@ namespace skyline::nce {
     }
 
     void NCE::RemoveTrap(TrapHandle handle) {
+        TRACE_EVENT("host", "NCE::RemoveTrap");
         std::scoped_lock lock(trapMutex);
         handle->value.protection = TrapProtection::None;
         ReprotectIntervals(handle->intervals, TrapProtection::None);
     }
 
     void NCE::DeleteTrap(TrapHandle handle) {
+        TRACE_EVENT("host", "NCE::DeleteTrap");
         std::scoped_lock lock(trapMutex);
         handle->value.protection = TrapProtection::None;
         ReprotectIntervals(handle->intervals, TrapProtection::None);

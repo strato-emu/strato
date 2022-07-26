@@ -23,6 +23,8 @@ namespace skyline::gpu {
                 return;
             std::scoped_lock lock{*buffer};
         }, [weakThis] {
+            TRACE_EVENT("gpu", "Buffer::ReadTrap");
+
             auto buffer{weakThis.lock()};
             if (!buffer)
                 return true;
@@ -34,6 +36,8 @@ namespace skyline::gpu {
 
             return true;
         }, [weakThis] {
+            TRACE_EVENT("gpu", "Buffer::WriteTrap");
+
             auto buffer{weakThis.lock()};
             if (!buffer)
                 return true;
