@@ -690,6 +690,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
+                        channelCtx.executor.Submit();
                         WriteSemaphoreResult(registers.semaphore->payload);
                         break;
 
