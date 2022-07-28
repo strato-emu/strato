@@ -102,23 +102,22 @@ namespace skyline::nce {
         };
 
         /**
-         * @brief Traps a region of guest memory with a callback for when an access to it has been made
-         * @param writeOnly If the trap is optimally for write-only accesses initially, this is not guarenteed
+         * @brief Creates a region of guest memory that can be trapped with a callback for when an access to it has been made
          * @param lockCallback A callback to lock the resource that is being trapped, it must block until the resource is locked but unlock it prior to returning
          * @param readCallback A callback for read accesses to the trapped region, it must not block and return a boolean if it would block
          * @param writeCallback A callback for write accesses to the trapped region, it must not block and return a boolean if it would block
          * @note The handle **must** be deleted using DeleteTrap before the NCE instance is destroyed
          * @note It is UB to supply a region of host memory rather than guest memory
-         * @note Any regions trapped without writeOnly may have their data (except border pages) paged out and it needs to be paged back in inside the callbacks
+         * @note This doesn't trap the region in itself, any trapping must be done via TrapRegions(...)
          */
-        TrapHandle TrapRegions(span<span<u8>> regions, bool writeOnly, const LockCallback& lockCallback, const TrapCallback& readCallback, const TrapCallback& writeCallback);
+        TrapHandle CreateTrap(span<span<u8>> regions, const LockCallback& lockCallback, const TrapCallback& readCallback, const TrapCallback& writeCallback);
 
         /**
          * @brief Re-traps a region of memory after protections were removed
          * @param writeOnly If the trap is optimally for write-only accesses, this is not guarenteed
          * @note Any regions trapped without writeOnly may have their data (except border pages) paged out and it needs to be paged back in inside the callbacks
          */
-        void RetrapRegions(TrapHandle handle, bool writeOnly);
+        void TrapRegions(TrapHandle handle, bool writeOnly);
 
         /**
          * @brief Removes protections from a region of memory

@@ -535,17 +535,15 @@ namespace skyline::nce {
 
     constexpr NCE::TrapHandle::TrapHandle(const TrapMap::GroupHandle &handle) : TrapMap::GroupHandle(handle) {}
 
-    NCE::TrapHandle NCE::TrapRegions(span<span<u8>> regions, bool writeOnly, const LockCallback &lockCallback, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
-        TRACE_EVENT("host", "NCE::TrapRegions");
+    NCE::TrapHandle NCE::CreateTrap(span<span<u8>> regions, const LockCallback &lockCallback, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
+        TRACE_EVENT("host", "NCE::CreateTrap");
         std::scoped_lock lock(trapMutex);
-        auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
-        TrapHandle handle{trapMap.Insert(regions, CallbackEntry{protection, lockCallback, readCallback, writeCallback})};
-        ReprotectIntervals(handle->intervals, protection);
+        TrapHandle handle{trapMap.Insert(regions, CallbackEntry{TrapProtection::None, lockCallback, readCallback, writeCallback})};
         return handle;
     }
 
-    void NCE::RetrapRegions(TrapHandle handle, bool writeOnly) {
-        TRACE_EVENT("host", "NCE::RetrapRegions");
+    void NCE::TrapRegions(TrapHandle handle, bool writeOnly) {
+        TRACE_EVENT("host", "NCE::TrapRegions");
         std::scoped_lock lock(trapMutex);
         auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
         handle->value.protection = protection;

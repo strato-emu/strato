@@ -145,7 +145,7 @@ namespace skyline::gpu {
 
         // We can't just capture `this` in the lambda since the lambda could exceed the lifetime of the buffer
         std::weak_ptr<Texture> weakThis{weak_from_this()};
-        trapHandle = gpu.state.nce->TrapRegions(mappings, true, [weakThis] {
+        trapHandle = gpu.state.nce->CreateTrap(mappings, [weakThis] {
             auto texture{weakThis.lock()};
             if (!texture)
                 return;
@@ -690,7 +690,7 @@ namespace skyline::gpu {
             if (gpuDirty && dirtyState == DirtyState::Clean) {
                 // If a texture is Clean then we can just transition it to being GPU dirty and retrap it
                 dirtyState = DirtyState::GpuDirty;
-                gpu.state.nce->RetrapRegions(*trapHandle, false);
+                gpu.state.nce->TrapRegions(*trapHandle, false);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return; // If the texture has not been modified on the CPU, there is no need to synchronize it
@@ -709,7 +709,7 @@ namespace skyline::gpu {
             cycle = lCycle;
         }
 
-        gpu.state.nce->RetrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
+        gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
     }
 
     void Texture::SynchronizeHostInline(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool gpuDirty) {
@@ -722,7 +722,7 @@ namespace skyline::gpu {
             std::scoped_lock lock{stateMutex};
             if (gpuDirty && dirtyState == DirtyState::Clean) {
                 dirtyState = DirtyState::GpuDirty;
-                gpu.state.nce->RetrapRegions(*trapHandle, false);
+                gpu.state.nce->TrapRegions(*trapHandle, false);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return;
@@ -739,7 +739,7 @@ namespace skyline::gpu {
             cycle = pCycle;
         }
 
-        gpu.state.nce->RetrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
+        gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
     }
 
     void Texture::SynchronizeGuest(bool cpuDirty, bool skipTrap) {
@@ -790,7 +790,7 @@ namespace skyline::gpu {
             if (cpuDirty)
                 gpu.state.nce->DeleteTrap(*trapHandle);
             else
-                gpu.state.nce->RetrapRegions(*trapHandle, true); // Trap any future CPU writes to this texture
+                gpu.state.nce->TrapRegions(*trapHandle, true); // Trap any future CPU writes to this texture
     }
 
     std::shared_ptr<TextureView> Texture::GetView(vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format pFormat, vk::ComponentMapping mapping) {

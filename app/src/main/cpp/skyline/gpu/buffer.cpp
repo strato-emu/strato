@@ -17,7 +17,7 @@ namespace skyline::gpu {
 
         // We can't just capture this in the lambda since the lambda could exceed the lifetime of the buffer
         std::weak_ptr<Buffer> weakThis{shared_from_this()};
-        trapHandle = gpu.state.nce->TrapRegions(*guest, true, [weakThis] {
+        trapHandle = gpu.state.nce->CreateTrap(*guest, [weakThis] {
             auto buffer{weakThis.lock()};
             if (!buffer)
                 return;
@@ -107,7 +107,7 @@ namespace skyline::gpu {
         BlockAllCpuBackingWrites();
         AdvanceSequence(); // The GPU will modify buffer contents so advance to the next sequence
 
-        gpu.state.nce->RetrapRegions(*trapHandle, false);
+        gpu.state.nce->TrapRegions(*trapHandle, false);
     }
 
     void Buffer::WaitOnFence() {
@@ -163,7 +163,7 @@ namespace skyline::gpu {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
 
         if (!skipTrap)
-            gpu.state.nce->RetrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
+            gpu.state.nce->TrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
         std::memcpy(backing.data(), mirror.data(), mirror.size());
     }
 
@@ -189,7 +189,7 @@ namespace skyline::gpu {
         }
 
         if (!skipTrap)
-            gpu.state.nce->RetrapRegions(*trapHandle, true);
+            gpu.state.nce->TrapRegions(*trapHandle, true);
 
         return true;
     }
