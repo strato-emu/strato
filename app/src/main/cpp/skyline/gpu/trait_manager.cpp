@@ -10,6 +10,16 @@ namespace skyline::gpu {
         bool supportsUniformBufferStandardLayout{}; // We require VK_KHR_uniform_buffer_standard_layout but assume it is implicitly supported even when not present
 
         for (auto &extension : deviceExtensions) {
+            #define EXT_SET_COND(name, property, cond)                                                       \
+            case util::Hash(name):                                                                           \
+                if (cond) {                                                                                  \
+                    if (name == extensionName) {                                                             \
+                            property = true;                                                                 \
+                            enabledExtensions.push_back(std::array<char, VK_MAX_EXTENSION_NAME_SIZE>{name}); \
+                    }                                                                                        \
+                }                                                                                            \
+                break
+
             #define EXT_SET(name, property)                                                          \
             case util::Hash(name):                                                                   \
                 if (name == extensionName) {                                                         \
@@ -35,7 +45,7 @@ namespace skyline::gpu {
                 EXT_SET("VK_EXT_custom_border_color", hasCustomBorderColorExt);
                 EXT_SET("VK_EXT_provoking_vertex", hasProvokingVertexExt);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", hasVertexAttributeDivisorExt);
-                EXT_SET("VK_KHR_push_descriptor", supportsPushDescriptors);
+                EXT_SET_COND("VK_KHR_push_descriptor", supportsPushDescriptors, !quirks.brokenPushDescriptors);
                 EXT_SET("VK_KHR_imageless_framebuffer", hasImagelessFramebuffersExt);
                 EXT_SET("VK_EXT_global_priority", supportsGlobalPriority);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
@@ -170,6 +180,7 @@ namespace skyline::gpu {
                 adrenoBrokenFormatReport = true;
                 brokenDescriptorAliasing = true;
                 relaxedRenderPassCompatibility = true; // Adreno drivers support relaxed render pass compatibility rules
+                brokenPushDescriptors = true;
 
                 if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 600, 0))
                     maxSubpassCount = 64; // Driver will segfault while destroying the renderpass and associated objects if this is exceeded on all 5xx and below drivers

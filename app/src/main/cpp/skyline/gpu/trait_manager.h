@@ -53,6 +53,7 @@ namespace skyline::gpu {
             bool adrenoBrokenFormatReport{}; //!< [Adreno Proprietary] If the drivers report format support incorrectly and include cases that are supported by the hardware
             bool brokenDescriptorAliasing{}; //!< [Adreno Proprietary] A bug that causes alised descriptor sets to be incorrectly interpreted by the shader compiler leading to it buggering up LLVM function argument types and crashing
             bool relaxedRenderPassCompatibility{}; //!< [Adreno Proprietary/Freedreno] A relaxed version of Vulkan specification's render pass compatibility clause which allows for caching pipeline objects for multi-subpass renderpasses, this is intentionally disabled by default as it requires testing prior to enabling
+            bool brokenPushDescriptors{}; //!< [Adreno Proprietary] A bug that causes push descriptor updates to ignored by the driver in certain situations
 
             u32 maxSubpassCount{std::numeric_limits<u32>::max()}; //!< The maximum amount of subpasses within a renderpass, this is limited to 64 on older Adreno proprietary drivers
             vk::QueueGlobalPriorityEXT maxGlobalPriority{vk::QueueGlobalPriorityEXT::eMedium}; //!< The highest allowed global priority of the queue, drivers will not allow higher priorities to be set on queues
