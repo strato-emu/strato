@@ -255,10 +255,8 @@ namespace skyline::gpu::interconnect {
                 }, {}, {}
             );
 
-            for (const auto &texture : attachedTextures) {
-                texture->SynchronizeHostWithBuffer(commandBuffer, cycle, true);
-                texture->MarkGpuDirty();
-            }
+            for (const auto &texture : attachedTextures)
+                texture->SynchronizeHostInline(commandBuffer, cycle, true);
 
             vk::RenderPass lRenderPass;
             u32 subpassIndex;

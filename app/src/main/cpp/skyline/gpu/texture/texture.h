@@ -367,9 +367,8 @@ namespace skyline::gpu {
             Clean, //!< The CPU mappings are in sync with the GPU texture
             CpuDirty, //!< The CPU mappings have been modified but the GPU texture is not up to date
             GpuDirty, //!< The GPU texture has been modified but the CPU mappings have not been updated
-        };
-        std::atomic<DirtyState> dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
-        static_assert(std::atomic<DirtyState>::is_always_lock_free);
+        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU texture
+        std::recursive_mutex stateMutex; //!< Synchronizes access to the dirty state
 
         /**
          * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
@@ -381,7 +380,7 @@ namespace skyline::gpu {
             vk::ImageSubresourceRange range;
             vk::raii::ImageView vkView;
 
-            TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView&& vkView);
+            TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView &&vkView);
         };
 
         std::vector<TextureViewStorage> views;
@@ -504,13 +503,6 @@ namespace skyline::gpu {
         bool try_lock();
 
         /**
-         * @brief Marks the texture as dirty on the GPU, it will be synced on the next call to SynchronizeGuest
-         * @note This **must** be called after syncing the texture to the GPU not before
-         * @note The texture **must** be locked prior to calling this
-         */
-        void MarkGpuDirty();
-
-        /**
          * @brief Waits on the texture backing to be a valid non-null Vulkan image
          * @return If the mutex could be unlocked during the function
          * @note The texture **must** be locked prior to calling this
@@ -536,43 +528,29 @@ namespace skyline::gpu {
         void TransitionLayout(vk::ImageLayout layout);
 
         /**
-         * @brief Converts the texture to have the specified format
-         */
-        void SetFormat(texture::Format format);
-
-        /**
          * @brief Synchronizes the host texture with the guest after it has been modified
-         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
+         * @param gpuDirty If true, the texture will be transitioned to being GpuDirty by this call
+         * @note This function is not blocking and the synchronization will not be complete until the associated fence is signalled, it can be waited on with WaitOnFence()
          * @note The texture **must** be locked prior to calling this
-         * @note The guest texture backing should exist prior to calling this
          */
-        void SynchronizeHost(bool rwTrap = false);
+        void SynchronizeHost(bool gpuDirty = false);
 
         /**
          * @brief Same as SynchronizeHost but this records any commands into the supplied command buffer rather than creating one as necessary
-         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
+         * @param gpuDirty If true, the texture will be transitioned to being GpuDirty by this call
          * @note It is more efficient to call SynchronizeHost than allocating a command buffer purely for this function as it may conditionally not record any commands
          * @note The texture **must** be locked prior to calling this
-         * @note The guest texture backing should exist prior to calling this
          */
-        void SynchronizeHostWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, bool rwTrap = false);
+        void SynchronizeHostInline(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, bool gpuDirty = false);
 
         /**
          * @brief Synchronizes the guest texture with the host texture after it has been modified
-         * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
-         * @param setDirty If true, the texture will be marked as CpuDirty rather than Clean
+         * @param cpuDirty If true, the texture will be transitioned to being CpuDirty by this call
+         * @param skipTrap If true, trapping/untrapping the guest mappings will be skipped and has to be handled by the caller
+         * @note This function is not blocking and the synchronization will not be complete until the associated fence is signalled, it can be waited on with WaitOnFence()
          * @note The texture **must** be locked prior to calling this
-         * @note The guest texture should not be null prior to calling this
          */
-        void SynchronizeGuest(bool skipTrap = false, bool setDirty = false);
-
-        /**
-         * @brief Synchronizes the guest texture with the host texture after it has been modified
-         * @note It is more efficient to call SynchronizeHost than allocating a command buffer purely for this function as it may conditionally not record any commands
-         * @note The texture **must** be locked prior to calling this
-         * @note The guest texture should not be null prior to calling this
-         */
-        void SynchronizeGuestWithBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
+        void SynchronizeGuest(bool cpuDirty = false, bool skipTrap = false);
 
         /**
          * @return A cached or newly created view into this texture with the supplied attributes
