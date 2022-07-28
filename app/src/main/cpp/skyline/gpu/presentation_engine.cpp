@@ -377,8 +377,8 @@ namespace skyline::gpu {
     u64 PresentationEngine::Present(const std::shared_ptr<TextureView> &texture, i64 timestamp, i64 swapInterval, AndroidRect crop, NativeWindowScalingMode scalingMode, NativeWindowTransform transform, skyline::service::hosbinder::AndroidFence fence, const std::function<void()> &presentCallback) {
         if (!vkSurface.has_value()) {
             // We want this function to generally (not necessarily always) block when a surface is not present to implicitly pause the game
-            std::unique_lock lock(mutex);
-            surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+            std::unique_lock lock{mutex};
+            surfaceCondition.wait(lock, [this] { return vkSurface.has_value(); });
         }
 
         presentQueue.Push(PresentableFrame{
@@ -397,8 +397,7 @@ namespace skyline::gpu {
     }
 
     NativeWindowTransform PresentationEngine::GetTransformHint() {
-        std::unique_lock lock(mutex);
-        surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+        std::unique_lock lock{mutex};
         return GetAndroidTransform(vkSurfaceCapabilities.currentTransform);
     }
 }

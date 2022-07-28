@@ -32,7 +32,7 @@ namespace skyline::gpu {
         i64 windowLastTimestamp{}; //!< The last timestamp submitted to the window, 0 or CLOCK_MONOTONIC value
 
         std::optional<vk::raii::SurfaceKHR> vkSurface; //!< The Vulkan Surface object that is backed by ANativeWindow
-        vk::SurfaceCapabilitiesKHR vkSurfaceCapabilities; //!< The capabilities of the current Vulkan Surface
+        vk::SurfaceCapabilitiesKHR vkSurfaceCapabilities{}; //!< The capabilities of the current Vulkan Surface
 
         std::optional<vk::raii::SwapchainKHR> vkSwapchain; //!< The Vulkan swapchain and the properties associated with it
         vk::raii::Fence acquireFence; //!< A fence for acquiring an image from the swapchain
