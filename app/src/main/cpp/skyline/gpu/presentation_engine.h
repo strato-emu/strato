@@ -47,6 +47,10 @@ namespace skyline::gpu {
         i64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
+      public:
+        std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Signalled every time a frame is drawn
+
+      private:
         std::thread choreographerThread; //!< A thread for signalling the V-Sync event and measure the refresh cycle duration using AChoreographer
         ALooper *choreographerLooper{};
         i64 lastChoreographerTime{}; //!< The timestamp of the last invocation of Choreographer::doFrame
@@ -97,8 +101,6 @@ namespace skyline::gpu {
         void UpdateSwapchain(texture::Format format, texture::Dimensions extent);
 
       public:
-        std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Signalled every time a frame is drawn
-
         PresentationEngine(const DeviceState &state, GPU &gpu);
 
         ~PresentationEngine();

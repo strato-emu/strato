@@ -26,9 +26,9 @@ namespace skyline::gpu {
           gpu{gpu},
           acquireFence{gpu.vkDevice, vk::FenceCreateInfo{}},
           presentationTrack{static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()},
+          vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)},
           choreographerThread{&PresentationEngine::ChoreographerThread, this},
-          presentationThread{&PresentationEngine::PresentationThread, this},
-          vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)} {
+          presentationThread{&PresentationEngine::PresentationThread, this} {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
