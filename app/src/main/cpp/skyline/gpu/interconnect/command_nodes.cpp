@@ -234,8 +234,8 @@ namespace skyline::gpu::interconnect::node {
                 .renderPass = renderPass,
                 .attachmentCount = static_cast<u32>(attachments.size()),
                 .pAttachments = attachments.data(),
-                .width = renderArea.extent.width,
-                .height = renderArea.extent.height,
+                .width = renderArea.extent.width + static_cast<u32>(renderArea.offset.x),
+                .height = renderArea.extent.height + static_cast<u32>(renderArea.offset.y),
                 .layers = 1,
             },
             vk::FramebufferAttachmentsCreateInfo{
