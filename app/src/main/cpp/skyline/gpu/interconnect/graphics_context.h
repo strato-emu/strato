@@ -1572,11 +1572,6 @@ namespace skyline::gpu::interconnect {
                 blendState.pAttachments = commonRtBlendState.data();
         }
 
-        void SetColorBlendEnabled(bool enable) {
-            for (auto &blend : commonRtBlendState)
-                blend.blendEnable = enable;
-        }
-
         void SetColorBlendOp(maxwell3d::BlendOp op) {
             auto vkOp{ConvertBlendOp(op)};
             for (auto &blend : commonRtBlendState)
@@ -1614,6 +1609,7 @@ namespace skyline::gpu::interconnect {
         }
 
         void SetColorBlendEnabled(u32 index, bool enable) {
+            commonRtBlendState[index].blendEnable = enable;
             independentRtBlendState[index].blendEnable = enable;
         }
 

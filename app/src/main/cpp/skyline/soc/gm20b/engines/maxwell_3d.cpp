@@ -407,10 +407,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     context.SetDstAlphaBlendFactor(alphaDstFactor);
                 })
 
-                ENGINE_STRUCT_CASE(blendStateCommon, enable, {
-                    context.SetColorBlendEnabled(enable);
-                })
-
                 #define SET_COLOR_BLEND_ENABLE_CALLBACK(z, index, data) \
                 ENGINE_ARRAY_CASE(rtBlendEnable, index, {               \
                     context.SetColorBlendEnabled(index, rtBlendEnable); \
