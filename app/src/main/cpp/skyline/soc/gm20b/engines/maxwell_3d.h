@@ -31,9 +31,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 return startOffset != std::numeric_limits<u32>::max();
             }
 
+            u32 Invalidate() {
+                return std::exchange(startOffset, std::numeric_limits<u32>::max());
+            }
+
             void Reset() {
                 buffer.clear();
-                startOffset = std::numeric_limits<u32>::max();
             }
         } batchConstantBufferUpdate; //!< Holds state for updating constant buffer data in a batch rather than word by word
 
