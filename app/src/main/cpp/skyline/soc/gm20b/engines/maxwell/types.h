@@ -564,7 +564,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             u8 _unk0_ : 2;
             bool depthClampNear : 1;
             bool depthClampFar : 1;
-            u8 _unk1_ : 7;
+            u8 _unk1_ : 6;
             bool depthClampDisable : 1;
         };
     };
