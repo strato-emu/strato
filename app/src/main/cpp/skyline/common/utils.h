@@ -27,7 +27,7 @@ namespace skyline::util {
         u64 frequency;
         asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
         u64 ticks;
-        asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
+        asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
         return static_cast<i64>(((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency));
     }
 
@@ -37,7 +37,7 @@ namespace skyline::util {
      */
     inline u64 GetTimeTicks() {
         u64 ticks;
-        asm("MRS %0, CNTVCT_EL0" : "=r"(ticks));
+        asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
         return ticks;
     }
 
