@@ -54,6 +54,14 @@
         </activity>
 
         <activity
+            android:name="emu.skyline.preference.GpuDriverActivity"
+            android:exported="true">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="emu.skyline.SettingsActivity" />
+        </activity>
+
+        <activity
             android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"

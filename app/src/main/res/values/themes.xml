@@ -3,9 +3,9 @@
 
     <style name="BaseAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorOnPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorSecondary">@color/colorPrimary</item>
-        <item name="colorOnSecondary">@color/colorPrimary</item>
+        <item name="colorOnSecondary">@android:color/white</item>
         <item name="android:statusBarColor">@color/backgroundColor</item>
         <item name="android:navigationBarColor">@color/backgroundColor</item>
         <item name="android:colorBackground">@color/backgroundColor</item>

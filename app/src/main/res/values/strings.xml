@@ -36,6 +36,7 @@
     <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
     <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
     <string name="log_level">Log Level</string>
+    <string name="gpu_driver_config">GPU Driver Configuration</string>
     <!-- Settings - System -->
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>
@@ -66,6 +67,19 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <!-- Gpu Driver Activity -->
+    <string name="gpu_driver">GPU Driver</string>
+    <string name="add_gpu_driver">Add a GPU driver</string>
+    <string name="delete_gpu_driver">Delete this GPU driver</string>
+    <string name="system_driver">System Driver</string>
+    <string name="system_driver_desc">The GPU driver provided by your system</string>
+    <string name="gpu_driver_install_inprogress">Installing the GPU driver…</string>
+    <string name="gpu_driver_install_success">GPU driver installed successfully</string>
+    <string name="gpu_driver_install_invalid_archive">Failed to unzip the provided driver package</string>
+    <string name="gpu_driver_install_missing_metadata">The supplied driver package is invalid due to missing metadata</string>
+    <string name="gpu_driver_install_invalid_metadata">The supplied driver package contains invalid metadata, it may be corrupted</string>
+    <string name="gpu_driver_install_unsupported_android_version">Your device doesn\'t meet the minimum Android version requirements for the supplied driver</string>
+    <string name="gpu_driver_install_already_installed">The supplied driver package is already installled</string>
     <!-- Input -->
     <string name="input">Input</string>
     <string name="osc">On-Screen Controls</string>
