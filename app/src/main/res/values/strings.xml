@@ -184,4 +184,5 @@
     <!-- Misc -->
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>
+    <string name="undo">Undo</string>
 </resources>

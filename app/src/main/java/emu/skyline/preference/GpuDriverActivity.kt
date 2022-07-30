@@ -79,17 +79,36 @@ class GpuDriverActivity : AppCompatActivity() {
         }
 
         GpuDriverHelper.getInstalledDrivers(this).onEachIndexed { index, (file, metadata) ->
-            items.add(GpuDriverViewItem(metadata, { wasChecked ->
-                if (wasChecked) {
-                    // If the deleted driver was the selected one, select the system driver
-                    preferenceSettings.gpuDriver = PreferenceSettings.SYSTEM_GPU_DRIVER
+            items.add(GpuDriverViewItem(metadata).apply {
+                onDelete = { position, wasChecked ->
+                    // If the driver was selected, select the system driver as the active one
+                    if (wasChecked)
+                        preferenceSettings.gpuDriver = PreferenceSettings.SYSTEM_GPU_DRIVER
+
+                    Snackbar.make(binding.root, "${metadata.label} deleted", Snackbar.LENGTH_LONG).setAction(R.string.undo) {
+                        this@GpuDriverActivity.adapter.run {
+                            addItemAt(position, this@apply)
+                            // If the item was selected before removal, set it back as the active one when undoing
+                            if (wasChecked) {
+                                // Only notify previous to avoid notifying items before indexes have updated, the newly inserted item will be updated on bind
+                                selectAndNotifyPrevious(position)
+                                preferenceSettings.gpuDriver = metadata.label
+                            }
+                        }
+                    }.addCallback(object : Snackbar.Callback() {
+                        override fun onDismissed(transientBottomBar : Snackbar?, event : Int) {
+                            // Only delete the driver directory if the user didn't undo the deletion
+                            if (event != DISMISS_EVENT_ACTION) {
+                                file.deleteRecursively()
+                            }
+                        }
+                    }).show()
                 }
-                if (!file.deleteRecursively()) {
-                    Snackbar.make(binding.root, getString(R.string.gpu_driver_delete_failed), Snackbar.LENGTH_LONG).show()
+
+                onClick = {
+                    preferenceSettings.gpuDriver = metadata.label
                 }
-            }, {
-                preferenceSettings.gpuDriver = metadata.label
-            }))
+            })
 
             if (preferenceSettings.gpuDriver == metadata.label) {
                 adapter.selectedPosition = index + 1 // Add 1 to account for the system driver entry

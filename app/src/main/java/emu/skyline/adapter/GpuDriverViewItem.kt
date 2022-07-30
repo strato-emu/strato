@@ -15,8 +15,8 @@ object GpuDriverBindingFactory : ViewBindingFactory {
 
 open class GpuDriverViewItem(
     val driverMetadata : GpuDriverMetadata,
-    private val onDelete : ((wasChecked : Boolean) -> Unit)? = null,
-    private val onClick : (() -> Unit)? = null
+    var onDelete : ((position : Int, wasChecked : Boolean) -> Unit)? = null,
+    var onClick : (() -> Unit)? = null
 ) : SelectableGenericListItem<GpuDriverItemBinding>() {
     private var position = -1
 
@@ -42,15 +42,15 @@ open class GpuDriverViewItem(
             onClick?.invoke()
         }
 
-        if (onDelete != null) {
+        onDelete?.let { onDelete ->
             binding.deleteButton.visibility = ViewGroup.VISIBLE
             binding.deleteButton.setOnClickListener {
                 val wasChecked = position == selectableAdapter?.selectedPosition
                 selectableAdapter?.removeItemAt(position)
 
-                onDelete.invoke(wasChecked)
+                onDelete.invoke(position, wasChecked)
             }
-        } else {
+        } ?: run {
             binding.deleteButton.visibility = ViewGroup.GONE
         }
     }
