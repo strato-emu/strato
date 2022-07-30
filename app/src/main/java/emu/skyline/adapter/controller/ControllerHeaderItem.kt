@@ -2,6 +2,7 @@ package emu.skyline.adapter.controller
 
 import android.view.ViewGroup
 import emu.skyline.adapter.GenericListItem
+import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.adapter.ViewBindingFactory
 import emu.skyline.adapter.inflater
 import emu.skyline.databinding.ControllerHeaderBinding
@@ -13,8 +14,8 @@ object ControllerHeaderBindingFactory : ViewBindingFactory {
 class ControllerHeaderItem(private val text : String) : GenericListItem<ControllerHeaderBinding>() {
     override fun getViewBindingFactory() = ControllerHeaderBindingFactory
 
-    override fun bind(binding : ControllerHeaderBinding, position : Int) {
-        binding.root.text = text
+    override fun bind(holder : GenericViewHolder<ControllerHeaderBinding>, position : Int) {
+        holder.binding.root.text = text
     }
 
     override fun areItemsTheSame(other : GenericListItem<ControllerHeaderBinding>) = other is ControllerHeaderItem

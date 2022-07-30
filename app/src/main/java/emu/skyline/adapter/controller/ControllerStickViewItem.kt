@@ -18,7 +18,8 @@ import emu.skyline.input.StickId
  * This item is used to display all information regarding a [stick] and it's mappings for the controller
  */
 class ControllerStickViewItem(private val controllerId : Int, val stick : StickId, private val onClick : (item : ControllerStickViewItem, position : Int) -> Unit) : ControllerViewItem(stick.toString()) {
-    override fun bind(binding : ControllerItemBinding, position : Int) {
+    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
+        val binding = holder.binding
         val context = binding.root.context
         val inputManager = context.getInputManager()
 
@@ -39,7 +40,7 @@ class ControllerStickViewItem(private val controllerId : Int, val stick : StickI
 
         subContent = "${context.getString(R.string.button)}: $button\n${context.getString(R.string.up)}: $yAxisPlus\n${context.getString(R.string.down)}: $yAxisMinus\n${context.getString(R.string.left)}: $xAxisMinus\n${context.getString(R.string.right)}: $xAxisPlus"
 
-        super.bind(binding, position)
+        super.bind(holder, position)
 
         binding.root.setOnClickListener { onClick.invoke(this, position) }
     }

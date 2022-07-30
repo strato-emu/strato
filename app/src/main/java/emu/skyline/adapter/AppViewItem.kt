@@ -84,7 +84,8 @@ private typealias InteractionFunction = (appItem : AppItem) -> Unit
 class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
     override fun getViewBindingFactory() = LayoutBindingFactory(layoutType)
 
-    override fun bind(binding : LayoutBinding<*>, position : Int) {
+    override fun bind(holder : GenericViewHolder<LayoutBinding<*>>, position : Int) {
+        val binding = holder.binding
         binding.textTitle.text = item.title
         binding.textSubtitle.text = item.subTitle ?: item.loaderResultString(binding.root.context)
 

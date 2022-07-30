@@ -6,6 +6,7 @@
 package emu.skyline.adapter
 
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.data.GpuDriverMetadata
 import emu.skyline.databinding.GpuDriverItemBinding
 
@@ -18,12 +19,15 @@ open class GpuDriverViewItem(
     var onDelete : ((position : Int, wasChecked : Boolean) -> Unit)? = null,
     var onClick : (() -> Unit)? = null
 ) : SelectableGenericListItem<GpuDriverItemBinding>() {
-    private var position = -1
+    private var holder : GenericViewHolder<GpuDriverItemBinding>? = null
+    private val adapterPosition get() = holder?.adapterPosition ?: RecyclerView.NO_POSITION
 
     override fun getViewBindingFactory() = GpuDriverBindingFactory
 
-    override fun bind(binding : GpuDriverItemBinding, position : Int) {
-        this.position = position
+    override fun bind(holder : GenericViewHolder<GpuDriverItemBinding>, position : Int) {
+        this.holder = holder
+        val binding = holder.binding
+
         binding.name.text = driverMetadata.name
 
         if (driverMetadata.packageVersion.isNotBlank() || driverMetadata.packageVersion.isNotBlank()) {
@@ -38,17 +42,21 @@ open class GpuDriverViewItem(
         binding.radioButton.isChecked = position == selectableAdapter?.selectedPosition
 
         binding.root.setOnClickListener {
-            selectableAdapter?.selectAndNotify(position)
+            selectableAdapter?.selectAndNotify(adapterPosition)
             onClick?.invoke()
         }
 
         onDelete?.let { onDelete ->
             binding.deleteButton.visibility = ViewGroup.VISIBLE
             binding.deleteButton.setOnClickListener {
-                val wasChecked = position == selectableAdapter?.selectedPosition
-                selectableAdapter?.removeItemAt(position)
+                val pos = adapterPosition
+                if (pos == RecyclerView.NO_POSITION)
+                    return@setOnClickListener
 
-                onDelete.invoke(position, wasChecked)
+                val wasChecked = pos == selectableAdapter?.selectedPosition
+                selectableAdapter?.removeItemAt(pos)
+
+                onDelete.invoke(pos, wasChecked)
             }
         } ?: run {
             binding.deleteButton.visibility = ViewGroup.GONE

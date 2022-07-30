@@ -8,6 +8,7 @@ package emu.skyline.adapter.controller
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import emu.skyline.adapter.GenericListItem
+import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.adapter.ViewBindingFactory
 import emu.skyline.adapter.inflater
 import emu.skyline.databinding.ControllerItemBinding
@@ -21,8 +22,9 @@ open class ControllerViewItem(var content : String = "", var subContent : String
 
     override fun getViewBindingFactory() = ControllerBindingFactory
 
-    override fun bind(binding : ControllerItemBinding, position : Int) {
+    override fun bind(holder : GenericViewHolder<ControllerItemBinding>, position : Int) {
         this.position = position
+        val binding = holder.binding
         binding.textTitle.apply {
             isGone = content.isEmpty()
             text = content

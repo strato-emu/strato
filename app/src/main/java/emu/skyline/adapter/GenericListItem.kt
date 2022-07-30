@@ -24,7 +24,7 @@ abstract class GenericListItem<V : ViewBinding> {
 
     abstract fun getViewBindingFactory() : ViewBindingFactory
 
-    abstract fun bind(binding : V, position : Int)
+    abstract fun bind(holder : GenericViewHolder<V>, position : Int)
 
     /**
      * Used for filtering

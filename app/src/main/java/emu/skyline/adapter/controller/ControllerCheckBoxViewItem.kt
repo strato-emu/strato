@@ -8,6 +8,7 @@ package emu.skyline.adapter.controller
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import emu.skyline.adapter.GenericListItem
+import emu.skyline.adapter.GenericViewHolder
 import emu.skyline.adapter.ViewBindingFactory
 import emu.skyline.adapter.inflater
 import emu.skyline.databinding.ControllerCheckboxItemBinding
@@ -19,7 +20,8 @@ object ControllerCheckBoxBindingFactory : ViewBindingFactory {
 class ControllerCheckBoxViewItem(var title : String, var summary : String, var checked : Boolean, private val onCheckedChange : (item : ControllerCheckBoxViewItem, position : Int) -> Unit) : GenericListItem<ControllerCheckboxItemBinding>() {
     override fun getViewBindingFactory() = ControllerCheckBoxBindingFactory
 
-    override fun bind(binding : ControllerCheckboxItemBinding, position : Int) {
+    override fun bind(holder : GenericViewHolder<ControllerCheckboxItemBinding>, position : Int) {
+        val binding = holder.binding
         binding.textTitle.isGone = title.isEmpty()
         binding.textTitle.text = title
         binding.textSubtitle.isGone = summary.isEmpty()

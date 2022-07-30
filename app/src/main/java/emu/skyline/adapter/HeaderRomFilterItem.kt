@@ -22,7 +22,8 @@ class HeaderRomFilterItem(private val formats : List<RomFormat>, selectedFormat 
 
     override fun getViewBindingFactory() = HeaderRomFilterBindingFactory
 
-    override fun bind(binding : HeaderRomFilterBinding, position : Int) {
+    override fun bind(holder : GenericViewHolder<HeaderRomFilterBinding>, position : Int) {
+        val binding = holder.binding
         binding.chipGroup.removeViews(1, binding.chipGroup.childCount - 1)
         for (format in formats) {
             binding.chipGroup.addView(Chip(binding.root.context, null, R.attr.chipChoiceStyle).apply { text = format.name })

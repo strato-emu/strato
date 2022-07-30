@@ -46,7 +46,7 @@ open class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>
     override fun onBindViewHolder(holder : GenericViewHolder<ViewBinding>, position : Int) {
         currentItems[position].apply {
             adapter = this@GenericAdapter
-            bind(holder.binding, position)
+            bind(holder, position)
         }
     }
 

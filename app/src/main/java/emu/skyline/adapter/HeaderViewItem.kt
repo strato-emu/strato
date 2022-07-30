@@ -15,8 +15,8 @@ object HeaderBindingFactory : ViewBindingFactory {
 class HeaderViewItem(private val text : String) : GenericListItem<SectionItemBinding>() {
     override fun getViewBindingFactory() = HeaderBindingFactory
 
-    override fun bind(binding : SectionItemBinding, position : Int) {
-        binding.textTitle.text = text
+    override fun bind(holder : GenericViewHolder<SectionItemBinding>, position : Int) {
+        holder.binding.textTitle.text = text
     }
 
     override fun toString() = ""
