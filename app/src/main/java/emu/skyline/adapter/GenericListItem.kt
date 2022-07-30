@@ -37,3 +37,7 @@ abstract class GenericListItem<V : ViewBinding> {
 
     open val fullSpan : Boolean = false
 }
+
+abstract class SelectableGenericListItem<V : ViewBinding> : GenericListItem<V>() {
+    val selectableAdapter get() = super.adapter as SelectableGenericAdapter?
+}

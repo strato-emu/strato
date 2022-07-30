@@ -21,7 +21,7 @@ typealias OnFilterPublishedListener = () -> Unit
 /**
  * Can handle any view types with [GenericListItem] implemented, [GenericListItem] are differentiated by the return value of [GenericListItem.getViewBindingFactory]
  */
-class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), Filterable {
+open class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), Filterable {
     companion object {
         private val DIFFER = object : DiffUtil.ItemCallback<GenericListItem<ViewBinding>>() {
             override fun areItemsTheSame(oldItem : GenericListItem<ViewBinding>, newItem : GenericListItem<ViewBinding>) = oldItem.areItemsTheSame(newItem)
@@ -137,5 +137,51 @@ class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>(), F
             asyncListDiffer.submitList(results.values as List<GenericListItem<ViewBinding>>)
             onFilterPublishedListener?.invoke()
         }
+    }
+}
+
+/**
+ * A [GenericAdapter] that supports marking one item as selected. List items that need to access the selected position should inherit from [SelectableGenericListItem]
+ */
+class SelectableGenericAdapter(private val defaultPosition : Int) : GenericAdapter() {
+    var selectedPosition : Int = defaultPosition
+
+    /**
+     * Sets the selected position to [position] and notifies previous and new selected positions
+     */
+    fun selectAndNotify(position : Int) {
+        val previousSelectedPosition = selectedPosition
+        selectedPosition = position
+        notifyItemChanged(previousSelectedPosition)
+        notifyItemChanged(position)
+    }
+
+    /**
+     * Sets the selected position to [position] and only notifies the previous selected position
+     */
+    fun selectAndNotifyPrevious(position : Int) {
+        val previousSelectedPosition = selectedPosition
+        selectedPosition = position
+        notifyItemChanged(previousSelectedPosition)
+    }
+
+    /**
+     * Removes the item at [position] from the list and updates the selected position accordingly
+     */
+    override fun removeItemAt(position: Int) {
+        super.removeItemAt(position)
+        if (position < selectedPosition)
+            selectedPosition--
+        else if (position == selectedPosition)
+            selectAndNotify(defaultPosition)
+    }
+
+    /**
+     * Inserts the given item to the list at [position] and updates the selected position accordingly
+     */
+    override fun addItemAt(position : Int, item : GenericListItem<out ViewBinding>) {
+        super.addItemAt(position, item)
+        if (position <= selectedPosition)
+            selectedPosition++
     }
 }
