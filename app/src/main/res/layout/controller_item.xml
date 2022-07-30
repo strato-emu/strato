@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/controller_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -22,7 +23,8 @@
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItem" />
+        android:textAppearance="?android:attr/textAppearanceListItem"
+        tools:text="@string/config_controller" />
 
     <TextView
         android:id="@+id/text_subtitle"
@@ -30,5 +32,6 @@
         android:layout_height="wrap_content"
         android:maxLines="10"
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="?android:attr/textColorSecondary" />
+        android:textColor="?android:attr/textColorSecondary"
+        tools:text="@string/handheld_procon" />
 </LinearLayout>

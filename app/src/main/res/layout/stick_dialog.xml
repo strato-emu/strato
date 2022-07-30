@@ -86,6 +86,7 @@
                 android:fontFamily="monospace"
                 android:gravity="center"
                 android:includeFontPadding="false"
+                android:textAlignment="center"
                 android:textColor="@android:color/white"
                 android:textSize="26sp"
                 tools:text="R" />

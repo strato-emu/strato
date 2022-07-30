@@ -55,6 +55,7 @@
             android:fontFamily="monospace"
             android:gravity="center"
             android:includeFontPadding="false"
+            android:textAlignment="center"
             android:textSize="26sp"
             tools:text="A" />
 

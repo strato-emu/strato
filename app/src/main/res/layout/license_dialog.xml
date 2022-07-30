@@ -45,10 +45,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoLink="web"
+            android:justificationMode="inter_word"
+            android:paddingHorizontal="15dp"
             android:paddingTop="10dp"
             android:paddingBottom="15dp"
-            android:paddingHorizontal="15dp"
-            android:justificationMode="inter_word"
+            android:textAlignment="viewStart"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
             tools:text="@string/mpl2_license" />
 

@@ -24,15 +24,17 @@
         android:id="@+id/perf_stats"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top|left"
         android:layout_marginLeft="@dimen/onScreenItemHorizontalMargin"
         android:layout_marginTop="5dp"
-        android:textColor="#9fffff00" />
+        android:textColor="#9fffff00"
+        tools:text="60 FPS \n16.7±1.20ms" />
 
     <ImageButton
         android:id="@+id/on_screen_controller_toggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="bottom|right"
         android:layout_marginRight="@dimen/onScreenItemHorizontalMargin"
         android:background="?android:attr/actionBarItemBackground"
         android:padding="8dp"

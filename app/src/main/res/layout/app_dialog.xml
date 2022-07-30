@@ -27,10 +27,11 @@
             android:id="@+id/game_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textAlignment="viewStart"
             android:textAppearance="?android:attr/textAppearanceListItem"
             android:textSize="18sp"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             tools:text="The Legend of Zelda: Breath of the Wild" />
 
         <TextView
@@ -40,8 +41,8 @@
             android:textAppearance="?android:attr/textAppearanceListItemSecondary"
             android:textColor="@android:color/tertiary_text_light"
             android:textSize="14sp"
-            app:layout_constraintTop_toBottomOf="@id/game_title"
             app:layout_constraintStart_toStartOf="@id/game_title"
+            app:layout_constraintTop_toBottomOf="@id/game_title"
             tools:text="Nintendo" />
 
         <com.google.android.flexbox.FlexboxLayout
@@ -49,9 +50,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="start"
             android:layout_marginTop="12dp"
+            app:flexWrap="wrap"
             app:layout_constraintStart_toStartOf="@id/game_title"
-            app:layout_constraintTop_toBottomOf="@id/game_subtitle"
-            app:flexWrap="wrap">
+            app:layout_constraintTop_toBottomOf="@id/game_subtitle">
 
             <Button
                 android:id="@+id/game_play"
@@ -62,9 +63,9 @@
                 android:focusedByDefault="true"
                 android:text="@string/play"
                 android:textColor="?attr/colorAccent"
-                app:layout_minWidth="146dp"
                 app:icon="@drawable/ic_play"
-                app:iconTint="?attr/colorAccent" />
+                app:iconTint="?attr/colorAccent"
+                app:layout_minWidth="146dp" />
 
             <Button
                 android:id="@+id/game_pin"
@@ -72,11 +73,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                app:layout_maxWidth="55dp"
+                android:textColor="?attr/colorAccent"
+                app:icon="@drawable/ic_add_home"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
-                app:icon="@drawable/ic_add_home"
-                android:textColor="?attr/colorAccent" />
+                app:layout_maxWidth="55dp" />
         </com.google.android.flexbox.FlexboxLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>

@@ -78,10 +78,10 @@
 
                 <ImageView
                     android:id="@+id/title_text"
-                    android:layout_width="0dp"
+                    android:layout_width="85dp"
                     android:layout_height="24dp"
-                    android:layout_marginTop="16dp"
                     android:layout_marginStart="16dp"
+                    android:layout_marginTop="16dp"
                     android:layout_marginEnd="16dp"
                     android:contentDescription="@string/app_name"
                     android:scaleType="fitStart"
@@ -131,6 +131,6 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:overScrollMode="ifContentScrolls"
-            android:paddingBottom="20dp"/>
+            android:paddingBottom="20dp" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
