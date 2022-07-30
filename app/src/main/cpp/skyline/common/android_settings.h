@@ -36,6 +36,8 @@ namespace skyline {
             systemLanguage = ktSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
             forceTripleBuffering = ktSettings.GetBool("forceTripleBuffering");
             disableFrameThrottling = ktSettings.GetBool("disableFrameThrottling");
+            gpuDriver = ktSettings.GetString("gpuDriver");
+            gpuDriverLibraryName = ktSettings.GetString("gpuDriverLibraryName");
         };
     };
 }

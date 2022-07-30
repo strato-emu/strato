@@ -67,6 +67,10 @@ namespace skyline {
         Setting<bool> forceTripleBuffering; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering
         Setting<bool> disableFrameThrottling; //!< Allow the guest to submit frames without any blocking calls
 
+        // GPU
+        Setting<std::string> gpuDriver; //!< The label of the GPU driver to use
+        Setting<std::string> gpuDriverLibraryName; //!< The name of the GPU driver library to use
+
         Settings() = default;
 
         virtual ~Settings() = default;

@@ -28,15 +28,15 @@ import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
 import emu.skyline.databinding.EmuActivityBinding
 import emu.skyline.input.*
 import emu.skyline.loader.getRomFormat
-import emu.skyline.utils.PreferenceSettings
 import emu.skyline.utils.ByteBufferSerializable
+import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.NativeSettings
+import emu.skyline.utils.PreferenceSettings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.FutureTask
 import javax.inject.Inject
 import kotlin.math.abs
-
 
 @AndroidEntryPoint
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener, DisplayManager.DisplayListener {
@@ -248,8 +248,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val romType = getRomFormat(rom, contentResolver).ordinal
         val romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
+        GpuDriverHelper.ensureFileRedirectDir(this)
         emulationThread = Thread {
-            executeApplication(rom.toString(), romType, romFd.detachFd(), NativeSettings(preferenceSettings), applicationContext.getPublicFilesDir().canonicalPath + "/", applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
+            executeApplication(rom.toString(), romType, romFd.detachFd(), NativeSettings(this, preferenceSettings), applicationContext.getPublicFilesDir().canonicalPath + "/", applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
             returnFromEmulation()
         }
 
