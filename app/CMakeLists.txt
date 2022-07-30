@@ -129,6 +129,7 @@ target_link_libraries_system(shader_recompiler Boost::intrusive Boost::container
 
 # Skyline
 add_library(skyline SHARED
+        ${source_DIR}/driver_jni.cpp
         ${source_DIR}/emu_jni.cpp
         ${source_DIR}/loader_jni.cpp
         ${source_DIR}/skyline/common.cpp
