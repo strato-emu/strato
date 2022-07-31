@@ -152,8 +152,9 @@ namespace skyline::gpu {
             // Transfer all delegates references from the overlapping buffer to the new buffer
             for (auto &delegate : srcBuffer->delegates) {
                 delegate->buffer = *newBuffer;
-                if (delegate->usageCallback)
-                    delegate->usageCallback(*delegate->view, *newBuffer);
+                if (delegate->usageCallbacks)
+                    for (auto &callback : *delegate->usageCallbacks)
+                        callback(*delegate->view, *newBuffer);
             }
 
             newBuffer->delegates.splice(newBuffer->delegates.end(), srcBuffer->delegates);

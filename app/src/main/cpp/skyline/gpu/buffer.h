@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <boost/functional/hash.hpp>
 #include <common/lockable_shared_ptr.h>
+#include <common/linear_allocator.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
 #include "megabuffer.h"
@@ -101,7 +102,8 @@ namespace skyline::gpu {
             LockableSharedPtr<Buffer> buffer;
             const Buffer::BufferViewStorage *view;
             bool attached{};
-            std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;
+            using UsageCallback = std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)>;
+            std::optional<std::vector<UsageCallback, LinearAllocator<UsageCallback>>> usageCallbacks;
             std::list<BufferDelegate *>::iterator iterator;
 
             BufferDelegate(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
@@ -405,7 +407,7 @@ namespace skyline::gpu {
          * @note The callback will be automatically called the first time after registration
          * @note The view **must** be locked prior to calling this
          */
-        void RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback);
+        void RegisterUsage(LinearAllocatorState<> &allocator, const std::shared_ptr<FenceCycle> &cycle, Buffer::BufferDelegate::UsageCallback usageCallback);
 
         /**
          * @brief Reads data at the specified offset in the view

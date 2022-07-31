@@ -324,7 +324,7 @@ namespace skyline::gpu::interconnect {
         textureManagerLock.reset();
 
         for (const auto &delegate : attachedBufferDelegates) {
-            delegate->usageCallback = nullptr;
+            delegate->usageCallbacks.reset();
             delegate->attached = false;
             delegate->view->megaBufferAllocation = {};
         }
@@ -333,6 +333,7 @@ namespace skyline::gpu::interconnect {
         attachedBuffers.clear();
         bufferManagerLock.reset();
         megaBufferAllocatorLock.reset();
+        allocator.Reset();
     }
 
     void CommandExecutor::Submit() {

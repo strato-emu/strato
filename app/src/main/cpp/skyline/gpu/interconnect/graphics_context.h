@@ -1122,7 +1122,7 @@ namespace skyline::gpu::interconnect {
                                 .range = view->view->size
                             };
                         } else {
-                            view.RegisterUsage(executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            view.RegisterUsage(executor.allocator, executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                                 *descriptor = vk::DescriptorBufferInfo{
                                     .buffer = buffer->GetBacking(),
                                     .offset = view.offset,
@@ -1157,7 +1157,7 @@ namespace skyline::gpu::interconnect {
                         if (storageBuffer.is_written)
                             view->buffer->MarkGpuDirty();
 
-                        view.RegisterUsage(executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        view.RegisterUsage(executor.allocator, executor.cycle, [descriptor = bufferDescriptors.data() + bufferIndex++](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             *descriptor = vk::DescriptorBufferInfo{
                                 .buffer = buffer->GetBacking(),
                                 .offset = view.offset,
@@ -2829,14 +2829,14 @@ namespace skyline::gpu::interconnect {
                 auto indexBufferView{GetIndexBuffer(count)};
                 executor.AttachBuffer(indexBufferView);
 
-                boundIndexBuffer = std::make_shared<BoundIndexBuffer>();
+                boundIndexBuffer = std::allocate_shared<BoundIndexBuffer, LinearAllocator<BoundIndexBuffer>>(executor.allocator);
                 boundIndexBuffer->type = indexBuffer.type;
                 if (auto megaBufferAllocation{indexBufferView.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
                     // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
                     boundIndexBuffer->handle = megaBufferAllocation.buffer;
                     boundIndexBuffer->offset = megaBufferAllocation.offset;
                 } else {
-                    indexBufferView.RegisterUsage(executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                    indexBufferView.RegisterUsage(executor.allocator, executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                         boundIndexBuffer->handle = buffer->GetBacking();
                         boundIndexBuffer->offset = view.offset;
                     });
@@ -2858,7 +2858,7 @@ namespace skyline::gpu::interconnect {
                 std::array<vk::Buffer, maxwell3d::VertexBufferCount> handles{};
                 std::array<vk::DeviceSize, maxwell3d::VertexBufferCount> offsets{};
             };
-            auto boundVertexBuffers{std::make_shared<BoundVertexBuffers>()};
+            auto boundVertexBuffers{std::allocate_shared<BoundVertexBuffers, LinearAllocator<BoundVertexBuffers>>(executor.allocator)};
 
             boost::container::static_vector<vk::VertexInputBindingDescription, maxwell3d::VertexBufferCount> vertexBindingDescriptions{};
             boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, maxwell3d::VertexBufferCount> vertexBindingDivisorsDescriptions{};
@@ -2877,7 +2877,7 @@ namespace skyline::gpu::interconnect {
                         boundVertexBuffers->handles[index] = megaBufferAllocation.buffer;
                         boundVertexBuffers->offsets[index] = megaBufferAllocation.offset;
                     } else {
-                        vertexBufferView.RegisterUsage(executor.cycle, [handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                        vertexBufferView.RegisterUsage(executor.allocator, executor.cycle, [handle = boundVertexBuffers->handles.data() + index, offset = boundVertexBuffers->offsets.data() + index](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
                             *handle = buffer->GetBacking();
                             *offset = view.offset;
                         });

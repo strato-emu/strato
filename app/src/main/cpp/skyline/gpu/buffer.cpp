@@ -320,19 +320,15 @@ namespace skyline::gpu {
 
     BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
 
-    void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
+    void BufferView::RegisterUsage(LinearAllocatorState<> &allocator, const std::shared_ptr<FenceCycle> &cycle, Buffer::BufferDelegate::UsageCallback usageCallback) {
+        if (!bufferDelegate->usageCallbacks)
+            bufferDelegate->usageCallbacks = decltype(bufferDelegate->usageCallbacks)::value_type{allocator};
+
         // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further sequenced writes in the current cycle to occur on the GPU
         bufferDelegate->buffer->BlockSequencedCpuBackingWrites();
 
         usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
-        if (!bufferDelegate->usageCallback) {
-            bufferDelegate->usageCallback = usageCallback;
-        } else {
-            bufferDelegate->usageCallback = [usageCallback, oldCallback = std::move(bufferDelegate->usageCallback)](const Buffer::BufferViewStorage &pView, const std::shared_ptr<Buffer> &buffer) {
-                oldCallback(pView, buffer);
-                usageCallback(pView, buffer);
-            };
-        }
+        bufferDelegate->usageCallbacks->emplace_back(std::move(usageCallback));
     }
 
     void BufferView::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const {
