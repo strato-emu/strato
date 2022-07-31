@@ -64,7 +64,7 @@ class JoystickButton(
     defaultRelativeRadiusToX,
     R.drawable.ic_button
 ) {
-    private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
+    internal val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
     var recenterSticks = false
     private lateinit var initialTapPosition : PointF

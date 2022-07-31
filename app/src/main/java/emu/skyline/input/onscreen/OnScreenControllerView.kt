@@ -258,6 +258,16 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         invalidate()
     }
 
+    fun changeOpacity(delta : Int) {
+        controls.allButtons.forEach {
+            val newOpacity = (it.config.opacity + delta).coerceIn(0, 100)
+            it.config.opacity = newOpacity
+            if (it is JoystickButton) 
+                it.innerButton.config.opacity = newOpacity
+        }
+        invalidate()
+    }
+
     fun setOnButtonStateChangedListener(listener : OnButtonStateChangedListener) {
         onButtonStateChangedListener = listener
     }

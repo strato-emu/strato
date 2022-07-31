@@ -79,6 +79,7 @@ abstract class OnScreenButton(
         buttonSymbolPaint.apply {
             textSize = size
             textAlign = Paint.Align.LEFT
+            alpha = (config.opacity / 100.0 * 255).toInt()
             getTextBounds(text, 0, text.length, textBoundsRect)
         }
         canvas.drawText(text, x - textBoundsRect.width() / 2f - textBoundsRect.left, y + textBoundsRect.height() / 2f - textBoundsRect.bottom, buttonSymbolPaint)
@@ -88,6 +89,7 @@ abstract class OnScreenButton(
         val bounds = currentBounds
         drawable.apply {
             this.bounds = bounds
+            alpha = (config.opacity / 100.0 * 255).toInt()
             draw(canvas)
         }
 

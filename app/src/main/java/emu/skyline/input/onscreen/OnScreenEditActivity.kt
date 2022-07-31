@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import emu.skyline.MainViewModel
 import emu.skyline.R
 import emu.skyline.databinding.OnScreenEditActivityBinding
 import emu.skyline.utils.PreferenceSettings
@@ -20,6 +21,9 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class OnScreenEditActivity : AppCompatActivity() {
+    companion object {
+        private const val OPACITY_DELTA_STEP = 10
+    }
     private val binding by lazy { OnScreenEditActivityBinding.inflate(layoutInflater) }
 
     private var fullEditVisible = true
@@ -80,6 +84,8 @@ class OnScreenEditActivity : AppCompatActivity() {
             Pair(R.drawable.ic_edit, editAction),
             Pair(R.drawable.ic_zoom_out, { binding.onScreenControllerView.decreaseScale() }),
             Pair(R.drawable.ic_zoom_in, { binding.onScreenControllerView.increaseScale() }),
+            Pair(R.drawable.ic_opacity_minus) { binding.onScreenControllerView.changeOpacity(-OPACITY_DELTA_STEP) },
+            Pair(R.drawable.ic_opacity_plus) { binding.onScreenControllerView.changeOpacity(OPACITY_DELTA_STEP) },
             Pair(R.drawable.ic_close, closeAction)
     )
 
