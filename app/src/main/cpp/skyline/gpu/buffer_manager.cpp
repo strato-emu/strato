@@ -185,7 +185,6 @@ namespace skyline::gpu {
             // If we couldn't find any overlapping buffers, create a new buffer without coalescing
             LockedBuffer buffer{std::make_shared<Buffer>(gpu, guestMapping), tag};
             buffer->SetupGuestMappings();
-            buffer->SynchronizeHost();
             InsertBuffer(*buffer);
             return buffer->GetView(offset, size);
         } else {
