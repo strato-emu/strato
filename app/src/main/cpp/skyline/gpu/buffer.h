@@ -100,6 +100,7 @@ namespace skyline::gpu {
         struct BufferDelegate {
             LockableSharedPtr<Buffer> buffer;
             const Buffer::BufferViewStorage *view;
+            bool attached{};
             std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)> usageCallback;
             std::list<BufferDelegate *>::iterator iterator;
 

@@ -137,9 +137,11 @@ namespace skyline::gpu::interconnect {
         if (didLock)
             attachedBuffers.emplace_back(view->buffer);
 
-        if (!attachedBufferDelegates.contains(view.bufferDelegate))
-            attachedBufferDelegates.emplace(view.bufferDelegate);
+        if (view.bufferDelegate->attached)
+            return didLock;
 
+        attachedBufferDelegates.emplace_back(view.bufferDelegate);
+        view.bufferDelegate->attached = true;
         return didLock;
     }
 
@@ -154,8 +156,11 @@ namespace skyline::gpu::interconnect {
             lock.Release(); // The executor will handle unlocking the lock so it doesn't need to be handled here
         }
 
-        if (!attachedBufferDelegates.contains(view.bufferDelegate))
-            attachedBufferDelegates.emplace(view.bufferDelegate);
+        if (view.bufferDelegate->attached)
+            return;
+
+        attachedBufferDelegates.emplace_back(view.bufferDelegate);
+        view.bufferDelegate->attached = true;
     }
 
     void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
@@ -320,6 +325,7 @@ namespace skyline::gpu::interconnect {
 
         for (const auto &delegate : attachedBufferDelegates) {
             delegate->usageCallback = nullptr;
+            delegate->attached = false;
             delegate->view->megaBufferAllocation = {};
         }
 

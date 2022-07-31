@@ -64,7 +64,7 @@ namespace skyline::gpu::interconnect {
         std::vector<LockedBuffer> attachedBuffers; //!< All textures that are attached to the current execution
 
         using SharedBufferDelegate = std::shared_ptr<Buffer::BufferDelegate>;
-        std::unordered_set<SharedBufferDelegate> attachedBufferDelegates; //!< All buffers that are attached to the current execution
+        std::vector<SharedBufferDelegate> attachedBufferDelegates; //!< All buffers that are attached to the current execution
 
         std::vector<TextureView *> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
         span<TextureView *> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
