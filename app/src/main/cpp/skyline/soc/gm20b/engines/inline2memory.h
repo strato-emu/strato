@@ -7,7 +7,7 @@
 #include "engine.h"
 
 namespace skyline::soc::gm20b {
-    struct AddressSpaceContext;
+    struct ChannelContext;
 }
 
 namespace skyline::soc::gm20b::engine {
@@ -18,7 +18,7 @@ namespace skyline::soc::gm20b::engine {
       private:
         std::vector<u32> buffer; //!< Temporary buffer to hold data being currently uploaded
         u32 writeOffset{}; //!< Current write offset in words into `buffer`
-        std::shared_ptr<AddressSpaceContext> addressSpaceContext;
+        ChannelContext &channelCtx;
 
       public:
         /**
@@ -124,7 +124,7 @@ namespace skyline::soc::gm20b::engine {
         void CompleteDma(RegisterState &state);
 
       public:
-        Inline2MemoryBackend(std::shared_ptr<AddressSpaceContext> addressSpaceContext);
+        Inline2MemoryBackend(ChannelContext &channelCtx);
 
         /**
          * @brief Should be called when launchDma in `state` is written to
@@ -164,7 +164,7 @@ namespace skyline::soc::gm20b::engine {
         } registers{};
 
       public:
-        Inline2Memory(std::shared_ptr<AddressSpaceContext> addressSpaceContext);
+        Inline2Memory(ChannelContext &channelCtx);
 
         void CallMethod(u32 method, u32 argument);
 

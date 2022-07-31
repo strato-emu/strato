@@ -11,7 +11,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         : MacroEngineBase(macroState),
           syncpoints(state.soc->host1x.syncpoints),
           context(*state.gpu, channelCtx, executor),
-          i2m(channelCtx.asCtx),
+          i2m(channelCtx),
           channelCtx(channelCtx) {
         executor.AddFlushCallback([this]() { FlushEngineState(); });
         InitializeRegisters();
