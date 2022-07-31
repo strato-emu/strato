@@ -98,7 +98,7 @@ namespace skyline::soc::gm20b {
                     channelCtx.maxwell3D->HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
                     break;
                 case SubchannelId::TwoD:
-                    channelCtx.fermi2D->HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
+                    channelCtx.fermi2D.HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
                     break;
                 default:
                     Logger::Warn("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
@@ -121,7 +121,7 @@ namespace skyline::soc::gm20b {
             case SubchannelId::Copy:
                 channelCtx.maxwellDma.CallMethod(method, argument);
             case SubchannelId::TwoD:
-                channelCtx.fermi2D->CallMethod(method, argument);
+                channelCtx.fermi2D.CallMethod(method, argument);
                 break;
             default:
                 Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);

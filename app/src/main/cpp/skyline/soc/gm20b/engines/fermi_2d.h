@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <gpu/interconnect/blit_context.h>
+#include <gpu/interconnect/fermi_2d.h>
 #include "engine.h"
 
 namespace skyline::soc::gm20b {
@@ -18,7 +18,7 @@ namespace skyline::soc::gm20b::engine::fermi2d {
     class Fermi2D : public MacroEngineBase {
       private:
         host1x::SyncpointSet &syncpoints;
-        gpu::interconnect::BlitContext context;
+        gpu::interconnect::Fermi2D interconnect;
         ChannelContext &channelCtx;
 
         /**
@@ -71,15 +71,15 @@ namespace skyline::soc::gm20b::engine::fermi2d {
 
                 u32 _pad3_[8];
 
-                i32 dstX0;
-                i32 dstY0;
-                i32 dstWidth;
-                i32 dstHeight;
+                u32 dstX0;
+                u32 dstY0;
+                u32 dstWidth;
+                u32 dstHeight;
                 i64 duDx;
                 i64 dvDy;
-                i64 srcX0;
+                i64 srcX;
                 union {
-                    i64 srcY0;
+                    i64 srcY;
                     struct {
                         u32 _pad4_;
                         u32 trigger;

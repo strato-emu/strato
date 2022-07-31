@@ -9,7 +9,7 @@ namespace skyline::soc::gm20b::engine::fermi2d {
     Fermi2D::Fermi2D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor)
         : MacroEngineBase(macroState),
           syncpoints(state.soc->host1x.syncpoints),
-          context(*state.gpu, channelCtx, executor),
+          interconnect(*state.gpu, channelCtx, executor),
           channelCtx(channelCtx) {}
 
     void Fermi2D::HandleMethod(u32 method, u32 argument) {
@@ -28,14 +28,18 @@ namespace skyline::soc::gm20b::engine::fermi2d {
             if (pixelsFromMemory.safeOverlap)
                 Logger::Warn("Safe overlap is unimplemented!");
 
-            constexpr u32 FractionalComponentSize{32};
+            auto fixedToFloating{[](i64 value) {
+                constexpr u32 FractionalComponentSize{32};
+
+                return static_cast<float>(value) / (1ULL << FractionalComponentSize);
+            }};
 
             // The 2D engine supports subpixel blit precision in the lower 32 bits of the src{X,Y}0 registers for filtering, we can safely ignore this in most cases though since the host driver will handle this in its own way
-            i32 srcX{static_cast<i32>(pixelsFromMemory.srcX0 >> FractionalComponentSize)};
-            i32 srcY{static_cast<i32>(pixelsFromMemory.srcY0 >> FractionalComponentSize)};
+            float srcX{fixedToFloating(pixelsFromMemory.srcX)};
+            float srcY{fixedToFloating(pixelsFromMemory.srcY)};
 
-            i32 srcWidth{static_cast<i32>((pixelsFromMemory.duDx * pixelsFromMemory.dstWidth) >> FractionalComponentSize)};
-            i32 srcHeight{static_cast<i32>((pixelsFromMemory.dvDy * pixelsFromMemory.dstHeight) >> FractionalComponentSize)};
+            float duDx{fixedToFloating(pixelsFromMemory.duDx)};
+            float dvDy{fixedToFloating(pixelsFromMemory.dvDy)};
 
             if (registers.pixelsFromMemory->sampleMode.origin == Registers::PixelsFromMemory::SampleModeOrigin::Center) {
                 // This is an MSAA resolve operation, sampling from the center of each pixel in order to resolve the final image from the MSAA samples
@@ -48,23 +52,17 @@ namespace skyline::soc::gm20b::engine::fermi2d {
                 /* 123
                    456 */
 
-                // Since we don't implement MSAA, any image that is supposed to have MSAA applied when drawing is just stored in the corner without any pixel scaling, so adjust width/height appropriately
-                srcWidth = pixelsFromMemory.dstWidth;
-                srcHeight = pixelsFromMemory.dstHeight;
-            } else {
-                // This is a regular blit operation, scaling from one image to another
-                // https://github.com/Ryujinx/Ryujinx/blob/c9c65af59edea05e7206a076cb818128c004384e/Ryujinx.Graphics.Gpu/Engine/Twod/TwodClass.cs#L253
-                srcX -= (pixelsFromMemory.duDx >> FractionalComponentSize) >> 1;
-                srcY -= (pixelsFromMemory.dvDy >> FractionalComponentSize) >> 1;
+                // Since we don't implement MSAA, we can avoid any scaling at all by setting using a scale factor of 1
+                duDx = dvDy = 1.0f;
             }
 
-            context.Blit(src, dst,
-                         srcX, srcY,
-                         srcWidth, srcHeight,
-                         pixelsFromMemory.dstX0, pixelsFromMemory.dstY0,
-                         pixelsFromMemory.dstWidth, pixelsFromMemory.dstHeight,
-                         registers.pixelsFromMemory->sampleMode.origin == Registers::PixelsFromMemory::SampleModeOrigin::Center,
-                         pixelsFromMemory.sampleMode.filter == Registers::PixelsFromMemory::SampleModeFilter::Bilinear);
+            interconnect.Blit(src, dst,
+                              srcX, srcY,
+                              pixelsFromMemory.dstWidth, pixelsFromMemory.dstHeight,
+                              pixelsFromMemory.dstX0, pixelsFromMemory.dstY0,
+                              duDx, dvDy,
+                              registers.pixelsFromMemory->sampleMode.origin == Registers::PixelsFromMemory::SampleModeOrigin::Center,
+                              pixelsFromMemory.sampleMode.filter == Registers::PixelsFromMemory::SampleModeFilter::Bilinear);
         }
     }
 
