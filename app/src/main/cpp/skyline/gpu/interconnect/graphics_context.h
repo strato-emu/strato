@@ -2200,7 +2200,8 @@ namespace skyline::gpu::interconnect {
                 TIC_FORMAT_CASE_INT_FLOAT(R32G32B32A32, R32G32B32A32);
 
                 default:
-                    throw exception("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
+                    Logger::Error("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
+                    return {};
             }
 
             #undef TIC_FORMAT
@@ -2258,14 +2259,15 @@ namespace skyline::gpu::interconnect {
             auto textureIt{texturePool.textures.insert({textureControl, {}})};
             auto &poolTexture{textureIt.first->second};
             if (textureIt.second) {
-                if (textureControl.formatWord.format == TextureImageControl::ImageFormat::Invalid) {
+                // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
+                auto &guest{poolTexture.guest};
+                if (auto format{ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb)}) {
+                    guest.format = format;
+                } else {
                     poolTexture.view = nullTextureView;
                     return nullTextureView;
                 }
 
-                // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
-                auto &guest{poolTexture.guest};
-                guest.format = ConvertTicFormat(textureControl.formatWord, textureControl.isSrgb);
                 guest.aspect = guest.format->Aspect(textureControl.formatWord.swizzleX == TextureImageControl::ImageSwizzle::R);
                 guest.swizzle = ConvertTicSwizzleMapping(textureControl.formatWord, guest.format->swizzleMapping);
 
