@@ -2971,6 +2971,13 @@ namespace skyline::gpu::interconnect {
                 executor.AttachDependency(drawStorage);
             }
 
+            vk::Rect2D renderArea{depthRenderTargetView ? vk::Rect2D{.extent = depthRenderTargetView->texture->dimensions} : vk::Rect2D{.extent = {std::numeric_limits<u32>::max(), std::numeric_limits<u32>::max()}}};
+
+            for (auto &colorRt : activeColorRenderTargets) {
+                renderArea.extent.width = std::min(renderArea.extent.width, colorRt->texture->dimensions.width);
+                renderArea.extent.height = std::min(renderArea.extent.height, colorRt->texture->dimensions.height);
+            }
+
             // Submit Draw
             executor.AddSubpass([=, drawStorage = std::move(drawStorage), pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 auto &vertexBufferHandles{boundVertexBuffers->handles};
@@ -3003,9 +3010,7 @@ namespace skyline::gpu::interconnect {
                 } else {
                     commandBuffer.draw(count, instanceCount, first, 0);
                 }
-            }, vk::Rect2D{
-                .extent = activeColorRenderTargets.empty() ? depthRenderTarget.guest.dimensions : activeColorRenderTargets.front()->texture->dimensions,
-            }, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
+            }, renderArea, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
         }
 
         void Draw(u32 vertexCount, u32 firstVertex, u32 instanceCount) {
