@@ -782,5 +782,26 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         ZeroToOne = 1
     };
 
+    constexpr static size_t TransformFeedbackBufferCount{4}; //!< Number of supported transform feecback buffers in the 3D engine
+
+    struct TransformFeedbackBuffer {
+        u32 enable;
+        Address iova;
+        u32 size;
+        u32 offset;
+        u32 _pad_[3];
+    };
+    static_assert(sizeof(TransformFeedbackBuffer) == (sizeof(u32) * 8));
+
+    struct TransformFeedbackBufferState {
+        u32 bufferIndex;
+        u32 varyingCount;
+        u32 stride;
+        u32 _pad_;
+    };
+    static_assert(sizeof(TransformFeedbackBufferState) == (sizeof(u32) * 4));
+
+    constexpr static size_t TransformFeedbackVaryingCount{0x80};
+
     #pragma pack(pop)
 }

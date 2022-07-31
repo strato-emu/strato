@@ -2817,6 +2817,146 @@ namespace skyline::gpu::interconnect {
             .rasterizationSamples = vk::SampleCountFlagBits::e1,
         };
 
+        /* Transform Feedback */
+      private:
+        bool transformFeedbackEnabled{};
+
+        struct TransformFeedbackBuffer {
+            IOVA iova;
+            u32 size;
+            u32 offset;
+            BufferView view;
+
+            u32 stride;
+            u32 varyingCount;
+            std::array<u8, maxwell3d::TransformFeedbackVaryingCount> varyings;
+        };
+        std::array<TransformFeedbackBuffer, maxwell3d::TransformFeedbackBufferCount> transformFeedbackBuffers{};
+
+        bool transformFeedbackVaryingsDirty;
+
+        struct TransformFeedbackBufferResult {
+            BufferView view;
+            bool wasCached;
+        };
+
+        TransformFeedbackBufferResult GetTransformFeedbackBuffer(size_t idx) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+
+            if (!buffer.iova || !buffer.size)
+                return {nullptr, false};
+            else if (buffer.view)
+                return {buffer.view, true};
+
+            auto mappings{channelCtx.asCtx->gmmu.TranslateRange(buffer.offset + buffer.iova, buffer.size)};
+            if (mappings.size() != 1)
+                Logger::Warn("Multiple buffer mappings ({}) are not supported", mappings.size());
+
+            auto mapping{mappings.front()};
+            buffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), buffer.size), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                executor.AttachLockedBuffer(buffer, std::move(lock));
+            });
+
+            return {buffer.view, false};
+        }
+
+        void FillTransformFeedbackVaryingState() {
+            if (!transformFeedbackVaryingsDirty)
+                return;
+
+            runtimeInfo.xfb_varyings.clear();
+
+            if (!transformFeedbackEnabled)
+                return;
+
+            // Will be indexed by a u8 so allocate just enough space
+            runtimeInfo.xfb_varyings.resize(256);
+            for (u32 i{}; i < maxwell3d::TransformFeedbackBufferCount; i++) {
+                const auto &buffer{transformFeedbackBuffers[i]};
+
+                for (u32 k{}; k < buffer.varyingCount; k++) {
+                    // TODO: We could merge multiple component accesses from the same attribute into one varying
+                    u8 attributeIndex{buffer.varyings[k]};
+                    runtimeInfo.xfb_varyings[attributeIndex] = {
+                        .buffer = i,
+                        .offset = k * 4,
+                        .stride = buffer.stride,
+                        .components = 1,
+                    };
+                }
+            }
+
+            transformFeedbackVaryingsDirty = false;
+        }
+
+        void InvalidateTransformFeedbackVaryings() {
+            transformFeedbackVaryingsDirty = true;
+
+            pipelineStages[maxwell3d::PipelineStage::Vertex].needsRecompile = true;
+            pipelineStages[maxwell3d::PipelineStage::Geometry].needsRecompile = true;
+        }
+
+      public:
+        void SetTransformFeedbackEnabled(bool enable) {
+            transformFeedbackEnabled = enable;
+
+            if (enable && !gpu.traits.supportsTransformFeedback)
+                Logger::Warn("Transform feedback used without host GPU support!");
+
+            InvalidateTransformFeedbackVaryings();
+        }
+
+        void SetTransformFeedbackBufferEnabled(size_t idx, bool enabled) {
+            if (!enabled)
+                transformFeedbackBuffers[idx].iova = {};
+        }
+
+        void SetTransformFeedbackBufferIovaHigh(size_t idx, u32 high) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.iova.high = high;
+            buffer.view = {};
+        };
+
+        void SetTransformFeedbackBufferIovaLow(size_t idx, u32 low) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.iova.low = low;
+            buffer.view = {};
+        }
+
+        void SetTransformFeedbackBufferSize(size_t idx, u32 size) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.size = size;
+            buffer.view = {};
+        }
+
+        void SetTransformFeedbackBufferOffset(size_t idx, u32 offset) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.offset = offset;
+            buffer.view = {};
+        }
+
+        void SetTransformFeedbackBufferStride(size_t idx, u32 stride) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.stride = stride;
+
+            InvalidateTransformFeedbackVaryings();
+        }
+
+        void SetTransformFeedbackBufferVaryingCount(size_t idx, u32 varyingCount) {
+            auto &buffer{transformFeedbackBuffers[idx]};
+            buffer.varyingCount = varyingCount;
+
+            InvalidateTransformFeedbackVaryings();
+        }
+
+        void SetTransformFeedbackBufferVarying(size_t bufIdx, size_t varIdx, u32 value) {
+            auto &buffer{transformFeedbackBuffers[bufIdx]};
+
+            span(buffer.varyings).cast<u32>()[varIdx] = value;
+
+            InvalidateTransformFeedbackVaryings();
+        }
+
         /* Draws */
       public:
         template<bool IsIndexed>
@@ -2900,6 +3040,34 @@ namespace skyline::gpu::interconnect {
                 if (vertexAttribute.enabled)
                     vertexAttributesDescriptions.push_back(vertexAttribute.description);
 
+            struct BoundTransformFeedbackBuffers {
+                std::array<vk::Buffer, maxwell3d::TransformFeedbackBufferCount> handles{};
+                std::array<vk::DeviceSize, maxwell3d::TransformFeedbackBufferCount> offsets{};
+                std::array<vk::DeviceSize, maxwell3d::TransformFeedbackBufferCount> sizes{};
+            };
+
+            std::shared_ptr<BoundTransformFeedbackBuffers> boundTransformFeedbackBuffers{};
+
+            if (transformFeedbackEnabled) {
+                boundTransformFeedbackBuffers = std::allocate_shared<BoundTransformFeedbackBuffers, LinearAllocator<BoundVertexBuffers>>(executor.allocator);
+                for (size_t i{}; i < maxwell3d::TransformFeedbackBufferCount; i++) {
+                    if (auto result{GetTransformFeedbackBuffer(i)}; result.view) {
+                        auto &view{result.view};
+                        executor.AttachBuffer(view);
+                        view->buffer->MarkGpuDirty();
+                        if (!result.wasCached) {
+                            boundTransformFeedbackBuffers->sizes[i] = view->view->size;
+                            view.RegisterUsage(executor.allocator, executor.cycle, [handle = boundTransformFeedbackBuffers->handles.data() + i, offset = boundTransformFeedbackBuffers->offsets.data() + i](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                                *handle = buffer->GetBacking();
+                                *offset = view.offset;
+                            });
+                        }
+                    }
+                }
+            }
+
+            FillTransformFeedbackVaryingState();
+
             // Color Render Target + Blending Setup
             boost::container::static_vector<TextureView *, maxwell3d::RenderTargetCount> activeColorRenderTargets;
             for (u32 index{}; index < maxwell3d::RenderTargetCount; index++) {
@@ -2979,7 +3147,7 @@ namespace skyline::gpu::interconnect {
             }
 
             // Submit Draw
-            executor.AddSubpass([=, drawStorage = std::move(drawStorage), pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
+            executor.AddSubpass([=, drawStorage = std::move(drawStorage), pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline, transformFeedbackEnabled = transformFeedbackEnabled](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 auto &vertexBufferHandles{boundVertexBuffers->handles};
                 for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
                     // We need to bind all non-null vertex buffers while skipping any null ones
@@ -3004,12 +3172,23 @@ namespace skyline::gpu::interconnect {
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
+                if (transformFeedbackEnabled) {
+                    for (u32 i{}; i < maxwell3d::TransformFeedbackBufferCount; i++)
+                        if (boundTransformFeedbackBuffers->handles[i])
+                            commandBuffer.bindTransformFeedbackBuffersEXT(i, span(boundTransformFeedbackBuffers->handles).subspan(i, 1), span(boundTransformFeedbackBuffers->offsets).subspan(i, 1), span(boundTransformFeedbackBuffers->sizes).subspan(i, 1));
+
+                    commandBuffer.beginTransformFeedbackEXT(0, {}, {});
+                }
+
                 if (IsIndexed || boundIndexBuffer) {
                     commandBuffer.bindIndexBuffer(boundIndexBuffer->handle, boundIndexBuffer->offset, boundIndexBuffer->type);
                     commandBuffer.drawIndexed(count, instanceCount, first, vertexOffset, 0);
                 } else {
                     commandBuffer.draw(count, instanceCount, first, 0);
                 }
+
+                if (transformFeedbackEnabled)
+                    commandBuffer.endTransformFeedbackEXT(0, {}, {});
             }, renderArea, {}, activeColorRenderTargets, depthRenderTargetView, !gpu.traits.quirks.relaxedRenderPassCompatibility);
         }
 

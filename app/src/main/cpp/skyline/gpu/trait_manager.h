@@ -35,9 +35,11 @@ namespace skyline::gpu {
         bool supportsAtomicInt64{}; //!< If atomic operations on 64-bit integers are supported in shaders
         bool supportsFloatControls{}; //!< If extensive control over FP behavior is exposed (with VK_KHR_shader_float_controls)
         vk::PhysicalDeviceFloatControlsProperties floatControls{}; //!< Specifics of FP behavior control (All members will be zero'd out when unavailable)
+        bool supportsTransformFeedback{}; //!< If the 'VK_EXT_transform_feedback' extension is supported with neccessary features for emulation
         bool supportsImageReadWithoutFormat{}; //!< If a storage image can be read without a format
         bool supportsTopologyListRestart{}; //!< If the device supports using primitive restart for topology lists (with VK_EXT_primitive_topology_list_restart)
         bool supportsTopologyPatchListRestart{}; //!< If the device supports using primitive restart for topology patch lists (with VK_EXT_primitive_topology_list_restart)
+        bool supportsGeometryShaders; //!< If the device supports the 'geometryShader' Vulkan feature
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
@@ -74,6 +76,7 @@ namespace skyline::gpu {
             vk::PhysicalDeviceProperties2,
             vk::PhysicalDeviceDriverProperties,
             vk::PhysicalDeviceFloatControlsProperties,
+            vk::PhysicalDeviceTransformFeedbackPropertiesEXT,
             vk::PhysicalDeviceSubgroupProperties>;
 
         using DeviceFeatures2 = vk::StructureChain<
@@ -87,7 +90,8 @@ namespace skyline::gpu {
             vk::PhysicalDeviceShaderDrawParametersFeatures,
             vk::PhysicalDeviceProvokingVertexFeaturesEXT,
             vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-            vk::PhysicalDeviceImagelessFramebufferFeatures>;
+            vk::PhysicalDeviceImagelessFramebufferFeatures,
+            vk::PhysicalDeviceTransformFeedbackFeaturesEXT>;
 
         TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice& physicalDevice);
 

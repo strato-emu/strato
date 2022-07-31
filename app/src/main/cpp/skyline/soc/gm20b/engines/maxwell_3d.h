@@ -118,6 +118,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0xC8, TessellationMode> tessellationMode;
 
             Register<0xDF, u32> rasterizerEnable;
+
+            Register<0xE0, std::array<type::TransformFeedbackBuffer, type::TransformFeedbackBufferCount>> transformFeedbackBuffers;
+            Register<0x1C0, std::array<type::TransformFeedbackBufferState, type::TransformFeedbackBufferCount>> transformFeedbackBufferStates;
+            Register<0x1D1, u32> transformFeedbackEnable;
+
             Register<0x200, std::array<type::ColorRenderTarget, type::RenderTargetCount>> renderTargets;
             Register<0x280, std::array<type::ViewportTransform, type::ViewportCount>> viewportTransforms;
             Register<0x300, std::array<type::Viewport, type::ViewportCount>> viewports;
@@ -378,6 +383,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x900, std::array<type::Bind, type::PipelineStageCount>> bind; //!< Binds constant buffers to pipeline stages
 
             Register<0x982, u32> bindlessTextureConstantBufferIndex; //!< The index of the constant buffer containing bindless texture descriptors
+
+            Register<0xA00, std::array<u32, (type::TransformFeedbackVaryingCount / sizeof(u32))  * type::TransformFeedbackBufferCount>> transformFeedbackVaryings;
         };
         static_assert(sizeof(Registers) == (EngineMethodsEnd * sizeof(u32)));
         #pragma pack(pop)
