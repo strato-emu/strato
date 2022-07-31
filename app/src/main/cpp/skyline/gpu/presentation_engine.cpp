@@ -401,7 +401,11 @@ namespace skyline::gpu {
     }
 
     NativeWindowTransform PresentationEngine::GetTransformHint() {
-        std::unique_lock lock{mutex};
+        if (!vkSurface.has_value()) {
+            std::unique_lock lock{mutex};
+            surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
+        }
+
         return GetAndroidTransform(vkSurfaceCapabilities.currentTransform);
     }
 }
