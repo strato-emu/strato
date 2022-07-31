@@ -175,9 +175,11 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/cache/graphics_pipeline_cache.cpp
         ${source_DIR}/skyline/gpu/cache/renderpass_cache.cpp
         ${source_DIR}/skyline/gpu/cache/framebuffer_cache.cpp
+        ${source_DIR}/skyline/gpu/interconnect/fermi_2d.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_nodes.cpp
         ${source_DIR}/skyline/gpu/interconnect/conversion/quads.cpp
+        ${source_DIR}/skyline/gpu/shaders/helper_shaders.cpp
         ${source_DIR}/skyline/soc/smmu.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
         ${source_DIR}/skyline/soc/host1x/command_fifo.cpp

@@ -24,9 +24,9 @@ namespace skyline::kernel {
         : nativeLibraryPath(std::move(nativeLibraryPath)),
           publicAppFilesPath(std::move(publicAppFilesPath)),
           privateAppFilesPath(std::move(privateAppFilesPath)),
-          state(this, jvmManager, settings),
           deviceTimeZone(std::move(deviceTimeZone)),
           assetFileSystem(std::move(assetFileSystem)),
+          state(this, jvmManager, settings),
           serviceManager(state) {}
 
     void OS::Execute(int romFd, loader::RomFormat romType) {

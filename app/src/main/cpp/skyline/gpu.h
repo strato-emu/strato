@@ -12,6 +12,7 @@
 #include "gpu/megabuffer.h"
 #include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
+#include "gpu/shaders/helper_shaders.h"
 #include "gpu/cache/graphics_pipeline_cache.h"
 #include "gpu/cache/renderpass_cache.h"
 #include "gpu/cache/framebuffer_cache.h"
@@ -49,6 +50,8 @@ namespace skyline::gpu {
 
         DescriptorAllocator descriptor;
         ShaderManager shader;
+
+        HelperShaders helperShaders;
 
         cache::GraphicsPipelineCache graphicsPipelineCache;
         cache::RenderPassCache renderPassCache;
