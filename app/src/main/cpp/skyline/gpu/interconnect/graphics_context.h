@@ -617,7 +617,7 @@ namespace skyline::gpu::interconnect {
         struct ConstantBuffer {
             IOVA iova;
             u32 size;
-            BufferView view;
+            BufferView *view;
 
             /**
              * @brief Reads an object from the supplied offset in the constant buffer
@@ -626,8 +626,8 @@ namespace skyline::gpu::interconnect {
             template<typename T>
             T Read(CommandExecutor &pExecutor, size_t dstOffset) const {
                 T object;
-                ContextLock lock{pExecutor.tag, view};
-                view.Read(lock.IsFirstUsage(), []() {
+                ContextLock lock{pExecutor.tag, *view};
+                view->Read(lock.IsFirstUsage(), []() {
                     // TODO: here we should trigger a SubmitWithFlush, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, span<T>(object).template cast<u8>(), dstOffset);
@@ -642,28 +642,29 @@ namespace skyline::gpu::interconnect {
             void Write(CommandExecutor &pExecutor, MegaBufferAllocator &megaBufferAllocator, span<T> buf, size_t dstOffset) {
                 auto srcCpuBuf{buf.template cast<u8>()};
 
-                ContextLock lock{pExecutor.tag, view};
-                view.Write(lock.IsFirstUsage(), pExecutor.cycle, []() {
+                ContextLock lock{pExecutor.tag, *view};
+                view->Write(lock.IsFirstUsage(), pExecutor.cycle, []() {
                     // TODO: see Read()
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, [&megaBufferAllocator, &pExecutor, srcCpuBuf, dstOffset, &view = this->view, &lock]() {
-                    pExecutor.AttachLockedBufferView(view, std::move(lock));
+                    pExecutor.AttachLockedBufferView(*view, std::move(lock));
                     // This will prevent any CPU accesses to backing for the duration of the usage
                     // ONLY in this specific case is it fine to access the backing buffer directly since the flag will be propagated with recreations
-                    view->buffer->BlockAllCpuBackingWrites();
+                    (*view)->buffer->BlockAllCpuBackingWrites();
 
                     auto srcGpuAllocation{megaBufferAllocator.Push(pExecutor.cycle, srcCpuBuf)};
                     pExecutor.AddOutsideRpCommand([=](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                         vk::BufferCopy copyRegion{
                             .size = srcCpuBuf.size_bytes(),
                             .srcOffset = srcGpuAllocation.offset,
-                            .dstOffset = view->view->offset + dstOffset
+                            .dstOffset = (*view)->view->offset + dstOffset
                         };
-                        commandBuffer.copyBuffer(srcGpuAllocation.buffer, view->buffer->GetBacking(), copyRegion);
+                        commandBuffer.copyBuffer(srcGpuAllocation.buffer, (*view)->buffer->GetBacking(), copyRegion);
                     });
                 }, srcCpuBuf, dstOffset);
             }
         };
+
         ConstantBuffer constantBufferSelector{}; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
 
       public:
@@ -708,40 +709,44 @@ namespace skyline::gpu::interconnect {
             std::unordered_map<Key, BufferView, KeyHash> cache;
 
           public:
-            std::optional<BufferView> Lookup(u32 size, u64 iova) {
+            BufferView *Lookup(u32 size, u64 iova) {
                 if (auto it{cache.find({size, iova})}; it != cache.end())
-                    return it->second;
+                    return &it->second;
 
-                return std::nullopt;
+                return nullptr;
             }
 
-            void Insert(u32 size, u64 iova, BufferView &view) {
-                cache[Key{size, iova}] = view;
+            BufferView *Insert(u32 size, u64 iova, BufferView &&view) {
+                return &cache.emplace(Key{size, iova}, view).first->second;
             }
         } constantBufferCache;
 
-        std::optional<ConstantBuffer> GetConstantBufferSelector() {
+        ConstantBuffer *GetConstantBufferSelector() {
             if (constantBufferSelector.size == 0)
-                return std::nullopt;
+                return nullptr;
             else if (constantBufferSelector.view)
-                return constantBufferSelector;
+                return &constantBufferSelector;
 
             auto view{constantBufferCache.Lookup(constantBufferSelector.size, constantBufferSelector.iova)};
             if (!view) {
                 auto mappings{channelCtx.asCtx->gmmu.TranslateRange(constantBufferSelector.iova, constantBufferSelector.size)};
-                view = executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
-                    executor.AttachLockedBuffer(buffer, std::move(lock));
-                });
-                constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova, *view);
+                view = constantBufferCache.Insert(constantBufferSelector.size, constantBufferSelector.iova,
+                          executor.AcquireBufferManager().FindOrCreate(mappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                              executor.AttachLockedBuffer(buffer, std::move(lock));
+                          })
+                       );
             }
 
-            constantBufferSelector.view = *view;
-            return constantBufferSelector;
+            constantBufferSelector.view = view;
+            return &constantBufferSelector;
         }
 
-        void ConstantBufferUpdate(std::vector<u32> data, u32 offset) {
-            auto constantBuffer{GetConstantBufferSelector().value()};
-            constantBuffer.Write<u32>(executor, executor.AcquireMegaBufferAllocator(), data, offset);
+        void ConstantBufferUpdate(span<u32> data, u32 offset) {
+            auto constantBuffer{GetConstantBufferSelector()};
+            if (constantBuffer)
+                constantBuffer->Write<u32>(executor, executor.AcquireMegaBufferAllocator(), data, offset);
+            else
+                throw exception("Attempting to write to invalid constant buffer!");
         }
 
         /* Shader Program */
@@ -1112,7 +1117,7 @@ namespace skyline::gpu::interconnect {
                             .stageFlags = pipelineStage.vkStage,
                         });
 
-                        auto view{pipelineStage.constantBuffers[constantBuffer.index].view};
+                        auto &view{*pipelineStage.constantBuffers[constantBuffer.index].view};
                         executor.AttachBuffer(view);
                         if (auto megaBufferAllocation{view.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
                             // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
@@ -1268,12 +1273,12 @@ namespace skyline::gpu::interconnect {
         }
 
         void BindPipelineConstantBuffer(maxwell3d::PipelineStage stage, bool enable, u32 index) {
-            auto &constantBuffer{pipelineStages[stage].constantBuffers[index]};
+            auto &targetConstantBuffer{pipelineStages[stage].constantBuffers[index]};
 
-            if (enable)
-                constantBuffer = GetConstantBufferSelector().value();
+            if (auto selector{GetConstantBufferSelector()}; selector && enable)
+                targetConstantBuffer = *selector;
             else
-                constantBuffer = {};
+                targetConstantBuffer = {};
         }
 
         /* Rasterizer State */
