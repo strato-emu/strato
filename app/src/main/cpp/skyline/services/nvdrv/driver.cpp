@@ -84,10 +84,9 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer) {
-        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
-
         try {
             std::shared_lock lock(deviceMutex);
+            Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
             return ConvertResult(devices.at(fd)->Ioctl(cmd, buffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl was called with invalid fd: {}", fd);
@@ -95,10 +94,9 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl2(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
-        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
-
         try {
             std::shared_lock lock(deviceMutex);
+            Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
             return ConvertResult(devices.at(fd)->Ioctl2(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl2 was called with invalid fd: {}", fd);
@@ -106,10 +104,9 @@ namespace skyline::service::nvdrv {
     }
 
     NvResult Driver::Ioctl3(FileDescriptor fd, IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {
-        Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
-
         try {
             std::shared_lock lock(deviceMutex);
+            Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
             return ConvertResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl3 was called with invalid fd: {}", fd);
