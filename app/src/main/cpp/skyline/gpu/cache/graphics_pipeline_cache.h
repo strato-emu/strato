@@ -4,7 +4,10 @@
 #pragma once
 
 #include <vulkan/vulkan_raii.hpp>
-#include <gpu/texture/texture.h>
+
+namespace skyline::gpu {
+    class TextureView;
+}
 
 namespace skyline::gpu::cache {
     /**
@@ -18,14 +21,14 @@ namespace skyline::gpu::cache {
          */
         struct PipelineState {
             span<vk::PipelineShaderStageCreateInfo> shaderStages;
-            vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> &vertexState;
-            vk::PipelineInputAssemblyStateCreateInfo &inputAssemblyState;
-            vk::PipelineTessellationStateCreateInfo &tessellationState;
-            vk::PipelineViewportStateCreateInfo &viewportState;
-            vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> &rasterizationState;
-            vk::PipelineMultisampleStateCreateInfo &multisampleState;
-            vk::PipelineDepthStencilStateCreateInfo &depthStencilState;
-            vk::PipelineColorBlendStateCreateInfo &colorBlendState;
+            const vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> &vertexState;
+            const vk::PipelineInputAssemblyStateCreateInfo &inputAssemblyState;
+            const vk::PipelineTessellationStateCreateInfo &tessellationState;
+            const vk::PipelineViewportStateCreateInfo &viewportState;
+            const vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> &rasterizationState;
+            const vk::PipelineMultisampleStateCreateInfo &multisampleState;
+            const vk::PipelineDepthStencilStateCreateInfo &depthStencilState;
+            const vk::PipelineColorBlendStateCreateInfo &colorBlendState;
 
             span<TextureView *> colorAttachments; //!< All color attachments in the subpass of this pipeline
             TextureView *depthStencilAttachment; //!< A nullable pointer to the depth/stencil attachment in the subpass of this pipeline
