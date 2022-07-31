@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 yuzu Emulator Project (https://github.com/yuzu-emu/)
 
 #pragma once
 
@@ -2404,7 +2405,8 @@ namespace skyline::gpu::interconnect {
             switch (filter) {
                 // @fmt:off
 
-                case TscFilter::None: return VkMode{};
+                // See https://github.com/yuzu-emu/yuzu/blob/5af06d14337a61d9ed1093079d13f68cbb1f5451/src/video_core/renderer_vulkan/maxwell_to_vk.cpp#L35
+                case TscFilter::None: return VkMode::eNearest;
                 case TscFilter::Nearest: return VkMode::eNearest;
                 case TscFilter::Linear: return VkMode::eLinear;
 
@@ -2534,8 +2536,8 @@ namespace skyline::gpu::interconnect {
                     .maxAnisotropy = maxAnisotropy,
                     .compareEnable = samplerControl.depthCompareEnable,
                     .compareOp = ConvertSamplerCompareOp(samplerControl.depthCompareOp),
-                    .minLod = samplerControl.MinLodClamp(),
-                    .maxLod = samplerControl.MaxLodClamp(),
+                    .minLod = samplerControl.mipFilter == TextureSamplerControl::MipFilter::None ? 0.0f : samplerControl.MinLodClamp(),
+                    .maxLod = samplerControl.mipFilter == TextureSamplerControl::MipFilter::None ? 0.25f : samplerControl.MaxLodClamp(),
                     .unnormalizedCoordinates = false,
                 }, vk::SamplerReductionModeCreateInfoEXT{
                     .reductionMode = ConvertSamplerReductionFilter(samplerControl.reductionFilter),
