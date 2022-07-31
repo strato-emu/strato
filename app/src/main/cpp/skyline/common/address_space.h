@@ -3,12 +3,15 @@
 
 #pragma once
 
+#include <boost/container/small_vector.hpp>
 #include <concepts>
 #include <common.h>
 
 namespace skyline {
     template<typename VaType, size_t AddressSpaceBits>
     concept AddressSpaceValid = std::is_unsigned_v<VaType> && sizeof(VaType) * 8 >= AddressSpaceBits;
+
+    using TranslatedAddressRange = boost::container::small_vector<span<u8>, 1>;
 
     struct EmptyStruct {};
 
@@ -116,7 +119,7 @@ namespace skyline {
         /**
          * @return A vector of all physical ranges inside of the given virtual range
          */
-        std::vector<span<u8>> TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
+        TranslatedAddressRange TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
 
         void Read(u8 *destination, VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {});
 

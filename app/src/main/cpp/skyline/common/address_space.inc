@@ -233,7 +233,7 @@ namespace skyline {
         munmap(sparseMap, SparseMapSize);
     }
 
-    MM_MEMBER(std::vector<span<u8>>)::TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
+    MM_MEMBER(TranslatedAddressRange)::TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
         TRACE_EVENT("containers", "FlatMemoryManager::TranslateRange");
 
         std::scoped_lock lock(this->blockMutex);
@@ -247,7 +247,7 @@ namespace skyline {
         u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
         VaType blockSize{std::min(successor->virt - virt, size)};
 
-        std::vector<span<u8>> ranges;
+        TranslatedAddressRange ranges;
 
         while (size) {
             // Return a zeroed out map to emulate sparse mappings
