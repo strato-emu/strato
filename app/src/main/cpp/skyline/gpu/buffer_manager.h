@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/range_table.h>
 #include "buffer.h"
 
 namespace skyline::gpu {
@@ -15,7 +16,12 @@ namespace skyline::gpu {
       private:
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes access to the buffer mappings
-        std::vector<std::shared_ptr<Buffer>> buffers; //!< A sorted vector of all buffer mappings
+        std::vector<std::shared_ptr<Buffer>> bufferMappings; //!< A sorted vector of all buffer mappings
+
+        static constexpr size_t AddressSpaceSize{1ULL << 39}; //!< The size of the guest CPU AS in bytes
+        static constexpr size_t PageSizeBits{12}; //!< The size of a single page of the guest CPU AS as a power of two (4 KiB == 1 << 12)
+        static constexpr size_t L2EntryGranularity{19}; //!< The amount of AS (in bytes) a single L2 PTE covers (512 KiB == 1 << 19)
+        RangeTable<Buffer*, AddressSpaceSize, PageSizeBits, L2EntryGranularity> bufferTable; //!< A page table of all buffer mappings for O(1) lookups on full matches
 
         std::mutex megaBufferMutex; //!< Synchronizes access to the allocated megabuffers
 
@@ -57,11 +63,13 @@ namespace skyline::gpu {
 
         /**
          * @brief Inserts the supplied buffer into the map based on its guest address
+         * @note The supplied buffer **must** have a valid guest mapping
          */
         void InsertBuffer(std::shared_ptr<Buffer> buffer);
 
         /**
          * @brief Deletes the supplied buffer from the map, the lifetime of the buffer will no longer be extended by the map
+         * @note The supplied buffer **must** have a valid guest mapping
          */
         void DeleteBuffer(const std::shared_ptr<Buffer> &buffer);
 

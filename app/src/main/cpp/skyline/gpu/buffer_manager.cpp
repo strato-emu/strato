@@ -2,7 +2,6 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu.h>
-
 #include "buffer_manager.h"
 
 namespace skyline::gpu {
@@ -36,8 +35,17 @@ namespace skyline::gpu {
 
     BufferManager::LockedBuffers BufferManager::Lookup(span<u8> range, ContextTag tag) {
         LockedBuffers overlaps;
-        auto entryIt{std::lower_bound(buffers.begin(), buffers.end(), range.end().base(), BufferLessThan)};
-        while (entryIt != buffers.begin() && (*--entryIt)->guest->begin() <= range.end())
+
+        // Try to do a fast lookup in the page table
+        auto lookupBuffer{bufferTable[range.begin().base()]};
+        if (lookupBuffer != nullptr && lookupBuffer->guest->contains(range)) {
+            overlaps.emplace_back(lookupBuffer->shared_from_this(), tag);
+            return overlaps;
+        }
+
+        // If we cannot find the buffer quickly, do a binary search to find all overlapping buffers
+        auto entryIt{std::lower_bound(bufferMappings.begin(), bufferMappings.end(), range.end().base(), BufferLessThan)};
+        while (entryIt != bufferMappings.begin() && (*--entryIt)->guest->begin() <= range.end())
             if ((*entryIt)->guest->end() > range.begin())
                 overlaps.emplace_back(*entryIt, tag);
 
@@ -45,12 +53,14 @@ namespace skyline::gpu {
     }
 
     void BufferManager::InsertBuffer(std::shared_ptr<Buffer> buffer) {
-        auto bufferEnd{buffer->guest->end().base()};
-        buffers.insert(std::lower_bound(buffers.begin(), buffers.end(), bufferEnd, BufferLessThan), std::move(buffer));
+        auto bufferStart{buffer->guest->begin().base()}, bufferEnd{buffer->guest->end().base()};
+        bufferTable.Set(bufferStart, bufferEnd, buffer.get());
+        bufferMappings.insert(std::lower_bound(bufferMappings.begin(), bufferMappings.end(), bufferEnd, BufferLessThan), std::move(buffer));
     }
 
     void BufferManager::DeleteBuffer(const std::shared_ptr<Buffer> &buffer) {
-        buffers.erase(std::find(buffers.begin(), buffers.end(), buffer));
+        bufferTable.Set(buffer->guest->begin().base(), buffer->guest->end().base(), nullptr);
+        bufferMappings.erase(std::find(bufferMappings.begin(), bufferMappings.end(), buffer));
     }
 
     BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
@@ -144,8 +154,6 @@ namespace skyline::gpu {
             }
 
             newBuffer->delegates.splice(newBuffer->delegates.end(), srcBuffer->delegates);
-
-            srcBuffer->Invalidate(); // Invalidate the overlapping buffer so it can't be synced in the future
         }
 
         return newBuffer;
@@ -189,8 +197,10 @@ namespace skyline::gpu {
             }
 
             // Delete older overlapping buffers and insert the new buffer into the map
-            for (auto &overlap : overlaps)
+            for (auto &overlap : overlaps) {
                 DeleteBuffer(*overlap);
+                overlap->Invalidate(); // Invalidate the overlapping buffer so it can't be synced in the future
+            }
             InsertBuffer(*buffer);
 
             return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
