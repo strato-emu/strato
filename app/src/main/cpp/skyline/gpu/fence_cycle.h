@@ -8,7 +8,7 @@
 #include <common/atomic_forward_list.h>
 
 namespace skyline::gpu {
-    struct FenceCycle;
+    class CommandScheduler;
 
     /**
      * @brief A wrapper around a Vulkan Fence which only tracks a single reset -> signal cycle with the ability to attach lifetimes of objects to it
@@ -17,19 +17,23 @@ namespace skyline::gpu {
      */
     struct FenceCycle {
       private:
-        std::atomic_flag signalled;
+        std::atomic_flag signalled{}; //!< If the underlying fence has been signalled since the creation of this FenceCycle, this doesn't necessarily mean the dependencies have been destroyed
+        std::atomic_flag alreadyDestroyed{}; //!< If the cycle's dependencies are already destroyed, this prevents multiple destructions
         const vk::raii::Device &device;
         vk::Fence fence;
+
+        friend CommandScheduler;
 
         AtomicForwardList<std::shared_ptr<void>> dependencies; //!< A list of all dependencies on this fence cycle
         AtomicForwardList<std::shared_ptr<FenceCycle>> chainedCycles; //!< A list of all chained FenceCycles, this is used to express multi-fence dependencies
 
         /**
-         * @brief Sequentially iterate through the shared_ptr linked list of dependencies and reset all pointers in a thread-safe atomic manner
-         * @note We cannot simply nullify the base pointer of the list as a false dependency chain is maintained between the objects when retained externally
+         * @brief Destroy all the dependencies of this cycle
+         * @note We cannot delete the chained cycles associated with this fence as they may be iterated over during the deletion, it is only safe to delete them during the destruction of the cycle
          */
         void DestroyDependencies() {
-            dependencies.Clear();
+            if (!alreadyDestroyed.test_and_set(std::memory_order_release))
+                dependencies.Clear();
         }
 
       public:
@@ -45,19 +49,23 @@ namespace skyline::gpu {
          * @brief Signals this fence regardless of if the underlying fence has been signalled or not
          */
         void Cancel() {
-            if (!signalled.test_and_set(std::memory_order_release))
-                DestroyDependencies();
+            signalled.test_and_set(std::memory_order_release);
+            DestroyDependencies();
         }
 
         /**
          * @brief Wait on a fence cycle till it has been signalled
+         * @param shouldDestroy If true, the dependencies of this cycle will be destroyed after the fence is signalled
          */
-        void Wait() {
-            if (signalled.test(std::memory_order_consume))
+        void Wait(bool shouldDestroy = false) {
+            if (signalled.test(std::memory_order_consume)) {
+                if (shouldDestroy)
+                    DestroyDependencies();
                 return;
+            }
 
-            chainedCycles.Iterate([](auto &cycle) {
-                cycle->Wait();
+            chainedCycles.Iterate([shouldDestroy](auto &cycle) {
+                cycle->Wait(shouldDestroy);
             });
 
             vk::Result waitResult;
@@ -73,21 +81,26 @@ namespace skyline::gpu {
                 throw exception("An error occurred while waiting for fence 0x{:X}: {}", static_cast<VkFence>(fence), vk::to_string(waitResult));
             }
 
-            if (!signalled.test_and_set(std::memory_order_release))
+            signalled.test_and_set(std::memory_order_release);
+            if (shouldDestroy)
                 DestroyDependencies();
         }
 
         /**
          * @brief Wait on a fence cycle with a timeout in nanoseconds
+         * @param shouldDestroy If true, the dependencies of this cycle will be destroyed after the fence is signalled
          * @return If the wait was successful or timed out
          */
-        bool Wait(i64 timeoutNs) {
-            if (signalled.test(std::memory_order_consume))
+        bool Wait(i64 timeoutNs, bool shouldDestroy = false) {
+            if (signalled.test(std::memory_order_consume)) {
+                if (shouldDestroy)
+                    DestroyDependencies();
                 return true;
+            }
 
             i64 startTime{util::GetTimeNs()}, initialTimeout{timeoutNs};
             if (!chainedCycles.AllOf([&](auto &cycle) {
-                if (!cycle->Wait(timeoutNs))
+                if (!cycle->Wait(timeoutNs, shouldDestroy))
                     return false;
                 timeoutNs = std::max<i64>(0, initialTimeout - (util::GetTimeNs() - startTime));
                 return true;
@@ -108,7 +121,8 @@ namespace skyline::gpu {
             }
 
             if (waitResult == vk::Result::eSuccess) {
-                if (!signalled.test_and_set(std::memory_order_release))
+                signalled.test_and_set(std::memory_order_release);
+                if (shouldDestroy)
                     DestroyDependencies();
                 return true;
             } else {
@@ -116,23 +130,31 @@ namespace skyline::gpu {
             }
         }
 
-        bool Wait(std::chrono::duration<i64, std::nano> timeout) {
-            return Wait(timeout.count());
+        bool Wait(std::chrono::duration<i64, std::nano> timeout, bool shouldDestroy = false) {
+            return Wait(timeout.count(), shouldDestroy);
         }
 
         /**
+         * @param quick Skips the call to check the fence's status, just checking the signalled flag
          * @return If the fence is signalled currently or not
          */
-        bool Poll() {
-            if (signalled.test(std::memory_order_consume))
+        bool Poll(bool quick = true, bool shouldDestroy = false) {
+            if (signalled.test(std::memory_order_consume)) {
+                if (shouldDestroy)
+                    DestroyDependencies();
                 return true;
+            }
 
-            if (!chainedCycles.AllOf([](auto &cycle) { return cycle->Poll(); }))
+            if (quick)
+                return false; // We need to return early if we're not waiting on the fence
+
+            if (!chainedCycles.AllOf([=](auto &cycle) { return cycle->Poll(quick, shouldDestroy); }))
                 return false;
 
             auto status{(*device).getFenceStatus(fence, *device.getDispatcher())};
             if (status == vk::Result::eSuccess) {
-                if (!signalled.test_and_set(std::memory_order_release))
+                signalled.test_and_set(std::memory_order_release);
+                if (shouldDestroy)
                     DestroyDependencies();
                 return true;
             } else {

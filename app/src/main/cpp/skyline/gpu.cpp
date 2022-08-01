@@ -368,7 +368,7 @@ namespace skyline::gpu {
           vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, traits)),
           vkQueue(vkDevice, vkQueueFamilyIndex, 0),
           memory(*this),
-          scheduler(*this),
+          scheduler(state, *this),
           presentation(state, *this),
           texture(*this),
           buffer(*this),
