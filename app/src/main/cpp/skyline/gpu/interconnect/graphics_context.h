@@ -1893,7 +1893,7 @@ namespace skyline::gpu::interconnect {
 
       public:
         void SetPrimitiveTopology(maxwell3d::PrimitiveTopology topology) {
-            auto[vkTopology, shaderTopology, isQuad] = [topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology, bool> {
+            auto[vkTopology, shaderTopology, isQuad]{[topology]() -> std::tuple<vk::PrimitiveTopology, ShaderCompiler::InputTopology, bool> {
                 using MaxwellTopology = maxwell3d::PrimitiveTopology;
                 using VkTopology = vk::PrimitiveTopology;
                 using ShaderTopology = ShaderCompiler::InputTopology;
@@ -1922,7 +1922,7 @@ namespace skyline::gpu::interconnect {
                     default:
                         throw exception("Unimplemented Maxwell3D Primitive Topology: {}", maxwell3d::ToString(topology));
                 }
-            }();
+            }()};
 
             inputAssemblyState.topology = vkTopology;
             needsQuadConversion = isQuad;
@@ -2844,7 +2844,7 @@ namespace skyline::gpu::interconnect {
                 }
             } else if (needsQuadConversion) {
                 // Convert the guest-supplied quad list to an indexed triangle list
-                auto[bufferView, indexType, indexCount] = GetNonIndexedQuadConversionBuffer(count);
+                auto[bufferView, indexType, indexCount]{GetNonIndexedQuadConversionBuffer(count)};
                 executor.AttachBuffer(bufferView);
 
                 count = indexCount;
@@ -2948,28 +2948,23 @@ namespace skyline::gpu::interconnect {
                 .depthStencilAttachment = depthRenderTargetView,
             }, programState.descriptorSetBindings)};
 
-            // Draw Persistent Storage
+            // Descriptor Set Binding + Update Setup
             struct DrawStorage {
                 ShaderProgramState::DescriptorSetWrites descriptorSetWrites;
-                std::optional<DescriptorAllocator::ActiveDescriptorSet> descriptorSet;
+                DescriptorAllocator::ActiveDescriptorSet descriptorSet;
 
-                DrawStorage(ShaderProgramState::DescriptorSetWrites &&descriptorSetWrites) : descriptorSetWrites(std::move(descriptorSetWrites)) {}
-
-                DrawStorage(ShaderProgramState::DescriptorSetWrites &&descriptorSetWrites, DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : descriptorSetWrites(std::move(descriptorSetWrites)), descriptorSet(std::move(descriptorSet)) {}
+                DrawStorage(ShaderProgramState::DescriptorSetWrites &&descriptorSetWrites, DescriptorAllocator::ActiveDescriptorSet &&descriptorSet) : descriptorSetWrites{std::move(descriptorSetWrites)}, descriptorSet{std::move(descriptorSet)} {}
             };
 
             std::shared_ptr<DrawStorage> drawStorage{};
             if (!programState.descriptorSetWrites->empty()) {
-                if (gpu.traits.supportsPushDescriptors)
-                    drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites));
-                else {
-                    drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), gpu.descriptor.AllocateSet(compiledPipeline.descriptorSetLayout));
-                }
+                drawStorage = std::make_shared<DrawStorage>(std::move(programState.descriptorSetWrites), gpu.descriptor.AllocateSet(compiledPipeline.descriptorSetLayout));
+                // We can't update the descriptor set here as the bindings might be retroactively updated by future draws
+                executor.AttachDependency(drawStorage);
             }
 
             // Submit Draw
-            executor.AddSubpass([=, drawStorage = std::move(drawStorage), &vkDevice = gpu.vkDevice, pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline, supportsPushDescriptors = gpu.traits.supportsPushDescriptors](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
-
+            executor.AddSubpass([=, drawStorage = std::move(drawStorage), pipelineLayout = compiledPipeline.pipelineLayout, pipeline = compiledPipeline.pipeline](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &, vk::RenderPass renderPass, u32 subpassIndex) mutable {
                 auto &vertexBufferHandles{boundVertexBuffers->handles};
                 for (u32 bindingIndex{}; bindingIndex != vertexBufferHandles.size(); bindingIndex++) {
                     // We need to bind all non-null vertex buffers while skipping any null ones
@@ -2984,16 +2979,12 @@ namespace skyline::gpu::interconnect {
                 }
 
                 if (drawStorage) {
-                    if (supportsPushDescriptors) {
-                        commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSetWrites);
-                    } else {
-                        for (auto &descriptorSetWrite : *drawStorage->descriptorSetWrites)
-                            descriptorSetWrite.dstSet = *drawStorage->descriptorSet;
-                        vkDevice.updateDescriptorSets(*drawStorage->descriptorSetWrites, nullptr);
-                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *drawStorage->descriptorSet, nullptr);
-                    }
+                    vk::DescriptorSet descriptorSet{*drawStorage->descriptorSet};
+                    for (auto &descriptorSetWrite : *drawStorage->descriptorSetWrites)
+                        descriptorSetWrite.dstSet = descriptorSet;
+                    gpu.vkDevice.updateDescriptorSets(*drawStorage->descriptorSetWrites, nullptr);
 
-                    cycle->AttachObject(drawStorage);
+                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
                 }
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
