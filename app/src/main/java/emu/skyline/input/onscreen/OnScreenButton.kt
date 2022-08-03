@@ -6,9 +6,12 @@
 package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.Typeface
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import androidx.core.content.ContextCompat
 import emu.skyline.input.ButtonId
 import kotlin.math.roundToInt
@@ -17,13 +20,13 @@ import kotlin.math.roundToInt
  * Converts relative values, such as coordinates and boundaries, to their absolute counterparts, also handles layout modifications like scaling and custom positioning
  */
 abstract class OnScreenButton(
-        onScreenControllerView : OnScreenControllerView,
-        val buttonId : ButtonId,
-        private val defaultRelativeX : Float,
-        private val defaultRelativeY : Float,
-        private val defaultRelativeWidth : Float,
-        private val defaultRelativeHeight : Float,
-        drawableId : Int
+    onScreenControllerView : OnScreenControllerView,
+    val buttonId : ButtonId,
+    private val defaultRelativeX : Float,
+    private val defaultRelativeY : Float,
+    private val defaultRelativeWidth : Float,
+    private val defaultRelativeHeight : Float,
+    drawableId : Int
 ) {
     companion object {
         /**
@@ -37,7 +40,11 @@ abstract class OnScreenButton(
 
     protected val drawable = ContextCompat.getDrawable(onScreenControllerView.context, drawableId)!!
 
-    private val buttonSymbolPaint = Paint().apply { color = Color.GRAY }
+    internal val buttonSymbolPaint = Paint().apply {
+        color = config.textColor
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        isAntiAlias = true
+    }
     private val textBoundsRect = Rect()
 
     var relativeX = config.relativeX
@@ -83,6 +90,7 @@ abstract class OnScreenButton(
         buttonSymbolPaint.apply {
             textSize = size
             textAlign = Paint.Align.LEFT
+            color = config.textColor
             this.alpha = alpha
             getTextBounds(text, 0, text.length, textBoundsRect)
         }
@@ -92,13 +100,23 @@ abstract class OnScreenButton(
     open fun render(canvas : Canvas) {
         val bounds = currentBounds
         val alpha = if (isPressed) (config.alpha - 130).coerceIn(30..255) else config.alpha
+        renderColors(drawable)
         drawable.apply {
             this.bounds = bounds
             this.alpha = alpha
             draw(canvas)
         }
-
         renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat(), alpha)
+    }
+
+    private fun renderColors(drawable : Drawable) {
+        when (drawable) {
+            is GradientDrawable -> drawable.setColor(config.backgroundColor)
+            is LayerDrawable -> {
+                for (i in 0 until drawable.numberOfLayers) renderColors(drawable.getDrawable(i))
+            }
+            else -> drawable.setTint(config.backgroundColor)
+        }
     }
 
     abstract fun isTouched(x : Float, y : Float) : Boolean

@@ -292,6 +292,14 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         invalidate()
     }
 
+    fun getTextColor() : Int {
+        return controls.globalTextColor
+    }
+
+    fun getBackGroundColor() : Int {
+        return controls.globalBackgroundColor
+    }
+
     fun setOnButtonStateChangedListener(listener : OnButtonStateChangedListener) {
         onButtonStateChangedListener = listener
     }
@@ -304,6 +312,20 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun setButtonEnabled(buttonId : ButtonId, enabled : Boolean) {
         controls.allButtons.first { it.buttonId == buttonId }.config.enabled = enabled
+        invalidate()
+    }
+
+    fun setTextColor(color : Int) {
+        for (button in controls.allButtons) {
+            button.config.textColor = color
+        }
+        invalidate()
+    }
+
+    fun setBackGroundColor(color : Int) {
+        for (button in controls.allButtons) {
+            button.config.backgroundColor = color
+        }
         invalidate()
     }
 }
