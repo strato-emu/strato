@@ -109,6 +109,7 @@ namespace skyline {
             /**
              * @brief Recursively updates the priority for any threads this thread might be waiting on
              * @note PI is performed by temporarily upgrading a thread's priority if a thread waiting on it has a higher priority to prevent priority inversion
+             * @note This will lock `waiterMutex` internally and it must **not** be held when calling this function
              */
             void UpdatePriorityInheritance();
 

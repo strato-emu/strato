@@ -122,7 +122,7 @@ namespace skyline::kernel::type {
 
         bool isHighestPriority;
         {
-            std::scoped_lock lock{owner->waiterMutex};
+            std::scoped_lock lock{owner->waiterMutex, state.thread->waiterMutex}; // We need to lock both mutexes at the same time as we mutate the owner and the current thread, the ordering of locks **must** match MutexUnlock to avoid deadlocks
 
             u32 value{};
             if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))

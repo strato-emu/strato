@@ -274,7 +274,9 @@ namespace skyline::kernel::type {
     }
 
     void KThread::UpdatePriorityInheritance() {
-        auto waitingOn{waitThread};
+        std::unique_lock lock{waiterMutex};
+
+        std::shared_ptr<KThread> waitingOn{waitThread};
         i8 currentPriority{priority.load()};
         while (waitingOn) {
             i8 ownerPriority;
@@ -287,7 +289,21 @@ namespace skyline::kernel::type {
             } while (!waitingOn->priority.compare_exchange_strong(ownerPriority, currentPriority));
 
             if (ownerPriority != currentPriority) {
-                std::scoped_lock waiterLock{waitingOn->waiterMutex};
+                std::unique_lock waiterLock{waitingOn->waiterMutex, std::try_to_lock};
+                if (!waiterLock) {
+                    // We want to avoid a deadlock here from the thread holding waitingOn->waiterMutex waiting for waiterMutex
+                    // We use a fallback mechanism to avoid this, resetting the state and trying again after being able to successfully acquire waitingOn->waiterMutex once
+                    waitingOn->priority = ownerPriority;
+
+                    lock.unlock();
+                    waiterLock.lock();
+
+                    lock.lock();
+                    waitingOn = waitThread;
+
+                    continue;
+                }
+
                 auto nextThread{waitingOn->waitThread};
                 if (nextThread) {
                     // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
