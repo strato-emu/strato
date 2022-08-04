@@ -1040,10 +1040,10 @@ namespace skyline::gpu::interconnect {
                                     pipelineStage.program = shader.program;
                             }
 
-                            pipelineStage.enabled = true;
                             pipelineStage.needsRecompile = true;
                         }
 
+                        pipelineStage.enabled = true;
                         shader.invalidated = false;
                     }
                 } else if (shader.stage != ShaderCompiler::Stage::VertexA) {
