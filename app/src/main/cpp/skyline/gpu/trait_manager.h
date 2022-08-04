@@ -91,7 +91,8 @@ namespace skyline::gpu {
             vk::PhysicalDeviceProvokingVertexFeaturesEXT,
             vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
             vk::PhysicalDeviceImagelessFramebufferFeatures,
-            vk::PhysicalDeviceTransformFeedbackFeaturesEXT>;
+            vk::PhysicalDeviceTransformFeedbackFeaturesEXT,
+            vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>;
 
         TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice& physicalDevice);
 
