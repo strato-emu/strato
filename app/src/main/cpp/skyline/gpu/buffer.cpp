@@ -15,13 +15,20 @@ namespace skyline::gpu {
         alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
         mirror = alignedMirror.subspan(static_cast<size_t>(guest->data() - alignedData), guest->size());
 
-        // We can't just capture `this` in the lambda since the lambda could exceed the lifetime of the buffer
-        std::weak_ptr<Buffer> weakThis{weak_from_this()};
+        // We can't just capture this in the lambda since the lambda could exceed the lifetime of the buffer
+        std::weak_ptr<Buffer> weakThis{shared_from_this()};
         trapHandle = gpu.state.nce->TrapRegions(*guest, true, [weakThis] {
             auto buffer{weakThis.lock()};
             if (!buffer)
                 return;
-            std::scoped_lock lock{*buffer};
+
+            std::unique_lock stateLock{buffer->stateMutex};
+            if (buffer->AllCpuBackingWritesBlocked()) {
+                stateLock.unlock(); // If the lock isn't unlocked, a deadlock from threads waiting on the other lock can occur
+
+                // If this mutex would cause other callbacks to be blocked then we should block on this mutex in advance
+                std::scoped_lock lock{*buffer};
+            }
         }, [weakThis] {
             TRACE_EVENT("gpu", "Buffer::ReadTrap");
 
@@ -29,11 +36,18 @@ namespace skyline::gpu {
             if (!buffer)
                 return true;
 
+            std::unique_lock stateLock{buffer->stateMutex, std::try_to_lock};
+            if (!stateLock)
+                return false;
+
+            if (buffer->dirtyState != DirtyState::GpuDirty)
+                return true; // If state is already CPU dirty/Clean we don't need to do anything
+
             std::unique_lock lock{*buffer, std::try_to_lock};
             if (!lock)
                 return false;
-            SynchronizeGuest(true); // We can skip trapping since the caller will do it
 
+            buffer->SynchronizeGuest(true); // We can skip trapping since the caller will do it
             return true;
         }, [weakThis] {
             TRACE_EVENT("gpu", "Buffer::WriteTrap");
@@ -42,21 +56,28 @@ namespace skyline::gpu {
             if (!buffer)
                 return true;
 
-            DirtyState expectedState{DirtyState::Clean};
-            if (buffer->dirtyState.compare_exchange_strong(expectedState, DirtyState::CpuDirty, std::memory_order_relaxed) || expectedState == DirtyState::CpuDirty)
-                return true; // If we can transition the buffer to CPU dirty (from Clean) or if it already is CPU dirty then we can just return, we only need to do the lock and corresponding sync if the buffer is GPU dirty
+            std::unique_lock stateLock{buffer->stateMutex, std::try_to_lock};
+            if (!stateLock)
+                return false;
+
+            if (!buffer->AllCpuBackingWritesBlocked() && buffer->dirtyState != DirtyState::GpuDirty) {
+                buffer->dirtyState = DirtyState::CpuDirty;
+                return true;
+            }
 
             std::unique_lock lock{*buffer, std::try_to_lock};
             if (!lock)
                 return false;
-            buffer->SynchronizeGuest(true, false, true); // We need to assume the buffer is dirty since we don't know what the guest is writing
+
+            buffer->WaitOnFence();
+            buffer->SynchronizeGuest(true); // We need to assume the buffer is dirty since we don't know what the guest is writing
+            buffer->dirtyState = DirtyState::CpuDirty;
+
             return true;
         });
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {
-        SetupGuestMappings();
-    }
+    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {}
 
     Buffer::Buffer(GPU &gpu, vk::DeviceSize size) : gpu(gpu), backing(gpu.memory.AllocateBuffer(size)) {
         dirtyState = DirtyState::Clean; // Since this is a host-only buffer it's always going to be clean
@@ -75,18 +96,24 @@ namespace skyline::gpu {
         if (!guest)
             return;
 
-        auto currentState{dirtyState.load(std::memory_order_relaxed)};
-        do {
-            if (currentState == DirtyState::GpuDirty)
-                return;
-        } while (!dirtyState.compare_exchange_strong(currentState, DirtyState::GpuDirty, std::memory_order_relaxed));
+        std::scoped_lock lock{stateMutex}; // stateMutex is locked to prevent state changes at any point during this function
 
+        if (dirtyState == DirtyState::GpuDirty)
+            return;
+        else if (dirtyState == DirtyState::CpuDirty)
+            SynchronizeHost(true); // Will transition the Buffer to Clean
+
+        dirtyState = DirtyState::GpuDirty;
+        BlockAllCpuBackingWrites();
         AdvanceSequence(); // The GPU will modify buffer contents so advance to the next sequence
+
         gpu.state.nce->RetrapRegions(*trapHandle, false);
     }
 
     void Buffer::WaitOnFence() {
         TRACE_EVENT("gpu", "Buffer::WaitOnFence");
+
+        std::scoped_lock lock{stateMutex};
 
         if (cycle) {
             cycle->Wait();
@@ -95,6 +122,8 @@ namespace skyline::gpu {
     }
 
     bool Buffer::PollFence() {
+        std::scoped_lock lock{stateMutex};
+
         if (!cycle)
             return true;
 
@@ -116,50 +145,51 @@ namespace skyline::gpu {
         guest = {};
     }
 
-    void Buffer::SynchronizeHost(bool rwTrap) {
+    void Buffer::SynchronizeHost(bool skipTrap) {
         if (!guest)
             return;
 
-        auto currentState{dirtyState.load(std::memory_order_relaxed)};
-        do {
-            if (currentState != DirtyState::CpuDirty || !guest)
-                return; // If the buffer has not been modified on the CPU, there is no need to synchronize it
-        } while (!dirtyState.compare_exchange_strong(currentState, rwTrap ? DirtyState::GpuDirty : DirtyState::Clean, std::memory_order_relaxed));
-
         TRACE_EVENT("gpu", "Buffer::SynchronizeHost");
+
+        {
+            std::scoped_lock lock{stateMutex};
+            if (dirtyState != DirtyState::CpuDirty)
+                return;
+
+            dirtyState = DirtyState::Clean;
+            WaitOnFence();
+        }
 
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
 
-        WaitOnFence();
-
+        if (!skipTrap)
+            gpu.state.nce->RetrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
         std::memcpy(backing.data(), mirror.data(), mirror.size());
-        gpu.state.nce->RetrapRegions(*trapHandle, !rwTrap); // Trap any future CPU reads (optionally) + writes to this buffer
     }
 
-    bool Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking, bool setDirty) {
+    bool Buffer::SynchronizeGuest(bool skipTrap, bool nonBlocking) {
         if (!guest)
             return false;
 
-        auto currentState{dirtyState.load(std::memory_order_relaxed)};
-        do {
-            if (currentState == DirtyState::CpuDirty || (currentState == DirtyState::Clean && !setDirty))
-                return true; // If the buffer is synchronized (Clean/CpuDirty), there is no need to synchronize it
-            else if (currentState == DirtyState::GpuDirty && nonBlocking && !PollFence())
-                return false; // If the buffer is GPU dirty and the fence is not signalled then we can't block
-        } while (!dirtyState.compare_exchange_strong(currentState, setDirty ? DirtyState::CpuDirty : DirtyState::Clean, std::memory_order_relaxed));
-
         TRACE_EVENT("gpu", "Buffer::SynchronizeGuest");
+
+        {
+            std::scoped_lock lock{stateMutex};
+
+            if (dirtyState != DirtyState::GpuDirty)
+                return true; // If the buffer is not dirty, there is no need to synchronize it
+
+            if (nonBlocking && !PollFence())
+                return false; // If the fence is not signalled and non-blocking behaviour is requested then bail out
+
+            WaitOnFence();
+            std::memcpy(mirror.data(), backing.data(), mirror.size());
+
+            dirtyState = DirtyState::Clean;
+        }
 
         if (!skipTrap)
             gpu.state.nce->RetrapRegions(*trapHandle, true);
-
-        if (setDirty && currentState == DirtyState::Clean)
-            return true; // If the texture was simply transitioned from Clean to CpuDirty, there is no need to synchronize it
-
-        if (!nonBlocking)
-            WaitOnFence();
-
-        std::memcpy(mirror.data(), backing.data(), mirror.size());
 
         return true;
     }
@@ -173,6 +203,7 @@ namespace skyline::gpu {
     }
 
     void Buffer::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) {
+        std::scoped_lock lock{stateMutex};
         if (dirtyState == DirtyState::GpuDirty)
             SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
@@ -183,17 +214,18 @@ namespace skyline::gpu {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
-        // Perform a syncs in both directions to ensure correct ordering of writes
+        // We cannot have *ANY* state changes for the duration of this function, if the buffer became CPU dirty partway through the GPU writes would mismatch the CPU writes
+        std::scoped_lock lock{stateMutex};
+
+        // Syncs in both directions to ensure correct ordering of writes
         if (dirtyState == DirtyState::CpuDirty)
             SynchronizeHost();
         else if (dirtyState == DirtyState::GpuDirty)
             SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
-        // It's possible that the guest will arbitrarily modify the buffer contents on the CPU after the syncs and trigger the signal handler which would set the dirty state to CPU dirty, this is acceptable as there is no requirement to make writes visible immediately
-
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
 
-        if (!usedByContext && PollFence())
+        if (!SequencedCpuBackingWritesBlocked() && PollFence())
             // We can write directly to the backing as long as this resource isn't being actively used by a past workload (in the current context or another)
             std::memcpy(backing.data() + offset, data.data(), data.size());
         else
@@ -222,6 +254,7 @@ namespace skyline::gpu {
     }
 
     span<u8> Buffer::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
+        std::scoped_lock lock{stateMutex};
         if (dirtyState == DirtyState::GpuDirty)
             SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
@@ -243,7 +276,7 @@ namespace skyline::gpu {
 
     void Buffer::unlock() {
         tag = ContextTag{};
-        usedByContext = false;
+        backingImmutability = BackingImmutability::None;
         mutex.unlock();
     }
 
@@ -284,8 +317,8 @@ namespace skyline::gpu {
     BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
 
     void BufferView::RegisterUsage(const std::shared_ptr<FenceCycle> &cycle, const std::function<void(const Buffer::BufferViewStorage &, const std::shared_ptr<Buffer> &)> &usageCallback) {
-        // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further writes in the current cycle to occur on the GPU
-        bufferDelegate->buffer->MarkGpuUsed();
+        // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further sequenced writes in the current cycle to occur on the GPU
+        bufferDelegate->buffer->BlockSequencedCpuBackingWrites();
 
         usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
         if (!bufferDelegate->usageCallback) {
@@ -306,8 +339,7 @@ namespace skyline::gpu {
         // If megabuffering can't be enabled we have to do a GPU-side copy to ensure sequencing
         bool gpuCopy{bufferDelegate->view->size > MegaBufferingDisableThreshold};
         if (gpuCopy)
-            // This will force the host buffer contents to stay as is for the current cycle, requiring that write operations are instead sequenced on the GPU for the entire buffer
-            bufferDelegate->buffer->MarkGpuUsed();
+            bufferDelegate->buffer->BlockSequencedCpuBackingWrites();
 
         bufferDelegate->buffer->Write(isFirstUsage, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
@@ -320,7 +352,7 @@ namespace skyline::gpu {
         if (bufferDelegate->view->size > MegaBufferingDisableThreshold)
             return 0;
 
-        auto[newSequence, sequenceSpan]{bufferDelegate->buffer->AcquireCurrentSequence()};
+        auto [newSequence, sequenceSpan]{bufferDelegate->buffer->AcquireCurrentSequence()};
         if (!newSequence)
             return 0; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
 

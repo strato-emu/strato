@@ -302,10 +302,9 @@ namespace skyline::gpu::interconnect {
             }
 
             for (const auto &attachedBuffer : attachedBuffers) {
-                if (attachedBuffer->UsedByContext()) {
+                if (attachedBuffer->RequiresCycleAttach() ) {
                     cycle->AttachObject(attachedBuffer.buffer);
-                    cycle->ChainCycle(attachedBuffer->cycle);
-                    attachedBuffer->cycle = cycle;
+                    attachedBuffer->UpdateCycle(cycle);
                 }
             }
         }

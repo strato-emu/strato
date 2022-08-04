@@ -86,7 +86,8 @@ namespace skyline::gpu {
         }
 
         /**
-         * @return If this lock was the first lock on the resource from this context, this effectively means if it was the first usage since prior usages would have to  lock the resource
+         * @return If this lock was the first lock on the resource from this context, this corresponds to it being the first usage since any past usages would need to lock
+         * @note This is an alias of OwnsLock() with a different name to be more semantically accurate
          */
         constexpr bool IsFirstUsage() const {
             return ownsLock;

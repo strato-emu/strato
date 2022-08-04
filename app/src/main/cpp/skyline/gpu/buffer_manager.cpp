@@ -24,7 +24,7 @@ namespace skyline::gpu {
         return mutex.try_lock();
     }
 
-    BufferManager::LockedBuffer::LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer} {}
+    BufferManager::LockedBuffer::LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer}, stateLock(buffer->stateMutex) {}
 
     Buffer *BufferManager::LockedBuffer::operator->() const {
         return buffer.get();
@@ -86,14 +86,20 @@ namespace skyline::gpu {
 
         for (auto &srcBuffer : srcBuffers) {
             // All newly created buffers that have this set are guaranteed to be attached in buffer FindOrCreate, attach will then lock the buffer without resetting this flag, which will only finally be reset when the lock is released
-            newBuffer->usedByContext |= srcBuffer->usedByContext;
+            if (newBuffer->backingImmutability == Buffer::BackingImmutability::None && srcBuffer->backingImmutability != Buffer::BackingImmutability::None)
+                newBuffer->backingImmutability = srcBuffer->backingImmutability;
+            else if (srcBuffer->backingImmutability == Buffer::BackingImmutability::AllWrites)
+                newBuffer->backingImmutability = Buffer::BackingImmutability::AllWrites;
+
             newBuffer->everHadInlineUpdate |= srcBuffer->everHadInlineUpdate;
 
-            if (srcBuffer->cycle && newBuffer->cycle != srcBuffer->cycle)
+            // LockedBuffer also holds `stateMutex` so we can freely access this
+            if (srcBuffer->cycle && newBuffer->cycle != srcBuffer->cycle) {
                 if (newBuffer->cycle)
                     newBuffer->cycle->ChainCycle(srcBuffer->cycle);
                 else
                     newBuffer->cycle = srcBuffer->cycle;
+            }
 
             if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
                 srcBuffer->WaitOnFence();
@@ -102,10 +108,11 @@ namespace skyline::gpu {
                     copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->mirror.data(), srcBuffer->backing.data());
                 else
                     newBuffer->MarkGpuDirty();
-            } else if (srcBuffer->usedByContext) {
+            } else if (srcBuffer->AllCpuBackingWritesBlocked()) {
                 if (srcBuffer->dirtyState == Buffer::DirtyState::CpuDirty)
-                    Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while being utilized by the context, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
-                // We need the backing to be stable so that any accesses within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
+                    Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while CPU backing writes are blocked, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
+
+                // We need the backing to be stable so that any writes within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
                 srcBuffer->WaitOnFence();
                 copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing.data(), srcBuffer->backing.data());
             }

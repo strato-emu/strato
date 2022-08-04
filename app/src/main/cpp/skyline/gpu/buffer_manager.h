@@ -39,6 +39,7 @@ namespace skyline::gpu {
         struct LockedBuffer {
             std::shared_ptr<Buffer> buffer;
             ContextLock<Buffer> lock;
+            std::unique_lock<std::recursive_mutex> stateLock;
 
             LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag);
 

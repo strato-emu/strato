@@ -28,21 +28,26 @@ namespace skyline::gpu {
         std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
         memory::Buffer backing;
         std::optional<GuestBuffer> guest;
+        std::shared_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
         std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
+
         enum class DirtyState {
             Clean, //!< The CPU mappings are in sync with the GPU buffer
             CpuDirty, //!< The CPU mappings have been modified but the GPU buffer is not up to date
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
-        };
-        std::atomic<DirtyState> dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
-        static_assert(std::atomic<DirtyState>::is_always_lock_free);
+        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+
+        enum class BackingImmutability {
+            None, //!< Backing can be freely written to and read from
+            SequencedWrites, //!< Sequenced writes must not modify the backing on the CPU due to it being read directly on the GPU, but non-sequenced writes can freely occur (SynchroniseHost etc)
+            AllWrites //!< No CPU writes to the backing can be performed, all must be sequenced on the GPU or delayed till this is no longer the case
+        } backingImmutability{}; //!< Describes how the buffer backing should be accessed by the current context
+        std::recursive_mutex stateMutex; //!< Synchronizes access to the dirty state and backing immutability
 
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
-
-        bool usedByContext{}; //!< If this buffer is used by the current context, this determines if a buffer needs to be bound to the cycle it is locked by or not
 
       public:
         /**
@@ -122,7 +127,11 @@ namespace skyline::gpu {
         void SetupGuestMappings();
 
       public:
-        std::shared_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
+        void UpdateCycle(const std::shared_ptr<FenceCycle> &newCycle) {
+            std::scoped_lock lock{stateMutex};
+            newCycle->ChainCycle(cycle);
+            cycle = newCycle;
+        }
 
         constexpr vk::Buffer GetBacking() {
             return backing.vkBuffer;
@@ -159,9 +168,9 @@ namespace skyline::gpu {
         void lock();
 
         /**
-         * @brief Acquires an exclusive lock on the texture for the calling thread
-         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
-         * @return If the lock was acquired by this call rather than having the same tag as the holder
+         * @brief Acquires an exclusive lock on the buffer for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (A default initialised tag will disable this behaviour)
+         * @return If the lock was acquired by this call as opposed to the buffer already being locked with the same tag
          * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
          */
         bool LockWithTag(ContextTag tag);
@@ -186,22 +195,54 @@ namespace skyline::gpu {
         void MarkGpuDirty();
 
         /**
-         * @brief Marks the buffer as utilized by the current context, this will be reset on unlocking the buffer
+         * @brief Prevents sequenced writes to this buffer's backing from occuring on the CPU, forcing sequencing on the GPU instead for the duration of the context. Unsequenced writes such as those from the guest can still occur however.
          * @note The buffer **must** be locked prior to calling this
-         * @note This is significantly different from MarkGpuDirty in that it doesn't imply that the buffer is written to on the GPU and only used on it, this eliminates the requirement to sync-back
          */
-        void MarkGpuUsed() {
-            usedByContext = true;
+        void BlockSequencedCpuBackingWrites() {
+            std::scoped_lock lock{stateMutex};
+            if (backingImmutability == BackingImmutability::None)
+                backingImmutability = BackingImmutability::SequencedWrites;
         }
 
         /**
-         * @return If this buffer has been utilized within the current context
-         * @note The buffer **must** be locked with a context prior to calling this
+         * @brief Prevents *any* writes to this buffer's backing from occuring on the CPU, forcing sequencing on the GPU instead for the duration of the context.
+         * @note The buffer **must** be locked prior to calling this
          */
-        bool UsedByContext() const {
-            return usedByContext;
+        void BlockAllCpuBackingWrites() {
+            std::scoped_lock lock{stateMutex};
+            backingImmutability = BackingImmutability::AllWrites;
         }
 
+        /**
+         * @return If sequenced writes to the backing must not occur on the CPU
+         * @note The buffer **must** be locked prior to calling this
+         */
+        bool SequencedCpuBackingWritesBlocked() {
+            std::scoped_lock lock{stateMutex};
+            return backingImmutability == BackingImmutability::SequencedWrites || backingImmutability == BackingImmutability::AllWrites;
+        }
+
+        /**
+         * @return If no writes to the backing are allowed to occur on the CPU
+         * @note The buffer **must** be locked prior to calling this
+         */
+        bool AllCpuBackingWritesBlocked() {
+            std::scoped_lock lock{stateMutex};
+            return backingImmutability == BackingImmutability::AllWrites;
+        }
+
+        /**
+         * @return If the cycle needs to be attached to the buffer before ending the current context
+         * @note This is an alias for `SequencedCpuBackingWritesBlocked()` since this is only ever set when the backing is accessed on the GPU in some form
+         * @note The buffer **must** be locked prior to calling this
+         */
+        bool RequiresCycleAttach() {
+            return SequencedCpuBackingWritesBlocked();
+        }
+
+        /**
+         * @note The buffer **must** be locked prior to calling this
+         */
         bool EverHadInlineUpdate() const {
             return everHadInlineUpdate;
         }
@@ -228,20 +269,19 @@ namespace skyline::gpu {
 
         /**
          * @brief Synchronizes the host buffer with the guest
-         * @param rwTrap If true, the guest buffer will be read/write trapped rather than only being write trapped which is more efficient than calling MarkGpuDirty directly after
+         * @param skipTrap If true, setting up a CPU trap will be skipped
          * @note The buffer **must** be locked prior to calling this
          */
-        void SynchronizeHost(bool rwTrap = false);
+        void SynchronizeHost(bool skipTrap = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer
-         * @param skipTrap If true, setting up a CPU trap will be skipped and the dirty state will be Clean/CpuDirty
+         * @param skipTrap If true, setting up a CPU trap will be skipped
          * @param nonBlocking If true, the call will return immediately if the fence is not signalled, skipping the sync
-         * @param setDirty If true, the buffer will be marked as CpuDirty rather than Clean
          * @return If the buffer's contents were successfully synchronized, this'll only be false on non-blocking operations or lack of a guest buffer
          * @note The buffer **must** be locked prior to calling this
          */
-        bool SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false, bool setDirty = false);
+        bool SynchronizeGuest(bool skipTrap = false, bool nonBlocking = false);
 
         /**
          * @brief Synchronizes the guest buffer with the host buffer immediately, flushing GPU work if necessary
@@ -321,9 +361,9 @@ namespace skyline::gpu {
         }
 
         /**
-         * @brief Acquires an exclusive lock on the texture for the calling thread
-         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (0 is not a valid tag value and will disable tag behavior)
-         * @return If the lock was acquired without waiting (i.e. the tag was the same as the last lock)
+         * @brief Acquires an exclusive lock on the buffer for the calling thread
+         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (A default initialised tag will disable this behaviour)
+         * @return If the lock was acquired by this call as opposed to the buffer already being locked with the same tag
          * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
          */
         bool LockWithTag(ContextTag tag) const {

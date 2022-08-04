@@ -648,6 +648,9 @@ namespace skyline::gpu::interconnect {
                     Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
                 }, [&megaBuffer, &pExecutor, srcCpuBuf, dstOffset, &view = this->view, &lock]() {
                     pExecutor.AttachLockedBufferView(view, std::move(lock));
+                    // This will prevent any CPU accesses to backing for the duration of the usage
+                    // ONLY in this specific case is it fine to access the backing buffer directly since the flag will be propagated with recreations
+                    view->buffer->BlockAllCpuBackingWrites();
 
                     auto srcGpuOffset{megaBuffer.Push(srcCpuBuf)};
                     auto srcGpuBuf{megaBuffer.GetBacking()};
@@ -662,7 +665,7 @@ namespace skyline::gpu::interconnect {
                 }, srcCpuBuf, dstOffset);
             }
         };
-        ConstantBuffer constantBufferSelector; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
+        ConstantBuffer constantBufferSelector{}; //!< The constant buffer selector is used to bind a constant buffer to a stage or update data in it
 
       public:
         void SetConstantBufferSelectorSize(u32 size) {
@@ -1268,11 +1271,10 @@ namespace skyline::gpu::interconnect {
         void BindPipelineConstantBuffer(maxwell3d::PipelineStage stage, bool enable, u32 index) {
             auto &constantBuffer{pipelineStages[stage].constantBuffers[index]};
 
-            if (enable) {
+            if (enable)
                 constantBuffer = GetConstantBufferSelector().value();
-            } else {
+            else
                 constantBuffer = {};
-            }
         }
 
         /* Rasterizer State */
