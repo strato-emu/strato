@@ -161,12 +161,13 @@ namespace skyline::gpu {
 
             dirtyState = DirtyState::Clean;
             WaitOnFence();
+
+            AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
+
+            if (!skipTrap)
+                gpu.state.nce->TrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
         }
 
-        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
-
-        if (!skipTrap)
-            gpu.state.nce->TrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
         std::memcpy(backing.data(), mirror.data(), mirror.size());
     }
 
