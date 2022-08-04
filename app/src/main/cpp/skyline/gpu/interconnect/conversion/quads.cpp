@@ -19,4 +19,37 @@ namespace skyline::gpu::interconnect::conversion::quads {
             *(dest++) = i + 0;
         }
     }
+
+    template<typename S>
+    static void GenerateQuadIndexConversionBufferImpl(S *__restrict__ dest, S *__restrict__ source, u32 indexCount) {
+        #pragma clang loop vectorize(enable) interleave(enable) unroll(enable)
+        for (size_t i{}; i < indexCount; i += 4, source += 4) {
+            // Given a quad ABCD, we want to generate triangles ABC & CDA
+            // Triangle ABC
+            *(dest++) = *(source + 0);
+            *(dest++) = *(source + 1);
+            *(dest++) = *(source + 2);
+
+            // Triangle CDA
+            *(dest++) = *(source + 2);
+            *(dest++) = *(source + 3);
+            *(dest++) = *(source + 0);
+        }
+    }
+
+    void GenerateIndexedQuadConversionBuffer(u8 *dest, u8 *source, u32 indexCount, vk::IndexType type) {
+        switch (type) {
+            case vk::IndexType::eUint32:
+                GenerateQuadIndexConversionBufferImpl(reinterpret_cast<u32 *>(dest), reinterpret_cast<u32 *>(source), indexCount);
+                break;
+            case vk::IndexType::eUint16:
+                GenerateQuadIndexConversionBufferImpl(reinterpret_cast<u16 *>(dest), reinterpret_cast<u16 *>(source), indexCount);
+                break;
+            case vk::IndexType::eUint8EXT:
+                GenerateQuadIndexConversionBufferImpl(dest, source, indexCount);
+                break;
+            default:
+                break;
+        }
+    }
 }

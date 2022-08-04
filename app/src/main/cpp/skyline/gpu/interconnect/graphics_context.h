@@ -1699,6 +1699,19 @@ namespace skyline::gpu::interconnect {
             return {quadListConversionBuffer->GetView(0, size), vk::IndexType::eUint32, conversion::quads::GetIndexCount(count)};
         }
 
+        MegaBufferAllocator::Allocation GetIndexedQuadConversionBuffer(u32 count) {
+            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, indexBuffer.type)};
+            auto allocation{executor.AcquireMegaBufferAllocator().Allocate(executor.cycle, size)};
+
+            ContextLock lock{executor.tag, indexBuffer.view};
+            auto guestIndexBuffer{indexBuffer.view.GetReadOnlyBackingSpan(lock.IsFirstUsage(), []() {
+                // TODO: see Read()
+                Logger::Error("Dirty index buffer reads for attached buffers are unimplemented");
+            })};
+            conversion::quads::GenerateIndexedQuadConversionBuffer(allocation.region.data(), guestIndexBuffer.data(), count, indexBuffer.type);
+            return allocation;
+        }
+
       public:
         void SetVertexBufferStride(u32 index, u32 stride) {
             vertexBuffers[index].bindingDescription.stride = stride;
@@ -2972,23 +2985,29 @@ namespace skyline::gpu::interconnect {
 
             std::shared_ptr<BoundIndexBuffer> boundIndexBuffer{};
             if constexpr (IsIndexed) {
-                if (needsQuadConversion)
-                    throw exception("Indexed quad conversion is not supported");
-
                 auto indexBufferView{GetIndexBuffer(count)};
-                executor.AttachBuffer(indexBufferView);
-
                 boundIndexBuffer = std::allocate_shared<BoundIndexBuffer, LinearAllocator<BoundIndexBuffer>>(executor.allocator);
                 boundIndexBuffer->type = indexBuffer.type;
-                if (auto megaBufferAllocation{indexBufferView.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
-                    // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
-                    boundIndexBuffer->handle = megaBufferAllocation.buffer;
-                    boundIndexBuffer->offset = megaBufferAllocation.offset;
+
+                if (needsQuadConversion) {
+                    auto allocation{GetIndexedQuadConversionBuffer(count)};
+                    boundIndexBuffer->handle = allocation.buffer;
+                    boundIndexBuffer->offset = allocation.offset;
+                    count = conversion::quads::GetIndexCount(count);
                 } else {
-                    indexBufferView.RegisterUsage(executor.allocator, executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
-                        boundIndexBuffer->handle = buffer->GetBacking();
-                        boundIndexBuffer->offset = view.offset;
-                    });
+                    executor.AttachBuffer(indexBufferView);
+
+                    boundIndexBuffer->type = indexBuffer.type;
+                    if (auto megaBufferAllocation{indexBufferView.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
+                        // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
+                        boundIndexBuffer->handle = megaBufferAllocation.buffer;
+                        boundIndexBuffer->offset = megaBufferAllocation.offset;
+                    } else {
+                        indexBufferView.RegisterUsage(executor.allocator, executor.cycle, [=](const Buffer::BufferViewStorage &view, const std::shared_ptr<Buffer> &buffer) {
+                            boundIndexBuffer->handle = buffer->GetBacking();
+                            boundIndexBuffer->offset = view.offset;
+                        });
+                    }
                 }
             } else if (needsQuadConversion) {
                 // Convert the guest-supplied quad list to an indexed triangle list

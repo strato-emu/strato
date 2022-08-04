@@ -43,4 +43,10 @@ namespace skyline::gpu::interconnect::conversion::quads {
      * @note The size of the supplied buffer should be at least the size returned by GetRequiredBufferSize()
      */
     void GenerateQuadListConversionBuffer(u32 *dest, u32 vertexCount);
+
+    /**
+     * @brief Create an index buffer that repeats quad vertices from the source buffer to generate a triangle list
+     * @note The size of the destination buffer should be at least the size returned by GetRequiredBufferSize()
+     */
+    void GenerateIndexedQuadConversionBuffer(u8 *dest, u8 *source, u32 indexCount, vk::IndexType type);
 }
