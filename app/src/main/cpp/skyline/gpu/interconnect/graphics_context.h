@@ -2668,6 +2668,7 @@ namespace skyline::gpu::interconnect {
             indexBuffer.view = executor.AcquireBufferManager().FindOrCreate(span<u8>(mapping.data(), size), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
                 executor.AttachLockedBuffer(buffer, std::move(lock));
             });
+            indexBuffer.viewSize = size;
             return indexBuffer.view;
         }
 
