@@ -365,7 +365,7 @@ namespace skyline::kernel::svc {
                     // If the new priority is equivalent to the current priority then we don't need to CAS
                     newPriority = thread->priority.load();
                     newPriority = std::min(newPriority, priority);
-                } while (newPriority != priority && thread->priority.compare_exchange_strong(newPriority, priority));
+                } while (newPriority != priority && !thread->priority.compare_exchange_strong(newPriority, priority));
                 state.scheduler->UpdatePriority(thread);
                 thread->UpdatePriorityInheritance();
             }

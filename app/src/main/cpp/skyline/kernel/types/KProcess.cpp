@@ -181,7 +181,7 @@ namespace skyline::kernel::type {
                 do {
                     basePriority = state.thread->basePriority.load();
                     newPriority = std::min(basePriority, highestPriorityThread->priority.load());
-                } while (basePriority != newPriority && state.thread->priority.compare_exchange_strong(basePriority, newPriority));
+                } while (basePriority != newPriority && !state.thread->priority.compare_exchange_strong(basePriority, newPriority));
                 state.scheduler->UpdatePriority(state.thread);
             } else {
                 i8 priority, basePriority;
@@ -199,7 +199,7 @@ namespace skyline::kernel::type {
                 do {
                     ownerPriority = nextOwner->priority.load();
                     priority = std::min(ownerPriority, nextWaiter->priority.load());
-                } while (ownerPriority != priority && nextOwner->priority.compare_exchange_strong(ownerPriority, priority));
+                } while (ownerPriority != priority && !nextOwner->priority.compare_exchange_strong(ownerPriority, priority));
 
                 __atomic_store_n(mutex, nextOwner->waitTag | HandleWaitersBit, __ATOMIC_SEQ_CST);
             } else {
