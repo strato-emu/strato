@@ -765,7 +765,7 @@ namespace skyline::gpu::interconnect {
             span<u8> bytecode{}; //!< A span of the shader bytecode inside the backing storage
             std::shared_ptr<ShaderManager::ShaderProgram> program{};
 
-            Shader(ShaderCompiler::Stage stage) : stage(stage) {}
+            Shader(ShaderCompiler::Stage stage, bool enabled = false) : stage(stage), enabled(enabled) {}
 
             maxwell3d::PipelineStage ToPipelineStage() {
                 using ShaderStage = ShaderCompiler::Stage;
@@ -796,7 +796,7 @@ namespace skyline::gpu::interconnect {
         struct ShaderSet : public std::array<Shader, maxwell3d::ShaderStageCount> {
             ShaderSet() : array{
                 Shader{ShaderCompiler::Stage::VertexA},
-                Shader{ShaderCompiler::Stage::VertexB},
+                Shader{ShaderCompiler::Stage::VertexB, true}, // VertexB cannot be disabled and must be enabled by default
                 Shader{ShaderCompiler::Stage::TessellationControl},
                 Shader{ShaderCompiler::Stage::TessellationEval},
                 Shader{ShaderCompiler::Stage::Geometry},
@@ -1263,8 +1263,12 @@ namespace skyline::gpu::interconnect {
 
         void SetShaderEnabled(maxwell3d::ShaderStage stage, bool enabled) {
             auto &shader{shaders[stage]};
-            shader.enabled = enabled;
-            shader.invalidated = true;
+
+            // VertexB shaders cannot be disabled in HW so ignore any attempts to disable them
+            if (stage != maxwell3d::ShaderStage::VertexB) {
+                shader.enabled = enabled;
+                shader.invalidated = true;
+            }
         }
 
         void SetShaderOffset(maxwell3d::ShaderStage stage, u32 offset) {
