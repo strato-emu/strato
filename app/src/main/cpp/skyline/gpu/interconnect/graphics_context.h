@@ -1076,13 +1076,40 @@ namespace skyline::gpu::interconnect {
             size_t bufferIndex{}, imageIndex{};
             boost::container::static_vector<vk::ShaderModule, maxwell3d::PipelineStageCount> shaderModules;
             boost::container::static_vector<vk::PipelineShaderStageCreateInfo, maxwell3d::PipelineStageCount> shaderStages;
+
+            // These parts of runtime info can only be set for the last stage that handles vertices in the current pipeline (either vertex or geometry) and should be unset for all others
+            struct StashedRuntimeInfo {
+                std::vector<::Shader::TransformFeedbackVarying> transformFeedbackVaryings;
+                std::optional<float> fixedStatePointSize;
+                bool convertDepthMode;
+            } stashedRuntimeInfo{
+                .fixedStatePointSize = runtimeInfo.fixed_state_point_size,
+                .convertDepthMode = runtimeInfo.convert_depth_mode,
+            };
+
+            auto stashRuntimeInfo{[&]() {
+                stashedRuntimeInfo.transformFeedbackVaryings = std::move(runtimeInfo.xfb_varyings);
+                runtimeInfo.xfb_varyings.clear();
+                runtimeInfo.fixed_state_point_size = {};
+                runtimeInfo.convert_depth_mode = false;
+            }};
+
+            auto unstashRuntimeInfo{[&]() {
+                runtimeInfo.xfb_varyings = std::move(stashedRuntimeInfo.transformFeedbackVaryings);
+                runtimeInfo.fixed_state_point_size = stashedRuntimeInfo.fixedStatePointSize;
+                runtimeInfo.convert_depth_mode = stashedRuntimeInfo.convertDepthMode;
+            }};
+
+            stashRuntimeInfo();
+            bool hasFullGeometryStage{pipelineStages[maxwell3d::PipelineStage::Geometry].enabled && !pipelineStages[maxwell3d::PipelineStage::Geometry].program->program.is_geometry_passthrough};
             for (auto &pipelineStage : pipelineStages) {
                 if (!pipelineStage.enabled)
                     continue;
 
-                auto fixedPointSize{runtimeInfo.fixed_state_point_size};
-                if (fixedPointSize && pipelineStage.vkStage != vk::ShaderStageFlagBits::eVertex && pipelineStage.vkStage != vk::ShaderStageFlagBits::eGeometry)
-                    runtimeInfo.fixed_state_point_size.reset(); // Only vertex/geometry stages are allowed to have a point size
+                bool needsUnstash{(pipelineStage.vkStage == vk::ShaderStageFlagBits::eGeometry && hasFullGeometryStage) ||
+                                  (pipelineStage.vkStage == vk::ShaderStageFlagBits::eVertex && !hasFullGeometryStage)};
+                if (needsUnstash)
+                    unstashRuntimeInfo();
 
                 if (pipelineStage.needsRecompile || bindings.unified != pipelineStage.bindingBase || pipelineStage.previousStageStores.mask != runtimeInfo.previous_stage_stores.mask) {
                     pipelineStage.previousStageStores = runtimeInfo.previous_stage_stores;
@@ -1091,7 +1118,8 @@ namespace skyline::gpu::interconnect {
                     pipelineStage.bindingLast = bindings.unified;
                 }
 
-                runtimeInfo.fixed_state_point_size = fixedPointSize;
+                if (needsUnstash)
+                    stashRuntimeInfo();
 
                 auto &program{pipelineStage.program->program};
                 runtimeInfo.previous_stage_stores = program.info.stores;
@@ -1235,6 +1263,8 @@ namespace skyline::gpu::interconnect {
                     .pName = "main",
                 });
             }
+
+            unstashRuntimeInfo();
 
             return {
                 std::move(shaderModules),
