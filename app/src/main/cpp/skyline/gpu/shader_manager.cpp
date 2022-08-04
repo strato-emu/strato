@@ -64,6 +64,7 @@ namespace skyline::gpu {
             .warp_size_potentially_larger_than_guest = TegraX1WarpSize < traits.subgroupSize,
             .lower_left_origin_mode = false,
             .need_declared_frag_colors = false,
+            .has_broken_spirv_position_input = traits.quirks.brokenSpirvPositionInput
         };
 
         Shader::Settings::values = {

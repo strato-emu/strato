@@ -204,6 +204,7 @@ namespace skyline::gpu {
                 brokenDescriptorAliasing = true;
                 relaxedRenderPassCompatibility = true; // Adreno drivers support relaxed render pass compatibility rules
                 brokenPushDescriptors = true;
+                brokenSpirvPositionInput = true;
 
                 if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 600, 0))
                     maxSubpassCount = 64; // Driver will segfault while destroying the renderpass and associated objects if this is exceeded on all 5xx and below drivers
