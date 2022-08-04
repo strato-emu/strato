@@ -691,13 +691,17 @@ namespace skyline::gpu {
                 // If a texture is Clean then we can just transition it to being GPU dirty and retrap it
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
+                gpu.state.nce->PageOutRegions(*trapHandle);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return; // If the texture has not been modified on the CPU, there is no need to synchronize it
             }
 
             dirtyState = gpuDirty ? DirtyState::GpuDirty : DirtyState::Clean;
+            gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
         }
+
+        // From this point on Clean -> CPU dirty state transitions can occur, GPU dirty -> * transitions will always require the full lock to be held and thus won't occur
 
         auto stagingBuffer{SynchronizeHostImpl()};
         if (stagingBuffer) {
@@ -709,7 +713,8 @@ namespace skyline::gpu {
             cycle = lCycle;
         }
 
-        gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
+        if (gpuDirty)
+            gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
     }
 
     void Texture::SynchronizeHostInline(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool gpuDirty) {
@@ -723,12 +728,14 @@ namespace skyline::gpu {
             if (gpuDirty && dirtyState == DirtyState::Clean) {
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
+                gpu.state.nce->PageOutRegions(*trapHandle);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return;
             }
 
             dirtyState = gpuDirty ? DirtyState::GpuDirty : DirtyState::Clean;
+            gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
         }
 
         auto stagingBuffer{SynchronizeHostImpl()};
@@ -739,7 +746,8 @@ namespace skyline::gpu {
             cycle = pCycle;
         }
 
-        gpu.state.nce->TrapRegions(*trapHandle, !gpuDirty); // Trap any future CPU reads (optionally) + writes to this texture
+        if (gpuDirty)
+            gpu.state.nce->PageOutRegions(*trapHandle);
     }
 
     void Texture::SynchronizeGuest(bool cpuDirty, bool skipTrap) {

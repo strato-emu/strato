@@ -455,17 +455,6 @@ namespace skyline::nce {
             reprotectIntervalsWithFunction([&](auto region) {
                 return PROT_NONE; // No checks are needed as this is already the highest level of protection
             });
-
-            // Page out regions that are no longer accessible, these should be paged back in by a callback
-            TRACE_EVENT("host", "NCE::ReprotectIntervals::PageOut");
-            for (auto region : intervals) {
-                auto freeStart{util::AlignUp(region.start, PAGE_SIZE)}, freeEnd{util::AlignDown(region.end, PAGE_SIZE)}; // We want to avoid the first and last page as they may contain data that won't be paged back in by the callback
-                ssize_t freeSize{freeEnd - freeStart};
-
-                constexpr ssize_t MinimumPageoutSize{PAGE_SIZE}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
-                if (freeSize > MinimumPageoutSize)
-                    state.process->memory.FreeMemory(span<u8>{freeStart, static_cast<size_t>(freeSize)});
-            }
         }
     }
 
@@ -537,29 +526,42 @@ namespace skyline::nce {
 
     NCE::TrapHandle NCE::CreateTrap(span<span<u8>> regions, const LockCallback &lockCallback, const TrapCallback &readCallback, const TrapCallback &writeCallback) {
         TRACE_EVENT("host", "NCE::CreateTrap");
-        std::scoped_lock lock(trapMutex);
+        std::scoped_lock lock{trapMutex};
         TrapHandle handle{trapMap.Insert(regions, CallbackEntry{TrapProtection::None, lockCallback, readCallback, writeCallback})};
         return handle;
     }
 
     void NCE::TrapRegions(TrapHandle handle, bool writeOnly) {
         TRACE_EVENT("host", "NCE::TrapRegions");
-        std::scoped_lock lock(trapMutex);
+        std::scoped_lock lock{trapMutex};
         auto protection{writeOnly ? TrapProtection::WriteOnly : TrapProtection::ReadWrite};
         handle->value.protection = protection;
         ReprotectIntervals(handle->intervals, protection);
     }
 
+    void NCE::PageOutRegions(TrapHandle handle) {
+        TRACE_EVENT("host", "NCE::PageOutRegions");
+        std::scoped_lock lock{trapMutex};
+        for (auto region : handle->intervals) {
+            auto freeStart{util::AlignUp(region.start, PAGE_SIZE)}, freeEnd{util::AlignDown(region.end, PAGE_SIZE)}; // We want to avoid the first and last page as they may contain unrelated data
+            ssize_t freeSize{freeEnd - freeStart};
+
+            constexpr ssize_t MinimumPageoutSize{PAGE_SIZE}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
+            if (freeSize > MinimumPageoutSize)
+                state.process->memory.FreeMemory(span<u8>{freeStart, static_cast<size_t>(freeSize)});
+        }
+    }
+
     void NCE::RemoveTrap(TrapHandle handle) {
         TRACE_EVENT("host", "NCE::RemoveTrap");
-        std::scoped_lock lock(trapMutex);
+        std::scoped_lock lock{trapMutex};
         handle->value.protection = TrapProtection::None;
         ReprotectIntervals(handle->intervals, TrapProtection::None);
     }
 
     void NCE::DeleteTrap(TrapHandle handle) {
         TRACE_EVENT("host", "NCE::DeleteTrap");
-        std::scoped_lock lock(trapMutex);
+        std::scoped_lock lock{trapMutex};
         handle->value.protection = TrapProtection::None;
         ReprotectIntervals(handle->intervals, TrapProtection::None);
         trapMap.Remove(handle);
