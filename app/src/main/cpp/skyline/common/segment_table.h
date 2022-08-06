@@ -116,7 +116,7 @@ namespace skyline {
             size_t l2AlignedAddress{util::AlignUp(start, L2Size)};
 
             size_t l1StartPaddingStart{start >> L1Bits};
-            size_t l1StartPaddingEnd{l2AlignedAddress >> L1Bits};
+            size_t l1StartPaddingEnd{l2AlignedAddress < end ? (l2AlignedAddress >> L1Bits) : (end >> L1Bits)};
             if (l1StartPaddingStart != l1StartPaddingEnd) {
                 auto &l2Entry{level2Table[start >> L2Bits]};
                 if (l2Entry.valid) {
@@ -129,6 +129,10 @@ namespace skyline {
 
                     for (size_t i{l1StartPaddingStart}; i < l1StartPaddingEnd; i++)
                         level1Table[i] = segment;
+
+                    size_t l1L2End{l2AlignedAddress >> L1Bits};
+                    for (size_t i{l1StartPaddingEnd}; i < l1L2End; i++)
+                        level1Table[i] = l2Entry.segment;
                 } else if (!l2Entry.level1Set) {
                     l2Entry.segment = segment;
                     l2Entry.valid = true;
@@ -138,6 +142,9 @@ namespace skyline {
                         level1Table[i] = segment;
                 }
             }
+
+            if (end <= l2AlignedAddress)
+                return;
 
             size_t l2IndexStart{l2AlignedAddress >> L2Bits};
             size_t l2IndexEnd{end >> L2Bits};
