@@ -177,11 +177,10 @@ namespace skyline::kernel::type {
             if (!waiters.empty()) {
                 // If there are threads still waiting on us then try to inherit their priority
                 auto highestPriorityThread{waiters.front()};
-                i8 newPriority, basePriority;
+                i8 newPriority, currentPriority{state.thread->priority.load()};
                 do {
-                    basePriority = state.thread->basePriority.load();
-                    newPriority = std::min(basePriority, highestPriorityThread->priority.load());
-                } while (basePriority != newPriority && !state.thread->priority.compare_exchange_strong(basePriority, newPriority));
+                    newPriority = std::min(currentPriority, highestPriorityThread->priority.load());
+                } while (currentPriority != newPriority && !state.thread->priority.compare_exchange_strong(currentPriority, newPriority));
                 state.scheduler->UpdatePriority(state.thread);
             } else {
                 i8 priority, basePriority;
