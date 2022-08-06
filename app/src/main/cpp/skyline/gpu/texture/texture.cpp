@@ -176,7 +176,6 @@ namespace skyline::gpu {
                 return false;
 
             texture->SynchronizeGuest(false, true); // We can skip trapping since the caller will do it
-            texture->WaitOnFence();
             return true;
         }, [weakThis] {
             TRACE_EVENT("gpu", "Texture::WriteTrap");
@@ -198,7 +197,6 @@ namespace skyline::gpu {
             if (!lock)
                 return false;
             texture->SynchronizeGuest(true, true); // We need to assume the texture is dirty since we don't know what the guest is writing
-            texture->WaitOnFence();
             return true;
         });
     }
@@ -455,13 +453,6 @@ namespace skyline::gpu {
         }
     }
 
-    Texture::TextureBufferCopy::TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer) : texture(std::move(texture)), stagingBuffer(std::move(stagingBuffer)) {}
-
-    Texture::TextureBufferCopy::~TextureBufferCopy() {
-        TRACE_EVENT("gpu", "Texture::TextureBufferCopy");
-        texture->CopyToGuest(stagingBuffer ? stagingBuffer->data() : std::get<memory::Image>(texture->backing).data());
-    }
-
     Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 levelCount, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
@@ -596,7 +587,6 @@ namespace skyline::gpu {
             gpu.state.nce->DeleteTrap(*trapHandle);
         if (alignedMirror.valid())
             munmap(alignedMirror.data(), alignedMirror.size());
-        WaitOnFence();
     }
 
     void Texture::lock() {
@@ -780,12 +770,13 @@ namespace skyline::gpu {
         if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
             auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
 
+            WaitOnFence();
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 CopyIntoStagingBuffer(commandBuffer, stagingBuffer);
             })};
-            lCycle->AttachObject(std::make_shared<TextureBufferCopy>(shared_from_this(), stagingBuffer));
-            lCycle->ChainCycle(cycle);
-            cycle = lCycle;
+            lCycle->Wait(); // We block till the copy is complete
+
+            CopyToGuest(stagingBuffer->data());
         } else if (tiling == vk::ImageTiling::eLinear) {
             // We can optimize linear texture sync on a UMA by mapping the texture onto the CPU and copying directly from it rather than using a staging buffer
             WaitOnFence();

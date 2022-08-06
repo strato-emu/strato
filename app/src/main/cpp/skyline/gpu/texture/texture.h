@@ -417,18 +417,6 @@ namespace skyline::gpu {
         void CopyToGuest(u8 *hostBuffer);
 
         /**
-         * @brief A fence cycle dependency that copies the contents of a staging buffer or mapped image backing the texture to the guest texture
-         */
-        struct TextureBufferCopy {
-            std::shared_ptr<Texture> texture;
-            std::shared_ptr<memory::StagingBuffer> stagingBuffer;
-
-            TextureBufferCopy(std::shared_ptr<Texture> texture, std::shared_ptr<memory::StagingBuffer> stagingBuffer = {});
-
-            ~TextureBufferCopy();
-        };
-
-        /**
          * @return A vector of all the buffer image copies that need to be done for every aspect of every level of every layer of the texture
          */
         boost::container::small_vector<vk::BufferImageCopy, 10> GetBufferImageCopies();
@@ -547,7 +535,7 @@ namespace skyline::gpu {
          * @brief Synchronizes the guest texture with the host texture after it has been modified
          * @param cpuDirty If true, the texture will be transitioned to being CpuDirty by this call
          * @param skipTrap If true, trapping/untrapping the guest mappings will be skipped and has to be handled by the caller
-         * @note This function is not blocking and the synchronization will not be complete until the associated fence is signalled, it can be waited on with WaitOnFence()
+         * @note This function is blocking and waiting on the fence is not required
          * @note The texture **must** be locked prior to calling this
          */
         void SynchronizeGuest(bool cpuDirty = false, bool skipTrap = false);
