@@ -26,9 +26,8 @@ namespace skyline {
          * @brief An entry in a segment table level aside from the lowest level which directly holds the type, this has an associated segment and a flag if the lookup should move to a higher granularity (and the corresponding lower level)
          */
         struct alignas(8) RangeEntry {
+            bool valid; //!< If the associated segment is valid, the entry must not be accessed without checking validity first and an invalid entry implies going to the next level
             SegmentType segment; //!< The segment associated with the entry, this is 0'd out if the entry is unset
-            bool valid; //!< If the associated segment is valid, the entry must not be accessed without checking validity first
-            bool level1Set; //!< If to ignore this level and look in the next level table instead
         };
 
         static constexpr size_t L2Size{1 << L2Bits}, L2Entries{util::DivideCeil(Size, L2Size)}, L1inL2Count{L1Size / L2Size};
@@ -85,31 +84,6 @@ namespace skyline {
         }
 
         /**
-         * @brief Sets a single segment at the specified index to the supplied value
-         */
-        void Set(size_t index, SegmentType segment) {
-            auto &l2Entry{level2Table[index >> L2Bits]};
-            if (l2Entry.valid || l2Entry.level1Set) {
-                if (l2Entry.segment == segment)
-                    return;
-
-                l2Entry.valid = false;
-                l2Entry.level1Set = true;
-                size_t l1L2Start{(index >> L2Bits) << (L2Bits - L1Bits)};
-                for (size_t i{l1L2Start}; i < l1L2Start + L1inL2Count; i++)
-                    level1Table[i] = l2Entry.segment;
-
-                level1Table[index >> L1Bits] = segment;
-            } else if (l2Entry.level1Set) {
-                level1Table[index >> L1Bits] = segment;
-            } else {
-                l2Entry.segment = segment;
-                l2Entry.valid = true;
-                l2Entry.level1Set = true;
-            }
-        }
-
-        /**
          * @brief Sets a segment of segments between the start and end to the supplied value
          */
         void Set(size_t start, size_t end, SegmentType segment) {
@@ -121,7 +95,6 @@ namespace skyline {
                 auto &l2Entry{level2Table[start >> L2Bits]};
                 if (l2Entry.valid) {
                     l2Entry.valid = false;
-                    l2Entry.level1Set = true;
 
                     size_t l1L2Start{(start >> L2Bits) << (L2Bits - L1Bits)};
                     for (size_t i{l1L2Start}; i < l1StartPaddingStart; i++)
@@ -133,10 +106,6 @@ namespace skyline {
                     size_t l1L2End{l2AlignedAddress >> L1Bits};
                     for (size_t i{l1StartPaddingEnd}; i < l1L2End; i++)
                         level1Table[i] = l2Entry.segment;
-                } else if (!l2Entry.level1Set) {
-                    l2Entry.segment = segment;
-                    l2Entry.valid = true;
-                    l2Entry.level1Set = false;
                 } else {
                     for (size_t i{l1StartPaddingStart}; i < l1StartPaddingEnd; i++)
                         level1Table[i] = segment;
@@ -152,7 +121,6 @@ namespace skyline {
                 auto &l2Entry{level2Table[i]};
                 l2Entry.segment = segment;
                 l2Entry.valid = true;
-                l2Entry.level1Set = false;
             }
 
             size_t l1EndPaddingStart{l2IndexEnd << (L2Bits - L1Bits)};
@@ -161,17 +129,12 @@ namespace skyline {
                 auto &l2Entry{level2Table[l2IndexEnd]};
                 if (l2Entry.valid) {
                     l2Entry.valid = false;
-                    l2Entry.level1Set = true;
 
                     for (size_t i{l1EndPaddingStart}; i < l1EndPaddingEnd; i++)
                         level1Table[i] = segment;
 
                     for (size_t i{l1EndPaddingEnd}; i < l1EndPaddingStart + L1inL2Count; i++)
                         level1Table[i] = l2Entry.segment;
-                } else if (!l2Entry.level1Set) {
-                    l2Entry.segment = segment;
-                    l2Entry.valid = true;
-                    l2Entry.level1Set = false;
                 } else {
                     for (size_t i{l1EndPaddingStart}; i < l1EndPaddingEnd; i++)
                         level1Table[i] = segment;
