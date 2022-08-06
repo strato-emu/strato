@@ -8,6 +8,7 @@
 #include <common/lockable_shared_ptr.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
+#include "megabuffer.h"
 #include "memory_manager.h"
 
 namespace skyline::gpu {
@@ -60,7 +61,7 @@ namespace skyline::gpu {
 
             // These are not accounted for in hash nor operator== since they are not an inherent property of the view, but they are required nonetheless for megabuffering on a per-view basis
             mutable u64 lastAcquiredSequence{}; //!< The last sequence number for the attached buffer that the megabuffer copy of this view was acquired from, if this is equal to the current sequence of the attached buffer then the copy at `megabufferOffset` is still valid
-            mutable vk::DeviceSize megabufferOffset{}; //!< Offset of the current copy of the view in the megabuffer (if any), 0 if no copy exists and this is only valid if `lastAcquiredSequence` is equal to the current sequence of the attached buffer
+            mutable MegaBufferAllocator::Allocation megaBufferAllocation; //!< Allocation for the current copy of the view in the megabuffer (if any), 0 if no copy exists and this is only valid if `lastAcquiredSequence` is equal to the current sequence of the attached buffer
 
             BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format);
 
@@ -421,10 +422,10 @@ namespace skyline::gpu {
 
         /**
          * @brief If megabuffering is beneficial for the current buffer, pushes its contents into the megabuffer and returns the offset of the pushed data
-         * @return The offset of the pushed buffer contents in the megabuffer, or 0 if megabuffering is not to be used
+         * @return The megabuffer allocation for the buffer, may be invalid if megabuffering is not beneficial
          * @note The view **must** be locked prior to calling this
          */
-        vk::DeviceSize AcquireMegaBuffer(MegaBuffer &megaBuffer) const;
+        MegaBufferAllocator::Allocation AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const;
 
         /**
          * @return A span of the backing buffer contents

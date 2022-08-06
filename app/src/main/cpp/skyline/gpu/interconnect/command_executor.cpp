@@ -5,7 +5,7 @@
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu{*state.gpu}, activeCommandBuffer{gpu.scheduler.AllocateCommandBuffer()}, cycle{activeCommandBuffer.GetFenceCycle()}, megaBuffer{gpu.buffer.AcquireMegaBuffer(cycle)}, tag{AllocateTag()} {}
+    CommandExecutor::CommandExecutor(const DeviceState &state) : gpu{*state.gpu}, activeCommandBuffer{gpu.scheduler.AllocateCommandBuffer()}, cycle{activeCommandBuffer.GetFenceCycle()}, tag{AllocateTag()} {}
 
     CommandExecutor::~CommandExecutor() {
         cycle->Cancel();
@@ -21,6 +21,12 @@ namespace skyline::gpu::interconnect {
         if (!bufferManagerLock)
             bufferManagerLock.emplace(gpu.buffer);
         return gpu.buffer;
+    }
+
+    MegaBufferAllocator &CommandExecutor::AcquireMegaBufferAllocator() {
+        if (!megaBufferAllocatorLock)
+            megaBufferAllocatorLock.emplace(gpu.megaBufferAllocator);
+        return gpu.megaBufferAllocator;
     }
 
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
@@ -314,12 +320,13 @@ namespace skyline::gpu::interconnect {
 
         for (const auto &delegate : attachedBufferDelegates) {
             delegate->usageCallback = nullptr;
-            delegate->view->megabufferOffset = 0;
+            delegate->view->megaBufferAllocation = {};
         }
 
         attachedBufferDelegates.clear();
         attachedBuffers.clear();
         bufferManagerLock.reset();
+        megaBufferAllocatorLock.reset();
     }
 
     void CommandExecutor::Submit() {
@@ -331,10 +338,6 @@ namespace skyline::gpu::interconnect {
             SubmitInternal();
             activeCommandBuffer = gpu.scheduler.AllocateCommandBuffer();
             cycle = activeCommandBuffer.GetFenceCycle();
-            if (megaBuffer.WasUsed())
-                megaBuffer = gpu.buffer.AcquireMegaBuffer(cycle);
-            else
-                megaBuffer.ReplaceCycle(cycle);
         }
         ResetInternal();
     }
@@ -347,8 +350,6 @@ namespace skyline::gpu::interconnect {
             TRACE_EVENT("gpu", "CommandExecutor::SubmitWithFlush");
             SubmitInternal();
             cycle = activeCommandBuffer.Reset();
-            megaBuffer.ReplaceCycle(cycle);
-            megaBuffer.Reset();
         }
         ResetInternal();
     }

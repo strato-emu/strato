@@ -166,6 +166,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/texture/texture.cpp
         ${source_DIR}/skyline/gpu/texture/layout.cpp
         ${source_DIR}/skyline/gpu/buffer.cpp
+        ${source_DIR}/skyline/gpu/megabuffer.cpp
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/shader_manager.cpp
         ${source_DIR}/skyline/gpu/cache/graphics_pipeline_cache.cpp

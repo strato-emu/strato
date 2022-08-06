@@ -348,30 +348,30 @@ namespace skyline::gpu {
         bufferDelegate->buffer->Write(isFirstUsage, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
     }
 
-    vk::DeviceSize BufferView::AcquireMegaBuffer(MegaBuffer &megaBuffer) const {
+    MegaBufferAllocator::Allocation BufferView::AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const {
         if (!bufferDelegate->buffer->EverHadInlineUpdate())
             // Don't megabuffer buffers that have never had inline updates since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
-            return 0;
+            return {};
 
         if (bufferDelegate->view->size > MegaBufferingDisableThreshold)
-            return 0;
+            return {};
 
         auto [newSequence, sequenceSpan]{bufferDelegate->buffer->AcquireCurrentSequence()};
         if (!newSequence)
-            return 0; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
+            return {}; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
 
         // If a copy of the view for the current sequence is already in megabuffer then we can just use that
-        if (newSequence == bufferDelegate->view->lastAcquiredSequence && bufferDelegate->view->megabufferOffset)
-            return bufferDelegate->view->megabufferOffset;
+        if (newSequence == bufferDelegate->view->lastAcquiredSequence && bufferDelegate->view->megaBufferAllocation)
+            return bufferDelegate->view->megaBufferAllocation;
 
         // If the view is not in the megabuffer then we need to allocate a new copy
         auto viewBackingSpan{sequenceSpan.subspan(bufferDelegate->view->offset, bufferDelegate->view->size)};
 
         // TODO: we could optimise the alignment requirements here based on buffer usage
-        bufferDelegate->view->megabufferOffset = megaBuffer.Push(viewBackingSpan, true);
+        bufferDelegate->view->megaBufferAllocation = allocator.Push(pCycle, viewBackingSpan, true);
         bufferDelegate->view->lastAcquiredSequence = newSequence;
 
-        return bufferDelegate->view->megabufferOffset; // Success!
+        return bufferDelegate->view->megaBufferAllocation; // Success!
     }
 
     span<u8> BufferView::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {

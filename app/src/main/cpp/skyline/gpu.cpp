@@ -372,6 +372,7 @@ namespace skyline::gpu {
           presentation(state, *this),
           texture(*this),
           buffer(*this),
+          megaBufferAllocator(*this),
           descriptor(*this),
           shader(state, *this),
           graphicsPipelineCache(*this),

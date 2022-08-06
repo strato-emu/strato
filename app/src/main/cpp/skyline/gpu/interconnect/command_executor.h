@@ -5,6 +5,7 @@
 
 #include <boost/container/stable_vector.hpp>
 #include <unordered_set>
+#include <gpu/megabuffer.h>
 #include "command_nodes.h"
 
 namespace skyline::gpu::interconnect {
@@ -21,7 +22,8 @@ namespace skyline::gpu::interconnect {
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
 
         std::optional<std::scoped_lock<TextureManager>> textureManagerLock; //!< The lock on the texture manager, this is locked for the duration of the command execution from the first usage inside an execution to the submission
-        std::optional<std::scoped_lock<BufferManager>> bufferManagerLock; //!< The lock on the buffer manager, this is locked for the duration of the command execution from the first usage inside an execution to the submission
+        std::optional<std::scoped_lock<BufferManager>> bufferManagerLock; //!< The lock on the buffer manager, see above for details
+        std::optional<std::scoped_lock<MegaBufferAllocator>> megaBufferAllocatorLock; //!< The lock on the megabuffer allocator, see above for details
 
         /**
          * @brief A wrapper of a Texture object that has been locked beforehand and must be unlocked afterwards
@@ -96,7 +98,6 @@ namespace skyline::gpu::interconnect {
 
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
-        MegaBuffer megaBuffer; //!< The megabuffer used to temporarily store buffer modifications allowing them to be replayed in-sequence on the GPU
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
 
         CommandExecutor(const DeviceState &state);
@@ -130,6 +131,12 @@ namespace skyline::gpu::interconnect {
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
         bool AttachBuffer(BufferView &view);
+
+        /**
+         * @return A reference to an instance of the megabuffer allocator which will be locked till execution
+         * @note Any access to the megabuffer allocator while recording commands **must** be done via this
+         */
+        MegaBufferAllocator &AcquireMegaBufferAllocator();
 
         /**
          * @brief Attach the lifetime of a buffer view that's already locked to the command buffer

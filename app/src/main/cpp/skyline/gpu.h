@@ -9,6 +9,7 @@
 #include "gpu/presentation_engine.h"
 #include "gpu/texture_manager.h"
 #include "gpu/buffer_manager.h"
+#include "gpu/megabuffer.h"
 #include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
 #include "gpu/cache/graphics_pipeline_cache.h"
@@ -44,6 +45,7 @@ namespace skyline::gpu {
 
         TextureManager texture;
         BufferManager buffer;
+        MegaBufferAllocator megaBufferAllocator;
 
         DescriptorAllocator descriptor;
         ShaderManager shader;

@@ -5,7 +5,7 @@
 #include "buffer_manager.h"
 
 namespace skyline::gpu {
-    BufferManager::BufferManager(GPU &gpu) : gpu(gpu) {}
+    BufferManager::BufferManager(GPU &gpu) : gpu{gpu} {}
 
     bool BufferManager::BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer) {
         return it->guest->begin().base() < pointer;
@@ -208,79 +208,5 @@ namespace skyline::gpu {
 
             return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
         }
-    }
-
-    constexpr static vk::DeviceSize MegaBufferSize{100 * 1024 * 1024}; //!< Size in bytes of the megabuffer (100MiB)
-
-    BufferManager::MegaBufferSlot::MegaBufferSlot(GPU &gpu) : backing(gpu.memory.AllocateBuffer(MegaBufferSize)) {}
-
-    MegaBuffer::MegaBuffer(BufferManager::MegaBufferSlot &slot) : slot{&slot}, freeRegion{slot.backing.subspan(PAGE_SIZE)} {}
-
-    MegaBuffer::~MegaBuffer() {
-        if (slot)
-            slot->active.clear(std::memory_order_release);
-    }
-
-    MegaBuffer &MegaBuffer::operator=(MegaBuffer &&other) {
-        if (slot)
-            slot->active.clear(std::memory_order_release);
-        slot = other.slot;
-        freeRegion = other.freeRegion;
-        other.slot = nullptr;
-        return *this;
-    }
-
-    bool MegaBuffer::WasUsed() {
-        return freeRegion != slot->backing.subspan(PAGE_SIZE);
-    }
-
-    void MegaBuffer::ReplaceCycle(const std::shared_ptr<FenceCycle> &cycle) {
-        slot->cycle = cycle;
-    }
-
-    void MegaBuffer::Reset() {
-        freeRegion = slot->backing.subspan(PAGE_SIZE);
-    }
-
-    vk::Buffer MegaBuffer::GetBacking() const {
-        return slot->backing.vkBuffer;
-    }
-
-    vk::DeviceSize MegaBuffer::Push(span<u8> data, bool pageAlign) {
-        if (data.size() > freeRegion.size())
-            throw exception("Ran out of megabuffer space! Alloc size: 0x{:X}", data.size());
-
-        if (pageAlign) {
-            // If page aligned data was requested then align the free
-            auto alignedFreeBase{util::AlignUp(static_cast<size_t>(freeRegion.data() - slot->backing.data()), PAGE_SIZE)};
-            freeRegion = slot->backing.subspan(alignedFreeBase);
-        }
-
-        // Allocate space for data from the free region
-        auto resultSpan{freeRegion.subspan(0, data.size())};
-        resultSpan.copy_from(data);
-
-        // Move the free region along
-        freeRegion = freeRegion.subspan(data.size());
-        return static_cast<vk::DeviceSize>(resultSpan.data() - slot->backing.data());
-    }
-
-    MegaBuffer BufferManager::AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &cycle) {
-        std::scoped_lock lock{megaBufferMutex};
-
-        for (auto &slot : megaBuffers) {
-            if (!slot.active.test_and_set(std::memory_order_acq_rel)) {
-                if (slot.cycle->Poll()) {
-                    slot.cycle = cycle;
-                    return {slot};
-                } else {
-                    slot.active.clear(std::memory_order_release);
-                }
-            }
-        }
-
-        auto &megaBuffer{megaBuffers.emplace_back(gpu)};
-        megaBuffer.cycle = cycle;
-        return {megaBuffer};
     }
 }
