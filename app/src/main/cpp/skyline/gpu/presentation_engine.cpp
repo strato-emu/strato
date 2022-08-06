@@ -129,15 +129,19 @@ namespace skyline::gpu {
             else
                 throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
         }
+        auto &nextImageTexture{images.at(nextImage.second)};
 
         std::ignore = gpu.vkDevice.waitForFences(*acquireFence, true, std::numeric_limits<u64>::max());
 
         texture->SynchronizeHost();
-        images.at(nextImage.second)->CopyFrom(texture, vk::ImageSubresourceRange{
+        nextImageTexture->CopyFrom(texture, vk::ImageSubresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .levelCount = 1,
             .layerCount = 1,
         });
+
+        // Wait on the copy to the swapchain image to complete before submitting for presentation
+        nextImageTexture->WaitOnFence();
 
         auto getMonotonicNsNow{[]() -> i64 {
             timespec time;
