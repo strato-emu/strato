@@ -63,12 +63,12 @@ enum class LoaderResult(val value : Int) {
 /**
  * This class is used to hold an application's metadata in a serializable way
  */
-data class AppEntry(var name : String, var author : String?, var icon : Bitmap?, var format : RomFormat, var uri : Uri, var loaderResult : LoaderResult) : Serializable {
+data class AppEntry(var name : String, var author : String?, var icon : Bitmap?, var version : String?, var format : RomFormat, var uri : Uri, var loaderResult : LoaderResult) : Serializable {
     constructor(context : Context, format : RomFormat, uri : Uri, loaderResult : LoaderResult) : this(context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
         val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         cursor.moveToFirst()
         cursor.getString(nameIndex)
-    }!!.dropLast(format.name.length + 1), null, null, format, uri, loaderResult)
+    }!!.dropLast(format.name.length + 1), null, null, null, format, uri, loaderResult)
 
     private fun writeObject(output : ObjectOutputStream) {
         output.writeUTF(name)
@@ -77,6 +77,8 @@ data class AppEntry(var name : String, var author : String?, var icon : Bitmap?,
         output.writeBoolean(author != null)
         if (author != null)
             output.writeUTF(author)
+        if (version != null)
+            output.writeUTF(version)
         output.writeInt(loaderResult.value)
         output.writeBoolean(icon != null)
         icon?.let {
@@ -119,6 +121,11 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
      */
     private var rawIcon : ByteArray? = null
 
+    /**
+     * @note This field is filled in by native code
+     */
+    private var applicationVersion : String? = null
+
     val appEntry : AppEntry
 
     var result = LoaderResult.Success
@@ -133,8 +140,10 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
 
         appEntry = applicationName?.let { name ->
             applicationAuthor?.let { author ->
-                rawIcon?.let { icon ->
-                    AppEntry(name, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), format, uri, result)
+                applicationVersion?.let { version ->
+                    rawIcon?.let { icon ->
+                        AppEntry(name, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), version, format, uri, result)
+                    }
                 }
             }
         } ?: AppEntry(context, format, uri, result)

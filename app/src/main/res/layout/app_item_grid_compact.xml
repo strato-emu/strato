@@ -49,6 +49,25 @@
             android:id="@+id/text_subtitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:alpha="242.25"
+            android:ellipsize="marquee"
+            android:fadingEdge="horizontal"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:singleLine="true"
+            android:textAlignment="viewStart"
+            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+            android:textColor="@android:color/white"
+            app:layout_constraintBottom_toTopOf="@id/text_version"
+            app:layout_constraintEnd_toEndOf="@id/icon"
+            app:layout_constraintStart_toStartOf="@id/icon"
+            tools:text="Subtitle" />
+
+        <TextView
+            android:id="@+id/text_version"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:alpha="242.25"
             android:ellipsize="marquee"
@@ -63,6 +82,6 @@
             app:layout_constraintBottom_toBottomOf="@id/icon"
             app:layout_constraintEnd_toEndOf="@id/icon"
             app:layout_constraintStart_toStartOf="@id/icon"
-            tools:text="Subtitle" />
+            tools:text="Version" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

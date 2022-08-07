@@ -45,11 +45,23 @@
             app:layout_constraintTop_toBottomOf="@id/game_title"
             tools:text="Nintendo" />
 
+        <TextView
+            android:id="@+id/game_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+            android:textColor="@android:color/tertiary_text_light"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/game_subtitle"
+            app:layout_constraintTop_toBottomOf="@id/game_subtitle"
+            tools:layout_editor_absoluteY="64dp"
+            tools:text="Version" />
+
         <com.google.android.flexbox.FlexboxLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="28dp"
             app:flexWrap="wrap"
             app:layout_constraintStart_toStartOf="@id/game_title"
             app:layout_constraintTop_toBottomOf="@id/game_subtitle">

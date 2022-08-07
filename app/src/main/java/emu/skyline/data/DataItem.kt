@@ -39,6 +39,11 @@ data class AppItem(private val meta : AppEntry) : DataItem() {
      */
     val uri get() = meta.uri
 
+    /**
+     * The application version
+     */
+    val version get() = meta.version
+
     val loaderResult get() = meta.loaderResult
 
     fun loaderResultString(context : Context) = context.getString(when (meta.loaderResult) {

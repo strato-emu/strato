@@ -33,4 +33,9 @@ namespace skyline::vfs {
         auto applicationPublisher{span(nacpContents.titleEntries.at(static_cast<size_t>(language)).applicationPublisher)};
         return std::string(applicationPublisher.as_string(true));
     }
+
+    std::string NACP::GetApplicationVersion() {
+        auto applicationPublisher{span(nacpContents.displayVersion)};
+        return std::string(applicationPublisher.as_string(true));
+    }
 }

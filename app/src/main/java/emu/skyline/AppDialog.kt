@@ -77,6 +77,7 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.gameIcon.setImageBitmap(item.icon ?: missingIcon)
         binding.gameTitle.text = item.title
         binding.gameSubtitle.text = item.subTitle ?: item.loaderResultString(requireContext())
+        binding.gameVersion.text = item.version ?: item.loaderResultString(requireContext())
 
         binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
         binding.gamePlay.setOnClickListener {

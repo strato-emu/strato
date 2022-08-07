@@ -44,10 +44,24 @@
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="@android:color/tertiary_text_light"
         app:layout_constrainedWidth="true"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/icon"
         app:layout_constraintTop_toBottomOf="@+id/text_title"
         tools:text="SubTitle" />
+
+    <TextView
+        android:id="@+id/text_version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+        android:textColor="@android:color/tertiary_text_light"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toEndOf="@id/icon"
+        app:layout_constraintTop_toBottomOf="@+id/text_subtitle"
+        tools:text="Version" />
 </androidx.constraintlayout.widget.ConstraintLayout>
