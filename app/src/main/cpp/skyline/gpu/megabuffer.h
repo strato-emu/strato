@@ -30,11 +30,7 @@ namespace skyline::gpu {
          */
         vk::Buffer GetBacking() const;
 
-        /**
-         * @brief Pushes data to the chunk and returns the offset at which it was written
-         * @param pageAlign Whether the pushed data should be page aligned in the chunk
-         */
-        vk::DeviceSize Push(const std::shared_ptr<FenceCycle> &newCycle, span<u8> data, bool pageAlign = false);
+        std::pair<vk::DeviceSize, span<u8>> Allocate(const std::shared_ptr<FenceCycle> &newCycle, vk::DeviceSize size, bool pageAlign = false);
     };
 
     /**
@@ -55,6 +51,7 @@ namespace skyline::gpu {
         struct Allocation {
             vk::Buffer buffer; //!< The megabuffer chunk backing hat the allocation was made within
             vk::DeviceSize offset; //!< The offset of the allocation in the chunk
+            span<u8> region; //!< The CPU mapped region of the allocation in the chunk
 
             operator bool() const {
                 return offset != 0;
@@ -80,6 +77,13 @@ namespace skyline::gpu {
          * @note Naming is in accordance to the Lockable named requirement
          */
         bool try_lock();
+
+        /**
+          * @brief Allocates data in a megabuffer chunk and returns an structure describing the allocation
+          * @param pageAlign Whether the pushed data should be page aligned in the megabuffer
+          * @note The allocator *MUST* be locked before calling this function
+          */
+        Allocation Allocate(const std::shared_ptr<FenceCycle> &cycle, vk::DeviceSize size, bool pageAlign = false);
 
         /**
          * @brief Pushes data to a megabuffer chunk and returns an structure describing the allocation
