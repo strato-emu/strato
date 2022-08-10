@@ -58,7 +58,7 @@ namespace skyline::gpu {
                 .polygonMode = vk::PolygonMode::eFill,
                 .lineWidth = 1.0f,
                 .cullMode = vk::CullModeFlagBits::eNone,
-                .frontFace = vk::FrontFace::eCounterClockwise,
+                .frontFace = vk::FrontFace::eClockwise,
                 .depthBiasEnable = false
             }, {
                 .provokingVertexMode = vk::ProvokingVertexModeEXT::eFirstVertex
