@@ -46,16 +46,6 @@ namespace skyline::soc::gm20b::engine::fermi2d {
                     Shape16x4 = 2
                 };
 
-                enum class SampleModeOrigin : u8 {
-                    Center = 0,
-                    Corner = 1
-                };
-
-                enum class SampleModeFilter : u8 {
-                    Point = 0,
-                    Bilinear = 1
-                };
-
                 BlockShapeV blockShape : 3;
                 u32 _pad0_ : 29;
                 u16 corralSize : 10;
@@ -63,9 +53,9 @@ namespace skyline::soc::gm20b::engine::fermi2d {
                 bool safeOverlap : 1;
                 u32 _pad2_ : 31;
                 struct {
-                    SampleModeOrigin origin : 1;
+                    type::SampleModeOrigin origin : 1;
                     u8 _pad0_ : 3;
-                    SampleModeFilter filter : 1;
+                    type::SampleModeFilter filter : 1;
                     u32 _pad1_ : 27;
                 } sampleMode;
 

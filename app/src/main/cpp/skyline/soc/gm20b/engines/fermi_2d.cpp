@@ -41,7 +41,7 @@ namespace skyline::soc::gm20b::engine::fermi2d {
             float duDx{fixedToFloating(pixelsFromMemory.duDx)};
             float dvDy{fixedToFloating(pixelsFromMemory.dvDy)};
 
-            if (registers.pixelsFromMemory->sampleMode.origin == Registers::PixelsFromMemory::SampleModeOrigin::Center) {
+            if (registers.pixelsFromMemory->sampleMode.origin == type::SampleModeOrigin::Center) {
                 // This is an MSAA resolve operation, sampling from the center of each pixel in order to resolve the final image from the MSAA samples
                 // MSAA images are stored in memory like regular images but each pixels dimensions are scaled: e.g for 2x2 MSAA
                 /* 112233
@@ -61,8 +61,9 @@ namespace skyline::soc::gm20b::engine::fermi2d {
                               pixelsFromMemory.dstWidth, pixelsFromMemory.dstHeight,
                               pixelsFromMemory.dstX0, pixelsFromMemory.dstY0,
                               duDx, dvDy,
-                              registers.pixelsFromMemory->sampleMode.origin == Registers::PixelsFromMemory::SampleModeOrigin::Center,
-                              pixelsFromMemory.sampleMode.filter == Registers::PixelsFromMemory::SampleModeFilter::Bilinear);
+                              registers.pixelsFromMemory->sampleMode.origin,
+                              registers.pixelsFromMemory->sampleMode.origin == type::SampleModeOrigin::Center,
+                              pixelsFromMemory.sampleMode.filter);
         }
     }
 

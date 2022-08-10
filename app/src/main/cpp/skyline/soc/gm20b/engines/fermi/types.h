@@ -89,5 +89,15 @@ namespace skyline::soc::gm20b::engine::fermi2d::type {
         Address address;
     };
 
+    enum class SampleModeOrigin : u8 {
+        Center = 0,
+        Corner = 1
+    };
+
+    enum class SampleModeFilter : u8 {
+        Point = 0,
+        Bilinear = 1
+    };
+
     #pragma pack(pop)
 }

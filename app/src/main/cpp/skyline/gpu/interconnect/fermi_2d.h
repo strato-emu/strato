@@ -26,6 +26,8 @@ namespace skyline::gpu::interconnect {
       private:
         using IOVA = soc::gm20b::IOVA;
         using Surface = skyline::soc::gm20b::engine::fermi2d::type::Surface;
+        using SampleModeOrigin = skyline::soc::gm20b::engine::fermi2d::type::SampleModeOrigin;
+        using SampleModeFilter = skyline::soc::gm20b::engine::fermi2d::type::SampleModeFilter;
 
         GPU &gpu;
         soc::gm20b::ChannelContext &channelCtx;
@@ -36,6 +38,6 @@ namespace skyline::gpu::interconnect {
       public:
         Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
 
-        void Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, bool resolve, bool bilinearFilter);
+        void Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter);
     };
 }

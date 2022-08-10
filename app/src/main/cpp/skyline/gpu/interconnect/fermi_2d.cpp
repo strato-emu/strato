@@ -108,7 +108,7 @@ namespace skyline::gpu::interconnect {
 
     Fermi2D::Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {}
 
-    void Fermi2D::Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, bool resolve, bool bilinearFilter) {
+    void Fermi2D::Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter) {
         // TODO: When we support MSAA perform a resolve operation rather than blit when the `resolve` flag is set.
         auto srcGuestTexture{GetGuestTexture(srcSurface)};
         auto dstGuestTexture{GetGuestTexture(dstSurface)};
@@ -120,13 +120,17 @@ namespace skyline::gpu::interconnect {
         auto dstTextureView{textureManager.FindOrCreate(dstGuestTexture, executor.tag)};
         executor.AttachTexture(dstTextureView.get());
 
+        // Blit shader always samples from centre so adjust if necessary
+        float centredSrcRectX{sampleOrigin == SampleModeOrigin::Corner ? srcRectX - 0.5f : srcRectX};
+        float centredSrcRectY{sampleOrigin == SampleModeOrigin::Corner ? srcRectY - 0.5f : srcRectY};
+
         gpu.helperShaders.blitHelperShader.Blit(
             gpu,
             {
                 .width = duDx * dstRectWidth,
                 .height = dvDy * dstRectHeight,
-                .x = srcRectX,
-                .y = srcRectY,
+                .x = centredSrcRectX,
+                .y = centredSrcRectY,
             },
             {
                 .width = static_cast<float>(dstRectWidth),
@@ -136,7 +140,7 @@ namespace skyline::gpu::interconnect {
             },
             srcGuestTexture.dimensions, dstGuestTexture.dimensions,
             duDx, dvDy,
-            bilinearFilter,
+            filter == SampleModeFilter::Bilinear,
             srcTextureView.get(), dstTextureView.get(),
             [=](auto &&executionCallback) {
                 auto dst{dstTextureView.get()};
