@@ -60,11 +60,17 @@ namespace skyline::service::timesrv {
         }
     };
 
+    /*
+     * Using __attribute__((packed)) doesn't work in new NDKs when a struct contains 128-bit integer members, likely because of a ndk/compiler bug
+     * Use #pragma pack to ensure that the following structs are tightly packed
+     */
+    #pragma pack(1)
+
     /**
      * @brief Holds details about a point in time sourced from a steady clock (e.g. RTC)
      * @url https://switchbrew.org/w/index.php?title=PSC_services#SteadyClockTimePoint
      */
-    struct __attribute__((packed)) SteadyClockTimePoint {
+    struct SteadyClockTimePoint {
         i64 timePoint; //!< Time in seconds
         UUID clockSourceId; //!< The UUID of the steady clock this timepoint comes from
 
@@ -76,13 +82,15 @@ namespace skyline::service::timesrv {
      * @brief Describes a system clocks offset from its associated steady clock
      * @url https://switchbrew.org/w/index.php?title=PSC_services#SystemClockContext
      */
-    struct __attribute__((packed)) SystemClockContext {
+    struct SystemClockContext {
         i64 offset; // Offset between the steady timepoint and the epoch
         SteadyClockTimePoint timestamp; //!< The steady timepoint this context was calibrated from
 
         auto operator<=>(const SystemClockContext &) const = default;
     };
     static_assert(sizeof(SystemClockContext) == 0x20);
+
+    #pragma pack()
 
     /**
      * @brief A particular time point in Nintendo's calendar format
