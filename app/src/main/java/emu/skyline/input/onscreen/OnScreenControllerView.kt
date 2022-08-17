@@ -150,13 +150,13 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                                 invalidate()
                             }
                             addListener(object : AnimatorListenerAdapter() {
-                                override fun onAnimationCancel(animation : Animator?) {
+                                override fun onAnimationCancel(animation : Animator) {
                                     super.onAnimationCancel(animation)
                                     onAnimationEnd(animation)
                                     onStickStateChangedListener?.invoke(joystick.stickId, PointF(0f, 0f))
                                 }
 
-                                override fun onAnimationEnd(animation : Animator?) {
+                                override fun onAnimationEnd(animation : Animator) {
                                     super.onAnimationEnd(animation)
                                     if (joystick.shortDoubleTapped)
                                         onButtonStateChangedListener?.invoke(joystick.buttonId, ButtonState.Released)

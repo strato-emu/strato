@@ -52,9 +52,9 @@ interface ByteBufferSerializable : Parcelable {
         return 0
     }
 
-    override fun writeToParcel(out : Parcel?, flags : Int) {
-        out?.writeString(this.javaClass.name)
-        out?.writeByteArray(this.writeToByteBuffer(ByteBuffer.allocate(ByteBufferSerializationData.getSerializationData(this::class).bytes)).array())
+    override fun writeToParcel(out : Parcel, flags : Int) {
+        out.writeString(this.javaClass.name)
+        out.writeByteArray(this.writeToByteBuffer(ByteBuffer.allocate(ByteBufferSerializationData.getSerializationData(this::class).bytes)).array())
     }
 
     class ParcelableCreator : Parcelable.ClassLoaderCreator<ByteBufferSerializable> {
