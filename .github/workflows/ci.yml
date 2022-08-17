@@ -42,7 +42,7 @@ jobs:
           ln -s /usr/bin/ninja .
 
       - name: Install CMake & Android NDK
-        run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.18.1" "ndk;25.0.8221429" --channel=3 | grep -v = || true
+        run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.22.1" "ndk;25.0.8775105" --channel=3 | grep -v = || true
 
       - name: Decode Keystore
         if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}

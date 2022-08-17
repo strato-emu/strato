@@ -8,7 +8,7 @@ plugins {
 }
 
 idea.module {
-    // These are not viable to index on most systems to exclude them to prevent IDE crashes
+    // These are not viable to index on most systems so exclude them to prevent IDE crashes
     excludeDirs.add(file("libraries/boost"))
     excludeDirs.add(file("libraries/llvm"))
 }
@@ -91,10 +91,10 @@ android {
     }
 
     /* NDK and CMake */
-    ndkVersion '25.0.8221429'
+    ndkVersion '25.0.8775105'
     externalNativeBuild {
         cmake {
-            version '3.18.1+'
+            version '3.22.1+'
             path "CMakeLists.txt"
         }
     }
@@ -116,16 +116,16 @@ android {
 
 dependencies {
     /* Google  */
-    implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.preference:preference-ktx:1.2.0'
-    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'com.google.android.material:material:1.6.1'
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
-    implementation 'androidx.fragment:fragment-ktx:1.4.1'
+    implementation 'androidx.fragment:fragment-ktx:1.5.2'
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
