@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="emu.skyline">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -27,8 +26,9 @@
         <profileable android:shell="true" />
 
         <activity
-            android:name="emu.skyline.MainActivity"
-            android:exported="true">
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -36,49 +36,39 @@
         </activity>
 
         <activity
-            android:name="emu.skyline.SettingsActivity"
+            android:name=".SettingsActivity"
             android:exported="true"
             android:label="@string/settings"
-            android:parentActivityName="emu.skyline.MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.MainActivity" />
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity">
         </activity>
 
         <activity
-            android:name="emu.skyline.input.ControllerActivity"
-            android:exported="true">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.SettingsActivity" />
+            android:name=".input.ControllerActivity"
+            android:exported="true"
+            android:parentActivityName=".SettingsActivity">
         </activity>
 
         <activity
-            android:name="emu.skyline.preference.GpuDriverActivity"
-            android:exported="true">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.SettingsActivity" />
+            android:name=".preference.GpuDriverActivity"
+            android:exported="true"
+            android:parentActivityName=".SettingsActivity">
         </activity>
 
         <activity
-            android:name="emu.skyline.input.onscreen.OnScreenEditActivity"
+            android:name=".input.onscreen.OnScreenEditActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
-            tools:ignore="LockedOrientationActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.input.ControllerActivity" />
+            tools:ignore="LockedOrientationActivity"
+            android:parentActivityName=".input.ControllerActivity">
         </activity>
 
         <activity
-            android:name="emu.skyline.EmulationActivity"
+            android:name=".EmulationActivity"
             android:configChanges="orientation|screenSize|uiMode"
             android:exported="true"
-            android:launchMode="singleTask">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="emu.skyline.MainActivity" />
+            android:launchMode="singleTask"
+            android:parentActivityName=".MainActivity">
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -114,7 +104,7 @@
         </activity>
 
         <provider
-            android:name="emu.skyline.provider.DocumentsProvider"
+            android:name=".provider.DocumentsProvider"
             android:authorities="emu.skyline.provider"
             android:exported="true"
             android:grantUriPermissions="true"
