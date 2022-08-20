@@ -72,14 +72,16 @@ abstract class OnScreenButton(
     var touchPointerId = -1
     var partnerPointerId = -1
 
+    var isPressed = false
+
     var isEditing = false
         private set
 
-    protected open fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float) {
+    protected open fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) {
         buttonSymbolPaint.apply {
             textSize = size
             textAlign = Paint.Align.LEFT
-            alpha = (config.opacity / 100.0 * 255).toInt()
+            this.alpha = alpha
             getTextBounds(text, 0, text.length, textBoundsRect)
         }
         canvas.drawText(text, x - textBoundsRect.width() / 2f - textBoundsRect.left, y + textBoundsRect.height() / 2f - textBoundsRect.bottom, buttonSymbolPaint)
@@ -87,20 +89,25 @@ abstract class OnScreenButton(
 
     open fun render(canvas : Canvas) {
         val bounds = currentBounds
+        val alpha = if (isPressed) (config.alpha - 130).coerceIn(30..255) else config.alpha
         drawable.apply {
             this.bounds = bounds
-            alpha = (config.opacity / 100.0 * 255).toInt()
+            this.alpha = alpha
             draw(canvas)
         }
 
-        renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat())
+        renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat(), alpha)
     }
 
     abstract fun isTouched(x : Float, y : Float) : Boolean
 
-    abstract fun onFingerDown(x : Float, y : Float)
+    open fun onFingerDown(x : Float, y : Float) {
+        isPressed = true
+    }
 
-    abstract fun onFingerUp(x : Float, y : Float)
+    open fun onFingerUp(x : Float, y : Float) {
+        isPressed = false
+    }
 
     fun loadConfigValues() {
         relativeX = config.relativeX

@@ -40,14 +40,6 @@ open class CircularButton(
      * Checks if [x] and [y] are within circle
      */
     override fun isTouched(x : Float, y : Float) : Boolean = (PointF(currentX, currentY) - (PointF(x, y))).length() <= radius
-
-    override fun onFingerDown(x : Float, y : Float) {
-        drawable.alpha = 125
-    }
-
-    override fun onFingerUp(x : Float, y : Float) {
-        drawable.alpha = 255
-    }
 }
 
 class JoystickButton(
@@ -64,7 +56,7 @@ class JoystickButton(
     defaultRelativeRadiusToX,
     R.drawable.ic_button
 ) {
-    internal val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
+    private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
     var recenterSticks = false
     private lateinit var initialTapPosition : PointF
@@ -73,7 +65,7 @@ class JoystickButton(
     var shortDoubleTapped = false
         private set
 
-    override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float) = Unit
+    override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
 
     override fun render(canvas : Canvas) {
         super.render(canvas)
@@ -101,7 +93,7 @@ class JoystickButton(
         if (firstTapDiff in 0..500 && secondTapDiff in 0..500) {
             shortDoubleTapped = true
             // Indicate stick being pressed with lower alpha value
-            drawable.alpha = 50
+            isPressed = true
         }
         fingerDownTime = currentTime
     }
@@ -113,7 +105,7 @@ class JoystickButton(
 
         fingerUpTime = SystemClock.elapsedRealtime()
         shortDoubleTapped = false
-        drawable.alpha = 255
+        isPressed = false
     }
 
     fun onFingerMoved(x : Float, y : Float, manualMove : Boolean = true) : PointF {
@@ -174,14 +166,6 @@ open class RectangularButton(
     drawableId
 ) {
     override fun isTouched(x : Float, y : Float) = currentBounds.contains(x.roundToInt(), y.roundToInt())
-
-    override fun onFingerDown(x : Float, y : Float) {
-        drawable.alpha = 125
-    }
-
-    override fun onFingerUp(x : Float, y : Float) {
-        drawable.alpha = 255
-    }
 }
 
 class TriggerButton(
@@ -248,11 +232,20 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons
 
     /**
-     * We can take any of the global scale variables from the buttons
+     * We can take any of the global scale variables from the buttons since the value is shared across all buttons
      */
     var globalScale
         get() = circularButtons.first().config.globalScale
         set(value) {
             circularButtons.first().config.globalScale = value
+        }
+
+    /**
+     * We can take any of the alpha variables from the buttons since the value is shared across all buttons
+     */
+    var alpha
+        get() = circularButtons.first().config.alpha
+        set(value) {
+            circularButtons.first().config.alpha = value
         }
 }
