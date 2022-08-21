@@ -47,8 +47,8 @@ namespace skyline::vfs {
 
         std::string GetApplicationName(language::ApplicationLanguage language);
 
-        std::string GetApplicationPublisher(language::ApplicationLanguage language);
-
         std::string GetApplicationVersion();
+
+        std::string GetApplicationPublisher(language::ApplicationLanguage language);
     };
 }

@@ -65,9 +65,9 @@ enum class LoaderResult(val value : Int) {
  */
 data class AppEntry(
     var name : String,
+    var version : String?,
     var author : String?,
     var icon : Bitmap?,
-    var version : String?,
     var format : RomFormat,
     var uri : Uri,
     var loaderResult : LoaderResult
@@ -82,12 +82,12 @@ data class AppEntry(
         output.writeUTF(name)
         output.writeObject(format)
         output.writeUTF(uri.toString())
-        output.writeBoolean(author != null)
-        if (author != null)
-            output.writeUTF(author)
         output.writeBoolean(version != null)
         if (version != null)
             output.writeUTF(version)
+        output.writeBoolean(author != null)
+        if (author != null)
+            output.writeUTF(author)
         output.writeInt(loaderResult.value)
         output.writeBoolean(icon != null)
         icon?.let {
@@ -104,9 +104,9 @@ data class AppEntry(
         format = input.readObject() as RomFormat
         uri = Uri.parse(input.readUTF())
         if (input.readBoolean())
-            author = input.readUTF()
-        if (input.readBoolean())
             version = input.readUTF()
+        if (input.readBoolean())
+            author = input.readUTF()
         loaderResult = LoaderResult.get(input.readInt())
         if (input.readBoolean())
             icon = BitmapFactory.decodeStream(input)
@@ -132,17 +132,17 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
     /**
      * @note This field is filled in by native code
      */
+    private var applicationVersion : String? = null
+
+    /**
+     * @note This field is filled in by native code
+     */
     private var applicationAuthor : String? = null
 
     /**
      * @note This field is filled in by native code
      */
     private var rawIcon : ByteArray? = null
-
-    /**
-     * @note This field is filled in by native code
-     */
-    private var applicationVersion : String? = null
 
     val appEntry : AppEntry
 
@@ -157,10 +157,10 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
         }
 
         appEntry = applicationName?.let { name ->
-            applicationAuthor?.let { author ->
-                applicationVersion?.let { version ->
+            applicationVersion?.let { version ->
+                applicationAuthor?.let { author ->
                     rawIcon?.let { icon ->
-                        AppEntry(name, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), version, format, uri, result)
+                        AppEntry(name, version, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), format, uri, result)
                     }
                 }
             }

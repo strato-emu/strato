@@ -44,9 +44,9 @@ interface LayoutBinding<V : ViewBinding> : ViewBinding {
 
     val textTitle : TextView
 
-    val textSubtitle : TextView
-
     val textVersion : TextView
+
+    val textSubtitle : TextView
 
     val icon : ImageView
 }
@@ -56,9 +56,9 @@ class ListBinding(parent : ViewGroup) : LayoutBinding<AppItemLinearBinding> {
 
     override val textTitle = binding.textTitle
 
-    override val textSubtitle = binding.textSubtitle
-
     override val textVersion = binding.textVersion
+
+    override val textSubtitle = binding.textSubtitle
 
     override val icon = binding.icon
 }
@@ -68,9 +68,9 @@ class GridBinding(parent : ViewGroup) : LayoutBinding<AppItemGridBinding> {
 
     override val textTitle = binding.textTitle
 
-    override val textSubtitle = binding.textSubtitle
-
     override val textVersion = binding.textVersion
+
+    override val textSubtitle = binding.textSubtitle
 
     override val icon = binding.icon
 }
@@ -80,9 +80,9 @@ class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBi
 
     override val textTitle = binding.textTitle
 
-    override val textSubtitle = binding.textSubtitle
-
     override val textVersion = binding.textVersion
+
+    override val textSubtitle = binding.textSubtitle
 
     override val icon = binding.icon
 }
@@ -95,8 +95,8 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
     override fun bind(holder : GenericViewHolder<LayoutBinding<*>>, position : Int) {
         val binding = holder.binding
         binding.textTitle.text = item.title
-        binding.textSubtitle.text = item.subTitle ?: item.loaderResultString(binding.root.context)
         binding.textVersion.text = item.version ?: item.loaderResultString(binding.root.context)
+        binding.textSubtitle.text = item.subTitle ?: item.loaderResultString(binding.root.context)
 
         binding.icon.setImageBitmap(item.icon ?: missingIcon)
 

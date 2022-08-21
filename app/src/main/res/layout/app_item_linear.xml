@@ -29,7 +29,7 @@
         android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceListItem"
         app:layout_constrainedWidth="true"
-        app:layout_constraintBottom_toTopOf="@+id/text_subtitle"
+        app:layout_constraintBottom_toTopOf="@id/text_version"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/icon"
@@ -37,21 +37,22 @@
         tools:text="Title" />
 
     <TextView
-        android:id="@+id/text_subtitle"
+        android:id="@+id/text_version"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="@android:color/tertiary_text_light"
         app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toTopOf="@id/text_subtitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/icon"
-        app:layout_constraintTop_toBottomOf="@+id/text_title"
-        tools:text="SubTitle" />
+        app:layout_constraintTop_toBottomOf="@id/text_title"
+        tools:text="Version" />
 
     <TextView
-        android:id="@+id/text_version"
+        android:id="@+id/text_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -62,6 +63,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/icon"
-        app:layout_constraintTop_toBottomOf="@+id/text_subtitle"
-        tools:text="Version" />
+        app:layout_constraintTop_toBottomOf="@id/text_version"
+        tools:text="SubTitle" />
 </androidx.constraintlayout.widget.ConstraintLayout>

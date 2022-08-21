@@ -40,7 +40,7 @@
         tools:text="Title" />
 
     <TextView
-        android:id="@+id/text_subtitle"
+        android:id="@+id/text_version"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -49,10 +49,10 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
         android:textSize="12sp"
-        tools:text="Subtitle" />
+        tools:text="Version" />
 
     <TextView
-        android:id="@+id/text_version"
+        android:id="@+id/text_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -62,5 +62,5 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
         android:textSize="12sp"
-        tools:text="Version" />
+        tools:text="Subtitle" />
 </LinearLayout>
