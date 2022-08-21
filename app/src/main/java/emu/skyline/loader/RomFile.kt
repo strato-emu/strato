@@ -63,7 +63,15 @@ enum class LoaderResult(val value : Int) {
 /**
  * This class is used to hold an application's metadata in a serializable way
  */
-data class AppEntry(var name : String, var author : String?, var icon : Bitmap?, var version : String?, var format : RomFormat, var uri : Uri, var loaderResult : LoaderResult) : Serializable {
+data class AppEntry(
+    var name : String,
+    var author : String?,
+    var icon : Bitmap?,
+    var version : String?,
+    var format : RomFormat,
+    var uri : Uri,
+    var loaderResult : LoaderResult
+) : Serializable {
     constructor(context : Context, format : RomFormat, uri : Uri, loaderResult : LoaderResult) : this(context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
         val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         cursor.moveToFirst()
@@ -77,6 +85,7 @@ data class AppEntry(var name : String, var author : String?, var icon : Bitmap?,
         output.writeBoolean(author != null)
         if (author != null)
             output.writeUTF(author)
+        output.writeBoolean(version != null)
         if (version != null)
             output.writeUTF(version)
         output.writeInt(loaderResult.value)
@@ -96,9 +105,18 @@ data class AppEntry(var name : String, var author : String?, var icon : Bitmap?,
         uri = Uri.parse(input.readUTF())
         if (input.readBoolean())
             author = input.readUTF()
+        if (input.readBoolean())
+            version = input.readUTF()
         loaderResult = LoaderResult.get(input.readInt())
         if (input.readBoolean())
             icon = BitmapFactory.decodeStream(input)
+    }
+
+    companion object {
+        /*
+         * The serialization version must be incremented after any changes to this class
+         */
+        private const val serialVersionUID : Long = 1L
     }
 }
 
