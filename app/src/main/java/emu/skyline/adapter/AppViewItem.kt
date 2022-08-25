@@ -96,7 +96,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         val binding = holder.binding
         binding.textTitle.text = item.title
         binding.textVersion.text = item.version ?: item.loaderResultString(binding.root.context)
-        binding.textAuthor.text = item.author ?: item.loaderResultString(binding.root.context)
+        binding.textAuthor.text = item.author
 
         binding.icon.setImageBitmap(item.icon ?: missingIcon)
 
