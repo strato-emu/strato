@@ -29,7 +29,7 @@ open class ControllerViewItem(var content : String = "", var subContent : String
             isGone = content.isEmpty()
             text = content
         }
-        binding.textSubtitle.apply {
+        binding.textAuthor.apply {
             isGone = subContent.isEmpty()
             text = subContent
         }

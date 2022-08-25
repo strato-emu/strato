@@ -24,8 +24,8 @@ class ControllerCheckBoxViewItem(var title : String, var summary : String, var c
         val binding = holder.binding
         binding.textTitle.isGone = title.isEmpty()
         binding.textTitle.text = title
-        binding.textSubtitle.isGone = summary.isEmpty()
-        binding.textSubtitle.text = summary
+        binding.textAuthor.isGone = summary.isEmpty()
+        binding.textAuthor.text = summary
         binding.checkbox.isChecked = checked
         binding.root.setOnClickListener {
             checked = !checked

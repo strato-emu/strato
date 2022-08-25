@@ -27,7 +27,7 @@
         tools:text="@string/config_controller" />
 
     <TextView
-        android:id="@+id/text_subtitle"
+        android:id="@+id/text_author"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="10"

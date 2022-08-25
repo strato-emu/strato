@@ -44,7 +44,7 @@
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="@android:color/tertiary_text_light"
         app:layout_constrainedWidth="true"
-        app:layout_constraintBottom_toTopOf="@id/text_subtitle"
+        app:layout_constraintBottom_toTopOf="@id/text_author"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/icon"
@@ -52,7 +52,7 @@
         tools:text="Version" />
 
     <TextView
-        android:id="@+id/text_subtitle"
+        android:id="@+id/text_author"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
