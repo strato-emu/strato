@@ -296,7 +296,9 @@ namespace skyline::kernel::type {
                     waitingOn->priority = ownerPriority;
 
                     lock.unlock();
+
                     waiterLock.lock();
+                    waiterLock.unlock();
 
                     lock.lock();
                     waitingOn = waitThread;
@@ -307,7 +309,23 @@ namespace skyline::kernel::type {
                 auto nextThread{waitingOn->waitThread};
                 if (nextThread) {
                     // We need to update the location of the owner thread in the waiter queue of the thread it's waiting on
-                    std::scoped_lock nextWaiterLock{nextThread->waiterMutex};
+                    std::unique_lock nextWaiterLock{nextThread->waiterMutex, std::try_to_lock};
+                    if (!nextWaiterLock) {
+                        // We want to avoid a deadlock here from the thread holding nextThread->waiterMutex waiting for waiterMutex or waitingOn->waiterMutex
+                        waitingOn->priority = ownerPriority;
+
+                        lock.unlock();
+                        waiterLock.unlock();
+
+                        nextWaiterLock.lock();
+                        nextWaiterLock.unlock();
+
+                        lock.lock();
+                        waitingOn = waitThread;
+
+                        continue;
+                    }
+
                     auto &piWaiters{nextThread->waiters};
                     piWaiters.erase(std::find(piWaiters.begin(), piWaiters.end(), waitingOn));
                     piWaiters.insert(std::upper_bound(piWaiters.begin(), piWaiters.end(), currentPriority, KThread::IsHigherPriority), waitingOn);
