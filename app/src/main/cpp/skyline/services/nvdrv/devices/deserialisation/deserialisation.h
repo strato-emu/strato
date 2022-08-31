@@ -55,7 +55,11 @@ namespace skyline::service::nvdrv::deserialisation {
             return make_ref_tuple(buffer.subspan(offset).template cast<RemoveAutoSizeSpan<ArgType>, std::dynamic_extent, true>());
         } else if constexpr (IsPad<ArgType>::value) {
             offset += ArgType::Bytes;
-            return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots);
+            if constexpr(sizeof...(ArgTypes) == 0) {
+                return std::tuple{};
+            } else {
+                return DecodeArgumentsImpl<Desc, ArgTypes...>(buffer, offset, saveSlots);
+            }
         } else if constexpr (IsSave<ArgType>::value) {
             saveSlots[ArgType::SaveSlot] = buffer.subspan(offset).template as<RemoveSave<ArgType>, true>();
             offset += sizeof(RemoveSave<ArgType>);
