@@ -266,6 +266,6 @@ namespace skyline::kernel {
     size_t MemoryManager::GetSystemResourceUsage() {
         std::shared_lock lock(mutex);
         constexpr size_t KMemoryBlockSize{0x40};
-        return std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), util::AlignUp(chunks.size() * KMemoryBlockSize, PAGE_SIZE));
+        return std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), util::AlignUp(chunks.size() * KMemoryBlockSize, constant::PageSize));
     }
 }

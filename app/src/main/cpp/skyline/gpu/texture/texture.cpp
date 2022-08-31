@@ -116,8 +116,8 @@ namespace skyline::gpu {
         auto &mappings{guest->mappings};
         if (mappings.size() == 1) {
             auto mapping{mappings.front()};
-            u8 *alignedData{util::AlignDown(mapping.data(), PAGE_SIZE)};
-            size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), PAGE_SIZE) - alignedData)};
+            u8 *alignedData{util::AlignDown(mapping.data(), constant::PageSize)};
+            size_t alignedSize{static_cast<size_t>(util::AlignUp(mapping.data() + mapping.size(), constant::PageSize) - alignedData)};
 
             alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
             mirror = alignedMirror.subspan(static_cast<size_t>(mapping.data() - alignedData), mapping.size());
@@ -125,7 +125,7 @@ namespace skyline::gpu {
             std::vector<span<u8>> alignedMappings;
 
             const auto &frontMapping{mappings.front()};
-            u8 *alignedData{util::AlignDown(frontMapping.data(), PAGE_SIZE)};
+            u8 *alignedData{util::AlignDown(frontMapping.data(), constant::PageSize)};
             alignedMappings.emplace_back(alignedData, (frontMapping.data() + frontMapping.size()) - alignedData);
 
             size_t totalSize{frontMapping.size()};
@@ -137,7 +137,7 @@ namespace skyline::gpu {
 
             const auto &backMapping{mappings.back()};
             totalSize += backMapping.size();
-            alignedMappings.emplace_back(backMapping.data(), util::AlignUp(backMapping.size(), PAGE_SIZE));
+            alignedMappings.emplace_back(backMapping.data(), util::AlignUp(backMapping.size(), constant::PageSize));
 
             alignedMirror = gpu.state.process->memory.CreateMirrors(alignedMappings);
             mirror = alignedMirror.subspan(static_cast<size_t>(frontMapping.data() - alignedData), totalSize);

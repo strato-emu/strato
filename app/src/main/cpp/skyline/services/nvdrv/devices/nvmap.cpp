@@ -9,7 +9,7 @@ namespace skyline::service::nvdrv::device {
     NvMap::NvMap(const DeviceState &state, Driver &driver, Core &core, const SessionContext &ctx) : NvDevice(state, driver, core, ctx) {}
 
     PosixResult NvMap::Create(In<u32> size, Out<NvMapCore::Handle::Id> handle) {
-        auto handleDesc{core.nvMap.CreateHandle(util::AlignUp(static_cast<u32>(size), PAGE_SIZE))};
+        auto handleDesc{core.nvMap.CreateHandle(util::AlignUp(static_cast<u32>(size), constant::PageSize))};
         if (handleDesc) {
             (*handleDesc)->origSize = size; // Orig size is the unaligned size
             handle = (*handleDesc)->id;
@@ -51,8 +51,8 @@ namespace skyline::service::nvdrv::device {
             return PosixResult::InvalidArgument;
 
         // Force page size alignment at a minimum
-        if (align < PAGE_SIZE) [[unlikely]]
-            align = PAGE_SIZE;
+        if (align < constant::PageSize) [[unlikely]]
+            align = constant::PageSize;
 
         auto handleDesc{core.nvMap.GetHandle(handle)};
         if (!handleDesc) [[unlikely]]

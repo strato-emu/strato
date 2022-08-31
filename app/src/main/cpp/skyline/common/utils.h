@@ -115,7 +115,7 @@ namespace skyline::util {
     template<typename TypeVal>
     requires IsPointerOrUnsignedIntegral<TypeVal>
     constexpr bool IsPageAligned(TypeVal value) {
-        return IsAligned(value, PAGE_SIZE);
+        return IsAligned(value, constant::PageSize);
     }
 
     template<typename TypeVal>

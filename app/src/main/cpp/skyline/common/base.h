@@ -42,6 +42,12 @@ namespace skyline {
         constexpr i64 NsInSecond{1000000000}; //!< The amount of nanoseconds in a second
         constexpr i64 NsInMillisecond{1000000}; //!< The amount of nanoseconds in a millisecond
         constexpr i64 NsInDay{86400000000000UL}; //!< The amount of nanoseconds in a day
+
+        constexpr size_t AddressSpaceSize{1ULL << 39}; //!< The size of the host CPU AS in bytes
+        constexpr size_t PageSize{0x1000}; //!< The size of a host page
+        constexpr size_t PageSizeBits{12}; //!< log2(PageSize)
+
+        static_assert(PageSize == PAGE_SIZE);
     }
 
     namespace util {

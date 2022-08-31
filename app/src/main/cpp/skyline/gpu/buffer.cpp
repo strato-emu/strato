@@ -9,8 +9,8 @@
 
 namespace skyline::gpu {
     void Buffer::SetupGuestMappings() {
-        u8 *alignedData{util::AlignDown(guest->data(), PAGE_SIZE)};
-        size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), PAGE_SIZE) - alignedData)};
+        u8 *alignedData{util::AlignDown(guest->data(), constant::PageSize)};
+        size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), constant::PageSize) - alignedData)};
 
         alignedMirror = gpu.state.process->memory.CreateMirror(span<u8>{alignedData, alignedSize});
         mirror = alignedMirror.subspan(static_cast<size_t>(guest->data() - alignedData), guest->size());

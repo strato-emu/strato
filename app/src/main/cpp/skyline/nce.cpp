@@ -243,7 +243,7 @@ namespace skyline::nce {
                 offsets.push_back(instructionOffset);
             }
         }
-        return {util::AlignUp(size * sizeof(u32), PAGE_SIZE), offsets};
+        return {util::AlignUp(size * sizeof(u32), constant::PageSize), offsets};
     }
 
     void NCE::PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets) {
@@ -413,7 +413,7 @@ namespace skyline::nce {
 
         auto reprotectIntervalsWithFunction = [&intervals](auto getProtection) {
             for (auto region : intervals) {
-                region = region.Align(PAGE_SIZE);
+                region = region.Align(constant::PageSize);
                 mprotect(region.start, region.Size(), getProtection(region));
             }
         };
@@ -472,7 +472,7 @@ namespace skyline::nce {
             std::scoped_lock lock(trapMutex);
 
             // Retrieve any callbacks for the page that was faulted
-            auto[entries, intervals]{trapMap.GetAlignedRecursiveRange<PAGE_SIZE>(address)};
+            auto[entries, intervals]{trapMap.GetAlignedRecursiveRange<constant::PageSize>(address)};
             if (entries.empty())
                 return false; // There's no callbacks associated with this page
 
@@ -543,10 +543,10 @@ namespace skyline::nce {
         TRACE_EVENT("host", "NCE::PageOutRegions");
         std::scoped_lock lock{trapMutex};
         for (auto region : handle->intervals) {
-            auto freeStart{util::AlignUp(region.start, PAGE_SIZE)}, freeEnd{util::AlignDown(region.end, PAGE_SIZE)}; // We want to avoid the first and last page as they may contain unrelated data
+            auto freeStart{util::AlignUp(region.start, constant::PageSize)}, freeEnd{util::AlignDown(region.end, constant::PageSize)}; // We want to avoid the first and last page as they may contain unrelated data
             ssize_t freeSize{freeEnd - freeStart};
 
-            constexpr ssize_t MinimumPageoutSize{PAGE_SIZE}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
+            constexpr ssize_t MinimumPageoutSize{constant::PageSize}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
             if (freeSize > MinimumPageoutSize)
                 state.process->memory.FreeMemory(span<u8>{freeStart, static_cast<size_t>(freeSize)});
         }

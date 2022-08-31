@@ -16,10 +16,8 @@ namespace skyline::gpu {
         std::mutex mutex; //!< Synchronizes access to the buffer mappings
         std::vector<std::shared_ptr<Buffer>> bufferMappings; //!< A sorted vector of all buffer mappings
 
-        static constexpr size_t AddressSpaceSize{1ULL << 39}; //!< The size of the guest CPU AS in bytes
-        static constexpr size_t PageSizeBits{12}; //!< The size of a single page of the guest CPU AS as a power of two (4 KiB == 1 << 12)
         static constexpr size_t L2EntryGranularity{19}; //!< The amount of AS (in bytes) a single L2 PTE covers (512 KiB == 1 << 19)
-        SegmentTable<Buffer*, AddressSpaceSize, PageSizeBits, L2EntryGranularity> bufferTable; //!< A page table of all buffer mappings for O(1) lookups on full matches
+        SegmentTable<Buffer *, constant::AddressSpaceSize, constant::PageSizeBits, L2EntryGranularity> bufferTable; //!< A page table of all buffer mappings for O(1) lookups on full matches
 
         /**
          * @brief A wrapper around a Buffer which locks it with the specified ContextTag

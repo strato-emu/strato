@@ -22,7 +22,7 @@ namespace skyline::service::nvdrv::core {
 
         flags = pFlags;
         kind = pKind;
-        align = pAlign < PAGE_SIZE ? PAGE_SIZE : pAlign;
+        align = pAlign < constant::PageSize ? constant::PageSize : pAlign;
 
         // This flag is only applicable for handles with an address passed
         if (pAddress)
@@ -30,7 +30,7 @@ namespace skyline::service::nvdrv::core {
         else
             throw exception("Mapping nvmap handles without a CPU side address is unimplemented!");
 
-        size = util::AlignUp(size, PAGE_SIZE);
+        size = util::AlignUp(size, constant::PageSize);
         alignedSize = util::AlignUp(size, align);
         address = pAddress;
 
@@ -56,7 +56,7 @@ namespace skyline::service::nvdrv::core {
         return PosixResult::Success;
     }
 
-    NvMap::NvMap(const DeviceState &state) : state(state), smmuAllocator(PAGE_SIZE) {}
+    NvMap::NvMap(const DeviceState &state) : state(state), smmuAllocator(soc::SmmuPageSize) {}
 
     void NvMap::AddHandle(std::shared_ptr<Handle> handleDesc) {
         std::scoped_lock lock(handlesLock);
