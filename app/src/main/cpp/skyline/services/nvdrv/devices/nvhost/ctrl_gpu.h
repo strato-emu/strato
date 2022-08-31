@@ -123,6 +123,11 @@ namespace skyline::service::nvdrv::device::nvhost {
          */
         PosixResult GetActiveSlotMask(Out<u32> slot, Out<u32> mask);
 
+        /**
+         * @url https://switchbrew.org/wiki/NV_services#NVGPU_GPU_IOCTL_GET_GPU_TIME
+         */
+        PosixResult GetGpuTime(Out<u64> time);
+
         std::shared_ptr<type::KEvent> QueryEvent(u32 eventId) override;
 
         PosixResult Ioctl(IoctlDescriptor cmd, span<u8> buffer) override;

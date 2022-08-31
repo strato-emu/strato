@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/utils.h>
 #include <services/nvdrv/devices/deserialisation/deserialisation.h>
 #include "ctrl_gpu.h"
 
@@ -55,6 +56,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
+    PosixResult CtrlGpu::GetGpuTime(Out<u64> time) {
+        time = static_cast<u64>(util::GetTimeNs());
+        return PosixResult::Success;
+    }
+
     std::shared_ptr<type::KEvent> CtrlGpu::QueryEvent(u32 eventId) {
         switch (eventId) {
             case 1:
@@ -82,6 +88,8 @@ namespace skyline::service::nvdrv::device::nvhost {
                         GetTpcMasks,        ARGS(In<u32>, Pad<u32, 3>, Out<u32>))
         IOCTL_CASE_ARGS(OUT,   SIZE(0x8),  MAGIC(CtrlGpuMagic), FUNC(0x14),
                         GetActiveSlotMask,  ARGS(Out<u32>, Out<u32>))
+        IOCTL_CASE_ARGS(INOUT, SIZE(0x10), MAGIC(CtrlGpuMagic), FUNC(0x1C),
+                        GetGpuTime,         ARGS(Out<u64>, Pad<u64>))
     }))
 
     INLINE_IOCTL_HANDLER_FUNC(Ioctl3, CtrlGpu, ({
