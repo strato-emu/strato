@@ -8,7 +8,6 @@ namespace skyline::audio {
         builder.setChannelCount(constant::StereoChannelCount);
         builder.setSampleRate(constant::SampleRate);
         builder.setFormat(constant::PcmFormat);
-        builder.setFramesPerCallback(constant::MixBufferSize);
         builder.setUsage(oboe::Usage::Game);
         builder.setCallback(this);
         builder.setSharingMode(oboe::SharingMode::Exclusive);
