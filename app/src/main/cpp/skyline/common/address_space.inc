@@ -7,7 +7,7 @@
 
 #define MAP_MEMBER(returnType) template<typename VaType, VaType UnmappedVa, typename PaType, PaType UnmappedPa, bool PaContigSplit, size_t AddressSpaceBits, typename ExtraBlockInfo> requires AddressSpaceValid<VaType, AddressSpaceBits> returnType FlatAddressSpaceMap<VaType, UnmappedVa, PaType, UnmappedPa, PaContigSplit, AddressSpaceBits, ExtraBlockInfo>
 
-#define MM_MEMBER(returnType) template<typename VaType, VaType UnmappedVa, size_t AddressSpaceBits> requires AddressSpaceValid<VaType, AddressSpaceBits> returnType FlatMemoryManager<VaType, UnmappedVa, AddressSpaceBits>
+#define MM_MEMBER(returnType) template<typename VaType, VaType UnmappedVa, size_t AddressSpaceBits, size_t VaGranularityBits, size_t VaL2GranularityBits> requires AddressSpaceValid<VaType, AddressSpaceBits> returnType FlatMemoryManager<VaType, UnmappedVa, AddressSpaceBits, VaGranularityBits, VaL2GranularityBits>
 
 #define ALLOC_MEMBER(returnType) template<typename VaType, VaType UnmappedVa, size_t AddressSpaceBits> requires AddressSpaceValid<VaType, AddressSpaceBits> returnType FlatAllocator<VaType, UnmappedVa, AddressSpaceBits>
 
@@ -223,20 +223,11 @@ namespace skyline {
             unmapCallback(virt, size);
     }
 
-    MM_MEMBER()::FlatMemoryManager() {
-        sparseMap = static_cast<u8 *>(mmap(0, SparseMapSize, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-        if (!sparseMap)
-            throw exception("Failed to mmap sparse map!");
-    }
 
-    MM_MEMBER()::~FlatMemoryManager() {
-        munmap(sparseMap, SparseMapSize);
-    }
-
-    MM_MEMBER(TranslatedAddressRange)::TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
+    MM_MEMBER(TranslatedAddressRange)::TranslateRangeImpl(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
         TRACE_EVENT("containers", "FlatMemoryManager::TranslateRange");
 
-        std::scoped_lock lock(this->blockMutex);
+        TranslatedAddressRange ranges;
 
         auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [] (auto virt, const auto &block) {
             return virt < block.virt;
@@ -247,7 +238,6 @@ namespace skyline {
         u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
         VaType blockSize{std::min(successor->virt - virt, size)};
 
-        TranslatedAddressRange ranges;
 
         while (size) {
             // Return a zeroed out map to emulate sparse mappings
@@ -274,6 +264,16 @@ namespace skyline {
         }
 
         return ranges;
+    }
+
+    MM_MEMBER()::FlatMemoryManager() {
+        sparseMap = static_cast<u8 *>(mmap(0, SparseMapSize, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+        if (!sparseMap)
+            throw exception("Failed to mmap sparse map!");
+    }
+
+    MM_MEMBER()::~FlatMemoryManager() {
+        munmap(sparseMap, SparseMapSize);
     }
 
     MM_MEMBER(void)::Read(u8 *destination, VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
@@ -491,10 +491,12 @@ namespace skyline {
     }
 
     ALLOC_MEMBER(void)::AllocateFixed(VaType virt, VaType size) {
-        this->Map(virt, true, size);
+        std::scoped_lock lock(this->blockMutex);
+        this->MapLocked(virt, true, size, {});
     }
 
     ALLOC_MEMBER(void)::Free(VaType virt, VaType size) {
-        this->Unmap(virt, size);
+        std::scoped_lock lock(this->blockMutex);
+        this->UnmapLocked(virt, size);
     }
 }

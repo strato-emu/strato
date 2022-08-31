@@ -6,5 +6,5 @@
 
 namespace skyline {
     template class FlatAddressSpaceMap<u32, 0, u8 *, nullptr, true, soc::SmmuAddressSpaceBits>;
-    template class FlatMemoryManager<u32, 0, soc::SmmuAddressSpaceBits>;
+    template class FlatMemoryManager<u32, 0, soc::SmmuAddressSpaceBits, soc::SmmuPageSizeBits, soc::SmmuL2PageSizeBits>;
 }
