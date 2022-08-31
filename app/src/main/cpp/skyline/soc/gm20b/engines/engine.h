@@ -7,7 +7,7 @@
 #include <soc/gm20b/macro/macro_state.h>
 
 #define U32_OFFSET(regs, field) (offsetof(regs, field) / sizeof(u32))
-#define ENGINE_OFFSET(field) (sizeof(typeof(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
+#define ENGINE_OFFSET(field) (sizeof(decltype(Registers::field)) - sizeof(std::remove_reference_t<decltype(*Registers::field)>)) / sizeof(u32)
 #define ENGINE_STRUCT_OFFSET(field, member) ENGINE_OFFSET(field) + U32_OFFSET(std::remove_reference_t<decltype(*Registers::field)>, member)
 #define ENGINE_STRUCT_STRUCT_OFFSET(field, member, submember) ENGINE_STRUCT_OFFSET(field, member) + U32_OFFSET(std::remove_reference_t<decltype(Registers::field->member)>, submember)
 #define ENGINE_STRUCT_ARRAY_OFFSET(field, member, index) ENGINE_STRUCT_OFFSET(field, member) + ((sizeof(std::remove_reference_t<decltype(Registers::field->member[0])>) / sizeof(u32)) * index)
@@ -47,7 +47,7 @@ namespace skyline::soc::gm20b::engine {
     };
     static_assert(sizeof(Address) == sizeof(u64));
 
-    constexpr u32 EngineMethodsEnd = 0xE00; //!< All methods above this are passed to the MME on supported engines
+    constexpr u32 EngineMethodsEnd{0xE00}; //!< All methods above this are passed to the MME on supported engines
 
     /**
      * @brief Returns current time in GPU ticks
