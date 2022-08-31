@@ -231,12 +231,18 @@ namespace skyline::gpu {
         std::scoped_lock lock{stateMutex};
 
         // Syncs in both directions to ensure correct ordering of writes
-        if (dirtyState == DirtyState::CpuDirty)
-            SynchronizeHost();
-        else if (dirtyState == DirtyState::GpuDirty)
+        if (dirtyState == DirtyState::GpuDirty)
             SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
+        if (dirtyState == DirtyState::CpuDirty && SequencedCpuBackingWritesBlocked())
+            // If the buffer is used in sequence directly on the GPU, SynchronizeHost before modifying the mirror contents to ensure proper sequencing. This write will then be sequenced on the GPU instead (the buffer will be kept clean for the rest of the execution due to gpuCopyCallback blocking all writes)
+            SynchronizeHost();
+
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
+
+        if (dirtyState == DirtyState::CpuDirty && !SequencedCpuBackingWritesBlocked())
+            // Skip updating backing if the changes are gonna be updated later by SynchroniseHost in executor anyway
+            return false;
 
         if (!SequencedCpuBackingWritesBlocked() && PollFence()) {
             // We can write directly to the backing as long as this resource isn't being actively used by a past workload (in the current context or another)
@@ -268,8 +274,6 @@ namespace skyline::gpu {
         if (!SynchronizeGuest(false, true))
             // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
-
-        SynchronizeHost(); // Ensure that the returned mirror is fully up-to-date by performing a CPU -> GPU sync
 
         return {sequenceNumber, mirror};
     }
