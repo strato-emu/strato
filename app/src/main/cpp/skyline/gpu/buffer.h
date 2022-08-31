@@ -5,6 +5,7 @@
 
 #include <boost/functional/hash.hpp>
 #include <common/linear_allocator.h>
+#include <common/spin_lock.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
 #include "megabuffer.h"
@@ -24,7 +25,7 @@ namespace skyline::gpu {
     class Buffer : public std::enable_shared_from_this<Buffer> {
       private:
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes any mutations to the buffer or its backing
+        SpinLock mutex; //!< Synchronizes any mutations to the buffer or its backing
         std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
         memory::Buffer backing;
         std::optional<GuestBuffer> guest;
@@ -46,7 +47,7 @@ namespace skyline::gpu {
             SequencedWrites, //!< Sequenced writes must not modify the backing on the CPU due to it being read directly on the GPU, but non-sequenced writes can freely occur (SynchroniseHost etc)
             AllWrites //!< No CPU writes to the backing can be performed, all must be sequenced on the GPU or delayed till this is no longer the case
         } backingImmutability{}; //!< Describes how the buffer backing should be accessed by the current context
-        std::recursive_mutex stateMutex; //!< Synchronizes access to the dirty state and backing immutability
+        RecursiveSpinLock stateMutex; //!< Synchronizes access to the dirty state and backing immutability
 
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 

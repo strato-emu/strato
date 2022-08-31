@@ -7,6 +7,7 @@
 #include <concepts>
 #include <common.h>
 #include "segment_table.h"
+#include "spin_lock.h"
 
 namespace skyline {
     template<typename VaType, size_t AddressSpaceBits>
@@ -54,7 +55,7 @@ namespace skyline {
             }
         };
 
-        std::mutex blockMutex;
+        SpinLock blockMutex;
         std::vector<Block> blocks{Block{}};
 
         /**

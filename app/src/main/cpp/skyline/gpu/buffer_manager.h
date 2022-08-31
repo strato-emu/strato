@@ -5,6 +5,7 @@
 
 #include <common/linear_allocator.h>
 #include <common/segment_table.h>
+#include <common/spin_lock.h>
 #include "buffer.h"
 
 namespace skyline::gpu {
@@ -28,7 +29,7 @@ namespace skyline::gpu {
         struct LockedBuffer {
             std::shared_ptr<Buffer> buffer;
             ContextLock<Buffer> lock;
-            std::unique_lock<std::recursive_mutex> stateLock;
+            std::unique_lock<RecursiveSpinLock> stateLock;
 
             LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag);
 
