@@ -165,17 +165,26 @@ namespace skyline::soc::gm20b {
             }
         }
 
-        pushBufferData.resize(gpEntry.size);
-        channelCtx.asCtx->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
+        auto pushBufferMappedRanges{channelCtx.asCtx->gmmu.TranslateRange(gpEntry.Address(), gpEntry.size * sizeof(u32))};
+        auto pushBuffer{[&]() -> span<u32> {
+            if (pushBufferMappedRanges.size() == 1) {
+                return pushBufferMappedRanges.front().cast<u32>();
+            } else {
+                // Create an intermediate copy of pushbuffer data if it's split across multiple mappings
+                pushBufferData.resize(gpEntry.size);
+                channelCtx.asCtx->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
+                return span(pushBufferData);
+            }
+        }()};
 
         // There will be at least one entry here
-        auto entry{pushBufferData.begin()};
+        auto entry{pushBuffer.begin()};
 
         // Executes the current split method, returning once execution is finished or the current GpEntry has reached its end
         auto resumeSplitMethod{[&](){
             switch (resumeState.state) {
                 case MethodResumeState::State::Inc:
-                    while (entry != pushBufferData.end() && resumeState.remaining)
+                    while (entry != pushBuffer.end() && resumeState.remaining)
                         SendFull(resumeState.address++, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
 
                     break;
@@ -186,7 +195,7 @@ namespace skyline::soc::gm20b {
                     resumeState.state = MethodResumeState::State::NonInc;
                     [[fallthrough]];
                 case MethodResumeState::State::NonInc:
-                    while (entry != pushBufferData.end() && resumeState.remaining)
+                    while (entry != pushBuffer.end() && resumeState.remaining)
                         SendFull(resumeState.address, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
 
                     break;
@@ -198,8 +207,8 @@ namespace skyline::soc::gm20b {
             resumeSplitMethod();
 
         // Process more methods if the entries are still not all used up after handling resuming
-        for (; entry != pushBufferData.end(); entry++) {
-            if (entry >= pushBufferData.end())
+        for (; entry != pushBuffer.end(); entry++) {
+            if (entry >= pushBuffer.end())
                 throw exception("GPFIFO buffer overflow!"); // This should never happen
 
             // An entry containing all zeroes is a NOP, skip over it
@@ -209,7 +218,7 @@ namespace skyline::soc::gm20b {
             PushBufferMethodHeader methodHeader{.raw = *entry};
 
             // Needed in order to check for methods split across multiple GpEntries
-            ssize_t remainingEntries{std::distance(entry, pushBufferData.end()) - 1};
+            ssize_t remainingEntries{std::distance(entry, pushBuffer.end()) - 1};
 
             // Handles storing state and initial execution for methods that are split across multiple GpEntries
             auto startSplitMethod{[&](auto methodState) {
