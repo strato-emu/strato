@@ -72,7 +72,10 @@ namespace skyline::service::nvdrv {
             case PosixResult::InappropriateIoctlForDevice:
             case PosixResult::NotSupported:
             default:
-                Logger::Warn("IOCTL {} failed: {}", ioctl, static_cast<i32>(result));
+                constexpr u32 GetConfigIoctl{0xC183001B};
+                // GetConfig is the only ioctl that's expected to fail with one of these errors in normal use so ignore it
+                if (ioctl != GetConfigIoctl)
+                    Logger::Warn("IOCTL {} failed: 0x{:X}", ioctl, static_cast<i32>(result));
                 return result;
         }
     }
