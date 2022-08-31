@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <unordered_set>
 #include <boost/functional/hash.hpp>
-#include <common/lockable_shared_ptr.h>
 #include <common/linear_allocator.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
@@ -15,9 +13,9 @@
 namespace skyline::gpu {
     using GuestBuffer = span<u8>; //!< The CPU mapping for the guest buffer, multiple mappings for buffers aren't supported since overlaps cannot be reconciled
 
-    struct BufferView;
+    class BufferView;
     class BufferManager;
-    class MegaBuffer;
+    class BufferDelegate;
 
     /**
      * @brief A buffer which is backed by host constructs while being synchronized with the underlying guest buffer
@@ -31,6 +29,7 @@ namespace skyline::gpu {
         memory::Buffer backing;
         std::optional<GuestBuffer> guest;
         std::shared_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
+        size_t id;
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
@@ -52,75 +51,15 @@ namespace skyline::gpu {
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 
       public:
-        /**
-         * @brief Storage for all metadata about a specific view into the buffer, used to prevent redundant view creation and duplication of VkBufferView(s)
-         */
-        struct BufferViewStorage {
-            vk::DeviceSize offset;
-            vk::DeviceSize size;
-            vk::Format format;
-
-            // These are not accounted for in hash nor operator== since they are not an inherent property of the view, but they are required nonetheless for megabuffering on a per-view basis
-            mutable u64 lastAcquiredSequence{}; //!< The last sequence number for the attached buffer that the megabuffer copy of this view was acquired from, if this is equal to the current sequence of the attached buffer then the copy at `megabufferOffset` is still valid
-            mutable MegaBufferAllocator::Allocation megaBufferAllocation; //!< Allocation for the current copy of the view in the megabuffer (if any), 0 if no copy exists and this is only valid if `lastAcquiredSequence` is equal to the current sequence of the attached buffer
-
-            BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format);
-
-            bool operator==(const BufferViewStorage &other) const {
-                return other.offset == offset && other.size == size && other.format == format;
-            }
-        };
 
         static constexpr u64 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
 
       private:
-        /**
-         * @brief Hash function for BufferViewStorage to be used in the views set
-         */
-        struct BufferViewStorageHash {
-            size_t operator()(const BufferViewStorage &entry) const noexcept {
-                size_t seed{};
-                boost::hash_combine(seed, entry.offset);
-                boost::hash_combine(seed, entry.size);
-                boost::hash_combine(seed, entry.format);
-
-                // The mutable fields {lastAcquiredSequence, megabufferOffset} are deliberately ignored
-                return seed;
-            }
-        };
-
-        std::unordered_set<BufferViewStorage, BufferViewStorageHash> views; //!< BufferViewStorage(s) that are backed by this Buffer, used for storage and repointing to a new Buffer on deletion
-
         u64 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
 
-      public:
-        /**
-         * @brief A delegate for a strong reference to a Buffer by a BufferView which can be changed to another Buffer transparently
-         * @note This class conforms to the Lockable and BasicLockable C++ named requirements
-         */
-        struct BufferDelegate {
-            LockableSharedPtr<Buffer> buffer;
-            const Buffer::BufferViewStorage *view;
-            bool attached{};
-            using UsageCallback = std::function<void(const BufferViewStorage &, const std::shared_ptr<Buffer> &)>;
-            std::optional<std::vector<UsageCallback, LinearAllocator<UsageCallback>>> usageCallbacks;
-            std::list<BufferDelegate *>::iterator iterator;
-
-            BufferDelegate(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
-
-            ~BufferDelegate();
-
-            void lock();
-
-            bool LockWithTag(ContextTag tag);
-
-            void unlock();
-
-            bool try_lock();
-        };
 
       private:
-        std::list<BufferDelegate *> delegates; //!< The reference delegates for this buffer, used to prevent the buffer from being deleted while it is still in use
+        BufferDelegate *delegate;
 
         friend BufferView;
         friend BufferManager;
@@ -155,13 +94,13 @@ namespace skyline::gpu {
          * @brief Creates a buffer object wrapping the guest buffer with a backing that can represent the guest buffer data
          * @note The guest mappings will not be setup until SetupGuestMappings() is called
          */
-        Buffer(GPU &gpu, GuestBuffer guest);
+        Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id);
 
         /**
          * @brief Creates a host-only Buffer which isn't backed by any guest buffer
          * @note The created buffer won't have a mirror so any operations cannot depend on a mirror existing
          */
-        Buffer(GPU &gpu, vk::DeviceSize size);
+        Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, vk::DeviceSize size, size_t id);
 
         ~Buffer();
 
@@ -311,10 +250,16 @@ namespace skyline::gpu {
         void Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset);
 
         /**
-         * @return A cached or newly created view into this buffer with the supplied attributes
+         * @return A view into this buffer with the supplied attributes
          * @note The buffer **must** be locked prior to calling this
          */
-        BufferView GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format = {});
+        BufferView GetView(vk::DeviceSize offset, vk::DeviceSize size);
+
+        /**
+         * @return A view into this buffer containing the given mapping, if the buffer doesn't contain the mapping an empty view will be returned
+         * @note The buffer **must** be locked prior to calling this
+         */
+        BufferView TryGetView(span<u8> mapping);
 
         /**
          * @brief Attempts to return the current sequence number and prepare the buffer for read accesses from the returned span
@@ -343,89 +288,139 @@ namespace skyline::gpu {
     };
 
     /**
+     * @brief A delegate for a strong reference to a Buffer by a BufferView which can be changed to another Buffer transparently
+     */
+    class BufferDelegate {
+      private:
+        union {
+            BufferDelegate *link{};
+            Buffer *buffer;
+        };
+        vk::DeviceSize offset{};
+
+        bool linked{};
+
+      public:
+        BufferDelegate(Buffer *buffer);
+
+        /**
+         * @brief Follows links to get the underlying target buffer of the delegate
+         */
+        Buffer *GetBuffer();
+
+        /**
+         * @brief Links the delegate to target a new buffer object
+         * @note Both the current target buffer object and new target buffer object **must** be locked prior to calling this
+         */
+        void Link(BufferDelegate *newTarget, vk::DeviceSize newOffset);
+
+        /**
+         * @return The offset of the delegate in the buffer
+         * @note The target buffer **must** be locked prior to calling this
+         */
+        vk::DeviceSize GetOffset();
+    };
+
+    /**
      * @brief A contiguous view into a Vulkan Buffer that represents a single guest buffer (as opposed to Buffer objects which contain multiple)
      * @note The object **must** be locked prior to accessing any members as values will be mutated
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
      */
-    struct BufferView {
+    class BufferView {
+      private:
         constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 128}; //!< The threshold at which the view is considered to be too large to be megabuffered (128KiB)
 
-        std::shared_ptr<Buffer::BufferDelegate> bufferDelegate;
-
-        BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view);
-
-        constexpr BufferView(nullptr_t = nullptr) : bufferDelegate(nullptr) {}
+        BufferDelegate *delegate{};
+        vk::DeviceSize offset{};
 
         /**
-         * @brief Acquires an exclusive lock on the buffer for the calling thread
-         * @note Naming is in accordance to the BasicLockable named requirement
-         */
-        void lock() const {
-            bufferDelegate->lock();
-        }
-
-        /**
-         * @brief Acquires an exclusive lock on the buffer for the calling thread
-         * @param tag A tag to associate with the lock, future invocations with the same tag prior to the unlock will acquire the lock without waiting (A default initialised tag will disable this behaviour)
-         * @return If the lock was acquired by this call as opposed to the buffer already being locked with the same tag
-         * @note All locks using the same tag **must** be from the same thread as it'll only have one corresponding unlock() call
-         */
-        bool LockWithTag(ContextTag tag) const {
-            return bufferDelegate->LockWithTag(tag);
-        }
-
-        /**
-         * @brief Relinquishes an existing lock on the buffer by the calling thread
-         * @note Naming is in accordance to the BasicLockable named requirement
-         */
-        void unlock() const {
-            bufferDelegate->unlock();
-        }
-
-        /**
-         * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
-         * @note Naming is in accordance to the Lockable named requirement
-         */
-        bool try_lock() const {
-            return bufferDelegate->try_lock();
-        }
-
-        constexpr operator bool() const {
-            return bufferDelegate != nullptr;
-        }
-
-        /**
-         * @note The buffer **must** be locked prior to calling this
-         */
-        Buffer::BufferDelegate *operator->() const {
-            return bufferDelegate.get();
-        }
-
-        /**
-         * @brief Registers a callback for a usage of this view, it may be called multiple times due to the view being recreated with different backings
-         * @note This will force the buffer to be host immutable for the current cycle, preventing megabuffering and requiring slower GPU inline writes instead
-         * @note The callback will be automatically called the first time after registration
+         * @brief Resolves the delegate's pointer chain so it directly points to the target buffer, updating offset accordingly
          * @note The view **must** be locked prior to calling this
          */
-        void RegisterUsage(LinearAllocatorState<> &allocator, const std::shared_ptr<FenceCycle> &cycle, Buffer::BufferDelegate::UsageCallback usageCallback);
+        void ResolveDelegate();
+
+      public:
+        vk::DeviceSize size{};
+
+        BufferView();
+
+        BufferView(BufferDelegate *delegate, vk::DeviceSize offset, vk::DeviceSize size);
+
+        /**
+         * @return A pointer to the current underlying buffer of the view
+         * @note The view **must** be locked prior to calling this
+         */
+        Buffer *GetBuffer() const;
+
+        /**
+         * @return The offset of the view in the underlying buffer
+         * @note The view **must** be locked prior to calling this
+         */
+        vk::DeviceSize GetOffset() const;
+
+        /**
+         * @brief Templated lock function that ensures correct locking of the delegate's underlying buffer
+         */
+        template<bool TryLock, typename LockFunction, typename UnlockFunction>
+        std::conditional_t<TryLock, bool, void> LockWithFunction(LockFunction lock, UnlockFunction unlock) {
+            while (true) {
+                auto preLockBuffer{delegate->GetBuffer()};
+                if constexpr (TryLock) {
+                    if (!lock(preLockBuffer))
+                        return false;
+                } else {
+                    lock(preLockBuffer);
+                }
+                auto postLockBuffer{delegate->GetBuffer()};
+                if (preLockBuffer == postLockBuffer)
+                    break;
+
+                preLockBuffer->unlock();
+            };
+
+            ResolveDelegate();
+
+            if constexpr (TryLock)
+                return true;
+            else
+                return;
+        }
+
+        void lock() {
+            LockWithFunction<false>([](Buffer *buffer) { buffer->lock(); }, [](Buffer *buffer) { buffer->unlock(); });
+        }
+
+        bool try_lock() {
+            return LockWithFunction<true>([](Buffer *buffer) { return buffer->try_lock(); }, [](Buffer *buffer) { buffer->unlock(); });
+        }
+
+        bool LockWithTag(ContextTag tag) {
+            bool result{};
+            LockWithFunction<false>([&result, tag](Buffer *buffer) { result = buffer->LockWithTag(tag); }, [](Buffer *buffer) { buffer->unlock(); });
+            return result;
+        }
+
+        void unlock() {
+            delegate->GetBuffer()->unlock();
+        }
 
         /**
          * @brief Reads data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Read
          */
-        void Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const;
+        void Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize readOffset) const;
 
         /**
          * @brief Writes data at the specified offset in the view
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Write
          */
-        void Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const;
+        bool Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
 
         /**
-         * @brief If megabuffering is beneficial for the current buffer, pushes its contents into the megabuffer and returns the offset of the pushed data
-         * @return The megabuffer allocation for the buffer, may be invalid if megabuffering is not beneficial
+         * @brief If megabuffering is beneficial for the view, pushes its contents into the megabuffer and returns the offset of the pushed data
+         * @return The megabuffer allocation for the view, may be invalid if megabuffering is not beneficial
          * @note The view **must** be locked prior to calling this
          */
         MegaBufferAllocator::Allocation AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const;
@@ -437,5 +432,9 @@ namespace skyline::gpu {
          * @note See Buffer::GetReadOnlyBackingSpan
          */
         span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
+
+        constexpr operator bool() {
+            return delegate != nullptr;
+        }
     };
 }

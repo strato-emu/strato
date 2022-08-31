@@ -77,9 +77,18 @@ namespace skyline::gpu {
         });
     }
 
-    Buffer::Buffer(GPU &gpu, GuestBuffer guest) : gpu{gpu}, backing{gpu.memory.AllocateBuffer(guest.size())}, guest{guest} {}
+    Buffer::Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id)
+        : gpu{gpu},
+          backing{gpu.memory.AllocateBuffer(guest.size())},
+          guest{guest},
+          delegate{delegateAllocator.EmplaceUntracked<BufferDelegate>(this)},
+          id{id} {}
 
-    Buffer::Buffer(GPU &gpu, vk::DeviceSize size) : gpu(gpu), backing(gpu.memory.AllocateBuffer(size)) {
+    Buffer::Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, vk::DeviceSize size, size_t id)
+        : gpu{gpu},
+          backing{gpu.memory.AllocateBuffer(size)},
+          delegate{delegateAllocator.EmplaceUntracked<BufferDelegate>(this)},
+          id{id} {
         dirtyState = DirtyState::Clean; // Since this is a host-only buffer it's always going to be clean
     }
 
@@ -237,10 +246,15 @@ namespace skyline::gpu {
             gpuCopyCallback();
     }
 
-    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) {
-        // Will return an iterator to the inserted view or the already-existing view if the same view is already in the set
-        auto it{views.emplace(offset, size, format).first};
-        return BufferView{shared_from_this(), &(*it)};
+    BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size) {
+        return BufferView{delegate, offset, size};
+    }
+
+    BufferView Buffer::TryGetView(span<u8> mapping) {
+        if (guest->contains(mapping))
+            return GetView(static_cast<vk::DeviceSize>(std::distance(guest->begin(), mapping.begin())), mapping.size());
+        else
+            return {};
     }
 
     std::pair<u64, span<u8>> Buffer::AcquireCurrentSequence() {
@@ -288,90 +302,80 @@ namespace skyline::gpu {
         return mutex.try_lock();
     }
 
-    Buffer::BufferViewStorage::BufferViewStorage(vk::DeviceSize offset, vk::DeviceSize size, vk::Format format) : offset(offset), size(size), format(format) {}
+    BufferDelegate::BufferDelegate(Buffer *buffer) : buffer{buffer} {}
 
-    Buffer::BufferDelegate::BufferDelegate(std::shared_ptr<Buffer> pBuffer, const Buffer::BufferViewStorage *view) : buffer(std::move(pBuffer)), view(view) {
-        iterator = buffer->delegates.emplace(buffer->delegates.end(), this);
+    Buffer *BufferDelegate::GetBuffer() {
+        if (linked) [[unlikely]]
+            return link->GetBuffer();
+        else
+            return buffer;
     }
 
-    Buffer::BufferDelegate::~BufferDelegate() {
-        buffer->delegates.erase(iterator);
+    void BufferDelegate::Link(BufferDelegate *newTarget, vk::DeviceSize newOffset) {
+        if (linked)
+            throw exception("Cannot link a buffer delegate that is already linked!");
+
+        linked = true;
+        link = newTarget;
+        offset = newOffset;
     }
 
-    void Buffer::BufferDelegate::lock() {
-        buffer.Lock();
+    vk::DeviceSize BufferDelegate::GetOffset() {
+        if (linked) [[unlikely]]
+            return link->GetOffset() + offset;
+        else
+            return offset;
     }
 
-    bool Buffer::BufferDelegate::LockWithTag(ContextTag pTag) {
-        bool result{};
-        buffer.Lock([pTag, &result](Buffer *pBuffer) {
-            result = pBuffer->LockWithTag(pTag);
-        });
-        return result;
+    void BufferView::ResolveDelegate() {
+        offset += delegate->GetOffset();
+        delegate = delegate->GetBuffer()->delegate;
     }
 
-    void Buffer::BufferDelegate::unlock() {
-        buffer->unlock();
+    BufferView::BufferView() {}
+
+    BufferView::BufferView(BufferDelegate *delegate, vk::DeviceSize offset, vk::DeviceSize size) : delegate{delegate}, offset{offset}, size{size} {}
+
+    Buffer *BufferView::GetBuffer() const {
+        return delegate->GetBuffer();
     }
 
-    bool Buffer::BufferDelegate::try_lock() {
-        return buffer.TryLock();
+    vk::DeviceSize BufferView::GetOffset() const {
+        return offset + delegate->GetOffset();
     }
 
-    BufferView::BufferView(std::shared_ptr<Buffer> buffer, const Buffer::BufferViewStorage *view) : bufferDelegate(std::make_shared<Buffer::BufferDelegate>(std::move(buffer), view)) {}
-
-    void BufferView::RegisterUsage(LinearAllocatorState<> &allocator, const std::shared_ptr<FenceCycle> &cycle, Buffer::BufferDelegate::UsageCallback usageCallback) {
-        if (!bufferDelegate->usageCallbacks)
-            bufferDelegate->usageCallbacks = decltype(bufferDelegate->usageCallbacks)::value_type{allocator};
-
-        // Users of RegisterUsage expect the buffer contents to be sequenced as the guest GPU would be, so force any further sequenced writes in the current cycle to occur on the GPU
-        bufferDelegate->buffer->BlockSequencedCpuBackingWrites();
-
-        usageCallback(*bufferDelegate->view, bufferDelegate->buffer);
-        bufferDelegate->usageCallbacks->emplace_back(std::move(usageCallback));
+    void BufferView::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize readOffset) const {
+        GetBuffer()->Read(isFirstUsage, flushHostCallback, data, readOffset + GetOffset());
     }
 
-    void BufferView::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) const {
-        bufferDelegate->buffer->Read(isFirstUsage, flushHostCallback, data, offset + bufferDelegate->view->offset);
-    }
-
-    void BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) const {
+    bool BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
         // If megabuffering can't be enabled we have to do a GPU-side copy to ensure sequencing
-        bool gpuCopy{bufferDelegate->view->size > MegaBufferingDisableThreshold};
+        bool gpuCopy{size > MegaBufferingDisableThreshold};
         if (gpuCopy)
-            bufferDelegate->buffer->BlockSequencedCpuBackingWrites();
+            GetBuffer()->BlockSequencedCpuBackingWrites();
 
-        bufferDelegate->buffer->Write(isFirstUsage, flushHostCallback, gpuCopyCallback, data, offset + bufferDelegate->view->offset);
+        return GetBuffer()->Write(isFirstUsage, flushHostCallback, data, writeOffset + GetOffset(), gpuCopyCallback);
     }
 
     MegaBufferAllocator::Allocation BufferView::AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const {
-        if (!bufferDelegate->buffer->EverHadInlineUpdate())
+        if (!GetBuffer()->EverHadInlineUpdate())
             // Don't megabuffer buffers that have never had inline updates since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
             return {};
 
-        if (bufferDelegate->view->size > MegaBufferingDisableThreshold)
+        if (size > MegaBufferingDisableThreshold)
             return {};
 
-        auto [newSequence, sequenceSpan]{bufferDelegate->buffer->AcquireCurrentSequence()};
+        auto [newSequence, sequenceSpan]{GetBuffer()->AcquireCurrentSequence()};
         if (!newSequence)
             return {}; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
 
-        // If a copy of the view for the current sequence is already in megabuffer then we can just use that
-        if (newSequence == bufferDelegate->view->lastAcquiredSequence && bufferDelegate->view->megaBufferAllocation)
-            return bufferDelegate->view->megaBufferAllocation;
+        auto viewBackingSpan{sequenceSpan.subspan(GetOffset(), size)};
 
-        // If the view is not in the megabuffer then we need to allocate a new copy
-        auto viewBackingSpan{sequenceSpan.subspan(bufferDelegate->view->offset, bufferDelegate->view->size)};
-
-        // TODO: we could optimise the alignment requirements here based on buffer usage
-        bufferDelegate->view->megaBufferAllocation = allocator.Push(pCycle, viewBackingSpan, true);
-        bufferDelegate->view->lastAcquiredSequence = newSequence;
-
-        return bufferDelegate->view->megaBufferAllocation; // Success!
+        return allocator.Push(pCycle, viewBackingSpan, true); // Success!
     }
 
     span<u8> BufferView::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
-        auto backing{bufferDelegate->buffer->GetReadOnlyBackingSpan(isFirstUsage, flushHostCallback)};
-        return backing.subspan(bufferDelegate->view->offset, bufferDelegate->view->size);
+        auto backing{delegate->GetBuffer()->GetReadOnlyBackingSpan(isFirstUsage, flushHostCallback)};
+        return backing.subspan(GetOffset(), size);
     }
 }

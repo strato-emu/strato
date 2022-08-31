@@ -77,7 +77,7 @@ namespace skyline::gpu {
                 highestAddress = mapping.end().base();
         }
 
-        LockedBuffer newBuffer{std::make_shared<Buffer>(gpu, span<u8>{lowestAddress, highestAddress}), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
+        LockedBuffer newBuffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, span<u8>{lowestAddress, highestAddress}, nextBufferId++), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
 
         newBuffer->SetupGuestMappings();
         newBuffer->SynchronizeHost(false); // Overlaps don't necessarily fully cover the buffer so we have to perform a sync here to prevent any gaps
@@ -132,64 +132,38 @@ namespace skyline::gpu {
 
             // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset, ensuring pointer stability
             vk::DeviceSize overlapOffset{static_cast<vk::DeviceSize>(srcBuffer->guest->begin() - newBuffer->guest->begin())};
-            for (auto it{srcBuffer->views.begin()}; it != srcBuffer->views.end(); it++) {
-                if (overlapOffset)
-                    // This is a slight hack as we really shouldn't be changing the underlying non-mutable set elements without a rehash but without writing our own set impl this is the best we can do
-                    const_cast<Buffer::BufferViewStorage *>(&*it)->offset += overlapOffset;
-
-                // Reset the sequence number to the initial one, if the new buffer was created from any GPU dirty overlaps then the new buffer's sequence will be incremented past this thus forcing a reacquire if necessary
-                // This is fine to do in the set since the hash and operator== do not use this value
-                it->lastAcquiredSequence = Buffer::InitialSequenceNumber;
-            }
-
-            if (overlapOffset)
-                // All current hashes are invalidated by above loop if overlapOffset is nonzero so rehash the container
-                srcBuffer->views.rehash(0);
-
-            // Merge the view sets, this will keep pointer stability hence avoiding any reallocation
-            newBuffer->views.merge(srcBuffer->views);
-
-            // Transfer all delegates references from the overlapping buffer to the new buffer
-            for (auto &delegate : srcBuffer->delegates) {
-                delegate->buffer = *newBuffer;
-                if (delegate->usageCallbacks)
-                    for (auto &callback : *delegate->usageCallbacks)
-                        callback(*delegate->view, *newBuffer);
-            }
-
-            newBuffer->delegates.splice(newBuffer->delegates.end(), srcBuffer->delegates);
+            srcBuffer->delegate->Link(newBuffer->delegate, overlapOffset);
         }
 
         return newBuffer;
     }
 
-    BufferView BufferManager::FindOrCreate(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer) {
+    BufferView BufferManager::FindOrCreateImpl(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer) {
         /*
          * We align the buffer to the page boundary to ensure that:
          * 1) Any buffer view has the same alignment guarantees as on the guest, this is required for UBOs, SSBOs and Texel buffers
          * 2) We can coalesce a lot of tiny buffers into a single large buffer covering an entire page, this is often the case for index buffers and vertex buffers
          */
-        auto alignedStart{util::AlignDown(guestMapping.begin().base(), PAGE_SIZE)}, alignedEnd{util::AlignUp(guestMapping.end().base(), PAGE_SIZE)};
-        vk::DeviceSize offset{static_cast<size_t>(guestMapping.begin().base() - alignedStart)}, size{guestMapping.size()};
-        guestMapping = span<u8>{alignedStart, alignedEnd};
+        auto alignedStart{util::AlignDown(guestMapping.begin().base(), constant::PageSize)}, alignedEnd{util::AlignUp(guestMapping.end().base(), constant::PageSize)};
+        span<u8> alignedGuestMapping{alignedStart, alignedEnd};
 
-        auto overlaps{Lookup(guestMapping, tag)};
+        auto overlaps{Lookup(alignedGuestMapping, tag)};
         if (overlaps.size() == 1) [[likely]] {
             // If we find a buffer which can entirely fit the guest mapping, we can just return a view into it
             auto &firstOverlap{overlaps.front()};
-            if (firstOverlap->guest->begin() <= guestMapping.begin() && firstOverlap->guest->end() >= guestMapping.end())
-                return firstOverlap->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - firstOverlap->guest->begin()) + offset, size);
+            if (firstOverlap->guest->begin() <= alignedGuestMapping.begin() && firstOverlap->guest->end() >= alignedGuestMapping.end())
+                return firstOverlap->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - firstOverlap->guest->begin()), guestMapping.size());
         }
 
         if (overlaps.empty()) {
             // If we couldn't find any overlapping buffers, create a new buffer without coalescing
-            LockedBuffer buffer{std::make_shared<Buffer>(gpu, guestMapping), tag};
+            LockedBuffer buffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, alignedGuestMapping, nextBufferId++), tag};
             buffer->SetupGuestMappings();
             InsertBuffer(*buffer);
-            return buffer->GetView(offset, size);
+            return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()), guestMapping.size());
         } else {
             // If the new buffer overlaps other buffers, we need to create a new buffer and coalesce all overlapping buffers into one
-            auto buffer{CoalesceBuffers(guestMapping, overlaps, tag)};
+            auto buffer{CoalesceBuffers(alignedGuestMapping, overlaps, tag)};
 
             // If any overlapping buffer was already attached to the current context, we should also attach the new buffer
             for (auto &srcBuffer : overlaps) {
@@ -206,7 +180,7 @@ namespace skyline::gpu {
             }
             InsertBuffer(*buffer);
 
-            return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()) + offset, size);
+            return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()), guestMapping.size());
         }
     }
 }

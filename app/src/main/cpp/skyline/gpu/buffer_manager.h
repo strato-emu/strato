@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/linear_allocator.h>
 #include <common/segment_table.h>
 #include "buffer.h"
 
@@ -15,6 +16,8 @@ namespace skyline::gpu {
         GPU &gpu;
         std::mutex mutex; //!< Synchronizes access to the buffer mappings
         std::vector<std::shared_ptr<Buffer>> bufferMappings; //!< A sorted vector of all buffer mappings
+        LinearAllocatorState<> delegateAllocatorState; //!< Linear allocator used to allocate buffer delegates
+        size_t nextBufferId{}; //!< The next unique buffer id to be assigned
 
         static constexpr size_t L2EntryGranularity{19}; //!< The amount of AS (in bytes) a single L2 PTE covers (512 KiB == 1 << 19)
         SegmentTable<Buffer *, constant::AddressSpaceSize, constant::PageSizeBits, L2EntryGranularity> bufferTable; //!< A page table of all buffer mappings for O(1) lookups on full matches

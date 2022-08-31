@@ -133,15 +133,9 @@ namespace skyline::gpu::interconnect {
             // See AttachTexture(...)
             bufferManagerLock.emplace(gpu.buffer);
 
-        bool didLock{view->LockWithTag(tag)};
+        bool didLock{view.LockWithTag(tag)};
         if (didLock)
-            attachedBuffers.emplace_back(view->buffer);
-
-        if (view.bufferDelegate->attached)
-            return didLock;
-
-        attachedBufferDelegates.emplace_back(view.bufferDelegate);
-        view.bufferDelegate->attached = true;
+            attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
         return didLock;
     }
 
@@ -152,15 +146,9 @@ namespace skyline::gpu::interconnect {
 
         if (lock.OwnsLock()) {
             // Transfer ownership to executor so that the resource will stay locked for the period it is used on the GPU
-            attachedBuffers.emplace_back(view->buffer);
+            attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
             lock.Release(); // The executor will handle unlocking the lock so it doesn't need to be handled here
         }
-
-        if (view.bufferDelegate->attached)
-            return;
-
-        attachedBufferDelegates.emplace_back(view.bufferDelegate);
-        view.bufferDelegate->attached = true;
     }
 
     void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
@@ -322,14 +310,6 @@ namespace skyline::gpu::interconnect {
     void CommandExecutor::ResetInternal() {
         attachedTextures.clear();
         textureManagerLock.reset();
-
-        for (const auto &delegate : attachedBufferDelegates) {
-            delegate->usageCallbacks.reset();
-            delegate->attached = false;
-            delegate->view->megaBufferAllocation = {};
-        }
-
-        attachedBufferDelegates.clear();
         attachedBuffers.clear();
         bufferManagerLock.reset();
         megaBufferAllocatorLock.reset();
