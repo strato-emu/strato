@@ -29,7 +29,7 @@ namespace skyline {
         /**
          * @brief Allocates a contiguous chunk of memory of size `size` aligned to the maximum possible required alignment
          */
-        u8 *Allocate(size_t unalignedSize) {
+        u8 *Allocate(size_t unalignedSize, bool track = true) {
             // Align the size to the maximum required alignment for standard types
             size_t size{util::AlignUp(unalignedSize, alignof(std::max_align_t))};
 
@@ -51,9 +51,20 @@ namespace skyline {
             chunkRemainingBytes -= size;
             ptr += size;
 
-            allocCount++;
+            if (track)
+                allocCount++;
 
             return allocatedPtr;
+        }
+
+        template<typename T>
+        T *AllocateUntracked() {
+            return reinterpret_cast<T *>(Allocate(sizeof(T), false));
+        }
+
+        template<typename T, class... Args>
+        T *EmplaceUntracked(Args &&... args) {
+            return std::construct_at(AllocateUntracked<T>(), std::forward<Args>(args)...);
         }
 
         /**
