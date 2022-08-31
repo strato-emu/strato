@@ -223,7 +223,7 @@ namespace skyline::gpu {
         std::memcpy(data.data(), mirror.data() + offset, data.size());
     }
 
-    void Buffer::Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset) {
+    bool Buffer::Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback) {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
@@ -238,12 +238,19 @@ namespace skyline::gpu {
 
         std::memcpy(mirror.data() + offset, data.data(), data.size()); // Always copy to mirror since any CPU side reads will need the up-to-date contents
 
-        if (!SequencedCpuBackingWritesBlocked() && PollFence())
+        if (!SequencedCpuBackingWritesBlocked() && PollFence()) {
             // We can write directly to the backing as long as this resource isn't being actively used by a past workload (in the current context or another)
             std::memcpy(backing.data() + offset, data.data(), data.size());
-        else
+        } else {
             // If this buffer is host immutable, perform a GPU-side inline update for the buffer contents since we can't directly modify the backing
-            gpuCopyCallback();
+            // If no copy callback is supplied, return true to indicate that the caller should repeat the write with an appropriate callback
+            if (gpuCopyCallback)
+                gpuCopyCallback();
+            else
+                return true;
+        }
+
+        return false;
     }
 
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size) {

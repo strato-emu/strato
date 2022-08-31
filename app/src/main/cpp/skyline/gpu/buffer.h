@@ -245,9 +245,10 @@ namespace skyline::gpu {
          * @brief Writes data at the specified offset in the buffer, falling back to GPU side copies if the buffer is host immutable
          * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
          * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
-         * @param gpuCopyCallback Callback to perform a GPU-side copy for this Write
+         * @param gpuCopyCallback Optional callback to perform a GPU-side copy for this Write if necessary, if such a copy is needed and this is not supplied `true` will be returned to indicate that the write needs to be repeated with the callback present
+         * @return Whether the write needs to be repeated with `gpuCopyCallback` provided, always false if `gpuCopyCallback` is provided
          */
-        void Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, const std::function<void()> &gpuCopyCallback, span<u8> data, vk::DeviceSize offset);
+        bool Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
 
         /**
          * @return A view into this buffer with the supplied attributes
