@@ -19,7 +19,7 @@ namespace skyline::audio {
     void AudioTrack::Stop() {
         auto allSamplesReleased{[&]() {
             std::scoped_lock lock{bufferLock};
-            return identifiers.empty() || identifiers.end()->released;
+            return identifiers.empty() || identifiers.back().released;
         }};
 
         while (!allSamplesReleased());
