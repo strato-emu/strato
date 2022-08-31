@@ -94,6 +94,15 @@ namespace skyline::gpu {
          * @return A pre-existing or newly created Buffer object which covers the supplied mappings
          * @note The buffer manager **must** be locked prior to calling this
          */
-        BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {}, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer = {});
+        BufferView FindOrCreateImpl(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer);
+
+        BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {}, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer = {}) {
+            auto lookupBuffer{bufferTable[guestMapping.begin().base()]};
+            if (lookupBuffer != nullptr)
+                if (auto view{lookupBuffer->TryGetView(guestMapping)}; view)
+                    return view;
+
+            return FindOrCreateImpl(guestMapping, tag, attachBuffer);
+        }
     };
 }
