@@ -68,9 +68,7 @@ namespace skyline::audio {
     }
 
     void Audio::onErrorAfterClose(oboe::AudioStream *audioStream, oboe::Result error) {
-        if (error == oboe::Result::ErrorDisconnected) {
-            builder.openManagedStream(outputStream);
-            outputStream->requestStart();
-        }
+        builder.openManagedStream(outputStream);
+        outputStream->requestStart();
     }
 }
