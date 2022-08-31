@@ -288,8 +288,12 @@ namespace skyline::util {
             return *this;
         }
 
-        auto operator[](std::size_t index) {
+        const auto &operator[](std::size_t index) const {
             return value[index];
+        }
+
+        const ValueType &operator*() const {
+            return value;
         }
 
         ValueType &operator*() {
