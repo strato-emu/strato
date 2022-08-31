@@ -24,11 +24,14 @@ namespace skyline::input {
         NpadManager npad;
         TouchManager touch;
 
-        Input(const DeviceState &state)
-            : state(state),
-              kHid(std::make_shared<kernel::type::KSharedMemory>(state, sizeof(HidSharedMemory))),
-              hid(reinterpret_cast<HidSharedMemory *>(kHid->host.data())),
-              npad(state, hid),
-              touch(state, hid) {}
+        Input(const DeviceState &state);
+
+      private:
+        std::thread updateThread; //!< A thread that handles delivering HID shared memory updates at a fixed rate
+
+        /**
+         * @brief The entry point for the update thread, this handles timing and delegation to the shared memory managers
+         */
+        void UpdateThread();
     };
 }

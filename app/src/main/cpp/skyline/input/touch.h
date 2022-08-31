@@ -30,6 +30,7 @@ namespace skyline::input {
         const DeviceState &state;
         bool activated{};
         TouchScreenSection &section;
+        TouchScreenState screenState{}; //!< The current state of the touch screen
 
       public:
         /**
@@ -40,5 +41,10 @@ namespace skyline::input {
         void Activate();
 
         void SetState(span<TouchScreenPoint> touchPoints);
+
+        /**
+         * @brief Writes the current state of the touch screen to HID shared memory
+         */
+        void UpdateSharedMemory();
     };
 }
