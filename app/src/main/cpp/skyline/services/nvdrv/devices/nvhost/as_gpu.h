@@ -44,13 +44,13 @@ namespace skyline::service::nvdrv::device::nvhost {
         std::mutex mutex; //!< Locks all AS operations
 
         struct VM {
-            static constexpr u32 PageSize{0x1000};
-            static constexpr u32 PageSizeBits{std::countr_zero(PageSize)};
+            static constexpr u32 PageSize{soc::gm20b::GmmuSmallPageSize};
+            static constexpr u32 PageSizeBits{soc::gm20b::GmmuSmallPageSizeBits};
 
             static constexpr u32 SupportedBigPageSizes{0x30000};
-            static constexpr u32 DefaultBigPageSize{0x20000};
+            static constexpr u32 DefaultBigPageSize{soc::gm20b::GmmuMinBigPageSize};
             u32 bigPageSize{DefaultBigPageSize};
-            u32 bigPageSizeBits{std::countr_zero(DefaultBigPageSize)};
+            u32 bigPageSizeBits{soc::gm20b::GmmuMinBigPageSizeBits};
 
             static constexpr u32 VaStartShift{10};
             static constexpr u64 DefaultVaSplit{1ULL << 34};
