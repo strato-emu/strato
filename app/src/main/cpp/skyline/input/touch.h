@@ -30,7 +30,10 @@ namespace skyline::input {
         const DeviceState &state;
         bool activated{};
         TouchScreenSection &section;
+
+        std::recursive_mutex mutex;
         TouchScreenState screenState{}; //!< The current state of the touch screen
+        std::array<uint8_t, 16> pointTimeout; //!< A frame timeout counter for each point which has ended (according to it's attribute), when it reaches 0 the point is removed from the screen
 
       public:
         /**
