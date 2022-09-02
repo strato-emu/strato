@@ -142,6 +142,34 @@ namespace skyline::gpu::interconnect::maxwell3d {
         TessellationState tessellation;
     };
 
+    class RasterizationState : dirty::ManualDirty {
+      public:
+        struct EngineRegisters {
+            const u32 &rasterEnable;
+            const engine::PolygonMode &frontPolygonMode;
+            const engine::PolygonMode &backPolygonMode;
+            const u32 &oglCullEnable;
+            const engine::CullFace &oglCullFace;
+            const engine::WindowOrigin &windowOrigin;
+            const engine::FrontFace &oglFrontFace;
+            const engine::ViewportClipControl &viewportClipControl;
+            const engine::PolyOffset &polyOffset;
+            const engine::ProvokingVertex &provokingVertex;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
+
+      public:
+        vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> rasterizationState;
+
+        RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
+
+        void Flush();
+    };
+
     /**
      * @brief Holds all GPU state for a pipeline, any changes to this will result in a pipeline cache lookup
      */
@@ -153,6 +181,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             VertexInputState::EngineRegisters vertexInputRegisters;
             InputAssemblyState::EngineRegisters inputAssemblyRegisters;
             TessellationState::EngineRegisters tessellationRegisters;
+            RasterizationState::EngineRegisters rasterizationRegisters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -162,6 +191,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
+        dirty::ManualDirtyState<RasterizationState> rasterization;
 
       public:
         DirectPipelineState directState;

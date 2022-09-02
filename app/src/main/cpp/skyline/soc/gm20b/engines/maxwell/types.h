@@ -351,6 +351,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         Fill = 0x1B02, //!< Fill the area bounded by the vertices
     };
 
+    struct PolyOffset {
+        u32 pointEnable;
+        u32 lineEnable;
+        u32 fillEnable;
+    };
+    static_assert(sizeof(PolyOffset) == (0x3 * sizeof(u32)));
+
     /**
      * @brief A scissor which is used to reject all writes to non-masked regions
      * @note All coordinates are in screen-space as defined by the viewport
@@ -652,8 +659,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     })
 
     enum class FrontFace : u32 {
-        Clockwise = 0x900,
-        CounterClockwise = 0x901,
+        CW = 0x900,
+        CCW = 0x901,
     };
 
     enum class CullFace : u32 {
@@ -662,18 +669,48 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         FrontAndBack = 0x408,
     };
 
-    union ViewVolumeClipControl {
+    union ViewportClipControl {
         u32 raw;
+        enum class PixelZ : u8 {
+            Clip = 0,
+            Clamp = 1
+        };
+
+        enum class GuardbandScale : u8 {
+            Scale256,
+            Scale1
+        };
+
+        enum class GeometryClip : u8 {
+            WZeroClip = 0,
+            Passthru = 1,
+            FrustrumXYClip = 2,
+            FrustrumXYZClip = 3,
+            WZeroClipNoZCull = 4,
+            FrustrumZClip = 5,
+            WZeroTriFillOrClip = 6
+        };
+
+        enum class GuardbandZScale : u8 {
+            SameAsXYGuardband = 0,
+            Scale256 = 1,
+            Scale1 = 2
+        };
+
         struct {
-            bool forceDepthRangeZeroToOne : 1;
-            u8 _unk0_ : 2;
-            bool depthClampNear : 1;
-            bool depthClampFar : 1;
-            u8 _unk1_ : 6;
-            bool depthClampDisable : 1;
+            bool minZZeroMaxZOne : 1;
+            GuardbandZScale guardbandZScale : 2;
+            PixelZ pixelMinZ : 1;
+            PixelZ pixelMaxZ : 1;
+            u8 _pad1_ : 2;
+            GuardbandScale geometryGuardbandScale : 1;
+            u8 _pad2_ : 2;
+            GuardbandScale linePointCullGuardbandScale : 1;
+            GeometryClip geometryClip : 3;
+            u32 _pad3_ : 18;
         };
     };
-    static_assert(sizeof(ViewVolumeClipControl) == sizeof(u32));
+    static_assert(sizeof(ViewportClipControl) == sizeof(u32));
 
     union ColorWriteMask {
         u32 raw;
@@ -879,6 +916,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 _pad3_[12];
     };
     static_assert(sizeof(SetProgramInfo) == (sizeof(u32) * 0x10));
+
+    struct ProvokingVertex {
+        enum class Value : u8 {
+            First = 0,
+            Last = 1,
+        } value : 1;
+        u32 _pad_ : 31;
+    };
+    static_assert(sizeof(ProvokingVertex) == sizeof(u32));
 
     struct ZtLayer {
         u16 offset;

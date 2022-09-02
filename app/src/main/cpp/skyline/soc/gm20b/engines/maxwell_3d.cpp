@@ -19,6 +19,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .vertexInputRegisters = {*registers.vertexStreams, *registers.vertexStreamInstance, *registers.vertexAttributes},
             .inputAssemblyRegisters = {*registers.primitiveRestartEnable},
             .tessellationRegisters = {*registers.patchSize, *registers.tessellationParameters},
+            .rasterizationRegisters = {*registers.rasterEnable, *registers.frontPolygonMode, *registers.backPolygonMode, *registers.oglCullEnable, *registers.oglCullFace, *registers.windowOrigin, *registers.oglFrontFace, *registers.viewportClipControl, *registers.polyOffset, *registers.provokingVertex},
         };
     }
 

@@ -115,7 +115,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0xC8, type::TessellationParameters> tessellationParameters;
 
-            Register<0xDF, u32> rasterizerEnable;
+            Register<0xDF, u32> rasterEnable;
 
             Register<0xE0, std::array<type::StreamOutBuffer, type::StreamOutBufferCount>> streamOutBuffers;
             Register<0x1C0, std::array<type::TransformFeedbackBufferState, type::StreamOutBufferCount>> transformFeedbackBufferStates;
@@ -126,7 +126,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x300, std::array<type::ViewportClip, type::ViewportCount>> viewportClips;
 
             Register<0x35B, type::ClearRect> clearRect;
-
 
             Register<0x35D, u32> vertexArrayStart; //!< The first vertex to draw
 
@@ -142,11 +141,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x364, float> zClearValue;
             Register<0x368, u32> stencilClearValue;
 
-            struct PolygonMode {
-                type::PolygonMode front; // 0x36B
-                type::PolygonMode back; // 0x36C
-            };
-            Register<0x36B, PolygonMode> polygonMode;
+            Register<0x36B, type::PolygonMode> frontPolygonMode;
+            Register<0x36C, type::PolygonMode> backPolygonMode;
+
+            Register<0x370, type::PolyOffset> polyOffset;
 
             Register<0x373, u32> patchSize;
 
@@ -310,7 +308,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x591, u32> primitiveRestartEnable;
             Register<0x592, u32> primitiveRestartIndex;
 
-            Register<0x5A1, u32> provokingVertexIsLast;
+            Register<0x5A1, type::ProvokingVertex> provokingVertex;
 
             Register<0x5E7, type::ZtLayer> ztLayer;
 
@@ -325,13 +323,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x620, std::array<type::VertexStreamInstance, type::VertexStreamCount>> vertexStreamInstance; //!< A per-VBO boolean denoting if the vertex input rate should be per vertex or per instance
 
-            Register<0x646, u32> cullFaceEnable;
-            Register<0x647, type::FrontFace> frontFace;
-            Register<0x648, type::CullFace> cullFace;
+            Register<0x646, u32> oglCullEnable;
+            Register<0x647, type::FrontFace> oglFrontFace;
+            Register<0x648, type::CullFace> oglCullFace;
 
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportScaleOffsetEnable;
-            Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
+            Register<0x64F, type::ViewportClipControl> viewportClipControl;
 
             Register<0x652, type::PrimitiveTopologyControl> primitiveTopologyControl;
             Register<0x65C, type::PrimitiveTopology> primitiveTopology;

@@ -476,6 +476,72 @@ namespace skyline::gpu::interconnect::maxwell3d {
         //                          maxwell3d::PipelineStage::TessellationEvaluation);
     }
 
+    /* Rasterizer State */
+    void RasterizationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, rasterEnable, frontPolygonMode, backPolygonMode, viewportClipControl, oglCullEnable, oglFrontFace, oglCullFace, windowOrigin, provokingVertex, polyOffset);
+    }
+
+    RasterizationState::RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
+
+    static vk::PolygonMode ConvertPolygonMode(engine::PolygonMode mode) {
+        switch (mode) {
+            case engine::PolygonMode::Fill:
+                return vk::PolygonMode::eFill;
+            case engine::PolygonMode::Line:
+                return vk::PolygonMode::eLine;
+            case engine::PolygonMode::Point:
+                return vk::PolygonMode::ePoint;
+        }
+    }
+
+    static vk::CullModeFlags ConvertCullMode(engine::CullFace cullMode) {
+        switch (cullMode) {
+            case engine::CullFace::Front:
+                return vk::CullModeFlagBits::eFront;
+            case engine::CullFace::Back:
+                return vk::CullModeFlagBits::eBack;
+            case engine::CullFace::FrontAndBack:
+                return vk::CullModeFlagBits::eFrontAndBack;
+        }
+    }
+
+
+    bool ConvertDepthBiasEnable(engine::PolyOffset polyOffset, engine::PolygonMode polygonMode) {
+        switch (polygonMode) {
+            case engine::PolygonMode::Point:
+                return polyOffset.pointEnable;
+            case engine::PolygonMode::Line:
+                return polyOffset.lineEnable;
+            case engine::PolygonMode::Fill:
+                return polyOffset.fillEnable;
+        }
+    }
+
+    static vk::ProvokingVertexModeEXT ConvertProvokingVertex(engine::ProvokingVertex::Value provokingVertex) {
+        switch (provokingVertex) {
+            case engine::ProvokingVertex::Value::First:
+                return vk::ProvokingVertexModeEXT::eFirstVertex;
+            case engine::ProvokingVertex::Value::Last:
+                return vk::ProvokingVertexModeEXT::eLastVertex;
+        }
+    }
+
+    void RasterizationState::Flush() {
+        auto &rasterizationCreateInfo{rasterizationState.get<vk::PipelineRasterizationStateCreateInfo>()};
+        rasterizationCreateInfo.rasterizerDiscardEnable = !engine->rasterEnable;
+        rasterizationCreateInfo.polygonMode = ConvertPolygonMode(engine->frontPolygonMode);
+        if (engine->backPolygonMode != engine->frontPolygonMode)
+            Logger::Warn("Non-matching polygon modes!");
+
+        rasterizationCreateInfo.cullMode = engine->oglCullEnable ? ConvertCullMode(engine->oglCullFace) : vk::CullModeFlagBits::eNone;
+        //                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
+
+        bool origFrontFaceClockwise{engine->oglFrontFace == engine::FrontFace::CW};
+        rasterizationCreateInfo.frontFace = (engine->windowOrigin.flipY != origFrontFaceClockwise) ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
+        rasterizationCreateInfo.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
+        rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(engine->provokingVertex.value);
+    }
+
     /* Pipeline State */
     void PipelineState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         auto bindFunc{[&](auto &regs) { regs.DirtyBind(manager, handle); }};
@@ -488,7 +554,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
         : engine{manager, dirtyHandle, engine},
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters)},
-          depthRenderTarget{manager, engine.depthRenderTargetRegisters} {}
+          depthRenderTarget{manager, engine.depthRenderTargetRegisters},
+          rasterization{manager, engine.rasterizationRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         auto updateFunc{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, args...); }};
@@ -497,7 +564,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto vertexState{directState.vertexInput.Build(ctx, engine->vertexInputRegisters)};
         auto inputAssemblyState{directState.inputAssembly.Build()};
-        auto tessellationState{directState.tessellationState.Build()};
+        auto tessellationState{directState.tessellation.Build()};
+        const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};
 
     }
 
