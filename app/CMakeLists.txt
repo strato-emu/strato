@@ -180,6 +180,11 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/cache/renderpass_cache.cpp
         ${source_DIR}/skyline/gpu/cache/framebuffer_cache.cpp
         ${source_DIR}/skyline/gpu/interconnect/fermi_2d.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/common.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/active_state.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_state.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/constant_buffers.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/maxwell_3d.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_nodes.cpp
         ${source_DIR}/skyline/gpu/interconnect/conversion/quads.cpp
