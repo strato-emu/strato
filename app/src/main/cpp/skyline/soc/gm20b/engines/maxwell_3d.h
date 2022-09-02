@@ -5,9 +5,12 @@
 
 #pragma once
 
-#include "maxwell/types.h"
+#include <gpu/interconnect/maxwell_3d/maxwell_3d.h>
 #include "engine.h"
+#include <soc/host1x/syncpoint.h>
+#include "gpu/interconnect/maxwell_3d/common.h"
 #include "inline2memory.h"
+#include "maxwell/types.h"
 
 namespace skyline::soc::gm20b {
     struct ChannelContext;
@@ -20,10 +23,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     class Maxwell3D : public MacroEngineBase {
       private:
         host1x::SyncpointSet &syncpoints;
-        gpu::interconnect::GraphicsContext context;
         Inline2MemoryBackend i2m;
+        gpu::interconnect::maxwell3d::DirtyManager dirtyManager;
+        gpu::interconnect::maxwell3d::Maxwell3D interconnect;
 
-        struct BatchConstantBufferUpdateState {
+        struct BatchLoadConstantBufferState {
             std::vector<u32> buffer;
             u32 startOffset{std::numeric_limits<u32>::max()};
 
@@ -38,7 +42,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             void Reset() {
                 buffer.clear();
             }
-        } batchConstantBufferUpdate; //!< Holds state for updating constant buffer data in a batch rather than word by word
+        } batchLoadConstantBuffer; //!< Holds state for updating constant buffer data in a batch rather than word by word
 
         /**
          * @brief In the Maxwell 3D engine, instanced draws are implemented by repeating the exact same draw in sequence with special flag set in vertexBeginGl. This flag allows either incrementing the instance counter or resetting it, since we need to supply an instance count to the host API we defer all draws until state changes occur. If there are no state changes between draws we can skip them and count the occurences to get the number of instances to draw.
@@ -46,24 +50,28 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         struct DeferredDrawState {
             bool pending;
             bool indexed; //!< If the deferred draw is indexed
-            type::PrimitiveTopology drawTopology; //!< Topology of draw at draw time
+            type::DrawTopology drawTopology; //!< Topology of draw at draw time
             u32 instanceCount{1}; //!< Number of instances in the final draw
             u32 drawCount; //!< indexed ? drawIndexCount : drawVertexCount
             u32 drawFirst; //!< indexed ? drawIndexFirst : drawVertexFirst
-            i32 drawBaseVertex; //!< Only applicable to indexed draws
+            u32 drawBaseVertex; //!< Only applicable to indexed draws
+            u32 drawBaseInstance;
 
             /**
              * @brief Sets up the state necessary to defer a new draw
              */
-            void Set(u32 pDrawCount, u32 pDrawFirst, i32 pDrawBaseVertex, type::PrimitiveTopology pDrawTopology, bool pIndexed) {
+            void Set(u32 pDrawCount, u32 pDrawFirst, u32 pDrawBaseVertex, u32 pDrawBaseInstance, type::DrawTopology pDrawTopology, bool pIndexed) {
                 pending = true;
                 indexed = pIndexed;
                 drawTopology = pDrawTopology;
                 drawCount = pDrawCount;
                 drawFirst = pDrawFirst;
                 drawBaseVertex = pDrawBaseVertex;
+                drawBaseInstance = pDrawBaseInstance;
             }
         } deferredDraw{};
+
+        type::DrawTopology GetCurrentTopology();
 
         void FlushDeferredDraw();
 
