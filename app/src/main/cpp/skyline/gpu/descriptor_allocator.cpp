@@ -35,7 +35,7 @@ namespace skyline::gpu {
                 .type = vk::DescriptorType::eStorageImage,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::RenderTargetCount,
+                .descriptorCount = maxwell3d::ColorTargetCount,
                 .type = vk::DescriptorType::eInputAttachment,
             },
         }; //!< A best approximate ratio of descriptors of each type that may be utilized, the total amount will grow in these ratios

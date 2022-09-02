@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <gpu/interconnect/graphics_context.h>
+#include "maxwell/types.h"
 #include "engine.h"
 #include "inline2memory.h"
 
@@ -119,22 +119,30 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0xDF, u32> rasterizerEnable;
 
-            Register<0xE0, std::array<type::TransformFeedbackBuffer, type::TransformFeedbackBufferCount>> transformFeedbackBuffers;
-            Register<0x1C0, std::array<type::TransformFeedbackBufferState, type::TransformFeedbackBufferCount>> transformFeedbackBufferStates;
-            Register<0x1D1, u32> transformFeedbackEnable;
+            Register<0xE0, std::array<type::StreamOutBuffer, type::StreamOutBufferCount>> streamOutBuffers;
+            Register<0x1C0, std::array<type::TransformFeedbackBufferState, type::StreamOutBufferCount>> transformFeedbackBufferStates;
+            Register<0x1D1, u32> streamOutEnable;
 
-            Register<0x200, std::array<type::ColorRenderTarget, type::RenderTargetCount>> renderTargets;
-            Register<0x280, std::array<type::ViewportTransform, type::ViewportCount>> viewportTransforms;
-            Register<0x300, std::array<type::Viewport, type::ViewportCount>> viewports;
+            Register<0x200, std::array<type::ColorTarget, type::ColorTargetCount>> colorTargets;
+            Register<0x280, std::array<type::Viewport, type::ViewportCount>> viewports;
+            Register<0x300, std::array<type::ViewportClip, type::ViewportCount>> viewportClips;
 
-            Register<0x35D, u32> drawVertexFirst; //!< The first vertex to draw
-            Register<0x35E, u32> drawVertexCount; //!< The amount of vertices to draw, calling this method triggers non-indexed drawing
+            Register<0x35B, type::ClearRect> clearRect;
 
-            Register<0x35F, type::DepthMode> depthMode;
 
-            Register<0x360, std::array<u32, 4>> clearColorValue;
-            Register<0x364, float> clearDepthValue;
-            Register<0x368, u32> clearStencilValue;
+            Register<0x35D, u32> vertexArrayStart; //!< The first vertex to draw
+
+            struct DrawVertexArray {
+                u32 count;
+            };
+
+            Register<0x35E, DrawVertexArray> drawVertexArray; //!< The amount of vertices to draw, calling this method triggers non-indexed drawing
+
+            Register<0x35F, type::ZClipRange> zClipRange;
+
+            Register<0x360, std::array<u32, 4>> colorClearValue;
+            Register<0x364, float> zClearValue;
+            Register<0x368, u32> stencilClearValue;
 
             struct PolygonMode {
                 type::PolygonMode front; // 0x36B
@@ -153,12 +161,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x370, DepthBiasEnable> depthBiasEnable;
 
-            struct StencilBackExtra {
-                u32 compareReference; // 0x3D5
-                u32 writeMask; // 0x3D6
-                u32 compareMask; // 0x3D7
-            };
-            Register<0x3D5, StencilBackExtra> stencilBackExtra;
+            Register<0x3D5, type::BackStencilValues> backStencilValues;
 
             Register<0x3D8, u32> tiledCacheEnable;
             struct TiledCacheSize {
@@ -167,25 +170,26 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x3D9, TiledCacheSize> tiledCacheSize;
 
-            Register<0x3E4, u32> commonColorWriteMask; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
+            Register<0x3E4, u32> singleCtWriteControl; //!< If enabled, the color write masks for all RTs must be set to that of the first RT
 
-            Register<0x3E7, float> depthBoundsNear;
-            Register<0x3E8, float> depthBoundsFar;
+            Register<0x3E7, float> depthBoundsMin;
+            Register<0x3E8, float> depthBoundsMax;
 
-            Register<0x3EB, u32> rtSeparateFragData;
+            Register<0x3EB, u32> ctMrtEnable;
 
-            Register<0x3F8, Address> depthTargetAddress;
-            Register<0x3FA, type::DepthRtFormat> depthTargetFormat;
-            Register<0x3FB, type::RenderTargetTileMode> depthTargetTileMode;
-            Register<0x3FC, u32> depthTargetLayerStride;
+            Register<0x3F8, Address> ztOffset;
+            Register<0x3FA, type::ZtFormat> ztFormat;
+            Register<0x3FB, type::ZtBlockSize> ztBlockSize;
+            Register<0x3FC, u32> ztArrayPitch;
+            Register<0x3FD, type::SurfaceClip> surfaceClip;
 
-            Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributeState;
+            Register<0x43E, type::ClearSurfaceControl> clearSurfaceControl;
 
-            Register<0x487, type::RenderTargetControl> renderTargetControl;
+            Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributes;
 
-            Register<0x48A, u32> depthTargetWidth;
-            Register<0x48B, u32> depthTargetHeight;
-            Register<0x48C, type::RenderTargetArrayMode> depthTargetArrayMode;
+            Register<0x487, type::CtSelect> ctSelect;
+
+            Register<0x48A, type::ZtSize> ztSize;
 
             Register<0x48D, bool> linkedTscHandle; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
 
@@ -193,9 +197,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
-            Register<0x4C3, type::CompareOp> depthTestFunc;
+            Register<0x4C3, type::CompareFunc> depthTestFunc;
             Register<0x4C4, float> alphaTestRef;
-            Register<0x4C5, type::CompareOp> alphaTestFunc;
+            Register<0x4C5, type::CompareFunc> alphaTestFunc;
             Register<0x4C6, u32> drawTFBStride;
 
             struct BlendConstant {
@@ -204,7 +208,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 float blue; // 0x4C9
                 float alpha; // 0x4CA
             };
-            Register<0x4C7, std::array<float, type::BlendColorChannelCount>> blendConstant;
+            Register<0x4C7, std::array<float, type::BlendColorChannelCount>> blendConsts;
 
             struct BlendStateCommon {
                 u32 seperateAlpha; // 0x4CF
@@ -220,34 +224,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x4CF, BlendStateCommon> blendStateCommon;
 
-            Register<0x4D8, std::array<u32, type::RenderTargetCount>> rtBlendEnable;
+            Register<0x4D8, std::array<u32, type::ColorTargetCount>> rtBlendEnable;
 
             Register<0x4E0, u32> stencilEnable;
-            struct StencilFront {
-                type::StencilOp failOp; // 0x4E1
-                type::StencilOp zFailOp; // 0x4E2
-                type::StencilOp passOp; // 0x4E3
 
-                type::CompareOp compareOp; // 0x4E4
-                u32 compareReference; // 0x4E5
-                u32 compareMask; // 0x4E6
+            Register<0x4E1, type::StencilOps> stencilOps;
+            Register<0x4E5, type::StencilValues> stencilValues;
 
-                u32 writeMask; // 0x4E7
-            };
-            Register<0x4E1, StencilFront> stencilFront;
+            Register<0x4EB, type::WindowOrigin> windowOrigin;
 
-            struct WindowOriginMode {
-                bool isOriginLowerLeft : 1;
-                u8 _pad_ : 3;
-                bool flipFrontFace : 1;
-            };
-            Register<0x4EB, WindowOriginMode> windowOriginMode;
-
-            Register<0x4EC, float> lineWidthSmooth;
+            Register<0x4EC, float> lineWidth;
             Register<0x4ED, float> lineWidthAliased;
 
-            Register<0x50D, i32> drawBaseVertex;
-            Register<0x50E, u32> drawBaseInstance;
+            Register<0x50D, u32> globalBaseVertexIndex;
+            Register<0x50E, u32> globalBaseInstanceIndex;
 
             Register<0x544, u32> clipDistanceEnable;
             Register<0x545, u32> sampleCounterEnable;
@@ -256,7 +246,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x548, u32> pointSpriteEnable;
             Register<0x54A, u32> shaderExceptions;
             Register<0x54D, u32> multisampleEnable;
-            Register<0x54E, u32> depthTargetEnable;
+            Register<0x54E, type::ZtSelect> ztSelect;
 
             Register<0x54F, type::MultisampleControl> multisampleControl;
 
@@ -266,8 +256,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x557, SamplerPool> samplerPool;
 
-            Register<0x55B, float> depthBiasFactor;
-            Register<0x55C, u32> lineSmoothEnable;
+            Register<0x55B, float> slopeScaleDepthBias;
+            Register<0x55C, u32> aliasedLineWidthEnable;
 
             struct TexturePool {
                 Address address; // 0x55D
@@ -275,45 +265,78 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x55D, TexturePool> texturePool;
 
-            Register<0x565, u32> stencilTwoSideEnable; //!< Determines if the back-facing stencil state uses the front facing stencil state or independent stencil state
+            Register<0x565, u32> twoSidedStencilTestEnable; //!< Determines if the back-facing stencil state uses the front facing stencil state or independent stencil state
 
-            struct StencilBack {
-                type::StencilOp failOp; // 0x566
-                type::StencilOp zFailOp; // 0x567
-                type::StencilOp passOp; // 0x568
-                type::CompareOp compareOp; // 0x569
-            };
-            Register<0x566, StencilBack> stencilBack;
+            Register<0x566, type::StencilOps> stencilBack;
 
-            Register<0x56F, float> depthBiasUnits;
+            Register<0x56F, float> depthBias;
 
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
             Register<0x582, Address> setProgramRegion;
 
-            Register<0x585, u32> vertexEndGl; //!< Method-only register with no real value, used after calling vertexBeginGl to invoke the draw
-            Register<0x586, type::VertexBeginGl> vertexBeginGl; //!< Similar to glVertexBegin semantically, supplies a primitive topology for draws alongside instancing data
+            Register<0x585, u32> end; //!< Method-only register with no real value, used after calling vertexBeginGl to invoke the draw
+
+            union Begin {
+                u32 raw;
+
+                enum class PrimitiveId : u8 {
+                    First = 0,
+                    Unchanged = 1,
+                };
+
+                enum class InstanceId : u8 {
+                    First = 0,
+                    Subsequent = 1,
+                    Unchanged = 2
+                };
+
+                enum class SplitMode : u8 {
+                    NormalBeginNormalEnd = 0,
+                    NormalBeginOpenEnd = 1,
+                    OpenBeginOpenEnd = 2,
+                    OpenBeginNormalEnd = 3
+                };
+
+                struct {
+                    type::DrawTopology op;
+                    u16 _pad0_ : 8;
+                    PrimitiveId primitiveId : 1;
+                    u8 _pad1_ : 1;
+                    InstanceId instanceId : 2;
+                    SplitMode splitMode : 4;
+                };
+            };
+            static_assert(sizeof(Begin) == sizeof(u32));
+            Register<0x586, Begin> begin; //!< Similar to glVertexBegin semantically, supplies a primitive topology for draws alongside instancing data
 
             Register<0x591, u32> primitiveRestartEnable;
             Register<0x592, u32> primitiveRestartIndex;
 
             Register<0x5A1, u32> provokingVertexIsLast;
 
+            Register<0x5E7, type::ZtLayer> ztLayer;
+
             Register<0x5F2, type::IndexBuffer> indexBuffer;
 
-            Register<0x5F7, u32> drawIndexFirst; //!< The first element in the index buffer to draw
-            Register<0x5F8, u32> drawIndexCount; //!< The amount of elements to draw, calling this method triggers indexed drawing
+            struct DrawIndexBuffer {
+                u32 count;
+            };
+            Register<0x5F8, DrawIndexBuffer> drawIndexBuffer;
 
             Register<0x61F, float> depthBiasClamp;
 
-            Register<0x620, std::array<u32, type::VertexBufferCount>> isVertexInputRatePerInstance; //!< A per-VBO boolean denoting if the vertex input rate should be per vertex or per instance
+            Register<0x620, std::array<type::VertexStreamInstance, type::VertexStreamCount>> vertexStreamInstance; //!< A per-VBO boolean denoting if the vertex input rate should be per vertex or per instance
 
             Register<0x646, u32> cullFaceEnable;
             Register<0x647, type::FrontFace> frontFace;
             Register<0x648, type::CullFace> cullFace;
 
             Register<0x649, u32> pixelCentreImage;
-            Register<0x64B, u32> viewportTransformEnable;
+            Register<0x64B, u32> viewportScaleOffsetEnable;
             Register<0x64F, type::ViewVolumeClipControl> viewVolumeClipControl;
+
+            Register<0x652, type::PrimitiveTopologyControl> primitiveTopologyControl;
+            Register<0x65C, type::PrimitiveTopology> primitiveTopology;
 
             Register<0x66F, u32> depthBoundsEnable;
 
@@ -323,8 +346,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x671, ColorLogicOp> colorLogicOp;
 
-            Register<0x674, type::ClearBuffers> clearBuffers;
-            Register<0x680, std::array<type::ColorWriteMask, type::RenderTargetCount>> colorWriteMask;
+            Register<0x674, type::ClearSurface> clearSurface;
+            Register<0x680, std::array<type::ColorWriteMask, type::ColorTargetCount>> colorWriteMask;
 
             struct Semaphore {
                 Address address; // 0x6C0
@@ -333,19 +356,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x6C0, Semaphore> semaphore;
 
-            struct VertexBuffer {
-                union {
-                    u32 raw;
-                    struct {
-                        u32 stride : 12;
-                        u32 enable : 1;
-                    };
-                } config;
-                Address iova;
-                u32 divisor;
-            };
-            static_assert(sizeof(VertexBuffer) == sizeof(u32) * 4);
-            Register<0x700, std::array<VertexBuffer, type::VertexBufferCount>> vertexBuffers;
+            Register<0x700, std::array<type::VertexStream, type::VertexStreamCount>> vertexStreams;
 
             struct IndependentBlend {
                 u32 seperateAlpha;
@@ -357,34 +368,31 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 type::BlendFactor alphaDstFactor;
                 u32 _pad_;
             };
-            Register<0x780, std::array<IndependentBlend, type::RenderTargetCount>> independentBlend;
+            Register<0x780, std::array<IndependentBlend, type::ColorTargetCount>> independentBlend;
 
-            Register<0x7C0, std::array<Address, type::VertexBufferCount>> vertexBufferLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
+            Register<0x7C0, std::array<Address, type::VertexStreamCount>> vertexStreamLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
 
             Register<0x800, std::array<type::SetProgramInfo, type::ShaderStageCount>> setProgram;
 
             Register<0x8C0, u32[0x20]> firmwareCall;
 
-            struct ConstantBufferSelector {
-                u32 size;
-                Address address;
-            };
-            Register<0x8E0, ConstantBufferSelector> constantBufferSelector;
+
+            Register<0x8E0, type::ConstantBufferSelector> constantBufferSelector;
 
             /**
              * @brief Allows updating the currently selected constant buffer inline with an offset and up to 16 words of data
              */
-            struct ConstantBufferUpdate {
+            struct LoadConstantBuffer {
                 u32 offset;
                 std::array<u32, 16> data;
             };
-            Register<0x8E3, ConstantBufferUpdate> constantBufferUpdate;
+            Register<0x8E3, LoadConstantBuffer> loadConstantBuffer;
 
-            Register<0x900, std::array<type::Bind, type::PipelineStageCount>> bind; //!< Binds constant buffers to pipeline stages
+            Register<0x900, std::array<type::BindGroup, type::PipelineStageCount>> bindGroups; //!< Binds constant buffers to pipeline stages
 
             Register<0x982, u32> bindlessTextureConstantBufferIndex; //!< The index of the constant buffer containing bindless texture descriptors
 
-            Register<0xA00, std::array<u32, (type::TransformFeedbackVaryingCount / sizeof(u32))  * type::TransformFeedbackBufferCount>> transformFeedbackVaryings;
+            Register<0xA00, std::array<u32, (type::TransformFeedbackVaryingCount / sizeof(u32))  * type::StreamOutBufferCount>> transformFeedbackVaryings;
         };
         static_assert(sizeof(Registers) == (EngineMethodsEnd * sizeof(u32)));
         #pragma pack(pop)

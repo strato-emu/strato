@@ -5,6 +5,7 @@
 #pragma once
 
 #include <common.h>
+#include <common/macros.h>
 #include <soc/gm20b/engines/engine.h>
 
 namespace skyline::soc::gm20b::engine::maxwell3d::type {
@@ -56,112 +57,193 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         ClockwiseConnectedTriangle = 3, //!< Clockwise, connected (Only for Triangles)
     };
 
-    constexpr static size_t RenderTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
+    constexpr static size_t ColorTargetCount{8}; //!< Maximum amount of render targets that can be bound at once on Maxwell 3D
 
-    struct RenderTargetTileMode {
+    struct TargetMemory {
+        enum class Layout : u8 {
+            BlockLinear = 0,
+            Pitch = 1
+        };
+
+        enum class ThirdDimensionControl : u8 {
+            ThirdDimensionDefinesArraySize = 0,
+            ThirdDimensionDefinesDepthSize = 1
+        };
+
         u8 blockWidthLog2 : 4; //!< The width of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
         u8 blockHeightLog2 : 4; //!< The height of a block in GOBs with log2 encoding
         u8 blockDepthLog2 : 4; //!< The depth of a block in GOBs with log2 encoding
-        bool isLinear : 1;
+        Layout layout : 1;
         u8 _pad0_ : 3;
-        bool is3d : 1;
+        ThirdDimensionControl thirdDimensionControl : 1;
         u16 _pad1_ : 15;
-    };
 
-    struct RenderTargetArrayMode {
-        u16 depthOrlayerCount; //!< The 3D depth or layer count of the render target depending on if it's 3D or not
-        bool volume : 1;
-        u16 _pad_ : 15;
+        u8 BlockWidth() const {
+            return 1; // blockWidthLog2 only supports a value of 0
+        }
+
+        u8 BlockHeight() const {
+            return static_cast<u8>(1 << blockHeightLog2);
+        }
+
+        u8 BlockDepth() const {
+            return static_cast<u8>(1 << blockDepthLog2);
+        }
     };
 
     /**
      * @brief The target image's metadata for any rendering operations
      * @note Any render target with ColorFormat::None as their format are effectively disabled
      */
-    struct ColorRenderTarget {
-        Address address;
+    struct ColorTarget {
+        Address offset;
         u32 width;
         u32 height;
 
         enum class Format : u32 {
-            None = 0x0,
-            R32G32B32A32Float = 0xC0,
-            R32G32B32A32Sint = 0xC1,
-            R32G32B32A32Uint = 0xC2,
-            R32G32B32X32Float = 0xC3,
-            R32G32B32X32Sint = 0xC4,
-            R32G32B32X32Uint = 0xC5,
-            R16G16B16X16Unorm = 0xC6,
-            R16G16B16X16Snorm = 0xC7,
-            R16G16B16X16Sint = 0xC8,
-            R16G16B16X16Uint = 0xC9,
-            R16G16B16A16Float = 0xCA,
-            R32G32Float = 0xCB,
-            R32G32Sint = 0xCC,
-            R32G32Uint = 0xCD,
-            R16G16B16X16Float = 0xCE,
-            B8G8R8A8Unorm = 0xCF,
-            B8G8R8A8Srgb = 0xD0,
-            A2B10G10R10Unorm = 0xD1,
-            A2B10G10R10Uint = 0xD2,
-            R8G8B8A8Unorm = 0xD5,
-            R8G8B8A8Srgb = 0xD6,
-            R8G8B8X8Snorm = 0xD7,
-            R8G8B8X8Sint = 0xD8,
-            R8G8B8X8Uint = 0xD9,
-            R16G16Unorm = 0xDA,
-            R16G16Snorm = 0xDB,
-            R16G16Sint = 0xDC,
-            R16G16Uint = 0xDD,
-            R16G16Float = 0xDE,
-            B10G11R11Float = 0xE0,
-            R32Sint = 0xE3,
-            R32Uint = 0xE4,
-            R32Float = 0xE5,
-            B8G8R8X8Unorm = 0xE6,
-            B8G8R8X8Srgb = 0xE7,
-            B5G6R5Unorm = 0xE8,
-            B5G5R5A1Unorm = 0xE9,
-            R8G8Unorm = 0xEA,
-            R8G8Snorm = 0xEB,
-            R8G8Sint = 0xEC,
-            R8G8Uint = 0xED,
-            R16Unorm = 0xEE,
-            R16Snorm = 0xEF,
-            R16Sint = 0xF0,
-            R16Uint = 0xF1,
-            R16Float = 0xF2,
-            R8Unorm = 0xF3,
-            R8Snorm = 0xF4,
-            R8Sint = 0xF5,
-            R8Uint = 0xF6,
-            B5G5R5X1Unorm = 0xF8,
-            R8G8B8X8Unorm = 0xF9,
-            R8G8B8X8Srgb = 0xFA
+            // F - SFloat
+            // S - SInt
+            // U - UInt
+            // L - sRGB
+            // N - SNorm
+            // Z - 0
+            // O - 1
+            //   - UNorm
+            // X - Ignored
+            // 8 bit formats are in BE - opposite to VK!
+            Disabled = 0x0,
+            RF32_GF32_BF32_AF32 = 0xC0,
+            RS32_GS32_BS32_AS32 = 0xC1,
+            RU32_GU32_BU32_AU32 = 0xC2,
+            RF32_GF32_BF32_X32 = 0xC3,
+            RS32_GS32_BS32_X32 = 0xC4,
+            RU32_GU32_BU32_X32 = 0xC5,
+            R16_G16_B16_A16 = 0xC6,
+            RN16_GN16_BN16_AN16 = 0xC7,
+            RS16_GS16_BS16_AS16 = 0xC8,
+            RU16_GU16_BU16_AU16 = 0xC9,
+            RF16_GF16_BF16_AF16 = 0xCA,
+            RF32_GF32 = 0xCB,
+            RS32_GS32 = 0xCC,
+            RU32_GU32 = 0xCD,
+            RF16_GF16_BF16_X16 = 0xCE,
+            A8R8G8B8 = 0xCF,
+            A8RL8GL8BL8 = 0xD0,
+            A2B10G10R10 = 0xD1,
+            AU2BU10GU10RU10 = 0xD2,
+            A8B8G8R8 = 0xD5,
+            A8BL8GL8RL8 = 0xD6,
+            AN8BN8GN8RN8 = 0xD7,
+            AS8BS8GS8RS8 = 0xD8,
+            AU8BU8GU8RU8 = 0xD9,
+            R16_G16 = 0xDA,
+            RN16_GN16 = 0xDB,
+            RS16_GS16 = 0xDC,
+            RU16_GU16 = 0xDD,
+            RF16_GF16 = 0xDE,
+            A2R10G10B10 = 0xDF,
+            BF10GF11RF11 = 0xE0,
+            RS32 = 0xE3,
+            RU32 = 0xE4,
+            RF32 = 0xE5,
+            X8R8G8B8 = 0xE6,
+            X8RL8GL8BL8 = 0xE7,
+            R5G6B5 = 0xE8,
+            A1R5G5B5 = 0xE9,
+            G8R8 = 0xEA,
+            GN8RN8 = 0xEB,
+            GS8RS8 = 0xEC,
+            GU8RU8 = 0xED,
+            R16 = 0xEE,
+            RN16 = 0xEF,
+            RS16 = 0xF0,
+            RU16 = 0xF1,
+            RF16 = 0xF2,
+            R8 = 0xF3,
+            RN8 = 0xF4,
+            RS8 = 0xF5,
+            RU8 = 0xF6,
+            A8 = 0xF7,
+            X1R5G5B5 = 0xF8,
+            X8B8G8R8 = 0xF9,
+            X8BL8GL8RL8 = 0xFA,
+            Z1R5G5B5 = 0xFB,
+            O1R5G5B5 = 0xFC,
+            Z8R8G8B8 = 0xFD,
+            O8R8G8B8 = 0xFE,
+            R32 = 0xFF,
+            A16 = 0x40,
+            AF16 = 0x41,
+            AF32 = 0x42,
+            A8R8 = 0x43,
+            R16_A16 = 0x44,
+            RF16_AF16 = 0x45,
+            RF32_AF32 = 0x46,
+            B8G8R8A8 = 0x47,
         } format;
 
-        RenderTargetTileMode tileMode;
+        TargetMemory memory;
 
-        RenderTargetArrayMode arrayMode;
+        u32 thirdDimension : 28;
+        u8 _pad0_ : 4;
 
-        u32 layerStrideLsr2; //!< The length of the stride of a layer shifted right by 2 bits
-        u32 baseLayer;
-        u32 _pad_[0x7];
+        u32 arrayPitchLsr2; //!< The length of the stride of a layer shifted right by 2 bits
+
+        u32 layerOffset;
+        u32 _pad1_[0x7];
+
+        u32 ArrayPitch() const {
+            return arrayPitchLsr2 << 2;
+        }
     };
-    static_assert(sizeof(ColorRenderTarget) == (0x10 * sizeof(u32)));
+    static_assert(sizeof(ColorTarget) == (0x10 * sizeof(u32)));
 
-    enum class DepthRtFormat : u32 {
-        D32Float = 0x0A,
-        D16Unorm = 0x13,
-        S8D24Unorm = 0x14,
-        D24X8Unorm = 0x15,
-        D24S8Unorm = 0x16,
-        S8Uint = 0x17,
-        D24C8Unorm = 0x18,
-        D32S8X24Float = 0x19,
-        D24X8S8C8X16Unorm = 0x1D,
-        D32X8C8X16Float = 0x1E,
-        D32S8C8X16Float = 0x1F,
+    enum class ZtFormat : u32 {
+        Z16 = 0x13,
+        Z24S8 = 0x14,
+        X8Z24 = 0x15,
+        S8Z24 = 0x16,
+        S8 = 0x17,
+        V8Z24 = 0x18,
+        ZF32 = 0x0A,
+        ZF32_X24S8 = 0x19,
+        X8Z24_X16V8S8 = 0x1D,
+        ZF32_X16V8X8 = 0x1E,
+        ZF32_X16V8S8 = 0x1F,
+    };
+
+    struct ZtBlockSize {
+        u8 blockWidthLog2 : 4; //!< The width of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
+        u8 blockHeightLog2 : 4; //!< The height of a block in GOBs with log2 encoding
+        u8 blockDepthLog2 : 4; //!< The depth of a block in GOBs with log2 encoding, this is always assumed to be 1 as it is the only configuration the X1 supports
+        u32 _pad_ : 20;
+
+        u8 BlockWidth() const {
+            return 1; // blockWidthLog2 only supports a value of 0
+        }
+
+        u8 BlockHeight() const {
+            return static_cast<u8>(1 << blockHeightLog2);
+        }
+
+        u8 BlockDepth() const {
+            return 1;
+        }
+    };
+
+    struct ZtSize {
+        enum class Control : u8 {
+            ThirdDimensionDefinesArraySize = 0,
+            ArraySizeIsOne = 1,
+        };
+
+        u32 width : 28;
+        u8 _pad0_ : 4;
+        u32 height : 17;
+        u16 _pad1_ : 15;
+        u16 thirdDimension;
+        Control control : 1;
+        u16 _pad2_ : 15;
     };
 
     constexpr static size_t ViewportCount{16}; //!< Amount of viewports on Maxwell 3D, array size for any per-viewport parameter such as transform, scissors, etc
@@ -169,50 +251,50 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     /**
      * @brief The transformations applied on any primitive sent to a viewport
      */
-    struct ViewportTransform {
+    struct Viewport {
         float scaleX; //!< Scales all X-axis primitive coordinates by this factor
         float scaleY;
         float scaleZ;
-        float translateX; //!< Translates all X-axis primitive coordinates by this value
-        float translateY;
-        float translateZ;
+        float offsetX; //!< Translates all X-axis primitive coordinates by this value
+        float offsetY;
+        float offsetZ;
 
         /**
          * @brief A component swizzle applied to primitive coordinates prior to clipping/perspective divide with optional negation
          * @note This functionality is exposed via GL_NV_viewport_swizzle (OpenGL) and VK_NV_viewport_swizzle (Vulkan)
          */
-        enum class Swizzle : u8 {
-            PositiveX = 0,
-            NegativeX = 1,
-            PositiveY = 2,
-            NegativeY = 3,
-            PositiveZ = 4,
-            NegativeZ = 5,
-            PositiveW = 6,
-            NegativeW = 7,
+        enum class CoordinateSwizzle : u8 {
+            PosX = 0,
+            NegX = 1,
+            PosY = 2,
+            NegY = 3,
+            PosZ = 4,
+            NegZ = 5,
+            PosW = 6,
+            NegW = 7,
         };
 
-        ENUM_STRING(Swizzle, {
-            ENUM_CASE_PAIR(PositiveX, "+X");
-            ENUM_CASE_PAIR(NegativeX, "-X");
-            ENUM_CASE_PAIR(PositiveY, "+Y");
-            ENUM_CASE_PAIR(NegativeY, "-Y");
-            ENUM_CASE_PAIR(PositiveZ, "+Z");
-            ENUM_CASE_PAIR(NegativeZ, "-Z");
-            ENUM_CASE_PAIR(PositiveW, "+W");
-            ENUM_CASE_PAIR(NegativeW, "-W");
+        ENUM_STRING(CoordinateSwizzle, {
+            ENUM_CASE_PAIR(PosX, "+X");
+            ENUM_CASE_PAIR(NegX, "-X");
+            ENUM_CASE_PAIR(PosY, "+Y");
+            ENUM_CASE_PAIR(NegY, "-Y");
+            ENUM_CASE_PAIR(PosZ, "+Z");
+            ENUM_CASE_PAIR(NegZ, "-Z");
+            ENUM_CASE_PAIR(PosW, "+W");
+            ENUM_CASE_PAIR(NegW, "-W");
         })
 
-        struct Swizzles {
-            Swizzle x : 3;
+        struct {
+            CoordinateSwizzle x : 3;
             u8 _pad0_ : 1;
-            Swizzle y : 3;
+            CoordinateSwizzle y : 3;
             u8 _pad1_ : 1;
-            Swizzle z : 3;
+            CoordinateSwizzle z : 3;
             u8 _pad2_ : 1;
-            Swizzle w : 3;
+            CoordinateSwizzle w : 3;
             u32 _pad3_ : 17;
-        } swizzles;
+        } swizzle;
 
         /**
          * @brief The amount of subpixel bits on screen-space axes that bias if a pixel is inside a primitive for conservative rasterization
@@ -223,29 +305,41 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             u8 _pad0_ : 3;
             u8 y : 5;
             u32 _pad1_ : 19;
-        } subpixelPrecisionBias;
+        } snapGridPrecision;
     };
-    static_assert(sizeof(ViewportTransform) == (0x8 * sizeof(u32)));
+    static_assert(sizeof(Viewport) == (0x8 * sizeof(u32)));
 
     /**
      * @brief The offset and extent of the viewport for transformation of coordinates from NDC-space (Normalized Device Coordinates) to screen-space
      * @note This is effectively unused since all this data can be derived from the viewport transform, this misses crucial data that the transform has such as depth range order and viewport axis inverse transformations
      */
-    struct Viewport {
+    struct ViewportClip {
         struct {
-            u16 x;
+            u16 x0;
             u16 width;
-        };
+        } horizontal;
 
         struct {
-            u16 y;
+            u16 y0;
             u16 height;
-        };
+        } vertical;
 
-        float depthRangeNear;
-        float depthRangeFar;
+        float minZ;
+        float maxZ;
     };
-    static_assert(sizeof(Viewport) == (0x4 * sizeof(u32)));
+    static_assert(sizeof(ViewportClip) == (0x4 * sizeof(u32)));
+
+    struct ClearRect {
+        struct {
+            u16 xMin;
+            u16 xMax;
+        } horizontal;
+
+        struct {
+            u16 yMin;
+            u16 yMax;
+        } vertical;
+    };
 
     /**
      * @brief The method used to rasterize polygons, not to be confused with the primitive type
@@ -263,57 +357,53 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
      */
     struct Scissor {
         u32 enable; //!< Rejects non-masked writes when enabled and allows all writes otherwise
-        struct ScissorBounds {
-            u16 minimum; //!< The lower bound of the masked region in a dimension
-            u16 maximum; //!< The higher bound of the masked region in a dimension
-        } horizontal, vertical;
+        struct {
+            u16 xMin;
+            u16 xMax;
+        } horizontal;
+
+        struct {
+            u16 yMin;
+            u16 yMax;
+        } vertical;
         u32 _pad_;
     };
     static_assert(sizeof(Scissor) == (0x4 * sizeof(u32)));
 
-    constexpr static size_t VertexBufferCount{16}; //!< The maximum amount of vertex buffers that can be bound at once
+    constexpr static size_t VertexStreamCount{16}; //!< The maximum amount of vertex buffers that can be bound at once
     constexpr static size_t VertexAttributeCount{32}; //!< The amount of vertex attributes that can be set
 
     union VertexAttribute {
         u32 raw;
 
-        enum class ElementSize : u16 {
-            e0 = 0x0,
-            e1x8 = 0x1D,
-            e2x8 = 0x18,
-            e3x8 = 0x13,
-            e4x8 = 0x0A,
-            e1x16 = 0x1B,
-            e2x16 = 0x0F,
-            e3x16 = 0x05,
-            e4x16 = 0x03,
-            e1x32 = 0x12,
-            e2x32 = 0x04,
-            e3x32 = 0x02,
-            e4x32 = 0x01,
-            e10_10_10_2 = 0x30,
-            e11_11_10 = 0x31,
+        enum class Source : u8 {
+            Active = 0,
+            Inactive = 1,
         };
 
-        ENUM_STRING(ElementSize, {
-            ENUM_CASE_PAIR(e1x8, "1x8");
-            ENUM_CASE_PAIR(e2x8, "2x8");
-            ENUM_CASE_PAIR(e3x8, "3x8");
-            ENUM_CASE_PAIR(e4x8, "4x8");
-            ENUM_CASE_PAIR(e1x16, "1x16");
-            ENUM_CASE_PAIR(e2x16, "2x16");
-            ENUM_CASE_PAIR(e3x16, "3x16");
-            ENUM_CASE_PAIR(e4x16, "4x16");
-            ENUM_CASE_PAIR(e1x32, "1x32");
-            ENUM_CASE_PAIR(e2x32, "2x32");
-            ENUM_CASE_PAIR(e3x32, "3x32");
-            ENUM_CASE_PAIR(e4x32, "4x32");
-            ENUM_CASE_PAIR(e10_10_10_2, "10_10_10_2");
-            ENUM_CASE_PAIR(e11_11_10, "11_11_10");
-        })
+        enum class ComponentBitWidths : u8 {
+            R32_G32_B32_A32 = 0x1,
+            R32_G32_B32 = 0x2,
+            R16_G16_B16_A16 = 0x3,
+            R32_G32 = 0x4,
+            R16_G16_B16 = 0x5,
+            A8B8G8R8 = 0x2F,
+            R8_G8_B8_A8 = 0xA,
+            X8B8G8R8 = 0x33,
+            A2B10G10R10 = 0x30,
+            B10G11R11 = 0x31,
+            R16_G16 = 0xF,
+            R32 = 0x12,
+            R8_G8_B8 = 0x13,
+            G8R8 = 0x32,
+            R8_G8 = 0x18,
+            R16 = 0x1B,
+            R8 = 0x1D,
+            A8 = 0x34
+        };
 
-        enum class ElementType : u16 {
-            None = 0,
+        enum class NumericalType : u8 {
+            UnusedEnumDoNotUseBecaseItWillGoAway = 0,
             Snorm = 1,
             Unorm = 2,
             Sint = 3,
@@ -323,92 +413,63 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
             Float = 7,
         };
 
-        ENUM_STRING(ElementType, {
-            ENUM_CASE(None);
-            ENUM_CASE(Snorm);
-            ENUM_CASE(Unorm);
-            ENUM_CASE(Sint);
-            ENUM_CASE(Uint);
-            ENUM_CASE(Uscaled);
-            ENUM_CASE(Sscaled);
-            ENUM_CASE(Float);
-        })
-
         struct {
-            u8 bufferId : 5;
+            u8 stream : 5;
             u8 _pad0_ : 1;
-            bool isConstant : 1;
+            Source source : 1;
             u16 offset : 14;
-            ElementSize elementSize : 6;
-            ElementType type : 3;
+            ComponentBitWidths componentBitWidths : 6;
+            NumericalType numericalType : 3;
             u8 _pad1_ : 1;
-            bool bgra : 1;
+            bool swapRAndB : 1;
         };
     };
     static_assert(sizeof(VertexAttribute) == sizeof(u32));
 
-    constexpr u16 operator|(VertexAttribute::ElementSize elementSize, VertexAttribute::ElementType type) {
-        return static_cast<u16>(static_cast<u16>(elementSize) | (static_cast<u16>(type) << 6));
+    constexpr u16 operator|(VertexAttribute::ComponentBitWidths componentBitWidths, VertexAttribute::NumericalType numericalType) {
+        return static_cast<u16>(static_cast<u16>(componentBitWidths) | (static_cast<u16>(numericalType) << 6));
     }
 
     /**
      * @brief A descriptor that controls how the RenderTarget array (at 0x200) will be interpreted
      */
-    struct RenderTargetControl {
+    struct CtSelect {
         u8 count : 4; //!< The amount of active render targets, doesn't necessarily mean bound
-        u8 map0 : 3; //!< The index of the render target that maps to slot 0
-        u8 map1 : 3;
-        u8 map2 : 3;
-        u8 map3 : 3;
-        u8 map4 : 3;
-        u8 map5 : 3;
-        u8 map6 : 3;
-        u8 map7 : 3;
+        u8 target0 : 3; //!< The index of the render target that maps to slot 0
+        u8 target1 : 3;
+        u8 target2 : 3;
+        u8 target3 : 3;
+        u8 target4 : 3;
+        u8 target5 : 3;
+        u8 target6 : 3;
+        u8 target7 : 3;
 
         size_t operator[](size_t index) {
             switch (index) {
                 case 0:
-                    return map0;
+                    return target0;
                 case 1:
-                    return map1;
+                    return target1;
                 case 2:
-                    return map2;
+                    return target2;
                 case 3:
-                    return map3;
+                    return target3;
                 case 4:
-                    return map4;
+                    return target4;
                 case 5:
-                    return map5;
+                    return target5;
                 case 6:
-                    return map6;
+                    return target6;
                 case 7:
-                    return map7;
+                    return target7;
                 default:
                     throw exception("Invalid RT index is being mapped: {}", index);
             }
         }
     };
-    static_assert(sizeof(RenderTargetControl) == sizeof(u32));
+    static_assert(sizeof(CtSelect) == sizeof(u32));
 
-    enum class CompareOp : u32 {
-        Never = 1,
-        Less = 2,
-        Equal = 3,
-        LessOrEqual = 4,
-        Greater = 5,
-        NotEqual = 6,
-        GreaterOrEqual = 7,
-        Always = 8,
 
-        NeverGL = 0x200,
-        LessGL = 0x201,
-        EqualGL = 0x202,
-        LessOrEqualGL = 0x203,
-        GreaterGL = 0x204,
-        NotEqualGL = 0x205,
-        GreaterOrEqualGL = 0x206,
-        AlwaysGL = 0x207,
-    };
 
     constexpr static size_t BlendColorChannelCount{4}; //!< The amount of color channels in operations such as blending
 
@@ -468,6 +529,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         OneMinusSource1AlphaGL = 0xC903,
     };
 
+    struct ZtSelect {
+        u8 targetCount : 1;
+        u32 _pad_ : 31;
+    };
+
     struct MultisampleControl {
         bool alphaToCoverage : 1;
         u8 _pad0_ : 3;
@@ -476,15 +542,65 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(MultisampleControl) == sizeof(u32));
 
-    enum class StencilOp : u32 {
-        Keep = 1,
-        Zero = 2,
-        Replace = 3,
-        IncrementAndClamp = 4,
-        DecrementAndClamp = 5,
-        Invert = 6,
-        IncrementAndWrap = 7,
-        DecrementAndWrap = 8,
+
+
+    enum class CompareFunc : u32 {
+        D3DNever = 1,
+        D3DLess = 2,
+        D3DEqual = 3,
+        D3DLessEqual = 4,
+        D3DGreater = 5,
+        D3DNotEqual = 6,
+        D3DGreaterEqual = 7,
+        D3DAlways = 8,
+
+        OglNever = 0x200,
+        OglLess = 0x201,
+        OglEqual = 0x202,
+        OglLeEqual = 0x203,
+        OglGreater = 0x204,
+        OglNotEqual = 0x205,
+        OglGequal = 0x206,
+        OglAlways = 0x207,
+    };
+
+    struct StencilOps {
+        enum class Op : u32 {
+            OglZero = 0,
+            D3DKeep = 1,
+            D3DZero = 2,
+            D3DReplace = 3,
+            D3DIncrSat = 4,
+            D3DDecrSat = 5,
+            D3DInvert = 6,
+            D3DIncr = 7,
+            D3DDecr = 8,
+            OglKeep = 0x1E00,
+            OglReplace = 0x1E01,
+            OglIncrSat = 0x1E02,
+            OglDecrSat = 0x1E03,
+            OglInvert = 0x150A,
+            OglIncr = 0x8507,
+            OglDecr = 0x8508
+        };
+
+
+        Op fail; // 0x4E1
+        Op zFail; // 0x4E2
+        Op zPass; // 0x4E3
+        CompareFunc func; // 0x4E4
+    };
+
+    struct StencilValues {
+        u32 funcRef;
+        u32 funcMask;
+        u32 mask;
+    };
+
+    struct BackStencilValues {
+        u32 funcRef;
+        u32 mask;
+        u32 funcMask;
     };
 
     struct PointCoordReplace {
@@ -499,52 +615,41 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(PointCoordReplace) == sizeof(u32));
 
-    enum class PrimitiveTopology : u16 {
-        PointList = 0,
-        LineList = 1,
-        LineLoop = 2,
-        LineStrip = 3,
-        TriangleList = 4,
-        TriangleStrip = 5,
-        TriangleFan = 6,
-        QuadList = 7,
-        QuadStrip = 8,
-        Polygon = 9,
-        LineListWithAdjacency = 10,
-        LineStripWithAdjacency = 11,
-        TriangleListWithAdjacency = 12,
-        TriangleStripWithAdjacency = 13,
-        PatchList = 14,
+    enum class DrawTopology : u16 {
+        Points = 0x0,
+        Lines = 0x1,
+        LineLoop = 0x2,
+        LineStrip = 0x3,
+        Triangles = 0x4,
+        TriangleStrip = 0x5,
+        TriangleFan = 0x6,
+        Quads = 0x7,
+        QuadStrip = 0x8,
+        Polygon = 0x9,
+        LineListAdjcy = 0xA,
+        LineStripAdjcy = 0xB,
+        TriangleListAdjcy = 0xC,
+        TriangleStripAdjcy = 0xD,
+        Patch = 0xE,
     };
 
-    ENUM_STRING(PrimitiveTopology, {
-        ENUM_CASE(PointList);
-        ENUM_CASE(LineList);
+    ENUM_STRING(DrawTopology, {
+        ENUM_CASE(Points);
+        ENUM_CASE(Lines);
         ENUM_CASE(LineLoop);
         ENUM_CASE(LineStrip);
-        ENUM_CASE(TriangleList);
+        ENUM_CASE(Triangles);
         ENUM_CASE(TriangleStrip);
         ENUM_CASE(TriangleFan);
-        ENUM_CASE(QuadList);
+        ENUM_CASE(Quads);
         ENUM_CASE(QuadStrip);
         ENUM_CASE(Polygon);
-        ENUM_CASE(LineListWithAdjacency);
-        ENUM_CASE(LineStripWithAdjacency);
-        ENUM_CASE(TriangleListWithAdjacency);
-        ENUM_CASE(TriangleStripWithAdjacency);
-        ENUM_CASE(PatchList);
+        ENUM_CASE(LineListAdjcy);
+        ENUM_CASE(LineStripAdjcy);
+        ENUM_CASE(TriangleListAdjcy);
+        ENUM_CASE(TriangleStripAdjcy);
+        ENUM_CASE(Patch);
     })
-
-    union VertexBeginGl {
-        u32 raw;
-        struct {
-            PrimitiveTopology topology;
-            u16 pad : 10;
-            bool instanceNext : 1;
-            bool instanceContinue : 1;
-        };
-    };
-    static_assert(sizeof(VertexBeginGl) == sizeof(u32));
 
     enum class FrontFace : u32 {
         Clockwise = 0x900,
@@ -585,18 +690,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     /**
      * @brief A method call which causes a layer of an RT to be cleared with a channel mask
      */
-    struct ClearBuffers {
-        bool depth : 1; //!< If the depth channel should be cleared
-        bool stencil : 1;
-        bool red : 1;
-        bool green : 1;
-        bool blue : 1;
-        bool alpha : 1;
-        u8 renderTargetId : 4; //!< The ID of the render target to clear
-        u16 layerId : 11; //!< The index of the layer of the render target to clear
+    struct ClearSurface {
+        bool zEnable : 1; //!< If the depth channel should be cleared
+        bool stencilEnable : 1;
+        bool rEnable : 1;
+        bool gEnable : 1;
+        bool bEnable : 1;
+        bool aEnable : 1;
+        u8 mrtSelect : 4; //!< The ID of the render target to clear
+        u16 rtArrayIndex : 11; //!< The index of the layer of the render target to clear
         u16 _pad_ : 10;
     };
-    static_assert(sizeof(ClearBuffers) == sizeof(u32));
+    static_assert(sizeof(ClearSurface) == sizeof(u32));
 
     struct SemaphoreInfo {
         enum class Op : u8 {
@@ -719,19 +824,26 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(static_cast<size_t>(PipelineStage::Fragment) + 1 == PipelineStageCount);
 
-    struct Bind {
+    struct ConstantBufferSelector {
+        u32 size : 17;
+        u16 _pad_ : 15;
+        Address address;
+    };
+    static_assert(sizeof(ConstantBufferSelector) == sizeof(u32) * 3);
+
+    struct BindGroup {
         u32 _pad0_[4];
         union {
             struct {
                 u32 valid : 1;
                 u32 _pad1_ : 3;
-                u32 index : 5; //!< The index of the constant buffer in the pipeline stage to bind to
+                u32 shaderSlot : 5; //!< The index of the constant buffer in the pipeline stage to bind to
             };
             u32 raw;
         } constantBuffer;
         u32 _pad2_[3];
     };
-    static_assert(sizeof(Bind) == (sizeof(u32) * 8));
+    static_assert(sizeof(BindGroup) == (sizeof(u32) * 8));
 
     constexpr static size_t PipelineStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
 
@@ -768,30 +880,36 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SetProgramInfo) == (sizeof(u32) * 0x10));
 
+    struct ZtLayer {
+        u16 offset;
+        u16 _pad_;
+    };
+
     struct IndexBuffer {
-        Address start, limit; //!< The IOVA bounds of the index buffer
-        enum class Format : u32 {
-            Uint8 = 0,
-            Uint16 = 1,
-            Uint32 = 2,
-        } format;
+        Address address, limit; //!< The IOVA bounds of the index buffer
+        enum class IndexSize : u32 {
+            OneByte = 0,
+            TwoBytes = 1,
+            FourBytes = 2,
+        } indexSize;
+        u32 first;
     };
 
-    enum class DepthMode : u32 {
-        MinusOneToOne = 0,
-        ZeroToOne = 1
+    enum class ZClipRange : u32 {
+        NegativeWToPositiveW = 0,
+        ZeroToPositiveW = 1
     };
 
-    constexpr static size_t TransformFeedbackBufferCount{4}; //!< Number of supported transform feecback buffers in the 3D engine
+    constexpr static size_t StreamOutBufferCount{4}; //!< Number of supported transform feecback buffers in the 3D engine
 
-    struct TransformFeedbackBuffer {
+    struct StreamOutBuffer {
         u32 enable;
-        Address iova;
+        Address address;
         u32 size;
-        u32 offset;
+        u32 loadWritePointerStartOffset;
         u32 _pad_[3];
     };
-    static_assert(sizeof(TransformFeedbackBuffer) == (sizeof(u32) * 8));
+    static_assert(sizeof(StreamOutBuffer) == (sizeof(u32) * 8));
 
     struct TransformFeedbackBufferState {
         u32 bufferIndex;
@@ -803,5 +921,129 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
 
     constexpr static size_t TransformFeedbackVaryingCount{0x80};
 
+    struct VertexStream {
+        union {
+            u32 raw;
+            struct {
+                u32 stride : 12;
+                u32 enable : 1;
+            };
+        } format;
+        Address location;
+        u32 frequency;
+    };
+    static_assert(sizeof(VertexStream) == sizeof(u32) * 4);
+
+    struct WindowOrigin {
+        bool lowerLeft : 1;
+        u8 _pad0_ : 3;
+        bool flipY : 1;
+        u32 _pad1_ : 27;
+    };
+    static_assert(sizeof(WindowOrigin) == sizeof(u32));
+
+    struct SurfaceClip {
+        struct {
+            u16 x;
+            u16 width;
+        } horizontal;
+
+        struct {
+            u16 y;
+            u16 height;
+        } vertical;
+    };
+    static_assert(sizeof(SurfaceClip) == sizeof(u32) * 2);
+
+    struct ClearSurfaceControl {
+        bool respectStencilMask : 1;
+        u8 _pad0_ : 3;
+        bool useClearRect : 1;
+        u8 _pad1_ : 3;
+        bool useScissor0 : 1;
+        u8 _pad2_ : 3;
+        bool useViewportClip0 : 1;
+        u32 _pad3_ : 19;
+    };
+    static_assert(sizeof(ClearSurfaceControl) == sizeof(u32));
+
+    struct VertexStreamInstance {
+        bool isInstanced : 1;
+        u32 _pad0_ : 31;
+    };
+    static_assert(sizeof(VertexStreamInstance) == sizeof(u32));
+
+    struct PrimitiveTopologyControl {
+        enum class Override : u8 {
+            UseTopologyInBeginMethods = 0,
+            UseSeperateTopologyState = 1
+        };
+
+        Override override : 1;
+        u32 _pad0_ : 31;
+    };
+    static_assert(sizeof(PrimitiveTopologyControl) == sizeof(u32));
+
+    enum class PrimitiveTopology : u16 {
+        PointList = 0x1,
+        LineList = 0x2,
+        LineStrip = 0x3,
+        TriangleList = 0x4,
+        TriangleStrip = 0x5,
+        LineListAdjcy = 0xA,
+        LineStripAdjcy = 0xB,
+        TriangleListAdjcy = 0xC,
+        TriangleStripAdjcy = 0xD,
+        PatchList = 0xE,
+        LegacyPoints = 0x1001,
+        LegacyIndexedLineList = 0x1002,
+        LegacyIndexedTriangleList = 0x1003,
+        LegacyLineList = 0x100F,
+        LegacyLineStrip = 0x1010,
+        LegacyIndexedLineStrip = 0x1011,
+        LegacyTriangleList = 0x1012,
+        LegacyTriangleStrip = 0x1013,
+        LegacyIndexedTriangleStrip = 0x1014,
+        LegacyTriangleFan = 0x1015,
+        LegacyIndexedTriangleFan = 0x1016,
+        LegacyTriangleFanImm = 0x1017,
+        LegacyLineListImm = 0x1018,
+        LegacyIndexedTriangleList2 = 0x101A,
+        LegacyIndexedLineList2 = 0x101B
+    };
+
+    inline DrawTopology ConvertPrimitiveTopologyToDrawTopology(PrimitiveTopology topology) {
+        switch (topology) {
+            case PrimitiveTopology::PointList:
+            case PrimitiveTopology::LegacyPoints:
+                return DrawTopology::Points;
+            case PrimitiveTopology::LineList:
+            case PrimitiveTopology::LegacyLineList:
+                return DrawTopology::Lines;
+            case PrimitiveTopology::LineStrip:
+            case PrimitiveTopology::LegacyLineStrip:
+                return DrawTopology::LineStrip;
+            case PrimitiveTopology::TriangleList:
+            case PrimitiveTopology::LegacyTriangleList:
+                return DrawTopology::Triangles;
+            case PrimitiveTopology::TriangleStrip:
+            case PrimitiveTopology::LegacyTriangleStrip:
+                return DrawTopology::TriangleStrip;
+            case PrimitiveTopology::LegacyTriangleFan:
+                return DrawTopology::TriangleFan;
+            case PrimitiveTopology::LineListAdjcy:
+                return DrawTopology::LineListAdjcy;
+            case PrimitiveTopology::LineStripAdjcy:
+                return DrawTopology::LineStripAdjcy;
+            case PrimitiveTopology::TriangleListAdjcy:
+                return DrawTopology::TriangleListAdjcy;
+            case PrimitiveTopology::TriangleStripAdjcy:
+                return DrawTopology::TriangleStripAdjcy;
+            case PrimitiveTopology::PatchList:
+                return DrawTopology::Patch;
+            default:
+                throw exception("Unsupported primitive topology 0x{:X}", static_cast<u16>(topology));
+        }
+    }
     #pragma pack(pop)
 }
