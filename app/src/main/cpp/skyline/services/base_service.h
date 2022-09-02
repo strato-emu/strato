@@ -5,8 +5,10 @@
 
 #include <kernel/ipc.h>
 
+constexpr static skyline::u32 TipcFunctionIdFlag{1U << 31}; //!< Flag applied to the stored service function ID to differentiate between TIPC and HIPC functions
 #define SERVICE_STRINGIFY(string) #string
 #define SFUNC(id, Class, Function) std::pair<u32, std::pair<Result(Class::*)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &), const char*>>{id, {&Class::Function, SERVICE_STRINGIFY(Class::Function)}}
+#define SFUNC_TIPC(id, Class, Function) std::pair<u32, std::pair<Result(Class::*)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &), const char*>>{TipcFunctionIdFlag | id, {&Class::Function, SERVICE_STRINGIFY(Class::Function)}}
 #define SFUNC_BASE(id, Class, BaseClass, Function) std::pair<u32, std::pair<Result(Class::*)(type::KSession &, ipc::IpcRequest &, ipc::IpcResponse &), const char*>>{id, {&Class::CallBaseFunction<BaseClass, decltype(&BaseClass::Function), &BaseClass::Function>, SERVICE_STRINGIFY(Class::Function)}}
 #define SERVICE_DECL_AUTO(name, value) decltype(value) name = value
 #define SERVICE_DECL(...)                                                                                      \
@@ -15,10 +17,10 @@ template<typename BaseClass, typename BaseFunctionType, BaseFunctionType BaseFun
 Result CallBaseFunction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {       \
     return (static_cast<BaseClass *>(this)->*BaseFunction)(session, request, response);                        \
 }                                                                                                              \
-SERVICE_DECL_AUTO(functions, frozen::make_unordered_map({__VA_ARGS__}));                                          \
+SERVICE_DECL_AUTO(functions, frozen::make_unordered_map({__VA_ARGS__}));                                       \
 protected:                                                                                                     \
-ServiceFunctionDescriptor GetServiceFunction(u32 id) override {                                                \
-    auto& function{functions.at(id)};                                                                          \
+ServiceFunctionDescriptor GetServiceFunction(u32 id, bool isTipc) override {                                   \
+    auto& function{functions.at((isTipc ? TipcFunctionIdFlag : 0U) | id)};                                     \
     return ServiceFunctionDescriptor{                                                                          \
         reinterpret_cast<DerivedService*>(this),                                                               \
         reinterpret_cast<decltype(ServiceFunctionDescriptor::function)>(function.first),                       \
@@ -71,7 +73,7 @@ namespace skyline::service {
          */
         virtual ~BaseService() = default;
 
-        virtual ServiceFunctionDescriptor GetServiceFunction(u32 id) {
+        virtual ServiceFunctionDescriptor GetServiceFunction(u32 id, bool isTipc) {
             throw std::out_of_range("GetServiceFunction not implemented");
         }
 

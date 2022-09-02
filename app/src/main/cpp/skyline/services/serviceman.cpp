@@ -238,11 +238,18 @@ namespace skyline::service {
                     break;
 
                 case ipc::CommandType::Close:
+                case ipc::CommandType::TipcCloseSession:
                     Logger::Debug("Closing Session");
                     CloseSession(handle);
                     break;
                 default:
-                    throw exception("Unimplemented IPC message type: {}", static_cast<u16>(request.header->type));
+                    // TIPC command ID is encoded in the request type
+                    if (request.isTipc) {
+                        response.errorCode = session->serviceObject->HandleRequest(*session, request, response);
+                        response.WriteResponse(session->isDomain, true);
+                    } else {
+                        throw exception("Unimplemented IPC message type: {}", static_cast<u16>(request.header->type));
+                    }
             }
         } else {
             Logger::Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);

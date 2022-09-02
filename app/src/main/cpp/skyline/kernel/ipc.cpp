@@ -10,6 +10,7 @@ namespace skyline::kernel::ipc {
         u8 *pointer{tls};
 
         header = reinterpret_cast<CommandHeader *>(pointer);
+        isTipc = static_cast<u16>(header->type) > static_cast<u16>(CommandType::TipcCloseSession);
         pointer += sizeof(CommandHeader);
 
         if (header->handleDesc) {
@@ -64,38 +65,42 @@ namespace skyline::kernel::ipc {
 
         auto bufCPointer{pointer + header->rawSize * sizeof(u32)};
 
-        size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
-        auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
-        pointer += padding;
-
-        if (isDomain && (header->type == CommandType::Request || header->type == CommandType::RequestWithContext)) {
-            domain = reinterpret_cast<DomainHeaderRequest *>(pointer);
-            pointer += sizeof(DomainHeaderRequest);
-
-            payload = reinterpret_cast<PayloadHeader *>(pointer);
-            pointer += sizeof(PayloadHeader);
-
-            cmdArg = pointer;
-            cmdArgSz = domain->payloadSz - sizeof(PayloadHeader);
-            pointer += cmdArgSz;
-
-            for (u8 index{}; domain->inputCount > index; index++) {
-                domainObjects.push_back(*reinterpret_cast<KHandle *>(pointer));
-                pointer += sizeof(KHandle);
-            }
-        } else {
-            payload = reinterpret_cast<PayloadHeader *>(pointer);
-            pointer += sizeof(PayloadHeader);
-
+        if (isTipc) {
             cmdArg = pointer;
             cmdArgSz = header->rawSize * sizeof(u32);
+        } else {
+            size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
+            auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
+            pointer += padding;
+
+            if (isDomain && (header->type == CommandType::Request || header->type == CommandType::RequestWithContext)) {
+                domain = reinterpret_cast<DomainHeaderRequest *>(pointer);
+                pointer += sizeof(DomainHeaderRequest);
+
+                payload = reinterpret_cast<PayloadHeader *>(pointer);
+                pointer += sizeof(PayloadHeader);
+
+                cmdArg = pointer;
+                cmdArgSz = domain->payloadSz - sizeof(PayloadHeader);
+                pointer += cmdArgSz;
+
+                for (u8 index{}; domain->inputCount > index; index++) {
+                    domainObjects.push_back(*reinterpret_cast<KHandle *>(pointer));
+                    pointer += sizeof(KHandle);
+                }
+            } else {
+                payload = reinterpret_cast<PayloadHeader *>(pointer);
+                pointer += sizeof(PayloadHeader);
+
+                cmdArg = pointer;
+                cmdArgSz = header->rawSize * sizeof(u32);
+            }
         }
 
         payloadOffset = cmdArg;
 
-        if (payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
+        if (!isTipc && payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
             Logger::Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
-
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
@@ -120,20 +125,25 @@ namespace skyline::kernel::ipc {
                 Logger::Verbose("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
             if (isDomain)
                 Logger::Verbose("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
-            Logger::Verbose("Command ID: 0x{:X}", static_cast<u32>(payload->value));
+
+            if (isTipc)
+                Logger::Verbose("TIPC Command ID: 0x{:X}", static_cast<u16>(header->type));
+            else
+                Logger::Verbose("Command ID: 0x{:X}", static_cast<u32>(payload->value));
         }
     }
 
     IpcResponse::IpcResponse(const DeviceState &state) : state(state) {}
 
-    void IpcResponse::WriteResponse(bool isDomain) {
+    void IpcResponse::WriteResponse(bool isDomain, bool isTipc) {
         auto tls{state.ctx->tpidrroEl0};
         u8 *pointer{tls};
 
         memset(tls, 0, constant::TlsIpcSize);
 
         auto header{reinterpret_cast<CommandHeader *>(pointer)};
-        header->rawSize = static_cast<u32>((sizeof(PayloadHeader) + payload.size() + (domainObjects.size() * sizeof(KHandle)) + constant::IpcPaddingSum + (isDomain ? sizeof(DomainHeaderRequest) : 0)) / sizeof(u32)); // Size is in 32-bit units because Nintendo
+        size_t sizeBytes{isTipc ? (payload.size() + sizeof(Result)) : (sizeof(PayloadHeader) + constant::IpcPaddingSum + payload.size() + (domainObjects.size() * sizeof(KHandle)) + (isDomain ? sizeof(DomainHeaderRequest) : 0))};
+        header->rawSize = static_cast<u32>(util::DivideCeil(sizeBytes, sizeof(u32))); // Size is in 32-bit units because Nintendo
         header->handleDesc = (!copyHandles.empty() || !moveHandles.empty());
         pointer += sizeof(CommandHeader);
 
@@ -154,33 +164,39 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
-        auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
-        pointer += padding;
-
-        if (isDomain) {
-            auto domain{reinterpret_cast<DomainHeaderResponse *>(pointer)};
-            domain->outputCount = static_cast<u32>(domainObjects.size());
-            pointer += sizeof(DomainHeaderResponse);
-        }
-
-        auto payloadHeader{reinterpret_cast<PayloadHeader *>(pointer)};
-        payloadHeader->magic = util::MakeMagic<u32>("SFCO"); // SFCO is the magic in IPC responses
-        payloadHeader->version = 1;
-        payloadHeader->value = errorCode;
-        pointer += sizeof(PayloadHeader);
-
-        if (!payload.empty())
+        if (isTipc) {
+            *reinterpret_cast<Result *>(pointer) = errorCode;
+            pointer += sizeof(Result);
             std::memcpy(pointer, payload.data(), payload.size());
-        pointer += payload.size();
+        } else {
+            size_t offset{static_cast<size_t>(pointer - tls)}; // We calculate the relative offset as the absolute one might differ
+            auto padding{util::AlignUp(offset, constant::IpcPaddingSum) - offset}; // Calculate the amount of padding at the front
+            pointer += padding;
 
-        if (isDomain) {
-            for (auto &domainObject : domainObjects) {
-                *reinterpret_cast<KHandle *>(pointer) = domainObject;
-                pointer += sizeof(KHandle);
+            if (isDomain) {
+                auto domain{reinterpret_cast<DomainHeaderResponse *>(pointer)};
+                domain->outputCount = static_cast<u32>(domainObjects.size());
+                pointer += sizeof(DomainHeaderResponse);
+            }
+
+            auto payloadHeader{reinterpret_cast<PayloadHeader *>(pointer)};
+            payloadHeader->magic = util::MakeMagic<u32>("SFCO"); // SFCO is the magic in IPC responses
+            payloadHeader->version = 1;
+            payloadHeader->value = errorCode;
+            pointer += sizeof(PayloadHeader);
+
+            if (!payload.empty())
+                std::memcpy(pointer, payload.data(), payload.size());
+            pointer += payload.size();
+
+            if (isDomain) {
+                for (auto &domainObject : domainObjects) {
+                    *reinterpret_cast<KHandle *>(pointer) = domainObject;
+                    pointer += sizeof(KHandle);
+                }
             }
         }
 
-        Logger::Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(payloadHeader->value), copyHandles.size(), moveHandles.size());
+        Logger::Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(errorCode), copyHandles.size(), moveHandles.size());
     }
 }

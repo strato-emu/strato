@@ -26,6 +26,7 @@ namespace skyline {
             Control = 5,            //!< A transaction between the client and IPC Manager
             RequestWithContext = 6, //!< Request with Token
             ControlWithContext = 7, //!< Control with Token
+            TipcCloseSession = 0xF,
         };
 
         /**
@@ -196,6 +197,7 @@ namespace skyline {
             CommandHeader *header{};
             HandleDescriptor *handleDesc{};
             bool isDomain{}; //!< If this is a domain request
+            bool isTipc; //!< If this is request uses the TIPC protocol
             DomainHeaderRequest *domain{};
             PayloadHeader *payload{};
             u8 *cmdArg{}; //!< A pointer to the data payload
@@ -298,8 +300,9 @@ namespace skyline {
             /**
              * @brief Writes this IpcResponse object's contents into TLS
              * @param isDomain Indicates if this is a domain response
+             * @param isTipc Indicates if this is a TIPC response
              */
-            void WriteResponse(bool isDomain);
+            void WriteResponse(bool isDomain, bool isTipc = false);
         };
     }
 }

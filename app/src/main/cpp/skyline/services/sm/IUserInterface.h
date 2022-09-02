@@ -40,7 +40,9 @@ namespace skyline::service::sm {
 
         SERVICE_DECL(
             SFUNC(0x0, IUserInterface, Initialize),
-            SFUNC(0x1, IUserInterface, GetService)
+            SFUNC_TIPC(0x10, IUserInterface, Initialize),
+            SFUNC(0x1, IUserInterface, GetService),
+            SFUNC_TIPC(0x11, IUserInterface, GetService)
         )
     };
 }

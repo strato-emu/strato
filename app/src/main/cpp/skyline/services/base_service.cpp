@@ -21,11 +21,13 @@ namespace skyline::service {
 
     Result service::BaseService::HandleRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         ServiceFunctionDescriptor function;
+        u32 functionId{request.isTipc ? static_cast<u32>(request.header->type) : request.payload->value};
+
         try {
-            function = GetServiceFunction(request.payload->value);
+            function = GetServiceFunction(functionId, request.isTipc);
             Logger::DebugNoPrefix("Service: {}", function.name);
         } catch (const std::out_of_range &) {
-            Logger::Warn("Cannot find function in service '{0}': 0x{1:X} ({1})", GetName(), static_cast<u32>(request.payload->value));
+            Logger::Warn("Cannot find {0} function in service '{1}': 0x{2:X} ({2})", request.isTipc ? "TIPC" : "HIPC", GetName(), static_cast<u32>(functionId));
             return {};
         }
         TRACE_EVENT("service", perfetto::StaticString{function.name});
