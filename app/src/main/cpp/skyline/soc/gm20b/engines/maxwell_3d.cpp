@@ -17,7 +17,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .colorRenderTargetsRegisters = util::MergeInto<REGTYPE(ColorRenderTargetState), type::ColorTargetCount>(*registers.colorTargets),
             .depthRenderTargetRegisters = {*registers.ztSize, *registers.ztOffset, *registers.ztFormat, *registers.ztBlockSize, *registers.ztArrayPitch, *registers.ztSelect, *registers.ztLayer},
             .vertexInputRegisters = {*registers.vertexStreams, *registers.vertexStreamInstance, *registers.vertexAttributes},
-            .inputAssemblyRegisters = {*registers.primitiveRestartEnable}
+            .inputAssemblyRegisters = {*registers.primitiveRestartEnable},
+            .tessellationRegisters = {*registers.patchSize, *registers.tessellationParameters},
         };
     }
 
@@ -174,9 +175,20 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 static_assert(type::VertexAttributeCount == 32 && type::VertexAttributeCount < BOOST_PP_LIMIT_REPEAT);
                 #undef VERTEX_ATTRIBUTE_CALLBACKS
 
+
                 ENGINE_CASE(primitiveRestartEnable, {
                     interconnect.directState.inputAssembly.SetPrimitiveRestart(primitiveRestartEnable != 0);
                 })
+
+
+                ENGINE_CASE(tessellationParameters, {
+                    interconnect.directState.tessellation.SetParameters(tessellationParameters);
+                })
+
+                ENGINE_CASE(patchSize, {
+                    interconnect.directState.tessellation.SetPatchControlPoints(patchSize);
+                })
+
                 default:
                     break;
             }

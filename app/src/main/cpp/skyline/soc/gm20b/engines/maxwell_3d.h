@@ -113,17 +113,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0xB2, type::SyncpointAction> syncpointAction;
 
-            union TessellationMode {
-                struct {
-                    type::TessellationPrimitive primitive : 2;
-                    u8 _pad0_ : 2;
-                    type::TessellationSpacing spacing : 2;
-                    u8 _pad1_ : 2;
-                    type::TessellationWinding winding : 2;
-                };
-                u32 raw;
-            };
-            Register<0xC8, TessellationMode> tessellationMode;
+            Register<0xC8, type::TessellationParameters> tessellationParameters;
 
             Register<0xDF, u32> rasterizerEnable;
 
@@ -158,7 +148,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x36B, PolygonMode> polygonMode;
 
-            Register<0x373, u32> tessellationPatchSize;
+            Register<0x373, u32> patchSize;
 
             Register<0x380, std::array<type::Scissor, type::ViewportCount>> scissors;
 

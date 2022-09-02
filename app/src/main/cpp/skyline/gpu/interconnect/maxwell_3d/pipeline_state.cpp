@@ -434,6 +434,48 @@ namespace skyline::gpu::interconnect::maxwell3d {
         inputAssemblyState.primitiveRestartEnable = enabled;
     }
 
+    /* Tessellation State */
+    void TessellationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, patchControlPoints, tessellationParameters);
+    }
+
+    const vk::PipelineTessellationStateCreateInfo &TessellationState::Build() {
+        return tessellationState;
+    }
+
+    void TessellationState::SetPatchControlPoints(u32 patchControlPoints) {
+        tessellationState.patchControlPoints = patchControlPoints;
+    }
+
+    Shader::TessPrimitive ConvertShaderTessPrimitive(engine::TessellationParameters::DomainType domainType) {
+        switch (domainType) {
+            case engine::TessellationParameters::DomainType::Isoline:
+                return Shader::TessPrimitive::Isolines;
+            case engine::TessellationParameters::DomainType::Triangle:
+                return Shader::TessPrimitive::Triangles;
+            case engine::TessellationParameters::DomainType::Quad:
+                return Shader::TessPrimitive::Quads;
+        }
+    }
+
+    Shader::TessSpacing ConvertShaderTessSpacing(engine::TessellationParameters::Spacing spacing) {
+        switch (spacing) {
+            case engine::TessellationParameters::Spacing::Integer:
+                return Shader::TessSpacing::Equal;
+            case engine::TessellationParameters::Spacing::FractionalEven:
+                return Shader::TessSpacing::FractionalEven;
+            case engine::TessellationParameters::Spacing::FractionalOdd:
+                return Shader::TessSpacing::FractionalOdd;
+        }
+    }
+
+    void TessellationState::SetParameters(engine::TessellationParameters params) {
+        // UpdateRuntimeInformation(runtimeInfo.tess_primitive, ConvertShaderTessPrimitive(params.domainType), maxwell3d::PipelineStage::TessellationEvaluation);
+        // UpdateRuntimeInformation(runtimeInfo.tess_spacing, ConvertShaderTessSpacing(params.spacing), maxwell3d::PipelineStage::TessellationEvaluation);
+        // UpdateRuntimeInformation(runtimeInfo.tess_clockwise, params.outputPrimitive == engine::TessellationParameters::OutputPrimitives::TrianglesCW,
+        //                          maxwell3d::PipelineStage::TessellationEvaluation);
+    }
+
     /* Pipeline State */
     void PipelineState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         auto bindFunc{[&](auto &regs) { regs.DirtyBind(manager, handle); }};
@@ -455,6 +497,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto vertexState{directState.vertexInput.Build(ctx, engine->vertexInputRegisters)};
         auto inputAssemblyState{directState.inputAssembly.Build()};
+        auto tessellationState{directState.tessellationState.Build()};
 
     }
 

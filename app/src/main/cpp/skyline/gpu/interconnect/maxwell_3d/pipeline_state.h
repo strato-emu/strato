@@ -114,12 +114,32 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SetPrimitiveRestart(bool enable);
     };
 
+    struct TessellationState {
+      private:
+        vk::PipelineTessellationStateCreateInfo tessellationState{};
+
+      public:
+        struct EngineRegisters {
+            const u32 &patchControlPoints;
+            const engine::TessellationParameters &tessellationParameters;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+        const vk::PipelineTessellationStateCreateInfo &Build();
+
+        void SetPatchControlPoints(u32 controlPoints);
+
+        void SetParameters(engine::TessellationParameters parameters);
+    };
+
     /**
      * @brief Holds pipeline state that is directly written by the engine code, without using dirty tracking
      */
     struct DirectPipelineState {
         VertexInputState vertexInput;
         InputAssemblyState inputAssembly;
+        TessellationState tessellation;
     };
 
     /**
@@ -132,6 +152,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             DepthRenderTargetState::EngineRegisters depthRenderTargetRegisters;
             VertexInputState::EngineRegisters vertexInputRegisters;
             InputAssemblyState::EngineRegisters inputAssemblyRegisters;
+            TessellationState::EngineRegisters tessellationRegisters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };

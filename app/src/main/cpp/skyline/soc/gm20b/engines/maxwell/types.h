@@ -1045,5 +1045,35 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
                 throw exception("Unsupported primitive topology 0x{:X}", static_cast<u16>(topology));
         }
     }
+
+    struct TessellationParameters {
+        enum class DomainType : u8 {
+            Isoline = 0,
+            Triangle = 1,
+            Quad = 2
+        };
+
+        enum class Spacing : u8 {
+            Integer = 0,
+            FractionalOdd = 1,
+            FractionalEven = 2
+        };
+
+        enum class OutputPrimitives : u8 {
+            Points = 0,
+            Lines = 1,
+            TrianglesCW = 2,
+            TrianglesCCW = 3
+        };
+
+        DomainType domainType : 2;
+        u8 _pad0_ : 2;
+        Spacing spacing : 2;
+        u8 _pad1_ : 2;
+        OutputPrimitives outputPrimitives : 2;
+        u32 _pad2_ : 22;
+    };
+    static_assert(sizeof(TessellationParameters) == sizeof(u32));
+
     #pragma pack(pop)
 }
