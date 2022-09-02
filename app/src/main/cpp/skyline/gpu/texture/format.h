@@ -76,6 +76,7 @@ namespace skyline::gpu::format {
            .r = vk::ComponentSwizzle::eB,
            .b = vk::ComponentSwizzle::eR
     });
+    FORMAT(A1R5G5B5Unorm, 16, eA1R5G5B5UnormPack16);
 
     FORMAT_INT_FLOAT(R32, 32, eR32);
     FORMAT_NORM_INT_FLOAT(R16G16, 32, eR16G16);
@@ -179,7 +180,11 @@ namespace skyline::gpu::format {
     }, .swizzleMapping = {
            .g = vk::ComponentSwizzle::eR
     });
-
+    FORMAT(S8Uint, 32, eS8Uint, .vkAspect = {
+           vka::eStencil
+    }, .swizzleMapping = {
+           .g = vk::ComponentSwizzle::eR
+    });
 
     #undef FORMAT
     #undef FORMAT_SUFF_UNORM_SRGB
