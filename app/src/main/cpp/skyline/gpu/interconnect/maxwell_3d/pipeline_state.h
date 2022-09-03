@@ -163,7 +163,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::BoundSubresource<EngineRegisters> engine;
 
       public:
-        vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> rasterizationState;
+        vk::StructureChain<vk::PipelineRasterizationStateCreateInfo, vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT> rasterizationState{};
 
         RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
@@ -189,11 +189,38 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::BoundSubresource<EngineRegisters> engine;
 
       public:
-        vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
 
         DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
         void Flush();
+    };
+
+    class ColorBlendState : dirty::RefreshableManualDirty {
+      public:
+        struct EngineRegisters {
+            const engine::LogicOp &logicOp;
+            const u32 &singleCtWriteControl;
+            const std::array<engine::CtWrite, engine::ColorTargetCount> &ctWrites;
+            const u32 &blendStatePerTargetEnable;
+            const std::array<engine::BlendPerTarget, engine::ColorTargetCount> &blendPerTargets;
+            const engine::Blend &blend;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
+        std::array<vk::PipelineColorBlendAttachmentState, engine::ColorTargetCount> attachmentBlendStates;
+
+      public:
+        vk::PipelineColorBlendStateCreateInfo colorBlendState{};
+
+        ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
+
+        void Flush(InterconnectContext &ctx, size_t attachmentCount);
+
+        void Refresh(InterconnectContext &ctx, size_t attachmentCount);
     };
 
     /**
@@ -209,6 +236,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             TessellationState::EngineRegisters tessellationRegisters;
             RasterizationState::EngineRegisters rasterizationRegisters;
             DepthStencilState::EngineRegisters depthStencilRegisters;
+            ColorBlendState::EngineRegisters colorBlendRegisters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -220,6 +248,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
         dirty::ManualDirtyState<RasterizationState> rasterization;
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
+        dirty::ManualDirtyState<ColorBlendState> colorBlend;
 
 
       public:

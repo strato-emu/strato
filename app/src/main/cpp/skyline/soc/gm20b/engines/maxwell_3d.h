@@ -190,7 +190,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x48D, bool> linkedTscHandle; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
 
             Register<0x4B3, u32> depthTestEnable;
-            Register<0x4B9, u32> independentBlendEnable;
+            Register<0x4B9, u32> blendStatePerTargetEnable;
             Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareFunc> depthFunc;
@@ -206,22 +206,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x4C7, std::array<float, type::BlendColorChannelCount>> blendConsts;
 
-            struct BlendStateCommon {
-                u32 seperateAlpha; // 0x4CF
-                type::BlendOp colorOp; // 0x4D0
-                type::BlendFactor colorSrcFactor; // 0x4D1
-                type::BlendFactor colorDstFactor; // 0x4D2
-                type::BlendOp alphaOp; // 0x4D3
-                type::BlendFactor alphaSrcFactor; // 0x4D4
-                u32 pad; // 0x4D5
-                type::BlendFactor alphaDstFactor; // 0x4D6
-
-                u32 enable; // 0x4D7
-            };
-            Register<0x4CF, BlendStateCommon> blendStateCommon;
-
-            Register<0x4D8, std::array<u32, type::ColorTargetCount>> rtBlendEnable;
-
+            Register<0x4CF, type::Blend> blend;
             Register<0x4E0, u32> stencilTestEnable;
 
             Register<0x4E1, type::StencilOps> stencilOps;
@@ -336,14 +321,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x66F, u32> depthBoundsTestEnable;
 
-            struct ColorLogicOp {
-                u32 enable;
-                type::ColorLogicOp type;
-            };
-            Register<0x671, ColorLogicOp> colorLogicOp;
+            Register<0x671, type::LogicOp> logicOp;
 
             Register<0x674, type::ClearSurface> clearSurface;
-            Register<0x680, std::array<type::ColorWriteMask, type::ColorTargetCount>> colorWriteMask;
+            Register<0x680, std::array<type::CtWrite, type::ColorTargetCount>> ctWrites;
 
             struct Semaphore {
                 Address address; // 0x6C0
@@ -354,17 +335,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x700, std::array<type::VertexStream, type::VertexStreamCount>> vertexStreams;
 
-            struct IndependentBlend {
-                u32 seperateAlpha;
-                type::BlendOp colorOp;
-                type::BlendFactor colorSrcFactor;
-                type::BlendFactor colorDstFactor;
-                type::BlendOp alphaOp;
-                type::BlendFactor alphaSrcFactor;
-                type::BlendFactor alphaDstFactor;
-                u32 _pad_;
-            };
-            Register<0x780, std::array<IndependentBlend, type::ColorTargetCount>> independentBlend;
+            Register<0x780, std::array<type::BlendPerTarget, type::ColorTargetCount>> blendPerTargets;
 
             Register<0x7C0, std::array<Address, type::VertexStreamCount>> vertexStreamLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
 

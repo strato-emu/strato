@@ -481,59 +481,55 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     constexpr static size_t BlendColorChannelCount{4}; //!< The amount of color channels in operations such as blending
 
     enum class BlendOp : u32 {
-        Add = 1,
-        Subtract = 2,
-        ReverseSubtract = 3,
-        Minimum = 4,
-        Maximum = 5,
-
-        AddGL = 0x8006,
-        MinimumGL = 0x8007,
-        MaximumGL = 0x8008,
-        SubtractGL = 0x800A,
-        ReverseSubtractGL = 0x800B,
+        OglFuncSubtract = 0x0000800A,
+        OglFuncReverseSubtract = 0x0000800B,
+        OglFuncAdd = 0x00008006,
+        OglMin = 0x00008007,
+        OglMax = 0x00008008,
+        D3DAdd = 0x00000001,
+        D3DSubtract = 0x00000002,
+        D3DRevSubtract = 0x00000003,
+        D3DMin = 0x00000004,
+        D3DMax = 0x00000005,
     };
 
-    enum class BlendFactor : u32 {
-        Zero = 0x1,
-        One = 0x2,
-        SourceColor = 0x3,
-        OneMinusSourceColor = 0x4,
-        SourceAlpha = 0x5,
-        OneMinusSourceAlpha = 0x6,
-        DestAlpha = 0x7,
-        OneMinusDestAlpha = 0x8,
-        DestColor = 0x9,
-        OneMinusDestColor = 0xA,
-        SourceAlphaSaturate = 0xB,
-        Source1Color = 0x10,
-        OneMinusSource1Color = 0x11,
-        Source1Alpha = 0x12,
-        OneMinusSource1Alpha = 0x13,
-        ConstantColor = 0x61,
-        OneMinusConstantColor = 0x62,
-        ConstantAlpha = 0x63,
-        OneMinusConstantAlpha = 0x64,
-
-        ZeroGL = 0x4000,
-        OneGL = 0x4001,
-        SourceColorGL = 0x4300,
-        OneMinusSourceColorGL = 0x4301,
-        SourceAlphaGL = 0x4302,
-        OneMinusSourceAlphaGL = 0x4303,
-        DestAlphaGL = 0x4304,
-        OneMinusDestAlphaGL = 0x4305,
-        DestColorGL = 0x4306,
-        OneMinusDestColorGL = 0x4307,
-        SourceAlphaSaturateGL = 0x4308,
-        ConstantColorGL = 0xC001,
-        OneMinusConstantColorGL = 0xC002,
-        ConstantAlphaGL = 0xC003,
-        OneMinusConstantAlphaGL = 0xC004,
-        Source1ColorGL = 0xC900,
-        OneMinusSource1ColorGL = 0xC901,
-        Source1AlphaGL = 0xC902,
-        OneMinusSource1AlphaGL = 0xC903,
+    enum class BlendCoeff : u32 {
+        OglZero = 0x4000,
+        OglOne = 0x4001,
+        OglSrcColor = 0x4300,
+        OglOneMinusSrcColor = 0x4301,
+        OglSrcAlpha = 0x4302,
+        OglOneMinusSrcAlpha = 0x4303,
+        OglDstAlpha = 0x4304,
+        OglOneMinusDstAlpha = 0x4305,
+        OglDstColor = 0x4306,
+        OglOneMinusDstColor = 0x4307,
+        OglSrcAlphaSaturate = 0x4308,
+        OglConstantColor = 0xC001,
+        OglOneMinusConstantColor = 0xC002,
+        OglConstantAlpha = 0xC003,
+        OglOneMinusConstantAlpha = 0xC004,
+        OglSrc1Color = 0xC900,
+        OglInvSrc1Color = 0xC901,
+        OglSrc1Alpha = 0xC902,
+        OglInvSrc1Alpha = 0xC903,
+        D3DZero = 0x1,
+        D3DOne = 0x2,
+        D3DSrcColor = 0x3,
+        D3DInvSrcColor = 0x4,
+        D3DSrcAlpha = 0x5,
+        D3DInvSrcAlpha = 0x6,
+        D3DDstAlpha = 0x7,
+        D3DInvDstAlpha = 0x8,
+        D3DDstColor = 0x9,
+        D3DInvDstColor = 0xA,
+        D3DSrcAlphaSaturate = 0xB,
+        D3DBlendCoeff = 0xE,
+        D3DInvBlendCoeff = 0xF,
+        D3DSrc1Color = 0x10,
+        D3DInvSrc1Color = 0x11,
+        D3DSrc1Alpha = 0x12,
+        D3DInvSrc1Alpha = 0x13,
     };
 
     struct ZtSelect {
@@ -710,17 +706,21 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(ViewportClipControl) == sizeof(u32));
 
-    union ColorWriteMask {
+    union CtWrite {
         u32 raw;
 
         struct {
-            u8 red : 4;
-            u8 green : 4;
-            u8 blue : 4;
-            u8 alpha : 4;
+            bool rEnable : 1;
+            u8 _pad0_ : 3;
+            bool gEnable : 1;
+            u8 _pad1_ : 3;
+            bool bEnable : 1;
+            u8 _pad2_ : 3;
+            bool aEnable : 1;
+            u32 _pad3_ : 19;
         };
     };
-    static_assert(sizeof(ColorWriteMask) == sizeof(u32));
+    static_assert(sizeof(CtWrite) == sizeof(u32));
 
     /**
      * @brief A method call which causes a layer of an RT to be cleared with a channel mask
@@ -822,28 +822,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         StructureSize structureSize : 1;
     };
     static_assert(sizeof(SemaphoreInfo) == sizeof(u32));
-
-    /**
-     * @brief The logical operations that can be performed on the framebuffer after the fragment shader
-     */
-    enum class ColorLogicOp : u32 {
-        Clear = 0x1500,
-        And = 0x1501,
-        AndReverse = 0x1502,
-        Copy = 0x1503,
-        AndInverted = 0x1504,
-        Noop = 0x1505,
-        Xor = 0x1506,
-        Or = 0x1507,
-        Nor = 0x1508,
-        Equiv = 0x1509,
-        Invert = 0x150A,
-        OrReverse = 0x150B,
-        CopyInverted = 0x150C,
-        OrInverted = 0x150D,
-        Nand = 0x150E,
-        Set = 0x150F,
-    };
 
     constexpr static size_t PipelineStageCount{5}; //!< Amount of pipeline stages on Maxwell 3D
 
@@ -977,6 +955,34 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 frequency;
     };
     static_assert(sizeof(VertexStream) == sizeof(u32) * 4);
+
+    struct BlendPerTarget {
+        bool seperateForAlpha : 1;
+        u32 _pad0_ : 31;
+        BlendOp colorOp;
+        BlendCoeff colorSourceCoeff;
+        BlendCoeff colorDestCoeff;
+        BlendOp alphaOp;
+        BlendCoeff alphaSourceCoeff;
+        BlendCoeff alphaDestCoeff;
+        u32 _pad_;
+    };
+
+    struct Blend {
+        bool seperateForAlpha : 1;
+        u32 _pad0_ : 31;
+        BlendOp colorOp;
+        BlendCoeff colorSourceCoeff;
+        BlendCoeff colorDestCoeff;
+        BlendOp alphaOp;
+        BlendCoeff alphaSourceCoeff;
+        bool globalColorKeyEnable : 1;
+        u32 _pad1_ : 31;
+        BlendCoeff alphaDestCoeff;
+        bool singleRopControlEnable : 1;
+        u32 _pad2_ : 31;
+        std::array<u32, ColorTargetCount> enable;
+    };
 
     struct WindowOrigin {
         bool lowerLeft : 1;
@@ -1118,6 +1124,29 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 _pad2_ : 22;
     };
     static_assert(sizeof(TessellationParameters) == sizeof(u32));
+
+    struct LogicOp {
+        bool enable : 1;
+        u32 _pad0_ : 31;
+        enum class Func : u32 {
+            Clear = 0x1500,
+            And = 0x1501,
+            AndReverse = 0x1502,
+            Copy = 0x1503,
+            AndInverted = 0x1504,
+            Noop = 0x1505,
+            Xor = 0x1506,
+            Or = 0x1507,
+            Nor = 0x1508,
+            Equiv = 0x1509,
+            Invert = 0x150A,
+            OrReverse = 0x150B,
+            CopyInverted = 0x150C,
+            OrInverted = 0x150D,
+            Nand = 0x150E,
+            Set = 0x150F
+        } func;
+    };
 
     #pragma pack(pop)
 }
