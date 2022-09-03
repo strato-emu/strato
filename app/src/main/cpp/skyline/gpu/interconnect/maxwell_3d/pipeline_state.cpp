@@ -491,6 +491,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return vk::PolygonMode::eLine;
             case engine::PolygonMode::Point:
                 return vk::PolygonMode::ePoint;
+            default:
+                throw exception("Invalid polygon mode: 0x{:X}", static_cast<u32>(mode));
         }
     }
 
@@ -502,9 +504,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return vk::CullModeFlagBits::eBack;
             case engine::CullFace::FrontAndBack:
                 return vk::CullModeFlagBits::eFrontAndBack;
+            default:
+                throw exception("Invalid cull mode: 0x{:X}", static_cast<u32>(cullMode));
         }
     }
-
 
     bool ConvertDepthBiasEnable(engine::PolyOffset polyOffset, engine::PolygonMode polygonMode) {
         switch (polygonMode) {
@@ -514,6 +517,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return polyOffset.lineEnable;
             case engine::PolygonMode::Fill:
                 return polyOffset.fillEnable;
+            default:
+                throw exception("Invalid polygon mode: 0x{:X}", static_cast<u32>(polygonMode));
         }
     }
 
@@ -575,6 +580,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             case engine::CompareFunc::D3DAlways:
             case engine::CompareFunc::OglAlways:
                 return vk::CompareOp::eAlways;
+            default:
+                throw exception("Invalid compare func: 0x{:X}", static_cast<u32>(func));
         }
     }
 
@@ -604,6 +611,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             case engine::StencilOps::Op::D3DDecr:
             case engine::StencilOps::Op::OglDecr:
                 return vk::StencilOp::eDecrementAndWrap;
+            default:
+                throw exception("Invalid stencil operation: 0x{:X}", static_cast<u32>(op));
         }
     }
 
