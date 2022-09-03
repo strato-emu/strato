@@ -549,8 +549,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(MultisampleControl) == sizeof(u32));
 
-
-
     enum class CompareFunc : u32 {
         D3DNever = 1,
         D3DLess = 2,
@@ -564,10 +562,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         OglNever = 0x200,
         OglLess = 0x201,
         OglEqual = 0x202,
-        OglLeEqual = 0x203,
+        OglLEqual = 0x203,
         OglGreater = 0x204,
         OglNotEqual = 0x205,
-        OglGequal = 0x206,
+        OglGEqual = 0x206,
         OglAlways = 0x207,
     };
 

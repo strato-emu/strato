@@ -542,6 +542,92 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(engine->provokingVertex.value);
     }
 
+    /* Depth Stencil State */
+    void DepthStencilState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, depthTestEnable, depthWriteEnable, depthFunc, depthBoundsTestEnable, stencilTestEnable, twoSidedStencilTestEnable, stencilOps, stencilBack);
+    }
+
+    DepthStencilState::DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
+
+    static vk::CompareOp ConvertCompareFunc(engine::CompareFunc func) {
+        switch (func) {
+            case engine::CompareFunc::D3DNever:
+            case engine::CompareFunc::OglNever:
+                return vk::CompareOp::eNever;
+            case engine::CompareFunc::D3DLess:
+            case engine::CompareFunc::OglLess:
+                return vk::CompareOp::eLess;
+            case engine::CompareFunc::D3DEqual:
+            case engine::CompareFunc::OglEqual:
+                return vk::CompareOp::eEqual;
+            case engine::CompareFunc::D3DLessEqual:
+            case engine::CompareFunc::OglLEqual:
+                return vk::CompareOp::eLessOrEqual;
+            case engine::CompareFunc::D3DGreater:
+            case engine::CompareFunc::OglGreater:
+                return vk::CompareOp::eGreater;
+            case engine::CompareFunc::D3DNotEqual:
+            case engine::CompareFunc::OglNotEqual:
+                return vk::CompareOp::eNotEqual;
+            case engine::CompareFunc::D3DGreaterEqual:
+            case engine::CompareFunc::OglGEqual:
+                return vk::CompareOp::eGreaterOrEqual;
+            case engine::CompareFunc::D3DAlways:
+            case engine::CompareFunc::OglAlways:
+                return vk::CompareOp::eAlways;
+        }
+    }
+
+    static vk::StencilOp ConvertStencilOp(engine::StencilOps::Op op) {
+        switch (op) {
+            case engine::StencilOps::Op::OglZero:
+            case engine::StencilOps::Op::D3DZero:
+                return vk::StencilOp::eZero;
+            case engine::StencilOps::Op::D3DKeep:
+            case engine::StencilOps::Op::OglKeep:
+                return vk::StencilOp::eKeep;
+            case engine::StencilOps::Op::D3DReplace:
+            case engine::StencilOps::Op::OglReplace:
+                return vk::StencilOp::eReplace;
+            case engine::StencilOps::Op::D3DIncrSat:
+            case engine::StencilOps::Op::OglIncrSat:
+                return vk::StencilOp::eIncrementAndClamp;
+            case engine::StencilOps::Op::D3DDecrSat:
+            case engine::StencilOps::Op::OglDecrSat:
+                return vk::StencilOp::eDecrementAndClamp;
+            case engine::StencilOps::Op::D3DInvert:
+            case engine::StencilOps::Op::OglInvert:
+                return vk::StencilOp::eInvert;
+            case engine::StencilOps::Op::D3DIncr:
+            case engine::StencilOps::Op::OglIncr:
+                return vk::StencilOp::eIncrementAndWrap;
+            case engine::StencilOps::Op::D3DDecr:
+            case engine::StencilOps::Op::OglDecr:
+                return vk::StencilOp::eDecrementAndWrap;
+        }
+    }
+
+    static vk::StencilOpState ConvertStencilOpsState(engine::StencilOps ops) {
+        return {
+            .passOp = ConvertStencilOp(ops.zPass),
+            .depthFailOp = ConvertStencilOp(ops.zFail),
+            .failOp = ConvertStencilOp(ops.fail),
+            .compareOp = ConvertCompareFunc(ops.func),
+        };
+    }
+
+    void DepthStencilState::Flush() {
+        depthStencilState.depthTestEnable = engine->depthTestEnable;
+        depthStencilState.depthWriteEnable = engine->depthWriteEnable;
+        depthStencilState.depthCompareOp = ConvertCompareFunc(engine->depthFunc);
+        depthStencilState.depthBoundsTestEnable = engine->depthBoundsTestEnable;
+        depthStencilState.stencilTestEnable = engine->stencilTestEnable;
+
+        auto stencilBack{engine->twoSidedStencilTestEnable ? engine->stencilBack : engine->stencilOps};
+        depthStencilState.front = ConvertStencilOpsState(engine->stencilOps);
+        depthStencilState.back = ConvertStencilOpsState(stencilBack);
+    };
+
     /* Pipeline State */
     void PipelineState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         auto bindFunc{[&](auto &regs) { regs.DirtyBind(manager, handle); }};
@@ -555,7 +641,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         : engine{manager, dirtyHandle, engine},
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters)},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
-          rasterization{manager, engine.rasterizationRegisters} {}
+          rasterization{manager, engine.rasterizationRegisters},
+          depthStencil{manager, engine.depthStencilRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         auto updateFunc{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, args...); }};
@@ -563,9 +650,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         updateFunc(depthRenderTarget);
 
         auto vertexState{directState.vertexInput.Build(ctx, engine->vertexInputRegisters)};
-        auto inputAssemblyState{directState.inputAssembly.Build()};
-        auto tessellationState{directState.tessellation.Build()};
+        const auto &inputAssemblyState{directState.inputAssembly.Build()};
+        const auto &tessellationState{directState.tessellation.Build()};
         const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};
+        vk::PipelineMultisampleStateCreateInfo multisampleState{
+            .rasterizationSamples = vk::SampleCountFlagBits::e1
+        };
+        const auto &depthStencilState{depthStencil.UpdateGet().depthStencilState};
+
 
     }
 

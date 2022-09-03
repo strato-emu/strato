@@ -193,7 +193,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4B9, u32> independentBlendEnable;
             Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
-            Register<0x4C3, type::CompareFunc> depthTestFunc;
+            Register<0x4C3, type::CompareFunc> depthFunc;
             Register<0x4C4, float> alphaTestRef;
             Register<0x4C5, type::CompareFunc> alphaTestFunc;
             Register<0x4C6, u32> drawTFBStride;
@@ -222,7 +222,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x4D8, std::array<u32, type::ColorTargetCount>> rtBlendEnable;
 
-            Register<0x4E0, u32> stencilEnable;
+            Register<0x4E0, u32> stencilTestEnable;
 
             Register<0x4E1, type::StencilOps> stencilOps;
             Register<0x4E5, type::StencilValues> stencilValues;
@@ -334,7 +334,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x652, type::PrimitiveTopologyControl> primitiveTopologyControl;
             Register<0x65C, type::PrimitiveTopology> primitiveTopology;
 
-            Register<0x66F, u32> depthBoundsEnable;
+            Register<0x66F, u32> depthBoundsTestEnable;
 
             struct ColorLogicOp {
                 u32 enable;

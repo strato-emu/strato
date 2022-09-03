@@ -170,6 +170,32 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush();
     };
 
+    class DepthStencilState : dirty::ManualDirty {
+      public:
+        struct EngineRegisters {
+            const u32 &depthTestEnable;
+            const u32 &depthWriteEnable;
+            const engine::CompareFunc &depthFunc;
+            const u32 &depthBoundsTestEnable;
+            const u32 &stencilTestEnable;
+            const u32 &twoSidedStencilTestEnable;
+            const engine::StencilOps &stencilOps;
+            const engine::StencilOps &stencilBack;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
+
+      public:
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+
+        DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
+
+        void Flush();
+    };
+
     /**
      * @brief Holds all GPU state for a pipeline, any changes to this will result in a pipeline cache lookup
      */
@@ -182,6 +208,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             InputAssemblyState::EngineRegisters inputAssemblyRegisters;
             TessellationState::EngineRegisters tessellationRegisters;
             RasterizationState::EngineRegisters rasterizationRegisters;
+            DepthStencilState::EngineRegisters depthStencilRegisters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -192,6 +219,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
         dirty::ManualDirtyState<RasterizationState> rasterization;
+        dirty::ManualDirtyState<DepthStencilState> depthStencil;
+
 
       public:
         DirectPipelineState directState;
