@@ -847,6 +847,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
         const auto &depthStencilState{depthStencil.UpdateGet().depthStencilState};
         const auto &colorBlendState{colorBlend.UpdateGet(ctx, colorAttachments.size()).colorBlendState};
+
+        constexpr std::array<vk::DynamicState, 9> dynamicStates{
+            vk::DynamicState::eViewport,
+            vk::DynamicState::eScissor,
+            vk::DynamicState::eLineWidth,
+            vk::DynamicState::eDepthBias,
+            vk::DynamicState::eBlendConstants,
+            vk::DynamicState::eDepthBounds,
+            vk::DynamicState::eStencilCompareMask,
+            vk::DynamicState::eStencilWriteMask,
+            vk::DynamicState::eStencilReference
+        };
+
+        vk::PipelineDynamicStateCreateInfo dynamicState{
+            .dynamicStateCount = static_cast<u32>(dynamicStates.size()),
+            .pDynamicStates = dynamicStates.data()
+        };
     }
 
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
