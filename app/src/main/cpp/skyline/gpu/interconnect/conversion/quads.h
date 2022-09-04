@@ -21,21 +21,10 @@ namespace skyline::gpu::interconnect::conversion::quads {
 
     /**
      * @return The minimum size (in bytes) required to store the quad index buffer of the given type after conversion
-     * @param type The type of an element in the index buffer
+     * @param indexSize The size of an element in the index buffer in bytes
      */
-    constexpr size_t GetRequiredBufferSize(u32 count, vk::IndexType type) {
-        return GetIndexCount(count) * [&]() -> size_t {
-            switch (type) {
-                case vk::IndexType::eUint32:
-                    return sizeof(u32);
-                case vk::IndexType::eUint16:
-                    return sizeof(u16);
-                case vk::IndexType::eUint8EXT:
-                    return sizeof(u8);
-                default:
-                    return 0;
-            }
-        }();
+    constexpr size_t GetRequiredBufferSize(u32 count, size_t indexSize) {
+        return GetIndexCount(count) * indexSize;
     }
 
     /**

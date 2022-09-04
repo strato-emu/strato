@@ -1722,19 +1722,25 @@ namespace skyline::gpu::interconnect {
 
         /**
          * @brief Retrieves an index buffer for converting a non-indexed quad list to a triangle list
-         * @result A tuple containing a view over the index buffer, the index type and the index count
+         * @return A tuple containing a view over the index buffer, the index type and the index count
          */
-        std::tuple<BufferView, vk::IndexType, u32> GetNonIndexedQuadConversionBuffer(u32 count) {
-            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, vk::IndexType::eUint32)};
+        std::tuple<BufferView, vk::IndexType, u32> GetNonIndexedQuadConversionBuffer(u32 count, u32 first) {
+            size_t firstPos{conversion::quads::GetRequiredBufferSize(first, sizeof(u32))};
+            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, sizeof(u32)) + firstPos};
+
             if (!quadListConversionBuffer || quadListConversionBuffer->GetBackingSpan().size_bytes() < size) {
                 quadListConversionBuffer = std::make_shared<Buffer>(gpu, size);
-                conversion::quads::GenerateQuadListConversionBuffer(quadListConversionBuffer->GetBackingSpan().cast<u32>().data(), count);
+                conversion::quads::GenerateQuadListConversionBuffer(quadListConversionBuffer->GetBackingSpan().cast<u32>().data(), first + count);
             }
-            return {quadListConversionBuffer->GetView(0, size), vk::IndexType::eUint32, conversion::quads::GetIndexCount(count)};
+            return {quadListConversionBuffer->GetView(firstPos, size), vk::IndexType::eUint32, conversion::quads::GetIndexCount(count)};
         }
 
-        MegaBufferAllocator::Allocation GetIndexedQuadConversionBuffer(u32 count) {
-            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, indexBuffer.type)};
+        /**
+         * @brief Generates an index buffer for converting an indexed quad list to a triangle list
+         * @return The megabuffer allocation containing the generated index buffer
+         */
+        MegaBufferAllocator::Allocation GetIndexedQuadConversionBuffer(u32 count, u32 first) {
+            vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, indexBuffer.GetIndexSize())};
             auto allocation{executor.AcquireMegaBufferAllocator().Allocate(executor.cycle, size)};
 
             ContextLock lock{executor.tag, indexBuffer.view};
@@ -1742,7 +1748,8 @@ namespace skyline::gpu::interconnect {
                 // TODO: see Read()
                 Logger::Error("Dirty index buffer reads for attached buffers are unimplemented");
             })};
-            conversion::quads::GenerateIndexedQuadConversionBuffer(allocation.region.data(), guestIndexBuffer.data(), count, indexBuffer.type);
+            u8 *guestBufferStart{guestIndexBuffer.data() + first * indexBuffer.GetIndexSize()};
+            conversion::quads::GenerateIndexedQuadConversionBuffer(allocation.region.data(), guestBufferStart, count, indexBuffer.type);
             return allocation;
         }
 
@@ -2085,18 +2092,21 @@ namespace skyline::gpu::interconnect {
             vk::DeviceSize viewSize{}; //!< The size of the cached view
             BufferView view{}; //!< A cached view tied to the IOVAs and size to allow for a faster lookup
 
-            vk::DeviceSize GetIndexBufferSize(u32 elementCount) {
+            constexpr size_t GetIndexSize() const {
                 switch (type) {
-                    case vk::IndexType::eUint8EXT:
-                        return sizeof(u8) * elementCount;
-                    case vk::IndexType::eUint16:
-                        return sizeof(u16) * elementCount;
                     case vk::IndexType::eUint32:
-                        return sizeof(u32) * elementCount;
-
+                        return sizeof(u32);
+                    case vk::IndexType::eUint16:
+                        return sizeof(u16);
+                    case vk::IndexType::eUint8EXT:
+                        return sizeof(u8);
                     default:
                         throw exception("Unsupported Vulkan Index Type: {}", vk::to_string(type));
                 }
+            }
+
+            vk::DeviceSize GetIndexBufferSize(u32 elementCount) {
+                return GetIndexSize() * elementCount;
             }
         } indexBuffer{};
 
@@ -3025,10 +3035,12 @@ namespace skyline::gpu::interconnect {
                 boundIndexBuffer->type = indexBuffer.type;
 
                 if (needsQuadConversion) {
-                    auto allocation{GetIndexedQuadConversionBuffer(count)};
+                    Logger::Warn("Drawing indexed quads");
+                    auto allocation{GetIndexedQuadConversionBuffer(count, first)};
                     boundIndexBuffer->handle = allocation.buffer;
                     boundIndexBuffer->offset = allocation.offset;
                     count = conversion::quads::GetIndexCount(count);
+                    first = 0;
                 } else {
                     executor.AttachBuffer(indexBufferView);
 
@@ -3046,10 +3058,11 @@ namespace skyline::gpu::interconnect {
                 }
             } else if (needsQuadConversion) {
                 // Convert the guest-supplied quad list to an indexed triangle list
-                auto[bufferView, indexType, indexCount]{GetNonIndexedQuadConversionBuffer(count)};
+                auto[bufferView, indexType, indexCount]{GetNonIndexedQuadConversionBuffer(count, first)};
                 executor.AttachBuffer(bufferView);
 
                 count = indexCount;
+                first = 0;
                 boundIndexBuffer = std::make_shared<BoundIndexBuffer>();
                 boundIndexBuffer->type = indexType;
                 boundIndexBuffer->handle = bufferView->buffer->GetBacking();
