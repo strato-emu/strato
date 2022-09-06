@@ -477,20 +477,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    void RasterizationState::Flush() {
-        auto &rasterizationCreateInfo{rasterizationState.get<vk::PipelineRasterizationStateCreateInfo>()};
-        rasterizationCreateInfo.rasterizerDiscardEnable = !engine->rasterEnable;
-        rasterizationCreateInfo.polygonMode = ConvertPolygonMode(engine->frontPolygonMode);
+    void RasterizationState::Flush(Key &key) {
+        key.rasterizerDiscardEnable = !engine->rasterEnable;
+        key.SetPolygonMode(engine->frontPolygonMode);
         if (engine->backPolygonMode != engine->frontPolygonMode)
             Logger::Warn("Non-matching polygon modes!");
 
-        rasterizationCreateInfo.cullMode = engine->oglCullEnable ? ConvertCullMode(engine->oglCullFace) : vk::CullModeFlagBits::eNone;
+        if (engine->oglCullEnable) {
+            key.cullModeFront = engine->oglCullFace == engine::CullFace::Front || engine->oglCullFace == engine::CullFace::FrontAndBack;
+            key.cullModeBack = engine->oglCullFace == engine::CullFace::Back || engine->oglCullFace == engine::CullFace::FrontAndBack;
+        } else {
+            key.cullModeFront = key.cullModeBack = false;
+        }
+
         //                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
 
+        key.flipYEnable = engine->windowOrigin.flipY;
+
         bool origFrontFaceClockwise{engine->oglFrontFace == engine::FrontFace::CW};
-        rasterizationCreateInfo.frontFace = (engine->windowOrigin.flipY != origFrontFaceClockwise) ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
-        rasterizationCreateInfo.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
-        rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(engine->provokingVertex.value);
+        key.frontFaceClockwise = (key.flipYEnable != origFrontFaceClockwise);
+        key.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
+        key.provokingVertex = engine->provokingVertex.value;
     }
 
     /* Depth Stencil State */
@@ -789,12 +796,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         vertexInput.Update(key);
         directState.inputAssembly.Update(key);
-
         tessellation.Update(key);
-        const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};
-        vk::PipelineMultisampleStateCreateInfo multisampleState{
+        rasterization.Update(key);
+        /* vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1
-        };
+        }; */
+
         const auto &depthStencilState{depthStencil.UpdateGet().depthStencilState};
         const auto &colorBlendState{colorBlend.UpdateGet(ctx, colorAttachments.size()).colorBlendState};
 

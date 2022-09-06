@@ -17,6 +17,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             engine::TessellationParameters::DomainType domainType : 2;  //!< Use SetTessellationParameters
             engine::TessellationParameters::Spacing spacing : 2; //!< Use SetTessellationParameters
             engine::TessellationParameters::OutputPrimitives outputPrimitives : 2; //!< Use SetTessellationParameters
+            bool rasterizerDiscardEnable : 1;
+            u8 polygonMode : 2; //!< Use {Set, Get}PolygonMode
+            bool cullModeFront : 1;
+            bool cullModeBack : 1;
+            bool flipYEnable : 1;
+            bool frontFaceClockwise : 1; //!< With Y flip transformation already applied
+            bool depthBiasEnable : 1;
+            engine::ProvokingVertex::Value provokingVertex : 1;
         };
 
         struct VertexBinding {
@@ -52,6 +60,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             domainType = parameters.domainType;
             spacing = parameters.spacing;
             outputPrimitives = parameters.outputPrimitives;
+        }
+
+        void SetPolygonMode(engine::PolygonMode mode) {
+            polygonMode = static_cast<u8>(static_cast<u32>(mode) - 0x1B00);
         }
     };
 
@@ -194,7 +206,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush();
+        void Flush(Key &key);
     };
 
     class DepthStencilState : dirty::ManualDirty {
