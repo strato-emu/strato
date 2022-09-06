@@ -18,7 +18,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         manager.Bind(handle, colorTarget);
     }
 
-    ColorRenderTargetState::ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
+    ColorRenderTargetState::ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, size_t index) : engine{manager, dirtyHandle, engine}, index{index} {}
 
     static texture::Format ConvertColorRenderTargetFormat(engine::ColorTarget::Format format) {
         #define FORMAT_CASE_BASE(engineFormat, skFormat, warn) \
@@ -107,8 +107,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #undef FORMAT_CASE_BASE
     }
 
-    void ColorRenderTargetState::Flush(InterconnectContext &ctx) {
+    void ColorRenderTargetState::Flush(InterconnectContext &ctx, Key &key) {
         auto &target{engine->colorTarget};
+        key.SetCtFormat(index, target.format);
+
         if (target.format == engine::ColorTarget::Format::Disabled) {
             view = {};
             return;
@@ -173,7 +175,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #undef FORMAT_CASE
     }
 
-    void DepthRenderTargetState::Flush(InterconnectContext &ctx) {
+    void DepthRenderTargetState::Flush(InterconnectContext &ctx, Key &key) {
+        key.SetZtFormat(engine->ztFormat);
+
         if (!engine->ztSelect.targetCount) {
             view = {};
             return;
@@ -824,19 +828,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
         : engine{manager, dirtyHandle, engine},
-          colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters)},
+          colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters, util::IncrementingT<size_t>{})},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+        Key key;
+
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
         for (auto &colorRenderTarget : colorRenderTargets)
-            if (auto view{colorRenderTarget.UpdateGet(ctx).view}; view)
+            if (auto view{colorRenderTarget.UpdateGet(ctx, key).view}; view)
                 colorAttachments.push_back(view.get());
 
-        TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx).view.get()};
+        TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, key).view.get()};
 
         auto vertexInputState{directState.vertexInput.Build(ctx, engine->vertexInputRegisters)};
         const auto &inputAssemblyState{directState.inputAssembly.Build()};
@@ -867,10 +873,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
-        return colorRenderTargets[index].UpdateGet(ctx).view;
+        return colorRenderTargets[index].UpdateGet(ctx, key).view;
     }
 
     std::shared_ptr<TextureView> PipelineState::GetDepthRenderTargetForClear(InterconnectContext &ctx) {
-        return depthRenderTarget.UpdateGet(ctx).view;
+        return depthRenderTarget.UpdateGet(ctx, key).view;
     }
 }

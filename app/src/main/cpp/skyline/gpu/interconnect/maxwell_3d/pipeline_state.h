@@ -8,6 +8,26 @@
 #include "common.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
+    class Key {
+      private:
+        struct {
+            u8 ztFormat : 5; // ZtFormat - 0xA as u8
+        };
+
+        std::array<u8, engine::ColorTargetCount> ctFormats; //!< ColorTarget::Format as u8
+
+      public:
+        std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
+
+        void SetCtFormat(size_t index, engine::ColorTarget::Format format) {
+            ctFormats[index] = static_cast<u8>(format);
+        }
+
+        void SetZtFormat(engine::ZtFormat format) {
+            ztFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+        }
+    };
+
     class ColorRenderTargetState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
@@ -18,13 +38,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         dirty::BoundSubresource<EngineRegisters> engine;
+        size_t index;
 
       public:
-        ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
+        ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, size_t index);
 
         std::shared_ptr<TextureView> view;
 
-        void Flush(InterconnectContext &ctx);
+        void Flush(InterconnectContext &ctx, Key &key);
     };
 
     class DepthRenderTargetState : dirty::ManualDirty {
@@ -49,7 +70,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::shared_ptr<TextureView> view;
 
-        void Flush(InterconnectContext &ctx);
+        void Flush(InterconnectContext &ctx, Key &key);
     };
 
     struct VertexInputState {
@@ -242,6 +263,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
+        Key key{};
+
         dirty::BoundSubresource<EngineRegisters> engine;
 
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
