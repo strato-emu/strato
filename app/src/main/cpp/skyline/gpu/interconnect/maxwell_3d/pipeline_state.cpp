@@ -320,8 +320,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
         manager.Bind(handle, primitiveRestartEnable);
     }
 
-    const vk::PipelineInputAssemblyStateCreateInfo &InputAssemblyState::Build() {
-        return inputAssemblyState;
+    InputAssemblyState::InputAssemblyState(const EngineRegisters &engine) : engine{engine} {}
+
+    void InputAssemblyState::Update(Key &key) {
+        key.topology = currentEngineTopology;
+        key.primitiveRestartEnabled = engine.primitiveRestartEnable & 1;
     }
     
     static std::pair<vk::PrimitiveTopology, Shader::InputTopology> ConvertPrimitiveTopology(engine::DrawTopology topology) {
@@ -359,9 +362,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void InputAssemblyState::SetPrimitiveTopology(engine::DrawTopology topology) {
         currentEngineTopology = topology;
 
-        Shader::InputTopology geometryTopology{};
-        std::tie(inputAssemblyState.topology, geometryTopology) = ConvertPrimitiveTopology(topology);
-
         /*
             if (shaderTopology == ShaderCompiler::InputTopology::Points)
                 UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::make_optional(pointSpriteSize), maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
@@ -380,9 +380,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return currentEngineTopology == engine::DrawTopology::Quads;
     }
 
-    void InputAssemblyState::SetPrimitiveRestart(bool enabled) {
-        inputAssemblyState.primitiveRestartEnable = enabled;
-    }
 
     /* Tessellation State */
     void TessellationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -779,7 +776,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           vertexInput{manager, engine.vertexInputRegisters},
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
-          colorBlend{manager, engine.colorBlendRegisters} {}
+          colorBlend{manager, engine.colorBlendRegisters},
+          directState{engine.inputAssemblyRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
@@ -790,7 +788,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, key).view.get()};
 
         vertexInput.Update(key);
-        const auto &inputAssemblyState{directState.inputAssembly.Build()};
+        directState.inputAssembly.Update(key);
+
         const auto &tessellationState{directState.tessellation.Build()};
         const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};
         vk::PipelineMultisampleStateCreateInfo multisampleState{

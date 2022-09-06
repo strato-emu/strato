@@ -6,12 +6,14 @@
 #include <boost/container/static_vector.hpp>
 #include <gpu/texture/texture.h>
 #include "common.h"
+#include "soc/gm20b/engines/maxwell/types.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
-    class Key {
-      private:
+    struct Key {
         struct {
-            u8 ztFormat : 5; // ZtFormat - 0xA as u8
+            u8 ztFormat : 5; //!< Use {Set, Get}ZtFormat. ZtFormat - 0xA as u8
+            engine::DrawTopology topology : 4;
+            bool primitiveRestartEnabled : 1;
         };
 
         struct VertexBinding {
@@ -23,10 +25,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
         static_assert(sizeof(VertexBinding) == 0x8);
 
-        std::array<u8, engine::ColorTargetCount> ctFormats; //!< ColorTarget::Format as u8
-        std::array<VertexBinding, engine::VertexStreamCount> vertexBindings;
-
-      public:
+        std::array<u8, engine::ColorTargetCount> ctFormats; //!< Use {Set, Get}CtFormat. ColorTarget::Format as u8
+        std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
 
         void SetCtFormat(size_t index, engine::ColorTarget::Format format) {
@@ -109,11 +109,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(Key &key);
     };
 
-    struct InputAssemblyState {
-      private:
-        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-        engine::DrawTopology currentEngineTopology{};
-
+    class InputAssemblyState {
       public:
         struct EngineRegisters {
             const u32 &primitiveRestartEnable;
@@ -121,19 +117,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
 
+      private:
+        EngineRegisters engine;
+        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+        engine::DrawTopology currentEngineTopology{};
 
-        const vk::PipelineInputAssemblyStateCreateInfo &Build();
+      public:
+        InputAssemblyState(const EngineRegisters &engine);
 
-        /**
-         * @note Calling this *REQUIRES* manually marking the pipeline as dirty
-         */
+        void Update(Key &key);
+
         void SetPrimitiveTopology(engine::DrawTopology topology);
 
         engine::DrawTopology GetPrimitiveTopology() const;
 
         bool NeedsQuadConversion() const;
-
-        void SetPrimitiveRestart(bool enable);
     };
 
     struct TessellationState {
