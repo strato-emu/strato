@@ -83,6 +83,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         depthFunc = ConvertCompareFunc(func);
     }
 
+    void PackedPipelineState::SetLogicOp(engine::LogicOp::Func op) {
+        if (op < engine::LogicOp::Func::Clear || op > engine::LogicOp::Func::Set)
+            throw exception("Invalid logical operation: 0x{:X}", val);
+
+        // VK LogicOp values match 1:1 with Maxwell
+        logicOp = static_cast<vk::LogicOp>(static_cast<u32>(op) - static_cast<u32>(engine::LogicOp::Func::Clear));
+    }
+
     static vk::StencilOp ConvertStencilOp(engine::StencilOps::Op op) {
         switch (op) {
             case engine::StencilOps::Op::OglZero:
@@ -126,6 +134,118 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void PackedPipelineState::SetStencilOps(engine::StencilOps front, engine::StencilOps back) {
         stencilFront = PackStencilOps(front);
         stencilBack = PackStencilOps(back);
+    }
+
+    static VkColorComponentFlags ConvertColorWriteMask(engine::CtWrite write) {
+        return (write.rEnable ? VK_COLOR_COMPONENT_R_BIT : 0) |
+               (write.gEnable ? VK_COLOR_COMPONENT_G_BIT : 0) |
+               (write.bEnable ? VK_COLOR_COMPONENT_B_BIT : 0) |
+               (write.aEnable ? VK_COLOR_COMPONENT_A_BIT : 0);
+    };
+
+    static vk::BlendOp ConvertBlendOp(engine::BlendOp op) {
+        switch (op) {
+            case engine::BlendOp::D3DAdd:
+            case engine::BlendOp::OglFuncAdd:
+                return vk::BlendOp::eAdd;
+            case engine::BlendOp::D3DSubtract:
+            case engine::BlendOp::OglFuncSubtract:
+                return vk::BlendOp::eSubtract;
+            case engine::BlendOp::D3DRevSubtract:
+            case engine::BlendOp::OglFuncReverseSubtract:
+                return vk::BlendOp::eReverseSubtract;
+            case engine::BlendOp::D3DMin:
+            case engine::BlendOp::OglMin:
+                return vk::BlendOp::eMin;
+            case engine::BlendOp::D3DMax:
+            case engine::BlendOp::OglMax:
+                return vk::BlendOp::eMax;
+            default:
+                throw exception("Invalid blend operation: 0x{:X}", static_cast<u32>(op));
+        }
+    }
+
+    static vk::BlendFactor ConvertBlendFactor(engine::BlendCoeff coeff) {
+        switch (coeff) {
+            case engine::BlendCoeff::OglZero:
+            case engine::BlendCoeff::D3DZero:
+                return vk::BlendFactor::eZero;
+            case engine::BlendCoeff::OglOne:
+            case engine::BlendCoeff::D3DOne:
+                return vk::BlendFactor::eOne;
+            case engine::BlendCoeff::OglSrcColor:
+            case engine::BlendCoeff::D3DSrcColor:
+                return vk::BlendFactor::eSrcColor;
+            case engine::BlendCoeff::OglOneMinusSrcColor:
+            case engine::BlendCoeff::D3DInvSrcColor:
+                return vk::BlendFactor::eOneMinusSrcColor;
+            case engine::BlendCoeff::OglSrcAlpha:
+            case engine::BlendCoeff::D3DSrcAlpha:
+                return vk::BlendFactor::eSrcAlpha;
+            case engine::BlendCoeff::OglOneMinusSrcAlpha:
+            case engine::BlendCoeff::D3DInvSrcAlpha:
+                return vk::BlendFactor::eOneMinusSrcAlpha;
+            case engine::BlendCoeff::OglDstAlpha:
+            case engine::BlendCoeff::D3DDstAlpha:
+                return vk::BlendFactor::eDstAlpha;
+            case engine::BlendCoeff::OglOneMinusDstAlpha:
+            case engine::BlendCoeff::D3DInvDstAlpha:
+                return vk::BlendFactor::eOneMinusDstAlpha;
+            case engine::BlendCoeff::OglDstColor:
+            case engine::BlendCoeff::D3DDstColor:
+                return vk::BlendFactor::eDstColor;
+            case engine::BlendCoeff::OglOneMinusDstColor:
+            case engine::BlendCoeff::D3DInvDstColor:
+                return vk::BlendFactor::eOneMinusDstColor;
+            case engine::BlendCoeff::OglSrcAlphaSaturate:
+            case engine::BlendCoeff::D3DSrcAlphaSaturate:
+                return vk::BlendFactor::eSrcAlphaSaturate;
+            case engine::BlendCoeff::OglConstantColor:
+            case engine::BlendCoeff::D3DBlendCoeff:
+                return vk::BlendFactor::eConstantColor;
+            case engine::BlendCoeff::OglOneMinusConstantColor:
+            case engine::BlendCoeff::D3DInvBlendCoeff:
+                return vk::BlendFactor::eOneMinusConstantColor;
+            case engine::BlendCoeff::OglConstantAlpha:
+                return vk::BlendFactor::eConstantAlpha;
+            case engine::BlendCoeff::OglOneMinusConstantAlpha:
+                return vk::BlendFactor::eOneMinusConstantAlpha;
+            case engine::BlendCoeff::OglSrc1Color:
+            case engine::BlendCoeff::D3DSrc1Color:
+                return vk::BlendFactor::eSrc1Color;
+            case engine::BlendCoeff::OglInvSrc1Color:
+            case engine::BlendCoeff::D3DInvSrc1Color:
+                return vk::BlendFactor::eOneMinusSrc1Color;
+            case engine::BlendCoeff::OglSrc1Alpha:
+            case engine::BlendCoeff::D3DSrc1Alpha:
+                return vk::BlendFactor::eSrc1Alpha;
+            case engine::BlendCoeff::OglInvSrc1Alpha:
+            case engine::BlendCoeff::D3DInvSrc1Alpha:
+                return vk::BlendFactor::eOneMinusSrc1Alpha;
+            default:
+                throw exception("Invalid blend coefficient type: 0x{:X}", static_cast<u32>(coeff));
+        }
+    }
+
+    static PackedPipelineState::AttachmentBlendState PackAttachmentBlendState(bool enable, engine::CtWrite writeMask, auto blend) {
+        return {
+            .colorWriteMask = ConvertColorWriteMask(writeMask),
+            .colorBlendOp = ConvertBlendOp(blend.colorOp),
+            .srcColorBlendFactor = ConvertBlendFactor(blend.colorSourceCoeff),
+            .dstColorBlendFactor = ConvertBlendFactor(blend.colorDestCoeff),
+            .alphaBlendOp = ConvertBlendOp(blend.alphaOp),
+            .srcAlphaBlendFactor = ConvertBlendFactor(blend.alphaSourceCoeff),
+            .dstAlphaBlendFactor = ConvertBlendFactor(blend.alphaDestCoeff),
+            .blendEnable = enable
+        };
+    }
+
+    void PackedPipelineState::SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::Blend blend) {
+        attachmentBlendStates[index] = PackAttachmentBlendState(enable, writeMask, blend);
+    }
+
+    void PackedPipelineState::SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::BlendPerTarget blend) {
+        attachmentBlendStates[index] = PackAttachmentBlendState(enable, writeMask, blend);
     }
 
     /* Colour Render Target */
@@ -618,134 +738,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     ColorBlendState::ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    static vk::ColorComponentFlags ConvertColorWriteMask(engine::CtWrite write) {
-        return vk::ColorComponentFlags{
-            write.rEnable ? vk::ColorComponentFlagBits::eR : vk::ColorComponentFlags{} |
-                write.gEnable ? vk::ColorComponentFlagBits::eG : vk::ColorComponentFlags{} |
-                write.bEnable ? vk::ColorComponentFlagBits::eB : vk::ColorComponentFlags{} |
-                write.aEnable ? vk::ColorComponentFlagBits::eA : vk::ColorComponentFlags{}
-        };
-    }
+    void ColorBlendState::Flush(PackedPipelineState &packedState) {
+        packedState.logicOpEnable = engine->logicOp.enable;
+        packedState.SetLogicOp(engine->logicOp.func);
 
-    static vk::BlendOp ConvertBlendOp(engine::BlendOp op) {
-        switch (op) {
-            case engine::BlendOp::D3DAdd:
-            case engine::BlendOp::OglFuncAdd:
-                return vk::BlendOp::eAdd;
-            case engine::BlendOp::D3DSubtract:
-            case engine::BlendOp::OglFuncSubtract:
-                return vk::BlendOp::eSubtract;
-            case engine::BlendOp::D3DRevSubtract:
-            case engine::BlendOp::OglFuncReverseSubtract:
-                return vk::BlendOp::eReverseSubtract;
-            case engine::BlendOp::D3DMin:
-            case engine::BlendOp::OglMin:
-                return vk::BlendOp::eMin;
-            case engine::BlendOp::D3DMax:
-            case engine::BlendOp::OglMax:
-                return vk::BlendOp::eMax;
-            default:
-                throw exception("Invalid blend operation: 0x{:X}", static_cast<u32>(op));
-        }
-    }
+        for (u32 i{}; i < engine::ColorTargetCount; i++) {
+            auto ctWrite{engine->singleCtWriteControl ? engine->ctWrites[0] : engine->ctWrites[i]};
+            bool enable{engine->blend.enable[i] != 0};
 
-    static vk::BlendFactor ConvertBlendFactor(engine::BlendCoeff coeff) {
-        switch (coeff) {
-            case engine::BlendCoeff::OglZero:
-            case engine::BlendCoeff::D3DZero:
-                return vk::BlendFactor::eZero;
-            case engine::BlendCoeff::OglOne:
-            case engine::BlendCoeff::D3DOne:
-                return vk::BlendFactor::eOne;
-            case engine::BlendCoeff::OglSrcColor:
-            case engine::BlendCoeff::D3DSrcColor:
-                return vk::BlendFactor::eSrcColor;
-            case engine::BlendCoeff::OglOneMinusSrcColor:
-            case engine::BlendCoeff::D3DInvSrcColor:
-                return vk::BlendFactor::eOneMinusSrcColor;
-            case engine::BlendCoeff::OglSrcAlpha:
-            case engine::BlendCoeff::D3DSrcAlpha:
-                return vk::BlendFactor::eSrcAlpha;
-            case engine::BlendCoeff::OglOneMinusSrcAlpha:
-            case engine::BlendCoeff::D3DInvSrcAlpha:
-                return vk::BlendFactor::eOneMinusSrcAlpha;
-            case engine::BlendCoeff::OglDstAlpha:
-            case engine::BlendCoeff::D3DDstAlpha:
-                return vk::BlendFactor::eDstAlpha;
-            case engine::BlendCoeff::OglOneMinusDstAlpha:
-            case engine::BlendCoeff::D3DInvDstAlpha:
-                return vk::BlendFactor::eOneMinusDstAlpha;
-            case engine::BlendCoeff::OglDstColor:
-            case engine::BlendCoeff::D3DDstColor:
-                return vk::BlendFactor::eDstColor;
-            case engine::BlendCoeff::OglOneMinusDstColor:
-            case engine::BlendCoeff::D3DInvDstColor:
-                return vk::BlendFactor::eOneMinusDstColor;
-            case engine::BlendCoeff::OglSrcAlphaSaturate:
-            case engine::BlendCoeff::D3DSrcAlphaSaturate:
-                return vk::BlendFactor::eSrcAlphaSaturate;
-            case engine::BlendCoeff::OglConstantColor:
-            case engine::BlendCoeff::D3DBlendCoeff:
-                return vk::BlendFactor::eConstantColor;
-            case engine::BlendCoeff::OglOneMinusConstantColor:
-            case engine::BlendCoeff::D3DInvBlendCoeff:
-                return vk::BlendFactor::eOneMinusConstantColor;
-            case engine::BlendCoeff::OglConstantAlpha:
-                return vk::BlendFactor::eConstantAlpha;
-            case engine::BlendCoeff::OglOneMinusConstantAlpha:
-                return vk::BlendFactor::eOneMinusConstantAlpha;
-            case engine::BlendCoeff::OglSrc1Color:
-            case engine::BlendCoeff::D3DSrc1Color:
-                return vk::BlendFactor::eSrc1Color;
-            case engine::BlendCoeff::OglInvSrc1Color:
-            case engine::BlendCoeff::D3DInvSrc1Color:
-                return vk::BlendFactor::eOneMinusSrc1Color;
-            case engine::BlendCoeff::OglSrc1Alpha:
-            case engine::BlendCoeff::D3DSrc1Alpha:
-                return vk::BlendFactor::eSrc1Alpha;
-            case engine::BlendCoeff::OglInvSrc1Alpha:
-            case engine::BlendCoeff::D3DInvSrc1Alpha:
-                return vk::BlendFactor::eOneMinusSrc1Alpha;
-            default:
-                throw exception("Invalid blend coefficient type: 0x{:X}", static_cast<u32>(coeff));
-        }
-    }
-
-    void ColorBlendState::Flush(InterconnectContext &ctx, size_t attachmentCount) {
-        if (engine->logicOp.enable) {
-            if (ctx.gpu.traits.supportsLogicOp) {
-                colorBlendState.logicOpEnable = true;
-                colorBlendState.logicOp = ConvertLogicOpFunc(engine->logicOp.func);
-            } else {
-                Logger::Warn("Cannot enable framebuffer logical operation without host GPU support!");
-            }
-        }
-
-        auto convertBlendState{[](vk::PipelineColorBlendAttachmentState &attachmentBlendState, const auto &blend) {
-            attachmentBlendState.colorBlendOp = ConvertBlendOp(blend.colorOp);
-            attachmentBlendState.srcColorBlendFactor = ConvertBlendFactor(blend.colorSourceCoeff);
-            attachmentBlendState.dstColorBlendFactor = ConvertBlendFactor(blend.colorDestCoeff);
-            attachmentBlendState.alphaBlendOp = ConvertBlendOp(blend.alphaOp);
-            attachmentBlendState.srcAlphaBlendFactor = ConvertBlendFactor(blend.alphaSourceCoeff);
-            attachmentBlendState.dstAlphaBlendFactor = ConvertBlendFactor(blend.alphaDestCoeff);
-        }};
-
-        for (size_t i{}; i < engine::ColorTargetCount; i++) {
-            auto &attachmentBlendState{attachmentBlendStates[i]};
-            attachmentBlendState.blendEnable = engine->blend.enable[i];
-            attachmentBlendState.colorWriteMask = ConvertColorWriteMask(engine->singleCtWriteControl ? engine->ctWrites[0] : engine->ctWrites[i]);
             if (engine->blendStatePerTargetEnable)
-                convertBlendState(attachmentBlendState, engine->blendPerTargets[i]);
+                packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blendPerTargets[i]);
             else
-                convertBlendState(attachmentBlendState, engine->blend);
+                packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blend);
         }
-
-        colorBlendState.attachmentCount = static_cast<u32>(attachmentCount);
-        colorBlendState.pAttachments = attachmentBlendStates.data();
-    }
-
-    void ColorBlendState::Refresh(InterconnectContext &ctx, size_t attachmentCount) {
-        colorBlendState.attachmentCount = static_cast<u32>(attachmentCount);
     }
 
     /* Pipeline State */
@@ -784,7 +789,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .rasterizationSamples = vk::SampleCountFlagBits::e1
         }; */
         depthStencil.Update(packedState);
-        const auto &colorBlendState{colorBlend.UpdateGet(ctx, colorAttachments.size()).colorBlendState};
+        colorBlend.Update(packedState);
 
         constexpr std::array<vk::DynamicState, 9> dynamicStates{
             vk::DynamicState::eViewport,

@@ -45,7 +45,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
             vk::CompareOp depthFunc : 3; //!< Use {Set, Get}DepthFunc
             bool depthBoundsTestEnable : 1;
             bool stencilTestEnable : 1;
+            bool logicOpEnable : 1;
+            vk::LogicOp logicOp : 4; //!< Use {Set, Get}LogicOp
         };
+
+        u32 patchSize;
+        std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
+        std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
 
         struct VertexBinding {
             u16 stride : 12;
@@ -55,10 +61,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 divisor;
         };
 
-        u32 patchSize;
-        std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
         std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
-        std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
+
+        struct AttachmentBlendState {
+            VkColorComponentFlags colorWriteMask : 4;
+            vk::BlendOp colorBlendOp : 3;
+            vk::BlendFactor srcColorBlendFactor : 5;
+            vk::BlendFactor dstColorBlendFactor : 5;
+            vk::BlendOp alphaBlendOp : 3;
+            vk::BlendFactor srcAlphaBlendFactor : 5;
+            vk::BlendFactor dstAlphaBlendFactor : 5;
+            bool blendEnable : 1;
+        };
+
+        std::array<AttachmentBlendState, engine::ColorTargetCount> attachmentBlendStates;
 
         void SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format);
 
@@ -75,6 +91,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SetDepthFunc(engine::CompareFunc func);
 
         void SetStencilOps(engine::StencilOps front, engine::StencilOps back);
+
+        void SetLogicOp(engine::LogicOp::Func op);
+
+        void SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::Blend blend);
+
+        void SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::BlendPerTarget blend);
     };
 
     class ColorRenderTargetState : dirty::ManualDirty {
@@ -243,7 +265,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(PackedPipelineState &packedState);
     };
 
-    class ColorBlendState : dirty::RefreshableManualDirty {
+    class ColorBlendState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
             const engine::LogicOp &logicOp;
@@ -258,16 +280,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         dirty::BoundSubresource<EngineRegisters> engine;
-        std::array<vk::PipelineColorBlendAttachmentState, engine::ColorTargetCount> attachmentBlendStates;
 
       public:
-        vk::PipelineColorBlendStateCreateInfo colorBlendState{};
-
         ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx, size_t attachmentCount);
-
-        void Refresh(InterconnectContext &ctx, size_t attachmentCount);
+        void Flush(PackedPipelineState &packedState);
     };
 
     /**
