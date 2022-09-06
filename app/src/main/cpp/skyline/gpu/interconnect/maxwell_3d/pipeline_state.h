@@ -16,10 +16,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     struct PackedPipelineState {
         struct StencilOps {
-            u8 zPass : 3;
-            u8 fail : 3;
-            u8 zFail : 3;
-            u8 func : 3;
+            vk::StencilOp zPass : 3;
+            vk::StencilOp fail : 3;
+            vk::StencilOp zFail : 3;
+            vk::CompareOp func : 3;
             // 4 bits left for each stencil side
         };
 
@@ -27,50 +27,50 @@ namespace skyline::gpu::interconnect::maxwell3d {
         StencilOps stencilBack; //!< Use {Set, Get}StencilOps
 
         struct {
-            u8 ztFormat : 5; //!< Use {Set, Get}ZtFormat
+            u8 depthRenderTargetFormat : 5; //!< Use {Set, Get}DepthRenderTargetFormat
             engine::DrawTopology topology : 4;
             bool primitiveRestartEnabled : 1;
             engine::TessellationParameters::DomainType domainType : 2;  //!< Use SetTessellationParameters
             engine::TessellationParameters::Spacing spacing : 2; //!< Use SetTessellationParameters
             engine::TessellationParameters::OutputPrimitives outputPrimitives : 2; //!< Use SetTessellationParameters
             bool rasterizerDiscardEnable : 1;
-            u8 polygonMode : 2; //!< Use {Set, Get}PolygonMode
-            bool cullModeFront : 1;
-            bool cullModeBack : 1;
+            vk::PolygonMode polygonMode : 2; //!< Use {Set, Get}PolygonMode
+            VkCullModeFlags cullMode : 2; //!< Use {Set, Get}CullMode
             bool flipYEnable : 1;
             bool frontFaceClockwise : 1; //!< With Y flip transformation already applied
             bool depthBiasEnable : 1;
             engine::ProvokingVertex::Value provokingVertex : 1;
             bool depthTestEnable : 1;
             bool depthWriteEnable : 1;
-            u8 depthFunc : 3; //!< Use {Set, Get}DepthFunc
+            vk::CompareOp depthFunc : 3; //!< Use {Set, Get}DepthFunc
             bool depthBoundsTestEnable : 1;
             bool stencilTestEnable : 1;
         };
 
         struct VertexBinding {
             u16 stride : 12;
-            bool instanced : 1;
+            vk::VertexInputRate inputRate : 1;
             bool enable : 1;
             u8 _pad_ : 2;
             u32 divisor;
         };
-        static_assert(sizeof(VertexBinding) == 0x8);
 
         u32 patchSize;
-        std::array<u8, engine::ColorTargetCount> ctFormats; //!< Use {Set, Get}CtFormat
+        std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
         std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
 
-        void SetCtFormat(size_t index, engine::ColorTarget::Format format);
+        void SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format);
 
-        void SetZtFormat(engine::ZtFormat format);
+        void SetDepthRenderTargetFormat(engine::ZtFormat format);
 
         void SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance);
 
         void SetTessellationParameters(engine::TessellationParameters parameters);
 
         void SetPolygonMode(engine::PolygonMode mode);
+
+        void SetCullMode(bool enable, engine::CullFace mode);
 
         void SetDepthFunc(engine::CompareFunc func);
 

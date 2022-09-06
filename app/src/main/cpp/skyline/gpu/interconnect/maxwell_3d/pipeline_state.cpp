@@ -10,21 +10,23 @@
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/texture/format.h>
 #include <gpu.h>
+#include <vulkan/vulkan_core.h>
 #include "pipeline_state.h"
+#include "soc/gm20b/engines/maxwell/types.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /* Packed State */
-    void PackedPipelineState::SetCtFormat(size_t index, engine::ColorTarget::Format format) {
-        ctFormats[index] = static_cast<u8>(format);
+    void PackedPipelineState::SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format) {
+        colorRenderTargetFormats[index] = static_cast<u8>(format);
     }
 
-    void PackedPipelineState::SetZtFormat(engine::ZtFormat format) {
-        ztFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+    void PackedPipelineState::SetDepthRenderTargetFormat(engine::ZtFormat format) {
+        depthRenderTargetFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
     }
 
     void PackedPipelineState::SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
         vertexBindings[index].stride = stream.format.stride;
-        vertexBindings[index].instanced = instance.isInstanced;
+        vertexBindings[index].inputRate = instance.isInstanced ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
         vertexBindings[index].enable = stream.format.enable;
         vertexBindings[index].divisor = stream.frequency;
     }
@@ -36,58 +38,88 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void PackedPipelineState::SetPolygonMode(engine::PolygonMode mode) {
-        polygonMode = static_cast<u8>(static_cast<u32>(mode) - 0x1B00);
+        switch (mode) {
+            case engine::PolygonMode::Fill:
+                polygonMode = vk::PolygonMode::eFill;
+            case engine::PolygonMode::Line:
+                polygonMode = vk::PolygonMode::eLine;
+            case engine::PolygonMode::Point:
+                polygonMode = vk::PolygonMode::ePoint;
+            default:
+                throw exception("Invalid polygon mode: 0x{:X}", static_cast<u32>(mode));
+        }
     }
 
-    static u8 PackCompareFunc(engine::CompareFunc func) {
-        // OpenGL enums go from 0x200 to 0x207 and the others from 1 to 8, subtract 0x200 from OpenGL enums and 1 from the others we get a 0-7 range (method from yuzu)
+    void PackedPipelineState::SetCullMode(bool enable, engine::CullFace mode) {
+        if (!enable) {
+            cullMode = {};
+            return;
+        }
+
+        switch (mode) {
+            case engine::CullFace::Front:
+                cullMode = VK_CULL_MODE_FRONT_BIT;
+            case engine::CullFace::Back:
+                cullMode = VK_CULL_MODE_BACK_BIT;
+            case engine::CullFace::FrontAndBack:
+                cullMode = VK_CULL_MODE_FRONT_BIT | VK_CULL_MODE_BACK_BIT;
+            default:
+                throw exception("Invalid cull mode: 0x{:X}", static_cast<u32>(mode));
+        }
+    }
+
+
+    static vk::CompareOp ConvertCompareFunc(engine::CompareFunc func) {
+        if (func < engine::CompareFunc::D3DNever || func > engine::CompareFunc::OglAlways || (func > engine::CompareFunc::D3DAlways && func < engine::CompareFunc::OglNever))
+            throw exception("Invalid comparision function: 0x{:X}", static_cast<u32>(func));
+
         u32 val{static_cast<u32>(func)};
-        return static_cast<u8>(val >= 0x200 ? (val - 0x200) : (val - 1));
+
+        // VK CompareOp values match 1:1 with Maxwell with some small maths
+        return static_cast<vk::CompareOp>(func >= engine::CompareFunc::OglNever ? val - 0x200 : val - 1);
     }
 
     void PackedPipelineState::SetDepthFunc(engine::CompareFunc func) {
-        depthFunc = PackCompareFunc(func);
+        depthFunc = ConvertCompareFunc(func);
     }
 
-    static u8 PackStencilOp(engine::StencilOps::Op op) {
+    static vk::StencilOp ConvertStencilOp(engine::StencilOps::Op op) {
         switch (op) {
             case engine::StencilOps::Op::OglZero:
-                op = engine::StencilOps::Op::D3DZero;
-                break;
+            case engine::StencilOps::Op::D3DZero:
+                return vk::StencilOp::eZero;
+            case engine::StencilOps::Op::D3DKeep:
             case engine::StencilOps::Op::OglKeep:
-                op = engine::StencilOps::Op::D3DKeep;
-                break;
+                return vk::StencilOp::eKeep;
+            case engine::StencilOps::Op::D3DReplace:
             case engine::StencilOps::Op::OglReplace:
-                op = engine::StencilOps::Op::D3DReplace;
-                break;
+                return vk::StencilOp::eReplace;
+            case engine::StencilOps::Op::D3DIncrSat:
             case engine::StencilOps::Op::OglIncrSat:
-                op = engine::StencilOps::Op::D3DIncrSat;
-                break;
+                return vk::StencilOp::eIncrementAndClamp;
+            case engine::StencilOps::Op::D3DDecrSat:
             case engine::StencilOps::Op::OglDecrSat:
-                op = engine::StencilOps::Op::D3DDecrSat;
-                break;
+                return vk::StencilOp::eDecrementAndClamp;
+            case engine::StencilOps::Op::D3DInvert:
             case engine::StencilOps::Op::OglInvert:
-                op = engine::StencilOps::Op::D3DInvert;
-                break;
+                return vk::StencilOp::eInvert;
+            case engine::StencilOps::Op::D3DIncr:
             case engine::StencilOps::Op::OglIncr:
-                op = engine::StencilOps::Op::D3DIncr;
-                break;
+                return vk::StencilOp::eIncrementAndWrap;
+            case engine::StencilOps::Op::D3DDecr:
             case engine::StencilOps::Op::OglDecr:
-                op = engine::StencilOps::Op::D3DDecr;
-                break;
+                return vk::StencilOp::eDecrementAndWrap;
             default:
-                break;
+                throw exception("Invalid stencil operation: 0x{:X}", static_cast<u32>(op));
         }
-
-        return static_cast<u8>(op) - 1;
     }
 
     static PackedPipelineState::StencilOps PackStencilOps(engine::StencilOps ops) {
         return {
-            .zPass = PackStencilOp(ops.zPass),
-            .fail = PackStencilOp(ops.fail),
-            .zFail = PackStencilOp(ops.zFail),
-            .func = PackCompareFunc(ops.func),
+            .zPass = ConvertStencilOp(ops.zPass),
+            .fail = ConvertStencilOp(ops.fail),
+            .zFail = ConvertStencilOp(ops.zFail),
+            .func = ConvertCompareFunc(ops.func),
         };
     }
 
@@ -192,7 +224,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void ColorRenderTargetState::Flush(InterconnectContext &ctx, PackedPipelineState &packedState) {
         auto &target{engine->colorTarget};
-        packedState.SetCtFormat(index, target.format);
+        packedState.SetColorRenderTargetFormat(index, target.format);
 
         if (target.format == engine::ColorTarget::Format::Disabled) {
             view = {};
@@ -259,7 +291,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void DepthRenderTargetState::Flush(InterconnectContext &ctx, PackedPipelineState &packedState) {
-        packedState.SetZtFormat(engine->ztFormat);
+        packedState.SetDepthRenderTargetFormat(engine->ztFormat);
 
         if (!engine->ztSelect.targetCount) {
             view = {};
@@ -512,32 +544,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     RasterizationState::RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    static vk::PolygonMode ConvertPolygonMode(engine::PolygonMode mode) {
-        switch (mode) {
-            case engine::PolygonMode::Fill:
-                return vk::PolygonMode::eFill;
-            case engine::PolygonMode::Line:
-                return vk::PolygonMode::eLine;
-            case engine::PolygonMode::Point:
-                return vk::PolygonMode::ePoint;
-            default:
-                throw exception("Invalid polygon mode: 0x{:X}", static_cast<u32>(mode));
-        }
-    }
-
-    static vk::CullModeFlags ConvertCullMode(engine::CullFace cullMode) {
-        switch (cullMode) {
-            case engine::CullFace::Front:
-                return vk::CullModeFlagBits::eFront;
-            case engine::CullFace::Back:
-                return vk::CullModeFlagBits::eBack;
-            case engine::CullFace::FrontAndBack:
-                return vk::CullModeFlagBits::eFrontAndBack;
-            default:
-                throw exception("Invalid cull mode: 0x{:X}", static_cast<u32>(cullMode));
-        }
-    }
-
     bool ConvertDepthBiasEnable(engine::PolyOffset polyOffset, engine::PolygonMode polygonMode) {
         switch (polygonMode) {
             case engine::PolygonMode::Point:
@@ -566,12 +572,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (engine->backPolygonMode != engine->frontPolygonMode)
             Logger::Warn("Non-matching polygon modes!");
 
-        if (engine->oglCullEnable) {
-            packedState.cullModeFront = engine->oglCullFace == engine::CullFace::Front || engine->oglCullFace == engine::CullFace::FrontAndBack;
-            packedState.cullModeBack = engine->oglCullFace == engine::CullFace::Back || engine->oglCullFace == engine::CullFace::FrontAndBack;
-        } else {
-            packedState.cullModeFront = packedState.cullModeBack = false;
-        }
+        packedState.SetCullMode(engine->oglCullEnable, engine->oglCullFace);
 
         //                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
 
@@ -589,68 +590,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     DepthStencilState::DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
-
-    static vk::CompareOp ConvertCompareFunc(engine::CompareFunc func) {
-        switch (func) {
-            case engine::CompareFunc::D3DNever:
-            case engine::CompareFunc::OglNever:
-                return vk::CompareOp::eNever;
-            case engine::CompareFunc::D3DLess:
-            case engine::CompareFunc::OglLess:
-                return vk::CompareOp::eLess;
-            case engine::CompareFunc::D3DEqual:
-            case engine::CompareFunc::OglEqual:
-                return vk::CompareOp::eEqual;
-            case engine::CompareFunc::D3DLessEqual:
-            case engine::CompareFunc::OglLEqual:
-                return vk::CompareOp::eLessOrEqual;
-            case engine::CompareFunc::D3DGreater:
-            case engine::CompareFunc::OglGreater:
-                return vk::CompareOp::eGreater;
-            case engine::CompareFunc::D3DNotEqual:
-            case engine::CompareFunc::OglNotEqual:
-                return vk::CompareOp::eNotEqual;
-            case engine::CompareFunc::D3DGreaterEqual:
-            case engine::CompareFunc::OglGEqual:
-                return vk::CompareOp::eGreaterOrEqual;
-            case engine::CompareFunc::D3DAlways:
-            case engine::CompareFunc::OglAlways:
-                return vk::CompareOp::eAlways;
-            default:
-                throw exception("Invalid compare func: 0x{:X}", static_cast<u32>(func));
-        }
-    }
-
-    static vk::StencilOp ConvertStencilOp(engine::StencilOps::Op op) {
-        switch (op) {
-            case engine::StencilOps::Op::OglZero:
-            case engine::StencilOps::Op::D3DZero:
-                return vk::StencilOp::eZero;
-            case engine::StencilOps::Op::D3DKeep:
-            case engine::StencilOps::Op::OglKeep:
-                return vk::StencilOp::eKeep;
-            case engine::StencilOps::Op::D3DReplace:
-            case engine::StencilOps::Op::OglReplace:
-                return vk::StencilOp::eReplace;
-            case engine::StencilOps::Op::D3DIncrSat:
-            case engine::StencilOps::Op::OglIncrSat:
-                return vk::StencilOp::eIncrementAndClamp;
-            case engine::StencilOps::Op::D3DDecrSat:
-            case engine::StencilOps::Op::OglDecrSat:
-                return vk::StencilOp::eDecrementAndClamp;
-            case engine::StencilOps::Op::D3DInvert:
-            case engine::StencilOps::Op::OglInvert:
-                return vk::StencilOp::eInvert;
-            case engine::StencilOps::Op::D3DIncr:
-            case engine::StencilOps::Op::OglIncr:
-                return vk::StencilOp::eIncrementAndWrap;
-            case engine::StencilOps::Op::D3DDecr:
-            case engine::StencilOps::Op::OglDecr:
-                return vk::StencilOp::eDecrementAndWrap;
-            default:
-                throw exception("Invalid stencil operation: 0x{:X}", static_cast<u32>(op));
-        }
-    }
 
     static vk::StencilOpState ConvertStencilOpsState(engine::StencilOps ops) {
         return {
@@ -678,45 +617,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     ColorBlendState::ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
-
-    vk::LogicOp ConvertLogicOpFunc(engine::LogicOp::Func func) {
-        switch (func) {
-            case engine::LogicOp::Func::Clear:
-                return vk::LogicOp::eClear;
-            case engine::LogicOp::Func::And:
-                return vk::LogicOp::eAnd;
-            case engine::LogicOp::Func::AndReverse:
-                return vk::LogicOp::eAndReverse;
-            case engine::LogicOp::Func::Copy:
-                return vk::LogicOp::eCopy;
-            case engine::LogicOp::Func::AndInverted:
-                return vk::LogicOp::eAndInverted;
-            case engine::LogicOp::Func::Noop:
-                return vk::LogicOp::eNoOp;
-            case engine::LogicOp::Func::Xor:
-                return vk::LogicOp::eXor;
-            case engine::LogicOp::Func::Or:
-                return vk::LogicOp::eOr;
-            case engine::LogicOp::Func::Nor:
-                return vk::LogicOp::eNor;
-            case engine::LogicOp::Func::Equiv:
-                return vk::LogicOp::eEquivalent;
-            case engine::LogicOp::Func::Invert:
-                return vk::LogicOp::eInvert;
-            case engine::LogicOp::Func::OrReverse:
-                return vk::LogicOp::eOrReverse;
-            case engine::LogicOp::Func::CopyInverted:
-                return vk::LogicOp::eCopyInverted;
-            case engine::LogicOp::Func::OrInverted:
-                return vk::LogicOp::eOrInverted;
-            case engine::LogicOp::Func::Nand:
-                return vk::LogicOp::eNand;
-            case engine::LogicOp::Func::Set:
-                return vk::LogicOp::eSet;
-            default:
-                throw exception("Invalid logical operation type: 0x{:X}", static_cast<u32>(func));
-        }
-    }
 
     static vk::ColorComponentFlags ConvertColorWriteMask(engine::CtWrite write) {
         return vk::ColorComponentFlags{
