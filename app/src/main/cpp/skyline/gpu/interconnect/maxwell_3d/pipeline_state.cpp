@@ -13,6 +13,89 @@
 #include "pipeline_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
+    /* Packed State */
+    void PackedPipelineState::SetCtFormat(size_t index, engine::ColorTarget::Format format) {
+        ctFormats[index] = static_cast<u8>(format);
+    }
+
+    void PackedPipelineState::SetZtFormat(engine::ZtFormat format) {
+        ztFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+    }
+
+    void PackedPipelineState::SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
+        vertexBindings[index].stride = stream.format.stride;
+        vertexBindings[index].instanced = instance.isInstanced;
+        vertexBindings[index].enable = stream.format.enable;
+        vertexBindings[index].divisor = stream.frequency;
+    }
+
+    void PackedPipelineState::SetTessellationParameters(engine::TessellationParameters parameters) {
+        domainType = parameters.domainType;
+        spacing = parameters.spacing;
+        outputPrimitives = parameters.outputPrimitives;
+    }
+
+    void PackedPipelineState::SetPolygonMode(engine::PolygonMode mode) {
+        polygonMode = static_cast<u8>(static_cast<u32>(mode) - 0x1B00);
+    }
+
+    static u8 PackCompareFunc(engine::CompareFunc func) {
+        // OpenGL enums go from 0x200 to 0x207 and the others from 1 to 8, subtract 0x200 from OpenGL enums and 1 from the others we get a 0-7 range (method from yuzu)
+        u32 val{static_cast<u32>(func)};
+        return static_cast<u8>(val >= 0x200 ? (val - 0x200) : (val - 1));
+    }
+
+    void PackedPipelineState::SetDepthFunc(engine::CompareFunc func) {
+        depthFunc = PackCompareFunc(func);
+    }
+
+    static u8 PackStencilOp(engine::StencilOps::Op op) {
+        switch (op) {
+            case engine::StencilOps::Op::OglZero:
+                op = engine::StencilOps::Op::D3DZero;
+                break;
+            case engine::StencilOps::Op::OglKeep:
+                op = engine::StencilOps::Op::D3DKeep;
+                break;
+            case engine::StencilOps::Op::OglReplace:
+                op = engine::StencilOps::Op::D3DReplace;
+                break;
+            case engine::StencilOps::Op::OglIncrSat:
+                op = engine::StencilOps::Op::D3DIncrSat;
+                break;
+            case engine::StencilOps::Op::OglDecrSat:
+                op = engine::StencilOps::Op::D3DDecrSat;
+                break;
+            case engine::StencilOps::Op::OglInvert:
+                op = engine::StencilOps::Op::D3DInvert;
+                break;
+            case engine::StencilOps::Op::OglIncr:
+                op = engine::StencilOps::Op::D3DIncr;
+                break;
+            case engine::StencilOps::Op::OglDecr:
+                op = engine::StencilOps::Op::D3DDecr;
+                break;
+            default:
+                break;
+        }
+
+        return static_cast<u8>(op) - 1;
+    }
+
+    static PackedPipelineState::StencilOps PackStencilOps(engine::StencilOps ops) {
+        return {
+            .zPass = PackStencilOp(ops.zPass),
+            .fail = PackStencilOp(ops.fail),
+            .zFail = PackStencilOp(ops.zFail),
+            .func = PackCompareFunc(ops.func),
+        };
+    }
+
+    void PackedPipelineState::SetStencilOps(engine::StencilOps front, engine::StencilOps back) {
+        stencilFront = PackStencilOps(front);
+        stencilBack = PackStencilOps(back);
+    }
+
     /* Colour Render Target */
     void ColorRenderTargetState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, colorTarget);
@@ -107,9 +190,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #undef FORMAT_CASE_BASE
     }
 
-    void ColorRenderTargetState::Flush(InterconnectContext &ctx, Key &key) {
+    void ColorRenderTargetState::Flush(InterconnectContext &ctx, PackedPipelineState &packedState) {
         auto &target{engine->colorTarget};
-        key.SetCtFormat(index, target.format);
+        packedState.SetCtFormat(index, target.format);
 
         if (target.format == engine::ColorTarget::Format::Disabled) {
             view = {};
@@ -175,8 +258,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #undef FORMAT_CASE
     }
 
-    void DepthRenderTargetState::Flush(InterconnectContext &ctx, Key &key) {
-        key.SetZtFormat(engine->ztFormat);
+    void DepthRenderTargetState::Flush(InterconnectContext &ctx, PackedPipelineState &packedState) {
+        packedState.SetZtFormat(engine->ztFormat);
 
         if (!engine->ztSelect.targetCount) {
             view = {};
@@ -224,12 +307,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     VertexInputState::VertexInputState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    void VertexInputState::Flush(Key &key) {
+    void VertexInputState::Flush(PackedPipelineState &packedState) {
         for (u32 i{}; i < engine::VertexStreamCount; i++)
-            key.SetVertexBinding(i, engine->vertexStreams[i], engine->vertexStreamInstance[i]);
+            packedState.SetVertexBinding(i, engine->vertexStreams[i], engine->vertexStreamInstance[i]);
 
         for (u32 i{}; i < engine::VertexAttributeCount; i++)
-            key.vertexAttributes[i] = engine->vertexAttributes[i];
+            packedState.vertexAttributes[i] = engine->vertexAttributes[i];
     }
 
     static vk::Format ConvertVertexInputAttributeFormat(engine::VertexAttribute::ComponentBitWidths componentBitWidths, engine::VertexAttribute::NumericalType numericalType) {
@@ -322,9 +405,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     InputAssemblyState::InputAssemblyState(const EngineRegisters &engine) : engine{engine} {}
 
-    void InputAssemblyState::Update(Key &key) {
-        key.topology = currentEngineTopology;
-        key.primitiveRestartEnabled = engine.primitiveRestartEnable & 1;
+    void InputAssemblyState::Update(PackedPipelineState &packedState) {
+        packedState.topology = currentEngineTopology;
+        packedState.primitiveRestartEnabled = engine.primitiveRestartEnable & 1;
     }
     
     static std::pair<vk::PrimitiveTopology, Shader::InputTopology> ConvertPrimitiveTopology(engine::DrawTopology topology) {
@@ -388,9 +471,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     TessellationState::TessellationState(const EngineRegisters &engine) : engine{engine} {}
 
-    void TessellationState::Update(Key &key) {
-        key.patchSize = engine.patchSize;
-        key.SetTessellationParameters(engine.tessellationParameters);
+    void TessellationState::Update(PackedPipelineState &packedState) {
+        packedState.patchSize = engine.patchSize;
+        packedState.SetTessellationParameters(engine.tessellationParameters);
     }
 
     Shader::TessPrimitive ConvertShaderTessPrimitive(engine::TessellationParameters::DomainType domainType) {
@@ -477,27 +560,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    void RasterizationState::Flush(Key &key) {
-        key.rasterizerDiscardEnable = !engine->rasterEnable;
-        key.SetPolygonMode(engine->frontPolygonMode);
+    void RasterizationState::Flush(PackedPipelineState &packedState) {
+        packedState.rasterizerDiscardEnable = !engine->rasterEnable;
+        packedState.SetPolygonMode(engine->frontPolygonMode);
         if (engine->backPolygonMode != engine->frontPolygonMode)
             Logger::Warn("Non-matching polygon modes!");
 
         if (engine->oglCullEnable) {
-            key.cullModeFront = engine->oglCullFace == engine::CullFace::Front || engine->oglCullFace == engine::CullFace::FrontAndBack;
-            key.cullModeBack = engine->oglCullFace == engine::CullFace::Back || engine->oglCullFace == engine::CullFace::FrontAndBack;
+            packedState.cullModeFront = engine->oglCullFace == engine::CullFace::Front || engine->oglCullFace == engine::CullFace::FrontAndBack;
+            packedState.cullModeBack = engine->oglCullFace == engine::CullFace::Back || engine->oglCullFace == engine::CullFace::FrontAndBack;
         } else {
-            key.cullModeFront = key.cullModeBack = false;
+            packedState.cullModeFront = packedState.cullModeBack = false;
         }
 
         //                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
 
-        key.flipYEnable = engine->windowOrigin.flipY;
+        packedState.flipYEnable = engine->windowOrigin.flipY;
 
         bool origFrontFaceClockwise{engine->oglFrontFace == engine::FrontFace::CW};
-        key.frontFaceClockwise = (key.flipYEnable != origFrontFaceClockwise);
-        key.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
-        key.provokingVertex = engine->provokingVertex.value;
+        packedState.frontFaceClockwise = (packedState.flipYEnable != origFrontFaceClockwise);
+        packedState.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
+        packedState.provokingVertex = engine->provokingVertex.value;
     }
 
     /* Depth Stencil State */
@@ -578,15 +661,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
     }
 
-    void DepthStencilState::Flush(Key &key) {
-        key.depthTestEnable = engine->depthTestEnable;
-        key.depthWriteEnable = engine->depthWriteEnable;
-        key.SetDepthFunc(engine->depthFunc);
-        key.depthBoundsTestEnable = engine->depthBoundsTestEnable;
-        key.stencilTestEnable = engine->stencilTestEnable;
+    void DepthStencilState::Flush(PackedPipelineState &packedState) {
+        packedState.depthTestEnable = engine->depthTestEnable;
+        packedState.depthWriteEnable = engine->depthWriteEnable;
+        packedState.SetDepthFunc(engine->depthFunc);
+        packedState.depthBoundsTestEnable = engine->depthBoundsTestEnable;
+        packedState.stencilTestEnable = engine->stencilTestEnable;
 
         auto stencilBack{engine->twoSidedStencilTestEnable ? engine->stencilBack : engine->stencilOps};
-        key.SetStencilOps(engine->stencilOps, engine->stencilOps);
+        packedState.SetStencilOps(engine->stencilOps, engine->stencilOps);
     };
 
     /* Color Blend State */
@@ -788,19 +871,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
         for (auto &colorRenderTarget : colorRenderTargets)
-            if (auto view{colorRenderTarget.UpdateGet(ctx, key).view}; view)
+            if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view}; view)
                 colorAttachments.push_back(view.get());
 
-        TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, key).view.get()};
+        TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, packedState).view.get()};
 
-        vertexInput.Update(key);
-        directState.inputAssembly.Update(key);
-        tessellation.Update(key);
-        rasterization.Update(key);
+        vertexInput.Update(packedState);
+        directState.inputAssembly.Update(packedState);
+        tessellation.Update(packedState);
+        rasterization.Update(packedState);
         /* vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1
         }; */
-        depthStencil.Update(key);
+        depthStencil.Update(packedState);
         const auto &colorBlendState{colorBlend.UpdateGet(ctx, colorAttachments.size()).colorBlendState};
 
         constexpr std::array<vk::DynamicState, 9> dynamicStates{
@@ -822,10 +905,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
-        return colorRenderTargets[index].UpdateGet(ctx, key).view;
+        return colorRenderTargets[index].UpdateGet(ctx, packedState).view;
     }
 
     std::shared_ptr<TextureView> PipelineState::GetDepthRenderTargetForClear(InterconnectContext &ctx) {
-        return depthRenderTarget.UpdateGet(ctx, key).view;
+        return depthRenderTarget.UpdateGet(ctx, packedState).view;
     }
 }
