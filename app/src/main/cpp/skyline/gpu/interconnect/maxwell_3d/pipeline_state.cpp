@@ -578,16 +578,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
     }
 
-    void DepthStencilState::Flush() {
-        depthStencilState.depthTestEnable = engine->depthTestEnable;
-        depthStencilState.depthWriteEnable = engine->depthWriteEnable;
-        depthStencilState.depthCompareOp = ConvertCompareFunc(engine->depthFunc);
-        depthStencilState.depthBoundsTestEnable = engine->depthBoundsTestEnable;
-        depthStencilState.stencilTestEnable = engine->stencilTestEnable;
+    void DepthStencilState::Flush(Key &key) {
+        key.depthTestEnable = engine->depthTestEnable;
+        key.depthWriteEnable = engine->depthWriteEnable;
+        key.SetDepthFunc(engine->depthFunc);
+        key.depthBoundsTestEnable = engine->depthBoundsTestEnable;
+        key.stencilTestEnable = engine->stencilTestEnable;
 
         auto stencilBack{engine->twoSidedStencilTestEnable ? engine->stencilBack : engine->stencilOps};
-        depthStencilState.front = ConvertStencilOpsState(engine->stencilOps);
-        depthStencilState.back = ConvertStencilOpsState(stencilBack);
+        key.SetStencilOps(engine->stencilOps, engine->stencilOps);
     };
 
     /* Color Blend State */
@@ -801,8 +800,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /* vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1
         }; */
-
-        const auto &depthStencilState{depthStencil.UpdateGet().depthStencilState};
+        depthStencil.Update(key);
         const auto &colorBlendState{colorBlend.UpdateGet(ctx, colorAttachments.size()).colorBlendState};
 
         constexpr std::array<vk::DynamicState, 9> dynamicStates{

@@ -10,8 +10,19 @@
 
 namespace skyline::gpu::interconnect::maxwell3d {
     struct Key {
+        struct StencilOps {
+            u8 zPass : 3;
+            u8 fail : 3;
+            u8 zFail : 3;
+            u8 func : 3;
+            // 4 bits left for each stencil side
+        };
+
+        StencilOps stencilFront; //!< Use {Set, Get}StencilOps
+        StencilOps stencilBack; //!< Use {Set, Get}StencilOps
+
         struct {
-            u8 ztFormat : 5; //!< Use {Set, Get}ZtFormat. ZtFormat - 0xA as u8
+            u8 ztFormat : 5; //!< Use {Set, Get}ZtFormat
             engine::DrawTopology topology : 4;
             bool primitiveRestartEnabled : 1;
             engine::TessellationParameters::DomainType domainType : 2;  //!< Use SetTessellationParameters
@@ -25,6 +36,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bool frontFaceClockwise : 1; //!< With Y flip transformation already applied
             bool depthBiasEnable : 1;
             engine::ProvokingVertex::Value provokingVertex : 1;
+            bool depthTestEnable : 1;
+            bool depthWriteEnable : 1;
+            u8 depthFunc : 3; //!< Use {Set, Get}DepthFunc
+            bool depthBoundsTestEnable : 1;
+            bool stencilTestEnable : 1;
         };
 
         struct VertexBinding {
@@ -37,7 +53,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         static_assert(sizeof(VertexBinding) == 0x8);
 
         u32 patchSize;
-        std::array<u8, engine::ColorTargetCount> ctFormats; //!< Use {Set, Get}CtFormat. ColorTarget::Format as u8
+        std::array<u8, engine::ColorTargetCount> ctFormats; //!< Use {Set, Get}CtFormat
         std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
 
@@ -64,6 +80,62 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void SetPolygonMode(engine::PolygonMode mode) {
             polygonMode = static_cast<u8>(static_cast<u32>(mode) - 0x1B00);
+        }
+
+        u8 PackCompareFunc(engine::CompareFunc func) {
+            u32 val{static_cast<u32>(func)};
+            return static_cast<u8>(val >= 0x200 ? (val - 0x200) : (val - 1));
+        }
+
+        void SetDepthFunc(engine::CompareFunc func) {
+            depthFunc = PackCompareFunc(func);
+        }
+
+        u8 PackStencilOp(engine::StencilOps::Op op) {
+            switch (op) {
+                case engine::StencilOps::Op::OglZero:
+                    op = engine::StencilOps::Op::D3DZero;
+                    break;
+                case engine::StencilOps::Op::OglKeep:
+                    op = engine::StencilOps::Op::D3DKeep;
+                    break;
+                case engine::StencilOps::Op::OglReplace:
+                    op = engine::StencilOps::Op::D3DReplace;
+                    break;
+                case engine::StencilOps::Op::OglIncrSat:
+                    op = engine::StencilOps::Op::D3DIncrSat;
+                    break;
+                case engine::StencilOps::Op::OglDecrSat:
+                    op = engine::StencilOps::Op::D3DDecrSat;
+                    break;
+                case engine::StencilOps::Op::OglInvert:
+                    op = engine::StencilOps::Op::D3DInvert;
+                    break;
+                case engine::StencilOps::Op::OglIncr:
+                    op = engine::StencilOps::Op::D3DIncr;
+                    break;
+                case engine::StencilOps::Op::OglDecr:
+                    op = engine::StencilOps::Op::D3DDecr;
+                    break;
+                default:
+                    break;
+            }
+
+            return static_cast<u8>(op) - 1;
+        }
+
+        StencilOps PackStencilOps(engine::StencilOps ops) {
+            return {
+                .zPass = PackStencilOp(ops.zPass),
+                .fail = PackStencilOp(ops.fail),
+                .zFail = PackStencilOp(ops.zFail),
+                .func = PackCompareFunc(ops.func),
+            };
+        }
+
+        void SetStencilOps(engine::StencilOps front, engine::StencilOps back) {
+            stencilFront = PackStencilOps(front);
+            stencilBack = PackStencilOps(back);
         }
     };
 
@@ -228,11 +300,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::BoundSubresource<EngineRegisters> engine;
 
       public:
-        vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
-
         DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush();
+        void Flush(Key &key);
     };
 
     class ColorBlendState : dirty::RefreshableManualDirty {
