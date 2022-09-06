@@ -14,6 +14,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u8 ztFormat : 5; //!< Use {Set, Get}ZtFormat. ZtFormat - 0xA as u8
             engine::DrawTopology topology : 4;
             bool primitiveRestartEnabled : 1;
+            engine::TessellationParameters::DomainType domainType : 2;  //!< Use SetTessellationParameters
+            engine::TessellationParameters::Spacing spacing : 2; //!< Use SetTessellationParameters
+            engine::TessellationParameters::OutputPrimitives outputPrimitives : 2; //!< Use SetTessellationParameters
         };
 
         struct VertexBinding {
@@ -25,6 +28,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
         static_assert(sizeof(VertexBinding) == 0x8);
 
+        u32 patchSize;
         std::array<u8, engine::ColorTargetCount> ctFormats; //!< Use {Set, Get}CtFormat. ColorTarget::Format as u8
         std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
@@ -42,6 +46,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
             vertexBindings[index].instanced = instance.isInstanced;
             vertexBindings[index].enable = stream.format.enable;
             vertexBindings[index].divisor = stream.frequency;
+        }
+
+        void SetTessellationParameters(engine::TessellationParameters parameters) {
+            domainType = parameters.domainType;
+            spacing = parameters.spacing;
+            outputPrimitives = parameters.outputPrimitives;
         }
     };
 
@@ -134,23 +144,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
         bool NeedsQuadConversion() const;
     };
 
-    struct TessellationState {
-      private:
-        vk::PipelineTessellationStateCreateInfo tessellationState{};
-
+    class TessellationState {
       public:
         struct EngineRegisters {
-            const u32 &patchControlPoints;
+            const u32 &patchSize;
             const engine::TessellationParameters &tessellationParameters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
 
-        const vk::PipelineTessellationStateCreateInfo &Build();
+      private:
+        EngineRegisters engine;
 
-        void SetPatchControlPoints(u32 controlPoints);
+      public:
+        TessellationState(const EngineRegisters &engine);
 
-        void SetParameters(engine::TessellationParameters parameters);
+        void Update(Key &key);
     };
 
     /**
@@ -158,7 +167,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     struct DirectPipelineState {
         InputAssemblyState inputAssembly;
-        TessellationState tessellation;
     };
 
     class RasterizationState : dirty::ManualDirty {
@@ -268,6 +276,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
         dirty::ManualDirtyState<VertexInputState> vertexInput;
+        TessellationState tessellation;
         dirty::ManualDirtyState<RasterizationState> rasterization;
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
         dirty::ManualDirtyState<ColorBlendState> colorBlend;

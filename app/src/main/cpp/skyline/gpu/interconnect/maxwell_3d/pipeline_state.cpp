@@ -383,15 +383,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Tessellation State */
     void TessellationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, patchControlPoints, tessellationParameters);
+        manager.Bind(handle, patchSize, tessellationParameters);
     }
 
-    const vk::PipelineTessellationStateCreateInfo &TessellationState::Build() {
-        return tessellationState;
-    }
+    TessellationState::TessellationState(const EngineRegisters &engine) : engine{engine} {}
 
-    void TessellationState::SetPatchControlPoints(u32 patchControlPoints) {
-        tessellationState.patchControlPoints = patchControlPoints;
+    void TessellationState::Update(Key &key) {
+        key.patchSize = engine.patchSize;
+        key.SetTessellationParameters(engine.tessellationParameters);
     }
 
     Shader::TessPrimitive ConvertShaderTessPrimitive(engine::TessellationParameters::DomainType domainType) {
@@ -416,12 +415,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    void TessellationState::SetParameters(engine::TessellationParameters params) {
+ //   void TessellationState::SetParameters(engine::TessellationParameters params) {
         // UpdateRuntimeInformation(runtimeInfo.tess_primitive, ConvertShaderTessPrimitive(params.domainType), maxwell3d::PipelineStage::TessellationEvaluation);
         // UpdateRuntimeInformation(runtimeInfo.tess_spacing, ConvertShaderTessSpacing(params.spacing), maxwell3d::PipelineStage::TessellationEvaluation);
         // UpdateRuntimeInformation(runtimeInfo.tess_clockwise, params.outputPrimitive == engine::TessellationParameters::OutputPrimitives::TrianglesCW,
         //                          maxwell3d::PipelineStage::TessellationEvaluation);
-    }
+ //   }
 
     /* Rasterizer State */
     void RasterizationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -774,6 +773,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters, util::IncrementingT<size_t>{})},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
           vertexInput{manager, engine.vertexInputRegisters},
+          tessellation{engine.tessellationRegisters},
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters},
@@ -790,7 +790,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         vertexInput.Update(key);
         directState.inputAssembly.Update(key);
 
-        const auto &tessellationState{directState.tessellation.Build()};
+        tessellation.Update(key);
         const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};
         vk::PipelineMultisampleStateCreateInfo multisampleState{
             .rasterizationSamples = vk::SampleCountFlagBits::e1
