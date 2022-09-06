@@ -213,63 +213,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     /* Vertex Input State */
+    // TODO: check if better individually
     void VertexInputState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        ranges::for_each(vertexStreamRegisters, [&](const auto &regs) { manager.Bind(handle, regs.format, regs.frequency); });
+        ranges::for_each(vertexStreams, [&](const auto &regs) { manager.Bind(handle, regs.format, regs.frequency); });
 
         auto bindFull{[&](const auto &regs) { manager.Bind(handle, regs); }};
-        ranges::for_each(vertexStreamInstanceRegisters, bindFull);
-        ranges::for_each(vertexAttributesRegisters, bindFull);
+        ranges::for_each(vertexStreamInstance, bindFull);
+        ranges::for_each(vertexAttributes, bindFull);
     }
 
-    vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> VertexInputState::Build(InterconnectContext &ctx, const EngineRegisters &engine) {
-        activeBindingDivisorDescs.clear();
-        activeAttributeDescs.clear();
+    VertexInputState::VertexInputState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-        for (size_t i{}; i < engine::VertexStreamCount; i++) {
-            if (bindingDescs[i].inputRate == vk::VertexInputRate::eInstance) {
-                if (!ctx.gpu.traits.supportsVertexAttributeDivisor) [[unlikely]]
-                        Logger::Warn("Vertex attribute divisor used on guest without host support");
-                else if (!ctx.gpu.traits.supportsVertexAttributeZeroDivisor && bindingDivisorDescs[i].divisor == 0) [[unlikely]]
-                        Logger::Warn("Vertex attribute zero divisor used on guest without host support");
-                else
-                    activeBindingDivisorDescs.push_back(bindingDivisorDescs[i]);
-            }
-        }
+    void VertexInputState::Flush(Key &key) {
+        for (u32 i{}; i < engine::VertexStreamCount; i++)
+            key.SetVertexBinding(i, engine->vertexStreams[i], engine->vertexStreamInstance[i]);
 
-        // TODO: check shader inputs
-        for (size_t i{}; i < engine::VertexAttributeCount; i++)
-            if (engine.vertexAttributesRegisters[i].source == engine::VertexAttribute::Source::Active)
-                activeAttributeDescs.push_back(attributeDescs[i]);
-
-        vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> chain{
-            vk::PipelineVertexInputStateCreateInfo{
-                .vertexBindingDescriptionCount = static_cast<u32>(bindingDescs.size()),
-                .pVertexBindingDescriptions = bindingDescs.data(),
-                .vertexAttributeDescriptionCount = static_cast<u32>(activeAttributeDescs.size()),
-                .pVertexAttributeDescriptions = activeAttributeDescs.data(),
-            },
-            vk::PipelineVertexInputDivisorStateCreateInfoEXT{
-                .vertexBindingDivisorCount = static_cast<u32>(activeBindingDivisorDescs.size()),
-                .pVertexBindingDivisors = activeBindingDivisorDescs.data(),
-            },
-        };
-
-        if (activeBindingDivisorDescs.empty())
-            chain.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
-
-        return chain;
-    }
-
-    void VertexInputState::SetStride(u32 index, u32 stride) {
-        bindingDescs[index].stride = stride;
-    }
-
-    void VertexInputState::SetInputRate(u32 index, engine::VertexStreamInstance instance) {
-        bindingDescs[index].inputRate = instance.isInstanced ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
-    }
-
-    void VertexInputState::SetDivisor(u32 index, u32 divisor) {
-        bindingDivisorDescs[index].divisor = divisor;
+        for (u32 i{}; i < engine::VertexAttributeCount; i++)
+            key.vertexAttributes[i] = engine->vertexAttributes[i];
     }
 
     static vk::Format ConvertVertexInputAttributeFormat(engine::VertexAttribute::ComponentBitWidths componentBitWidths, engine::VertexAttribute::NumericalType numericalType) {
@@ -352,20 +312,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             default:
                 Logger::Warn("Unimplemented attribute type: {}", static_cast<u8>(numericalType));
                 return Shader::AttributeType::Disabled;
-        }
-    }
-
-    void VertexInputState::SetAttribute(u32 index, engine::VertexAttribute attribute) {
-        auto &vkAttribute{attributeDescs[index]};
-        if (attribute.source == engine::VertexAttribute::Source::Active) {
-            vkAttribute.binding = attribute.stream;
-            vkAttribute.format = ConvertVertexInputAttributeFormat(attribute.componentBitWidths, attribute.numericalType);
-            vkAttribute.offset = attribute.offset;
-
-
-            //  UpdateRuntimeInformation(runtimeInfo.generic_input_types[index], ConvertShaderGenericInputType(attribute.numericalType), maxwell3d::PipelineStage::Vertex);
-        } else {
-            //  UpdateRuntimeInformation(runtimeInfo.generic_input_types[index], Shader::AttributeType::Disabled, maxwell3d::PipelineStage::Vertex);
         }
     }
     
@@ -830,13 +776,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         : engine{manager, dirtyHandle, engine},
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters, util::IncrementingT<size_t>{})},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
+          vertexInput{manager, engine.vertexInputRegisters},
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
-        Key key;
-
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
         for (auto &colorRenderTarget : colorRenderTargets)
             if (auto view{colorRenderTarget.UpdateGet(ctx, key).view}; view)
@@ -844,7 +789,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, key).view.get()};
 
-        auto vertexInputState{directState.vertexInput.Build(ctx, engine->vertexInputRegisters)};
+        vertexInput.Update(key);
         const auto &inputAssemblyState{directState.inputAssembly.Build()};
         const auto &tessellationState{directState.tessellation.Build()};
         const auto &rasterizationState{rasterization.UpdateGet().rasterizationState};

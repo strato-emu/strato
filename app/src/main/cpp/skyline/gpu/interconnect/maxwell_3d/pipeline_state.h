@@ -14,7 +14,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u8 ztFormat : 5; // ZtFormat - 0xA as u8
         };
 
+        struct VertexBinding {
+            u16 stride : 12;
+            bool instanced : 1;
+            bool enable : 1;
+            u8 _pad_ : 2;
+            u32 divisor;
+        };
+        static_assert(sizeof(VertexBinding) == 0x8);
+
         std::array<u8, engine::ColorTargetCount> ctFormats; //!< ColorTarget::Format as u8
+        std::array<VertexBinding, engine::VertexStreamCount> vertexBindings;
 
       public:
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
@@ -25,6 +35,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void SetZtFormat(engine::ZtFormat format) {
             ztFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+        }
+
+        void SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
+            vertexBindings[index].stride = stream.format.stride;
+            vertexBindings[index].instanced = instance.isInstanced;
+            vertexBindings[index].enable = stream.format.enable;
+            vertexBindings[index].divisor = stream.frequency;
         }
     };
 
@@ -73,39 +90,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(InterconnectContext &ctx, Key &key);
     };
 
-    struct VertexInputState {
-      private:
-        std::array<vk::VertexInputBindingDescription, engine::VertexStreamCount> bindingDescs{
-            util::MergeInto<vk::VertexInputBindingDescription, engine::VertexStreamCount>(util::IncrementingT<u32>{})
-        };
-        std::array<vk::VertexInputBindingDivisorDescriptionEXT, engine::VertexStreamCount> bindingDivisorDescs{
-            util::MergeInto<vk::VertexInputBindingDivisorDescriptionEXT, engine::VertexStreamCount>(util::IncrementingT<u32>{})
-        };
-        std::array<vk::VertexInputAttributeDescription, engine::VertexAttributeCount> attributeDescs{
-            util::MergeInto<vk::VertexInputAttributeDescription, engine::VertexAttributeCount>(util::IncrementingT<u32>{})
-        };
-
-        boost::container::static_vector<vk::VertexInputBindingDivisorDescriptionEXT, engine::VertexStreamCount> activeBindingDivisorDescs;
-        boost::container::static_vector<vk::VertexInputAttributeDescription, engine::VertexAttributeCount> activeAttributeDescs;
-
+    class VertexInputState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
-            const std::array<engine::VertexStream, engine::VertexStreamCount> &vertexStreamRegisters;
-            const std::array<engine::VertexStreamInstance, engine::VertexStreamCount> &vertexStreamInstanceRegisters;
-            const std::array<engine::VertexAttribute, engine::VertexAttributeCount> &vertexAttributesRegisters;
+            const std::array<engine::VertexStream, engine::VertexStreamCount> &vertexStreams;
+            const std::array<engine::VertexStreamInstance, engine::VertexStreamCount> &vertexStreamInstance;
+            const std::array<engine::VertexAttribute, engine::VertexAttributeCount> &vertexAttributes;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
 
-        vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> Build(InterconnectContext &ctx, const EngineRegisters &engine);
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
 
-        void SetStride(u32 index, u32 stride);
+      public:
+        VertexInputState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void SetInputRate(u32 index, engine::VertexStreamInstance instance);
-
-        void SetDivisor(u32 index, u32 divisor);
-
-        void SetAttribute(u32 index, engine::VertexAttribute attribute);
+        void Flush(Key &key);
     };
 
     struct InputAssemblyState {
@@ -158,7 +159,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
      * @brief Holds pipeline state that is directly written by the engine code, without using dirty tracking
      */
     struct DirectPipelineState {
-        VertexInputState vertexInput;
         InputAssemblyState inputAssembly;
         TessellationState tessellation;
     };
@@ -269,6 +269,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
+        dirty::ManualDirtyState<VertexInputState> vertexInput;
         dirty::ManualDirtyState<RasterizationState> rasterization;
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
         dirty::ManualDirtyState<ColorBlendState> colorBlend;

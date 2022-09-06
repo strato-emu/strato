@@ -153,31 +153,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             dirtyManager.MarkDirty(method);
 
             switch (method) {
-                #define VERTEX_STREAM_CALLBACKS(z, idx, data)                                     \
-                ENGINE_ARRAY_STRUCT_CASE(vertexStreams, idx, format, {                            \
-                    interconnect.directState.vertexInput.SetStride(idx, format.stride);           \
-                })                                                                                \
-                ENGINE_ARRAY_STRUCT_CASE(vertexStreams, idx, frequency, {                         \
-                    interconnect.directState.vertexInput.SetDivisor(idx, frequency);              \
-                })                                                                                \
-                ENGINE_ARRAY_CASE(vertexStreamInstance, idx, {                                    \
-                    interconnect.directState.vertexInput.SetInputRate(idx, vertexStreamInstance); \
-                })
-
-                BOOST_PP_REPEAT(16, VERTEX_STREAM_CALLBACKS, 0)
-                static_assert(type::VertexStreamCount == 16 && type::VertexStreamCount < BOOST_PP_LIMIT_REPEAT);
-                #undef VERTEX_STREAM_CALLBACKS
-
-
-                #define VERTEX_ATTRIBUTE_CALLBACKS(z, idx, data)                              \
-                ENGINE_ARRAY_CASE(vertexAttributes, idx, {                                    \
-                    interconnect.directState.vertexInput.SetAttribute(idx, vertexAttributes); \
-                })
-
-                BOOST_PP_REPEAT(16, VERTEX_ATTRIBUTE_CALLBACKS, 0)
-                static_assert(type::VertexAttributeCount == 32 && type::VertexAttributeCount < BOOST_PP_LIMIT_REPEAT);
-                #undef VERTEX_ATTRIBUTE_CALLBACKS
-
 
                 ENGINE_CASE(primitiveRestartEnable, {
                     interconnect.directState.inputAssembly.SetPrimitiveRestart(primitiveRestartEnable != 0);
