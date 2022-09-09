@@ -858,9 +858,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(BindGroup) == (sizeof(u32) * 8));
 
+    struct BindlessTexture {
+        u8 constantBufferSlotSelect : 5;
+        u32 _pad0_ : 27;
+    };
+    static_assert(sizeof(BindlessTexture) == sizeof(u32));
+
     constexpr static size_t PipelineStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
 
-    constexpr static size_t ShaderStageCount{6}; //!< Amount of shader stages on Maxwell 3D
+    constexpr static size_t PipelineCount{6}; //!< Amount of shader stages on Maxwell 3D
 
     /**
      * @brief All the shader programs stages that Maxwell3D supports for draws
@@ -879,19 +885,31 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     /**
      * @brief The arguments to set a shader program for a pipeline stage
      */
-    struct SetProgramInfo {
-        struct {
+    struct Pipeline {
+        struct Shader {
+            enum class Type : u8 {
+                VertexCullBeforeFetch = 0,
+                Vertex = 1,
+                TessellationInit = 2,
+                Tessellation = 3,
+                Geometry = 4,
+                Pixel = 5,
+            };
+
             bool enable : 1;
             u8 _pad0_ : 3;
-            ShaderStage stage : 4;
+            Type type : 4;
             u32 _pad1_ : 24;
-        } info;
-        u32 offset; //!< Offset from the base shader memory IOVA
+        } shader;
+        u32 programOffset; //!< Offset from the base shader memory IOVA
         u32 _pad2_;
-        u32 gprCount; //!< Amount of GPRs used by the shader program
-        u32 _pad3_[12];
+        u8 registerCount; //!< Amount of GPRs used by the shader program
+        u32 _pad3_ : 24;
+        u8 bindingGroup : 3;
+        u32 _pad4_ : 29;
+        u32 _pad5_[11];
     };
-    static_assert(sizeof(SetProgramInfo) == (sizeof(u32) * 0x10));
+    static_assert(sizeof(Pipeline) == (sizeof(u32) * 0x10));
 
     struct ProvokingVertex {
         enum class Value : u8 {

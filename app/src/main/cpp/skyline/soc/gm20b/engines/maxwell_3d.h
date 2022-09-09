@@ -189,6 +189,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x48D, bool> linkedTscHandle; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
 
+            Register<0x490, std::array<u32, 8>> postVtgShaderAttributeSkipMask;
+
             Register<0x4B3, u32> depthTestEnable;
             Register<0x4B9, u32> blendStatePerTargetEnable;
             Register<0x4BA, u32> depthWriteEnable;
@@ -253,7 +255,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x56F, float> depthBias;
 
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
-            Register<0x582, Address> setProgramRegion;
+            Register<0x582, Address> programRegion;
 
             Register<0x585, u32> end; //!< Method-only register with no real value, used after calling vertexBeginGl to invoke the draw
 
@@ -339,7 +341,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x7C0, std::array<Address, type::VertexStreamCount>> vertexStreamLimits; //!< A per-VBO IOVA denoting the end of the vertex buffer
 
-            Register<0x800, std::array<type::SetProgramInfo, type::ShaderStageCount>> setProgram;
+            Register<0x800, std::array<type::Pipeline, type::PipelineCount>> pipelines;
 
             Register<0x8C0, u32[0x20]> firmwareCall;
 
@@ -357,7 +359,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x900, std::array<type::BindGroup, type::PipelineStageCount>> bindGroups; //!< Binds constant buffers to pipeline stages
 
-            Register<0x982, u32> bindlessTextureConstantBufferIndex; //!< The index of the constant buffer containing bindless texture descriptors
+            Register<0x982, type::BindlessTexture> bindlessTexture; //!< The index of the constant buffer containing bindless texture descriptors
 
             Register<0xA00, std::array<u32, (type::TransformFeedbackVaryingCount / sizeof(u32))  * type::StreamOutBufferCount>> transformFeedbackVaryings;
         };

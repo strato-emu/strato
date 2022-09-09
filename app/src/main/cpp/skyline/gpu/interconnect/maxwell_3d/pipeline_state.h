@@ -6,7 +6,7 @@
 #include <boost/container/static_vector.hpp>
 #include <gpu/texture/texture.h>
 #include "common.h"
-#include "soc/gm20b/engines/maxwell/types.h"
+#include "shader_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /**
@@ -47,11 +47,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bool stencilTestEnable : 1;
             bool logicOpEnable : 1;
             vk::LogicOp logicOp : 4; //!< Use {Set, Get}LogicOp
+            u8 bindlessTextureConstantBufferSlotSelect : 5;
         };
 
         u32 patchSize;
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
         std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
+        std::array<u32, 8> postVtgShaderAttributeSkipMask;
 
         struct VertexBinding {
             u16 stride : 12;
@@ -287,12 +289,31 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(PackedPipelineState &packedState);
     };
 
+    class GlobalShaderConfigState {
+      public:
+        struct EngineRegisters {
+            const std::array<u32, 8> &postVtgShaderAttributeSkipMask;
+            const engine::BindlessTexture &bindlessTexture;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        EngineRegisters engine;
+
+      public:
+        GlobalShaderConfigState(const EngineRegisters &engine);
+
+        void Update(PackedPipelineState &packedState);
+    };
+
     /**
      * @brief Holds all GPU state for a pipeline, any changes to this will result in a pipeline cache lookup
      */
     class PipelineState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
+            std::array<IndividualShaderState::EngineRegisters, engine::PipelineCount> shadersRegisters;
             std::array<ColorRenderTargetState::EngineRegisters, engine::ColorTargetCount> colorRenderTargetsRegisters;
             DepthRenderTargetState::EngineRegisters depthRenderTargetRegisters;
             VertexInputState::EngineRegisters vertexInputRegisters;
@@ -301,6 +322,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             RasterizationState::EngineRegisters rasterizationRegisters;
             DepthStencilState::EngineRegisters depthStencilRegisters;
             ColorBlendState::EngineRegisters colorBlendRegisters;
+            GlobalShaderConfigState::EngineRegisters globalShaderConfigRegisters;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -310,6 +332,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         dirty::BoundSubresource<EngineRegisters> engine;
 
+        std::array<dirty::ManualDirtyState<IndividualShaderState>, engine::PipelineCount> shaders;
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
         dirty::ManualDirtyState<VertexInputState> vertexInput;
@@ -317,7 +340,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<RasterizationState> rasterization;
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
         dirty::ManualDirtyState<ColorBlendState> colorBlend;
-
+        GlobalShaderConfigState globalShaderConfig;
 
       public:
         DirectPipelineState directState;

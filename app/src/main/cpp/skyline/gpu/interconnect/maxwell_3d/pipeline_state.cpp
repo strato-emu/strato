@@ -12,6 +12,7 @@
 #include <gpu.h>
 #include <vulkan/vulkan_core.h>
 #include "pipeline_state.h"
+#include "shader_state.h"
 #include "soc/gm20b/engines/maxwell/types.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
@@ -753,6 +754,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
+    /* Global Shader Config State */
+    void GlobalShaderConfigState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture);
+    }
+
+    GlobalShaderConfigState::GlobalShaderConfigState(const EngineRegisters &engine) : engine{engine} {}
+
+    void GlobalShaderConfigState::Update(PackedPipelineState &packedState) {
+        packedState.postVtgShaderAttributeSkipMask = engine.postVtgShaderAttributeSkipMask;
+        packedState.bindlessTextureConstantBufferSlotSelect = engine.bindlessTexture.constantBufferSlotSelect;
+    }
+
     /* Pipeline State */
     void PipelineState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         auto bindFunc{[&](auto &regs) { regs.DirtyBind(manager, handle); }};
@@ -764,6 +777,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
         : engine{manager, dirtyHandle, engine},
+          shaders{util::MergeInto<dirty::ManualDirtyState<IndividualShaderState>, engine::PipelineCount>(manager, engine.shadersRegisters, util::IncrementingT<u8>{})},
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters, util::IncrementingT<size_t>{})},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
           vertexInput{manager, engine.vertexInputRegisters},
@@ -771,7 +785,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters},
-          directState{engine.inputAssemblyRegisters} {}
+          directState{engine.inputAssemblyRegisters},
+          globalShaderConfig{engine.globalShaderConfigRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
@@ -790,6 +805,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }; */
         depthStencil.Update(packedState);
         colorBlend.Update(packedState);
+        globalShaderConfig.Update(packedState);
 
         constexpr std::array<vk::DynamicState, 9> dynamicStates{
             vk::DynamicState::eViewport,
