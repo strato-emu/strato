@@ -439,7 +439,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Rasterizer State */
     void RasterizationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, rasterEnable, frontPolygonMode, backPolygonMode, viewportClipControl, oglCullEnable, oglFrontFace, oglCullFace, windowOrigin, provokingVertex, polyOffset);
+        manager.Bind(handle, rasterEnable, frontPolygonMode, backPolygonMode, viewportClipControl, oglCullEnable, oglFrontFace, oglCullFace, windowOrigin, provokingVertex, polyOffset, pointSize, zClipRange);
     }
 
     RasterizationState::RasterizationState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
@@ -457,8 +457,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-
-
     void RasterizationState::Flush(PackedPipelineState &packedState) {
         packedState.rasterizerDiscardEnable = !engine->rasterEnable;
         packedState.SetPolygonMode(engine->frontPolygonMode);
@@ -475,6 +473,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.frontFaceClockwise = (packedState.flipYEnable != origFrontFaceClockwise);
         packedState.depthBiasEnable = ConvertDepthBiasEnable(engine->polyOffset, engine->frontPolygonMode);
         packedState.provokingVertex = engine->provokingVertex.value;
+        packedState.pointSize = engine->pointSize;
+        packedState.openGlNdc = engine->zClipRange == engine::ZClipRange::NegativeWToPositiveW;
     }
 
     /* Depth Stencil State */
@@ -519,7 +519,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Global Shader Config State */
     void GlobalShaderConfigState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture);
+        manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture, apiMandatedEarlyZ);
     }
 
     GlobalShaderConfigState::GlobalShaderConfigState(const EngineRegisters &engine) : engine{engine} {}
@@ -527,6 +527,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void GlobalShaderConfigState::Update(PackedPipelineState &packedState) {
         packedState.postVtgShaderAttributeSkipMask = engine.postVtgShaderAttributeSkipMask;
         packedState.bindlessTextureConstantBufferSlotSelect = engine.bindlessTexture.constantBufferSlotSelect;
+        packedState.apiMandatedEarlyZ = engine.apiMandatedEarlyZ;
     }
 
     /* Pipeline State */

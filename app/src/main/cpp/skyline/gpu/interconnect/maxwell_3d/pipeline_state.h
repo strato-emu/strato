@@ -164,6 +164,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const engine::ViewportClipControl &viewportClipControl;
             const engine::PolyOffset &polyOffset;
             const engine::ProvokingVertex &provokingVertex;
+            const float &pointSize;
+            const engine::ZClipRange &zClipRange;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -230,6 +232,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         struct EngineRegisters {
             const std::array<u32, 8> &postVtgShaderAttributeSkipMask;
             const engine::BindlessTexture &bindlessTexture;
+            const u32 &apiMandatedEarlyZ;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };

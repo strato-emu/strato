@@ -111,6 +111,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x60, Inline2MemoryBackend::RegisterState> i2m;
 
+            Register<0x84, u32> apiMandatedEarlyZEnable;
+
             Register<0xB2, type::SyncpointAction> syncpointAction;
 
             Register<0xC8, type::TessellationParameters> tessellationParameters;
