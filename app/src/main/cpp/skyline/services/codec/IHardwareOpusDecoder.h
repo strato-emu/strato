@@ -58,7 +58,7 @@ namespace skyline::service::codec {
         Result DecodeInterleavedImpl(ipc::IpcRequest &request, ipc::IpcResponse &response, bool writeDecodeTime = false);
 
       public:
-        IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, i32 sampleRate, i32 channelCount, u32 workBufferSize, KHandle workBufferHandle);
+        IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, i32 sampleRate, i32 channelCount, u32 workBufferSize, KHandle workBufferHandle, bool isIsLargerSize = false);
 
         /**
          * @brief Decodes the Opus source data, returns decoded data size and decoded sample count
