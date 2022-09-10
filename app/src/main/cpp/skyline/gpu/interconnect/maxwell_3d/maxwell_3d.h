@@ -58,7 +58,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /**
          * @brief Binds the constant buffer selector to the given pipeline stage
          */
-        void BindConstantBuffer(engine::PipelineStage stage, u32 index, bool enable);
+        void BindConstantBuffer(engine::ShaderStage stage, u32 index, bool enable);
 
         void Clear(engine::ClearSurface &clearSurface);
 

@@ -79,7 +79,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         constantBuffers.Load(ctx, data, offset);
     }
 
-    void Maxwell3D::BindConstantBuffer(engine::PipelineStage stage, u32 index, bool enable) {
+    void Maxwell3D::BindConstantBuffer(engine::ShaderStage stage, u32 index, bool enable) {
         if (enable)
             constantBuffers.Bind(ctx, stage, index);
         else

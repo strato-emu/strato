@@ -19,19 +19,19 @@ namespace skyline::gpu {
         using DescriptorSizes = std::array<vk::DescriptorPoolSize, 5>;
         constexpr DescriptorSizes BaseDescriptorSizes{
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::PipelineStageConstantBufferCount,
+                .descriptorCount = maxwell3d::ShaderStageConstantBufferCount,
                 .type = vk::DescriptorType::eUniformBuffer,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::PipelineStageCount * 5,
+                .descriptorCount = maxwell3d::ShaderStageCount * 5,
                 .type = vk::DescriptorType::eStorageBuffer,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::PipelineStageCount * 5,
+                .descriptorCount = maxwell3d::ShaderStageCount * 5,
                 .type = vk::DescriptorType::eCombinedImageSampler,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::PipelineStageCount,
+                .descriptorCount = maxwell3d::ShaderStageCount,
                 .type = vk::DescriptorType::eStorageImage,
             },
             vk::DescriptorPoolSize{

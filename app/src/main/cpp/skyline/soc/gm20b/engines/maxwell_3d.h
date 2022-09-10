@@ -224,7 +224,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x544, u32> clipDistanceEnable;
             Register<0x545, u32> sampleCounterEnable;
-            Register<0x546, float> pointSpriteSize;
+            Register<0x546, float> pointSize;
             Register<0x547, u32> zCullStatCountersEnable;
             Register<0x548, u32> pointSpriteEnable;
             Register<0x54A, u32> shaderExceptions;
@@ -357,7 +357,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             };
             Register<0x8E3, LoadConstantBuffer> loadConstantBuffer;
 
-            Register<0x900, std::array<type::BindGroup, type::PipelineStageCount>> bindGroups; //!< Binds constant buffers to pipeline stages
+            Register<0x900, std::array<type::BindGroup, type::ShaderStageCount>> bindGroups; //!< Binds constant buffers to pipeline stages
 
             Register<0x982, type::BindlessTexture> bindlessTexture; //!< The index of the constant buffer containing bindless texture descriptors
 

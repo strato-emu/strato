@@ -823,19 +823,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SemaphoreInfo) == sizeof(u32));
 
-    constexpr static size_t PipelineStageCount{5}; //!< Amount of pipeline stages on Maxwell 3D
+    constexpr static size_t ShaderStageCount{5}; //!< Amount of pipeline stages on Maxwell 3D
 
     /**
      * @brief All the pipeline stages that Maxwell3D supports for draws
      */
-    enum class PipelineStage {
+    enum class ShaderStage {
         Vertex = 0,
         TessellationControl = 1,
         TessellationEvaluation = 2,
         Geometry = 3,
         Fragment = 4,
     };
-    static_assert(static_cast<size_t>(PipelineStage::Fragment) + 1 == PipelineStageCount);
 
     struct ConstantBufferSelector {
         u32 size : 17;
@@ -864,23 +863,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(BindlessTexture) == sizeof(u32));
 
-    constexpr static size_t PipelineStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
+    constexpr static size_t ShaderStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
 
     constexpr static size_t PipelineCount{6}; //!< Amount of shader stages on Maxwell 3D
-
-    /**
-     * @brief All the shader programs stages that Maxwell3D supports for draws
-     * @note As opposed to pipeline stages, there are two shader programs for the vertex stage
-     */
-    enum class ShaderStage {
-        VertexA = 0,
-        VertexB = 1,
-        TessellationControl = 2,
-        TessellationEvaluation = 3,
-        Geometry = 4,
-        Fragment = 5,
-    };
-    static_assert(static_cast<size_t>(ShaderStage::Fragment) + 1 == ShaderStageCount);
 
     /**
      * @brief The arguments to set a shader program for a pipeline stage

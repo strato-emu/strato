@@ -153,25 +153,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         if (!redundant) {
             dirtyManager.MarkDirty(method);
-
-            switch (method) {
-
-                ENGINE_CASE(primitiveRestartEnable, {
-                    interconnect.directState.inputAssembly.SetPrimitiveRestart(primitiveRestartEnable != 0);
-                })
-
-
-                ENGINE_CASE(tessellationParameters, {
-                    interconnect.directState.tessellation.SetParameters(tessellationParameters);
-                })
-
-                ENGINE_CASE(patchSize, {
-                    interconnect.directState.tessellation.SetPatchControlPoints(patchSize);
-                })
-
-                default:
-                    break;
-            }
         }
 
         switch (method) {
@@ -275,11 +256,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             #define PIPELINE_CALLBACKS(z, idx, data)                                                                                         \
                 ENGINE_ARRAY_STRUCT_CASE(bindGroups, idx, constantBuffer, {                                                                  \
-                    interconnect.BindConstantBuffer(static_cast<type::PipelineStage>(idx), constantBuffer.shaderSlot, constantBuffer.valid); \
+                    interconnect.BindConstantBuffer(static_cast<type::ShaderStage>(idx), constantBuffer.shaderSlot, constantBuffer.valid); \
                 })
 
             BOOST_PP_REPEAT(5, PIPELINE_CALLBACKS, 0)
-            static_assert(type::PipelineStageCount == 5 && type::PipelineStageCount < BOOST_PP_LIMIT_REPEAT);
+            static_assert(type::ShaderStageCount == 5 && type::ShaderStageCount < BOOST_PP_LIMIT_REPEAT);
             #undef PIPELINE_CALLBACKS
             default:
                 break;

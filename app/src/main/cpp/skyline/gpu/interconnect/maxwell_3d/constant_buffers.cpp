@@ -70,12 +70,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    void ConstantBuffers::Bind(InterconnectContext &ctx, engine::PipelineStage stage, size_t index) {
+    void ConstantBuffers::Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index) {
         auto &view{*selectorState.UpdateGet(ctx).view};
         boundConstantBuffers[static_cast<size_t>(stage)][index] = {view};
     }
 
-    void ConstantBuffers::Unbind(engine::PipelineStage stage, size_t index) {
+    void ConstantBuffers::Unbind(engine::ShaderStage stage, size_t index) {
         boundConstantBuffers[static_cast<size_t>(stage)][index] = {};
     }
 }

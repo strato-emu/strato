@@ -48,7 +48,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<ConstantBufferSelectorState> selectorState;
 
       public:
-        std::array<std::array<ConstantBuffer, engine::PipelineStageConstantBufferCount>, engine::PipelineStageCount> boundConstantBuffers;
+        std::array<std::array<ConstantBuffer, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount> boundConstantBuffers;
 
         ConstantBuffers(DirtyManager &manager, const ConstantBufferSelectorState::EngineRegisters &constantBufferSelectorRegisters);
 
@@ -56,8 +56,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void Load(InterconnectContext &ctx, span<u32> data, u32 offset);
 
-        void Bind(InterconnectContext &ctx, engine::PipelineStage stage, size_t index);
+        void Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index);
 
-        void Unbind(engine::PipelineStage stage, size_t index);
+        void Unbind(engine::ShaderStage stage, size_t index);
     };
 }
