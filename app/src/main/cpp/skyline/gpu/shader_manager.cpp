@@ -96,7 +96,8 @@ namespace skyline::gpu {
         std::vector<ShaderManager::ConstantBufferWord> constantBufferWords;
         std::vector<ShaderManager::CachedTextureType> textureTypes;
 
-        GraphicsEnvironment(Shader::Stage pStage, span<u8> pBinary, u32 baseOffset, u32 textureBufferIndex, ShaderManager::ConstantBufferRead constantBufferRead, ShaderManager::GetTextureType getTextureType) : binary{pBinary}, baseOffset{baseOffset}, textureBufferIndex{textureBufferIndex}, constantBufferRead{std::move(constantBufferRead)}, getTextureType{std::move(getTextureType)} {
+        GraphicsEnvironment(const std::array<u32, 8> &postVtgShaderAttributeSkipMask, Shader::Stage pStage, span<u8> pBinary, u32 baseOffset, u32 textureBufferIndex, ShaderManager::ConstantBufferRead constantBufferRead, ShaderManager::GetTextureType getTextureType) : binary{pBinary}, baseOffset{baseOffset}, textureBufferIndex{textureBufferIndex}, constantBufferRead{std::move(constantBufferRead)}, getTextureType{std::move(getTextureType)} {
+            gp_passthrough_mask = postVtgShaderAttributeSkipMask;
             stage = pStage;
             sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
             start_address = baseOffset;
@@ -185,204 +186,42 @@ namespace skyline::gpu {
 
     constexpr ShaderManager::CachedTextureType::CachedTextureType(u32 handle, Shader::TextureType type) : handle(handle), type(type) {}
 
-    ShaderManager::ShaderProgram::ShaderProgram(Shader::IR::Program &&program) : program{std::move(program)} {}
+    Shader::IR::Program ShaderManager::ParseGraphicsShader(const std::array<u32, 8> &postVtgShaderAttributeSkipMask, Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
+        std::scoped_lock lock{poolMutex};
 
-    bool ShaderManager::SingleShaderProgram::VerifyState(const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) const {
-        return ranges::all_of(constantBufferWords, [&](const ConstantBufferWord &word) {
-            return constantBufferRead(word.index, word.offset) == word.value;
-        }) &&
-            ranges::all_of(textureTypes, [&](const CachedTextureType &type) {
-                return getTextureType(type.handle) == type.type;
-            });
+        GraphicsEnvironment environment{postVtgShaderAttributeSkipMask, stage, binary, baseOffset, textureConstantBufferIndex, constantBufferRead, getTextureType};
+        Shader::Maxwell::Flow::CFG cfg{environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))}};
+        return  Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
     }
 
-    ShaderManager::GuestShaderKey::GuestShaderKey(Shader::Stage stage, span<u8> bytecode, u32 textureConstantBufferIndex, span<ConstantBufferWord> constantBufferWords, span<CachedTextureType> textureTypes) : stage{stage}, bytecode{bytecode.begin(), bytecode.end()}, textureConstantBufferIndex{textureConstantBufferIndex}, constantBufferWords{constantBufferWords}, textureTypes{textureTypes} {}
+    Shader::IR::Program ShaderManager::CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary) {
+        std::scoped_lock lock{poolMutex};
 
-    ShaderManager::GuestShaderLookup::GuestShaderLookup(Shader::Stage stage, span<u8> bytecode, u32 textureConstantBufferIndex, ConstantBufferRead constantBufferRead, GetTextureType getTextureType) : stage(stage), textureConstantBufferIndex(textureConstantBufferIndex), bytecode(bytecode), constantBufferRead(std::move(constantBufferRead)), getTextureType(std::move(getTextureType)) {}
-
-    #define HASH(member) boost::hash_combine(hash, key.member)
-
-    size_t ShaderManager::ShaderProgramHash::operator()(const GuestShaderKey &key) const noexcept {
-        size_t hash{};
-
-        HASH(stage);
-        hash = XXH64(key.bytecode.data(), key.bytecode.size(), hash);
-        HASH(textureConstantBufferIndex);
-
-        return hash;
+        VertexBEnvironment env{vertexBBinary};
+        return Shader::Maxwell::MergeDualVertexPrograms(vertexA, vertexB, env);
     }
 
-    size_t ShaderManager::ShaderProgramHash::operator()(const GuestShaderLookup &key) const noexcept {
-        size_t hash{};
+    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
+        std::scoped_lock lock{poolMutex};
 
-        HASH(stage);
-        hash = XXH64(key.bytecode.data(), key.bytecode.size(), hash);
-        HASH(textureConstantBufferIndex);
+        if (program.info.loads.Legacy() || program.info.stores.Legacy())
+            Shader::Maxwell::ConvertLegacyToGeneric(program, runtimeInfo);
 
-        return hash;
-    }
-
-    #undef HASH
-
-    bool ShaderManager::ShaderProgramEqual::operator()(const GuestShaderKey &lhs, const GuestShaderLookup &rhs) const noexcept {
-        return lhs.stage == rhs.stage &&
-            ranges::equal(lhs.bytecode, rhs.bytecode) &&
-            lhs.textureConstantBufferIndex == rhs.textureConstantBufferIndex &&
-            ranges::all_of(lhs.constantBufferWords, [&constantBufferRead = rhs.constantBufferRead](const ConstantBufferWord &word) {
-                return constantBufferRead(word.index, word.offset) == word.value;
-            }) &&
-            ranges::all_of(lhs.textureTypes, [&getTextureType = rhs.getTextureType](const CachedTextureType &type) {
-                return getTextureType(type.handle) == type.type;
-            });
-    }
-
-    bool ShaderManager::ShaderProgramEqual::operator()(const GuestShaderKey &lhs, const GuestShaderKey &rhs) const noexcept {
-        return lhs.stage == rhs.stage &&
-            ranges::equal(lhs.bytecode, rhs.bytecode) &&
-            lhs.textureConstantBufferIndex == rhs.textureConstantBufferIndex &&
-            ranges::equal(lhs.constantBufferWords, rhs.constantBufferWords) &&
-            ranges::equal(lhs.textureTypes, rhs.textureTypes);
-    }
-
-    ShaderManager::DualVertexShaderProgram::DualVertexShaderProgram(Shader::IR::Program ir, std::shared_ptr<ShaderProgram> vertexA, std::shared_ptr<ShaderProgram> vertexB) : ShaderProgram{std::move(ir)}, vertexA{std::move(vertexA)}, vertexB{std::move(vertexB)} {}
-
-    bool ShaderManager::DualVertexShaderProgram::VerifyState(const ConstantBufferRead &constantBufferRead, const GetTextureType& getTextureType) const {
-        return vertexA->VerifyState(constantBufferRead, getTextureType) && vertexB->VerifyState(constantBufferRead, getTextureType);
-    }
-
-    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::ParseGraphicsShader(Shader::Stage stage, span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
-        std::unique_lock lock{programMutex};
-
-        auto it{programCache.find(GuestShaderLookup{stage, binary, textureConstantBufferIndex, constantBufferRead, getTextureType})};
-        if (it != programCache.end())
-            return it->second;
-
-        lock.unlock();
-
-        auto program{std::make_shared<SingleShaderProgram>()};
-        GraphicsEnvironment environment{stage, binary, baseOffset, textureConstantBufferIndex, constantBufferRead, getTextureType};
-        Shader::Maxwell::Flow::CFG cfg(environment, program->flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset + sizeof(Shader::ProgramHeader))});
-        program->program = Shader::Maxwell::TranslateProgram(program->instructionPool, program->blockPool, environment, cfg, hostTranslateInfo);
-        program->constantBufferWords = std::move(environment.constantBufferWords);
-        program->textureTypes = std::move(environment.textureTypes);
-
-        lock.lock();
-
-        auto programIt{programCache.try_emplace(GuestShaderKey{stage, binary, textureConstantBufferIndex, program->constantBufferWords, program->textureTypes}, std::move(program))};
-        return programIt.first->second;
-    }
-
-    constexpr size_t ShaderManager::DualVertexProgramsHash::operator()(const std::pair<std::shared_ptr<ShaderProgram>, std::shared_ptr<ShaderProgram>> &p) const {
-        size_t hash{};
-        boost::hash_combine(hash, p.first);
-        boost::hash_combine(hash, p.second);
-        return hash;
-    }
-
-    std::shared_ptr<ShaderManager::ShaderProgram> ShaderManager::CombineVertexShaders(const std::shared_ptr<ShaderProgram> &vertexA, const std::shared_ptr<ShaderProgram> &vertexB, span<u8> vertexBBinary) {
-        std::unique_lock lock{programMutex};
-        auto &program{dualProgramCache[DualVertexPrograms{vertexA, vertexB}]};
-        if (program)
-            return program;
-
-        lock.unlock();
-
-        VertexBEnvironment vertexBEnvironment{vertexBBinary};
-        auto mergedProgram{std::make_shared<DualVertexShaderProgram>(Shader::Maxwell::MergeDualVertexPrograms(vertexA->program, vertexB->program, vertexBEnvironment), vertexA, vertexB)};
-
-        lock.lock();
-
-        return program = std::move(mergedProgram);
-    }
-
-    bool ShaderManager::ShaderModuleState::operator==(const ShaderModuleState &other) const {
-        if (program != other.program)
-            return false;
-
-        if (bindings.unified != other.bindings.unified || bindings.uniform_buffer != other.bindings.uniform_buffer || bindings.storage_buffer != other.bindings.storage_buffer || bindings.texture != other.bindings.texture || bindings.image != other.bindings.image || bindings.texture_scaling_index != other.bindings.texture_scaling_index || bindings.image_scaling_index != other.bindings.image_scaling_index)
-            return false;
-
-        static_assert(sizeof(Shader::Backend::Bindings) == 0x1C);
-
-        if (!std::equal(runtimeInfo.generic_input_types.begin(), runtimeInfo.generic_input_types.end(), other.runtimeInfo.generic_input_types.begin()))
-            return false;
-
-        #define NEQ(member) runtimeInfo.member != other.runtimeInfo.member
-
-        if (NEQ(previous_stage_stores.mask) || NEQ(convert_depth_mode) || NEQ(force_early_z) || NEQ(tess_primitive) || NEQ(tess_spacing) || NEQ(tess_clockwise) || NEQ(input_topology) || NEQ(fixed_state_point_size) || NEQ(alpha_test_func) || NEQ(alpha_test_reference) || NEQ(y_negate) || NEQ(glasm_use_storage_buffers))
-            return false;
-
-        #undef NEQ
-
-        if (!std::equal(runtimeInfo.xfb_varyings.begin(), runtimeInfo.xfb_varyings.end(), other.runtimeInfo.xfb_varyings.begin(), [](const Shader::TransformFeedbackVarying &a, const Shader::TransformFeedbackVarying &b) {
-            return a.buffer == b.buffer && a.stride == b.stride && a.offset == b.offset && a.components == b.components;
-        }))
-            return false;
-
-        static_assert(sizeof(Shader::RuntimeInfo) == 0x88);
-
-        return true;
-    }
-
-    constexpr size_t ShaderManager::ShaderModuleStateHash::operator()(const ShaderModuleState &state) const {
-        size_t hash{};
-
-        boost::hash_combine(hash, state.program);
-
-        hash = XXH64(&state.bindings, sizeof(Shader::Backend::Bindings), hash);
-
-        #define RIH(member) boost::hash_combine(hash, state.runtimeInfo.member)
-
-        hash = XXH64(state.runtimeInfo.generic_input_types.data(), state.runtimeInfo.generic_input_types.size() * sizeof(Shader::AttributeType), hash);
-        hash = XXH64(&state.runtimeInfo.previous_stage_stores.mask, sizeof(state.runtimeInfo.previous_stage_stores.mask), hash);
-        RIH(convert_depth_mode);
-        RIH(force_early_z);
-        RIH(tess_primitive);
-        RIH(tess_spacing);
-        RIH(tess_clockwise);
-        RIH(input_topology);
-        RIH(fixed_state_point_size.value_or(NAN));
-        RIH(alpha_test_func.value_or(Shader::CompareFunction::Never));
-        RIH(alpha_test_reference);
-        RIH(glasm_use_storage_buffers);
-        hash = XXH64(state.runtimeInfo.xfb_varyings.data(), state.runtimeInfo.xfb_varyings.size() * sizeof(Shader::TransformFeedbackVarying), hash);
-
-        static_assert(sizeof(Shader::RuntimeInfo) == 0x88);
-        #undef RIH
-
-        return hash;
-    }
-
-    ShaderManager::ShaderModule::ShaderModule(const vk::raii::Device &device, const vk::ShaderModuleCreateInfo &createInfo, Shader::Backend::Bindings bindings) : vkModule{device, createInfo}, bindings{bindings} {}
-
-    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, const std::shared_ptr<ShaderProgram> &program, Shader::Backend::Bindings &bindings) {
-        std::unique_lock lock{moduleMutex};
-        ShaderModuleState shaderModuleState{program, bindings, runtimeInfo};
-        auto it{shaderModuleCache.find(shaderModuleState)};
-        if (it != shaderModuleCache.end()) {
-            const auto &entry{it->second};
-            bindings = entry.bindings;
-            return *entry.vkModule;
-        }
-
-        lock.unlock();
-
-        // Note: EmitSPIRV will change bindings so we explicitly have pre/post emit bindings
-        if (program->program.info.loads.Legacy() || program->program.info.stores.Legacy()) {
-            // The legacy conversion pass modifies the underlying program based on runtime state, so without making a copy of the program there may be issues if runtimeInfo changes
-            Logger::Warn("Shader uses legacy attributes, beware!");
-            Shader::Maxwell::ConvertLegacyToGeneric(program->program, runtimeInfo);
-        }
-        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program->program, bindings)};
+        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),
             .codeSize = spirv.size() * sizeof(u32),
         };
 
-        lock.lock();
+        return (*gpu.vkDevice).createShaderModule(createInfo);
+    }
 
-        auto shaderModule{shaderModuleCache.try_emplace(shaderModuleState, gpu.vkDevice, createInfo, bindings)};
-        return *(shaderModule.first->second.vkModule);
+    void ShaderManager::ResetPools() {
+        std::scoped_lock lock{poolMutex};
+
+        instructionPool.ReleaseContents();
+        blockPool.ReleaseContents();
+        flowBlockPool.ReleaseContents();
     }
 }
