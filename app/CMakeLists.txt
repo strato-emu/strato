@@ -109,6 +109,9 @@ add_subdirectory("libraries/sirit")
 # libadrenotools
 add_subdirectory("libraries/adrenotools")
 
+# Tessil Robin Map
+add_subdirectory("libraries/robin-map")
+
 # Build Skyline with full debugging data and -Og for debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer")
 # Build Skyline with full debugging data and some optimizations for reldebug builds, build speed is pioritised
@@ -184,6 +187,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/active_state.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_state.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/packed_pipeline_state.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_manager.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/constant_buffers.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/maxwell_3d.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
@@ -356,4 +360,4 @@ target_include_directories(skyline PRIVATE ${source_DIR}/skyline)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field -Wno-dangling-else -Wconversion -fsigned-bitfields)
 
 target_link_libraries(skyline PRIVATE shader_recompiler)
-target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto opus Boost::intrusive Boost::container range-v3 adrenotools)
+target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto opus Boost::intrusive Boost::container range-v3 adrenotools tsl::robin_map)

@@ -9,7 +9,6 @@
 #include <gpu/texture/format.h>
 #include <gpu.h>
 #include "pipeline_state.h"
-#include "shader_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /* Colour Render Target */
@@ -578,22 +577,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         colorBlend.Update(packedState);
         globalShaderConfig.Update(packedState);
 
-        constexpr std::array<vk::DynamicState, 9> dynamicStates{
-            vk::DynamicState::eViewport,
-            vk::DynamicState::eScissor,
-            vk::DynamicState::eLineWidth,
-            vk::DynamicState::eDepthBias,
-            vk::DynamicState::eBlendConstants,
-            vk::DynamicState::eDepthBounds,
-            vk::DynamicState::eStencilCompareMask,
-            vk::DynamicState::eStencilWriteMask,
-            vk::DynamicState::eStencilReference
-        };
+        if (pipeline) {
+            if (auto newPipeline{pipeline->LookupNext(packedState)}; newPipeline) {
+                pipeline = newPipeline;
+                return;
+            }
+        }
 
-        vk::PipelineDynamicStateCreateInfo dynamicState{
-            .dynamicStateCount = static_cast<u32>(dynamicStates.size()),
-            .pDynamicStates = dynamicStates.data()
-        };
+        auto newPipeline{pipelineManager.FindOrCreate(ctx, packedState, shaderBinaries, colorAttachments, depthAttachment)};
+        pipeline->AddTransition(packedState, newPipeline);
+        pipeline = newPipeline;
     }
 
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
