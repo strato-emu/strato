@@ -3,252 +3,15 @@
 // Copyright © 2022 yuzu Team and Contributors (https://github.com/yuzu-emu/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
-#include <optional>
 #include <range/v3/algorithm/for_each.hpp>
 #include <soc/gm20b/channel.h>
 #include <soc/gm20b/gmmu.h>
-#include <gpu/interconnect/command_executor.h>
 #include <gpu/texture/format.h>
 #include <gpu.h>
-#include <vulkan/vulkan_core.h>
 #include "pipeline_state.h"
 #include "shader_state.h"
-#include "soc/gm20b/engines/maxwell/types.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
-    /* Packed State */
-    void PackedPipelineState::SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format) {
-        colorRenderTargetFormats[index] = static_cast<u8>(format);
-    }
-
-    void PackedPipelineState::SetDepthRenderTargetFormat(engine::ZtFormat format) {
-        depthRenderTargetFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
-    }
-
-    void PackedPipelineState::SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
-        vertexBindings[index].stride = stream.format.stride;
-        vertexBindings[index].inputRate = instance.isInstanced ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex;
-        vertexBindings[index].enable = stream.format.enable;
-        vertexBindings[index].divisor = stream.frequency;
-    }
-
-    void PackedPipelineState::SetTessellationParameters(engine::TessellationParameters parameters) {
-        domainType = parameters.domainType;
-        spacing = parameters.spacing;
-        outputPrimitives = parameters.outputPrimitives;
-    }
-
-    void PackedPipelineState::SetPolygonMode(engine::PolygonMode mode) {
-        switch (mode) {
-            case engine::PolygonMode::Fill:
-                polygonMode = vk::PolygonMode::eFill;
-            case engine::PolygonMode::Line:
-                polygonMode = vk::PolygonMode::eLine;
-            case engine::PolygonMode::Point:
-                polygonMode = vk::PolygonMode::ePoint;
-            default:
-                throw exception("Invalid polygon mode: 0x{:X}", static_cast<u32>(mode));
-        }
-    }
-
-    void PackedPipelineState::SetCullMode(bool enable, engine::CullFace mode) {
-        if (!enable) {
-            cullMode = {};
-            return;
-        }
-
-        switch (mode) {
-            case engine::CullFace::Front:
-                cullMode = VK_CULL_MODE_FRONT_BIT;
-            case engine::CullFace::Back:
-                cullMode = VK_CULL_MODE_BACK_BIT;
-            case engine::CullFace::FrontAndBack:
-                cullMode = VK_CULL_MODE_FRONT_BIT | VK_CULL_MODE_BACK_BIT;
-            default:
-                throw exception("Invalid cull mode: 0x{:X}", static_cast<u32>(mode));
-        }
-    }
-
-
-    static vk::CompareOp ConvertCompareFunc(engine::CompareFunc func) {
-        if (func < engine::CompareFunc::D3DNever || func > engine::CompareFunc::OglAlways || (func > engine::CompareFunc::D3DAlways && func < engine::CompareFunc::OglNever))
-            throw exception("Invalid comparision function: 0x{:X}", static_cast<u32>(func));
-
-        u32 val{static_cast<u32>(func)};
-
-        // VK CompareOp values match 1:1 with Maxwell with some small maths
-        return static_cast<vk::CompareOp>(func >= engine::CompareFunc::OglNever ? val - 0x200 : val - 1);
-    }
-
-    void PackedPipelineState::SetDepthFunc(engine::CompareFunc func) {
-        depthFunc = ConvertCompareFunc(func);
-    }
-
-    void PackedPipelineState::SetLogicOp(engine::LogicOp::Func op) {
-        if (op < engine::LogicOp::Func::Clear || op > engine::LogicOp::Func::Set)
-            throw exception("Invalid logical operation: 0x{:X}", val);
-
-        // VK LogicOp values match 1:1 with Maxwell
-        logicOp = static_cast<vk::LogicOp>(static_cast<u32>(op) - static_cast<u32>(engine::LogicOp::Func::Clear));
-    }
-
-    static vk::StencilOp ConvertStencilOp(engine::StencilOps::Op op) {
-        switch (op) {
-            case engine::StencilOps::Op::OglZero:
-            case engine::StencilOps::Op::D3DZero:
-                return vk::StencilOp::eZero;
-            case engine::StencilOps::Op::D3DKeep:
-            case engine::StencilOps::Op::OglKeep:
-                return vk::StencilOp::eKeep;
-            case engine::StencilOps::Op::D3DReplace:
-            case engine::StencilOps::Op::OglReplace:
-                return vk::StencilOp::eReplace;
-            case engine::StencilOps::Op::D3DIncrSat:
-            case engine::StencilOps::Op::OglIncrSat:
-                return vk::StencilOp::eIncrementAndClamp;
-            case engine::StencilOps::Op::D3DDecrSat:
-            case engine::StencilOps::Op::OglDecrSat:
-                return vk::StencilOp::eDecrementAndClamp;
-            case engine::StencilOps::Op::D3DInvert:
-            case engine::StencilOps::Op::OglInvert:
-                return vk::StencilOp::eInvert;
-            case engine::StencilOps::Op::D3DIncr:
-            case engine::StencilOps::Op::OglIncr:
-                return vk::StencilOp::eIncrementAndWrap;
-            case engine::StencilOps::Op::D3DDecr:
-            case engine::StencilOps::Op::OglDecr:
-                return vk::StencilOp::eDecrementAndWrap;
-            default:
-                throw exception("Invalid stencil operation: 0x{:X}", static_cast<u32>(op));
-        }
-    }
-
-    static PackedPipelineState::StencilOps PackStencilOps(engine::StencilOps ops) {
-        return {
-            .zPass = ConvertStencilOp(ops.zPass),
-            .fail = ConvertStencilOp(ops.fail),
-            .zFail = ConvertStencilOp(ops.zFail),
-            .func = ConvertCompareFunc(ops.func),
-        };
-    }
-
-    void PackedPipelineState::SetStencilOps(engine::StencilOps front, engine::StencilOps back) {
-        stencilFront = PackStencilOps(front);
-        stencilBack = PackStencilOps(back);
-    }
-
-    static VkColorComponentFlags ConvertColorWriteMask(engine::CtWrite write) {
-        return (write.rEnable ? VK_COLOR_COMPONENT_R_BIT : 0) |
-               (write.gEnable ? VK_COLOR_COMPONENT_G_BIT : 0) |
-               (write.bEnable ? VK_COLOR_COMPONENT_B_BIT : 0) |
-               (write.aEnable ? VK_COLOR_COMPONENT_A_BIT : 0);
-    };
-
-    static vk::BlendOp ConvertBlendOp(engine::BlendOp op) {
-        switch (op) {
-            case engine::BlendOp::D3DAdd:
-            case engine::BlendOp::OglFuncAdd:
-                return vk::BlendOp::eAdd;
-            case engine::BlendOp::D3DSubtract:
-            case engine::BlendOp::OglFuncSubtract:
-                return vk::BlendOp::eSubtract;
-            case engine::BlendOp::D3DRevSubtract:
-            case engine::BlendOp::OglFuncReverseSubtract:
-                return vk::BlendOp::eReverseSubtract;
-            case engine::BlendOp::D3DMin:
-            case engine::BlendOp::OglMin:
-                return vk::BlendOp::eMin;
-            case engine::BlendOp::D3DMax:
-            case engine::BlendOp::OglMax:
-                return vk::BlendOp::eMax;
-            default:
-                throw exception("Invalid blend operation: 0x{:X}", static_cast<u32>(op));
-        }
-    }
-
-    static vk::BlendFactor ConvertBlendFactor(engine::BlendCoeff coeff) {
-        switch (coeff) {
-            case engine::BlendCoeff::OglZero:
-            case engine::BlendCoeff::D3DZero:
-                return vk::BlendFactor::eZero;
-            case engine::BlendCoeff::OglOne:
-            case engine::BlendCoeff::D3DOne:
-                return vk::BlendFactor::eOne;
-            case engine::BlendCoeff::OglSrcColor:
-            case engine::BlendCoeff::D3DSrcColor:
-                return vk::BlendFactor::eSrcColor;
-            case engine::BlendCoeff::OglOneMinusSrcColor:
-            case engine::BlendCoeff::D3DInvSrcColor:
-                return vk::BlendFactor::eOneMinusSrcColor;
-            case engine::BlendCoeff::OglSrcAlpha:
-            case engine::BlendCoeff::D3DSrcAlpha:
-                return vk::BlendFactor::eSrcAlpha;
-            case engine::BlendCoeff::OglOneMinusSrcAlpha:
-            case engine::BlendCoeff::D3DInvSrcAlpha:
-                return vk::BlendFactor::eOneMinusSrcAlpha;
-            case engine::BlendCoeff::OglDstAlpha:
-            case engine::BlendCoeff::D3DDstAlpha:
-                return vk::BlendFactor::eDstAlpha;
-            case engine::BlendCoeff::OglOneMinusDstAlpha:
-            case engine::BlendCoeff::D3DInvDstAlpha:
-                return vk::BlendFactor::eOneMinusDstAlpha;
-            case engine::BlendCoeff::OglDstColor:
-            case engine::BlendCoeff::D3DDstColor:
-                return vk::BlendFactor::eDstColor;
-            case engine::BlendCoeff::OglOneMinusDstColor:
-            case engine::BlendCoeff::D3DInvDstColor:
-                return vk::BlendFactor::eOneMinusDstColor;
-            case engine::BlendCoeff::OglSrcAlphaSaturate:
-            case engine::BlendCoeff::D3DSrcAlphaSaturate:
-                return vk::BlendFactor::eSrcAlphaSaturate;
-            case engine::BlendCoeff::OglConstantColor:
-            case engine::BlendCoeff::D3DBlendCoeff:
-                return vk::BlendFactor::eConstantColor;
-            case engine::BlendCoeff::OglOneMinusConstantColor:
-            case engine::BlendCoeff::D3DInvBlendCoeff:
-                return vk::BlendFactor::eOneMinusConstantColor;
-            case engine::BlendCoeff::OglConstantAlpha:
-                return vk::BlendFactor::eConstantAlpha;
-            case engine::BlendCoeff::OglOneMinusConstantAlpha:
-                return vk::BlendFactor::eOneMinusConstantAlpha;
-            case engine::BlendCoeff::OglSrc1Color:
-            case engine::BlendCoeff::D3DSrc1Color:
-                return vk::BlendFactor::eSrc1Color;
-            case engine::BlendCoeff::OglInvSrc1Color:
-            case engine::BlendCoeff::D3DInvSrc1Color:
-                return vk::BlendFactor::eOneMinusSrc1Color;
-            case engine::BlendCoeff::OglSrc1Alpha:
-            case engine::BlendCoeff::D3DSrc1Alpha:
-                return vk::BlendFactor::eSrc1Alpha;
-            case engine::BlendCoeff::OglInvSrc1Alpha:
-            case engine::BlendCoeff::D3DInvSrc1Alpha:
-                return vk::BlendFactor::eOneMinusSrc1Alpha;
-            default:
-                throw exception("Invalid blend coefficient type: 0x{:X}", static_cast<u32>(coeff));
-        }
-    }
-
-    static PackedPipelineState::AttachmentBlendState PackAttachmentBlendState(bool enable, engine::CtWrite writeMask, auto blend) {
-        return {
-            .colorWriteMask = ConvertColorWriteMask(writeMask),
-            .colorBlendOp = ConvertBlendOp(blend.colorOp),
-            .srcColorBlendFactor = ConvertBlendFactor(blend.colorSourceCoeff),
-            .dstColorBlendFactor = ConvertBlendFactor(blend.colorDestCoeff),
-            .alphaBlendOp = ConvertBlendOp(blend.alphaOp),
-            .srcAlphaBlendFactor = ConvertBlendFactor(blend.alphaSourceCoeff),
-            .dstAlphaBlendFactor = ConvertBlendFactor(blend.alphaDestCoeff),
-            .blendEnable = enable
-        };
-    }
-
-    void PackedPipelineState::SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::Blend blend) {
-        attachmentBlendStates[index] = PackAttachmentBlendState(enable, writeMask, blend);
-    }
-
-    void PackedPipelineState::SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::BlendPerTarget blend) {
-        attachmentBlendStates[index] = PackAttachmentBlendState(enable, writeMask, blend);
-    }
-
     /* Colour Render Target */
     void ColorRenderTargetState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, colorTarget);
@@ -629,28 +392,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.SetTessellationParameters(engine.tessellationParameters);
     }
 
-    Shader::TessPrimitive ConvertShaderTessPrimitive(engine::TessellationParameters::DomainType domainType) {
-        switch (domainType) {
-            case engine::TessellationParameters::DomainType::Isoline:
-                return Shader::TessPrimitive::Isolines;
-            case engine::TessellationParameters::DomainType::Triangle:
-                return Shader::TessPrimitive::Triangles;
-            case engine::TessellationParameters::DomainType::Quad:
-                return Shader::TessPrimitive::Quads;
-        }
-    }
-
-    Shader::TessSpacing ConvertShaderTessSpacing(engine::TessellationParameters::Spacing spacing) {
-        switch (spacing) {
-            case engine::TessellationParameters::Spacing::Integer:
-                return Shader::TessSpacing::Equal;
-            case engine::TessellationParameters::Spacing::FractionalEven:
-                return Shader::TessSpacing::FractionalEven;
-            case engine::TessellationParameters::Spacing::FractionalOdd:
-                return Shader::TessSpacing::FractionalOdd;
-        }
-    }
-
  //   void TessellationState::SetParameters(engine::TessellationParameters params) {
         // UpdateRuntimeInformation(runtimeInfo.tess_primitive, ConvertShaderTessPrimitive(params.domainType), maxwell3d::PipelineStage::TessellationEvaluation);
         // UpdateRuntimeInformation(runtimeInfo.tess_spacing, ConvertShaderTessSpacing(params.spacing), maxwell3d::PipelineStage::TessellationEvaluation);
@@ -678,14 +419,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    static vk::ProvokingVertexModeEXT ConvertProvokingVertex(engine::ProvokingVertex::Value provokingVertex) {
-        switch (provokingVertex) {
-            case engine::ProvokingVertex::Value::First:
-                return vk::ProvokingVertexModeEXT::eFirstVertex;
-            case engine::ProvokingVertex::Value::Last:
-                return vk::ProvokingVertexModeEXT::eLastVertex;
-        }
-    }
+
 
     void RasterizationState::Flush(PackedPipelineState &packedState) {
         packedState.rasterizerDiscardEnable = !engine->rasterEnable;
@@ -711,15 +445,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     DepthStencilState::DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
-
-    static vk::StencilOpState ConvertStencilOpsState(engine::StencilOps ops) {
-        return {
-            .passOp = ConvertStencilOp(ops.zPass),
-            .depthFailOp = ConvertStencilOp(ops.zFail),
-            .failOp = ConvertStencilOp(ops.fail),
-            .compareOp = ConvertCompareFunc(ops.func),
-        };
-    }
 
     void DepthStencilState::Flush(PackedPipelineState &packedState) {
         packedState.depthTestEnable = engine->depthTestEnable;
