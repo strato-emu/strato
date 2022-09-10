@@ -56,6 +56,32 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(InterconnectContext &ctx, PackedPipelineState &packedState);
     };
 
+    class PipelineStageState : dirty::ManualDirty {
+      public:
+        struct EngineRegisters {
+            const engine::Pipeline &pipeline;
+            const soc::gm20b::engine::Address &programRegion;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
+        engine::Pipeline::Shader::Type shaderType;
+
+        constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
+
+        std::array<u8, MaxShaderBytecodeSize> shaderBacking;
+
+      public:
+        ShaderBinary binary;
+        u64 hash;
+
+        PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u8 shaderType);
+
+        void Flush(InterconnectContext &ctx);
+    };
+
     class VertexInputState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
@@ -223,7 +249,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     class PipelineState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
-            std::array<IndividualShaderState::EngineRegisters, engine::PipelineCount> shadersRegisters;
+            std::array<PipelineStageState::EngineRegisters, engine::PipelineCount> pipelineStageRegisters;
             std::array<ColorRenderTargetState::EngineRegisters, engine::ColorTargetCount> colorRenderTargetsRegisters;
             DepthRenderTargetState::EngineRegisters depthRenderTargetRegisters;
             VertexInputState::EngineRegisters vertexInputRegisters;
@@ -238,11 +264,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
+        PipelineManager pipelineManager{};
+        Pipeline *pipeline{};
+
         PackedPipelineState packedState{};
 
         dirty::BoundSubresource<EngineRegisters> engine;
 
-        std::array<dirty::ManualDirtyState<IndividualShaderState>, engine::PipelineCount> shaders;
+        std::array<dirty::ManualDirtyState<PipelineStageState>, engine::PipelineCount> pipelineStages;
         std::array<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount> colorRenderTargets;
         dirty::ManualDirtyState<DepthRenderTargetState> depthRenderTarget;
         dirty::ManualDirtyState<VertexInputState> vertexInput;

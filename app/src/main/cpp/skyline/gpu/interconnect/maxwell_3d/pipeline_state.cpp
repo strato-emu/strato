@@ -211,6 +211,44 @@ namespace skyline::gpu::interconnect::maxwell3d {
         view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
     }
 
+    /* Pipeline Stages */
+    void PipelineStageState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, pipeline, programRegion);
+    }
+
+    PipelineStageState::PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u8 shaderType)
+        : engine{manager, dirtyHandle, engine},
+          shaderType{static_cast<engine::Pipeline::Shader::Type>(shaderType)} {}
+
+    void PipelineStageState::Flush(InterconnectContext &ctx) {
+        if (engine->pipeline.shader.type != shaderType)
+            throw exception("Shader type mismatch: {} != {}!", engine->pipeline.shader.type, static_cast<u8>(shaderType));
+
+        if (!engine->pipeline.shader.enable && shaderType != engine::Pipeline::Shader::Type::Vertex) {
+            hash = 0;
+            return;
+        }
+
+        binary.binary = ctx.channelCtx.asCtx->gmmu.ReadTill(shaderBacking, engine->programRegion + engine->pipeline.programOffset, [](span<u8> data) -> std::optional<size_t> {
+            // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
+            // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
+            constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
+
+            span<u64> shaderInstructions{data.cast<u64, std::dynamic_extent, true>()};
+            for (auto it{shaderInstructions.begin()}; it != shaderInstructions.end(); it++) {
+                auto instruction{*it};
+                if (instruction == BraSelf1 || instruction == BraSelf2) [[unlikely]]
+                    // It is far more likely that the instruction doesn't match so this is an unlikely case
+                    return static_cast<size_t>(std::distance(shaderInstructions.begin(), it)) * sizeof(u64);
+            }
+            return std::nullopt;
+        });
+
+        binary.baseOffset = engine->pipeline.programOffset;
+
+        hash = XXH64(binary.binary.data(), binary.binary.size_bytes(), 0);
+    }
+
     /* Vertex Input State */
     // TODO: check if better individually
     void VertexInputState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -502,7 +540,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
         : engine{manager, dirtyHandle, engine},
-          shaders{util::MergeInto<dirty::ManualDirtyState<IndividualShaderState>, engine::PipelineCount>(manager, engine.shadersRegisters, util::IncrementingT<u8>{})},
+          pipelineStages{util::MergeInto<dirty::ManualDirtyState<PipelineStageState>, engine::PipelineCount>(manager, engine.pipelineStageRegisters, util::IncrementingT<u8>{})},
           colorRenderTargets{util::MergeInto<dirty::ManualDirtyState<ColorRenderTargetState>, engine::ColorTargetCount>(manager, engine.colorRenderTargetsRegisters, util::IncrementingT<size_t>{})},
           depthRenderTarget{manager, engine.depthRenderTargetRegisters},
           vertexInput{manager, engine.vertexInputRegisters},
@@ -514,6 +552,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
           globalShaderConfig{engine.globalShaderConfigRegisters} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+        std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
+        for (size_t i{}; i < engine::PipelineCount; i++) {
+            const auto &stage{pipelineStages[i].UpdateGet(ctx)};
+            packedState.shaderHashes[i] = stage.hash;
+            shaderBinaries[i] = stage.binary;
+        }
+
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
         for (auto &colorRenderTarget : colorRenderTargets)
             if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view}; view)
