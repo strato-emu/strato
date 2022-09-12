@@ -7,7 +7,6 @@
 #include <gpu/texture/texture.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
-#include "shader_state.h"
 #include "pipeline_manager.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {

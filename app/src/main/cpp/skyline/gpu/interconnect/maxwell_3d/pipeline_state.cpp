@@ -267,89 +267,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         for (u32 i{}; i < engine::VertexAttributeCount; i++)
             packedState.vertexAttributes[i] = engine->vertexAttributes[i];
     }
-
-    static vk::Format ConvertVertexInputAttributeFormat(engine::VertexAttribute::ComponentBitWidths componentBitWidths, engine::VertexAttribute::NumericalType numericalType) {
-        #define FORMAT_CASE(bitWidths, type, vkType, vkFormat, ...) \
-            case engine::VertexAttribute::ComponentBitWidths::bitWidths | engine::VertexAttribute::NumericalType::type: \
-                return vk::Format::vkFormat ## vkType ##__VA_ARGS__
-
-        #define FORMAT_INT_CASE(size, vkFormat, ...) \
-            FORMAT_CASE(size, Uint, Uint, vkFormat, ##__VA_ARGS__); \
-            FORMAT_CASE(size, Sint, Sint, vkFormat, ##__VA_ARGS__);
-
-        #define FORMAT_INT_FLOAT_CASE(size, vkFormat, ...) \
-            FORMAT_INT_CASE(size, vkFormat, ##__VA_ARGS__); \
-            FORMAT_CASE(size, Float, Sfloat, vkFormat, ##__VA_ARGS__);
-
-        #define FORMAT_NORM_INT_SCALED_CASE(size, vkFormat, ...) \
-            FORMAT_INT_CASE(size, vkFormat, ##__VA_ARGS__);               \
-            FORMAT_CASE(size, Unorm, Unorm, vkFormat, ##__VA_ARGS__);     \
-            FORMAT_CASE(size, Snorm, Unorm, vkFormat, ##__VA_ARGS__);     \
-            FORMAT_CASE(size, Uscaled, Uscaled, vkFormat, ##__VA_ARGS__); \
-            FORMAT_CASE(size, Sscaled, Sscaled, vkFormat, ##__VA_ARGS__)
-
-        #define FORMAT_NORM_INT_SCALED_FLOAT_CASE(size, vkFormat) \
-            FORMAT_NORM_INT_SCALED_CASE(size, vkFormat); \
-            FORMAT_CASE(size, Float, Sfloat, vkFormat)
-
-        switch (componentBitWidths | numericalType) {
-            /* 8-bit components */
-            FORMAT_NORM_INT_SCALED_CASE(R8, eR8);
-            FORMAT_NORM_INT_SCALED_CASE(R8_G8, eR8G8);
-            FORMAT_NORM_INT_SCALED_CASE(G8R8, eR8G8);
-            FORMAT_NORM_INT_SCALED_CASE(R8_G8_B8, eR8G8B8);
-            FORMAT_NORM_INT_SCALED_CASE(R8_G8_B8_A8, eR8G8B8A8);
-            FORMAT_NORM_INT_SCALED_CASE(A8B8G8R8, eR8G8B8A8);
-            FORMAT_NORM_INT_SCALED_CASE(X8B8G8R8, eR8G8B8A8);
-
-            /* 16-bit components */
-            FORMAT_NORM_INT_SCALED_FLOAT_CASE(R16, eR16);
-            FORMAT_NORM_INT_SCALED_FLOAT_CASE(R16_G16, eR16G16);
-            FORMAT_NORM_INT_SCALED_FLOAT_CASE(R16_G16_B16, eR16G16B16);
-            FORMAT_NORM_INT_SCALED_FLOAT_CASE(R16_G16_B16_A16, eR16G16B16A16);
-
-            /* 32-bit components */
-            FORMAT_INT_FLOAT_CASE(R32, eR32);
-            FORMAT_INT_FLOAT_CASE(R32_G32, eR32G32);
-            FORMAT_INT_FLOAT_CASE(R32_G32_B32, eR32G32B32);
-            FORMAT_INT_FLOAT_CASE(R32_G32_B32_A32, eR32G32B32A32);
-
-            /* 10-bit RGB, 2-bit A */
-            FORMAT_NORM_INT_SCALED_CASE(A2B10G10R10, eA2B10G10R10, Pack32);
-
-            /* 11-bit G and R, 10-bit B */
-            FORMAT_CASE(B10G11R11, Float, Ufloat, eB10G11R11, Pack32);
-
-            default:
-                Logger::Warn("Unimplemented Maxwell3D Vertex Buffer Format: {} | {}", static_cast<u8>(componentBitWidths), static_cast<u8>(numericalType));
-                return vk::Format::eR8G8B8A8Unorm;
-        }
-
-        #undef FORMAT_CASE
-        #undef FORMAT_INT_CASE
-        #undef FORMAT_INT_FLOAT_CASE
-        #undef FORMAT_NORM_INT_SCALED_CASE
-        #undef FORMAT_NORM_INT_SCALED_FLOAT_CASE
-    }
-
-    static Shader::AttributeType ConvertShaderGenericInputType(engine::VertexAttribute::NumericalType numericalType) {
-        using MaxwellType = engine::VertexAttribute::NumericalType;
-        switch (numericalType) {
-            case MaxwellType::Snorm:
-            case MaxwellType::Unorm:
-            case MaxwellType::Uscaled:
-            case MaxwellType::Sscaled:
-            case MaxwellType::Float:
-                return Shader::AttributeType::Float;
-            case MaxwellType::Sint:
-                return Shader::AttributeType::SignedInt;
-            case MaxwellType::Uint:
-                return Shader::AttributeType::UnsignedInt;
-            default:
-                Logger::Warn("Unimplemented attribute type: {}", static_cast<u8>(numericalType));
-                return Shader::AttributeType::Disabled;
-        }
-    }
     
     /* Input Assembly State */
     void InputAssemblyState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -362,50 +279,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.topology = currentEngineTopology;
         packedState.primitiveRestartEnabled = engine.primitiveRestartEnable & 1;
     }
-    
-    static std::pair<vk::PrimitiveTopology, Shader::InputTopology> ConvertPrimitiveTopology(engine::DrawTopology topology) {
-        switch (topology) {
-            case engine::DrawTopology::Points:
-                return {vk::PrimitiveTopology::ePointList, Shader::InputTopology::Points};
-            case engine::DrawTopology::Lines:
-                return {vk::PrimitiveTopology::eLineList, Shader::InputTopology::Lines};
-            case engine::DrawTopology::LineStrip:
-                return {vk::PrimitiveTopology::eLineStrip, Shader::InputTopology::Lines};
-            case engine::DrawTopology::Triangles:
-                return {vk::PrimitiveTopology::eTriangleList, Shader::InputTopology::Triangles};
-            case engine::DrawTopology::TriangleStrip:
-                return {vk::PrimitiveTopology::eTriangleStrip, Shader::InputTopology::Triangles};
-            case engine::DrawTopology::TriangleFan:
-                return {vk::PrimitiveTopology::eTriangleFan, Shader::InputTopology::Triangles};
-            case engine::DrawTopology::Quads:
-                return {vk::PrimitiveTopology::eTriangleList, Shader::InputTopology::Triangles}; // Will use quad conversion
-            case engine::DrawTopology::LineListAdjcy:
-                return {vk::PrimitiveTopology::eLineListWithAdjacency, Shader::InputTopology::Lines};
-            case engine::DrawTopology::LineStripAdjcy:
-                return {vk::PrimitiveTopology::eLineStripWithAdjacency, Shader::InputTopology::Lines};
-            case engine::DrawTopology::TriangleListAdjcy:
-                return {vk::PrimitiveTopology::eTriangleListWithAdjacency, Shader::InputTopology::Triangles};
-            case engine::DrawTopology::TriangleStripAdjcy:
-                return {vk::PrimitiveTopology::eTriangleStripWithAdjacency, Shader::InputTopology::Triangles};
-            case engine::DrawTopology::Patch:
-                return {vk::PrimitiveTopology::ePatchList, Shader::InputTopology::Triangles};
-            default:
-                Logger::Warn("Unimplemented input assembly topology: {}", static_cast<u8>(topology));
-                return {vk::PrimitiveTopology::eTriangleList, Shader::InputTopology::Triangles};
-        }
-    }
 
     void InputAssemblyState::SetPrimitiveTopology(engine::DrawTopology topology) {
         currentEngineTopology = topology;
-
-        /*
-            if (shaderTopology == ShaderCompiler::InputTopology::Points)
-                UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::make_optional(pointSpriteSize), maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
-            else if (runtimeInfo.input_topology == ShaderCompiler::InputTopology::Points)
-                UpdateRuntimeInformation(runtimeInfo.fixed_state_point_size, std::optional<float>{}, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Geometry);
-
-            UpdateRuntimeInformation(runtimeInfo.input_topology, shaderTopology, maxwell3d::PipelineStage::Geometry);
-         */
     }
 
     engine::DrawTopology InputAssemblyState::GetPrimitiveTopology() const {
@@ -415,7 +291,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     bool InputAssemblyState::NeedsQuadConversion() const {
         return currentEngineTopology == engine::DrawTopology::Quads;
     }
-
 
     /* Tessellation State */
     void TessellationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -428,13 +303,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.patchSize = engine.patchSize;
         packedState.SetTessellationParameters(engine.tessellationParameters);
     }
-
- //   void TessellationState::SetParameters(engine::TessellationParameters params) {
-        // UpdateRuntimeInformation(runtimeInfo.tess_primitive, ConvertShaderTessPrimitive(params.domainType), maxwell3d::PipelineStage::TessellationEvaluation);
-        // UpdateRuntimeInformation(runtimeInfo.tess_spacing, ConvertShaderTessSpacing(params.spacing), maxwell3d::PipelineStage::TessellationEvaluation);
-        // UpdateRuntimeInformation(runtimeInfo.tess_clockwise, params.outputPrimitive == engine::TessellationParameters::OutputPrimitives::TrianglesCW,
-        //                          maxwell3d::PipelineStage::TessellationEvaluation);
- //   }
 
     /* Rasterizer State */
     void RasterizationState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
@@ -463,8 +331,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             Logger::Warn("Non-matching polygon modes!");
 
         packedState.SetCullMode(engine->oglCullEnable, engine->oglCullFace);
-
-        //                UpdateRuntimeInformation(runtimeInfo.y_negate, enabled, maxwell3d::PipelineStage::Vertex, maxwell3d::PipelineStage::Fragment);
 
         packedState.flipYEnable = engine->windowOrigin.flipY;
 
@@ -570,9 +436,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         directState.inputAssembly.Update(packedState);
         tessellation.Update(packedState);
         rasterization.Update(packedState);
-        /* vk::PipelineMultisampleStateCreateInfo multisampleState{
-            .rasterizationSamples = vk::SampleCountFlagBits::e1
-        }; */
         depthStencil.Update(packedState);
         colorBlend.Update(packedState);
         globalShaderConfig.Update(packedState);
