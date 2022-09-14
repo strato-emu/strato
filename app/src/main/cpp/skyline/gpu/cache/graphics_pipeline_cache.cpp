@@ -280,6 +280,8 @@ namespace skyline::gpu::cache {
             KEYNEQ(depthStencilState.maxDepthBounds)
         )
 
+        RETF(ARREQ(dynamicState.pDynamicStates, dynamicState.dynamicStateCount))
+
         RETF(KEYNEQ(colorBlendState.flags) ||
             KEYNEQ(colorBlendState.logicOpEnable) ||
             KEYNEQ(colorBlendState.logicOp) ||
@@ -392,7 +394,7 @@ namespace skyline::gpu::cache {
             .pMultisampleState = &state.multisampleState,
             .pDepthStencilState = &state.depthStencilState,
             .pColorBlendState = &state.colorBlendState,
-            .pDynamicState = nullptr,
+            .pDynamicState = &state.dynamicState,
             .layout = *pipelineLayout,
             .renderPass = *renderPass,
             .subpass = 0,

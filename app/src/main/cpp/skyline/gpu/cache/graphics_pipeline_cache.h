@@ -29,6 +29,7 @@ namespace skyline::gpu::cache {
             const vk::PipelineMultisampleStateCreateInfo &multisampleState;
             const vk::PipelineDepthStencilStateCreateInfo &depthStencilState;
             const vk::PipelineColorBlendStateCreateInfo &colorBlendState;
+            const vk::PipelineDynamicStateCreateInfo &dynamicState;
 
             span<TextureView *> colorAttachments; //!< All color attachments in the subpass of this pipeline
             TextureView *depthStencilAttachment; //!< A nullable pointer to the depth/stencil attachment in the subpass of this pipeline
@@ -87,6 +88,7 @@ namespace skyline::gpu::cache {
             vk::PipelineMultisampleStateCreateInfo multisampleState;
             vk::PipelineDepthStencilStateCreateInfo depthStencilState;
             vk::PipelineColorBlendStateCreateInfo colorBlendState;
+            vk::PipelineDynamicStateCreateInfo dynamicState;
             std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
 
             std::vector<AttachmentMetadata> colorAttachments;
