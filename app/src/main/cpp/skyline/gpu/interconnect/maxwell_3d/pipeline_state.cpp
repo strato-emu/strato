@@ -294,6 +294,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         entry->cache.insert({blockMapping.data() + blockOffset, CacheEntry{binary, hash}});
     }
 
+    // TODO: this needs to be checked every draw irresspective of pipeline dirtiness
+    bool PipelineStageState::Refresh(InterconnectContext &ctx) {
+        std::scoped_lock lock{trapMutex};
+        if (entry && entry->dirty)
+            return true;
+
+        return false;
+    }
+
     PipelineStageState::~PipelineStageState() {
         std::scoped_lock lock{trapMutex};
         //for (const auto &mirror : mirrorMap)
@@ -504,10 +513,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 pipeline = newPipeline;
                 return;
             }
-        }
+       }
 
         auto newPipeline{pipelineManager.FindOrCreate(ctx, packedState, shaderBinaries, colorAttachments, depthAttachment)};
-        pipeline->AddTransition(packedState, newPipeline);
+        if (pipeline)
+            pipeline->AddTransition(newPipeline);
         pipeline = newPipeline;
     }
 

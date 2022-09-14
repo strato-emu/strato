@@ -55,7 +55,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(InterconnectContext &ctx, PackedPipelineState &packedState);
     };
 
-    class PipelineStageState : dirty::ManualDirty {
+    class PipelineStageState : dirty::RefreshableManualDirty {
       public:
         struct EngineRegisters {
             const engine::Pipeline &pipeline;
@@ -100,6 +100,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ~PipelineStageState();
 
         void Flush(InterconnectContext &ctx);
+
+        bool Refresh(InterconnectContext &ctx);
     };
 
     class VertexInputState : dirty::ManualDirty {

@@ -32,12 +32,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
 
+        std::array<Pipeline *, 4> transitionCache{};
+        size_t transitionCacheNextIdx{};
+
       public:
+        PackedPipelineState sourcePackedState;
+
         Pipeline(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment);
 
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 
-        void AddTransition(const PackedPipelineState &packedState, Pipeline *next);
+        void AddTransition(Pipeline *next);
     };
 
     class PipelineManager {

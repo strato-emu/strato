@@ -505,13 +505,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
     Pipeline::Pipeline(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment)
         : shaderStages{MakePipelineShaders(ctx, packedState, shaderBinaries)},
           descriptorSetLayoutBindings{MakePipelineDescriptorSetLayoutBindings(shaderStages)},
-          compiledPipeline{MakeCompiledPipeline(ctx, packedState, shaderStages, descriptorSetLayoutBindings, colorAttachments, depthAttachment)} {
+          compiledPipeline{MakeCompiledPipeline(ctx, packedState, shaderStages, descriptorSetLayoutBindings, colorAttachments, depthAttachment)},
+          sourcePackedState{packedState} {
     }
 
     Pipeline *Pipeline::LookupNext(const PackedPipelineState &packedState) {
+        auto it{std::find_if(transitionCache.begin(), transitionCache.end(), [&packedState](auto pipeline) {
+            if (pipeline && pipeline->sourcePackedState == packedState)
+                return true;
+            else
+                return false;
+        })};
+
+        if (it != transitionCache.end())
+            return *it;
+
         return nullptr;
     }
 
-    void Pipeline::AddTransition(const PackedPipelineState &packedState, Pipeline *next) {}
+    void Pipeline::AddTransition(Pipeline *next) {
+        transitionCache[transitionCacheNextIdx] = next;
+        transitionCacheNextIdx = (transitionCacheNextIdx + 1) % transitionCache.size();
+    }
 }
 
