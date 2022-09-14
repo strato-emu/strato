@@ -222,7 +222,8 @@ namespace skyline::dirty {
                 dirty = false;
                 value.Flush(std::forward<Args>(args)...);
             } else if constexpr (std::is_base_of_v<RefreshableManualDirty, T>) {
-                value.Refresh(std::forward<Args>(args)...);
+                if (value.Refresh(std::forward<Args>(args)...))
+                    value.Flush(std::forward<Args>(args)...);
             }
         }
 
