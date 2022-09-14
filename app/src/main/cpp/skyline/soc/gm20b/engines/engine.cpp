@@ -20,7 +20,7 @@ namespace skyline::soc::gm20b::engine {
         if (!(macroMethodOffset & 1)) {
             // Flush the current macro as we are switching to another one
             if (macroInvocation.Valid()) {
-                macroState.macroInterpreter.Execute(macroState.macroPositions[macroInvocation.index], macroInvocation.arguments, this);
+                macroState.Execute(macroInvocation.index, macroInvocation.arguments, this);
                 macroInvocation.Reset();
             }
 
@@ -32,7 +32,7 @@ namespace skyline::soc::gm20b::engine {
 
         // Flush macro after all of the data in the method call has been sent
         if (lastCall && macroInvocation.Valid()) {
-            macroState.macroInterpreter.Execute(macroState.macroPositions[macroInvocation.index], macroInvocation.arguments, this);
+            macroState.Execute(macroInvocation.index, macroInvocation.arguments, this);
             macroInvocation.Reset();
         }
     };

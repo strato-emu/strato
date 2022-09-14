@@ -392,5 +392,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         void CallMethodFromMacro(u32 method, u32 argument) override;
 
         u32 ReadMethodFromMacro(u32 method) override;
+
+        void DrawInstanced(bool setRegs, u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) override;
+
+        void DrawIndexedInstanced(bool setRegs, u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) override;
     };
 }

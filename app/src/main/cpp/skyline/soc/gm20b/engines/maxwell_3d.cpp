@@ -323,4 +323,29 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     u32 Maxwell3D::ReadMethodFromMacro(u32 method) {
         return registers.raw[method];
     }
+
+    void Maxwell3D::DrawInstanced(bool setRegs, u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
+        auto topology{static_cast<type::DrawTopology>(drawTopology)};
+        if (setRegs) {
+            registers.begin->op = topology;
+            registers.drawVertexArray->count = vertexArrayCount;
+            registers.vertexArrayStart = vertexArrayStart;
+            registers.globalBaseInstanceIndex = globalBaseInstanceIndex;
+        }
+
+        interconnect.Draw(topology, false, vertexArrayCount, vertexArrayStart, instanceCount, 0, globalBaseInstanceIndex);
+    }
+
+    void Maxwell3D::DrawIndexedInstanced(bool setRegs, u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
+        auto topology{static_cast<type::DrawTopology>(drawTopology)};
+        if (setRegs) {
+            registers.begin->op = topology;
+            registers.drawIndexBuffer->count = indexBufferCount;
+            registers.indexBuffer->first = indexBufferFirst;
+            registers.globalBaseVertexIndex = globalBaseVertexIndex;
+            registers.globalBaseInstanceIndex = globalBaseInstanceIndex;
+        }
+
+        interconnect.Draw(topology, true, indexBufferCount, indexBufferFirst, instanceCount, globalBaseVertexIndex, globalBaseInstanceIndex);
+    }
 }

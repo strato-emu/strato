@@ -61,15 +61,15 @@ namespace skyline::soc::gm20b::engine {
         MacroState &macroState;
 
         struct {
-            size_t index{std::numeric_limits<size_t>::max()};
+            u32 index{std::numeric_limits<u32>::max()};
             std::vector<u32> arguments;
 
             bool Valid() {
-                return index != std::numeric_limits<size_t>::max();
+                return index != std::numeric_limits<u32>::max();
             }
 
             void Reset() {
-                index = std::numeric_limits<size_t>::max();
+                index = std::numeric_limits<u32>::max();
                 arguments.clear();
             }
         } macroInvocation{}; //!< Data for a macro that is pending execution
@@ -87,6 +87,14 @@ namespace skyline::soc::gm20b::engine {
          * @brief Reads the current value for the supplied method
          */
         virtual u32 ReadMethodFromMacro(u32 method) = 0;
+
+        virtual void DrawInstanced(bool setRegs, u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
+            throw exception("DrawInstanced is not implemented for this engine");
+        }
+
+        virtual void DrawIndexedInstanced(bool setRegs, u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
+            throw exception("DrawIndexedInstanced is not implemented for this engine");
+        }
 
         /**
          * @brief Handles a call to a method in the MME space

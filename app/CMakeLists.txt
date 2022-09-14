@@ -203,6 +203,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/soc/gm20b/channel.cpp
         ${source_DIR}/skyline/soc/gm20b/gpfifo.cpp
         ${source_DIR}/skyline/soc/gm20b/gmmu.cpp
+        ${source_DIR}/skyline/soc/gm20b/macro/macro_state.cpp
         ${source_DIR}/skyline/soc/gm20b/macro/macro_interpreter.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/engine.cpp
         ${source_DIR}/skyline/soc/gm20b/engines/gpfifo.cpp
