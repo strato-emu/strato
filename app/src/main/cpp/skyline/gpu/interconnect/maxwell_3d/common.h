@@ -8,6 +8,10 @@
 #include <soc/gm20b/engines/maxwell/types.h>
 #include <gpu/buffer.h>
 
+namespace skyline::kernel {
+    class MemoryManager;
+}
+
 namespace skyline::soc::gm20b {
     struct ChannelContext;
 }
@@ -26,6 +30,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         soc::gm20b::ChannelContext &channelCtx;
         CommandExecutor &executor;
         GPU &gpu;
+        nce::NCE &nce;
+        kernel::MemoryManager &memory;
     };
 
     /**

@@ -4,6 +4,8 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <range/v3/algorithm/for_each.hpp>
+#include <nce.h>
+#include <kernel/memory.h>
 #include <soc/gm20b/channel.h>
 #include <soc/gm20b/gmmu.h>
 #include <gpu/texture/format.h>
@@ -228,24 +230,74 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return;
         }
 
-        binary.binary = ctx.channelCtx.asCtx->gmmu.ReadTill(shaderBacking, engine->programRegion + engine->pipeline.programOffset, [](span<u8> data) -> std::optional<size_t> {
+        auto [blockMapping, blockOffset]{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->programRegion + engine->pipeline.programOffset)};
+
+        // Skip looking up the mirror if it is the same as the one used for the previous update
+        if (!mirrorBlock.valid() || !mirrorBlock.contains(blockMapping)) {
+            auto mirrorIt{mirrorMap.find(blockMapping.data())};
+            if (mirrorIt == mirrorMap.end()) {
+                // Allocate a host mirror for the mapping and trap the guest region
+                auto newIt{mirrorMap.emplace(blockMapping.data(), std::make_unique<MirrorEntry>(ctx.memory.CreateMirror(blockMapping)))};
+
+                // We need to create the trap after allocating the entry so that we have an `invalid` pointer we can pass in
+                auto trapHandle{ctx.nce.CreateTrap(blockMapping, [](){}, [](){ return true; }, [dirty = &newIt.first->second->dirty, mutex = &trapMutex](){
+                    std::scoped_lock lock{*mutex}; // Don't use lock callback here since we need trapMutex to be always locked on accesses to prevent UAFs
+                    *dirty = true;
+                    return true;
+                })};
+
+                // Write only trap
+                ctx.nce.TrapRegions(trapHandle, true);
+
+                entry = newIt.first->second.get();
+                entry->trap = trapHandle;
+            } else {
+                entry = mirrorIt->second.get();
+            }
+
+            mirrorBlock = blockMapping;
+        }
+
+        // If the mirror entry has been written to, clear its shader binary cache and retrap to catch any future writes
+        if (entry->dirty) {
+            entry->cache.clear();
+            entry->dirty = false;
+            ctx.nce.TrapRegions(*entry->trap, true);
+        } else if (auto it{entry->cache.find(blockMapping.data() + blockOffset)}; it != entry->cache.end()) {
+            binary = it->second.binary;
+            hash = it->second.hash;
+            return;
+        }
+
+        // If nothing was in the cache then do a full shader parse
+        auto guest{[](span<u8> mapping) {
             // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
             // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
             constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
 
-            span<u64> shaderInstructions{data.cast<u64, std::dynamic_extent, true>()};
+            span<u64> shaderInstructions{mapping.cast<u64, std::dynamic_extent, true>()};
             for (auto it{shaderInstructions.begin()}; it != shaderInstructions.end(); it++) {
                 auto instruction{*it};
                 if (instruction == BraSelf1 || instruction == BraSelf2) [[unlikely]]
                     // It is far more likely that the instruction doesn't match so this is an unlikely case
-                    return static_cast<size_t>(std::distance(shaderInstructions.begin(), it)) * sizeof(u64);
+                    return span{shaderInstructions.begin(), it}.cast<u8>();
             }
-            return std::nullopt;
-        });
+
+            return span<u8>{};
+        }(blockMapping.subspan(blockOffset))};
 
         binary.baseOffset = engine->pipeline.programOffset;
+        hash = XXH64(guest.data(), guest.size_bytes(), 0);
 
-        hash = XXH64(binary.binary.data(), binary.binary.size_bytes(), 0);
+        binary.binary = {guest.data() - mirrorBlock.data() + entry->mirror.data(), guest.size()};
+
+        entry->cache.insert({blockMapping.data() + blockOffset, CacheEntry{binary, hash}});
+    }
+
+    PipelineStageState::~PipelineStageState() {
+        std::scoped_lock lock{trapMutex};
+        //for (const auto &mirror : mirrorMap)
+        //    ctx.nce.DestroyTrap(*mirror.second->trap);
     }
 
     /* Vertex Input State */

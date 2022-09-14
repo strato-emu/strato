@@ -65,18 +65,39 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
+        struct CacheEntry {
+            ShaderBinary binary;
+            u64 hash;
+
+            CacheEntry(ShaderBinary binary, u64 hash) : binary{binary}, hash{hash} {}
+        };
+
+        /**
+         * @brief Holds mirror state for a single GPU mapped block
+         */
+        struct MirrorEntry {
+            span<u8> mirror;
+            tsl::robin_map<u8 *, CacheEntry> cache;
+            std::optional<nce::NCE::TrapHandle> trap;
+            bool dirty{};
+            MirrorEntry(span<u8> alignedMirror) : mirror{alignedMirror} {}
+        };
+
         dirty::BoundSubresource<EngineRegisters> engine;
         engine::Pipeline::Shader::Type shaderType;
 
-        constexpr static size_t MaxShaderBytecodeSize{1 * 1024 * 1024}; //!< The largest shader binary that we support (1 MiB)
-
-        std::array<u8, MaxShaderBytecodeSize> shaderBacking;
+        tsl::robin_map<u8 *, std::unique_ptr<MirrorEntry>> mirrorMap;
+        std::mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
+        MirrorEntry *entry{};
+        span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
 
       public:
         ShaderBinary binary;
         u64 hash;
 
         PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u8 shaderType);
+
+        ~PipelineStageState();
 
         void Flush(InterconnectContext &ctx);
     };
