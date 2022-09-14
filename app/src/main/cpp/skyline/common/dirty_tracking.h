@@ -199,7 +199,7 @@ namespace skyline::dirty {
     class ManualDirtyState {
       private:
         T value; //!< The underlying object
-        bool dirty{}; //!< Whether the value is dirty
+        bool dirty{true}; //!< Whether the value is dirty
 
         /**
          * @return An opaque handle that can be used to modify dirty state
