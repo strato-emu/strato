@@ -19,10 +19,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<u64, engine::PipelineCount> shaderHashes;
 
         struct StencilOps {
-            vk::StencilOp zPass : 3;
-            vk::StencilOp fail : 3;
-            vk::StencilOp zFail : 3;
-            vk::CompareOp func : 3;
+            u8 zPass : 3;
+            u8 fail : 3;
+            u8 zFail : 3;
+            u8 func : 3;
             // 4 bits left for each stencil side
         };
 
@@ -37,7 +37,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             engine::TessellationParameters::Spacing spacing : 2; //!< Use SetTessellationParameters
             engine::TessellationParameters::OutputPrimitives outputPrimitives : 2; //!< Use SetTessellationParameters
             bool rasterizerDiscardEnable : 1;
-            vk::PolygonMode polygonMode : 2; //!< Use SetPolygonMode
+            u8 polygonMode : 2; //!< Use {Set,Get}PolygonMode
             VkCullModeFlags cullMode : 2; //!< Use SetCullMode
             bool flipYEnable : 1;
             bool frontFaceClockwise : 1; //!< With Y flip transformation already applied
@@ -45,11 +45,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             engine::ProvokingVertex::Value provokingVertex : 1;
             bool depthTestEnable : 1;
             bool depthWriteEnable : 1;
-            vk::CompareOp depthFunc : 3; //!< Use SetDepthFunc
+            u8 depthFunc : 3; //!< Use {Set,Get}DepthFunc
             bool depthBoundsTestEnable : 1;
             bool stencilTestEnable : 1;
             bool logicOpEnable : 1;
-            vk::LogicOp logicOp : 4; //!< Use SetLogicOp
+            u8 logicOp : 4; //!< Use {Set,Get}LogicOp
             u8 bindlessTextureConstantBufferSlotSelect : 5;
             bool apiMandatedEarlyZ : 1;
             bool openGlNdc : 1;
@@ -63,22 +63,26 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         struct VertexBinding {
             u16 stride : 12;
-            vk::VertexInputRate inputRate : 1;
+            u8 inputRate : 1;
             bool enable : 1;
             u8 _pad_ : 2;
             u32 divisor;
+
+            vk::VertexInputRate GetInputRate() const {
+                return static_cast<vk::VertexInputRate>(inputRate);
+            }
         };
 
         std::array<VertexBinding, engine::VertexStreamCount> vertexBindings; //!< Use {Set, Get}VertexBinding
 
         struct AttachmentBlendState {
             VkColorComponentFlags colorWriteMask : 4;
-            vk::BlendOp colorBlendOp : 3;
-            vk::BlendFactor srcColorBlendFactor : 5;
-            vk::BlendFactor dstColorBlendFactor : 5;
-            vk::BlendOp alphaBlendOp : 3;
-            vk::BlendFactor srcAlphaBlendFactor : 5;
-            vk::BlendFactor dstAlphaBlendFactor : 5;
+            u8 colorBlendOp : 3;
+            u8 srcColorBlendFactor : 5;
+            u8 dstColorBlendFactor : 5;
+            u8 alphaBlendOp : 3;
+            u8 srcAlphaBlendFactor : 5;
+            u8 dstAlphaBlendFactor : 5;
             bool blendEnable : 1;
         };
 
@@ -94,13 +98,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void SetPolygonMode(engine::PolygonMode mode);
 
+        vk::PolygonMode GetPolygonMode() const;
+
         void SetCullMode(bool enable, engine::CullFace mode);
 
         void SetDepthFunc(engine::CompareFunc func);
 
+        vk::CompareOp GetDepthFunc() const;
+
         void SetStencilOps(engine::StencilOps front, engine::StencilOps back);
 
         void SetLogicOp(engine::LogicOp::Func op);
+
+        vk::LogicOp GetLogicOp() const;
 
         void SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::Blend blend);
 

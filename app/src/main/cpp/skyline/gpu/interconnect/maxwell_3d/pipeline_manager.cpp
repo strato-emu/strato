@@ -374,7 +374,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 .inputRate = binding.divisor ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex,
             });
 
-            if (binding.inputRate == vk::VertexInputRate::eInstance) {
+            if (binding.GetInputRate() == vk::VertexInputRate::eInstance) {
                 if (!ctx.gpu.traits.supportsVertexAttributeDivisor) [[unlikely]]
                         Logger::Warn("Vertex attribute divisor used on guest without host support");
                 else if (!ctx.gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0) [[unlikely]]
@@ -427,7 +427,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto &rasterizationCreateInfo{rasterizationState.get<vk::PipelineRasterizationStateCreateInfo>()};
         rasterizationCreateInfo.rasterizerDiscardEnable = packedState.rasterizerDiscardEnable;
-        rasterizationCreateInfo.polygonMode = packedState.polygonMode;
+        rasterizationCreateInfo.polygonMode = packedState.GetPolygonMode();
         rasterizationCreateInfo.cullMode = vk::CullModeFlags{packedState.cullMode};
         rasterizationCreateInfo.frontFace = packedState.frontFaceClockwise ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
         rasterizationCreateInfo.depthBiasEnable = packedState.depthBiasEnable;
@@ -440,7 +440,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         vk::PipelineDepthStencilStateCreateInfo depthStencilState{
             .depthTestEnable = packedState.depthTestEnable,
             .depthWriteEnable = packedState.depthWriteEnable,
-            .depthCompareOp = packedState.depthFunc,
+            .depthCompareOp = packedState.GetDepthFunc(),
             .depthBoundsTestEnable = packedState.depthBoundsTestEnable,
             .stencilTestEnable = packedState.stencilTestEnable
         };
@@ -453,7 +453,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         vk::PipelineColorBlendStateCreateInfo colorBlendState{
             .logicOpEnable = packedState.logicOpEnable,
-            .logicOp = packedState.logicOp,
+            .logicOp = packedState.GetLogicOp(),
             .attachmentCount = static_cast<u32>(attachmentBlendStates.size()),
             .pAttachments = attachmentBlendStates.data()
         };
