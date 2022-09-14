@@ -8,6 +8,7 @@
 #include <shader_compiler/common/log.h>
 #include <shader_compiler/frontend/maxwell/translate_program.h>
 #include <shader_compiler/backend/spirv/emit_spirv.h>
+#include <vulkan/vulkan_raii.hpp>
 #include "shader_manager.h"
 
 namespace Shader::Log {
@@ -214,7 +215,7 @@ namespace skyline::gpu {
             .codeSize = spirv.size() * sizeof(u32),
         };
 
-        return (*gpu.vkDevice).createShaderModule(createInfo);
+        return (*gpu.vkDevice).createShaderModule(createInfo, nullptr, *gpu.vkDevice.getDispatcher());
     }
 
     void ShaderManager::ResetPools() {
