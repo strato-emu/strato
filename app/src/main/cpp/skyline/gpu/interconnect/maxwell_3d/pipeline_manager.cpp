@@ -475,16 +475,28 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .pDynamicStates = dynamicStates.data()
         };
 
+        // Dynamic state will be used instead of these
+        std::array<vk::Rect2D, engine::ViewportCount> emptyScissors{};
+        std::array<vk::Viewport, engine::ViewportCount> emptyViewports{};
+
+        vk::PipelineViewportStateCreateInfo viewportState{
+            .viewportCount = static_cast<u32>(ctx.gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
+            .pViewports = emptyViewports.data(),
+            .scissorCount = static_cast<u32>(ctx.gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
+            .pScissors = emptyScissors.data(),
+        };
+
         return ctx.gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
             .shaderStages = shaderStageInfos,
             .vertexState = vertexInputState,
             .inputAssemblyState = inputAssemblyState,
             .tessellationState = tessellationState,
-            .viewportState = {},
+            .viewportState = viewportState,
             .rasterizationState = rasterizationState,
             .multisampleState = multisampleState,
             .depthStencilState = depthStencilState,
             .colorBlendState = colorBlendState,
+            .dynamicState = dynamicState,
             .colorAttachments = colorAttachments,
             .depthStencilAttachment = depthAttachment,
         }, layoutBindings);

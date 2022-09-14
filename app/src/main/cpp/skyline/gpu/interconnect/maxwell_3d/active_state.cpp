@@ -196,6 +196,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     ViewportState::ViewportState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
 
     void ViewportState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+        if (index != 0 && !ctx.gpu.traits.supportsMultipleViewports)
+            return;
+
         if (!engine->viewportScaleOffsetEnable)
             // https://github.com/Ryujinx/Ryujinx/pull/3328
             Logger::Warn("Viewport scale/offset disable is unimplemented");
