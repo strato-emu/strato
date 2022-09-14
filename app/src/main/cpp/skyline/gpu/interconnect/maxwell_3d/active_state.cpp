@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void VertexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         size_t size{engine->vertexStreamLimit - engine->vertexStream.location + 1};
 
-        if (engine->vertexStream.format.enable && size) {
+        if (engine->vertexStream.format.enable && engine->vertexStream.location != 0) {
             view.Update(ctx, engine->vertexStream.location, size);
             ctx.executor.AttachBuffer(*view);
 
