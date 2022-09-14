@@ -671,8 +671,8 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHost(bool gpuDirty) {
-        if (!guest || format != guest->format)
-            return; // We need to skip GPU dirty if the host format and guest format differ as we don't support re-encoding compressed textures which is when this generally occurs
+        if (!guest)
+            return;
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
         {
@@ -708,8 +708,8 @@ namespace skyline::gpu {
     }
 
     void Texture::SynchronizeHostInline(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool gpuDirty) {
-        if (!guest || format != guest->format)
-            return; // See SynchronizeHost(...)
+        if (!guest)
+            return;
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHostInline");
 
