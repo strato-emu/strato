@@ -399,9 +399,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void PipelineState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         auto bindFunc{[&](auto &regs) { regs.DirtyBind(manager, handle); }};
 
+        ranges::for_each(pipelineStageRegisters, bindFunc);
         ranges::for_each(colorRenderTargetsRegisters, bindFunc);
         bindFunc(depthRenderTargetRegisters);
         bindFunc(vertexInputRegisters);
+        bindFunc(inputAssemblyRegisters);
+        bindFunc(tessellationRegisters);
+        bindFunc(rasterizationRegisters);
+        bindFunc(depthStencilRegisters);
+        bindFunc(colorBlendRegisters);
+        bindFunc(globalShaderConfigRegisters);
     }
 
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
