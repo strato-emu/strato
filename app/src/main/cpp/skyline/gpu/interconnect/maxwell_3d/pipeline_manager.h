@@ -8,6 +8,7 @@
 #include <gpu/cache/graphics_pipeline_cache.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
+#include "constant_buffers.h"
 
 namespace skyline::gpu {
     class TextureView;
@@ -42,6 +43,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
+        std::vector<CachedMappedBufferView> storageBufferViews;
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
         DescriptorInfo descriptorInfo;
@@ -57,6 +59,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 
         void AddTransition(Pipeline *next);
+
+        void SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
     };
 
     class PipelineManager {

@@ -40,6 +40,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     };
 
+    using ConstantBufferSet = std::array<std::array<ConstantBuffer, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount>;
+
     /**
      * @brief Holds the state of all bound constant buffers and the selector, abstracting out operations on them
      */
@@ -48,7 +50,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<ConstantBufferSelectorState> selectorState;
 
       public:
-        std::array<std::array<ConstantBuffer, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount> boundConstantBuffers;
+        ConstantBufferSet boundConstantBuffers;
 
         ConstantBuffers(DirtyManager &manager, const ConstantBufferSelectorState::EngineRegisters &constantBufferSelectorRegisters);
 

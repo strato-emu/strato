@@ -78,6 +78,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         BufferBinding(vk::Buffer buffer, vk::DeviceSize offset = 0, vk::DeviceSize size = 0) : buffer{buffer}, offset{offset}, size{size} {}
     };
 
+    using DynamicBufferBinding = std::variant<BufferBinding, BufferView>;
     using DirtyManager = dirty::Manager<soc::gm20b::engine::EngineMethodsEnd * sizeof(u32), sizeof(u32)>;
 
     /**

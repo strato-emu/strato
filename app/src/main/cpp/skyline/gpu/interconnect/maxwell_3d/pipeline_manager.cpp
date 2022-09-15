@@ -4,6 +4,7 @@
 #include <gpu/texture/texture.h>
 #include <gpu/shader_manager.h>
 #include <gpu.h>
+#include <gpu/interconnect/command_executor.h>
 #include <vulkan/vulkan_handles.hpp>
 #include "gpu/cache/graphics_pipeline_cache.h"
 #include "pipeline_manager.h"
@@ -536,6 +537,68 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void Pipeline::AddTransition(Pipeline *next) {
         transitionCache[transitionCacheNextIdx] = next;
         transitionCacheNextIdx = (transitionCacheNextIdx + 1) % transitionCache.size();
+    }
+
+    // TODO: EXEC ID FOR STORAGE BUFS PURGE REMAP
+    void Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers) {
+        u32 bindingIdx{};
+        u32 writeIdx{};
+        u32 bufferIdx{};
+        u32 imageIdx{};
+
+        auto writes{ctx.executor.allocator.AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.writeDescCount)};
+        auto bufferDescs{ctx.executor.allocator.AllocateUntracked<vk::DescriptorBufferInfo>(descriptorInfo.totalBufferDescCount)};
+        auto bufferDescViews{ctx.executor.allocator.AllocateUntracked<DynamicBufferBinding>(descriptorInfo.totalBufferDescCount)};
+
+        auto writeBufferDescs{[&](vk::DescriptorType type, const auto &descs, u32 count, auto getBufferCb) {
+            if (!descs.empty()) {
+                writes[writeIdx++] = {
+                    .dstBinding = bindingIdx,
+                    .descriptorCount = count,
+                    .descriptorType = type,
+                    .pBufferInfo = &bufferDescs[bufferIdx],
+                };
+
+                for (size_t descIdx{}; descIdx < descs.size(); descIdx++) {
+                    const auto &shaderDesc{descs[descIdx]};
+                    for (size_t arrayIdx{}; arrayIdx < shaderDesc.count; arrayIdx++)
+                        bufferDescViews[bufferIdx++] = getBufferCb(shaderDesc, descIdx, arrayIdx);
+                }
+            }
+        }};
+
+        for (size_t i{}; i < shaderStages.size(); i++) {
+            const auto &stage{shaderStages[i]};
+            writeBufferDescs(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount,
+                             [&](const Shader::ConstantBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) -> DynamicBufferBinding {
+                auto view{constantBuffers[i][desc.index + arrayIdx].view};
+                if (auto megaBufferAlloc{view.AcquireMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator())}) {
+                    return BufferBinding(megaBufferAlloc.buffer, megaBufferAlloc.offset, view.size);
+                } else {
+                    ctx.executor.AttachBuffer(view);
+                    return view;
+                }
+            });
+
+            writeBufferDescs(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount, [&](const Shader::StorageBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
+                struct SsboDescriptor {
+                    u64 address;
+                    u32 size;
+                };
+
+                auto &cbuf{constantBuffers[i][desc.cbuf_index]};
+                auto ssbo{cbuf.Read<SsboDescriptor>(ctx.executor, desc.cbuf_offset)};
+                storageBufferViews[descIdx].Update(ctx, ssbo.address, ssbo.size);
+
+                auto view{storageBufferViews[descIdx].view};
+                ctx.executor.AttachBuffer(view);
+
+                if (desc.is_written)
+                    view.GetBuffer()->MarkGpuDirty();
+
+                return view;
+            });
+        }
     }
 }
 
