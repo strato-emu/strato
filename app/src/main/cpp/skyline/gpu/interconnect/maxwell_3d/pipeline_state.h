@@ -290,7 +290,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         PipelineManager pipelineManager{};
-        Pipeline *pipeline{};
 
         PackedPipelineState packedState{};
 
@@ -308,6 +307,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         DirectPipelineState directState;
+        Pipeline *pipeline{};
 
         PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 

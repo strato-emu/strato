@@ -376,6 +376,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         updateFunc(stencilValues);
     }
 
+    Pipeline *ActiveState::GetPipeline() {
+        return pipeline.Get().pipeline;
+    }
+
     std::shared_ptr<TextureView> ActiveState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
         return pipeline.Get().GetColorRenderTargetForClear(ctx, index);
     }

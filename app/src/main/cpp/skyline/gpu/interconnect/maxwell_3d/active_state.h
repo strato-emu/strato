@@ -256,6 +256,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
          */
         void Update(InterconnectContext &ctx, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount);
 
+        Pipeline *GetPipeline();
+
         std::shared_ptr<TextureView> GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index);
 
         std::shared_ptr<TextureView> GetDepthRenderTargetForClear(InterconnectContext &ctx);
