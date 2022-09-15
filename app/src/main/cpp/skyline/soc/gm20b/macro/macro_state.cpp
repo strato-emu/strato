@@ -65,8 +65,10 @@ namespace skyline::soc::gm20b {
     void MacroState::Execute(u32 position, span<u32> args, engine::MacroEngineBase *targetEngine) {
         size_t offset{macroPositions[position]};
 
-        if (invalidatePending)
+        if (invalidatePending) {
             macroHleFunctions.fill({});
+            invalidatePending = false;
+        }
 
         auto &hleEntry{macroHleFunctions[position]};
 

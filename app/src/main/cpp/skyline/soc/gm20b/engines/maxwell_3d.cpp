@@ -161,6 +161,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     throw exception("Macro memory is full!");
 
                 macroState.macroCode[registers.mme->instructionRamPointer++] = instructionRamLoad;
+                macroState.Invalidate();
 
                 // Wraparound writes
                 // This works on HW but will also generate an error interrupt
@@ -172,6 +173,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     throw exception("Maximum amount of macros reached!");
 
                 macroState.macroPositions[registers.mme->startAddressRamPointer++] = startAddressRamLoad;
+                macroState.Invalidate();
             })
 
             ENGINE_STRUCT_CASE(i2m, launchDma, {
