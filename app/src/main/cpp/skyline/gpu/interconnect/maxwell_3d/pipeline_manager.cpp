@@ -216,14 +216,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return shaderStages;
     }
 
-    static std::vector<vk::DescriptorSetLayoutBinding> MakePipelineDescriptorSetLayoutBindings(const std::array<Pipeline::ShaderStage, engine::ShaderStageCount> &shaderStages) {
-        std::vector<vk::DescriptorSetLayoutBinding> layoutBindings;
+    static Pipeline::DescriptorInfo MakePipelineDescriptorInfo(const std::array<Pipeline::ShaderStage, engine::ShaderStageCount> &shaderStages, bool needsIndividualTextureBindingWrites) {
+        Pipeline::DescriptorInfo descriptorInfo{};
         u32 bindingIndex{};
 
         for (const auto &stage : shaderStages) {
-            auto pushBindings{[&](vk::DescriptorType type, const auto &descs) {
+            auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count, bool individualDescWrites = false) {
+                descriptorInfo.writeDescCount += individualDescWrites ? descs.size() : ((descs.size() > 0) ? 1 : 0);
+
                 for (const auto &desc : descs) {
-                    layoutBindings.push_back(vk::DescriptorSetLayoutBinding{
+                    count += desc.count;
+
+                    descriptorInfo.descriptorSetLayoutBindings.push_back(vk::DescriptorSetLayoutBinding{
                         .binding = bindingIndex++,
                         .descriptorType = type,
                         .descriptorCount = desc.count,
@@ -232,15 +236,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 }
             }};
 
-            pushBindings(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors);
-            pushBindings(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors);
-            pushBindings(vk::DescriptorType::eUniformTexelBuffer, stage.info.texture_buffer_descriptors);
-            pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors);
-            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors);
-            pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors);
+            pushBindings(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount);
+            pushBindings(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount);
+            descriptorInfo.totalBufferDescCount += descriptorInfo.uniformBufferDescCount + descriptorInfo.storageBufferDescCount;
+
+            pushBindings(vk::DescriptorType::eUniformTexelBuffer, stage.info.texture_buffer_descriptors, descriptorInfo.uniformTexelBufferDescCount);
+            pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors, descriptorInfo.storageTexelBufferDescCount);
+            descriptorInfo.totalTexelBufferDescCount += descriptorInfo.uniformTexelBufferDescCount + descriptorInfo.storageTexelBufferDescCount;
+
+            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, descriptorInfo.combinedImageSamplerDescCount, needsIndividualTextureBindingWrites);
+            pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors, descriptorInfo.storageImageDescCount);
+            descriptorInfo.totalImageDescCount += descriptorInfo.combinedImageSamplerDescCount + descriptorInfo.storageImageDescCount;
         }
 
-        return layoutBindings;
+        return descriptorInfo;
     }
 
     static vk::Format ConvertVertexInputAttributeFormat(engine::VertexAttribute::ComponentBitWidths componentBitWidths, engine::VertexAttribute::NumericalType numericalType) {
@@ -504,9 +513,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     Pipeline::Pipeline(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment)
         : shaderStages{MakePipelineShaders(ctx, packedState, shaderBinaries)},
-          descriptorSetLayoutBindings{MakePipelineDescriptorSetLayoutBindings(shaderStages)},
-          compiledPipeline{MakeCompiledPipeline(ctx, packedState, shaderStages, descriptorSetLayoutBindings, colorAttachments, depthAttachment)},
+          descriptorInfo{MakePipelineDescriptorInfo(shaderStages, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites)},
+          compiledPipeline{MakeCompiledPipeline(ctx, packedState, shaderStages, descriptorInfo.descriptorSetLayoutBindings, colorAttachments, depthAttachment)},
           sourcePackedState{packedState} {
+        storageBufferViews.resize(descriptorInfo.storageBufferDescCount);
     }
 
     Pipeline *Pipeline::LookupNext(const PackedPipelineState &packedState) {

@@ -27,10 +27,24 @@ namespace skyline::gpu::interconnect::maxwell3d {
             Shader::Info info;
         };
 
+        struct DescriptorInfo {
+            std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+            u32 writeDescCount{};
+            u32 uniformBufferDescCount{};
+            u32 storageBufferDescCount{};
+            u32 totalBufferDescCount{};
+            u32 uniformTexelBufferDescCount{};
+            u32 storageTexelBufferDescCount{};
+            u32 totalTexelBufferDescCount{};
+            u32 combinedImageSamplerDescCount{};
+            u32 storageImageDescCount{};
+            u32 totalImageDescCount{};
+        };
+
       private:
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
-        std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
+        DescriptorInfo descriptorInfo;
 
         std::array<Pipeline *, 4> transitionCache{};
         size_t transitionCacheNextIdx{};
