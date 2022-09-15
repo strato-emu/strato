@@ -58,8 +58,8 @@ namespace skyline {
         }
 
         template<typename T>
-        T *AllocateUntracked() {
-            return reinterpret_cast<T *>(Allocate(sizeof(T), false));
+        T *AllocateUntracked(size_t count = 1) {
+            return reinterpret_cast<T *>(Allocate(sizeof(T) * count, false));
         }
 
         template<typename T, class... Args>
