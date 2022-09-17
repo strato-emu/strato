@@ -165,5 +165,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
 
         activeState.Update(ctx, builder, indexed, topology, count);
+        activeState.GetPipeline()->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
     }
 }
