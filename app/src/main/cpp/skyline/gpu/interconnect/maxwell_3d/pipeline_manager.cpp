@@ -571,11 +571,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const auto &stage{shaderStages[i]};
             writeBufferDescs(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount,
                              [&](const Shader::ConstantBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) -> DynamicBufferBinding {
-                auto view{constantBuffers[i][desc.index + arrayIdx].view};
-                if (auto megaBufferAlloc{view.AcquireMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator())}) {
-                    return BufferBinding(megaBufferAlloc.buffer, megaBufferAlloc.offset, view.size);
+                size_t cbufIdx{desc.index + arrayIdx};
+                auto view{constantBuffers[i][cbufIdx].view};
+
+                ctx.executor.AttachBuffer(view);
+
+                size_t sizeOverride{std::min<size_t>(stage.info.constant_buffer_used_sizes[cbufIdx], view.size)};
+                if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber, sizeOverride)}) {
+                    return megaBufferBinding;
                 } else {
-                    ctx.executor.AttachBuffer(view);
+                    view.GetBuffer()->BlockSequencedCpuBackingWrites();
                     return view;
                 }
             });

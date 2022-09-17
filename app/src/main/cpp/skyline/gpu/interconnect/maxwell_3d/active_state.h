@@ -21,7 +21,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::BoundSubresource<EngineRegisters> engine;
 
         CachedMappedBufferView view{};
-        BufferBinding *megaBufferBinding{};
+        BufferBinding megaBufferBinding{};
         u32 index{};
 
       public:
@@ -45,7 +45,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
       private:
         dirty::BoundSubresource<EngineRegisters> engine;
         CachedMappedBufferView view{};
-        BufferBinding *megaBufferBinding{};
+        BufferBinding megaBufferBinding{};
         vk::IndexType indexType{};
         u32 usedElementCount{};
         bool usedQuadConversion{};

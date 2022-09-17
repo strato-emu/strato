@@ -65,18 +65,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     };
 
-    /**
-     * @brief Represents a bound Vulkan buffer that can be used for state updates
-     */
-    struct BufferBinding {
-        vk::Buffer buffer{};
-        vk::DeviceSize offset{};
-        vk::DeviceSize size{};
-
-        BufferBinding() = default;
-
-        BufferBinding(vk::Buffer buffer, vk::DeviceSize offset = 0, vk::DeviceSize size = 0) : buffer{buffer}, offset{offset}, size{size} {}
-    };
 
     using DynamicBufferBinding = std::variant<BufferBinding, BufferView>;
     using DirtyManager = dirty::Manager<soc::gm20b::engine::EngineMethodsEnd * sizeof(u32), sizeof(u32)>;

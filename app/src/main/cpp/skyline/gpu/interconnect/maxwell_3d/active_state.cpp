@@ -13,15 +13,6 @@
 #include "active_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
-    /* General Buffer Helpers */
-    static BufferBinding *AllocateMegaBufferBinding(InterconnectContext &ctx, BufferView &view) {
-        auto megaBufferAllocation{view.AcquireMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator())};
-        if (megaBufferAllocation)
-            return ctx.executor.allocator.EmplaceUntracked<BufferBinding>(megaBufferAllocation.buffer, megaBufferAllocation.offset, view.size);
-        else
-            return nullptr;
-    }
-
     /* Vertex Buffer */
     void VertexBufferState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, vertexStream.format, vertexStream.location);
@@ -36,23 +27,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
             view.Update(ctx, engine->vertexStream.location, size);
             ctx.executor.AttachBuffer(*view);
 
-            if (megaBufferBinding = AllocateMegaBufferBinding(ctx, *view); megaBufferBinding)
+            if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
+                  megaBufferBinding)
                 builder.SetVertexBuffer(index, megaBufferBinding);
             else
                 builder.SetVertexBuffer(index, *view);
         } else {
-            auto nullBinding{ctx.executor.allocator.EmplaceUntracked<BufferBinding>()};
-            megaBufferBinding = {};
-            builder.SetVertexBuffer(index, nullBinding);
+            // TODO: null descriptor
         }
     }
 
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         if (megaBufferBinding) {
-            if (megaBufferBinding = AllocateMegaBufferBinding(ctx, *view); megaBufferBinding)
-                builder.SetVertexBuffer(index, megaBufferBinding);
-            else
-                builder.SetVertexBuffer(index, *view);
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
+                  newMegaBufferBinding != megaBufferBinding) {
+
+                megaBufferBinding = newMegaBufferBinding;
+                if (megaBufferBinding)
+                    builder.SetVertexBuffer(index, megaBufferBinding);
+                else
+                    builder.SetVertexBuffer(index, *view);
+            }
         }
         return false;
     }
@@ -89,7 +84,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    static BufferBinding *GenerateQuadConversionIndexBuffer(InterconnectContext &ctx, vk::IndexType indexType, BufferView &view, u32 elementCount) {
+    static BufferBinding GenerateQuadConversionIndexBuffer(InterconnectContext &ctx, vk::IndexType indexType, BufferView &view, u32 elementCount) {
         auto viewSpan{view.GetReadOnlyBackingSpan(false /* We attach above so always false */, []() {
             // TODO: see Read()
             Logger::Error("Dirty index buffer reads for attached buffers are unimplemented");
@@ -100,7 +95,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         conversion::quads::GenerateIndexedQuadConversionBuffer(quadConversionAllocation.region.data(), viewSpan.data(), elementCount, indexType);
 
-        return ctx.executor.allocator.EmplaceUntracked<BufferBinding>(quadConversionAllocation.buffer, quadConversionAllocation.offset, indexBufferSize);
+        return {quadConversionAllocation.buffer, quadConversionAllocation.offset, indexBufferSize};
     }
 
     /* Index Buffer */
@@ -123,7 +118,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (quadConversion)
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, indexType, *view, elementCount);
         else
-            megaBufferBinding = AllocateMegaBufferBinding(ctx, *view);
+            megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
 
         if (megaBufferBinding)
             builder.SetIndexBuffer(megaBufferBinding, indexType);
@@ -143,10 +138,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, indexType, *view, elementCount);
             builder.SetIndexBuffer(megaBufferBinding, indexType);
         } else if (megaBufferBinding) {
-            if (megaBufferBinding = AllocateMegaBufferBinding(ctx, *view); megaBufferBinding)
-                builder.SetIndexBuffer(megaBufferBinding, indexType);
-            else
-                builder.SetIndexBuffer(*view, indexType);
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
+                newMegaBufferBinding != megaBufferBinding) {
+
+                megaBufferBinding = newMegaBufferBinding;
+                if (megaBufferBinding)
+                    builder.SetIndexBuffer(megaBufferBinding, indexType);
+                else
+                    builder.SetIndexBuffer(*view, indexType);
+            }
         }
 
         return false;
@@ -174,9 +174,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 builder.SetTransformFeedbackBuffer(index, *view);
             } else {
                 // Bind an empty buffer ourselves since Vulkan doesn't support passing a VK_NULL_HANDLE xfb buffer
-                 auto binding{ctx.executor.allocator.EmplaceUntracked<BufferBinding>(
-                     ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer)};
-                builder.SetTransformFeedbackBuffer(index, binding);
+                builder.SetTransformFeedbackBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
             }
         }
     }
