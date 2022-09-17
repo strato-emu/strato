@@ -209,7 +209,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 continue;
 
             auto runtimeInfo{MakeRuntimeInfo(packedState, programs[i], lastProgram, hasGeometry)};
-            shaderStages[i] = {ConvertVkShaderStage(pipelineStage(i)), ctx.gpu.shader.CompileShader(runtimeInfo, programs[i], bindings), programs[i].info};
+            shaderStages[i - (i >= 1 ? 1 : 0)] = {ConvertVkShaderStage(pipelineStage(i)), ctx.gpu.shader.CompileShader(runtimeInfo, programs[i], bindings), programs[i].info};
 
             lastProgram = &programs[i];
         }
