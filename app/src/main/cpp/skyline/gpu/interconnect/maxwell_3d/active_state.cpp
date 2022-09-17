@@ -239,6 +239,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     ScissorState::ScissorState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
 
     void ScissorState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+        if (index != 0 && !ctx.gpu.traits.supportsMultipleViewports)
+            return;
+
         builder.SetScissor(index, [&]() {
             if (engine->scissor.enable) {
                 const auto &vertical{engine->scissor.vertical};
