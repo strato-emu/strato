@@ -495,7 +495,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
         for (auto &colorRenderTarget : colorRenderTargets)
-            if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view}; view)
+            if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view})
                 colorAttachments.push_back(view.get());
 
         TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, packedState).view.get()};
@@ -509,7 +509,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         globalShaderConfig.Update(packedState);
 
         if (pipeline) {
-            if (auto newPipeline{pipeline->LookupNext(packedState)}; newPipeline) {
+            if (auto newPipeline{pipeline->LookupNext(packedState)}) {
                 pipeline = newPipeline;
                 return;
             }
