@@ -286,7 +286,8 @@ namespace skyline::gpu::interconnect {
             commandBuffer.end();
 
             for (const auto &attachedBuffer : attachedBuffers)
-                attachedBuffer->SynchronizeHost(); // Synchronize attached buffers from the CPU without using a staging buffer, this is done directly prior to submission to prevent stalls
+                if (attachedBuffer->SequencedCpuBackingWritesBlocked())
+                    attachedBuffer->SynchronizeHost(); // Synchronize attached buffers from the CPU without using a staging buffer, this is done directly prior to submission to prevent stalls
 
             gpu.scheduler.SubmitCommandBuffer(commandBuffer, cycle);
 

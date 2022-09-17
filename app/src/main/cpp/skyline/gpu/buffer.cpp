@@ -279,7 +279,7 @@ namespace skyline::gpu {
             // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
-        if (!everHadInlineUpdate)
+        if (!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold)
             // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
             return {};
 
