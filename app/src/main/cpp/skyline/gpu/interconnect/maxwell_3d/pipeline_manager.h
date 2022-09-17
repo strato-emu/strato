@@ -45,8 +45,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
       private:
         std::vector<CachedMappedBufferView> storageBufferViews;
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
-        cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
         DescriptorInfo descriptorInfo;
+        cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
 
         std::array<Pipeline *, 4> transitionCache{};
         size_t transitionCacheNextIdx{};
