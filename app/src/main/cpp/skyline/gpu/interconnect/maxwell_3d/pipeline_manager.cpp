@@ -222,6 +222,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         u32 bindingIndex{};
 
         for (const auto &stage : shaderStages) {
+            if (!stage.module)
+                continue;
+
             auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count, bool individualDescWrites = false) {
                 descriptorInfo.writeDescCount += individualDescWrites ? descs.size() : ((descs.size() > 0) ? 1 : 0);
 
