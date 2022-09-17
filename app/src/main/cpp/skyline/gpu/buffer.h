@@ -18,6 +18,24 @@ namespace skyline::gpu {
     class BufferManager;
     class BufferDelegate;
 
+
+    /**
+     * @brief Represents a bound Vulkan buffer that can be used for state updates
+     */
+    struct BufferBinding {
+        vk::Buffer buffer{};
+        vk::DeviceSize offset{};
+        vk::DeviceSize size{};
+
+        BufferBinding() = default;
+
+        BufferBinding(vk::Buffer buffer, vk::DeviceSize offset = 0, vk::DeviceSize size = 0) : buffer{buffer}, offset{offset}, size{size} {}
+
+        operator bool() const {
+            return buffer;
+        }
+    };
+
     /**
      * @brief A buffer which is backed by host constructs while being synchronized with the underlying guest buffer
      * @note This class conforms to the Lockable and BasicLockable C++ named requirements
@@ -51,13 +69,24 @@ namespace skyline::gpu {
 
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 
-      public:
-
         static constexpr u64 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
-
-      private:
         u64 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
 
+        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 128}; //!< The threshold at which a view is considered to be too large to be megabuffered (128KiB)
+
+        /**
+         * @brief Holds a single megabuffer copy with sequencing information for an offset within the buffer
+         */
+        struct MegaBufferTableEntry {
+            MegaBufferAllocator::Allocation allocation{}; //!< The allocation in the megabuffer for the entry, can be any size
+            size_t executionNumber; //!< Execution number of when the allocation was made
+            size_t sequenceNumber; //!< Sequence number of when the allocation was made
+        };
+
+        static constexpr int MegaBufferTableShiftMin{std::countr_zero(0x100U)}; //!< The minimum shift for megabuffer table entries, giving an alignment of at least 256 bytes
+        static constexpr size_t MegaBufferTableMaxEntries{0x500U}; //!< Maximum number of entries in the megabuffer table, `megaBufferTableShift` is set based on this and the total buffer size
+        int megaBufferTableShift; //!< Shift to apply to buffer offsets to get their megabuffer table index
+        std::vector<MegaBufferTableEntry> megaBufferTable; //!< Table of megabuffer allocations for regions of the buffer
 
       private:
         BufferDelegate *delegate;
@@ -185,13 +214,6 @@ namespace skyline::gpu {
         }
 
         /**
-         * @note The buffer **must** be locked prior to calling this
-         */
-        bool EverHadInlineUpdate() const {
-            return everHadInlineUpdate;
-        }
-
-        /**
          * @brief Waits on a fence cycle if it exists till it's signalled and resets it after
          * @note The buffer **must** be locked prior to calling this
          */
@@ -263,14 +285,14 @@ namespace skyline::gpu {
          */
         BufferView TryGetView(span<u8> mapping);
 
-        /**
-         * @brief Attempts to return the current sequence number and prepare the buffer for read accesses from the returned span
-         * @return The current sequence number and a span of the buffers guest mirror given that the buffer is not GPU dirty, if it is then a zero sequence number is returned
-         * @note The contents of the returned span can be cached safely given the sequence number is unchanged
+
+        /*
+         * @brief If megabuffering is determined to be beneficial for this buffer, allocates and copies the given view of buffer into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region
+         * @return A binding to the megabuffer allocation for the view, may be invalid if megabuffering is not beneficial
          * @note The buffer **must** be locked prior to calling this
-         * @note An implicit CPU -> GPU sync will be performed when calling this, an immediate GPU -> CPU sync will also be attempted if the buffer is GPU dirty
          */
-        std::pair<u64, span<u8>> AcquireCurrentSequence();
+        BufferBinding TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber,
+                                        vk::DeviceSize offset, vk::DeviceSize size);
 
         /**
          * @brief Increments the sequence number of the buffer, any futher calls to AcquireCurrentSequence will return this new sequence number. See the comment for `sequenceNumber`
@@ -330,8 +352,6 @@ namespace skyline::gpu {
      */
     class BufferView {
       private:
-        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 128}; //!< The threshold at which the view is considered to be too large to be megabuffered (128KiB)
-
         BufferDelegate *delegate{};
         vk::DeviceSize offset{};
 
@@ -418,14 +438,17 @@ namespace skyline::gpu {
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Write
          */
-        bool Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
+        bool Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback,
+                   span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
 
-        /**
-         * @brief If megabuffering is beneficial for the view, pushes its contents into the megabuffer and returns the offset of the pushed data
-         * @return The megabuffer allocation for the view, may be invalid if megabuffering is not beneficial
+
+        /*
+         * @brief If megabuffering is determined to be beneficial for the underlying buffer, allocates and copies this view into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region
+         * @param sizeOverride If non-zero, specifies the size of the megabuffer region to allocate and copy to, *MUST* be smaller than the size of the view
          * @note The view **must** be locked prior to calling this
+         * @note See Buffer::TryMegaBufferView
          */
-        MegaBufferAllocator::Allocation AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const;
+        BufferBinding TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber, size_t sizeOverride = 0) const;
 
         /**
          * @return A span of the backing buffer contents

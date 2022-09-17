@@ -82,7 +82,10 @@ namespace skyline::gpu {
           backing{gpu.memory.AllocateBuffer(guest.size())},
           guest{guest},
           delegate{delegateAllocator.EmplaceUntracked<BufferDelegate>(this)},
-          id{id} {}
+          id{id},
+          megaBufferTableShift{std::max(std::bit_width(guest.size() / MegaBufferTableMaxEntries - 1), MegaBufferTableShiftMin)} {
+        megaBufferTable.resize(guest.size() / (1 << megaBufferTableShift));
+    }
 
     Buffer::Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, vk::DeviceSize size, size_t id)
         : gpu{gpu},
@@ -270,12 +273,33 @@ namespace skyline::gpu {
             return {};
     }
 
-    std::pair<u64, span<u8>> Buffer::AcquireCurrentSequence() {
+    BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber,
+                                            vk::DeviceSize offset, vk::DeviceSize size) {
         if (!SynchronizeGuest(false, true))
             // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
-        return {sequenceNumber, mirror};
+        if (!everHadInlineUpdate)
+            // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
+            return {};
+
+        if (size > MegaBufferingDisableThreshold)
+            return {};
+
+        size_t entryIdx{offset >> megaBufferTableShift};
+        size_t bufferEntryOffset{entryIdx << megaBufferTableShift};
+        size_t entryViewOffset{offset - bufferEntryOffset};
+        auto &entry{megaBufferTable[entryIdx]};
+
+        // If the cached allocation is invalid or not up to date, allocate a new one
+        if (!entry.allocation || entry.executionNumber != executionNumber ||
+              entry.sequenceNumber != sequenceNumber || entry.allocation.region.size() + entryViewOffset < size) {
+            // Use max(oldSize, newSize) to avoid redundant reallocations within an execution if a larger allocation comes along later
+            auto mirrorAllocationRegion{mirror.subspan(bufferEntryOffset, std::max(entryViewOffset + size, entry.allocation.region.size()))};
+            entry.allocation = allocator.Push(pCycle, mirrorAllocationRegion, true);
+        }
+
+        return {entry.allocation.buffer, entry.allocation.offset + entryViewOffset, size};
     }
 
     void Buffer::AdvanceSequence() {
@@ -359,30 +383,13 @@ namespace skyline::gpu {
         GetBuffer()->Read(isFirstUsage, flushHostCallback, data, readOffset + GetOffset());
     }
 
-    bool BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
-        // If megabuffering can't be enabled we have to do a GPU-side copy to ensure sequencing
-        bool gpuCopy{size > MegaBufferingDisableThreshold};
-        if (gpuCopy)
-            GetBuffer()->BlockSequencedCpuBackingWrites();
-
+    bool BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback,
+                           span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
         return GetBuffer()->Write(isFirstUsage, flushHostCallback, data, writeOffset + GetOffset(), gpuCopyCallback);
     }
 
-    MegaBufferAllocator::Allocation BufferView::AcquireMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator) const {
-        if (!GetBuffer()->EverHadInlineUpdate())
-            // Don't megabuffer buffers that have never had inline updates since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
-            return {};
-
-        if (size > MegaBufferingDisableThreshold)
-            return {};
-
-        auto [newSequence, sequenceSpan]{GetBuffer()->AcquireCurrentSequence()};
-        if (!newSequence)
-            return {}; // If the sequence can't be acquired then the buffer is GPU dirty and we can't megabuffer
-
-        auto viewBackingSpan{sequenceSpan.subspan(GetOffset(), size)};
-
-        return allocator.Push(pCycle, viewBackingSpan, true); // Success!
+    BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber, size_t sizeOverride) const {
+        return GetBuffer()->TryMegaBufferView(pCycle, allocator, executionNumber, GetOffset(), sizeOverride ? sizeOverride : size);
     }
 
     span<u8> BufferView::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
