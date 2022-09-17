@@ -99,6 +99,7 @@ namespace skyline::gpu::interconnect {
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         LinearAllocatorState<> allocator;
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
+        size_t executionNumber{};
 
         CommandExecutor(const DeviceState &state);
 

@@ -328,6 +328,8 @@ namespace skyline::gpu::interconnect {
             cycle = activeCommandBuffer.GetFenceCycle();
         }
         ResetInternal();
+
+        executionNumber++;
     }
 
     void CommandExecutor::SubmitWithFlush() {
@@ -340,5 +342,7 @@ namespace skyline::gpu::interconnect {
             cycle = activeCommandBuffer.Reset();
         }
         ResetInternal();
+
+        executionNumber++;
     }
 }
