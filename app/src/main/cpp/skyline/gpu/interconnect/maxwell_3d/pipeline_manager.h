@@ -40,6 +40,24 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 combinedImageSamplerDescCount{};
             u32 storageImageDescCount{};
             u32 totalImageDescCount{};
+            u32 totalElemCount{};
+
+            /**
+             * @brief Keeps track of all bindings that are dependent on a given constant buffer index to allow for quick binding
+             */
+            struct ConstantBufferDescriptorUsages {
+                struct Usage {
+                    u32 binding; //!< Vulkan binding index
+                    u32 shaderDescIdx; //!< Index of the descriptor in the appropriate shader info member
+                };
+
+                boost::container::small_vector<Usage, 2> uniformBuffers;
+                boost::container::small_vector<Usage, 2> storageBuffers;
+                u32 totalBufferDescCount{};
+                u32 writeDescCount{};
+            };
+
+            std::array<std::array<ConstantBufferDescriptorUsages, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount> cbufUsages{};
         };
 
       private:
@@ -61,6 +79,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void AddTransition(Pipeline *next);
 
         void SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
+
+        void SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind);
     };
 
     class PipelineManager {

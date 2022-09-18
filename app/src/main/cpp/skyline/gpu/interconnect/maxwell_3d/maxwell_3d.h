@@ -62,6 +62,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
          */
         void BindConstantBuffer(engine::ShaderStage stage, u32 index, bool enable);
 
+        /**
+         * @note See ConstantBuffers::DisableQuickBind
+         */
+        void DisableQuickConstantBufferBind();
+
         void Clear(engine::ClearSurface &clearSurface);
 
         void Draw(engine::DrawTopology topology, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance);

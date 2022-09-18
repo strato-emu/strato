@@ -107,6 +107,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 #undef LOAD_CONSTANT_BUFFER_CALLBACKS
                 default:
                     // When a method other than constant buffer update is called submit our submit the previously built-up update as a batch
+                    interconnect.DisableQuickConstantBufferBind();
                     interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.Invalidate());
                     batchLoadConstantBuffer.Reset();
                     break; // Continue on here to handle the actual method
@@ -177,6 +178,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             ENGINE_STRUCT_CASE(i2m, launchDma, {
+                FlushEngineState();
                 i2m.LaunchDma(*registers.i2m);
             })
 
@@ -258,7 +260,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             #define PIPELINE_CALLBACKS(z, idx, data)                                                                                         \
                 ENGINE_ARRAY_STRUCT_CASE(bindGroups, idx, constantBuffer, {                                                                  \
-                    interconnect.BindConstantBuffer(static_cast<type::ShaderStage>(idx), constantBuffer.shaderSlot, constantBuffer.valid); \
+                    interconnect.BindConstantBuffer(static_cast<type::ShaderStage>(idx), constantBuffer.shaderSlot, constantBuffer.valid);   \
                 })
 
             BOOST_PP_REPEAT(5, PIPELINE_CALLBACKS, 0)
@@ -297,6 +299,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.Invalidate());
             batchLoadConstantBuffer.Reset();
         }
+
+        interconnect.DisableQuickConstantBufferBind();
     }
 
     __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {

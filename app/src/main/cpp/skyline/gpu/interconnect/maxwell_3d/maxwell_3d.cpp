@@ -88,6 +88,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             constantBuffers.Unbind(stage, index);
     }
 
+    void Maxwell3D::DisableQuickConstantBufferBind() {
+        constantBuffers.DisableQuickBind();
+    }
+
     void Maxwell3D::Clear(engine::ClearSurface &clearSurface) {
         auto scissor{GetClearScissor()};
         if (scissor.extent.width == 0 || scissor.extent.height == 0)

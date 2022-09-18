@@ -52,6 +52,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         ConstantBufferSet boundConstantBuffers;
 
+        /**
+         * @brief Allows for a single constant buffer to be bound between two draws without requiring a full descriptor sync
+         */
+        struct QuickBind {
+            size_t index; //!< The index of the constant buffer to bind
+            engine::ShaderStage stage; //!< The shader stage to bind the constant buffer to
+        };
+        std::optional<QuickBind> quickBind;
+        bool quickBindEnabled{}; //!< If quick binding can occur, if multiple bindings, constant buffer loads or other engines have been used since the last draw this is disabled
+
         ConstantBuffers(DirtyManager &manager, const ConstantBufferSelectorState::EngineRegisters &constantBufferSelectorRegisters);
 
         void MarkAllDirty();
@@ -61,5 +71,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index);
 
         void Unbind(engine::ShaderStage stage, size_t index);
+
+        /**
+         * @brief Resets quick binding state to be ready store a new bind, this should be called after every draw
+         */
+        void ResetQuickBind();
+
+        /**
+         * @brief Diables quick binding, this should be called before any operation that could impact contents of bound constant buffers
+         */
+        void DisableQuickBind();
     };
 }

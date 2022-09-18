@@ -80,9 +80,24 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void ConstantBuffers::Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index) {
         auto &view{*selectorState.UpdateGet(ctx).view};
         boundConstantBuffers[static_cast<size_t>(stage)][index] = {view};
+
+        if (quickBindEnabled && quickBind)
+            DisableQuickBind(); // We can only quick bind one buffer per draw
+        else if (quickBindEnabled)
+            quickBind = QuickBind{index, stage};
     }
 
     void ConstantBuffers::Unbind(engine::ShaderStage stage, size_t index) {
         boundConstantBuffers[static_cast<size_t>(stage)][index] = {};
+    }
+
+    void ConstantBuffers::ResetQuickBind() {
+        quickBindEnabled = true;
+        quickBind.reset();
+    }
+
+    void ConstantBuffers::DisableQuickBind() {
+        quickBindEnabled = false;
+        quickBind.reset();
     }
 }

@@ -221,15 +221,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
         Pipeline::DescriptorInfo descriptorInfo{};
         u32 bindingIndex{};
 
-        for (const auto &stage : shaderStages) {
+        for (size_t i{}; i < engine::ShaderStageCount; i++) {
+            const auto &stage{shaderStages[i]};
             if (!stage.module)
                 continue;
 
-            auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count, bool individualDescWrites = false) {
+            auto &stageCbufUsage{descriptorInfo.cbufUsages[i]};
+
+            auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count,  auto &&descCb, bool individualDescWrites = false) {
                 descriptorInfo.writeDescCount += individualDescWrites ? descs.size() : ((descs.size() > 0) ? 1 : 0);
 
-                for (const auto &desc : descs) {
+                for (u32 descIdx{}; descIdx < descs.size(); descIdx++) {
+                    const auto &desc{descs[descIdx]};
                     count += desc.count;
+
+                    descCb(desc, descIdx);
 
                     descriptorInfo.descriptorSetLayoutBindings.push_back(vk::DescriptorSetLayoutBinding{
                         .binding = bindingIndex++,
@@ -240,19 +246,32 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 }
             }};
 
-            pushBindings(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount);
-            pushBindings(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount);
+            pushBindings(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount, [&](const Shader::ConstantBufferDescriptor &desc, u32 descIdx) {
+                for (u32 cbufIdx{desc.index}; cbufIdx < desc.index + desc.count; cbufIdx++) {
+                    auto &usage{stageCbufUsage[cbufIdx]};
+                    usage.uniformBuffers.push_back({bindingIndex, descIdx});
+                    usage.totalBufferDescCount += desc.count;
+                    usage.writeDescCount++;
+                }
+            });
+            pushBindings(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount, [&](const Shader::StorageBufferDescriptor &desc, u32 descIdx) {
+                auto &usage{stageCbufUsage[desc.cbuf_index]};
+                usage.storageBuffers.push_back({bindingIndex, descIdx});
+                usage.totalBufferDescCount += desc.count;
+                usage.writeDescCount++;
+            });
             descriptorInfo.totalBufferDescCount += descriptorInfo.uniformBufferDescCount + descriptorInfo.storageBufferDescCount;
 
-            pushBindings(vk::DescriptorType::eUniformTexelBuffer, stage.info.texture_buffer_descriptors, descriptorInfo.uniformTexelBufferDescCount);
-            pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors, descriptorInfo.storageTexelBufferDescCount);
+            pushBindings(vk::DescriptorType::eUniformTexelBuffer, stage.info.texture_buffer_descriptors, descriptorInfo.uniformTexelBufferDescCount, [](const auto &, u32) {});
+            pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors, descriptorInfo.storageTexelBufferDescCount, [](const auto &, u32) {});
             descriptorInfo.totalTexelBufferDescCount += descriptorInfo.uniformTexelBufferDescCount + descriptorInfo.storageTexelBufferDescCount;
 
-            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, descriptorInfo.combinedImageSamplerDescCount, needsIndividualTextureBindingWrites);
-            pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors, descriptorInfo.storageImageDescCount);
+            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, descriptorInfo.combinedImageSamplerDescCount, [](const auto &, u32) {}, needsIndividualTextureBindingWrites);
+            pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors, descriptorInfo.storageImageDescCount, [](const auto &, u32) {});
             descriptorInfo.totalImageDescCount += descriptorInfo.combinedImageSamplerDescCount + descriptorInfo.storageImageDescCount;
         }
 
+        descriptorInfo.totalElemCount = descriptorInfo.totalBufferDescCount + descriptorInfo.totalTexelBufferDescCount + descriptorInfo.totalImageDescCount;
         return descriptorInfo;
     }
 
@@ -542,6 +561,38 @@ namespace skyline::gpu::interconnect::maxwell3d {
         transitionCacheNextIdx = (transitionCacheNextIdx + 1) % transitionCache.size();
     }
 
+    static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
+        ctx.executor.AttachBuffer(view);
+
+        size_t sizeOverride{std::min<size_t>(info.constant_buffer_used_sizes[idx], view.size)};
+        if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber, sizeOverride)}) {
+            return megaBufferBinding;
+        } else {
+            view.GetBuffer()->BlockSequencedCpuBackingWrites();
+            return view;
+        }
+    }
+
+    static DynamicBufferBinding GetStorageBufferBinding(InterconnectContext &ctx, const Shader::Info &info, ConstantBuffer &cbuf, CachedMappedBufferView &cachedView, size_t idx) {
+        struct SsboDescriptor {
+            u64 address;
+            u32 size;
+        };
+
+        const auto &desc{info.storage_buffers_descriptors[idx]};
+        auto ssbo{cbuf.Read<SsboDescriptor>(ctx.executor, desc.cbuf_offset)};
+        cachedView.Update(ctx, ssbo.address, ssbo.size);
+
+        auto view{cachedView.view};
+        ctx.executor.AttachBuffer(view);
+        view.GetBuffer()->BlockSequencedCpuBackingWrites();
+
+        if (desc.is_written)
+            view.GetBuffer()->MarkGpuDirty();
+
+        return view;
+    }
+
     // TODO: EXEC ID FOR STORAGE BUFS PURGE REMAP
     void Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers) {
         u32 bindingIdx{};
@@ -572,41 +623,69 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         for (size_t i{}; i < shaderStages.size(); i++) {
             const auto &stage{shaderStages[i]};
+            if (!stage.module)
+                continue;
+
             writeBufferDescs(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount,
-                             [&](const Shader::ConstantBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) -> DynamicBufferBinding {
+                             [&](const Shader::ConstantBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
                 size_t cbufIdx{desc.index + arrayIdx};
-                auto view{constantBuffers[i][cbufIdx].view};
-
-                ctx.executor.AttachBuffer(view);
-
-                size_t sizeOverride{std::min<size_t>(stage.info.constant_buffer_used_sizes[cbufIdx], view.size)};
-                if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber, sizeOverride)}) {
-                    return megaBufferBinding;
-                } else {
-                    view.GetBuffer()->BlockSequencedCpuBackingWrites();
-                    return view;
-                }
+                return GetConstantBufferBinding(ctx, stage.info, constantBuffers[i][cbufIdx].view, cbufIdx);
             });
 
-            writeBufferDescs(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount, [&](const Shader::StorageBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
-                struct SsboDescriptor {
-                    u64 address;
-                    u32 size;
-                };
-
-                auto &cbuf{constantBuffers[i][desc.cbuf_index]};
-                auto ssbo{cbuf.Read<SsboDescriptor>(ctx.executor, desc.cbuf_offset)};
-                storageBufferViews[descIdx].Update(ctx, ssbo.address, ssbo.size);
-
-                auto view{storageBufferViews[descIdx].view};
-                ctx.executor.AttachBuffer(view);
-
-                if (desc.is_written)
-                    view.GetBuffer()->MarkGpuDirty();
-
-                return view;
+            writeBufferDescs(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount,
+                             [&](const Shader::StorageBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
+                return GetStorageBufferBinding(ctx, stage.info, constantBuffers[i][desc.cbuf_index], storageBufferViews[descIdx], descIdx);
             });
         }
+    }
+
+    void Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind) {
+        const auto &cbufUsageInfo{descriptorInfo.cbufUsages[static_cast<size_t>(quickBind.stage)][quickBind.index]};
+        const auto &shaderInfo{shaderStages[static_cast<size_t>(quickBind.stage)].info};
+        auto &stageConstantBuffers{constantBuffers[static_cast<size_t>(quickBind.stage)]};
+        auto copy{ctx.executor.allocator.AllocateUntracked<vk::CopyDescriptorSet>()};
+        auto writes{ctx.executor.allocator.AllocateUntracked<vk::WriteDescriptorSet>(cbufUsageInfo.writeDescCount)};
+        size_t writeIdx{};
+        size_t bufferIdx{};
+
+        auto bufferDescs{ctx.executor.allocator.AllocateUntracked<vk::DescriptorBufferInfo>(cbufUsageInfo.totalBufferDescCount)};
+        auto bufferDescViews{ctx.executor.allocator.AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
+
+        // TODO: opt this to do partial copy
+        *copy = vk::CopyDescriptorSet{
+            .srcBinding = 0,
+            .srcArrayElement = 0,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = descriptorInfo.totalElemCount,
+        };
+
+        auto writeBufferDescs{[&](vk::DescriptorType type, const auto &usages, const auto &descs, u32 count, auto getBufferCb) {
+            for (const auto &usage : usages) {
+                const auto &shaderDesc{descs[usage.shaderDescIdx]};
+
+                writes[writeIdx++] = {
+                    .dstBinding = usage.binding,
+                    .descriptorCount = shaderDesc.count,
+                    .descriptorType = type,
+                    .pBufferInfo = &bufferDescs[bufferIdx],
+                };
+
+                for (size_t i{}; i < shaderDesc.count; i++)
+                    bufferDescViews[bufferIdx++] = getBufferCb(shaderDesc, usage.shaderDescIdx, i);
+            }
+        }};
+
+        writeBufferDescs(vk::DescriptorType::eUniformBuffer, cbufUsageInfo.uniformBuffers, shaderInfo.constant_buffer_descriptors, descriptorInfo.uniformBufferDescCount,
+                         [&](const Shader::ConstantBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) -> DynamicBufferBinding {
+            size_t cbufIdx{desc.index + arrayIdx};
+            return GetConstantBufferBinding(ctx, shaderInfo, stageConstantBuffers[cbufIdx].view, cbufIdx);
+        });
+
+        writeBufferDescs(vk::DescriptorType::eStorageBuffer, cbufUsageInfo.storageBuffers, shaderInfo.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount,
+                         [&](const Shader::StorageBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
+            return GetStorageBufferBinding(ctx, shaderInfo, stageConstantBuffers[desc.cbuf_index], storageBufferViews[bufferIdx], descIdx);
+        });
     }
 }
 
