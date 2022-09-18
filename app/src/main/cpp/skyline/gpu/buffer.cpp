@@ -275,15 +275,16 @@ namespace skyline::gpu {
 
     BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber,
                                             vk::DeviceSize offset, vk::DeviceSize size) {
-        if (!SynchronizeGuest(false, true))
-            // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
-            return {};
-
         if (!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold)
             // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
             return {};
 
         if (size > MegaBufferingDisableThreshold)
+            return {};
+
+        // We are safe to check dirty state here since it will only ever be set GPU dirty with the buffer locked and from the active GPFIFO thread. This helps with perf since the lock ends up being slightly expensive
+        if (dirtyState == DirtyState::GpuDirty && !SynchronizeGuest(false, true))
+            // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
         size_t entryIdx{offset >> megaBufferTableShift};
