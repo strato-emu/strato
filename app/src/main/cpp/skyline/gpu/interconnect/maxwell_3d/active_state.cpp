@@ -34,6 +34,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 builder.SetVertexBuffer(index, *view);
         } else {
             // TODO: null descriptor
+            megaBufferBinding = {};
         }
     }
 
