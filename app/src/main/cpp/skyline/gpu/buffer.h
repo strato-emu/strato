@@ -382,45 +382,24 @@ namespace skyline::gpu {
         vk::DeviceSize GetOffset() const;
 
         /**
-         * @brief Templated lock function that ensures correct locking of the delegate's underlying buffer
+         * @note The buffer manager **MUST** be locked prior to calling this
          */
-        template<bool TryLock, typename LockFunction, typename UnlockFunction>
-        std::conditional_t<TryLock, bool, void> LockWithFunction(LockFunction lock, UnlockFunction unlock) {
-            while (true) {
-                auto preLockBuffer{delegate->GetBuffer()};
-                if constexpr (TryLock) {
-                    if (!lock(preLockBuffer))
-                        return false;
-                } else {
-                    lock(preLockBuffer);
-                }
-                auto postLockBuffer{delegate->GetBuffer()};
-                if (preLockBuffer == postLockBuffer)
-                    break;
-
-                preLockBuffer->unlock();
-            };
-
-            ResolveDelegate();
-
-            if constexpr (TryLock)
-                return true;
-            else
-                return;
-        }
-
         void lock() {
-            LockWithFunction<false>([](Buffer *buffer) { buffer->lock(); }, [](Buffer *buffer) { buffer->unlock(); });
+            delegate->GetBuffer()->lock();
         }
 
+        /**
+         * @note The buffer manager **MUST** be locked prior to calling this
+         */
         bool try_lock() {
-            return LockWithFunction<true>([](Buffer *buffer) { return buffer->try_lock(); }, [](Buffer *buffer) { buffer->unlock(); });
+            return delegate->GetBuffer()->try_lock();
         }
 
+        /**
+         * @note The buffer manager **MUST** be locked prior to calling this
+         */
         bool LockWithTag(ContextTag tag) {
-            bool result{};
-            LockWithFunction<false>([&result, tag](Buffer *buffer) { result = buffer->LockWithTag(tag); }, [](Buffer *buffer) { buffer->unlock(); });
-            return result;
+            return delegate->GetBuffer()->LockWithTag(tag);
         }
 
         void unlock() {

@@ -30,6 +30,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void ConstantBuffer::Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset) {
+        executor.AcquireBufferManager();
         ContextLock lock{executor.tag, view};
         view.Read(lock.IsFirstUsage(), FlushHostCallback, dstBuffer, srcOffset);
     }
@@ -44,6 +45,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto &view{*selectorState.UpdateGet(ctx).view};
         auto srcCpuBuf{data.cast<u8>()};
 
+        ctx.executor.AcquireBufferManager();
         ContextLock lock{ctx.executor.tag, view};
 
         // First attempt the write without setting up the gpu copy callback as a fast path
