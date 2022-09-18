@@ -163,11 +163,33 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void Maxwell3D::Draw(engine::DrawTopology topology, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance) {
-        StateUpdateBuilder builder{};
+        StateUpdateBuilder builder{ctx.executor.allocator};
 
-
-
+        Pipeline *oldPipeline{activeState.GetPipeline()};
         activeState.Update(ctx, builder, indexed, topology, count);
-        activeState.GetPipeline()->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
+        Pipeline *pipeline{activeState.GetPipeline()};
+
+        if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
+            // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
+            if (constantBuffers.quickBind)
+                // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
+                pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, *constantBuffers.quickBind);
+        } else {
+            // If bindings have changed or quick bind is disabled, perform a full descriptor update
+            pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
+        }
+
+        const auto &surfaceClip{clearEngineRegisters.surfaceClip};
+        vk::Rect2D scissor{
+            {surfaceClip.horizontal.x, surfaceClip.vertical.y},
+            {surfaceClip.horizontal.width, surfaceClip.vertical.height}
+        };
+
+        auto stateUpdater{builder.Build()};
+        ctx.executor.AddSubpass([stateUpdater](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
+            stateUpdater.RecordAll(commandBuffer);
+        }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment());
+
+        constantBuffers.ResetQuickBind();
     }
 }
