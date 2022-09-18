@@ -298,6 +298,8 @@ namespace skyline::gpu {
             // Use max(oldSize, newSize) to avoid redundant reallocations within an execution if a larger allocation comes along later
             auto mirrorAllocationRegion{mirror.subspan(bufferEntryOffset, std::max(entryViewOffset + size, entry.allocation.region.size()))};
             entry.allocation = allocator.Push(pCycle, mirrorAllocationRegion, true);
+            entry.executionNumber = executionNumber;
+            entry.sequenceNumber = sequenceNumber;
         }
 
         return {entry.allocation.buffer, entry.allocation.offset + entryViewOffset, size};
