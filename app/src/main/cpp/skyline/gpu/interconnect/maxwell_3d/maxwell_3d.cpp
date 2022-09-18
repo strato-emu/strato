@@ -7,8 +7,7 @@
 #include "common/utils.h"
 #include "maxwell_3d.h"
 #include "common.h"
-#include "pipeline_state.h"
-#include "services/hosbinder/GraphicBufferProducer.h"
+#include "state_updater.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     Maxwell3D::Maxwell3D(GPU &gpu,

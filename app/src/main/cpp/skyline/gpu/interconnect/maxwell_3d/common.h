@@ -65,46 +65,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     };
 
-
     using DynamicBufferBinding = std::variant<BufferBinding, BufferView>;
     using DirtyManager = dirty::Manager<soc::gm20b::engine::EngineMethodsEnd * sizeof(u32), sizeof(u32)>;
 
-    /**
-     * @brief This is a stub for a future implementation
-     */
-    struct StateUpdateBuilder {
-        void SetVertexBuffer(u32 index, BufferBinding *binding) {}
-
-        void SetVertexBuffer(u32 index, BufferView &view) {
-            view.GetBuffer()->BlockSequencedCpuBackingWrites();
-        }
-
-        void SetIndexBuffer(BufferBinding *binding, vk::IndexType indexType) {}
-
-        void SetIndexBuffer(BufferView &view, vk::IndexType indexType) {
-            view.GetBuffer()->BlockSequencedCpuBackingWrites();
-
-        }
-
-        void SetTransformFeedbackBuffer(u32 index, BufferView &view) {
-            view.GetBuffer()->BlockSequencedCpuBackingWrites();
-
-        }
-
-        void SetTransformFeedbackBuffer(u32 index, BufferBinding *binding) {}
-
-        void SetViewport(u32 index, const vk::Viewport &viewport) {}
-
-        void SetScissor(u32 index, const vk::Rect2D &scissor) {}
-
-        void SetLineWidth(float lineWidth) {}
-
-        void SetDepthBias(float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) {}
-
-        void SetBlendConstants(const std::array<float, engine::BlendColorChannelCount> &blendConstants) {}
-
-        void SetDepthBounds(float minDepthBounds, float maxDepthBounds) {}
-
-        void SetBaseStencilState(vk::StencilFaceFlags flags, u32 funcRef, u32 funcMask, u32 mask) {}
-    };
+    class StateUpdateBuilder;
 }
