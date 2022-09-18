@@ -493,12 +493,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
             shaderBinaries[i] = stage.binary;
         }
 
-        boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
+        colorAttachments.clear();
         for (auto &colorRenderTarget : colorRenderTargets)
             if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view})
                 colorAttachments.push_back(view.get());
 
-        TextureView *depthAttachment{depthRenderTarget.UpdateGet(ctx, packedState).view.get()};
+        depthAttachment = depthRenderTarget.UpdateGet(ctx, packedState).view.get();
 
         vertexInput.Update(packedState);
         directState.inputAssembly.Update(packedState);

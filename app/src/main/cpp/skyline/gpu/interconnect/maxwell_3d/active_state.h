@@ -258,6 +258,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         Pipeline *GetPipeline();
 
+        span<TextureView *> GetColorAttachments();
+
+        TextureView *GetDepthAttachment();
+
         std::shared_ptr<TextureView> GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index);
 
         std::shared_ptr<TextureView> GetDepthRenderTargetForClear(InterconnectContext &ctx);

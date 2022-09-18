@@ -308,6 +308,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         DirectPipelineState directState;
         Pipeline *pipeline{};
+        boost::container::static_vector<TextureView *, engine::ColorTargetCount> colorAttachments;
+        TextureView *depthAttachment{};
 
         PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
