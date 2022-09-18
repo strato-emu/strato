@@ -561,6 +561,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
         transitionCacheNextIdx = (transitionCacheNextIdx + 1) % transitionCache.size();
     }
 
+    bool Pipeline::CheckBindingMatch(Pipeline *other) {
+        if (auto it{bindingMatchCache.find(other)}; it != bindingMatchCache.end())
+            return it->second;
+
+        for (size_t i{}; i < shaderStages.size(); i++) {
+            if (!shaderStages[i].BindingsEqual(other->shaderStages[i])) {
+                bindingMatchCache[other] = false;
+                return false;
+            }
+        }
+
+        bindingMatchCache[other] = true;
+        return true;
+    }
+
     static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
         ctx.executor.AttachBuffer(view);
 

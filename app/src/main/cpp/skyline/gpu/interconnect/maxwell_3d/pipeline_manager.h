@@ -26,6 +26,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
             vk::ShaderStageFlagBits stage;
             vk::ShaderModule module;
             Shader::Info info;
+
+            /**
+             * @return Whether the bindings for this stage match those of the input stage
+             */
+            bool BindingsEqual(const ShaderStage &other) const {
+                return info.constant_buffer_descriptors == other.info.constant_buffer_descriptors &&
+                       info.storage_buffers_descriptors == other.info.storage_buffers_descriptors &&
+                       info.texture_buffer_descriptors == other.info.texture_buffer_descriptors &&
+                       info.image_buffer_descriptors == other.info.image_buffer_descriptors &&
+                       info.texture_descriptors == other.info.texture_descriptors &&
+                       info.image_descriptors == other.info.image_descriptors;
+            }
         };
 
         struct DescriptorInfo {
@@ -69,6 +81,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<Pipeline *, 4> transitionCache{};
         size_t transitionCacheNextIdx{};
 
+        tsl::robin_map<Pipeline *, bool> bindingMatchCache; //!< Cache of which pipelines have bindings that match this pipeline
+
       public:
         PackedPipelineState sourcePackedState;
 
@@ -77,6 +91,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 
         void AddTransition(Pipeline *next);
+
+        bool CheckBindingMatch(Pipeline *other);
 
         void SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
 
