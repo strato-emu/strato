@@ -84,7 +84,7 @@ namespace skyline::gpu {
             size_t sequenceNumber; //!< Sequence number of when the allocation was made
         };
 
-        static constexpr int MegaBufferTableShiftMin{std::countr_zero(0x100U)}; //!< The minimum shift for megabuffer table entries, giving an alignment of at least 256 bytes
+        static constexpr int MegaBufferTableShiftMin{std::countr_zero(0x80U)}; //!< The minimum shift for megabuffer table entries, giving an alignment of at least 128 bytes
         static constexpr size_t MegaBufferTableMaxEntries{0x500U}; //!< Maximum number of entries in the megabuffer table, `megaBufferTableShift` is set based on this and the total buffer size
         int megaBufferTableShift; //!< Shift to apply to buffer offsets to get their megabuffer table index
         std::vector<MegaBufferTableEntry> megaBufferTable; //!< Table of megabuffer allocations for regions of the buffer
