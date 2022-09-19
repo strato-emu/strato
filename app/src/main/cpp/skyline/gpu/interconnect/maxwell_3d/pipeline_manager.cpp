@@ -615,9 +615,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         u32 bufferIdx{};
         u32 imageIdx{};
 
-        auto writes{ctx.executor.allocator.AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.writeDescCount)};
-        auto bufferDescs{ctx.executor.allocator.AllocateUntracked<vk::DescriptorBufferInfo>(descriptorInfo.totalBufferDescCount)};
-        auto bufferDescViews{ctx.executor.allocator.AllocateUntracked<DynamicBufferBinding>(descriptorInfo.totalBufferDescCount)};
+        auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.writeDescCount)};
+        auto bufferDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorBufferInfo>(descriptorInfo.totalBufferDescCount)};
+        auto bufferDescViews{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(descriptorInfo.totalBufferDescCount)};
 
         auto writeBufferDescs{[&](vk::DescriptorType type, const auto &descs, u32 count, auto getBufferCb) {
             if (!descs.empty()) {
@@ -658,13 +658,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
         const auto &cbufUsageInfo{descriptorInfo.cbufUsages[static_cast<size_t>(quickBind.stage)][quickBind.index]};
         const auto &shaderInfo{shaderStages[static_cast<size_t>(quickBind.stage)].info};
         auto &stageConstantBuffers{constantBuffers[static_cast<size_t>(quickBind.stage)]};
-        auto copy{ctx.executor.allocator.AllocateUntracked<vk::CopyDescriptorSet>()};
-        auto writes{ctx.executor.allocator.AllocateUntracked<vk::WriteDescriptorSet>(cbufUsageInfo.writeDescCount)};
+        auto copy{ctx.executor.allocator->AllocateUntracked<vk::CopyDescriptorSet>()};
+        auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(cbufUsageInfo.writeDescCount)};
         size_t writeIdx{};
         size_t bufferIdx{};
 
-        auto bufferDescs{ctx.executor.allocator.AllocateUntracked<vk::DescriptorBufferInfo>(cbufUsageInfo.totalBufferDescCount)};
-        auto bufferDescViews{ctx.executor.allocator.AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
+        auto bufferDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorBufferInfo>(cbufUsageInfo.totalBufferDescCount)};
+        auto bufferDescViews{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
 
         // TODO: opt this to do partial copy
         *copy = vk::CopyDescriptorSet{

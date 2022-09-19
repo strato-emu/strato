@@ -10,6 +10,57 @@
 #include "command_nodes.h"
 
 namespace skyline::gpu::interconnect {
+    /*
+     * @brief Thread responsible for recording Vulkan commands from the execution nodes and submitting them
+     */
+    class CommandRecordThread {
+      public:
+        /**
+         * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
+         */
+        struct Slot {
+            vk::raii::CommandPool commandPool; //!< Use one command pool per slot since command buffers from different slots may be recorded into on multiple threads at the same time
+            vk::raii::CommandBuffer commandBuffer;
+            vk::raii::Fence fence;
+            std::shared_ptr<FenceCycle> cycle;
+            boost::container::stable_vector<node::NodeVariant> nodes;
+            LinearAllocatorState<> allocator;
+
+            Slot(GPU &gpu);
+
+            /**
+             * @brief Waits on the fence and resets the command buffer
+             * @note A new fence cycle for the reset command buffer
+             */
+            std::shared_ptr<FenceCycle> Reset(GPU &gpu);
+        };
+
+      private:
+        const DeviceState &state;
+        std::thread thread;
+
+        static constexpr size_t ActiveRecordSlots{4}; //!< Maximum number of simultaneously active slots
+        CircularQueue<Slot *> incoming{ActiveRecordSlots}; //!< Slots pending recording
+        CircularQueue<Slot *> outgoing{ActiveRecordSlots}; //!< Slots that have been submitted, may still be active on the GPU
+
+        void ProcessSlot(Slot *slot);
+
+        void Run();
+
+      public:
+        CommandRecordThread(const DeviceState &state);
+
+        /**
+         * @return A free slot, `Reset` needs to be called before accessing it
+         */
+        Slot *AcquireSlot();
+
+        /**
+         * @brief Submit a slot to be recorded
+         */
+        void ReleaseSlot(Slot *slot);
+    };
+
     /**
      * @brief Assembles a Vulkan command stream with various nodes and manages execution of the produced graph
      * @note This class is **NOT** thread-safe and should **ONLY** be utilized by a single thread
@@ -17,11 +68,10 @@ namespace skyline::gpu::interconnect {
     class CommandExecutor {
       private:
         GPU &gpu;
-        CommandScheduler::ActiveCommandBuffer activeCommandBuffer;
-        boost::container::stable_vector<node::NodeVariant> nodes;
+        CommandRecordThread recordThread;
+        CommandRecordThread::Slot *slot{};
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
-
         std::optional<std::scoped_lock<TextureManager>> textureManagerLock; //!< The lock on the texture manager, this is locked for the duration of the command execution from the first usage inside an execution to the submission
         std::optional<std::scoped_lock<BufferManager>> bufferManagerLock; //!< The lock on the buffer manager, see above for details
         std::optional<std::scoped_lock<MegaBufferAllocator>> megaBufferAllocatorLock; //!< The lock on the megabuffer allocator, see above for details
@@ -72,6 +122,8 @@ namespace skyline::gpu::interconnect {
 
         std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
 
+        void RotateRecordSlot();
+
         /**
          * @brief Create a new render pass and subpass with the specified attachments, if one doesn't already exist or the current one isn't compatible
          * @note This also checks for subpass coalescing and will merge the new subpass with the previous one when possible
@@ -97,7 +149,7 @@ namespace skyline::gpu::interconnect {
 
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
-        LinearAllocatorState<> allocator;
+        LinearAllocatorState<> *allocator;
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
         size_t executionNumber{};
 
@@ -193,10 +245,5 @@ namespace skyline::gpu::interconnect {
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
          */
         void Submit();
-
-        /**
-         * @brief Execute all the nodes and submit the resulting command buffer to the GPU then wait for the completion of the command buffer
-         */
-        void SubmitWithFlush();
     };
 }

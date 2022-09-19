@@ -163,7 +163,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void Maxwell3D::Draw(engine::DrawTopology topology, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance) {
-        StateUpdateBuilder builder{ctx.executor.allocator};
+        StateUpdateBuilder builder{*ctx.executor.allocator};
 
         Pipeline *oldPipeline{activeState.GetPipeline()};
         activeState.Update(ctx, builder, indexed, topology, count);
