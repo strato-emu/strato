@@ -29,10 +29,27 @@ namespace skyline::gpu::interconnect {
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
           cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, true)} {}
 
+    CommandRecordThread::Slot::ScopedReset::ScopedReset(CommandRecordThread::Slot &slot) : slot{slot} {}
+
+    CommandRecordThread::Slot::ScopedReset::~ScopedReset() {
+        std::scoped_lock resetLock{slot.resetMutex};
+        if (slot.needsReset)
+            slot.commandBuffer.reset();
+
+        slot.needsReset = false;
+    }
+
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
         cycle->Wait();
         cycle = std::make_shared<FenceCycle>(gpu.vkDevice, *fence);
-        commandBuffer.reset();
+
+        std::scoped_lock resetLock{resetMutex};
+        if (needsReset)
+            commandBuffer.reset();
+
+        needsReset = false;
+        cycle->AttachObjects(std::make_shared<ScopedReset>(*this));
+
         return cycle;
     }
 
@@ -72,6 +89,9 @@ namespace skyline::gpu::interconnect {
 
         slot->nodes.clear();
         slot->allocator.Reset();
+
+        std::scoped_lock resetLock{slot->resetMutex};
+        slot->needsReset = true;
     }
 
     void CommandRecordThread::Run() {
