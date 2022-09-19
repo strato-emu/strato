@@ -37,8 +37,9 @@ namespace skyline::gpu {
         }
 
       public:
-        FenceCycle(const vk::raii::Device &device, vk::Fence fence) : signalled{false}, device{device}, fence{fence} {
-            device.resetFences(fence);
+        FenceCycle(const vk::raii::Device &device, vk::Fence fence, bool signalled = false) : signalled{signalled}, device{device}, fence{fence} {
+            if (!signalled)
+                device.resetFences(fence);
         }
 
         ~FenceCycle() {
