@@ -64,6 +64,7 @@ namespace skyline::gpu {
     }
 
     BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
+        std::scoped_lock lock{recreationMutex};
         if (!range.valid())
             range = span<u8>{srcBuffers.front().buffer->guest->begin(), srcBuffers.back().buffer->guest->end()};
 
