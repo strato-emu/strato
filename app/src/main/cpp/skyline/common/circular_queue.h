@@ -126,7 +126,7 @@ namespace skyline {
         template<typename TransformedType, typename Transformation>
         void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
             std::unique_lock lock(productionMutex);
-            for (const auto &item : buffer) {
+            for (auto &item : buffer) {
                 auto next{end + 1};
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
                 if (next == start) {
