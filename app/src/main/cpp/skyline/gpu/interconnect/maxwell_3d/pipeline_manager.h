@@ -94,9 +94,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         bool CheckBindingMatch(Pipeline *other);
 
-        void SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
+        DescriptorUpdateInfo *SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
 
-        void SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind);
+        DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind);
     };
 
     class PipelineManager {

@@ -169,14 +169,29 @@ namespace skyline::gpu::interconnect::maxwell3d {
         activeState.Update(ctx, builder, indexed, topology, count);
         Pipeline *pipeline{activeState.GetPipeline()};
 
-        if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
-            // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
-            if (constantBuffers.quickBind)
-                // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
-                pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, *constantBuffers.quickBind);
-        } else {
-            // If bindings have changed or quick bind is disabled, perform a full descriptor update
-            pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
+        auto *descUpdateInfo{[&]() -> DescriptorUpdateInfo * {
+            if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
+                // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
+                if (constantBuffers.quickBind)
+                    // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
+                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, *constantBuffers.quickBind);
+                else
+                    return nullptr;
+            } else {
+                // If bindings have changed or quick bind is disabled, perform a full descriptor update
+                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
+            }
+        }()};
+
+        if (descUpdateInfo) {
+            auto newSet{std::make_shared<DescriptorAllocator::ActiveDescriptorSet>(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
+            ctx.executor.cycle->AttachObject(newSet);
+
+            // Descriptor set lifetime is bound to the current cycle so we can safely use a raw pointer from now on
+            auto *oldSet{activeDescriptorSet};
+            activeDescriptorSet = newSet.get();
+
+            builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
         }
 
         const auto &surfaceClip{clearEngineRegisters.surfaceClip};
@@ -186,8 +201,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
         auto stateUpdater{builder.Build()};
-        ctx.executor.AddSubpass([stateUpdater](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
-            stateUpdater.RecordAll(commandBuffer);
+        ctx.executor.AddSubpass([stateUpdater](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
+            stateUpdater.RecordAll(gpu, commandBuffer);
         }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment());
 
         constantBuffers.ResetQuickBind();

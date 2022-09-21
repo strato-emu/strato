@@ -39,6 +39,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ClearEngineRegisters clearEngineRegisters;
         ConstantBuffers constantBuffers;
 
+        DescriptorAllocator::ActiveDescriptorSet *activeDescriptorSet{};
+
         vk::Rect2D GetClearScissor();
 
       public:

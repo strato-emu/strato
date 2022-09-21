@@ -69,4 +69,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using DirtyManager = dirty::Manager<soc::gm20b::engine::EngineMethodsEnd * sizeof(u32), sizeof(u32)>;
 
     class StateUpdateBuilder;
+
+    struct DescriptorUpdateInfo {
+        span<vk::CopyDescriptorSet> copies; //!< These will be performed before writes
+        span<vk::WriteDescriptorSet> writes;
+        span<vk::DescriptorBufferInfo> bufferDescs;
+        span<DynamicBufferBinding> bufferDescDynamicBindings;
+        vk::PipelineLayout pipelineLayout;
+        vk::DescriptorSetLayout descriptorSetLayout;
+        vk::PipelineBindPoint bindPoint;
+        u32 descriptorSetIndex;
+    };
 }

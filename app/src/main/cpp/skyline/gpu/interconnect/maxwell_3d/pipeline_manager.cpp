@@ -609,7 +609,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     // TODO: EXEC ID FOR STORAGE BUFS PURGE REMAP
-    void Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers) {
+    DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers) {
         u32 bindingIdx{};
         u32 writeIdx{};
         u32 bufferIdx{};
@@ -617,7 +617,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.writeDescCount)};
         auto bufferDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorBufferInfo>(descriptorInfo.totalBufferDescCount)};
-        auto bufferDescViews{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(descriptorInfo.totalBufferDescCount)};
+        auto bufferDescDynamicBindings{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(descriptorInfo.totalBufferDescCount)};
 
         auto writeBufferDescs{[&](vk::DescriptorType type, const auto &descs, u32 count, auto getBufferCb) {
             if (!descs.empty()) {
@@ -631,7 +631,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 for (size_t descIdx{}; descIdx < descs.size(); descIdx++) {
                     const auto &shaderDesc{descs[descIdx]};
                     for (size_t arrayIdx{}; arrayIdx < shaderDesc.count; arrayIdx++)
-                        bufferDescViews[bufferIdx++] = getBufferCb(shaderDesc, descIdx, arrayIdx);
+                        bufferDescDynamicBindings[bufferIdx++] = getBufferCb(shaderDesc, descIdx, arrayIdx);
                 }
             }
         }};
@@ -652,22 +652,35 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return GetStorageBufferBinding(ctx, stage.info, constantBuffers[i][desc.cbuf_index], storageBufferViews[descIdx], descIdx);
             });
         }
+        
+        return ctx.executor.allocator->EmplaceUntracked<DescriptorUpdateInfo>(DescriptorUpdateInfo{
+            .writes = writes,
+            .bufferDescs = bufferDescs,
+            .bufferDescDynamicBindings = bufferDescDynamicBindings,
+            .pipelineLayout = compiledPipeline.pipelineLayout,
+            .descriptorSetLayout = compiledPipeline.descriptorSetLayout,
+            .bindPoint = vk::PipelineBindPoint::eGraphics,
+            .descriptorSetIndex = 0,
+        });
     }
 
-    void Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind) {
-        const auto &cbufUsageInfo{descriptorInfo.cbufUsages[static_cast<size_t>(quickBind.stage)][quickBind.index]};
-        const auto &shaderInfo{shaderStages[static_cast<size_t>(quickBind.stage)].info};
-        auto &stageConstantBuffers{constantBuffers[static_cast<size_t>(quickBind.stage)]};
-        auto copy{ctx.executor.allocator->AllocateUntracked<vk::CopyDescriptorSet>()};
+    DescriptorUpdateInfo *Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind) {
+        size_t stageIndex{static_cast<size_t>(quickBind.stage)};
+
+        const auto &cbufUsageInfo{descriptorInfo.cbufUsages[stageIndex][quickBind.index]};
+        const auto &shaderInfo{shaderStages[stageIndex].info};
+        auto &stageConstantBuffers{constantBuffers[stageIndex]};
+        auto copies{ctx.executor.allocator->AllocateUntracked<vk::CopyDescriptorSet>(1)};
         auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(cbufUsageInfo.writeDescCount)};
+
         size_t writeIdx{};
         size_t bufferIdx{};
 
         auto bufferDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorBufferInfo>(cbufUsageInfo.totalBufferDescCount)};
-        auto bufferDescViews{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
+        auto bufferDescDynamicBindings{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
 
-        // TODO: opt this to do partial copy
-        *copy = vk::CopyDescriptorSet{
+        // TODO: opt this to do partial copy and avoid updating twice
+        copies[0] = vk::CopyDescriptorSet{
             .srcBinding = 0,
             .srcArrayElement = 0,
             .dstBinding = 0,
@@ -687,7 +700,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 };
 
                 for (size_t i{}; i < shaderDesc.count; i++)
-                    bufferDescViews[bufferIdx++] = getBufferCb(shaderDesc, usage.shaderDescIdx, i);
+                    bufferDescDynamicBindings[bufferIdx++] = getBufferCb(shaderDesc, usage.shaderDescIdx, i);
             }
         }};
 
@@ -700,6 +713,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         writeBufferDescs(vk::DescriptorType::eStorageBuffer, cbufUsageInfo.storageBuffers, shaderInfo.storage_buffers_descriptors, descriptorInfo.storageBufferDescCount,
                          [&](const Shader::StorageBufferDescriptor &desc, size_t descIdx, size_t arrayIdx) {
             return GetStorageBufferBinding(ctx, shaderInfo, stageConstantBuffers[desc.cbuf_index], storageBufferViews[bufferIdx], descIdx);
+        });
+
+        return ctx.executor.allocator->EmplaceUntracked<DescriptorUpdateInfo>(DescriptorUpdateInfo{
+            .copies = copies,
+            .writes = writes,
+            .bufferDescs = bufferDescs,
+            .bufferDescDynamicBindings = bufferDescDynamicBindings,
+            .pipelineLayout = compiledPipeline.pipelineLayout,
+            .descriptorSetLayout = compiledPipeline.descriptorSetLayout,
+            .bindPoint = vk::PipelineBindPoint::eGraphics,
+            .descriptorSetIndex = 0,
         });
     }
 }

@@ -12,7 +12,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     struct StateUpdateCmdHeader {
         StateUpdateCmdHeader *next;
-        using RecordFunc = void (*)(vk::raii::CommandBuffer &commandBuffer, StateUpdateCmdHeader *header);
+        using RecordFunc = void (*)(GPU &gpu, vk::raii::CommandBuffer &commandBuffer, StateUpdateCmdHeader *header);
         RecordFunc record;
     };
 
@@ -30,13 +30,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
         
         CmdHolder() = default;
 
-        static void Record(vk::raii::CommandBuffer &commandBuffer, StateUpdateCmdHeader *header) {
-            reinterpret_cast<CmdHolder *>(header)->cmd.Record(commandBuffer);
+        static void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer, StateUpdateCmdHeader *header) {
+            reinterpret_cast<CmdHolder *>(header)->cmd.Record(gpu, commandBuffer);
         }
     };
 
     struct SetVertexBuffersCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.bindVertexBuffers(firstBinding,
                                             span(buffers).subspan(firstBinding, bindingCount),
                                             span(offsets).subspan(firstBinding, bindingCount));
@@ -50,7 +50,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetVertexBuffersCmd = CmdHolder<SetVertexBuffersCmdImpl>;
 
     struct SetVertexBuffersDynamicCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             for (u32 i{base.firstBinding}; i < base.firstBinding + base.bindingCount; i++) {
                 base.buffers[i] = views[i].GetBuffer()->GetBacking();
                 base.offsets[i] = views[i].GetOffset();
@@ -59,13 +59,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
             base.Record(commandBuffer);
         }
 
-        SetVertexBuffersCmdImpl base;
+        SetVertexBuffersCmdImpl base{};
         std::array<BufferView, engine::VertexStreamCount> views;
     };
     using SetVertexBuffersDynamicCmd = CmdHolder<SetVertexBuffersDynamicCmdImpl>;
 
     struct SetIndexBufferCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.bindIndexBuffer(buffer, offset, indexType);
         }
         
@@ -76,7 +76,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetIndexBufferCmd = CmdHolder<SetIndexBufferCmdImpl>;
 
     struct SetIndexBufferDynamicCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             base.buffer = view.GetBuffer()->GetBacking();
             base.offset = view.GetOffset();
             base.Record(commandBuffer);
@@ -88,7 +88,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetIndexBufferDynamicCmd = CmdHolder<SetIndexBufferDynamicCmdImpl>;
 
     struct SetTransformFeedbackBufferCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.bindTransformFeedbackBuffersEXT(binding, buffer, offset, size);
         }
         
@@ -100,7 +100,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetTransformFeedbackBufferCmd = CmdHolder<SetTransformFeedbackBufferCmdImpl>;
 
     struct SetTransformFeedbackBufferDynamicCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             base.buffer = view.GetBuffer()->GetBacking();
             base.offset = view.GetOffset();
             base.Record(commandBuffer);
@@ -112,7 +112,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetTransformFeedbackBufferDynamicCmd = CmdHolder<SetTransformFeedbackBufferDynamicCmdImpl>;
 
     struct SetViewportCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setViewport(index, viewport);
         }
         
@@ -122,7 +122,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetViewportCmd = CmdHolder<SetViewportCmdImpl>;
 
     struct SetScissorCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setScissor(index, scissor);
         }
         
@@ -132,7 +132,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetScissorCmd = CmdHolder<SetScissorCmdImpl>;
     
     struct SetLineWidthCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setLineWidth(lineWidth);
         }
         
@@ -141,7 +141,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetLineWidthCmd = CmdHolder<SetLineWidthCmdImpl>;
 
     struct SetDepthBiasCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setDepthBias(depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
         }
         
@@ -152,7 +152,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetDepthBiasCmd = CmdHolder<SetDepthBiasCmdImpl>;
 
     struct SetBlendConstantsCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setBlendConstants(blendConstants.data());
         }
         
@@ -161,7 +161,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetBlendConstantsCmd = CmdHolder<SetBlendConstantsCmdImpl>;
 
     struct SetDepthBoundsCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setDepthBounds(minDepthBounds, maxDepthBounds);
         }
         
@@ -171,7 +171,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     using SetDepthBoundsCmd = CmdHolder<SetDepthBoundsCmdImpl>;
 
     struct SetBaseStencilStateCmdImpl {
-        void Record(vk::raii::CommandBuffer &commandBuffer) {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setStencilCompareMask(flags, funcMask);
             commandBuffer.setStencilReference(flags, funcRef);
             commandBuffer.setStencilWriteMask(flags, mask);
@@ -183,6 +183,52 @@ namespace skyline::gpu::interconnect::maxwell3d {
         u32 mask;
     };
     using SetBaseStencilStateCmd = CmdHolder<SetBaseStencilStateCmdImpl>;
+
+    struct SetDescriptorSetWithUpdateCmdImpl {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
+            // Resolve descriptor infos from dynamic bindings
+            for (size_t i{}; i < updateInfo->bufferDescDynamicBindings.size(); i++) {
+                auto &dynamicBinding{updateInfo->bufferDescDynamicBindings[i]};
+                if (auto view{std::get_if<BufferView>(&dynamicBinding)}) {
+                    updateInfo->bufferDescs[i] = vk::DescriptorBufferInfo{
+                        .buffer = view->GetBuffer()->GetBacking(),
+                        .offset = view->GetOffset(),
+                        .range = view->size
+                    };
+                } else if (auto binding{std::get_if<BufferBinding>(&dynamicBinding)}) {
+                    updateInfo->bufferDescs[i] = vk::DescriptorBufferInfo{
+                        .buffer = binding->buffer,
+                        .offset = binding->offset,
+                        .range = binding->size
+                    };
+                }
+            }
+
+            // Set the destination/(source) descriptor set(s) for all writes/(copies)
+            for (auto &write : updateInfo->writes)
+                write.dstSet = **dstSet;
+
+            for (auto &copy : updateInfo->copies) {
+                copy.dstSet = **dstSet;
+                copy.srcSet = **srcSet;
+            }
+            
+            // Perform the updates, doing copies first to avoid overwriting
+            if (!updateInfo->copies.empty())
+                gpu.vkDevice.updateDescriptorSets({}, updateInfo->copies);
+
+            if (!updateInfo->writes.empty())
+                gpu.vkDevice.updateDescriptorSets(updateInfo->writes, {});
+
+            // Bind the updated descriptor set and we're done!
+            commandBuffer.bindDescriptorSets(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, **dstSet, 0);
+        }
+
+        DescriptorUpdateInfo *updateInfo;
+        DescriptorAllocator::ActiveDescriptorSet *srcSet;
+        DescriptorAllocator::ActiveDescriptorSet *dstSet;
+    };
+    using SetDescriptorSetWithUpdateCmd = CmdHolder<SetDescriptorSetWithUpdateCmdImpl>;
 
     /**
      * @brief Single-use helper for recording a batch of state updates into a command buffer
@@ -197,9 +243,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /**
          * @brief Records all contained state updates into the given command buffer
          */
-        void RecordAll(vk::raii::CommandBuffer &commandBuffer) const {
+        void RecordAll(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) const {
             for (StateUpdateCmdHeader *cmd{first}; cmd; cmd = cmd->next)
-                cmd->record(commandBuffer, cmd);
+                cmd->record(gpu, commandBuffer, cmd);
         }
     };
 
@@ -357,6 +403,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 .funcRef = funcRef,
                 .funcMask = funcMask,
                 .mask = mask,
+            });
+        }
+
+        void SetDescriptorSetWithUpdate(DescriptorUpdateInfo *updateInfo, DescriptorAllocator::ActiveDescriptorSet *dstSet, DescriptorAllocator::ActiveDescriptorSet *srcSet) {
+            AppendCmd<SetDescriptorSetWithUpdateCmd>({
+                .updateInfo = updateInfo,
+                .srcSet = srcSet,
+                .dstSet = dstSet,
             });
         }
     };
