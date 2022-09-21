@@ -21,10 +21,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
           activeState{manager, registerBundle.activeStateRegisters},
           clearEngineRegisters{registerBundle.clearRegisters},
           constantBuffers{manager, registerBundle.constantBufferSelectorRegisters},
+          samplers{manager, registerBundle.samplerPoolRegisters},
           directState{activeState.directState} {
         executor.AddFlushCallback([this] {
             activeState.MarkAllDirty();
             constantBuffers.MarkAllDirty();
+            samplers.MarkAllDirty();
         });
     }
 

@@ -6,6 +6,7 @@
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
+#include "samplers.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /**
@@ -31,6 +32,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             ActiveState::EngineRegisters activeStateRegisters;
             ClearEngineRegisters clearRegisters;
             ConstantBufferSelectorState::EngineRegisters constantBufferSelectorRegisters;
+            SamplerPoolState::EngineRegisters samplerPoolRegisters;
         };
 
       private:
@@ -38,6 +40,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ActiveState activeState;
         ClearEngineRegisters clearEngineRegisters;
         ConstantBuffers constantBuffers;
+        Samplers samplers;
 
         DescriptorAllocator::ActiveDescriptorSet *activeDescriptorSet{};
 

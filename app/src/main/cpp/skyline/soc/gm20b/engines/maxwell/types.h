@@ -545,6 +545,29 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(MultisampleControl) == sizeof(u32));
 
+    struct SamplerBinding {
+        enum class Value : u8 {
+            Independently = 0,
+            ViaHeaderBinding = 1
+        };
+
+        Value value : 1;
+        u32 _pad_ : 31;
+    };
+    static_assert(sizeof(SamplerBinding) == sizeof(u32));
+
+    struct TexSamplerPool {
+        Address offset;
+        u32 maximumIndex;
+    };
+    static_assert(sizeof(TexSamplerPool) == sizeof(u32) * 3);
+
+    struct TexHeaderPool {
+        Address offset;
+        u32 maximumIndex;
+    };
+    static_assert(sizeof(TexHeaderPool) == sizeof(u32) * 3);
+
     enum class CompareFunc : u32 {
         D3DNever = 1,
         D3DLess = 2,

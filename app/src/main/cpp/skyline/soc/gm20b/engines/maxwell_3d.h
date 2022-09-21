@@ -189,7 +189,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x48A, type::ZtSize> ztSize;
 
-            Register<0x48D, bool> linkedTscHandle; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
+            Register<0x48D, type::SamplerBinding> samplerBinding; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
 
             Register<0x490, std::array<u32, 8>> postVtgShaderAttributeSkipMask;
 
@@ -235,20 +235,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x54F, type::MultisampleControl> multisampleControl;
 
-            struct SamplerPool {
-                Address address; // 0x557
-                u32 maximumIndex; // 0x559
-            };
-            Register<0x557, SamplerPool> samplerPool;
+            Register<0x557, type::TexSamplerPool> texSamplerPool;
 
             Register<0x55B, float> slopeScaleDepthBias;
             Register<0x55C, u32> aliasedLineWidthEnable;
 
-            struct TexturePool {
-                Address address; // 0x55D
-                u32 maximumIndex; // 0x55F
-            };
-            Register<0x55D, TexturePool> texturePool;
+            Register<0x55D, type::TexHeaderPool> texHeaderPool;
 
             Register<0x565, u32> twoSidedStencilTestEnable; //!< Determines if the back-facing stencil state uses the front facing stencil state or independent stencil state
 
