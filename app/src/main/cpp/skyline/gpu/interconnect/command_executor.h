@@ -19,25 +19,12 @@ namespace skyline::gpu::interconnect {
          * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
          */
         struct Slot {
-            /**
-             * @brief Helper to reset a slot's command buffer asynchronously
-             */
-            struct ScopedReset {
-                Slot &slot;
-
-                ScopedReset(Slot &slot);
-
-                ~ScopedReset();
-            };
-
             vk::raii::CommandPool commandPool; //!< Use one command pool per slot since command buffers from different slots may be recorded into on multiple threads at the same time
             vk::raii::CommandBuffer commandBuffer;
             vk::raii::Fence fence;
             std::shared_ptr<FenceCycle> cycle;
             boost::container::stable_vector<node::NodeVariant> nodes;
             LinearAllocatorState<> allocator;
-            std::mutex resetMutex;
-            bool needsReset{}; //!< If the slot's command buffer needs to be reset before it can be used again
 
             Slot(GPU &gpu);
 
