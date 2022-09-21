@@ -189,6 +189,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/packed_pipeline_state.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_manager.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/constant_buffers.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/samplers.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/maxwell_3d.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_executor.cpp
         ${source_DIR}/skyline/gpu/interconnect/command_nodes.cpp
