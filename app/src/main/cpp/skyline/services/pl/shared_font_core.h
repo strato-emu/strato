@@ -23,12 +23,12 @@ namespace skyline::service::pl {
 
         std::array<FontEntry, 6> fonts{
             {
+                {"FontStandard.ttf"},
                 {"FontChineseSimplified.ttf"},
-                {"FontChineseTraditional.ttf"},
                 {"FontExtendedChineseSimplified.ttf"},
+                {"FontChineseTraditional.ttf"},
                 {"FontKorean.ttf"},
                 {"FontNintendoExtended.ttf"},
-                {"FontStandard.ttf"},
             }
         };
 
