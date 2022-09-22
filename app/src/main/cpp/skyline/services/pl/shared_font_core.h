@@ -12,7 +12,7 @@ namespace skyline::service::pl {
      * @brief A persistent object for managing the shared memory utilized by shared fonts
      */
     struct SharedFontCore {
-        static constexpr u32 FontSharedMemSize{0x2547000}; //!< The total size of the font shared memory
+        static constexpr u32 FontSharedMemSize{0x140A000}; //!< The total size of the font shared memory
         std::shared_ptr<kernel::type::KSharedMemory> sharedFontMemory; //!< The KSharedMemory that stores the TTF data of all shared fonts
 
         struct FontEntry {
