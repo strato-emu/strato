@@ -280,20 +280,15 @@
             app:summary="@string/mtico_description"
             app:title="Material Design Icons" />
         <emu.skyline.preference.LicensePreference
-            app:libraryCopyright="Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
-            app:libraryLicense="@string/apache2_license"
-            app:libraryUrl="https://fonts.google.com/specimen/Open+Sans"
-            app:summary="@string/open_sans_description"
-            app:title="Open Sans" />
+            app:libraryCopyright="Copyright 2018 The Noto Project Authors (github.com/googlei18n/noto-fonts)"
+            app:libraryLicense="@string/sil_open_font_license"
+            app:libraryUrl="https://github.com/googlefonts/noto-cjk"
+            app:summary="@string/noto_sans_description"
+            app:title="Noto Sans" />
         <emu.skyline.preference.LicensePreference
             app:libraryLicense="@string/apache2_license"
             app:libraryUrl="https://fonts.google.com/specimen/Roboto"
             app:summary="@string/roboto_description"
             app:title="Roboto" />
-        <emu.skyline.preference.LicensePreference
-            app:libraryLicense="@string/sil_open_font_license"
-            app:libraryUrl="https://fonts.google.com/specimen/Source+Sans+Pro"
-            app:summary="@string/source_sans_pro_description"
-            app:title="Source Sans Pro" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
