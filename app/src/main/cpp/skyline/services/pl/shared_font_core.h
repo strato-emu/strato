@@ -40,10 +40,6 @@ namespace skyline::service::pl {
             auto fontsDirectory{std::make_shared<vfs::OsFileSystem>(state.os->publicAppFilesPath + "fonts/")};
             auto ptr{reinterpret_cast<u32 *>(sharedFontMemory->host.data())};
             for (auto &font : fonts) {
-                *ptr++ = 0x18029a7f;
-                *ptr++ = util::SwapEndianness(font.length ^ 0x49621806);
-                font.offset = static_cast<u32>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(sharedFontMemory->host.data()));
-
                 std::shared_ptr<vfs::Backing> fontFile;
                 if (fontsDirectory->FileExists(font.path))
                     fontFile = fontsDirectory->OpenFile(font.path);
@@ -51,6 +47,10 @@ namespace skyline::service::pl {
                     fontFile = state.os->assetFileSystem->OpenFile("fonts/" + font.path);
 
                 font.length = static_cast<u32>(fontFile->size);
+
+                *ptr++ = util::SwapEndianness(SharedFontResult);
+                *ptr++ = util::SwapEndianness(font.length ^ SharedFontKey);
+                font.offset = static_cast<u32>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(sharedFontMemory->host.data()));
                 fontFile->Read(span<u8>(reinterpret_cast<u8 *>(ptr), font.length));
                 ptr = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(ptr) + font.length);
             }
