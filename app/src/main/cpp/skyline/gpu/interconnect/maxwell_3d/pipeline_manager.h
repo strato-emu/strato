@@ -42,34 +42,43 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         struct DescriptorInfo {
             std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-            u32 writeDescCount{};
-            u32 uniformBufferDescCount{};
-            u32 storageBufferDescCount{};
-            u32 totalBufferDescCount{};
-            u32 uniformTexelBufferDescCount{};
-            u32 storageTexelBufferDescCount{};
-            u32 totalTexelBufferDescCount{};
-            u32 combinedImageSamplerDescCount{};
-            u32 storageImageDescCount{};
-            u32 totalImageDescCount{};
-            u32 totalElemCount{};
 
-            /**
-             * @brief Keeps track of all bindings that are dependent on a given constant buffer index to allow for quick binding
-             */
-            struct ConstantBufferDescriptorUsages {
-                struct Usage {
-                    u32 binding; //!< Vulkan binding index
-                    u32 shaderDescIdx; //!< Index of the descriptor in the appropriate shader info member
+            struct StageDescriptorInfo {
+                u32 uniformBufferDescCount;
+                u32 storageBufferDescCount;
+                u32 uniformTexelBufferDescCount;
+                u32 storageTexelBufferDescCount;
+                u32 combinedImageSamplerDescCount;
+                u32 storageImageDescCount;
+
+                /**
+                 * @brief Keeps track of all bindings that are dependent on a given constant buffer index to allow for quick binding
+                 */
+                struct ConstantBufferDescriptorUsages {
+                    struct Usage {
+                        u32 binding; //!< Vulkan binding index
+                        u32 shaderDescIdx; //!< Index of the descriptor in the appropriate shader info member
+                        u32 storageBufferIdx; //!< Index of the storage buffer in the per-pipeline storage buffer cache
+                    };
+
+                    boost::container::small_vector<Usage, 2> uniformBuffers;
+                    boost::container::small_vector<Usage, 2> storageBuffers;
+                    u32 totalBufferDescCount;
+                    u32 writeDescCount;
                 };
 
-                boost::container::small_vector<Usage, 2> uniformBuffers;
-                boost::container::small_vector<Usage, 2> storageBuffers;
-                u32 totalBufferDescCount{};
-                u32 writeDescCount{};
+                std::array<ConstantBufferDescriptorUsages, engine::ShaderStageConstantBufferCount> cbufUsages;
             };
 
-            std::array<std::array<ConstantBufferDescriptorUsages, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount> cbufUsages{};
+            std::array<StageDescriptorInfo, 5> stages;
+
+            u32 totalStorageBufferCount;
+
+            u32 totalWriteDescCount;
+            u32 totalBufferDescCount;
+            u32 totalTexelBufferDescCount;
+            u32 totalImageDescCount;
+            u32 totalElemCount;
         };
 
       private:

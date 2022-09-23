@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpu/descriptor_allocator.h>
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
