@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect {
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
         cycle->Wait();
         cycle = std::make_shared<FenceCycle>(gpu.vkDevice, *fence);
-        commandBuffer.reset();
+        // Command buffer doesn't need to be reset since that's done implicitly by begin
         return cycle;
     }
 
