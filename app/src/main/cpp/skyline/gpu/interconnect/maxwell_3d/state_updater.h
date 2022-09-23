@@ -56,7 +56,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 base.offsets[i] = views[i].GetOffset();
             }
             
-            base.Record(commandBuffer);
+            base.Record(gpu, commandBuffer);
         }
 
         SetVertexBuffersCmdImpl base{};
@@ -79,7 +79,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             base.buffer = view.GetBuffer()->GetBacking();
             base.offset = view.GetOffset();
-            base.Record(commandBuffer);
+            base.Record(gpu, commandBuffer);
         }
         
         SetIndexBufferCmdImpl base;
@@ -103,7 +103,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             base.buffer = view.GetBuffer()->GetBacking();
             base.offset = view.GetOffset();
-            base.Record(commandBuffer);
+            base.Record(gpu, commandBuffer);
         }
         
         SetTransformFeedbackBufferCmdImpl base;
@@ -221,7 +221,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 gpu.vkDevice.updateDescriptorSets(updateInfo->writes, {});
 
             // Bind the updated descriptor set and we're done!
-            commandBuffer.bindDescriptorSets(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, **dstSet, 0);
+            commandBuffer.bindDescriptorSets(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, **dstSet, {});
         }
 
         DescriptorUpdateInfo *updateInfo;
