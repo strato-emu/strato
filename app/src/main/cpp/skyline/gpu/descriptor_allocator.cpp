@@ -94,9 +94,13 @@ namespace skyline::gpu {
         vk::Result lastResult{};
         if (it != pool->layoutSlots.end()) {
             auto &slots{it->second};
-            for (auto &slot : it->second)
-                if (!slot.active.test_and_set(std::memory_order_acq_rel))
-                    return ActiveDescriptorSet{pool, &slot};
+            for (auto slotIt{it->second.begin()} ; slotIt != it->second.end() ; slotIt++) {
+                if (!slotIt->active.test_and_set(std::memory_order_acq_rel)) {
+                    // Move active slots to end of list to reduce search time
+                    it->second.splice(it->second.end(), it->second, slotIt);
+                    return ActiveDescriptorSet{pool, &*slotIt};
+                }
+            }
 
             // If we couldn't find an available slot, we need to allocate a new one
             auto set{AllocateVkDescriptorSet(layout)};
