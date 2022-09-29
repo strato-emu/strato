@@ -93,16 +93,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    static BufferBinding GenerateQuadConversionIndexBuffer(InterconnectContext &ctx, vk::IndexType indexType, BufferView &view, u32 elementCount) {
+    static BufferBinding GenerateQuadConversionIndexBuffer(InterconnectContext &ctx, engine::IndexBuffer::IndexSize indexType, BufferView &view, u32 elementCount) {
         auto viewSpan{view.GetReadOnlyBackingSpan(false /* We attach above so always false */, []() {
             // TODO: see Read()
             Logger::Error("Dirty index buffer reads for attached buffers are unimplemented");
         })};
 
-        vk::DeviceSize indexBufferSize{conversion::quads::GetRequiredBufferSize(elementCount, indexType)};
+        size_t indexSize{1U << static_cast<u32>(indexType)};
+        vk::DeviceSize indexBufferSize{conversion::quads::GetRequiredBufferSize(elementCount, indexSize)};
         auto quadConversionAllocation{ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, indexBufferSize)};
 
-        conversion::quads::GenerateIndexedQuadConversionBuffer(quadConversionAllocation.region.data(), viewSpan.data(), elementCount, indexType);
+        conversion::quads::GenerateIndexedQuadConversionBuffer(quadConversionAllocation.region.data(), viewSpan.data(), elementCount, ConvertIndexType(indexType));
 
         return {quadConversionAllocation.buffer, quadConversionAllocation.offset, indexBufferSize};
     }
@@ -130,7 +131,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         indexType = ConvertIndexType(engine->indexBuffer.indexSize);
 
         if (quadConversion)
-            megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, indexType, *view, elementCount);
+            megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, elementCount);
         else
             megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
 
@@ -149,7 +150,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         // TODO: optimise this to use buffer sequencing to avoid needing to regenerate the quad buffer every time. We can't use as it is rn though because sequences aren't globally unique and may conflict after buffer recreation
         if (usedQuadConversion) {
-            megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, indexType, *view, elementCount);
+            megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, elementCount);
             builder.SetIndexBuffer(megaBufferBinding, indexType);
         } else if (megaBufferBinding) {
             if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
