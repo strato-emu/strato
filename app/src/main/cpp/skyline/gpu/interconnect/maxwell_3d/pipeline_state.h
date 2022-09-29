@@ -271,7 +271,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     /**
      * @brief Holds all GPU state for a pipeline, any changes to this will result in a pipeline cache lookup
      */
-    class PipelineState : dirty::ManualDirty {
+    class PipelineState : dirty::CachedManualDirty {
       public:
         struct EngineRegisters {
             std::array<PipelineStageState::EngineRegisters, engine::PipelineCount> pipelineStageRegisters;
@@ -316,6 +316,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
         void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder);
+
+        void PurgeCaches();
 
         std::shared_ptr<TextureView> GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index);
 

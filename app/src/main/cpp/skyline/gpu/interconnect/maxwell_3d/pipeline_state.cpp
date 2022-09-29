@@ -535,6 +535,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         pipeline = newPipeline;
     }
 
+    void PipelineState::PurgeCaches() {
+        pipeline = nullptr;
+    }
+
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {
         return colorRenderTargets[index].UpdateGet(ctx, packedState).view;
     }

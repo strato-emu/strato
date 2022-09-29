@@ -88,7 +88,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         u32 lastExecutionNumber{}; //!< The last execution number this pipeline was used at
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
         DescriptorInfo descriptorInfo;
-        cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
 
         std::array<Pipeline *, 4> transitionCache{};
         size_t transitionCacheNextIdx{};
@@ -98,6 +97,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SyncCachedStorageBufferViews(u32 executionNumber);
 
       public:
+        cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
+
         PackedPipelineState sourcePackedState;
 
         Pipeline(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment);
