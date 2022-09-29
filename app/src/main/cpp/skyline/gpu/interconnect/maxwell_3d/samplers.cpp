@@ -13,7 +13,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     SamplerPoolState::SamplerPoolState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
     void SamplerPoolState::Flush(InterconnectContext &ctx) {
-        u32 maximumIndex{engine->samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding ? engine->texHeaderPool.maximumIndex : engine->texSamplerPool.maximumIndex};
+        useTexHeaderBinding = engine->samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding;
+        u32 maximumIndex{useTexHeaderBinding ? engine->texHeaderPool.maximumIndex : engine->texSamplerPool.maximumIndex};
         auto mapping{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->texSamplerPool.offset)};
 
         texSamplers = mapping.first.subspan(mapping.second).cast<TextureSamplerControl>().first(maximumIndex + 1);
@@ -27,6 +28,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void Samplers::MarkAllDirty() {
         samplerPool.MarkDirty(true);
+        std::fill(texSamplerCache.begin(), texSamplerCache.end(), nullptr);
     }
 
     static vk::Filter ConvertSamplerFilter(TextureSamplerControl::Filter filter) {
@@ -137,63 +139,72 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return vk::BorderColor::eFloatTransparentBlack;
     }
 
-    std::shared_ptr<vk::raii::Sampler> Samplers::GetSampler(InterconnectContext &ctx, u32 index) {
-        auto texSamplers{samplerPool.UpdateGet(ctx).texSamplers};
-
-        TextureSamplerControl &texSampler{texSamplers[index]};
-        auto &sampler{texSamplerCache[texSampler]};
-        if (sampler)
-            return sampler;
-
-        auto convertAddressModeWithCheck{[&](TextureSamplerControl::AddressMode mode) {
-            auto vkMode{ConvertSamplerAddressMode(mode)};
-            if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !ctx.gpu.traits.supportsSamplerMirrorClampToEdge) [[unlikely]] {
-                Logger::Warn("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
-                return vk::SamplerAddressMode::eClampToEdge; // We use a normal clamp to edge to approximate it
-            }
-            return vkMode;
-        }};
-
-        auto maxAnisotropy{texSampler.MaxAnisotropy()};
-        vk::StructureChain<vk::SamplerCreateInfo, vk::SamplerReductionModeCreateInfoEXT, vk::SamplerCustomBorderColorCreateInfoEXT> samplerInfo{
-            vk::SamplerCreateInfo{
-                .magFilter = ConvertSamplerFilter(texSampler.magFilter),
-                .minFilter = ConvertSamplerFilter(texSampler.minFilter),
-                .mipmapMode = ConvertSamplerMipFilter(texSampler.mipFilter),
-                .addressModeU = convertAddressModeWithCheck(texSampler.addressModeU),
-                .addressModeV = convertAddressModeWithCheck(texSampler.addressModeV),
-                .addressModeW = convertAddressModeWithCheck(texSampler.addressModeP),
-                .mipLodBias = texSampler.MipLodBias(),
-                .anisotropyEnable = ctx.gpu.traits.supportsAnisotropicFiltering && maxAnisotropy > 1.0f,
-                .maxAnisotropy = maxAnisotropy,
-                .compareEnable = texSampler.depthCompareEnable,
-                .compareOp = ConvertSamplerCompareOp(texSampler.depthCompareOp),
-                .minLod = texSampler.mipFilter == TextureSamplerControl::MipFilter::None ? 0.0f : texSampler.MinLodClamp(),
-                .maxLod = texSampler.mipFilter == TextureSamplerControl::MipFilter::None ? 0.25f : texSampler.MaxLodClamp(),
-                .unnormalizedCoordinates = false,
-            }, vk::SamplerReductionModeCreateInfoEXT{
-                .reductionMode = ConvertSamplerReductionFilter(texSampler.reductionFilter),
-            }, vk::SamplerCustomBorderColorCreateInfoEXT{
-                .customBorderColor.float32 = {{texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA}},
-                .format = vk::Format::eUndefined,
-            },
-        };
-
-        if (!ctx.gpu.traits.supportsSamplerReductionMode)
-            samplerInfo.unlink<vk::SamplerReductionModeCreateInfoEXT>();
-
-        vk::BorderColor &borderColor{samplerInfo.get<vk::SamplerCreateInfo>().borderColor};
-        if (ctx.gpu.traits.supportsCustomBorderColor) {
-            borderColor = ConvertBorderColorWithCustom(texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA);
-            if (borderColor != vk::BorderColor::eFloatCustomEXT)
-                samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
-        } else {
-            borderColor = ConvertBorderColorFixed(texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA);
-            samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
+    vk::raii::Sampler *Samplers::GetSampler(InterconnectContext &ctx, u32 samplerIndex, u32 textureIndex) {
+        const auto &samplerPoolObj{samplerPool.UpdateGet(ctx)};
+        u32 index{samplerPoolObj.useTexHeaderBinding ? textureIndex : samplerIndex};
+        auto texSamplers{samplerPoolObj.texSamplers};
+        if (texSamplers.size() != texSamplerCache.size()) {
+            texSamplerCache.resize(texSamplers.size());
+            std::fill(texSamplerCache.begin(), texSamplerCache.end(), nullptr);
+        } else if (texSamplerCache[index]) {
+            return texSamplerCache[index];
         }
 
-        sampler = std::make_shared<vk::raii::Sampler>(ctx.gpu.vkDevice, samplerInfo.get<vk::SamplerCreateInfo>());
-        return sampler;
+        TextureSamplerControl &texSampler{texSamplers[index]};
+        auto &sampler{texSamplerStore[texSampler]};
+        if (!sampler) {
+            auto convertAddressModeWithCheck{[&](TextureSamplerControl::AddressMode mode) {
+                auto vkMode{ConvertSamplerAddressMode(mode)};
+                if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !ctx.gpu.traits.supportsSamplerMirrorClampToEdge) [[unlikely]] {
+                    Logger::Warn("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
+                    return vk::SamplerAddressMode::eClampToEdge; // We use a normal clamp to edge to approximate it
+                }
+                return vkMode;
+            }};
+
+            auto maxAnisotropy{texSampler.MaxAnisotropy()};
+            vk::StructureChain<vk::SamplerCreateInfo, vk::SamplerReductionModeCreateInfoEXT, vk::SamplerCustomBorderColorCreateInfoEXT> samplerInfo{
+                vk::SamplerCreateInfo{
+                    .magFilter = ConvertSamplerFilter(texSampler.magFilter),
+                    .minFilter = ConvertSamplerFilter(texSampler.minFilter),
+                    .mipmapMode = ConvertSamplerMipFilter(texSampler.mipFilter),
+                    .addressModeU = convertAddressModeWithCheck(texSampler.addressModeU),
+                    .addressModeV = convertAddressModeWithCheck(texSampler.addressModeV),
+                    .addressModeW = convertAddressModeWithCheck(texSampler.addressModeP),
+                    .mipLodBias = texSampler.MipLodBias(),
+                    .anisotropyEnable = ctx.gpu.traits.supportsAnisotropicFiltering && maxAnisotropy > 1.0f,
+                    .maxAnisotropy = maxAnisotropy,
+                    .compareEnable = texSampler.depthCompareEnable,
+                    .compareOp = ConvertSamplerCompareOp(texSampler.depthCompareOp),
+                    .minLod = texSampler.mipFilter == TextureSamplerControl::MipFilter::None ? 0.0f : texSampler.MinLodClamp(),
+                    .maxLod = texSampler.mipFilter == TextureSamplerControl::MipFilter::None ? 0.25f : texSampler.MaxLodClamp(),
+                    .unnormalizedCoordinates = false,
+                }, vk::SamplerReductionModeCreateInfoEXT{
+                    .reductionMode = ConvertSamplerReductionFilter(texSampler.reductionFilter),
+                }, vk::SamplerCustomBorderColorCreateInfoEXT{
+                    .customBorderColor.float32 = {{texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA}},
+                    .format = vk::Format::eUndefined,
+                },
+            };
+
+            if (!ctx.gpu.traits.supportsSamplerReductionMode)
+                samplerInfo.unlink<vk::SamplerReductionModeCreateInfoEXT>();
+
+            vk::BorderColor &borderColor{samplerInfo.get<vk::SamplerCreateInfo>().borderColor};
+            if (ctx.gpu.traits.supportsCustomBorderColor) {
+                borderColor = ConvertBorderColorWithCustom(texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA);
+                if (borderColor != vk::BorderColor::eFloatCustomEXT)
+                    samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
+            } else {
+                borderColor = ConvertBorderColorFixed(texSampler.borderColorR, texSampler.borderColorG, texSampler.borderColorB, texSampler.borderColorA);
+                samplerInfo.unlink<vk::SamplerCustomBorderColorCreateInfoEXT>();
+            }
+
+            sampler = std::make_unique<vk::raii::Sampler>(ctx.gpu.vkDevice, samplerInfo.get<vk::SamplerCreateInfo>());
+        }
+
+        texSamplerCache[index] = sampler.get();
+        return sampler.get();
     }
 
 

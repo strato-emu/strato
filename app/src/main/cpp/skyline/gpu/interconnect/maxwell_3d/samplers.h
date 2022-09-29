@@ -23,6 +23,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         span<TextureSamplerControl> texSamplers;
+        bool useTexHeaderBinding;
 
         SamplerPoolState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
@@ -35,13 +36,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
       private:
         dirty::ManualDirtyState<SamplerPoolState> samplerPool;
 
-        tsl::robin_map<TextureSamplerControl, std::shared_ptr<vk::raii::Sampler>, util::ObjectHash<TextureSamplerControl>> texSamplerCache;
+        tsl::robin_map<TextureSamplerControl, std::unique_ptr<vk::raii::Sampler>, util::ObjectHash<TextureSamplerControl>> texSamplerStore;
+        std::vector<vk::raii::Sampler *> texSamplerCache;
+
 
       public:
         Samplers(DirtyManager &manager, const SamplerPoolState::EngineRegisters &engine);
 
         void MarkAllDirty();
 
-        std::shared_ptr<vk::raii::Sampler> GetSampler(InterconnectContext &ctx, u32 index);
+        vk::raii::Sampler *GetSampler(InterconnectContext &ctx, u32 samplerIndex, u32 textureIndex);
     };
 }
