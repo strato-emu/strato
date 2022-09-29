@@ -8,6 +8,7 @@
 #include "active_state.h"
 #include "constant_buffers.h"
 #include "samplers.h"
+#include "textures.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /**
@@ -34,6 +35,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             ClearEngineRegisters clearRegisters;
             ConstantBufferSelectorState::EngineRegisters constantBufferSelectorRegisters;
             SamplerPoolState::EngineRegisters samplerPoolRegisters;
+            TexturePoolState::EngineRegisters texturePoolRegisters;
         };
 
       private:
@@ -42,6 +44,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ClearEngineRegisters clearEngineRegisters;
         ConstantBuffers constantBuffers;
         Samplers samplers;
+        Textures textures;
         std::shared_ptr<memory::Buffer> quadConversionBuffer{};
         bool quadConversionBufferAttached{};
 

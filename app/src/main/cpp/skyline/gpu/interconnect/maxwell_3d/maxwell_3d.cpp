@@ -23,11 +23,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
           clearEngineRegisters{registerBundle.clearRegisters},
           constantBuffers{manager, registerBundle.constantBufferSelectorRegisters},
           samplers{manager, registerBundle.samplerPoolRegisters},
+          textures{manager, registerBundle.texturePoolRegisters},
           directState{activeState.directState} {
         executor.AddFlushCallback([this] {
             activeState.MarkAllDirty();
             constantBuffers.MarkAllDirty();
             samplers.MarkAllDirty();
+            textures.MarkAllDirty();
             quadConversionBufferAttached = false;
         });
 
@@ -216,12 +218,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
                 if (constantBuffers.quickBind)
                     // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
-                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, *constantBuffers.quickBind);
+                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, samplers, textures, *constantBuffers.quickBind);
                 else
                     return nullptr;
             } else {
                 // If bindings have changed or quick bind is disabled, perform a full descriptor update
-                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers);
+                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers, samplers, textures);
             }
         }()};
 

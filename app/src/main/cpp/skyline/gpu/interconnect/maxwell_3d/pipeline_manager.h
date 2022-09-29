@@ -9,6 +9,8 @@
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
+#include "samplers.h"
+#include "textures.h"
 
 namespace skyline::gpu {
     class TextureView;
@@ -109,9 +111,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         bool CheckBindingMatch(Pipeline *other);
 
-        DescriptorUpdateInfo *SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers);
+        DescriptorUpdateInfo *SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures);
 
-        DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, ConstantBuffers::QuickBind quickBind);
+        DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind);
     };
 
     class PipelineManager {
