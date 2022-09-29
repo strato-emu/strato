@@ -248,11 +248,15 @@ namespace skyline {
                 blockPhys = sparseMap;
             }
 
-            span cpuBlock{blockPhys, blockSize};
-            if (cpuAccessCallback)
-                cpuAccessCallback(cpuBlock);
+            if (predecessor->phys) {
+                span cpuBlock{blockPhys, blockSize};
+                if (cpuAccessCallback)
+                    cpuAccessCallback(cpuBlock);
 
-            ranges.push_back(cpuBlock);
+                ranges.push_back(cpuBlock);
+            } else {
+                ranges.push_back(span<u8>{static_cast<u8*>(nullptr), blockSize});
+            }
 
             size -= blockSize;
 
