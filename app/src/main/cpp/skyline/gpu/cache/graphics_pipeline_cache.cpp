@@ -36,8 +36,13 @@ namespace skyline::gpu::cache {
 
         colorBlendState.pAttachments = colorBlendAttachments.data();
 
-        for (auto &colorAttachment : state.colorAttachments)
-            colorAttachments.emplace_back(AttachmentMetadata{colorAttachment->format->vkFormat, colorAttachment->texture->sampleCount});
+        for (auto &colorAttachment : state.colorAttachments) {
+            if (colorAttachment)
+                colorAttachments.emplace_back(AttachmentMetadata{colorAttachment->format->vkFormat, colorAttachment->texture->sampleCount});
+            else
+                colorAttachments.emplace_back(AttachmentMetadata{vk::Format::eUndefined, vk::SampleCountFlagBits::e1});
+        }
+
         if (state.depthStencilAttachment)
             depthStencilAttachment.emplace(AttachmentMetadata{state.depthStencilAttachment->format->vkFormat, state.depthStencilAttachment->texture->sampleCount});
     }
@@ -171,8 +176,10 @@ namespace skyline::gpu::cache {
 
         HASH(key.colorAttachments.size());
         for (const auto &attachment : key.colorAttachments) {
-            HASH(attachment->format->vkFormat);
-            HASH(attachment->texture->sampleCount);
+            if (attachment) {
+                HASH(attachment->format->vkFormat);
+                HASH(attachment->texture->sampleCount);
+            }
         }
 
         HASH(key.depthStencilAttachment != nullptr);
@@ -342,21 +349,28 @@ namespace skyline::gpu::cache {
         boost::container::small_vector<vk::AttachmentDescription, 8> attachmentDescriptions;
         boost::container::small_vector<vk::AttachmentReference, 8> attachmentReferences;
 
-        auto pushAttachment{[&](const TextureView &view) {
-            attachmentDescriptions.push_back(vk::AttachmentDescription{
-                .format = view.format->vkFormat,
-                .samples = view.texture->sampleCount,
-                .loadOp = vk::AttachmentLoadOp::eLoad,
-                .storeOp = vk::AttachmentStoreOp::eStore,
-                .stencilLoadOp = vk::AttachmentLoadOp::eLoad,
-                .stencilStoreOp = vk::AttachmentStoreOp::eStore,
-                .initialLayout = view.texture->layout,
-                .finalLayout = view.texture->layout,
-            });
-            attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = static_cast<u32>(attachmentDescriptions.size() - 1),
-                .layout = view.texture->layout,
-            });
+        auto pushAttachment{[&](TextureView *view) {
+            if (view) {
+                attachmentDescriptions.push_back(vk::AttachmentDescription{
+                    .format = view->format->vkFormat,
+                    .samples = view->texture->sampleCount,
+                    .loadOp = vk::AttachmentLoadOp::eLoad,
+                    .storeOp = vk::AttachmentStoreOp::eStore,
+                    .stencilLoadOp = vk::AttachmentLoadOp::eLoad,
+                    .stencilStoreOp = vk::AttachmentStoreOp::eStore,
+                    .initialLayout = view->texture->layout,
+                    .finalLayout = view->texture->layout,
+                });
+                attachmentReferences.push_back(vk::AttachmentReference{
+                    .attachment = static_cast<u32>(attachmentDescriptions.size() - 1),
+                    .layout = view->texture->layout,
+                });
+            } else {
+                attachmentReferences.push_back(vk::AttachmentReference{
+                    .attachment = VK_ATTACHMENT_UNUSED,
+                    .layout = vk::ImageLayout::eUndefined,
+                });
+            }
         }};
 
         vk::SubpassDescription subpassDescription{
@@ -364,10 +378,10 @@ namespace skyline::gpu::cache {
         };
 
         for (auto &colorAttachment : state.colorAttachments)
-            pushAttachment(*colorAttachment);
+            pushAttachment(colorAttachment);
 
         if (state.depthStencilAttachment) {
-            pushAttachment(*state.depthStencilAttachment);
+            pushAttachment(state.depthStencilAttachment);
 
             subpassDescription.pColorAttachments = attachmentReferences.data();
             subpassDescription.colorAttachmentCount = static_cast<u32>(attachmentReferences.size() - 1);

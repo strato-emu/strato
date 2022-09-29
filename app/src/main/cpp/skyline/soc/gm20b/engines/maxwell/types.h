@@ -451,7 +451,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u8 target6 : 3;
         u8 target7 : 3;
 
-        size_t operator[](size_t index) {
+        size_t operator[](size_t index) const {
             switch (index) {
                 case 0:
                     return target0;

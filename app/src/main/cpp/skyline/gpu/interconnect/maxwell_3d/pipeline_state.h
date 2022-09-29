@@ -284,6 +284,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             DepthStencilState::EngineRegisters depthStencilRegisters;
             ColorBlendState::EngineRegisters colorBlendRegisters;
             GlobalShaderConfigState::EngineRegisters globalShaderConfigRegisters;
+            const engine::CtSelect &ctSelect;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -304,6 +305,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
         dirty::ManualDirtyState<ColorBlendState> colorBlend;
         GlobalShaderConfigState globalShaderConfig;
+        const engine::CtSelect &ctSelect;
 
       public:
         DirectPipelineState directState;

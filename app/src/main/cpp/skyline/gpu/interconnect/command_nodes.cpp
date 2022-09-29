@@ -128,10 +128,16 @@ namespace skyline::gpu::interconnect::node {
 
         auto colorAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)}; // Calculate new base offset as it has changed since we pushed the input attachments
         for (auto &attachment : colorAttachments) {
-            attachmentReferences.push_back(vk::AttachmentReference{
-                .attachment = AddAttachment(attachment, gpu),
-                .layout = attachment->texture->layout,
-            });
+            if (attachment)
+                attachmentReferences.push_back(vk::AttachmentReference{
+                    .attachment = AddAttachment(attachment, gpu),
+                    .layout = attachment->texture->layout,
+                });
+            else
+                attachmentReferences.push_back(vk::AttachmentReference{
+                    .attachment = VK_ATTACHMENT_UNUSED,
+                    .layout = vk::ImageLayout::eUndefined,
+                });
         }
 
         auto depthStencilAttachmentOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};

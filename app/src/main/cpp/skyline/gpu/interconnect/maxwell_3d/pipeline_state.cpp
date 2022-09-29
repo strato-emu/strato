@@ -470,6 +470,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         bindFunc(depthStencilRegisters);
         bindFunc(colorBlendRegisters);
         bindFunc(globalShaderConfigRegisters);
+        manager.Bind(handle, ctSelect);
     }
 
     PipelineState::PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine)
@@ -483,7 +484,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters},
           directState{engine.inputAssemblyRegisters},
-          globalShaderConfig{engine.globalShaderConfigRegisters} {}
+          globalShaderConfig{engine.globalShaderConfigRegisters},
+          ctSelect{engine.ctSelect} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
@@ -494,11 +496,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         colorAttachments.clear();
-        for (auto &colorRenderTarget : colorRenderTargets)
-            if (auto view{colorRenderTarget.UpdateGet(ctx, packedState).view})
-                colorAttachments.push_back(view.get());
+        for (size_t i{}; i < ctSelect.count; i++) {
+            const auto &view{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState).view.get()};
+            colorAttachments.push_back(view);
+
+            if (view)
+                ctx.executor.AttachTexture(view);
+        }
 
         depthAttachment = depthRenderTarget.UpdateGet(ctx, packedState).view.get();
+        if (depthAttachment)
+            ctx.executor.AttachTexture(depthAttachment);
 
         vertexInput.Update(packedState);
         directState.inputAssembly.Update(packedState);
