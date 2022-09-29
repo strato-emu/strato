@@ -85,6 +85,7 @@ namespace skyline::gpu {
             }, cycle->fence);
         }
 
+        cycle->NotifySubmitted();
         cycleQueue.Push(cycle);
     }
 }

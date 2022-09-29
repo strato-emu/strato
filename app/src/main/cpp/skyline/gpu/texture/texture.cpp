@@ -699,6 +699,8 @@ namespace skyline::gpu {
 
         auto stagingBuffer{SynchronizeHostImpl()};
         if (stagingBuffer) {
+            if (cycle)
+                cycle->WaitSubmit();
             auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
                 CopyFromStagingBuffer(commandBuffer, stagingBuffer);
             })};
@@ -810,6 +812,10 @@ namespace skyline::gpu {
     void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
         WaitOnBacking();
         source->WaitOnBacking();
+        if (cycle)
+            cycle->WaitSubmit();
+        if (source->cycle)
+            source->cycle->WaitSubmit();
 
         if (source->layout == vk::ImageLayout::eUndefined)
             throw exception("Cannot copy from image with undefined layout");
@@ -889,6 +895,7 @@ namespace skyline::gpu {
         })};
         lCycle->AttachObjects(std::move(source), shared_from_this());
         lCycle->ChainCycle(cycle);
+        lCycle->ChainCycle(source->cycle);
         cycle = lCycle;
     }
 }
