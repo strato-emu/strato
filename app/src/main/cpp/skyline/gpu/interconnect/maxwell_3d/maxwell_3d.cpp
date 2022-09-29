@@ -240,16 +240,31 @@ namespace skyline::gpu::interconnect::maxwell3d {
             builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
         }
 
+        auto stateUpdater{builder.Build()};
+
+        struct DrawParams {
+            u32 count;
+            u32 first;
+            u32 instanceCount;
+            u32 vertexOffset;
+            u32 firstInstance;
+            bool indexed;
+        };
+        auto *drawParams{ctx.executor.allocator->EmplaceUntracked<DrawParams>(DrawParams{count, first, instanceCount, vertexOffset, firstInstance, indexed})};
+
         const auto &surfaceClip{clearEngineRegisters.surfaceClip};
         vk::Rect2D scissor{
             {surfaceClip.horizontal.x, surfaceClip.vertical.y},
             {surfaceClip.horizontal.width, surfaceClip.vertical.height}
         };
 
-        auto stateUpdater{builder.Build()};
-        ctx.executor.AddSubpass([stateUpdater](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
+        ctx.executor.AddSubpass([stateUpdater, drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             stateUpdater.RecordAll(gpu, commandBuffer);
-        }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment());
+            if (drawParams->indexed)
+                commandBuffer.drawIndexed(drawParams->count, drawParams->instanceCount, drawParams->first, static_cast<i32>(drawParams->vertexOffset), drawParams->firstInstance);
+            else
+                commandBuffer.draw(drawParams->count, drawParams->instanceCount, drawParams->first, drawParams->firstInstance);
+        }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
 
         constantBuffers.ResetQuickBind();
     }
