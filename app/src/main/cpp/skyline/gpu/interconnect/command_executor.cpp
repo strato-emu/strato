@@ -152,7 +152,7 @@ namespace skyline::gpu::interconnect {
         return gpu.megaBufferAllocator;
     }
 
-    bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment) {
+    bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool noSubpassCreation) {
         auto addSubpass{[&] {
             renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu);
 
@@ -175,7 +175,12 @@ namespace skyline::gpu::interconnect {
             lastSubpassDepthStencilAttachment = depthStencilAttachment;
         }};
 
-        if (renderPass == nullptr || renderPass->renderArea != renderArea || subpassCount >= gpu.traits.quirks.maxSubpassCount) {
+        bool attachmentsMatch{ranges::equal(lastSubpassInputAttachments, inputAttachments) &&
+                              ranges::equal(lastSubpassColorAttachments, colorAttachments) &&
+                              lastSubpassDepthStencilAttachment == depthStencilAttachment};
+
+        if (renderPass == nullptr || renderPass->renderArea != renderArea ||
+            ((noSubpassCreation || subpassCount >= gpu.traits.quirks.maxSubpassCount) && !attachmentsMatch)) {
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
             if (renderPass != nullptr)
                 slot->nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
@@ -184,9 +189,7 @@ namespace skyline::gpu::interconnect {
             subpassCount = 1;
             return false;
         } else {
-            if (ranges::equal(lastSubpassInputAttachments, inputAttachments) &&
-                ranges::equal(lastSubpassColorAttachments, colorAttachments) &&
-                lastSubpassDepthStencilAttachment == depthStencilAttachment) {
+            if (attachmentsMatch) {
                 // The last subpass had the same attachments, so we can reuse them
                 return false;
             } else {
@@ -285,18 +288,12 @@ namespace skyline::gpu::interconnect {
         cycle->AttachObject(dependency);
     }
 
-    void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool exclusiveSubpass) {
-        if (exclusiveSubpass)
-            FinishRenderPass();
-
-        bool gotoNext{CreateRenderPassWithSubpass(renderArea, inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr)};
+    void CommandExecutor::AddSubpass(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&function, vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool noSubpassCreation) {
+        bool gotoNext{CreateRenderPassWithSubpass(renderArea, inputAttachments, colorAttachments, depthStencilAttachment ? &*depthStencilAttachment : nullptr, noSubpassCreation)};
         if (gotoNext)
             slot->nodes.emplace_back(std::in_place_type_t<node::NextSubpassFunctionNode>(), std::forward<decltype(function)>(function));
         else
             slot->nodes.emplace_back(std::in_place_type_t<node::SubpassFunctionNode>(), std::forward<decltype(function)>(function));
-
-        if (exclusiveSubpass)
-            FinishRenderPass();
     }
 
     void CommandExecutor::AddOutsideRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
