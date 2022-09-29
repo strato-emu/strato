@@ -135,48 +135,52 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::shared_ptr<TextureView> depthStencilView{};
 
         if (clearSurface.rEnable || clearSurface.gEnable || clearSurface.bEnable || clearSurface.aEnable) {
-            colorView = activeState.GetColorRenderTargetForClear(ctx, clearSurface.mrtSelect);
-            ctx.executor.AttachTexture(&*colorView);
+            if (auto view{activeState.GetColorRenderTargetForClear(ctx, clearSurface.mrtSelect)}) {
+                ctx.executor.AttachTexture(&*view);
 
-            if (!(clearSurface.rEnable && clearSurface.gEnable && clearSurface.bEnable && clearSurface.aEnable))
-                Logger::Warn("Partial clears are unimplemented! Performing full clear instead");
+                if (!(clearSurface.rEnable && clearSurface.gEnable && clearSurface.bEnable && clearSurface.aEnable))
+                    Logger::Warn("Partial clears are unimplemented! Performing full clear instead");
 
-            if (!(colorView->range.aspectMask & vk::ImageAspectFlagBits::eColor)) {
-                Logger::Warn("Colour RT used in clear lacks colour aspect"); // TODO: Drop this check after texman rework
-                return;
-            }
+                if (!(view->range.aspectMask & vk::ImageAspectFlagBits::eColor)) {
+                    Logger::Warn("Colour RT used in clear lacks colour aspect"); // TODO: Drop this check after texman rework
+                    return;
+                }
 
-            if (needsAttachmentClearCmd(colorView)) {
-                clearAttachments.push_back({ .aspectMask = colorView->range.aspectMask, .clearValue = {clearEngineRegisters.colorClearValue} });
-            } else {
-                ctx.executor.AddClearColorSubpass(&*colorView, clearEngineRegisters.colorClearValue);
-                colorView = {}; // Will avoid adding as colour RT
+                if (needsAttachmentClearCmd(view)) {
+                    clearAttachments.push_back({.aspectMask = view->range.aspectMask, .clearValue = {clearEngineRegisters.colorClearValue}});
+                    colorView = view;
+                } else {
+                    ctx.executor.AddClearColorSubpass(&*view, clearEngineRegisters.colorClearValue);
+                }
             }
         }
 
         if (clearSurface.stencilEnable || clearSurface.zEnable) {
-            depthStencilView = activeState.GetDepthRenderTargetForClear(ctx);
-            ctx.executor.AttachTexture(&*depthStencilView);
+            if (auto view{activeState.GetDepthRenderTargetForClear(ctx)}) {
+                ctx.executor.AttachTexture(&*view);
 
-            bool viewHasDepth{depthStencilView->range.aspectMask & vk::ImageAspectFlagBits::eDepth}, viewHasStencil{depthStencilView->range.aspectMask & vk::ImageAspectFlagBits::eStencil};
-            vk::ClearDepthStencilValue clearValue{
-                .depth = clearEngineRegisters.depthClearValue,
-                .stencil = clearEngineRegisters.stencilClearValue
-            };
+                bool viewHasDepth{view->range.aspectMask & vk::ImageAspectFlagBits::eDepth}, viewHasStencil{view->range.aspectMask & vk::ImageAspectFlagBits::eStencil};
+                vk::ClearDepthStencilValue clearValue{
+                    .depth = clearEngineRegisters.depthClearValue,
+                    .stencil = clearEngineRegisters.stencilClearValue
+                };
 
+                if (!viewHasDepth && !viewHasStencil) {
+                    Logger::Warn("Depth stencil RT used in clear lacks depth or stencil aspects"); // TODO: Drop this check after texman rework
+                    return;
+                }
 
-            if (!viewHasDepth && !viewHasStencil) {
-                Logger::Warn("Depth stencil RT used in clear lacks depth or stencil aspects"); // TODO: Drop this check after texman rework
-                return;
-            }
-
-            if (needsAttachmentClearCmd(depthStencilView) || (!clearSurface.stencilEnable && viewHasStencil) || (!clearSurface.zEnable && viewHasDepth )) { // Subpass clears write to all aspects of the texture, so we can't use them when only one component is enabled
-                clearAttachments.push_back({ .aspectMask = depthStencilView->range.aspectMask, .clearValue = clearValue });
-            } else {
-                ctx.executor.AddClearDepthStencilSubpass(&*depthStencilView, clearValue);
-                depthStencilView = {}; // Will avoid adding as depth-stencil RT
+                if (needsAttachmentClearCmd(view) || (!clearSurface.stencilEnable && viewHasStencil) || (!clearSurface.zEnable && viewHasDepth)) { // Subpass clears write to all aspects of the texture, so we can't use them when only one component is enabled
+                    clearAttachments.push_back({.aspectMask = view->range.aspectMask, .clearValue = clearValue});
+                    depthStencilView = view;
+                } else {
+                    ctx.executor.AddClearDepthStencilSubpass(&*view, clearValue);
+                }
             }
         }
+
+        if (clearAttachments.empty())
+            return;
 
         // Always use surfaceClip for render area since it's more likely to match the renderArea of draws and avoid an RP break
         const auto &surfaceClip{clearEngineRegisters.surfaceClip};
