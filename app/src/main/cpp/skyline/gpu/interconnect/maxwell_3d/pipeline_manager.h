@@ -85,6 +85,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         std::vector<CachedMappedBufferView> storageBufferViews;
+        u32 lastExecutionNumber{}; //!< The last execution number this pipeline was used at
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
         DescriptorInfo descriptorInfo;
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
@@ -93,6 +94,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         size_t transitionCacheNextIdx{};
 
         tsl::robin_map<Pipeline *, bool> bindingMatchCache; //!< Cache of which pipelines have bindings that match this pipeline
+
+        void SyncCachedStorageBufferViews(u32 executionNumber);
 
       public:
         PackedPipelineState sourcePackedState;

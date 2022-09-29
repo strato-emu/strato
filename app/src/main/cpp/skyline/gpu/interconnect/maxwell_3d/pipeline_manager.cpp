@@ -565,6 +565,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         storageBufferViews.resize(descriptorInfo.totalStorageBufferCount);
     }
 
+    void Pipeline::SyncCachedStorageBufferViews(u32 executionNumber) {
+        if (lastExecutionNumber != executionNumber) {
+            for (auto &view : storageBufferViews)
+                view.PurgeCaches();
+
+            lastExecutionNumber = executionNumber;
+        }
+    }
+
     Pipeline *Pipeline::LookupNext(const PackedPipelineState &packedState) {
         auto it{std::find_if(transitionCache.begin(), transitionCache.end(), [&packedState](auto pipeline) {
             if (pipeline && pipeline->sourcePackedState == packedState)
