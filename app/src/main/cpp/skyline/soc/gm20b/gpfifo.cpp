@@ -61,7 +61,7 @@ namespace skyline::soc::gm20b {
          * @brief Checks if a method is 'pure' i.e. does not touch macro or GPFIFO methods
          */
         bool Pure() const {
-            u16 size{[&]() -> u16  {
+            u32 size{[&]() -> u32  {
                 switch (secOp) {
                     case SecOp::NonIncMethod:
                     case SecOp::ImmdDataMethod:
@@ -73,7 +73,7 @@ namespace skyline::soc::gm20b {
                 }
             }()};
 
-            u16 end{static_cast<u16>(methodAddress + size)};
+            u32 end{static_cast<u32>(methodAddress + size)};
             return end < engine::EngineMethodsEnd && methodAddress >= engine::GPFIFO::RegisterCount;
         }
     };
@@ -212,12 +212,13 @@ namespace skyline::soc::gm20b {
 
         // Process more methods if the entries are still not all used up after handling resuming
         for (; entry != pushBuffer.end(); entry++) {
-            if (entry >= pushBuffer.end())
+            if (entry >= pushBuffer.end()) [[unlikely]]
                 throw exception("GPFIFO buffer overflow!"); // This should never happen
 
-            // An entry containing all zeroes is a NOP, skip over it
-            if (*entry == 0)
-                continue;
+            // Entries containing all zeroes is a NOP, skip over them
+            for (; *entry == 0; entry++)
+                if (entry == std::prev(pushBuffer.end()))
+                    return;
 
             PushBufferMethodHeader methodHeader{.raw = *entry};
 
@@ -279,6 +280,7 @@ namespace skyline::soc::gm20b {
                             }
                         }
 
+                        #pragma unroll(2)
                         for (u32 i{}; i < methodHeader.methodCount; i++)
                             SendPure(methodHeader.methodAddress + methodOffset(i), *++entry, methodHeader.methodSubChannel);
                     } else {
@@ -299,23 +301,22 @@ namespace skyline::soc::gm20b {
              * @return If the this was the final method in the current GpEntry
              */
             auto processMethod{[&] () -> bool {
-                switch (methodHeader.secOp) {
-                    case PushBufferMethodHeader::SecOp::IncMethod:
-                        return dispatchCalls.operator()<MethodResumeState::State::Inc>();
-                    case PushBufferMethodHeader::SecOp::NonIncMethod:
-                        return dispatchCalls.operator()<MethodResumeState::State::NonInc>();
-                    case PushBufferMethodHeader::SecOp::OneInc:
-                        return dispatchCalls.operator()<MethodResumeState::State::OneInc>();
-                    case PushBufferMethodHeader::SecOp::ImmdDataMethod:
-                        if (methodHeader.Pure())
-                            SendPure(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel);
-                        else
-                            SendFull(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true);
+                if (methodHeader.secOp == PushBufferMethodHeader::SecOp::IncMethod)  [[likely]] {
+                    return dispatchCalls.operator()<MethodResumeState::State::Inc>();
+                } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::OneInc) [[likely]] {
+                    return dispatchCalls.operator()<MethodResumeState::State::OneInc>();
+                } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::ImmdDataMethod) {
+                    if (methodHeader.Pure())
+                        SendPure(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel);
+                    else
+                        SendFull(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true);
 
-                        return false;
-                    case PushBufferMethodHeader::SecOp::EndPbSegment:
+                    return false;
+                } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::NonIncMethod) [[unlikely]] {
+                    return dispatchCalls.operator()<MethodResumeState::State::NonInc>();
+                } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::EndPbSegment) [[unlikely]] {
                         return true;
-                    default:
+                } else {
                         throw exception("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
                 }
             }};
