@@ -275,7 +275,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
             pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors, stageDescInfo.storageTexelBufferDescCount, [](const auto &, u32) {});
             descriptorInfo.totalTexelBufferDescCount += stageDescInfo.uniformTexelBufferDescCount + stageDescInfo.storageTexelBufferDescCount;
 
-            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, stageDescInfo.combinedImageSamplerDescCount, [](const auto &, u32) {}, needsIndividualTextureBindingWrites);
+            pushBindings(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, stageDescInfo.combinedImageSamplerDescCount, [&](const Shader::TextureDescriptor &desc, u32 descIdx) {
+                auto addUsage{[&](auto idx) {
+                    auto &usage{stageDescInfo.cbufUsages[desc.cbuf_index]};
+                    usage.combinedImageSamplers.push_back({bindingIndex, descIdx});
+                    usage.totalImageDescCount += desc.count;
+                    usage.writeDescCount++;
+                }};
+
+                addUsage(desc.cbuf_index);
+                if (desc.has_secondary)
+                    addUsage(desc.secondary_cbuf_index);
+            }, needsIndividualTextureBindingWrites);
             pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors, stageDescInfo.storageImageDescCount, [](const auto &, u32) {});
             descriptorInfo.totalImageDescCount += stageDescInfo.combinedImageSamplerDescCount + stageDescInfo.storageImageDescCount;
         }

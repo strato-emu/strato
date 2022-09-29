@@ -63,13 +63,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                     boost::container::small_vector<Usage, 2> uniformBuffers;
                     boost::container::small_vector<Usage, 2> storageBuffers;
+                    boost::container::small_vector<Usage, 2> combinedImageSamplers;
                     u32 totalBufferDescCount;
+                    u32 totalImageDescCount;
                     u32 writeDescCount;
                 };
 
                 std::array<ConstantBufferDescriptorUsages, engine::ShaderStageConstantBufferCount> cbufUsages;
             };
 
+            std::vector<vk::CopyDescriptorSet> copyDescs;
             std::array<StageDescriptorInfo, 5> stages;
 
             u32 totalStorageBufferCount;
@@ -78,7 +81,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 totalBufferDescCount;
             u32 totalTexelBufferDescCount;
             u32 totalImageDescCount;
-            u32 totalElemCount;
         };
 
       private:
