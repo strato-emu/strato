@@ -12,6 +12,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (address < blockMappingStartAddr || address >= blockMappingEndAddr) {
             u64 blockOffset{};
             std::tie(blockMapping, blockOffset) = ctx.channelCtx.asCtx->gmmu.LookupBlock(address);
+            if (!blockMapping.valid()) {
+                view = {};
+                blockMappingEndAddr = 0;
+                return;
+            }
+
             blockMappingStartAddr = address - blockOffset;
             blockMappingEndAddr = blockMappingStartAddr + blockMapping.size();
         }
