@@ -76,7 +76,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandRecordThread::Run() {
         auto &gpu{*state.gpu};
-        std::array<Slot, ActiveRecordSlots> slots{{gpu, gpu, gpu, gpu}};
+        std::array<Slot, ActiveRecordSlots> slots{{gpu, gpu, gpu, gpu, gpu, gpu}};
         outgoing.AppendTranform(span<Slot>(slots), [](auto &slot) { return &slot; });
 
         if (int result{pthread_setname_np(pthread_self(), "Sky-CmdRecord")})

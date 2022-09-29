@@ -39,7 +39,7 @@ namespace skyline::gpu::interconnect {
         const DeviceState &state;
         std::thread thread;
 
-        static constexpr size_t ActiveRecordSlots{4}; //!< Maximum number of simultaneously active slots
+        static constexpr size_t ActiveRecordSlots{6}; //!< Maximum number of simultaneously active slots
         CircularQueue<Slot *> incoming{ActiveRecordSlots}; //!< Slots pending recording
         CircularQueue<Slot *> outgoing{ActiveRecordSlots}; //!< Slots that have been submitted, may still be active on the GPU
 
