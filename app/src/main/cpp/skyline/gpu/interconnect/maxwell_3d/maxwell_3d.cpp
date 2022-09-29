@@ -225,6 +225,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }()};
 
+        if (oldPipeline != pipeline)
+            // If the pipeline has changed, we need to update the pipeline state
+            builder.SetPipeline(pipeline->compiledPipeline.pipeline);
+
         if (descUpdateInfo) {
             auto newSet{std::make_shared<DescriptorAllocator::ActiveDescriptorSet>(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
             ctx.executor.cycle->AttachObject(newSet);
