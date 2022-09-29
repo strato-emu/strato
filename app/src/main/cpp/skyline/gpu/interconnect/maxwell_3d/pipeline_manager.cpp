@@ -204,7 +204,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::array<Pipeline::ShaderStage, engine::ShaderStageCount> shaderStages{};
 
-        for (size_t i{stageIdx(ignoreVertexCullBeforeFetch ? PipelineStage::Vertex : PipelineStage::VertexCullBeforeFetch)}; i < engine::ShaderStageCount; i++) {
+        for (size_t i{stageIdx(ignoreVertexCullBeforeFetch ? PipelineStage::Vertex : PipelineStage::VertexCullBeforeFetch)}; i < engine::PipelineCount; i++) {
             if (!packedState.shaderHashes[i])
                 continue;
 
