@@ -66,6 +66,10 @@ namespace skyline::gpu {
         return GetLayerStride() * (layerCount - baseArrayLayer);
     }
 
+    bool GuestTexture::MappingsValid() const {
+        return ranges::all_of(mappings, [](const auto &mapping) { return mapping.valid(); });
+    }
+
     TextureView::TextureView(std::shared_ptr<Texture> texture, vk::ImageViewType type, vk::ImageSubresourceRange range, texture::Format format, vk::ComponentMapping mapping) : texture(std::move(texture)), type(type), format(format), mapping(mapping), range(range) {}
 
     Texture::TextureViewStorage::TextureViewStorage(vk::ImageViewType type, texture::Format format, vk::ComponentMapping mapping, vk::ImageSubresourceRange range, vk::raii::ImageView &&vkView) : type(type), format(format), mapping(mapping), range(range), vkView(std::move(vkView)) {}

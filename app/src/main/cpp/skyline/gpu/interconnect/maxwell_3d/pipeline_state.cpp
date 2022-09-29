@@ -145,7 +145,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(target.offset, guest.GetSize())};
         guest.mappings.assign(mappings.begin(), mappings.end());
 
-        view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
+        if (guest.MappingsValid())
+            view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
+        else
+            view = {};
     }
 
     /* Depth Render Target */
@@ -209,7 +212,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(engine->ztOffset, guest.GetSize())};
         guest.mappings.assign(mappings.begin(), mappings.end());
 
-        view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
+        if (guest.MappingsValid())
+            view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
+        else
+            view = {};
     }
 
     /* Pipeline Stages */
