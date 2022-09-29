@@ -150,7 +150,7 @@ namespace skyline::dirty {
          */
         void MarkDirty(size_t index) {
             auto &state{states[index]};
-            if (state.type == BindingState::Type::None) {
+            if (state.type == BindingState::Type::None) [[likely]] {
                 return;
             } else if (state.type == BindingState::Type::Inline) {
                 *state.inlineDirtyPtr = true;

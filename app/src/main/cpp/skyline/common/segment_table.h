@@ -78,9 +78,10 @@ namespace skyline {
          */
         const SegmentType &operator[](size_t index) const {
             auto &l2Entry{level2Table[index >> L2Bits]};
-            if (l2Entry.valid)
+            if (l2Entry.valid) [[likely]]
                 return l2Entry.segment;
-            return level1Table[index >> L1Bits];
+            else
+                return level1Table[index >> L1Bits];
         }
 
         /**
