@@ -37,6 +37,7 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandRecordThread::ProcessSlot(Slot *slot) {
+        TRACE_EVENT_FMT("gpu", "ProcessSlot: 0x{:X}, execution: {}", slot, slot->executionNumber);
         auto &gpu{*state.gpu};
 
         vk::RenderPass lRenderPass;
@@ -129,6 +130,7 @@ namespace skyline::gpu::interconnect {
 
         slot = recordThread.AcquireSlot();
         cycle = slot->Reset(gpu);
+        slot->executionNumber = executionNumber;
         allocator = &slot->allocator;
     }
 
@@ -411,12 +413,12 @@ namespace skyline::gpu::interconnect {
         for (const auto &callback : flushCallbacks)
             callback();
 
+        executionNumber++;
+
         if (!slot->nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Submit");
             SubmitInternal();
         }
         ResetInternal();
-
-        executionNumber++;
     }
 }
