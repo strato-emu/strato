@@ -2,13 +2,11 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu/texture/texture.h>
+#include <gpu/interconnect/command_executor.h>
+#include <gpu/cache/graphics_pipeline_cache.h>
 #include <gpu/shader_manager.h>
 #include <gpu.h>
-#include <gpu/interconnect/command_executor.h>
-#include <vulkan/vulkan_handles.hpp>
-#include "gpu/cache/graphics_pipeline_cache.h"
 #include "pipeline_manager.h"
-#include "soc/gm20b/engines/maxwell/types.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     static constexpr Shader::Stage ConvertCompilerShaderStage(engine::Pipeline::Shader::Type stage) {
@@ -426,7 +424,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bindingDescs.push_back({
                 .binding = i,
                 .stride = binding.stride,
-                .inputRate = binding.divisor ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex,
+                .inputRate = binding.GetInputRate(),
             });
 
             if (binding.GetInputRate() == vk::VertexInputRate::eInstance) {
