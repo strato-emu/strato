@@ -107,6 +107,7 @@ namespace skyline::service::nvdrv {
         try {
             std::shared_lock lock(deviceMutex);
             Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+            TRACE_EVENT("service", "Ioctl", "fd", fd, "cmd", cmd.raw);
             return ConvertResult(LogIoctlResult(devices.at(fd)->Ioctl(cmd, buffer), cmd.raw));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl was called with invalid fd: {}", fd);
@@ -117,6 +118,7 @@ namespace skyline::service::nvdrv {
         try {
             std::shared_lock lock(deviceMutex);
             Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+            TRACE_EVENT("service", "Ioctl", "fd", fd, "cmd", cmd.raw);
             return ConvertResult(LogIoctlResult(devices.at(fd)->Ioctl2(cmd, buffer, inlineBuffer), cmd.raw));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl2 was called with invalid fd: {}", fd);
@@ -127,6 +129,7 @@ namespace skyline::service::nvdrv {
         try {
             std::shared_lock lock(deviceMutex);
             Logger::Debug("fd: {}, cmd: 0x{:X}, device: {}", fd, cmd.raw, devices.at(fd)->GetName());
+            TRACE_EVENT("service", "Ioctl", "fd", fd, "cmd", cmd.raw);
             return ConvertResult(LogIoctlResult(devices.at(fd)->Ioctl3(cmd, buffer, inlineBuffer), cmd.raw));
         } catch (const std::out_of_range &) {
             throw exception("Ioctl3 was called with invalid fd: {}", fd);
