@@ -1511,11 +1511,11 @@ namespace bcn {
         const auto *alpha{reinterpret_cast<const BC_alpha *>(src)};
         const auto *color{reinterpret_cast<const BC_color *>(src + 8)};
         size_t pitch{R8g8b8a8Bpp * width};
-        for (size_t y{}; y < height; y += BlockHeight, dst += BlockHeight * width) {
+        for (size_t y{}; y < height; y += BlockHeight, dst += BlockHeight * pitch) {
             uint8_t *dstRow{dst};
             for (size_t x{}; x < width; x += BlockWidth, alpha += 2, color += 2, dstRow += BlockWidth * R8g8b8a8Bpp) {
-                [[clang::always_inline]] color->decode(dstRow, x, y, width, height, width, R8g8b8a8Bpp, false, true);
-                [[clang::always_inline]] alpha->decode(dstRow, x, y, width, height, width, R8g8b8a8Bpp);
+                [[clang::always_inline]] color->decode(dstRow, x, y, width, height, pitch, R8g8b8a8Bpp, false, true);
+                [[clang::always_inline]] alpha->decode(dstRow, x, y, width, height, pitch, R8g8b8a8Bpp);
             }
         }
     }
