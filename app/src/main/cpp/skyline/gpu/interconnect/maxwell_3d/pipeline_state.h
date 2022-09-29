@@ -87,7 +87,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         engine::Pipeline::Shader::Type shaderType;
 
         tsl::robin_map<u8 *, std::unique_ptr<MirrorEntry>> mirrorMap;
-        std::mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
+        SpinLock trapMutex; //!< Protects accesses from trap handlers to the mirror map
         MirrorEntry *entry{};
         span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
 
