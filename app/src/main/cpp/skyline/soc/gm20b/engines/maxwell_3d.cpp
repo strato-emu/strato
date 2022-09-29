@@ -70,8 +70,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     __attribute__((always_inline)) void Maxwell3D::FlushDeferredDraw() {
-        if (deferredDraw.pending) {
-            deferredDraw.pending = false;
+        if (batchEnableState.drawActive) {
+            batchEnableState.drawActive = false;
             interconnect.Draw(deferredDraw.drawTopology, deferredDraw.indexed, deferredDraw.drawCount, deferredDraw.drawFirst, deferredDraw.instanceCount, deferredDraw.drawBaseVertex, deferredDraw.drawBaseInstance);
             deferredDraw.instanceCount = 1;
         }
@@ -92,70 +92,70 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         bool redundant{registers.raw[method] == argument};
         registers.raw[method] = argument;
 
-        // TODO COMBINE THESE
-        if (batchLoadConstantBuffer.Active()) {
-            switch (method) {
-                // Add to the batch constant buffer update buffer
-                // Return early here so that any code below can rely on the fact that any cbuf updates will always be the first of a batch
-                #define LOAD_CONSTANT_BUFFER_CALLBACKS(z, index, data_)                \
-                ENGINE_STRUCT_ARRAY_CASE(loadConstantBuffer, data, index, { \
-                    batchLoadConstantBuffer.buffer.push_back(argument);         \
-                    registers.loadConstantBuffer->offset += 4;              \
-                    return;                                                   \
-                })
+        if (batchEnableState.raw) {
+            if (batchEnableState.constantBufferActive) {
+                switch (method) {
+                    // Add to the batch constant buffer update buffer
+                    // Return early here so that any code below can rely on the fact that any cbuf updates will always be the first of a batch
+                    #define LOAD_CONSTANT_BUFFER_CALLBACKS(z, index, data_)                \
+                    ENGINE_STRUCT_ARRAY_CASE(loadConstantBuffer, data, index, { \
+                        batchLoadConstantBuffer.buffer.push_back(argument);         \
+                        registers.loadConstantBuffer->offset += 4;              \
+                        return;                                                   \
+                    })
 
-                BOOST_PP_REPEAT(16, LOAD_CONSTANT_BUFFER_CALLBACKS, 0)
-                #undef LOAD_CONSTANT_BUFFER_CALLBACKS
-                default:
-                    // When a method other than constant buffer update is called submit our submit the previously built-up update as a batch
-                    interconnect.DisableQuickConstantBufferBind();
-                    interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.Invalidate());
-                    batchLoadConstantBuffer.Reset();
-                    break; // Continue on here to handle the actual method
-            }
-        } else if (deferredDraw.pending) { // See DeferredDrawState comment for full details
-            switch (method) {
-                ENGINE_CASE(begin, {
-                    if (begin.instanceId == Registers::Begin::InstanceId::Subsequent) {
-                        if (deferredDraw.drawTopology != begin.op &&
-                            registers.primitiveTopologyControl->override == type::PrimitiveTopologyControl::Override::UseTopologyInBeginMethods)
-                            Logger::Warn("Vertex topology changed partway through instanced draw!");
+                    BOOST_PP_REPEAT(16, LOAD_CONSTANT_BUFFER_CALLBACKS, 0)
+                    #undef LOAD_CONSTANT_BUFFER_CALLBACKS
+                    default:
+                        // When a method other than constant buffer update is called submit our submit the previously built-up update as a batch
+                        interconnect.DisableQuickConstantBufferBind();
+                        interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.startOffset);
+                        batchEnableState.constantBufferActive = false;
+                        batchLoadConstantBuffer.Reset();
+                        break; // Continue on here to handle the actual method
+                }
+            } else if (batchEnableState.drawActive) { // See DeferredDrawState comment for full details
+                switch (method) {
+                    ENGINE_CASE(begin, {
+                        if (begin.instanceId == Registers::Begin::InstanceId::Subsequent) {
+                            if (deferredDraw.drawTopology != begin.op &&
+                                registers.primitiveTopologyControl->override == type::PrimitiveTopologyControl::Override::UseTopologyInBeginMethods)
+                                Logger::Warn("Vertex topology changed partway through instanced draw!");
 
-                        deferredDraw.instanceCount++;
-                    } else {
+                            deferredDraw.instanceCount++;
+                        } else {
+                            FlushDeferredDraw();
+                            break; // This instanced draw is finished, continue on to handle the next draw
+                        }
+
+                        return;
+                    })
+
+                    // Can be ignored since we handle drawing in draw{Vertex,Index}Count
+                    ENGINE_CASE(end, { return; })
+
+                    // Draws here can be ignored since they're just repeats of the original instanced draw
+                    ENGINE_CASE(drawVertexArray, {
+                        if (!redundant)
+                            Logger::Warn("Vertex count changed partway through instanced draw!");
+                        return;
+                    })
+                    ENGINE_CASE(drawIndexBuffer, {
+                        if (!redundant)
+                            Logger::Warn("Index count changed partway through instanced draw!");
+                        return;
+                    })
+
+                    // Once we stop calling draw methods flush the current draw since drawing is dependent on the register state not changing
+                    default:
                         FlushDeferredDraw();
-                        break; // This instanced draw is finished, continue on to handle the next draw
-                    }
-
-                    return;
-                })
-
-                // Can be ignored since we handle drawing in draw{Vertex,Index}Count
-                ENGINE_CASE(end, { return; })
-
-                // Draws here can be ignored since they're just repeats of the original instanced draw
-                ENGINE_CASE(drawVertexArray, {
-                    if (!redundant)
-                        Logger::Warn("Vertex count changed partway through instanced draw!");
-                    return;
-                })
-                ENGINE_CASE(drawIndexBuffer, {
-                    if (!redundant)
-                        Logger::Warn("Index count changed partway through instanced draw!");
-                    return;
-                })
-
-                // Once we stop calling draw methods flush the current draw since drawing is dependent on the register state not changing
-                default:
-                    FlushDeferredDraw();
-                    break;
+                        break;
+                }
             }
         }
 
-
-        if (!redundant) {
+        if (!redundant)
             dirtyManager.MarkDirty(method);
-        }
 
         switch (method) {
             ENGINE_STRUCT_CASE(mme, instructionRamLoad, {
@@ -208,11 +208,13 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             ENGINE_STRUCT_CASE(drawVertexArray, count, {
                 // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
                 deferredDraw.Set(count, *registers.vertexArrayStart, 0, *registers.globalBaseInstanceIndex, GetCurrentTopology(), false);
+                batchEnableState.drawActive = true;
             })
 
             ENGINE_STRUCT_CASE(drawIndexBuffer, count, {
                 // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
                 deferredDraw.Set(count, registers.indexBuffer->first, *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex, GetCurrentTopology(), true);
+                batchEnableState.drawActive = true;
             })
 
             ENGINE_STRUCT_CASE(semaphore, info, {
@@ -251,8 +253,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             // Begin a batch constant buffer update, this case will never be reached if a batch update is currently active
             #define LOAD_CONSTANT_BUFFER_CALLBACKS(z, index, data_)                                      \
             ENGINE_STRUCT_ARRAY_CASE(loadConstantBuffer, data, index, {                       \
-                batchLoadConstantBuffer.startOffset = registers.loadConstantBuffer->offset; \
-                batchLoadConstantBuffer.buffer.push_back(data);                               \
+                batchLoadConstantBuffer.startOffset = registers.loadConstantBuffer->offset;              \
+                batchLoadConstantBuffer.buffer.push_back(data);                                          \
+                batchEnableState.constantBufferActive = true;                                        \
                 registers.loadConstantBuffer->offset += 4;                                    \
             })
 
@@ -296,8 +299,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     void Maxwell3D::FlushEngineState() {
         FlushDeferredDraw();
 
-        if (batchLoadConstantBuffer.Active()) {
-            interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.Invalidate());
+        if (batchEnableState.constantBufferActive) {
+            interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.startOffset);
+            batchEnableState.constantBufferActive = false;
             batchLoadConstantBuffer.Reset();
         }
 
