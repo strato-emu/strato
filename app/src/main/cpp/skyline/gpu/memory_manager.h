@@ -27,7 +27,8 @@ namespace skyline::gpu::memory {
         constexpr Buffer(Buffer &&other)
             : vmaAllocator(std::exchange(other.vmaAllocator, nullptr)),
               vmaAllocation(std::exchange(other.vmaAllocation, nullptr)),
-              vkBuffer(std::exchange(other.vkBuffer, {})) {}
+              vkBuffer(std::exchange(other.vkBuffer, {})),
+              span(other) {}
 
         Buffer &operator=(const Buffer &) = delete;
 
