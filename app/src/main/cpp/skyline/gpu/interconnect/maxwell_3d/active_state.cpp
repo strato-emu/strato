@@ -24,19 +24,26 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void VertexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         size_t size{engine->vertexStreamLimit - engine->vertexStream.location + 1};
 
-        if (engine->vertexStream.format.enable && engine->vertexStream.location != 0) {
+        if (engine->vertexStream.format.enable && engine->vertexStream.location != 0 && size) {
             view.Update(ctx, engine->vertexStream.location, size);
-            ctx.executor.AttachBuffer(*view);
+            if (*view) {
+                ctx.executor.AttachBuffer(*view);
 
-            if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
-                  megaBufferBinding)
-                builder.SetVertexBuffer(index, megaBufferBinding);
-            else
-                builder.SetVertexBuffer(index, *view);
-        } else {
-            // TODO: null descriptor
-            megaBufferBinding = {};
+                if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
+                    megaBufferBinding)
+                    builder.SetVertexBuffer(index, megaBufferBinding);
+                else
+                    builder.SetVertexBuffer(index, *view);
+
+                return;
+            } else {
+                Logger::Warn("Unmapped vertex buffer: 0x{:X}", engine->vertexStream.location);
+            }
         }
+
+        // TODO: null descriptor
+        megaBufferBinding = {};
+        builder.SetVertexBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
     }
 
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
@@ -113,6 +120,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         size_t size{GetIndexBufferSize(engine->indexBuffer.indexSize, elementCount)};
         view.Update(ctx, engine->indexBuffer.address, size);
+        if (!*view) {
+            Logger::Warn("Unmapped index buffer: 0x{:X}", engine->indexBuffer.address);
+            return;
+        }
+
         ctx.executor.AttachBuffer(*view);
 
         indexType = ConvertIndexType(engine->indexBuffer.indexSize);
@@ -170,14 +182,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (engine->streamOutEnable) {
             if (engine->streamOutBuffer.size) {
                 view.Update(ctx, engine->streamOutBuffer.address + engine->streamOutBuffer.loadWritePointerStartOffset, engine->streamOutBuffer.size);
-                ctx.executor.AttachBuffer(*view);
 
-                //    view.GetBuffer()->MarkGpuDirty();
-                builder.SetTransformFeedbackBuffer(index, *view);
-            } else {
-                // Bind an empty buffer ourselves since Vulkan doesn't support passing a VK_NULL_HANDLE xfb buffer
-                builder.SetTransformFeedbackBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
+                if (*view) {
+                    ctx.executor.AttachBuffer(*view);
+
+                    //    view.GetBuffer()->MarkGpuDirty();
+                    builder.SetTransformFeedbackBuffer(index, *view);
+                    return;
+                } else {
+                    Logger::Warn("Unmapped transform feedback buffer: 0x{:X}", engine->streamOutBuffer.address);
+                }
             }
+
+            // Bind an empty buffer ourselves since Vulkan doesn't support passing a VK_NULL_HANDLE xfb buffer
+            builder.SetTransformFeedbackBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
         }
     }
 
