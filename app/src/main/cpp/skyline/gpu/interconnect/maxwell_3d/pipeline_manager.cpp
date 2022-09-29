@@ -237,6 +237,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                     descCb(desc, descIdx);
 
+                    descriptorInfo.copyDescs.push_back(vk::CopyDescriptorSet{
+                        .srcBinding = bindingIndex,
+                        .srcArrayElement = 0,
+                        .dstBinding = bindingIndex,
+                        .dstArrayElement = 0,
+                        .descriptorCount = desc.count,
+                    });
+
                     descriptorInfo.descriptorSetLayoutBindings.push_back(vk::DescriptorSetLayoutBinding{
                         .binding = bindingIndex++,
                         .descriptorType = type,
@@ -271,8 +279,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors, stageDescInfo.storageImageDescCount, [](const auto &, u32) {});
             descriptorInfo.totalImageDescCount += stageDescInfo.combinedImageSamplerDescCount + stageDescInfo.storageImageDescCount;
         }
-
-        descriptorInfo.totalElemCount = descriptorInfo.totalBufferDescCount + descriptorInfo.totalTexelBufferDescCount + descriptorInfo.totalImageDescCount;
         return descriptorInfo;
     }
 
@@ -686,24 +692,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         const auto &shaderInfo{shaderStages[stageIndex].info};
         auto &stageConstantBuffers{constantBuffers[stageIndex]};
-        auto copies{ctx.executor.allocator->AllocateUntracked<vk::CopyDescriptorSet>(1)};
+
+        u32 writeIdx{};
         auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(cbufUsageInfo.writeDescCount)};
 
-        size_t writeIdx{};
-        size_t bufferIdx{};
-        size_t imageIdx{};
-
+        u32 bufferIdx{};
         auto bufferDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorBufferInfo>(cbufUsageInfo.totalBufferDescCount)};
         auto bufferDescDynamicBindings{ctx.executor.allocator->AllocateUntracked<DynamicBufferBinding>(cbufUsageInfo.totalBufferDescCount)};
 
-        // TODO: opt this to do partial copy and avoid updating twice
-        copies[0] = vk::CopyDescriptorSet{
-            .srcBinding = 0,
-            .srcArrayElement = 0,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = descriptorInfo.totalElemCount,
-        };
+        u32 imageIdx{};
+        auto imageDescs{ctx.executor.allocator->AllocateUntracked<vk::DescriptorImageInfo>(cbufUsageInfo.totalImageDescCount)};
 
         auto writeBufferDescs{[&](vk::DescriptorType type, const auto &usages, const auto &descs, auto getBufferCb) {
             for (const auto &usage : usages) {
@@ -736,7 +734,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return nullptr;
 
         return ctx.executor.allocator->EmplaceUntracked<DescriptorUpdateInfo>(DescriptorUpdateInfo{
-            .copies = copies,
+            .copies = descriptorInfo.copyDescs,
             .writes = writes.first(writeIdx),
             .bufferDescs = bufferDescs.first(bufferIdx),
             .bufferDescDynamicBindings = bufferDescDynamicBindings.first(bufferIdx),
