@@ -85,6 +85,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     class ViewportState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
+            const engine::Viewport &viewport0;
+            const engine::ViewportClip &viewportClip0;
             const engine::Viewport &viewport;
             const engine::ViewportClip &viewportClip;
             const engine::WindowOrigin &windowOrigin;

@@ -206,13 +206,47 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Viewport */
     void ViewportState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, viewport.offsetX, viewport.offsetY, viewport.scaleX, viewport.scaleY, viewport.swizzle,
+        manager.Bind(handle,
+                     viewport0.offsetX, viewport0.offsetY, viewport0.scaleX, viewport0.scaleY, viewport0.swizzle,
+                     viewportClip0,
+                     viewport.offsetX, viewport.offsetY, viewport.scaleX, viewport.scaleY, viewport.swizzle,
                      viewportClip,
                      windowOrigin,
                      viewportScaleOffsetEnable);
     }
 
     ViewportState::ViewportState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
+
+    static vk::Viewport ConvertViewport(const engine::Viewport &viewport, const engine::ViewportClip &viewportClip, const engine::WindowOrigin &windowOrigin, bool viewportScaleOffsetEnable) {
+        vk::Viewport vkViewport{};
+
+        vkViewport.x = viewport.offsetX - viewport.scaleX; // Counteract the addition of the half of the width (o_x) to the host translation
+        vkViewport.width = viewport.scaleX * 2.0f; // Counteract the division of the width (p_x) by 2 for the host scale
+        vkViewport.y = viewport.offsetY - viewport.scaleY; // Counteract the addition of the half of the height (p_y/2 is center) to the host translation (o_y)
+        vkViewport.height = viewport.scaleY * 2.0f; // Counteract the division of the height (p_y) by 2 for the host scale
+
+        using CoordinateSwizzle = engine::Viewport::CoordinateSwizzle;
+        if (viewport.swizzle.x != CoordinateSwizzle::PosX &&
+            viewport.swizzle.y != CoordinateSwizzle::PosY && viewport.swizzle.y != CoordinateSwizzle::NegY &&
+            viewport.swizzle.z != CoordinateSwizzle::PosZ &&
+            viewport.swizzle.w != CoordinateSwizzle::PosW)
+            throw exception("Unsupported viewport swizzle: {}x{}x{}x{}", engine::Viewport::ToString(viewport.swizzle.x),
+                            engine::Viewport::ToString(viewport.swizzle.y),
+                            engine::Viewport::ToString(viewport.swizzle.z),
+                            engine::Viewport::ToString(viewport.swizzle.w));
+
+        // If swizzle and origin mode cancel out then do nothing, otherwise flip the viewport
+        if ((viewport.swizzle.y == CoordinateSwizzle::NegY) != (windowOrigin.lowerLeft != 0)) {
+            // Flip the viewport given that the viewport origin is lower left or the viewport Y has been flipped via a swizzle but not if both are active at the same time
+            vkViewport.y += vkViewport.height;
+            vkViewport.height = -vkViewport.height;
+        }
+
+        // Clamp since we don't yet use VK_EXT_unrestricted_depth_range
+        vkViewport.minDepth = std::clamp(viewportClip.minZ, 0.0f, 1.0f);
+        vkViewport.maxDepth = std::clamp(viewportClip.maxZ, 0.0f, 1.0f);
+        return vkViewport;
+    }
 
     void ViewportState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         if (index != 0 && !ctx.gpu.traits.supportsMultipleViewports)
@@ -222,34 +256,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             // https://github.com/Ryujinx/Ryujinx/pull/3328
             Logger::Warn("Viewport scale/offset disable is unimplemented");
 
-        vk::Viewport viewport{};
-
-        viewport.x = engine->viewport.offsetX - engine->viewport.scaleX; // Counteract the addition of the half of the width (o_x) to the host translation
-        viewport.width = engine->viewport.scaleX * 2.0f; // Counteract the division of the width (p_x) by 2 for the host scale
-        viewport.y = engine->viewport.offsetY - engine->viewport.scaleY; // Counteract the addition of the half of the height (p_y/2 is center) to the host translation (o_y)
-        viewport.height = engine->viewport.scaleY * 2.0f; // Counteract the division of the height (p_y) by 2 for the host scale
-
-        using CoordinateSwizzle = engine::Viewport::CoordinateSwizzle;
-        if (engine->viewport.swizzle.x != CoordinateSwizzle::PosX &&
-            engine->viewport.swizzle.y != CoordinateSwizzle::PosY && engine->viewport.swizzle.y != CoordinateSwizzle::NegY &&
-            engine->viewport.swizzle.z != CoordinateSwizzle::PosZ &&
-            engine->viewport.swizzle.w != CoordinateSwizzle::PosW)
-            throw exception("Unsupported viewport swizzle: {}x{}x{}x{}", engine::Viewport::ToString(engine->viewport.swizzle.x),
-                            engine::Viewport::ToString(engine->viewport.swizzle.y),
-                            engine::Viewport::ToString(engine->viewport.swizzle.z),
-                            engine::Viewport::ToString(engine->viewport.swizzle.w));
-
-        // If swizzle and origin mode cancel out then do nothing, otherwise flip the viewport
-        if ((engine->viewport.swizzle.y == CoordinateSwizzle::NegY) != (engine->windowOrigin.lowerLeft != 0)) {
-            // Flip the viewport given that the viewport origin is lower left or the viewport Y has been flipped via a swizzle but not if both are active at the same time
-            viewport.y += viewport.height;
-            viewport.height = -viewport.height;
-        }
-
-        // Clamp since we don't yet use VK_EXT_unrestricted_depth_range
-        viewport.minDepth = std::clamp(engine->viewportClip.minZ, 0.0f, 1.0f);
-        viewport.maxDepth = std::clamp(engine->viewportClip.maxZ, 0.0f, 1.0f);
-        builder.SetViewport(index, viewport);
+        if (engine->viewport.scaleX == 0.0f || engine->viewport.scaleY == 0.0f)
+            builder.SetViewport(index, ConvertViewport(engine->viewport0, engine->viewportClip0, engine->windowOrigin, engine->viewportScaleOffsetEnable));
+        else
+            builder.SetViewport(index, ConvertViewport(engine->viewport, engine->viewportClip, engine->windowOrigin, engine->viewportScaleOffsetEnable));
     }
 
     /* Scissor */
