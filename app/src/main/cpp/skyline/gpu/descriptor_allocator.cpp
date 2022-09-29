@@ -116,7 +116,9 @@ namespace skyline::gpu {
             auto set{AllocateVkDescriptorSet(layout)};
             if (set.result == vk::Result::eSuccess) {
                 auto &layoutSlots{pool->layoutSlots.try_emplace(layout).first->second};
-                return ActiveDescriptorSet{pool, &layoutSlots.emplace_back(set.value)};
+                auto &slot{layoutSlots.emplace_back(set.value)};
+                slot.active.test_and_set(std::memory_order_relaxed);
+                return ActiveDescriptorSet{pool, &slot};
             } else {
                 lastResult = set.result;
             }
@@ -140,6 +142,8 @@ namespace skyline::gpu {
             auto set{AllocateVkDescriptorSet(layout)};
             if (set.result == vk::Result::eSuccess) {
                 auto &layoutSlots{pool->layoutSlots.try_emplace(layout).first->second};
+                auto &slot{layoutSlots.emplace_back(set.value)};
+                slot.active.test_and_set(std::memory_order_relaxed);
                 return ActiveDescriptorSet{pool, &layoutSlots.emplace_back(set.value)};
             } else {
                 lastResult = set.result;
