@@ -47,6 +47,7 @@
 #include "mmnv/IRequest.h"
 #include "bt/IBluetoothUser.h"
 #include "btm/IBtmUser.h"
+#include "ro/IRoInterface.h"
 #include "serviceman.h"
 
 #define SERVICE_CASE(class, name, ...) \
@@ -121,6 +122,7 @@ namespace skyline::service {
             SERVICE_CASE(bt::IBluetoothUser, "bt")
             SERVICE_CASE(btm::IBtmUser, "btm:u")
             SERVICE_CASE(nim::IShopServiceAccessServerInterface, "nim:eca")
+            SERVICE_CASE(ro::IRoInterface, "ldr:ro")
             default:
                 std::string_view nameString(span(reinterpret_cast<char *>(&name), sizeof(name)).as_string(true));
                 throw std::out_of_range(fmt::format("CreateService called with an unknown service name: {}", nameString));
