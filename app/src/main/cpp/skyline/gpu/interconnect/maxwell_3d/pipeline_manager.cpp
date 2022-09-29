@@ -607,6 +607,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
+        if (!view) // Return a dummy buffer if the constant buffer isn't bound
+            return BufferBinding{ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer, 0, PAGE_SIZE};
+
         ctx.executor.AttachBuffer(view);
 
         size_t sizeOverride{std::min<size_t>(info.constant_buffer_used_sizes[idx], view.size)};
