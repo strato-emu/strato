@@ -230,6 +230,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
     };
     using SetDescriptorSetWithUpdateCmd = CmdHolder<SetDescriptorSetWithUpdateCmdImpl>;
 
+    struct SetPipelineCmdImpl {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        }
+
+        vk::Pipeline pipeline;
+    };
+    using SetPipelineCmd = CmdHolder<SetPipelineCmdImpl>;
+
     /**
      * @brief Single-use helper for recording a batch of state updates into a command buffer
      */
@@ -411,6 +420,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 .updateInfo = updateInfo,
                 .srcSet = srcSet,
                 .dstSet = dstSet,
+            });
+        }
+
+        void SetPipeline(vk::Pipeline pipeline) {
+            AppendCmd<SetPipelineCmd>({
+                .pipeline = pipeline,
             });
         }
     };
