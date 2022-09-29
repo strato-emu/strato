@@ -356,6 +356,15 @@ namespace skyline::gpu::interconnect {
         flushCallbacks.emplace_back(std::forward<decltype(callback)>(callback));
     }
 
+    void CommandExecutor::AddPipelineChangeCallback(std::function<void()> &&callback) {
+        pipelineChangeCallbacks.emplace_back(std::forward<decltype(callback)>(callback));
+    }
+
+    void CommandExecutor::NotifyPipelineChange() {
+        for (auto &callback : pipelineChangeCallbacks)
+            callback();
+    }
+
     void CommandExecutor::SubmitInternal() {
         if (renderPass)
             FinishRenderPass();

@@ -122,6 +122,7 @@ namespace skyline::gpu::interconnect {
         TextureView *lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
 
         std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
+        std::vector<std::function<void()>> pipelineChangeCallbacks; //!< Set of persistent callbacks that will be called after any non-Maxwell 3D engine changes the active pipeline
 
         void RotateRecordSlot();
 
@@ -242,6 +243,16 @@ namespace skyline::gpu::interconnect {
          * @brief Adds a persistent callback that will be called at the start of Execute in order to flush data required for recording
          */
         void AddFlushCallback(std::function<void()> &&callback);
+
+        /**
+         * @brief Adds a persistent callback that will be called after any non-Maxwell 3D engine changes the active pipeline
+         */
+        void AddPipelineChangeCallback(std::function<void()> &&callback);
+
+        /**
+         * @brief Calls all registered pipeline change callbacks
+         */
+        void NotifyPipelineChange();
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU

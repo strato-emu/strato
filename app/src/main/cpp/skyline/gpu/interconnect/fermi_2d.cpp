@@ -147,6 +147,8 @@ namespace skyline::gpu::interconnect {
                 executor.AddSubpass(std::move(executionCallback), {{static_cast<i32>(dstRectX), static_cast<i32>(dstRectY)}, {dstRectWidth, dstRectHeight} }, {}, {dst});
             }
         );
+
+        executor.NotifyPipelineChange();
     }
 
 }

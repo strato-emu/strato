@@ -28,6 +28,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             constantBuffers.MarkAllDirty();
             samplers.MarkAllDirty();
         });
+
+        executor.AddPipelineChangeCallback([this] {
+            activeState.MarkAllDirty();
+        });
     }
 
     vk::Rect2D Maxwell3D::GetClearScissor() {
