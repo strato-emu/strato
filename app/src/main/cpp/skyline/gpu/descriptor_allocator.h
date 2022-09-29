@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
+#include <common/spin_lock.h>
 #include <common.h>
 
 namespace skyline::gpu {
@@ -13,7 +14,7 @@ namespace skyline::gpu {
     class DescriptorAllocator {
       private:
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes the creation and replacement of the pool object
+        SpinLock mutex; //!< Synchronizes the creation and replacement of the pool object
 
         static constexpr u32 DescriptorSetCountIncrement{64}; //!< The amount of descriptor sets that we allocate in increments of
         u32 descriptorSetCount{DescriptorSetCountIncrement}; //!< The maximum amount of descriptor sets in the pool
