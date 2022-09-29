@@ -875,7 +875,7 @@ namespace skyline::gpu {
                     .subresourceRange = subresource,
                 });
 
-            if (layout != vk::ImageLayout::eTransferSrcOptimal)
+            if (source->layout != vk::ImageLayout::eTransferSrcOptimal)
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
                     .image = sourceBacking,
                     .srcAccessMask = vk::AccessFlagBits::eTransferRead,
