@@ -77,12 +77,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         switch (attribute.numericalType) {
             case engine::VertexAttribute::NumericalType::Snorm:
             case engine::VertexAttribute::NumericalType::Unorm:
-            case engine::VertexAttribute::NumericalType::Sscaled:
-            case engine::VertexAttribute::NumericalType::Uscaled:
             case engine::VertexAttribute::NumericalType::Float:
                 return Shader::AttributeType::Float;
+            case engine::VertexAttribute::NumericalType::Sscaled:
             case engine::VertexAttribute::NumericalType::Sint:
                 return Shader::AttributeType::SignedInt;
+            case engine::VertexAttribute::NumericalType::Uscaled:
             case engine::VertexAttribute::NumericalType::Uint:
                 return Shader::AttributeType::UnsignedInt;
             default:
@@ -299,6 +299,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #define FORMAT_NORM_INT_SCALED_FLOAT_CASE(size, vkFormat) \
             FORMAT_NORM_INT_SCALED_CASE(size, vkFormat); \
             FORMAT_CASE(size, Float, Sfloat, vkFormat)
+
+        if (numericalType == engine::VertexAttribute::NumericalType::Sscaled)
+            numericalType = engine::VertexAttribute::NumericalType::Sint;
+        else if (numericalType == engine::VertexAttribute::NumericalType::Uscaled)
+            numericalType = engine::VertexAttribute::NumericalType::Uint;
 
         switch (componentBitWidths | numericalType) {
                 /* 8-bit components */
