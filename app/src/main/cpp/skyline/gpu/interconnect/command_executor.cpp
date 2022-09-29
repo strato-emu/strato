@@ -233,11 +233,10 @@ namespace skyline::gpu::interconnect {
             // Avoids a potential deadlock with this resource being locked while acquiring the TextureManager lock while the thread owning it tries to acquire a lock on this texture
             textureManagerLock.emplace(gpu.texture);
 
-        cycle->AttachObject(view->shared_from_this());
-
         bool didLock{view->LockWithTag(tag)};
         if (didLock)
             attachedTextures.emplace_back(view->texture);
+
         return didLock;
     }
 
