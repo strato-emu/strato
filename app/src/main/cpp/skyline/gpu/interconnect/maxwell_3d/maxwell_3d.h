@@ -42,8 +42,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ClearEngineRegisters clearEngineRegisters;
         ConstantBuffers constantBuffers;
         Samplers samplers;
+        std::shared_ptr<memory::Buffer> quadConversionBuffer{};
+        bool quadConversionBufferAttached{};
 
         DescriptorAllocator::ActiveDescriptorSet *activeDescriptorSet{};
+
+        size_t UpdateQuadConversionBuffer(u32 count, u32 firstVertex);
 
         vk::Rect2D GetClearScissor();
 

@@ -3,6 +3,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu/interconnect/command_executor.h>
+#include <gpu/interconnect/conversion/quads.h>
 #include <vulkan/vulkan_structs.hpp>
 #include "common/utils.h"
 #include "maxwell_3d.h"
@@ -27,11 +28,30 @@ namespace skyline::gpu::interconnect::maxwell3d {
             activeState.MarkAllDirty();
             constantBuffers.MarkAllDirty();
             samplers.MarkAllDirty();
+            quadConversionBufferAttached = false;
         });
 
         executor.AddPipelineChangeCallback([this] {
             activeState.MarkAllDirty();
         });
+    }
+
+    vk::DeviceSize Maxwell3D::UpdateQuadConversionBuffer(u32 count, u32 firstVertex) {
+        vk::DeviceSize offset{conversion::quads::GetRequiredBufferSize(firstVertex, sizeof(u32))};
+        vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, sizeof(u32)) + offset};
+
+        if (!quadConversionBuffer || quadConversionBuffer->size_bytes() < size) {
+            quadConversionBuffer = std::make_shared<memory::Buffer>(ctx.gpu.memory.AllocateBuffer(util::AlignUp(size, PAGE_SIZE)));
+            conversion::quads::GenerateQuadListConversionBuffer(quadConversionBuffer->cast<u32>().data(), firstVertex + count);
+            quadConversionBufferAttached = false;
+        }
+
+        if (!quadConversionBufferAttached) {
+            ctx.executor.AttachDependency(quadConversionBuffer);
+            quadConversionBufferAttached = true;
+        }
+
+        return offset;
     }
 
     vk::Rect2D Maxwell3D::GetClearScissor() {
@@ -173,6 +193,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         Pipeline *oldPipeline{activeState.GetPipeline()};
         activeState.Update(ctx, builder, indexed, topology, count);
+        if (directState.inputAssembly.NeedsQuadConversion()) {
+            count = conversion::quads::GetIndexCount(count);
+            first = 0;
+
+            if (!indexed) {
+                // Use an index buffer to emulate quad lists with a triangle list input topology
+                vk::DeviceSize offset{UpdateQuadConversionBuffer(count, first)};
+                builder.SetIndexBuffer(BufferBinding{quadConversionBuffer->vkBuffer, offset}, vk::IndexType::eUint32);
+                indexed = true;
+            }
+        }
+
         Pipeline *pipeline{activeState.GetPipeline()};
 
         auto *descUpdateInfo{[&]() -> DescriptorUpdateInfo * {
