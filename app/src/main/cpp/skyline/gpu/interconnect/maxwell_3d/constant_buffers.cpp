@@ -14,10 +14,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     ConstantBufferSelectorState::ConstantBufferSelectorState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    void ConstantBufferSelectorState::Flush(InterconnectContext &ctx) {
+    void ConstantBufferSelectorState::Flush(InterconnectContext &ctx, size_t minSize) {
         const auto &selector{engine->constantBufferSelector};
         // Constant buffer selector size is often left at the default value of 0x10000 which can end up being larger than the underlying mapping so avoid warning for split mappings here
-        view.Update(ctx, selector.address, selector.size, false);
+        view.Update(ctx, selector.address, std::max<size_t>(minSize, selector.size), false);
+    }
+
+    bool ConstantBufferSelectorState::Refresh(InterconnectContext &ctx, size_t minSize) {
+        const auto &selector{engine->constantBufferSelector};
+        size_t selectorMinSize{std::max<size_t>(minSize, selector.size)};
+        if (view->size != selectorMinSize)
+            view.Update(ctx, selector.address, selectorMinSize, false);
+
+        return false;
     }
 
     void ConstantBufferSelectorState::PurgeCaches() {
@@ -42,7 +51,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void ConstantBuffers::Load(InterconnectContext &ctx, span<u32> data, u32 offset) {
-        auto &view{*selectorState.UpdateGet(ctx).view};
+        auto &view{*selectorState.UpdateGet(ctx, data.size_bytes()).view};
         auto srcCpuBuf{data.cast<u8>()};
 
         ctx.executor.AcquireBufferManager();
@@ -79,6 +88,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void ConstantBuffers::Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index) {
         auto &view{*selectorState.UpdateGet(ctx).view};
+        if (!view)
+            throw exception("Constant buffer selector is not mapped");
+
         boundConstantBuffers[static_cast<size_t>(stage)][index] = {view};
 
         if (quickBindEnabled && quickBind)

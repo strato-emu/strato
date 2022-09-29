@@ -6,7 +6,7 @@
 #include "common.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
-    class ConstantBufferSelectorState : dirty::CachedManualDirty {
+    class ConstantBufferSelectorState : dirty::CachedManualDirty, dirty::RefreshableManualDirty {
       public:
         struct EngineRegisters {
             const engine::ConstantBufferSelector &constantBufferSelector;
@@ -22,7 +22,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         CachedMappedBufferView view;
 
-        void Flush(InterconnectContext &ctx);
+        void Flush(InterconnectContext &ctx, size_t minSize = 0);
+
+        bool Refresh(InterconnectContext &ctx, size_t minSize = 0);
 
         void PurgeCaches();
     };
