@@ -18,7 +18,7 @@
         android:hasFragileUserData="${shouldSaveUserData}"
         android:icon="@drawable/logo_skyline"
         android:isGame="true"
-        android:label="@string/app_name"
+        android:label="${appLabel}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
@@ -105,7 +105,7 @@
 
         <provider
             android:name=".provider.DocumentsProvider"
-            android:authorities="emu.skyline.provider"
+            android:authorities="${applicationId}.provider"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">

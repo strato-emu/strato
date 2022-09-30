@@ -54,13 +54,13 @@ jobs:
           CMAKE_C_COMPILER_LAUNCHER: "ccache"          
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_NOCOMPRESS: "true"
-        run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assemble
+        run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFull
 
       - name: Rename APKs (Signed)
         if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
         run: |
-          mv app/build/outputs/apk/debug/app-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
-          mv app/build/outputs/apk/release/app-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
+          mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
+          mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
 
       - name: Upload Signed Debug APK
         if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}

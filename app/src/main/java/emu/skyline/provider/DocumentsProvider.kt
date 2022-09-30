@@ -12,6 +12,7 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
+import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.SkylineApplication
 import emu.skyline.getPublicFilesDir
@@ -42,7 +43,7 @@ class DocumentsProvider : DocumentsProvider() {
             DocumentsContract.Document.COLUMN_SIZE
         )
 
-        const val AUTHORITY : String = "emu.skyline.provider"
+        const val AUTHORITY : String = BuildConfig.APPLICATION_ID + ".provider"
 
         const val ROOT_ID : String = "root"
     }
@@ -100,7 +101,7 @@ class DocumentsProvider : DocumentsProvider() {
     /**
      * @return A new [File] with a unique name based off the supplied [name], not conflicting with any existing file
      */
-    fun File.resolveWithoutConflict(name: String): File {
+    fun File.resolveWithoutConflict(name : String) : File {
         var file = resolve(name)
         if (file.exists()) {
             var noConflictId = 1 // Makes sure two files don't have the same name by adding a number to the end

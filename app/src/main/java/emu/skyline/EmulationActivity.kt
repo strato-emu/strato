@@ -635,7 +635,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @ExperimentalUnsignedTypes
     @Suppress("unused")
     fun getVersionCode() : Int {
-        val (major, minor, patch) = BuildConfig.VERSION_NAME.split('.').map { it.toUInt() }
+        val (major, minor, patch) = BuildConfig.VERSION_NAME.split('-')[0].split('.').map { it.toUInt() }
         return ((major shl 22) or (minor shl 12) or (patch)).toInt()
     }
 
