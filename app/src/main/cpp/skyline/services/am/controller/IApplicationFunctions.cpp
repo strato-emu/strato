@@ -57,6 +57,12 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result IApplicationFunctions::SetTerminateResult(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto result{request.Pop<Result>()};
+        Logger::Info("App set termination result: {}", result.raw);
+        return {};
+    }
+
     Result IApplicationFunctions::GetDesiredLanguage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto desiredLanguage{language::GetApplicationLanguage(*state.settings->systemLanguage)};
 
