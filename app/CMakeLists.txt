@@ -12,8 +12,9 @@ set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Wno-unused-command-line-argument -fwrapv")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -DNDEBUG")
 
-# Build all libraries with -Ofast but with default debug data (-g) for debug builds
+# Build all libraries with -Ofast but with default debug data (-g) for debug and reldebug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-Ofast")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Ofast")
 
 # libcxx
 set(ANDROID_STL "none")
@@ -110,6 +111,8 @@ add_subdirectory("libraries/adrenotools")
 
 # Build Skyline with full debugging data and -Og for debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer")
+# Build Skyline with full debugging data and some optimizations for reldebug builds, build speed is pioritised
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O1 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer -fno-stack-protector")
 
 # Include headers from libraries as system headers to silence warnings from them
 function(target_link_libraries_system target)
