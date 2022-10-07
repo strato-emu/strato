@@ -36,6 +36,16 @@ namespace skyline::service::hid {
         Result ActivateTouchScreen(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Activates the mouse
+         */
+        Result ActivateMouse(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Activates the keyboard
+         */
+        Result ActivateKeyboard(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Starts the Six Axis Sensor for a specific Npad
          * @url https://switchbrew.org/wiki/HID_services#StartSixAxisSensor
          */
@@ -172,6 +182,8 @@ namespace skyline::service::hid {
             SFUNC(0x0, IHidServer, CreateAppletResource),
             SFUNC(0x1, IHidServer, ActivateDebugPad),
             SFUNC(0xB, IHidServer, ActivateTouchScreen),
+            SFUNC(0x15, IHidServer, ActivateMouse),
+            SFUNC(0x1F, IHidServer, ActivateKeyboard),
             SFUNC(0x42, IHidServer, StartSixAxisSensor),
             SFUNC(0x43, IHidServer, StopSixAxisSensor),
             SFUNC(0x64, IHidServer, SetSupportedNpadStyleSet),
