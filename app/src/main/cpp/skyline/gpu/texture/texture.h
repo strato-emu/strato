@@ -277,6 +277,11 @@ namespace skyline::gpu {
         u32 GetLayerStride();
 
         /**
+         * @brief Calculates the size of a single layer in bytes, unlike `GetLayerStride` the returned layer size is always calculated and may not be equal to the actual layer stride
+         */
+        u32 CalculateLayerSize();
+
+        /**
          * @return The most appropriate backing image type for this texture
          */
         vk::ImageType GetImageType() const;
