@@ -13,9 +13,23 @@
 #include "pipeline_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
+    static void DetermineRenderTargetDimensions(GuestTexture &guest, const engine::SurfaceClip &clip) {
+        // RT dimensions always include block linear alignment and contain the unaligned dimensions in surface clip, we ideally want to create the texture using the unaligned dimensions since the texture manager doesn't support resolving such overlaps yet. By checking that the layer size calculated is equal to the RT size we can eliminate most cases where the clip is used not just for aligmnent
+        u32 underlyingRtLayerSize{guest.CalculateLayerSize()};
+        texture::Dimensions underlyingRtDimensions{guest.dimensions};
+        guest.dimensions = texture::Dimensions{static_cast<u32>(clip.horizontal.width + clip.horizontal.x),
+                                               static_cast<u32>(clip.vertical.height + clip.vertical.y),
+                                               guest.dimensions.depth};
+        u32 clippedRtLayerSize{guest.CalculateLayerSize()};
+
+        // If the calculated sizes don't match then always use the RT dimensions
+        if (clippedRtLayerSize != underlyingRtLayerSize)
+            guest.dimensions = underlyingRtDimensions;
+    }
+
     /* Colour Render Target */
     void ColorRenderTargetState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, colorTarget);
+        manager.Bind(handle, colorTarget, surfaceClip);
     }
 
     ColorRenderTargetState::ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, size_t index) : engine{manager, dirtyHandle, engine}, index{index} {}
@@ -145,15 +159,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(target.offset, guest.GetSize())};
         guest.mappings.assign(mappings.begin(), mappings.end());
 
-        if (guest.MappingsValid())
-            view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
-        else
+        if (guest.MappingsValid()) {
+            if (guest.tileConfig.mode == gpu::texture::TileMode::Block)
+                DetermineRenderTargetDimensions(guest, engine->surfaceClip);
+
+            view = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
+        } else {
             view = {};
+        }
     }
 
     /* Depth Render Target */
     void DepthRenderTargetState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, ztSize, ztOffset, ztFormat, ztBlockSize, ztArrayPitch, ztSelect, ztLayer);
+        manager.Bind(handle, ztSize, ztOffset, ztFormat, ztBlockSize, ztArrayPitch, ztSelect, ztLayer, surfaceClip);
     }
 
     DepthRenderTargetState::DepthRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
@@ -212,10 +230,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(engine->ztOffset, guest.GetSize())};
         guest.mappings.assign(mappings.begin(), mappings.end());
 
-        if (guest.MappingsValid())
-            view = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
-        else
+        if (guest.MappingsValid()) {
+            if (guest.tileConfig.mode == gpu::texture::TileMode::Block)
+                DetermineRenderTargetDimensions(guest, engine->surfaceClip);
+
+            view = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
+        } else {
             view = {};
+        }
     }
 
     /* Pipeline Stages */

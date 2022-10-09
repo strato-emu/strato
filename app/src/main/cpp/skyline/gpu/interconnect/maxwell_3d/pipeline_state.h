@@ -14,6 +14,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         struct EngineRegisters {
             const engine::ColorTarget &colorTarget;
+            const engine::SurfaceClip &surfaceClip;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -40,6 +41,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const u32 &ztArrayPitch;
             const engine::ZtSelect &ztSelect;
             const engine::ZtLayer &ztLayer;
+            const engine::SurfaceClip &surfaceClip;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
