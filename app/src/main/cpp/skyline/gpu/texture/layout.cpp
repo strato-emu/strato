@@ -97,13 +97,13 @@ namespace skyline::gpu::texture {
                                  size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb,
                                  size_t gobBlockHeight, size_t gobBlockDepth,
                                  u8 *blockLinear, u8 *linear) {
-        size_t robWidthUnalignedBytes{(dimensions.width / formatBlockWidth) * formatBpb};
+        size_t robWidthUnalignedBytes{util::DivideCeil<size_t>(dimensions.width, formatBlockWidth) * formatBpb};
         size_t robWidthBytes{util::AlignUp(robWidthUnalignedBytes, GobWidth)};
         size_t robWidthBlocks{robWidthUnalignedBytes / GobWidth};
 
         size_t blockHeight{gobBlockHeight};
         size_t robHeight{GobHeight * blockHeight};
-        size_t surfaceHeightLines{dimensions.height / formatBlockHeight};
+        size_t surfaceHeightLines{util::DivideCeil<size_t>(dimensions.height, formatBlockHeight)};
         size_t surfaceHeightRobs{surfaceHeightLines / robHeight}; //!< The height of the surface in ROBs excluding padding ROBs
 
         size_t blockDepth{std::min<size_t>(dimensions.depth, gobBlockDepth)};
