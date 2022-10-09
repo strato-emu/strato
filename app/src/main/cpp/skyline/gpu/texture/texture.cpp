@@ -614,6 +614,7 @@ namespace skyline::gpu {
 
     void Texture::lock() {
         mutex.lock();
+        accumulatedCpuLockCounter++;
     }
 
     bool Texture::LockWithTag(ContextTag pTag) {
@@ -631,7 +632,12 @@ namespace skyline::gpu {
     }
 
     bool Texture::try_lock() {
-        return mutex.try_lock();
+        if (mutex.try_lock()) {
+            accumulatedCpuLockCounter++;
+            return true;
+        }
+
+        return false;
     }
 
     bool Texture::WaitOnBacking() {

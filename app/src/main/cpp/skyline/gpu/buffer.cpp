@@ -331,6 +331,7 @@ namespace skyline::gpu {
 
     void Buffer::lock() {
         mutex.lock();
+        accumulatedCpuLockCounter++;
     }
 
     bool Buffer::LockWithTag(ContextTag pTag) {
@@ -349,7 +350,11 @@ namespace skyline::gpu {
     }
 
     bool Buffer::try_lock() {
-        return mutex.try_lock();
+        if (mutex.try_lock()) {
+            accumulatedCpuLockCounter++;
+            return true;
+        }
+        return false;
     }
 
     BufferDelegate::BufferDelegate(Buffer *buffer) : buffer{buffer} {}

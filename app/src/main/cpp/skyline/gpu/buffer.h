@@ -89,6 +89,9 @@ namespace skyline::gpu {
         int megaBufferTableShift; //!< Shift to apply to buffer offsets to get their megabuffer table index
         std::vector<MegaBufferTableEntry> megaBufferTable; //!< Table of megabuffer allocations for regions of the buffer
 
+        static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a buffer can be locked (not from context locks, only normal) before it should be considered frequently locked
+        size_t accumulatedCpuLockCounter{}; //!< Number of times buffer has been locked through non-ContextLocks
+
       private:
         BufferDelegate *delegate;
 
@@ -212,6 +215,13 @@ namespace skyline::gpu {
          */
         bool RequiresCycleAttach() {
             return SequencedCpuBackingWritesBlocked();
+        }
+
+        /**
+         * @return If the buffer is frequently locked by threads using non-ContextLocks
+         */
+        bool FrequentlyLocked() {
+            return accumulatedCpuLockCounter >= FrequentlyLockedThreshold;
         }
 
         /**

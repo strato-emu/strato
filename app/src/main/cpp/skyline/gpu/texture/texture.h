@@ -423,6 +423,9 @@ namespace skyline::gpu {
          */
         boost::container::small_vector<vk::BufferImageCopy, 10> GetBufferImageCopies();
 
+        static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a texture can be locked (not from context locks, only normal) before it should be considered frequently locked
+        size_t accumulatedCpuLockCounter{};
+
       public:
         std::shared_ptr<FenceCycle> cycle; //!< A fence cycle for when any host operation mutating the texture has completed, it must be waited on prior to any mutations to the backing
         std::optional<GuestTexture> guest;
@@ -555,5 +558,12 @@ namespace skyline::gpu {
             .levelCount = VK_REMAINING_MIP_LEVELS,
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         });
+
+        /**
+         * @return If the texture is frequently locked by threads using non-ContextLocks
+         */
+        bool FrequentlyLocked() {
+            return accumulatedCpuLockCounter >= FrequentlyLockedThreshold;
+        }
     };
 }
