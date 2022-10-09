@@ -71,7 +71,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-
     static u8 ConvertCompareFunc(engine::CompareFunc func) {
         if (func < engine::CompareFunc::D3DNever || func > engine::CompareFunc::OglAlways || (func > engine::CompareFunc::D3DAlways && func < engine::CompareFunc::OglNever))
             throw exception("Invalid comparision function: 0x{:X}", static_cast<u32>(func));
@@ -253,12 +252,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
     static PackedPipelineState::AttachmentBlendState PackAttachmentBlendState(bool enable, engine::CtWrite writeMask, auto blend) {
         return {
             .colorWriteMask = ConvertColorWriteMask(writeMask),
-            .colorBlendOp = ConvertBlendOp(blend.colorOp),
-            .srcColorBlendFactor = ConvertBlendFactor(blend.colorSourceCoeff),
-            .dstColorBlendFactor = ConvertBlendFactor(blend.colorDestCoeff),
-            .alphaBlendOp = ConvertBlendOp(blend.alphaOp),
-            .srcAlphaBlendFactor = ConvertBlendFactor(blend.alphaSourceCoeff),
-            .dstAlphaBlendFactor = ConvertBlendFactor(blend.alphaDestCoeff),
+            .colorBlendOp = enable ? ConvertBlendOp(blend.colorOp) : u8{0},
+            .srcColorBlendFactor = enable ? ConvertBlendFactor(blend.colorSourceCoeff) : u8{0},
+            .dstColorBlendFactor = enable ? ConvertBlendFactor(blend.colorDestCoeff) : u8{0},
+            .alphaBlendOp = enable ? ConvertBlendOp(blend.alphaOp) : u8{0},
+            .srcAlphaBlendFactor = enable ? ConvertBlendFactor(blend.alphaSourceCoeff) : u8{0},
+            .dstAlphaBlendFactor = enable ? ConvertBlendFactor(blend.alphaDestCoeff) : u8{0},
             .blendEnable = enable
         };
     }

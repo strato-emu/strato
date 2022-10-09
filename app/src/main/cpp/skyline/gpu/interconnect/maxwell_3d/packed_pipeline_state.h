@@ -59,6 +59,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         float pointSize;
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
         std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
+        std::bitset<8> activeColorTargets;
         std::array<u32, 8> postVtgShaderAttributeSkipMask;
 
         struct VertexBinding {

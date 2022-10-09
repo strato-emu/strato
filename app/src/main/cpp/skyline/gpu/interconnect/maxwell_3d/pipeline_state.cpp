@@ -439,8 +439,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.SetLogicOp(engine->logicOp.func);
 
         for (u32 i{}; i < engine::ColorTargetCount; i++) {
-            auto ctWrite{engine->singleCtWriteControl ? engine->ctWrites[0] : engine->ctWrites[i]};
-            bool enable{engine->blend.enable[i] != 0};
+            auto ctWrite{[&]() {
+                if (!packedState.activeColorTargets.test(i))
+                    return engine::CtWrite{};
+
+                if (engine->singleCtWriteControl)
+                    return engine->ctWrites[0];
+                else
+                    return engine->ctWrites[i];
+            }()};
+
+            bool enable{engine->blend.enable[i] != 0 && packedState.activeColorTargets.test(i)};
 
             if (engine->blendStatePerTargetEnable)
                 packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blendPerTargets[i]);
@@ -502,9 +511,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         colorAttachments.clear();
+        packedState.activeColorTargets.reset();
         for (size_t i{}; i < ctSelect.count; i++) {
             const auto &view{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState).view.get()};
             colorAttachments.push_back(view);
+            packedState.activeColorTargets.set(i);
 
             if (view)
                 ctx.executor.AttachTexture(view);
