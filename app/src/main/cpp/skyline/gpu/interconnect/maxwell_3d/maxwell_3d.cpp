@@ -261,7 +261,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto stateUpdater{builder.Build()};
 
+        /**
+         * @brief Struct that can be linearly allocated, holding all state for the draw to avoid a dynamic allocation with lambda captures
+         */
         struct DrawParams {
+            StateUpdater stateUpdater;
             u32 count;
             u32 first;
             u32 instanceCount;
@@ -269,7 +273,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 firstInstance;
             bool indexed;
         };
-        auto *drawParams{ctx.executor.allocator->EmplaceUntracked<DrawParams>(DrawParams{count, first, instanceCount, vertexOffset, firstInstance, indexed})};
+        auto *drawParams{ctx.executor.allocator->EmplaceUntracked<DrawParams>(DrawParams{stateUpdater,
+                                                                                         count, first, instanceCount, vertexOffset, firstInstance, indexed})};
 
         const auto &surfaceClip{clearEngineRegisters.surfaceClip};
         vk::Rect2D scissor{
@@ -277,12 +282,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             {surfaceClip.horizontal.width, surfaceClip.vertical.height}
         };
 
-        ctx.executor.AddSubpass([stateUpdater, drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
-            stateUpdater.RecordAll(gpu, commandBuffer);
+        ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
+            drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
+
             if (drawParams->indexed)
                 commandBuffer.drawIndexed(drawParams->count, drawParams->instanceCount, drawParams->first, static_cast<i32>(drawParams->vertexOffset), drawParams->firstInstance);
             else
                 commandBuffer.draw(drawParams->count, drawParams->instanceCount, drawParams->first, drawParams->firstInstance);
+
         }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
 
         constantBuffers.ResetQuickBind();
