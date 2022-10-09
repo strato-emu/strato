@@ -49,7 +49,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         if (megaBufferBinding) {
             if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
-                  newMegaBufferBinding != megaBufferBinding) {
+                newMegaBufferBinding != megaBufferBinding) {
 
                 megaBufferBinding = newMegaBufferBinding;
                 if (megaBufferBinding)

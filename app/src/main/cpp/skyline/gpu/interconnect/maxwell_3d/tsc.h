@@ -112,7 +112,7 @@ namespace skyline::gpu::interconnect {
         };
 
       public:
-        bool operator==(const TextureSamplerControl&) const = default;
+        bool operator==(const TextureSamplerControl &) const = default;
 
         float MaxAnisotropy() {
             constexpr size_t AnisotropyCount{8}; //!< The amount of unique anisotropy values that can be represented (2^3 — 3-bit value)

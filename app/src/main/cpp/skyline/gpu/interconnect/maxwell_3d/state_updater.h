@@ -27,7 +27,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         Cmd cmd;
 
         CmdHolder(Cmd &&cmd) : cmd{cmd} {}
-        
+
         CmdHolder() = default;
 
         static void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer, StateUpdateCmdHeader *header) {
@@ -55,7 +55,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 base.buffers[i] = views[i].GetBuffer()->GetBacking();
                 base.offsets[i] = views[i].GetOffset();
             }
-            
+
             base.Record(gpu, commandBuffer);
         }
 
@@ -68,7 +68,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.bindIndexBuffer(buffer, offset, indexType);
         }
-        
+
         vk::Buffer buffer;
         vk::DeviceSize offset;
         vk::IndexType indexType;
@@ -81,7 +81,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             base.offset = view.GetOffset();
             base.Record(gpu, commandBuffer);
         }
-        
+
         SetIndexBufferCmdImpl base;
         BufferView view;
     };
@@ -91,7 +91,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.bindTransformFeedbackBuffersEXT(binding, buffer, offset, size);
         }
-        
+
         u32 binding;
         vk::Buffer buffer;
         vk::DeviceSize offset;
@@ -105,7 +105,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             base.offset = view.GetOffset();
             base.Record(gpu, commandBuffer);
         }
-        
+
         SetTransformFeedbackBufferCmdImpl base;
         BufferView view;
     };
@@ -115,7 +115,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setViewport(index, viewport);
         }
-        
+
         u32 index;
         vk::Viewport viewport;
     };
@@ -125,17 +125,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setScissor(index, scissor);
         }
-        
+
         u32 index;
         vk::Rect2D scissor;
     };
     using SetScissorCmd = CmdHolder<SetScissorCmdImpl>;
-    
+
     struct SetLineWidthCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setLineWidth(lineWidth);
         }
-        
+
         float lineWidth;
     };
     using SetLineWidthCmd = CmdHolder<SetLineWidthCmdImpl>;
@@ -144,7 +144,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setDepthBias(depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
         }
-        
+
         float depthBiasConstantFactor;
         float depthBiasClamp;
         float depthBiasSlopeFactor;
@@ -155,7 +155,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setBlendConstants(blendConstants.data());
         }
-        
+
         std::array<float, 4> blendConstants;
     };
     using SetBlendConstantsCmd = CmdHolder<SetBlendConstantsCmdImpl>;
@@ -164,7 +164,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             commandBuffer.setDepthBounds(minDepthBounds, maxDepthBounds);
         }
-        
+
         float minDepthBounds;
         float maxDepthBounds;
     };
@@ -176,7 +176,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             commandBuffer.setStencilReference(flags, funcRef);
             commandBuffer.setStencilWriteMask(flags, mask);
         }
-        
+
         vk::StencilFaceFlags flags;
         u32 funcRef;
         u32 funcMask;
@@ -184,7 +184,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     };
     using SetBaseStencilStateCmd = CmdHolder<SetBaseStencilStateCmdImpl>;
 
-    struct SetDescriptorSetWithUpdateCmdImpl {
+    template<bool PushDescriptor>
+    struct SetDescriptorSetCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             // Resolve descriptor infos from dynamic bindings
             for (size_t i{}; i < updateInfo->bufferDescDynamicBindings.size(); i++) {
@@ -245,7 +246,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     class StateUpdater {
       private:
         StateUpdateCmdHeader *first;
-      
+
       public:
         StateUpdater(StateUpdateCmdHeader *first) : first{first} {}
 
@@ -268,7 +269,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         SetVertexBuffersDynamicCmd *vertexBatchBind{};
         StateUpdateCmdHeader *head{};
         StateUpdateCmdHeader *tail{};
-        
+
         void AppendCmd(StateUpdateCmdHeader *cmd) {
             if (tail) {
                 tail->next = cmd;
@@ -278,7 +279,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 tail = head;
             }
         }
-        
+
         template<typename Cmd>
         void AppendCmd(typename Cmd::CmdType &&contents) {
             Cmd *cmd{allocator.template EmplaceUntracked<Cmd>(std::forward<typename Cmd::CmdType>(contents))};
@@ -332,101 +333,121 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         void SetIndexBuffer(const BufferBinding &binding, vk::IndexType indexType) {
-            AppendCmd<SetIndexBufferCmd>({
-                .indexType = indexType,
-                .buffer = binding.buffer,
-                .offset = binding.offset,
-            });
+            AppendCmd<SetIndexBufferCmd>(
+                {
+                    .indexType = indexType,
+                    .buffer = binding.buffer,
+                    .offset = binding.offset,
+                });
         }
 
         void SetIndexBuffer(BufferView view, vk::IndexType indexType) {
             view.GetBuffer()->BlockSequencedCpuBackingWrites();
 
-            AppendCmd<SetIndexBufferDynamicCmd>({
-                .base.indexType = indexType,
-                .view = view,
-            });
+            AppendCmd<SetIndexBufferDynamicCmd>(
+                {
+                    .base.indexType = indexType,
+                    .view = view,
+                });
         }
 
         void SetTransformFeedbackBuffer(u32 index, const BufferBinding &binding) {
-            AppendCmd<SetTransformFeedbackBufferCmd>({
-                .binding = index,
-                .buffer = binding.buffer,
-                .offset = binding.offset,
-            });
+            AppendCmd<SetTransformFeedbackBufferCmd>(
+                {
+                    .binding = index,
+                    .buffer = binding.buffer,
+                    .offset = binding.offset,
+                });
         }
 
         void SetTransformFeedbackBuffer(u32 index, BufferView view) {
             view.GetBuffer()->BlockSequencedCpuBackingWrites();
 
-            AppendCmd<SetTransformFeedbackBufferDynamicCmd>({
-                .base.binding = index,
-                .view = view,
-            });
+            AppendCmd<SetTransformFeedbackBufferDynamicCmd>(
+                {
+                    .base.binding = index,
+                    .view = view,
+                });
         }
 
         void SetViewport(u32 index, const vk::Viewport &viewport) {
-            AppendCmd<SetViewportCmd>({
-                .index = index,
-                .viewport = viewport,
-            });
+            AppendCmd<SetViewportCmd>(
+                {
+                    .index = index,
+                    .viewport = viewport,
+                });
         }
 
         void SetScissor(u32 index, const vk::Rect2D &scissor) {
-            AppendCmd<SetScissorCmd>({
-                .index = index,
-                .scissor = scissor,
-            });
+            AppendCmd<SetScissorCmd>(
+                {
+                    .index = index,
+                    .scissor = scissor,
+                });
         }
 
         void SetLineWidth(float lineWidth) {
-            AppendCmd<SetLineWidthCmd>({
-                .lineWidth = lineWidth,
-            });
+            AppendCmd<SetLineWidthCmd>(
+                {
+                    .lineWidth = lineWidth,
+                });
         }
 
         void SetDepthBias(float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) {
-            AppendCmd<SetDepthBiasCmd>({
-                .depthBiasConstantFactor = depthBiasConstantFactor,
-                .depthBiasClamp = depthBiasClamp,
-                .depthBiasSlopeFactor = depthBiasSlopeFactor,
-            });
+            AppendCmd<SetDepthBiasCmd>(
+                {
+                    .depthBiasConstantFactor = depthBiasConstantFactor,
+                    .depthBiasClamp = depthBiasClamp,
+                    .depthBiasSlopeFactor = depthBiasSlopeFactor,
+                });
         }
 
         void SetBlendConstants(const std::array<float, engine::BlendColorChannelCount> &blendConstants) {
-            AppendCmd<SetBlendConstantsCmd>({
-                .blendConstants = blendConstants,
-            });
+            AppendCmd<SetBlendConstantsCmd>(
+                {
+                    .blendConstants = blendConstants,
+                });
         }
 
         void SetDepthBounds(float minDepthBounds, float maxDepthBounds) {
-            AppendCmd<SetDepthBoundsCmd>({
-                .minDepthBounds = minDepthBounds,
-                .maxDepthBounds = maxDepthBounds,
-            });
+            AppendCmd<SetDepthBoundsCmd>(
+                {
+                    .minDepthBounds = minDepthBounds,
+                    .maxDepthBounds = maxDepthBounds,
+                });
         }
 
         void SetBaseStencilState(vk::StencilFaceFlags flags, u32 funcRef, u32 funcMask, u32 mask) {
-            AppendCmd<SetBaseStencilStateCmd>({
-                .flags = flags,
-                .funcRef = funcRef,
-                .funcMask = funcMask,
-                .mask = mask,
-            });
+            AppendCmd<SetBaseStencilStateCmd>(
+                {
+                    .flags = flags,
+                    .funcRef = funcRef,
+                    .funcMask = funcMask,
+                    .mask = mask,
+                });
         }
 
         void SetDescriptorSetWithUpdate(DescriptorUpdateInfo *updateInfo, DescriptorAllocator::ActiveDescriptorSet *dstSet, DescriptorAllocator::ActiveDescriptorSet *srcSet) {
-            AppendCmd<SetDescriptorSetWithUpdateCmd>({
-                .updateInfo = updateInfo,
-                .srcSet = srcSet,
-                .dstSet = dstSet,
-            });
+            AppendCmd<SetDescriptorSetWithUpdateCmd>(
+                {
+                    .updateInfo = updateInfo,
+                    .srcSet = srcSet,
+                    .dstSet = dstSet,
+                });
         }
 
         void SetPipeline(vk::Pipeline pipeline) {
-            AppendCmd<SetPipelineCmd>({
-                .pipeline = pipeline,
-            });
+            AppendCmd<SetPipelineCmd>(
+                {
+                    .pipeline = pipeline,
+                });
+        }
+
+        void SetDescriptorSetWithPush(DescriptorUpdateInfo *updateInfo) {
+            AppendCmd<SetDescriptorSetWithPushCmd>(
+                {
+                    .updateInfo = updateInfo,
+                });
         }
     };
 }

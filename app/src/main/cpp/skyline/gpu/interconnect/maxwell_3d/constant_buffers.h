@@ -15,7 +15,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
-       dirty::BoundSubresource<EngineRegisters> engine;
+        dirty::BoundSubresource <EngineRegisters> engine;
 
       public:
         ConstantBufferSelectorState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     struct ConstantBuffer {
         BufferView view;
 
-        void Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset);
+        void Read(CommandExecutor &executor, span <u8> dstBuffer, size_t srcOffset);
 
         template<typename T>
         T Read(CommandExecutor &executor, size_t srcOffset) {
@@ -49,7 +49,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     class ConstantBuffers {
       private:
-        dirty::ManualDirtyState<ConstantBufferSelectorState> selectorState;
+        dirty::ManualDirtyState <ConstantBufferSelectorState> selectorState;
 
       public:
         ConstantBufferSet boundConstantBuffers;
@@ -68,7 +68,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void MarkAllDirty();
 
-        void Load(InterconnectContext &ctx, span<u32> data, u32 offset);
+        void Load(InterconnectContext &ctx, span <u32> data, u32 offset);
 
         void Bind(InterconnectContext &ctx, engine::ShaderStage stage, size_t index);
 

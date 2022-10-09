@@ -39,7 +39,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         tsl::robin_map<TextureSamplerControl, std::unique_ptr<vk::raii::Sampler>, util::ObjectHash<TextureSamplerControl>> texSamplerStore;
         std::vector<vk::raii::Sampler *> texSamplerCache;
 
-
       public:
         Samplers(DirtyManager &manager, const SamplerPoolState::EngineRegisters &engine);
 

@@ -174,8 +174,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ctx.gpu.shader.ResetPools();
 
         using PipelineStage = engine::Pipeline::Shader::Type;
-        auto pipelineStage{[](size_t i){ return static_cast<PipelineStage>(i); }};
-        auto stageIdx{[](PipelineStage stage){ return static_cast<u8>(stage); }};
+        auto pipelineStage{[](size_t i) { return static_cast<PipelineStage>(i); }};
+        auto stageIdx{[](PipelineStage stage) { return static_cast<u8>(stage); }};
 
         std::array<Shader::IR::Program, engine::PipelineCount> programs;
         bool ignoreVertexCullBeforeFetch{};
@@ -233,7 +233,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
             auto &stageDescInfo{descriptorInfo.stages[i]};
 
-            auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count,  auto &&descCb, bool individualDescWrites = false) {
+            auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u32 &count, auto &&descCb, bool individualDescWrites = false) {
                 descriptorInfo.totalWriteDescCount += individualDescWrites ? descs.size() : ((descs.size() > 0) ? 1 : 0);
 
                 for (u32 descIdx{}; descIdx < descs.size(); descIdx++) {
@@ -328,7 +328,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             numericalType = engine::VertexAttribute::NumericalType::Uint;
 
         switch (componentBitWidths | numericalType) {
-                /* 8-bit components */
+            /* 8-bit components */
             FORMAT_NORM_INT_SCALED_CASE(R8, eR8);
             FORMAT_NORM_INT_SCALED_CASE(R8_G8, eR8G8);
             FORMAT_NORM_INT_SCALED_CASE(G8R8, eR8G8);
@@ -429,21 +429,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
         for (u32 i{}; i < engine::VertexStreamCount; i++) {
             const auto &binding{packedState.vertexBindings[i]};
             bindingDescs.push_back({
-                .binding = i,
-                .stride = binding.stride,
-                .inputRate = binding.GetInputRate(),
-            });
+                                       .binding = i,
+                                       .stride = binding.stride,
+                                       .inputRate = binding.GetInputRate(),
+                                   });
 
             if (binding.GetInputRate() == vk::VertexInputRate::eInstance) {
-                if (!ctx.gpu.traits.supportsVertexAttributeDivisor) [[unlikely]]
+                if (!ctx.gpu.traits.supportsVertexAttributeDivisor)
+                    [[unlikely]]
                         Logger::Warn("Vertex attribute divisor used on guest without host support");
-                else if (!ctx.gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0) [[unlikely]]
+                else if (!ctx.gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0)
+                    [[unlikely]]
                         Logger::Warn("Vertex attribute zero divisor used on guest without host support");
                 else
                     bindingDivisorDescs.push_back({
-                        .binding = i,
-                        .divisor = binding.divisor,
-                    });
+                                                      .binding = i,
+                                                      .divisor = binding.divisor,
+                                                  });
             }
         }
 
@@ -451,11 +453,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const auto &attribute{packedState.vertexAttributes[i]};
             if (attribute.source == engine::VertexAttribute::Source::Active && shaderStages[0].info.loads.Generic(i))
                 attributeDescs.push_back({
-                    .location = i,
-                    .binding = attribute.stream,
-                    .format = ConvertVertexInputAttributeFormat(attribute.componentBitWidths, attribute.numericalType),
-                    .offset = attribute.offset,
-                });
+                                             .location = i,
+                                             .binding = attribute.stream,
+                                             .format = ConvertVertexInputAttributeFormat(attribute.componentBitWidths, attribute.numericalType),
+                                             .offset = attribute.offset,
+                                         });
         }
 
         vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexInputState{
@@ -668,7 +670,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         size_t primaryCbufOffset{desc.cbuf_offset + elemOffset};
         u32 primaryVal{primaryCbuf.Read<u32>(ctx.executor, primaryCbufOffset)};
 
-        if constexpr (requires { desc.has_secondary; } ) {
+        if constexpr (requires { desc.has_secondary; }) {
             if (desc.has_secondary) {
                 ConstantBuffer &secondaryCbuf{constantBuffers[desc.secondary_cbuf_index]};
                 size_t secondaryCbufOffset{desc.secondary_cbuf_offset + elemOffset};
@@ -677,7 +679,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
-        return { .raw = primaryVal };
+        return {.raw = primaryVal};
     }
 
     static vk::DescriptorImageInfo GetTextureBinding(InterconnectContext &ctx, const Shader::TextureDescriptor &desc, Samplers &samplers, Textures &textures, BindlessHandle handle) {
@@ -768,29 +770,29 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
             writeBufferDescs(vk::DescriptorType::eUniformBuffer, stage.info.constant_buffer_descriptors, stageDescInfo.uniformBufferDescCount,
                              [&](const Shader::ConstantBufferDescriptor &desc, size_t arrayIdx) {
-                size_t cbufIdx{desc.index + arrayIdx};
-                return GetConstantBufferBinding(ctx, stage.info, constantBuffers[i][cbufIdx].view, cbufIdx);
-            });
+                                 size_t cbufIdx{desc.index + arrayIdx};
+                                 return GetConstantBufferBinding(ctx, stage.info, constantBuffers[i][cbufIdx].view, cbufIdx);
+                             });
 
             writeBufferDescs(vk::DescriptorType::eStorageBuffer, stage.info.storage_buffers_descriptors, stageDescInfo.storageBufferDescCount,
                              [&](const Shader::StorageBufferDescriptor &desc, size_t arrayIdx) {
-                auto binding{GetStorageBufferBinding(ctx, desc, constantBuffers[i][desc.cbuf_index], storageBufferViews[storageBufferIdx - arrayIdx ? 1 : 0])};
-                // Storage buffer arrays all share the same view index, so to only increment the index once per array do it at element zero and subtract that for all subsequent array elems (see above)
-                storageBufferIdx += arrayIdx ? 0 : 1;
-                return binding;
-            });
+                                 auto binding{GetStorageBufferBinding(ctx, desc, constantBuffers[i][desc.cbuf_index], storageBufferViews[storageBufferIdx - arrayIdx ? 1 : 0])};
+                                 // Storage buffer arrays all share the same view index, so to only increment the index once per array do it at element zero and subtract that for all subsequent array elems (see above)
+                                 storageBufferIdx += arrayIdx ? 0 : 1;
+                                 return binding;
+                             });
 
             writeImageDescs(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, stageDescInfo.combinedImageSamplerDescCount,
                             [&](const Shader::TextureDescriptor &desc, size_t arrayIdx) {
-                BindlessHandle handle{ReadBindlessHandle(ctx, constantBuffers[i], desc, arrayIdx)};
-                return GetTextureBinding(ctx, desc, samplers, textures, handle);
-            }, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites);
+                                BindlessHandle handle{ReadBindlessHandle(ctx, constantBuffers[i], desc, arrayIdx)};
+                                return GetTextureBinding(ctx, desc, samplers, textures, handle);
+                            }, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites);
         }
 
         // Since we don't implement all descriptor types the number of writes might not match what's expected
         if (!writeIdx)
             return nullptr;
-        
+
         return ctx.executor.allocator->EmplaceUntracked<DescriptorUpdateInfo>(DescriptorUpdateInfo{
             .writes = writes.first(writeIdx),
             .bufferDescs = bufferDescs.first(bufferIdx),
@@ -855,21 +857,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }};
 
         writeDescs.operator()<false, true>(vk::DescriptorType::eUniformBuffer, cbufUsageInfo.uniformBuffers, shaderInfo.constant_buffer_descriptors,
-                         [&](auto usage, const Shader::ConstantBufferDescriptor &desc, size_t arrayIdx) -> DynamicBufferBinding {
-            size_t cbufIdx{desc.index + arrayIdx};
-            return GetConstantBufferBinding(ctx, shaderInfo, stageConstantBuffers[cbufIdx].view, cbufIdx);
-        });
+                                           [&](auto usage, const Shader::ConstantBufferDescriptor &desc, size_t arrayIdx) -> DynamicBufferBinding {
+                                               size_t cbufIdx{desc.index + arrayIdx};
+                                               return GetConstantBufferBinding(ctx, shaderInfo, stageConstantBuffers[cbufIdx].view, cbufIdx);
+                                           });
 
         writeDescs.operator()<false, true>(vk::DescriptorType::eStorageBuffer, cbufUsageInfo.storageBuffers, shaderInfo.storage_buffers_descriptors,
-                         [&](auto usage, const Shader::StorageBufferDescriptor &desc, size_t arrayIdx) {
-             return GetStorageBufferBinding(ctx, desc, stageConstantBuffers[desc.cbuf_index], storageBufferViews[usage.storageBufferIdx]);
-        });
+                                           [&](auto usage, const Shader::StorageBufferDescriptor &desc, size_t arrayIdx) {
+                                               return GetStorageBufferBinding(ctx, desc, stageConstantBuffers[desc.cbuf_index], storageBufferViews[usage.storageBufferIdx]);
+                                           });
 
         writeDescs.operator()<true, false>(vk::DescriptorType::eCombinedImageSampler, cbufUsageInfo.combinedImageSamplers, shaderInfo.texture_descriptors,
-                         [&](auto usage, const Shader::TextureDescriptor &desc, size_t arrayIdx) {
-            BindlessHandle handle{ReadBindlessHandle(ctx, stageConstantBuffers, desc, arrayIdx)};
-            return GetTextureBinding(ctx, desc, samplers, textures, handle);
-        });
+                                           [&](auto usage, const Shader::TextureDescriptor &desc, size_t arrayIdx) {
+                                               BindlessHandle handle{ReadBindlessHandle(ctx, stageConstantBuffers, desc, arrayIdx)};
+                                               return GetTextureBinding(ctx, desc, samplers, textures, handle);
+                                           });
 
         // Since we don't implement all descriptor types the number of writes might not match what's expected
         if (!writeIdx)

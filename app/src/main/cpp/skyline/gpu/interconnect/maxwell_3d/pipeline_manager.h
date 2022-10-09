@@ -34,11 +34,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
              */
             bool BindingsEqual(const ShaderStage &other) const {
                 return info.constant_buffer_descriptors == other.info.constant_buffer_descriptors &&
-                       info.storage_buffers_descriptors == other.info.storage_buffers_descriptors &&
-                       info.texture_buffer_descriptors == other.info.texture_buffer_descriptors &&
-                       info.image_buffer_descriptors == other.info.image_buffer_descriptors &&
-                       info.texture_descriptors == other.info.texture_descriptors &&
-                       info.image_descriptors == other.info.image_descriptors;
+                    info.storage_buffers_descriptors == other.info.storage_buffers_descriptors &&
+                    info.texture_buffer_descriptors == other.info.texture_buffer_descriptors &&
+                    info.image_buffer_descriptors == other.info.image_buffer_descriptors &&
+                    info.texture_descriptors == other.info.texture_descriptors &&
+                    info.image_descriptors == other.info.image_descriptors;
             }
         };
 

@@ -152,9 +152,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     static VkColorComponentFlags ConvertColorWriteMask(engine::CtWrite write) {
         return (write.rEnable ? VK_COLOR_COMPONENT_R_BIT : 0) |
-               (write.gEnable ? VK_COLOR_COMPONENT_G_BIT : 0) |
-               (write.bEnable ? VK_COLOR_COMPONENT_B_BIT : 0) |
-               (write.aEnable ? VK_COLOR_COMPONENT_A_BIT : 0);
+            (write.gEnable ? VK_COLOR_COMPONENT_G_BIT : 0) |
+            (write.bEnable ? VK_COLOR_COMPONENT_B_BIT : 0) |
+            (write.aEnable ? VK_COLOR_COMPONENT_A_BIT : 0);
     };
 
     static u8 ConvertBlendOp(engine::BlendOp op) {

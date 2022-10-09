@@ -200,7 +200,6 @@ namespace skyline::gpu::interconnect {
             e16to1 = 7,
         };
 
-
         // 0x00
         struct FormatWord {
             static constexpr u32 FormatColorComponentPadMask{(1U << 31) | 0b111'111'111'111'1111111U}; //!< Mask for the format, component and pad fields

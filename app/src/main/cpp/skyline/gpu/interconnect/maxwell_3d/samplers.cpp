@@ -207,5 +207,4 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return sampler.get();
     }
 
-
 }
