@@ -48,7 +48,7 @@ namespace skyline::gpu {
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) &&
                      ((matchGuestTexture.dimensions.width == guestTexture.dimensions.width &&
                        matchGuestTexture.dimensions.height == guestTexture.dimensions.height &&
-                       matchGuestTexture.dimensions.depth == guestTexture.GetViewDepth())
+                       matchGuestTexture.GetViewDepth() == guestTexture.GetViewDepth())
                       || matchGuestTexture.viewMipBase > 0)
                      && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};
