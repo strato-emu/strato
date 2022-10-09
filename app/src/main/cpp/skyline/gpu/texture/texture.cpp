@@ -159,7 +159,19 @@ namespace skyline::gpu {
                 stateLock.unlock(); // If the lock isn't unlocked, a deadlock from threads waiting on the other lock can occur
 
                 // If this mutex would cause other callbacks to be blocked then we should block on this mutex in advance
-                std::scoped_lock lock{*texture};
+                std::shared_ptr<FenceCycle> waitCycle{};
+                do {
+                    if (waitCycle)
+                        waitCycle->Wait();
+
+                    std::scoped_lock lock{*texture};
+                    if (waitCycle && texture->cycle == waitCycle) {
+                        texture->cycle = {};
+                        waitCycle = {};
+                    } else {
+                        waitCycle = texture->cycle;
+                    }
+                } while (waitCycle);
             }
         }, [weakThis] {
             TRACE_EVENT("gpu", "Texture::ReadTrap");
@@ -177,6 +189,9 @@ namespace skyline::gpu {
 
             std::unique_lock lock{*texture, std::try_to_lock};
             if (!lock)
+                return false;
+
+            if (texture->cycle)
                 return false;
 
             texture->SynchronizeGuest(false, true); // We can skip trapping since the caller will do it
@@ -200,6 +215,10 @@ namespace skyline::gpu {
             std::unique_lock lock{*texture, std::try_to_lock};
             if (!lock)
                 return false;
+
+            if (texture->cycle)
+                return false;
+
             texture->SynchronizeGuest(true, true); // We need to assume the texture is dirty since we don't know what the guest is writing
             return true;
         });

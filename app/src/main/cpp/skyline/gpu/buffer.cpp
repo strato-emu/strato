@@ -23,11 +23,23 @@ namespace skyline::gpu {
                 return;
 
             std::unique_lock stateLock{buffer->stateMutex};
-            if (buffer->AllCpuBackingWritesBlocked()) {
+            if (buffer->AllCpuBackingWritesBlocked() || buffer->dirtyState == DirtyState::GpuDirty) {
                 stateLock.unlock(); // If the lock isn't unlocked, a deadlock from threads waiting on the other lock can occur
 
                 // If this mutex would cause other callbacks to be blocked then we should block on this mutex in advance
-                std::scoped_lock lock{*buffer};
+                std::shared_ptr<FenceCycle> waitCycle{};
+                do {
+                    if (waitCycle)
+                        waitCycle->Wait();
+
+                    std::scoped_lock lock{*buffer};
+                    if (waitCycle && buffer->cycle == waitCycle) {
+                        buffer->cycle = {};
+                        waitCycle = {};
+                    } else {
+                        waitCycle = buffer->cycle;
+                    }
+                } while (waitCycle);
             }
         }, [weakThis] {
             TRACE_EVENT("gpu", "Buffer::ReadTrap");
@@ -45,6 +57,9 @@ namespace skyline::gpu {
 
             std::unique_lock lock{*buffer, std::try_to_lock};
             if (!lock)
+                return false;
+
+            if (buffer->cycle)
                 return false;
 
             buffer->SynchronizeGuest(true); // We can skip trapping since the caller will do it
@@ -69,7 +84,9 @@ namespace skyline::gpu {
             if (!lock)
                 return false;
 
-            buffer->WaitOnFence();
+            if (buffer->cycle)
+                return false;
+
             buffer->SynchronizeGuest(true); // We need to assume the buffer is dirty since we don't know what the guest is writing
             buffer->dirtyState = DirtyState::CpuDirty;
 
@@ -128,8 +145,6 @@ namespace skyline::gpu {
     void Buffer::WaitOnFence() {
         TRACE_EVENT("gpu", "Buffer::WaitOnFence");
 
-        std::scoped_lock lock{stateMutex};
-
         if (cycle) {
             cycle->Wait();
             cycle = nullptr;
@@ -137,8 +152,6 @@ namespace skyline::gpu {
     }
 
     bool Buffer::PollFence() {
-        std::scoped_lock lock{stateMutex};
-
         if (!cycle)
             return true;
 
@@ -219,7 +232,6 @@ namespace skyline::gpu {
     }
 
     void Buffer::Read(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset) {
-        std::scoped_lock lock{stateMutex};
         if (dirtyState == DirtyState::GpuDirty)
             SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
 
