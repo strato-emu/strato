@@ -345,7 +345,7 @@ namespace skyline::gpu {
 
     void Buffer::unlock() {
         tag = ContextTag{};
-        backingImmutability = BackingImmutability::None;
+        AllowAllBackingWrites();
         mutex.unlock();
     }
 

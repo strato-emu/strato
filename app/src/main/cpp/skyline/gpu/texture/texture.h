@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/spin_lock.h>
 #include <common/lockable_shared_ptr.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
@@ -356,9 +357,9 @@ namespace skyline::gpu {
     class Texture : public std::enable_shared_from_this<Texture> {
       private:
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes any mutations to the texture or its backing
+        RecursiveSpinLock mutex; //!< Synchronizes any mutations to the texture or its backing
         std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
-        std::condition_variable backingCondition; //!< Signalled when a valid backing has been swapped in
+        std::condition_variable_any backingCondition; //!< Signalled when a valid backing has been swapped in
         using BackingType = std::variant<vk::Image, vk::raii::Image, memory::Image>;
         BackingType backing; //!< The Vulkan image that backs this texture, it is nullable
 

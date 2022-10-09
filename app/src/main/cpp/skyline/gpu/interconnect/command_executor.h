@@ -15,6 +15,8 @@ namespace skyline::gpu::interconnect {
      */
     class CommandRecordThread {
       public:
+        static constexpr size_t ActiveRecordSlots{6}; //!< Maximum number of simultaneously active slots
+
         /**
          * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
          */
@@ -40,7 +42,6 @@ namespace skyline::gpu::interconnect {
         const DeviceState &state;
         std::thread thread;
 
-        static constexpr size_t ActiveRecordSlots{6}; //!< Maximum number of simultaneously active slots
         CircularQueue<Slot *> incoming{ActiveRecordSlots}; //!< Slots pending recording
         CircularQueue<Slot *> outgoing{ActiveRecordSlots}; //!< Slots that have been submitted, may still be active on the GPU
 
@@ -76,6 +77,7 @@ namespace skyline::gpu::interconnect {
         std::optional<std::scoped_lock<TextureManager>> textureManagerLock; //!< The lock on the texture manager, this is locked for the duration of the command execution from the first usage inside an execution to the submission
         std::optional<std::scoped_lock<BufferManager>> bufferManagerLock; //!< The lock on the buffer manager, see above for details
         std::optional<std::scoped_lock<MegaBufferAllocator>> megaBufferAllocatorLock; //!< The lock on the megabuffer allocator, see above for details
+        bool preserveLocked{};
 
         /**
          * @brief A wrapper of a Texture object that has been locked beforehand and must be unlocked afterwards
@@ -94,6 +96,7 @@ namespace skyline::gpu::interconnect {
             ~LockedTexture();
         };
 
+        std::vector<LockedTexture> preserveAttachedTextures;
         std::vector<LockedTexture> attachedTextures; //!< All textures that are attached to the current execution
 
         /**
@@ -113,6 +116,7 @@ namespace skyline::gpu::interconnect {
             ~LockedBuffer();
         };
 
+        std::vector<LockedBuffer> preserveAttachedBuffers;
         std::vector<LockedBuffer> attachedBuffers; //!< All textures that are attached to the current execution
 
 
@@ -154,6 +158,7 @@ namespace skyline::gpu::interconnect {
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         LinearAllocatorState<> *allocator;
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
+        size_t submissionNumber{};
         u32 executionNumber{};
 
         CommandExecutor(const DeviceState &state);
@@ -258,5 +263,17 @@ namespace skyline::gpu::interconnect {
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
          */
         void Submit();
+
+        /**
+         * @brief Locks all preserve attached buffers/textures
+         * @note This **MUST** be called before attaching any buffers/textures to an execution
+         */
+        void LockPreserve();
+
+        /**
+         * @brief Unlocks all preserve attached buffers/textures
+         * @note This **MUST** be called when there is no GPU work left to be done to avoid deadlocks where the guest will try to lock a buffer/texture but the GPFIFO thread has no work so won't periodically unlock it
+         */
+        void UnlockPreserve();
     };
 }

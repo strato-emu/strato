@@ -43,7 +43,7 @@ namespace skyline::gpu {
     class Buffer : public std::enable_shared_from_this<Buffer> {
       private:
         GPU &gpu;
-        SpinLock mutex; //!< Synchronizes any mutations to the buffer or its backing
+        RecursiveSpinLock mutex; //!< Synchronizes any mutations to the buffer or its backing
         std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
         memory::Buffer backing;
         std::optional<GuestBuffer> guest;
@@ -188,6 +188,11 @@ namespace skyline::gpu {
         void BlockAllCpuBackingWrites() {
             std::scoped_lock lock{stateMutex};
             backingImmutability = BackingImmutability::AllWrites;
+        }
+
+        void AllowAllBackingWrites() {
+            std::scoped_lock lock{stateMutex};
+            backingImmutability = BackingImmutability::None;
         }
 
         /**

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <range/v3/view.hpp>
 #include <loader/loader.h>
 #include <gpu.h>
 #include "command_executor.h"
@@ -234,8 +235,12 @@ namespace skyline::gpu::interconnect {
             textureManagerLock.emplace(gpu.texture);
 
         bool didLock{view->LockWithTag(tag)};
-        if (didLock)
-            attachedTextures.emplace_back(view->texture);
+        if (didLock) {
+            if (view->texture->FrequentlyLocked())
+                attachedTextures.emplace_back(view->texture);
+            else
+                preserveAttachedTextures.emplace_back(view->texture);
+        }
 
         return didLock;
     }
@@ -259,8 +264,12 @@ namespace skyline::gpu::interconnect {
             bufferManagerLock.emplace(gpu.buffer);
 
         bool didLock{view.LockWithTag(tag)};
-        if (didLock)
-            attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+        if (didLock) {
+            if (view.GetBuffer()->FrequentlyLocked())
+                attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+            else
+                preserveAttachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+        }
         return didLock;
     }
 
@@ -271,14 +280,20 @@ namespace skyline::gpu::interconnect {
 
         if (lock.OwnsLock()) {
             // Transfer ownership to executor so that the resource will stay locked for the period it is used on the GPU
-            attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+            if (view.GetBuffer()->FrequentlyLocked())
+                attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+            else
+                preserveAttachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
             lock.Release(); // The executor will handle unlocking the lock so it doesn't need to be handled here
         }
     }
 
     void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
         if (lock.OwnsLock()) {
-            attachedBuffers.emplace_back(std::move(buffer));
+            if (buffer->FrequentlyLocked())
+                attachedBuffers.emplace_back(std::move(buffer));
+            else
+                preserveAttachedBuffers.emplace_back(std::move(buffer));
             lock.Release(); // See AttachLockedBufferView(...)
         }
     }
@@ -381,24 +396,25 @@ namespace skyline::gpu::interconnect {
                 }, {}, {}
             );
 
-            for (const auto &texture : attachedTextures)
+            boost::container::small_vector<FenceCycle *, 8> chainedCycles;
+            for (const auto &texture : ranges::views::concat(attachedTextures, preserveAttachedTextures)) {
                 texture->SynchronizeHostInline(slot->commandBuffer, cycle, true);
+                // We don't need to attach the Texture to the cycle as a TextureView will already be attached
+                if (ranges::find(chainedCycles, texture->cycle.get()) == chainedCycles.end()) {
+                    cycle->ChainCycle(texture->cycle);
+                    chainedCycles.emplace_back(texture->cycle.get());
+                }
+
+                texture->cycle = cycle;
+            }
         }
 
-        for (const auto &attachedBuffer : attachedBuffers)
-            if (attachedBuffer->SequencedCpuBackingWritesBlocked())
+        for (const auto &attachedBuffer : ranges::views::concat(attachedBuffers, preserveAttachedBuffers)) {
+            if (attachedBuffer->RequiresCycleAttach()) {
                 attachedBuffer->SynchronizeHost(); // Synchronize attached buffers from the CPU without using a staging buffer
-
-        for (const auto &attachedTexture : attachedTextures) {
-            // We don't need to attach the Texture to the cycle as a TextureView will already be attached
-            cycle->ChainCycle(attachedTexture->cycle);
-            attachedTexture->cycle = cycle;
-        }
-
-        for (const auto &attachedBuffer : attachedBuffers) {
-            if (attachedBuffer->RequiresCycleAttach() ) {
                 cycle->AttachObject(attachedBuffer.buffer);
                 attachedBuffer->UpdateCycle(cycle);
+                attachedBuffer->AllowAllBackingWrites();
             }
         }
 
@@ -412,6 +428,12 @@ namespace skyline::gpu::interconnect {
         bufferManagerLock.reset();
         megaBufferAllocatorLock.reset();
         allocator->Reset();
+
+        // Periodically clear preserve attachments just in case there are new waiters which would otherwise end up waiting forever
+        if ((submissionNumber % CommandRecordThread::ActiveRecordSlots * 2) == 0) {
+            preserveAttachedBuffers.clear();
+            preserveAttachedTextures.clear();
+        }
     }
 
     void CommandExecutor::Submit() {
@@ -423,7 +445,33 @@ namespace skyline::gpu::interconnect {
         if (!slot->nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Submit");
             SubmitInternal();
+            submissionNumber++;
         }
+
         ResetInternal();
+    }
+
+    void CommandExecutor::LockPreserve() {
+        if (!preserveLocked) {
+            preserveLocked = true;
+
+            for (auto &buffer : preserveAttachedBuffers)
+                buffer->LockWithTag(tag);
+
+            for (auto &texture : preserveAttachedTextures)
+                texture->LockWithTag(tag);
+        }
+    }
+
+    void CommandExecutor::UnlockPreserve() {
+        if (preserveLocked) {
+            for (auto &buffer : preserveAttachedBuffers)
+                buffer->unlock();
+
+            for (auto &texture : preserveAttachedTextures)
+                texture->unlock();
+
+            preserveLocked = false;
+        }
     }
 }
