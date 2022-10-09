@@ -249,6 +249,25 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(PackedPipelineState &packedState);
     };
 
+    class TransformFeedbackState : dirty::ManualDirty {
+      public:
+        struct EngineRegisters {
+            const u32 &streamOutputEnable;
+            const std::array<engine::StreamOutControl, engine::StreamOutBufferCount> &streamOutControls;
+            const std::array<std::array<u8, engine::StreamOutLayoutSelectAttributeCount>, engine::StreamOutBufferCount> &streamOutLayoutSelect;
+
+            void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+        };
+
+      private:
+        dirty::BoundSubresource<EngineRegisters> engine;
+
+      public:
+        TransformFeedbackState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
+
+        void Flush(PackedPipelineState &packedState);
+    };
+
     class GlobalShaderConfigState {
       public:
         struct EngineRegisters {
@@ -283,6 +302,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             RasterizationState::EngineRegisters rasterizationRegisters;
             DepthStencilState::EngineRegisters depthStencilRegisters;
             ColorBlendState::EngineRegisters colorBlendRegisters;
+            TransformFeedbackState::EngineRegisters transformFeedbackRegisters;
             GlobalShaderConfigState::EngineRegisters globalShaderConfigRegisters;
             const engine::CtSelect &ctSelect;
 
@@ -304,6 +324,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::ManualDirtyState<RasterizationState> rasterization;
         dirty::ManualDirtyState<DepthStencilState> depthStencil;
         dirty::ManualDirtyState<ColorBlendState> colorBlend;
+        dirty::ManualDirtyState<TransformFeedbackState> transformFeedback;
         GlobalShaderConfigState globalShaderConfig;
         const engine::CtSelect &ctSelect;
 

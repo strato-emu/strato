@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "common.h"
 #include <tuple>
+#include <shader_compiler/runtime_info.h>
+#include "common.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     #pragma clang diagnostic push
@@ -53,6 +54,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u8 bindlessTextureConstantBufferSlotSelect : 5;
             bool apiMandatedEarlyZ : 1;
             bool openGlNdc : 1;
+            bool transformFeedbackEnable : 1;
         };
 
         u32 patchSize;
@@ -89,6 +91,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::array<AttachmentBlendState, engine::ColorTargetCount> attachmentBlendStates;
 
+        struct TransformFeedbackVarying {
+            u16 stride;
+            u8 offsetWords;
+            u8 buffer;
+        };
+        std::array<TransformFeedbackVarying, 0x100> transformFeedbackVaryings{};
+
         void SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format);
 
         void SetDepthRenderTargetFormat(engine::ZtFormat format);
@@ -121,8 +130,26 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         vk::PipelineColorBlendAttachmentState GetAttachmentBlendState(u32 index) const;
 
+        void SetTransformFeedbackVaryings(const engine::StreamOutControl &control, const std::array<u8, engine::StreamOutLayoutSelectAttributeCount> &layoutSelect, size_t buffer);
+
+        std::vector<Shader::TransformFeedbackVarying> GetTransformFeedbackVaryings() const;
+
         bool operator==(const PackedPipelineState &other) const {
-            return std::memcmp(this, &other, sizeof(PackedPipelineState)) == 0;
+            // Only hash transform feedback state if it's enabled
+            if (other.transformFeedbackEnable && transformFeedbackEnable)
+                return std::memcmp(this, &other, sizeof(PackedPipelineState)) == 0;
+            else
+                return std::memcmp(this, &other, offsetof(PackedPipelineState, transformFeedbackVaryings)) == 0;
+        }
+    };
+
+    struct PackedPipelineStateHash {
+        size_t operator()(const PackedPipelineState &state) const noexcept {
+            // Only hash transform feedback state if it's enabled
+            if (state.transformFeedbackEnable)
+                return XXH64(&state, sizeof(PackedPipelineState), 0);
+
+            return XXH64(&state, offsetof(PackedPipelineState, transformFeedbackVaryings), 0);
         }
     };
 

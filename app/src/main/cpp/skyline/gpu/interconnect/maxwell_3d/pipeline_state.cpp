@@ -458,6 +458,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
+    /* Transform Feedback State */
+    void TransformFeedbackState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
+        manager.Bind(handle, streamOutputEnable, streamOutControls, streamOutLayoutSelect);
+    }
+
+    TransformFeedbackState::TransformFeedbackState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
+
+    void TransformFeedbackState::Flush(PackedPipelineState &packedState) {
+        packedState.transformFeedbackEnable = engine->streamOutputEnable;
+        packedState.transformFeedbackVaryings = {};
+
+        if (engine->streamOutputEnable)
+            for (size_t i{}; i < engine::StreamOutBufferCount; i++)
+                packedState.SetTransformFeedbackVaryings(engine->streamOutControls[i], engine->streamOutLayoutSelect[i], i);
+    }
+
     /* Global Shader Config State */
     void GlobalShaderConfigState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture, apiMandatedEarlyZ);
@@ -485,6 +501,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         bindFunc(depthStencilRegisters);
         bindFunc(colorBlendRegisters);
         bindFunc(globalShaderConfigRegisters);
+        bindFunc(transformFeedbackRegisters);
         manager.Bind(handle, ctSelect);
     }
 
@@ -498,6 +515,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
           rasterization{manager, engine.rasterizationRegisters},
           depthStencil{manager, engine.depthStencilRegisters},
           colorBlend{manager, engine.colorBlendRegisters},
+          transformFeedback{manager, engine.transformFeedbackRegisters},
           directState{engine.inputAssemblyRegisters},
           globalShaderConfig{engine.globalShaderConfigRegisters},
           ctSelect{engine.ctSelect} {}
@@ -531,6 +549,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterization.Update(packedState);
         depthStencil.Update(packedState);
         colorBlend.Update(packedState);
+        transformFeedback.Update(packedState);
         globalShaderConfig.Update(packedState);
 
         if (pipeline) {

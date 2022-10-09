@@ -107,15 +107,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
                     if (packedState.topology == engine::DrawTopology::Points)
                         info.fixed_state_point_size = packedState.pointSize;
 
-                    //if (key.state.xfb_enabled)
-                    //info.xfb_varyings = VideoCommon::MakeTransformFeedbackVaryings(key.state.xfb_state);
-                    //}
+                    if (packedState.transformFeedbackEnable)
+                        info.xfb_varyings = packedState.GetTransformFeedbackVaryings();
+
                     info.convert_depth_mode = packedState.openGlNdc;
                 }
                 ranges::transform(packedState.vertexAttributes, info.generic_input_types.begin(), &ConvertShaderAttributeType);
                 break;
             case Shader::Stage::TessellationEval:
-                // Double check this!
                 info.tess_clockwise = packedState.outputPrimitives != engine::TessellationParameters::OutputPrimitives::TrianglesCCW;
                 info.tess_primitive = ConvertShaderTessPrimitive(packedState.domainType);
                 info.tess_spacing = ConvertShaderTessSpacing(packedState.spacing);
@@ -124,9 +123,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 if (program.output_topology == Shader::OutputTopology::PointList)
                     info.fixed_state_point_size = packedState.pointSize;
 
-             //   if (key.state.xfb_enabled != 0) {
-              //      info.xfb_varyings = VideoCommon::MakeTransformFeedbackVaryings(key.state.xfb_state);
-               // }
+                if (packedState.transformFeedbackEnable)
+                    info.xfb_varyings = packedState.GetTransformFeedbackVaryings();
+
                 info.convert_depth_mode = packedState.openGlNdc;
                 break;
             case Shader::Stage::Fragment:

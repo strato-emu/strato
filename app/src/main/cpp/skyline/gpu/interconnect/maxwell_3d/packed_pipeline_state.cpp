@@ -300,6 +300,37 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .blendEnable = state.blendEnable
         };
     }
+
+    void PackedPipelineState::SetTransformFeedbackVaryings(const engine::StreamOutControl &control, const std::array<u8, engine::StreamOutLayoutSelectAttributeCount> &layoutSelect, size_t buffer) {
+        for (size_t i{}; i < control.componentCount; i++) {
+            // TODO: We could merge multiple component accesses from the same attribute into one varying as yuzu does
+            u8 attributeIndex{layoutSelect[i]};
+
+            if (control.strideBytes > std::numeric_limits<u16>::max())
+                throw exception("Stride too large: {}", control.strideBytes);
+
+            transformFeedbackVaryings[attributeIndex] = {
+                .buffer = static_cast<u8>(buffer),
+                .offsetWords = static_cast<u8>(i),
+                .stride = static_cast<u16>(control.strideBytes)
+            };
+        }
+    }
+
+    std::vector<Shader::TransformFeedbackVarying> PackedPipelineState::GetTransformFeedbackVaryings() const {
+        std::vector<Shader::TransformFeedbackVarying> convertedVaryings;
+        convertedVaryings.reserve(0x100);
+        for (const auto &varying : transformFeedbackVaryings)
+            convertedVaryings.push_back(
+                {
+                    .buffer = varying.buffer,
+                    .stride = varying.stride,
+                    .offset = varying.offsetWords * 4U,
+                    .components = 1,
+                });
+
+        return convertedVaryings;
+    }
 }
 
 #pragma clang diagnostic pop
