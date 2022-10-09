@@ -30,7 +30,18 @@ namespace skyline::soc::gm20b {
         engine::KeplerCompute keplerCompute;
         engine::Inline2Memory inline2Memory;
         ChannelGpfifo gpfifo;
+        std::mutex &globalChannelLock;
 
         ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> asCtx, size_t numEntries);
+
+        void Lock() {
+            globalChannelLock.lock();
+            executor.LockPreserve();
+        }
+
+        void Unlock() {
+            executor.UnlockPreserve();
+            globalChannelLock.unlock();
+        }
     };
 }

@@ -57,6 +57,8 @@ namespace skyline::gpu {
         cache::RenderPassCache renderPassCache;
         cache::FramebufferCache framebufferCache;
 
+        std::mutex channelLock;
+
         GPU(const DeviceState &state);
     };
 }

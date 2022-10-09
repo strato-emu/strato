@@ -12,5 +12,6 @@ namespace skyline::soc::gm20b {
           maxwellDma(state, *this, executor),
           keplerCompute(state, *this),
           inline2Memory(*this),
-          gpfifo(state, *this, numEntries) {}
+          gpfifo(state, *this, numEntries),
+          globalChannelLock{state.gpu->channelLock} {}
 }

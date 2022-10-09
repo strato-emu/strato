@@ -25,7 +25,10 @@ namespace skyline::soc::gm20b::engine {
                     Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
 
                     // Wait forever for another channel to increment
+
+                    channelCtx.Unlock();
                     syncpoints.at(action.index).Wait(registers.syncpoint->payload, std::chrono::steady_clock::duration::max());
+                    channelCtx.Lock();
                 }
             })
 

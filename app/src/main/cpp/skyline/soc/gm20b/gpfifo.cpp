@@ -340,13 +340,23 @@ namespace skyline::soc::gm20b {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
             signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
 
-            gpEntries.Process([this](GpEntry gpEntry) {
+            bool channelLocked{};
+
+            gpEntries.Process([this, &channelLocked](GpEntry gpEntry) {
                 Logger::Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
+
+                if (!channelLocked) {
+                    channelCtx.Lock();
+                    channelLocked = true;
+                }
+
                 Process(gpEntry);
-            }, [this]() {
+            }, [this, &channelLocked]() {
                 // If we run out of GpEntries to process ensure we submit any remaining GPU work before waiting for more to arrive
                 Logger::Debug("Finished processing pushbuffer batch");
                 channelCtx.executor.Submit();
+                channelCtx.Unlock();
+                channelLocked = false;
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
