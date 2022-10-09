@@ -197,9 +197,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
             Register<0x4C3, type::CompareFunc> depthFunc;
-            Register<0x4C4, float> alphaTestRef;
-            Register<0x4C5, type::CompareFunc> alphaTestFunc;
-            Register<0x4C6, u32> drawTFBStride;
+            Register<0x4C4, float> alphaRef;
+            Register<0x4C5, type::CompareFunc> alphaFunc;
+            Register<0x4C6, u32> drawAutoStride;
 
             struct BlendConstant {
                 float red; // 0x4C7
