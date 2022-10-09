@@ -411,7 +411,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Depth Stencil State */
     void DepthStencilState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, depthTestEnable, depthWriteEnable, depthFunc, depthBoundsTestEnable, stencilTestEnable, twoSidedStencilTestEnable, stencilOps, stencilBack);
+        manager.Bind(handle, depthTestEnable, depthWriteEnable, depthFunc, depthBoundsTestEnable, stencilTestEnable, twoSidedStencilTestEnable, stencilOps, stencilBack, alphaTestEnable, alphaFunc, alphaRef);
     }
 
     DepthStencilState::DepthStencilState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
@@ -419,12 +419,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void DepthStencilState::Flush(PackedPipelineState &packedState) {
         packedState.depthTestEnable = engine->depthTestEnable;
         packedState.depthWriteEnable = engine->depthWriteEnable;
-        packedState.SetDepthFunc(engine->depthFunc);
+        packedState.SetDepthFunc(engine->depthTestEnable ? engine->depthFunc : engine::CompareFunc::OglAlways);
         packedState.depthBoundsTestEnable = engine->depthBoundsTestEnable;
-        packedState.stencilTestEnable = engine->stencilTestEnable;
 
-        auto stencilBack{engine->twoSidedStencilTestEnable ? engine->stencilBack : engine->stencilOps};
-        packedState.SetStencilOps(engine->stencilOps, engine->stencilOps);
+        packedState.stencilTestEnable = engine->stencilTestEnable;
+        if (packedState.stencilTestEnable) {
+            auto stencilBack{engine->twoSidedStencilTestEnable ? engine->stencilBack : engine->stencilOps};
+            packedState.SetStencilOps(engine->stencilOps, stencilBack);
+        } else {
+            packedState.SetStencilOps({ .func = engine::CompareFunc::OglAlways }, { .func = engine::CompareFunc::OglAlways });
+        }
+
+        packedState.alphaTestEnable = engine->alphaTestEnable;
+        packedState.SetAlphaFunc(engine->alphaTestEnable ? engine->alphaFunc : engine::CompareFunc::OglAlways);
+        packedState.alphaRef = engine->alphaTestEnable ? engine->alphaRef : 0;
     };
 
     /* Color Blend State */

@@ -331,6 +331,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         return convertedVaryings;
     }
+
+    void PackedPipelineState::SetAlphaFunc(engine::CompareFunc func) {
+        alphaFunc = ConvertCompareFunc(func);
+    }
+
+    Shader::CompareFunction PackedPipelineState::GetAlphaFunc() const {
+        // Vulkan enum values match 1-1 with hades
+        return static_cast<Shader::CompareFunction>(alphaFunc);
+    }
 }
 
 #pragma clang diagnostic pop

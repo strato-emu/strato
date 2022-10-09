@@ -129,9 +129,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 info.convert_depth_mode = packedState.openGlNdc;
                 break;
             case Shader::Stage::Fragment:
-         //       info.alpha_test_func = MaxwellToCompareFunction(
-           //         key.state.UnpackComparisonOp(key.state.alpha_test_func.Value()));
-             //   info.alpha_test_reference = Common::BitCast<float>(key.state.alpha_test_ref);
+                if (packedState.alphaTestEnable) {
+                    info.alpha_test_func = packedState.GetAlphaFunc();
+                    info.alpha_test_reference = packedState.alphaRef;
+                }
+
                 break;
             default:
                 break;

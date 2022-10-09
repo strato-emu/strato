@@ -55,9 +55,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bool apiMandatedEarlyZ : 1;
             bool openGlNdc : 1;
             bool transformFeedbackEnable : 1;
+            u8 alphaFunc : 3; //!< Use {Set,Get}AlphaFunc
+            bool alphaTestEnable : 1;
         };
 
         u32 patchSize;
+        float alphaRef;
         float pointSize;
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
         std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
@@ -133,6 +136,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SetTransformFeedbackVaryings(const engine::StreamOutControl &control, const std::array<u8, engine::StreamOutLayoutSelectAttributeCount> &layoutSelect, size_t buffer);
 
         std::vector<Shader::TransformFeedbackVarying> GetTransformFeedbackVaryings() const;
+
+        void SetAlphaFunc(engine::CompareFunc func);
+
+        Shader::CompareFunction GetAlphaFunc() const;
 
         bool operator==(const PackedPipelineState &other) const {
             // Only hash transform feedback state if it's enabled

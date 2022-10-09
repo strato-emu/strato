@@ -214,6 +214,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const u32 &twoSidedStencilTestEnable;
             const engine::StencilOps &stencilOps;
             const engine::StencilOps &stencilBack;
+            const u32 &alphaTestEnable;
+            const engine::CompareFunc &alphaFunc;
+            const float &alphaRef;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
