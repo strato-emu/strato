@@ -62,6 +62,13 @@ namespace skyline::gpu {
          * @brief Waits for submission of the command buffer associated with this cycle to the GPU
          */
         void WaitSubmit() {
+            if (signalled.test(std::memory_order_consume))
+                return;
+
+            chainedCycles.Iterate([&](const auto &cycle) {
+                cycle->WaitSubmit();
+            });
+
             std::unique_lock lock{mutex};
             submitCondition.wait(lock, [this] { return submitted; });
         }
@@ -71,8 +78,6 @@ namespace skyline::gpu {
          * @param shouldDestroy If true, the dependencies of this cycle will be destroyed after the fence is signalled
          */
         void Wait(bool shouldDestroy = false) {
-            std::unique_lock lock{mutex};
-
             if (signalled.test(std::memory_order_consume)) {
                 if (shouldDestroy)
                     DestroyDependencies();
@@ -83,7 +88,14 @@ namespace skyline::gpu {
                 cycle->Wait(shouldDestroy);
             });
 
+            std::unique_lock lock{mutex};
             submitCondition.wait(lock, [&] { return submitted; });
+
+            if (signalled.test(std::memory_order_consume)) {
+                if (shouldDestroy)
+                    DestroyDependencies();
+                return;
+            }
 
             vk::Result waitResult;
             while ((waitResult = (*device).waitForFences(1, &fence, false, std::numeric_limits<u64>::max(), *device.getDispatcher())) != vk::Result::eSuccess) {
@@ -109,10 +121,6 @@ namespace skyline::gpu {
          * @return If the wait was successful or timed out
          */
         bool Wait(i64 timeoutNs, bool shouldDestroy = false) {
-            std::unique_lock lock{mutex, std::defer_lock};
-            if (!lock.try_lock_for(std::chrono::nanoseconds{timeoutNs}))
-                return false;
-
             if (signalled.test(std::memory_order_consume)) {
                 if (shouldDestroy)
                     DestroyDependencies();
@@ -126,6 +134,10 @@ namespace skyline::gpu {
                 timeoutNs = std::max<i64>(0, initialTimeout - (util::GetTimeNs() - startTime));
                 return true;
             }))
+                return false;
+
+            std::unique_lock lock{mutex, std::defer_lock};
+            if (!lock.try_lock_for(std::chrono::nanoseconds{timeoutNs}))
                 return false;
 
             if (!submitCondition.wait_for(lock, std::chrono::nanoseconds(timeoutNs), [&] { return submitted; }))
@@ -165,10 +177,6 @@ namespace skyline::gpu {
          * @return If the fence is signalled currently or not
          */
         bool Poll(bool quick = true, bool shouldDestroy = false) {
-            std::unique_lock lock{mutex, std::try_to_lock};
-            if (!lock)
-                return false;
-
             if (signalled.test(std::memory_order_consume)) {
                 if (shouldDestroy)
                     DestroyDependencies();
@@ -179,6 +187,10 @@ namespace skyline::gpu {
                 return false; // We need to return early if we're not waiting on the fence
 
             if (!chainedCycles.AllOf([=](auto &cycle) { return cycle->Poll(quick, shouldDestroy); }))
+                return false;
+
+            std::unique_lock lock{mutex, std::try_to_lock};
+            if (!lock)
                 return false;
 
             if (!submitted)
@@ -217,7 +229,7 @@ namespace skyline::gpu {
          * @param cycle The cycle to chain to this one, this is nullable and this function will be a no-op if this is nullptr
          */
         void ChainCycle(const std::shared_ptr<FenceCycle> &cycle) {
-            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this && !cycle->Poll())
+            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this)
                 chainedCycles.Append(cycle); // If the cycle isn't the current cycle or already signalled, we need to chain it
         }
 
