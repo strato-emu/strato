@@ -41,6 +41,11 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::IsSixAxisSensorAtRest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(1);
+        return {};
+    }
+
     Result IHidServer::SetSupportedNpadStyleSet(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto styleSet{request.Pop<NpadStyleSet>()};
         std::scoped_lock lock{state.input->npad.mutex};
