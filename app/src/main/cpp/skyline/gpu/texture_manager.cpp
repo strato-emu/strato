@@ -24,6 +24,7 @@ namespace skyline::gpu {
          */
 
         std::shared_ptr<Texture> match{};
+        boost::container::small_vector<std::shared_ptr<Texture>, 4> matches{};
         auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping)}, hostMapping{mappingEnd};
         while (hostMapping != textures.begin() && (--hostMapping)->end() > guestMapping.begin()) {
             auto &hostMappings{hostMapping->texture->guest->mappings};
@@ -58,6 +59,8 @@ namespace skyline::gpu {
                         .levelCount = guestTexture.viewMipCount,
                         .layerCount = guestTexture.GetViewLayerCount(),
                     }, guestTexture.format, guestTexture.swizzle);
+                } else {
+                    matches.push_back(hostMapping->texture);
                 }
             } /* else if (mappingMatch) {
                 // We've gotten a partial match with a certain subset of contiguous mappings matching, we need to check if this is a meaningful overlap
@@ -72,6 +75,9 @@ namespace skyline::gpu {
                 }
             } */
         }
+
+        for (auto &texture : matches)
+            texture->SynchronizeGuest(false, true);
 
         // Create a texture as we cannot find one that matches
         auto texture{std::make_shared<Texture>(gpu, guestTexture)};
