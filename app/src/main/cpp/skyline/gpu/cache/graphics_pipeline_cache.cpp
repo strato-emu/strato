@@ -324,7 +324,7 @@ namespace skyline::gpu::cache {
 
     GraphicsPipelineCache::CompiledPipeline::CompiledPipeline(const PipelineCacheEntry &entry) : descriptorSetLayout(*entry.descriptorSetLayout), pipelineLayout(*entry.pipelineLayout), pipeline(*entry.pipeline) {}
 
-    GraphicsPipelineCache::CompiledPipeline GraphicsPipelineCache::GetCompiledPipeline(const PipelineState &state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges) {
+    GraphicsPipelineCache::CompiledPipeline GraphicsPipelineCache::GetCompiledPipeline(const PipelineState &state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges, bool noPushDescriptors) {
         std::unique_lock lock(mutex);
 
         auto it{pipelineCache.find(state)};
@@ -334,7 +334,7 @@ namespace skyline::gpu::cache {
         lock.unlock();
 
         vk::raii::DescriptorSetLayout descriptorSetLayout{gpu.vkDevice, vk::DescriptorSetLayoutCreateInfo{
-            .flags = vk::DescriptorSetLayoutCreateFlags{},
+            .flags = vk::DescriptorSetLayoutCreateFlags{(!noPushDescriptors && gpu.traits.supportsPushDescriptors) ? vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR : vk::DescriptorSetLayoutCreateFlags{}},
             .pBindings = layoutBindings.data(),
             .bindingCount = static_cast<u32>(layoutBindings.size()),
         }};

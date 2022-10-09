@@ -157,6 +157,6 @@ namespace skyline::gpu::cache {
          * @note Shader specializiation constants are **not** supported and will result in UB
          * @note Input/Resolve attachments are **not** supported and using them with the supplied pipeline will result in UB
          */
-        CompiledPipeline GetCompiledPipeline(const PipelineState& state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges = {});
+        CompiledPipeline GetCompiledPipeline(const PipelineState& state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges = {}, bool noPushDescriptors = false);
     };
 }
