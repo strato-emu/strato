@@ -135,7 +135,7 @@ namespace skyline::gpu {
             .dynamicState = {},
             .colorAttachments = span<TextureView *>{colorAttachment},
             .depthStencilAttachment = nullptr,
-        }, layoutBindings, pushConstantRanges);
+        }, layoutBindings, pushConstantRanges, true);
     }
 
     namespace glsl {
