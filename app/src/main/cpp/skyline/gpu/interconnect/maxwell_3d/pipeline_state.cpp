@@ -236,7 +236,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return;
         }
 
-        auto [blockMapping, blockOffset]{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->programRegion + engine->pipeline.programOffset)};
+        auto[blockMapping, blockOffset]{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->programRegion + engine->pipeline.programOffset)};
 
         // Skip looking up the mirror if it is the same as the one used for the previous update
         if (!mirrorBlock.valid() || !mirrorBlock.contains(blockMapping)) {
@@ -246,8 +246,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 auto newIt{mirrorMap.emplace(blockMapping.data(), std::make_unique<MirrorEntry>(ctx.memory.CreateMirror(blockMapping)))};
 
                 // We need to create the trap after allocating the entry so that we have an `invalid` pointer we can pass in
-                auto trapHandle{ctx.nce.CreateTrap(blockMapping, [](){}, [](){ return true; }, [dirty = &newIt.first->second->dirty, mutex = &trapMutex](){
-                    std::scoped_lock lock{*mutex}; // Don't use lock callback here since we need trapMutex to be always locked on accesses to prevent UAFs
+                auto trapHandle{ctx.nce.CreateTrap(blockMapping, [mutex = &trapMutex]() {
+                    std::scoped_lock lock{*mutex};
+                    return;
+                }, []() { return true; }, [dirty = &newIt.first->second->dirty, mutex = &trapMutex]() {
+                    std::unique_lock lock{*mutex, std::try_to_lock};
+                    if (!lock)
+                        return false;
                     *dirty = true;
                     return true;
                 })};
@@ -263,6 +268,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
             mirrorBlock = blockMapping;
         }
+
+        if (!trapExecutionLock)
+            trapExecutionLock.emplace(trapMutex);
 
         // If the mirror entry has been written to, clear its shader binary cache and retrap to catch any future writes
         if (entry->dirty) {
@@ -300,13 +308,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
         entry->cache.insert({blockMapping.data() + blockOffset, CacheEntry{binary, hash}});
     }
 
-    // TODO: this needs to be checked every draw irresspective of pipeline dirtiness
     bool PipelineStageState::Refresh(InterconnectContext &ctx) {
-        std::scoped_lock lock{trapMutex};
+        if (!trapExecutionLock)
+            trapExecutionLock.emplace(trapMutex);
+
         if (entry && entry->dirty)
             return true;
 
         return false;
+    }
+
+    void PipelineStageState::PurgeCaches() {
+        trapExecutionLock.reset();
     }
 
     PipelineStageState::~PipelineStageState() {
@@ -575,6 +588,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void PipelineState::PurgeCaches() {
         pipeline = nullptr;
+        for (auto &stage : pipelineStages)
+            stage.MarkDirty(true);
     }
 
     std::shared_ptr<TextureView> PipelineState::GetColorRenderTargetForClear(InterconnectContext &ctx, size_t index) {

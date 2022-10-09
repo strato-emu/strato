@@ -55,7 +55,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(InterconnectContext &ctx, PackedPipelineState &packedState);
     };
 
-    class PipelineStageState : dirty::RefreshableManualDirty {
+    class PipelineStageState : dirty::RefreshableManualDirty, dirty::CachedManualDirty {
       public:
         struct EngineRegisters {
             const engine::Pipeline &pipeline;
@@ -80,6 +80,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             tsl::robin_map<u8 *, CacheEntry> cache;
             std::optional<nce::NCE::TrapHandle> trap;
             bool dirty{};
+
             MirrorEntry(span<u8> alignedMirror) : mirror{alignedMirror} {}
         };
 
@@ -87,7 +88,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         engine::Pipeline::Shader::Type shaderType;
 
         tsl::robin_map<u8 *, std::unique_ptr<MirrorEntry>> mirrorMap;
-        SpinLock trapMutex; //!< Protects accesses from trap handlers to the mirror map
+        std::mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
+        std::optional<std::scoped_lock<std::mutex>> trapExecutionLock;
         MirrorEntry *entry{};
         span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
 
@@ -102,6 +104,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(InterconnectContext &ctx);
 
         bool Refresh(InterconnectContext &ctx);
+
+        void PurgeCaches();
     };
 
     class VertexInputState : dirty::ManualDirty {
