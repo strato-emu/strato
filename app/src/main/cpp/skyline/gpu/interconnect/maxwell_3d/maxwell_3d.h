@@ -84,6 +84,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         void Clear(engine::ClearSurface &clearSurface);
 
-        void Draw(engine::DrawTopology topology, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance);
+        void Draw(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance);
     };
 }

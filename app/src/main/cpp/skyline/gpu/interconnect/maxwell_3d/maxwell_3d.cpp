@@ -272,9 +272,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 vertexOffset;
             u32 firstInstance;
             bool indexed;
+            bool transformFeedbackEnable;
         };
         auto *drawParams{ctx.executor.allocator->EmplaceUntracked<DrawParams>(DrawParams{stateUpdater,
-                                                                                         count, first, instanceCount, vertexOffset, firstInstance, indexed})};
+                                                                                         count, first, instanceCount, vertexOffset, firstInstance, indexed,
+                                                                                         ctx.gpu.traits.supportsTransformFeedback ? transformFeedbackEnable : false})};
 
         const auto &surfaceClip{clearEngineRegisters.surfaceClip};
         vk::Rect2D scissor{
@@ -285,11 +287,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
 
+            if (drawParams->transformFeedbackEnable)
+                commandBuffer.beginTransformFeedbackEXT(0, {}, {});
+
             if (drawParams->indexed)
                 commandBuffer.drawIndexed(drawParams->count, drawParams->instanceCount, drawParams->first, static_cast<i32>(drawParams->vertexOffset), drawParams->firstInstance);
             else
                 commandBuffer.draw(drawParams->count, drawParams->instanceCount, drawParams->first, drawParams->firstInstance);
 
+            if (drawParams->transformFeedbackEnable)
+                commandBuffer.endTransformFeedbackEXT(0, {}, {});
         }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
 
         constantBuffers.ResetQuickBind();

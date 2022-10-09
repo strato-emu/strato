@@ -119,8 +119,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0xDF, u32> rasterEnable;
 
             Register<0xE0, std::array<type::StreamOutBuffer, type::StreamOutBufferCount>> streamOutBuffers;
-            Register<0x1C0, std::array<type::TransformFeedbackBufferState, type::StreamOutBufferCount>> transformFeedbackBufferStates;
-            Register<0x1D1, u32> streamOutEnable;
+            Register<0x1C0, std::array<type::StreamOutControl, type::StreamOutBufferCount>> streamOutControls;
+            Register<0x1D1, u32> streamOutputEnable;
 
             Register<0x200, std::array<type::ColorTarget, type::ColorTargetCount>> colorTargets;
             Register<0x280, std::array<type::Viewport, type::ViewportCount>> viewports;
@@ -354,7 +354,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x982, type::BindlessTexture> bindlessTexture; //!< The index of the constant buffer containing bindless texture descriptors
 
-            Register<0xA00, std::array<u32, (type::TransformFeedbackVaryingCount / sizeof(u32))  * type::StreamOutBufferCount>> transformFeedbackVaryings;
+            Register<0xA00, std::array<std::array<u8, type::StreamOutLayoutSelectAttributeCount>, type::StreamOutBufferCount>> streamOutLayoutSelect;
         };
         static_assert(sizeof(Registers) == (EngineMethodsEnd * sizeof(u32)));
         #pragma pack(pop)

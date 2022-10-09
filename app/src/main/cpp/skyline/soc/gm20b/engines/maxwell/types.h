@@ -959,15 +959,17 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(StreamOutBuffer) == (sizeof(u32) * 8));
 
-    struct TransformFeedbackBufferState {
-        u32 bufferIndex;
-        u32 varyingCount;
-        u32 stride;
+    struct StreamOutControl {
+        u8 streamSelect : 2;
+        u32 _pad0_ : 30;
+        u8 componentCount : 8;
+        u32 _pad1_ : 24;
+        u32 strideBytes;
         u32 _pad_;
     };
-    static_assert(sizeof(TransformFeedbackBufferState) == (sizeof(u32) * 4));
+    static_assert(sizeof(StreamOutControl) == (sizeof(u32) * 4));
 
-    constexpr static size_t TransformFeedbackVaryingCount{0x80};
+    constexpr static size_t StreamOutLayoutSelectAttributeCount{0x80};
 
     struct VertexStream {
         union {
