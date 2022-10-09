@@ -28,7 +28,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void Textures::MarkAllDirty() {
         texturePool.MarkDirty(true);
-        std::fill(textureHeaderCache.begin(), textureHeaderCache.end(), nullptr);
     }
 
     static texture::Format ConvertTicFormat(TextureImageControl::FormatWord format, bool srgb) {
@@ -182,9 +181,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto textureHeaders{texturePool.UpdateGet(ctx).textureHeaders};
         if (textureHeaderCache.size() != textureHeaders.size()) {
             textureHeaderCache.resize(textureHeaders.size());
-            std::fill(textureHeaderCache.begin(), textureHeaderCache.end(), nullptr);
-        } else if (auto cached{textureHeaderCache[index]}) {
-            return cached;
+            std::fill(textureHeaderCache.begin(), textureHeaderCache.end(), CacheEntry{});
+        } else if (auto &cached{textureHeaderCache[index]}; cached.view) {
+            if (cached.executionNumber == ctx.executor.executionNumber)
+                return cached.view;
+
+            if (cached.tic == textureHeaders[index]) {
+                cached.executionNumber = ctx.executor.executionNumber;
+                return cached.view;
+            }
         }
 
         TextureImageControl &textureHeader{textureHeaders[index]};
@@ -310,7 +315,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             texture = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
         }
 
-        textureHeaderCache[index] = texture.get();
+        textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionNumber};
         return texture.get();
     }
 }

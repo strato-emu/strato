@@ -36,7 +36,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         tsl::robin_map<TextureImageControl, std::shared_ptr<TextureView>, util::ObjectHash<TextureImageControl>> textureHeaderStore;
 
-        std::vector<TextureView *> textureHeaderCache;
+        struct CacheEntry {
+            TextureImageControl tic;
+            TextureView *view;
+            u32 executionNumber;
+        };
+        std::vector<CacheEntry> textureHeaderCache;
 
       public:
         Textures(DirtyManager &manager, const TexturePoolState::EngineRegisters &engine);
@@ -44,5 +49,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void MarkAllDirty();
 
         TextureView *GetTexture(InterconnectContext &ctx, u32 index, Shader::TextureType shaderType);
+
+        Shader::TextureType GetTextureType(InterconnectContext &ctx, u32 index);
     };
 }
