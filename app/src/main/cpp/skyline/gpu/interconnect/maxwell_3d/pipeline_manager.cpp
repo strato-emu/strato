@@ -639,10 +639,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         auto view{cachedView.view};
         ctx.executor.AttachBuffer(view);
+
+        if (desc.is_written) {
+            view.GetBuffer()->MarkGpuDirty();
+        } else {
+            if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)})
+                return megaBufferBinding;
+        }
+
         view.GetBuffer()->BlockSequencedCpuBackingWrites();
 
-        if (desc.is_written)
-            view.GetBuffer()->MarkGpuDirty();
 
         return view;
     }
