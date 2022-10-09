@@ -318,4 +318,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
         textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionNumber};
         return texture.get();
     }
+
+    Shader::TextureType Textures::GetTextureType(InterconnectContext &ctx, u32 index) {
+        auto textureHeaders{texturePool.UpdateGet(ctx).textureHeaders};
+        switch (textureHeaders[index].textureType) {
+            case TextureImageControl::TextureType::e1D:
+                return Shader::TextureType::Color1D;
+            case TextureImageControl::TextureType::e1DArray:
+                return Shader::TextureType::ColorArray1D;
+            case TextureImageControl::TextureType::e1DBuffer:
+                return Shader::TextureType::Buffer;
+            case TextureImageControl::TextureType::e2DNoMipmap:
+            case TextureImageControl::TextureType::e2D:
+                return Shader::TextureType::Color2D;
+            case TextureImageControl::TextureType::e2DArray:
+                return Shader::TextureType::ColorArray2D;
+            case TextureImageControl::TextureType::e3D:
+                return Shader::TextureType::Color3D;
+            case TextureImageControl::TextureType::eCube:
+                return Shader::TextureType::ColorCube;
+            case TextureImageControl::TextureType::eCubeArray:
+                return Shader::TextureType::ColorArrayCube;
+        }
+    }
 }

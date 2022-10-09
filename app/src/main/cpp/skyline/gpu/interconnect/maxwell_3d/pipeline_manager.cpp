@@ -184,11 +184,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (!packedState.shaderHashes[i])
                 continue;
 
-            auto program{ctx.gpu.shader.ParseGraphicsShader(packedState.postVtgShaderAttributeSkipMask,
-                                                            ConvertCompilerShaderStage(static_cast<PipelineStage>(i)),
-                                                            shaderBinaries[i].binary, shaderBinaries[i].baseOffset,
-                                                            packedState.bindlessTextureConstantBufferSlotSelect,
-                                                            [](int, int){ return 0; }, [](u32){return Shader::TextureType::Color2D;})};
+            auto program{ctx.gpu.shader.ParseGraphicsShader(
+                packedState.postVtgShaderAttributeSkipMask,
+                ConvertCompilerShaderStage(static_cast<PipelineStage>(i)),
+                shaderBinaries[i].binary, shaderBinaries[i].baseOffset,
+                packedState.bindlessTextureConstantBufferSlotSelect,
+                [&](u32 index, u32 offset) {
+                    size_t shaderStage{i > 0 ? (i - 1) : 0};
+                    return constantBuffers[shaderStage][index].Read<int>(ctx.executor, offset);
+                }, [&](u32 index) {
+                    return textures.GetTextureType(ctx, index);
+                })};
             if (i == stageIdx(PipelineStage::Vertex) && packedState.shaderHashes[stageIdx(PipelineStage::VertexCullBeforeFetch)]) {
                 ignoreVertexCullBeforeFetch = true;
                 programs[i] = ctx.gpu.shader.CombineVertexShaders(programs[stageIdx(PipelineStage::VertexCullBeforeFetch)], program, shaderBinaries[i].binary);
