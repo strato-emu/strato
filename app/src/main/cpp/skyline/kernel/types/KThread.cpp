@@ -35,6 +35,7 @@ namespace skyline::kernel::type {
     }
 
     void KThread::StartThread() {
+        pthread = pthread_self();
         std::array<char, 16> threadName{};
         if (int result{pthread_getname_np(pthread, threadName.data(), threadName.size())})
             Logger::Warn("Failed to get the thread name: {}", strerror(result));
@@ -216,12 +217,10 @@ namespace skyline::kernel::type {
             killed = false;
             statusCondition.notify_all();
             if (self) {
-                pthread = pthread_self();
                 lock.unlock();
                 StartThread();
             } else {
                 thread = std::thread(&KThread::StartThread, this);
-                pthread = thread.native_handle();
             }
         }
     }
