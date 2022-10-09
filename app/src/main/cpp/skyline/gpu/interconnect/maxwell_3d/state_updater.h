@@ -205,31 +205,36 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 }
             }
 
-            // Set the destination/(source) descriptor set(s) for all writes/(copies)
-            for (auto &write : updateInfo->writes)
-                write.dstSet = **dstSet;
+            if constexpr (PushDescriptor) {
+                commandBuffer.pushDescriptorSetKHR(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, updateInfo->writes);
+            } else {
+                // Set the destination/(source) descriptor set(s) for all writes/(copies)
+                for (auto &write : updateInfo->writes)
+                    write.dstSet = **dstSet;
 
-            for (auto &copy : updateInfo->copies) {
-                copy.dstSet = **dstSet;
-                copy.srcSet = **srcSet;
+                for (auto &copy : updateInfo->copies) {
+                    copy.dstSet = **dstSet;
+                    copy.srcSet = **srcSet;
+                }
+
+                // Perform the updates, doing copies first to avoid overwriting
+                if (!updateInfo->copies.empty())
+                    gpu.vkDevice.updateDescriptorSets({}, updateInfo->copies);
+
+                if (!updateInfo->writes.empty())
+                    gpu.vkDevice.updateDescriptorSets(updateInfo->writes, {});
+
+                // Bind the updated descriptor set and we're done!
+                commandBuffer.bindDescriptorSets(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, **dstSet, {});
             }
-            
-            // Perform the updates, doing copies first to avoid overwriting
-            if (!updateInfo->copies.empty())
-                gpu.vkDevice.updateDescriptorSets({}, updateInfo->copies);
-
-            if (!updateInfo->writes.empty())
-                gpu.vkDevice.updateDescriptorSets(updateInfo->writes, {});
-
-            // Bind the updated descriptor set and we're done!
-            commandBuffer.bindDescriptorSets(updateInfo->bindPoint, updateInfo->pipelineLayout, updateInfo->descriptorSetIndex, **dstSet, {});
         }
 
         DescriptorUpdateInfo *updateInfo;
         DescriptorAllocator::ActiveDescriptorSet *srcSet;
         DescriptorAllocator::ActiveDescriptorSet *dstSet;
     };
-    using SetDescriptorSetWithUpdateCmd = CmdHolder<SetDescriptorSetWithUpdateCmdImpl>;
+    using SetDescriptorSetWithUpdateCmd = CmdHolder<SetDescriptorSetCmdImpl<false>>;
+    using SetDescriptorSetWithPushCmd = CmdHolder<SetDescriptorSetCmdImpl<true>>;
 
     struct SetPipelineCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {

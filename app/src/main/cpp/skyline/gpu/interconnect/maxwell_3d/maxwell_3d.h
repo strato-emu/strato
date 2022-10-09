@@ -48,6 +48,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::shared_ptr<memory::Buffer> quadConversionBuffer{};
         bool quadConversionBufferAttached{};
 
+        static constexpr size_t DescriptorBatchSize{0x100};
+        std::shared_ptr<boost::container::static_vector<DescriptorAllocator::ActiveDescriptorSet, DescriptorBatchSize>> attachedDescriptorSets;
         DescriptorAllocator::ActiveDescriptorSet *activeDescriptorSet{};
 
         size_t UpdateQuadConversionBuffer(u32 count, u32 firstVertex);

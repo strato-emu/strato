@@ -26,15 +26,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
           textures{manager, registerBundle.texturePoolRegisters},
           directState{activeState.directState} {
         executor.AddFlushCallback([this] {
+            if (attachedDescriptorSets) {
+                ctx.executor.AttachDependency(attachedDescriptorSets);
+                attachedDescriptorSets = nullptr;
+                activeDescriptorSet = nullptr;
+            }
+
             activeState.MarkAllDirty();
             constantBuffers.MarkAllDirty();
             samplers.MarkAllDirty();
             textures.MarkAllDirty();
             quadConversionBufferAttached = false;
+            constantBuffers.DisableQuickBind();
         });
 
         executor.AddPipelineChangeCallback([this] {
             activeState.MarkAllDirty();
+            activeDescriptorSet = nullptr;
         });
     }
 
@@ -232,14 +240,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
             builder.SetPipeline(pipeline->compiledPipeline.pipeline);
 
         if (descUpdateInfo) {
-            auto newSet{std::make_shared<DescriptorAllocator::ActiveDescriptorSet>(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
-            ctx.executor.cycle->AttachObject(newSet);
+            if (ctx.gpu.traits.supportsPushDescriptors) {
+                builder.SetDescriptorSetWithPush(descUpdateInfo);
+            } else {
+                if (!attachedDescriptorSets)
+                    attachedDescriptorSets = std::make_shared<boost::container::static_vector<DescriptorAllocator::ActiveDescriptorSet, DescriptorBatchSize>>();
 
-            // Descriptor set lifetime is bound to the current cycle so we can safely use a raw pointer from now on
-            auto *oldSet{activeDescriptorSet};
-            activeDescriptorSet = newSet.get();
+                auto newSet{&attachedDescriptorSets->emplace_back(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
+                auto *oldSet{activeDescriptorSet};
+                activeDescriptorSet = newSet;
 
-            builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
+                builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
+
+                if (attachedDescriptorSets->size() == DescriptorBatchSize) {
+                    ctx.executor.AttachDependency(attachedDescriptorSets);
+                    attachedDescriptorSets.reset();
+                }
+            }
         }
 
         auto stateUpdater{builder.Build()};
