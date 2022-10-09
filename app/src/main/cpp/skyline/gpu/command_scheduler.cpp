@@ -76,7 +76,7 @@ namespace skyline::gpu {
         return {pool->buffers.emplace_back(gpu.vkDevice, commandBuffer, pool->vkCommandPool)};
     }
 
-    void CommandScheduler::SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle) {
+    void CommandScheduler::SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, std::shared_ptr<FenceCycle> cycle) {
         {
             std::scoped_lock lock(gpu.queueMutex);
             gpu.vkQueue.submit(vk::SubmitInfo{

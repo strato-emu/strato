@@ -114,7 +114,7 @@ namespace skyline::gpu {
          * @note The supplied command buffer and cycle **must** be from AllocateCommandBuffer()
          * @note Any cycle submitted via this method does not need to destroy dependencies manually, the waiter thread will handle this
          */
-        void SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle);
+        void SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, std::shared_ptr<FenceCycle> cycle);
 
         /**
          * @brief Submits a command buffer recorded with the supplied function synchronously
