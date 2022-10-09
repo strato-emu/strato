@@ -126,31 +126,16 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::RotateRecordSlot() {
-        if (slot)
+        if (slot) {
+            slot->capt = capt;
             recordThread.ReleaseSlot(slot);
+        }
 
+        capt = false;
         slot = recordThread.AcquireSlot();
         cycle = slot->Reset(gpu);
         slot->executionNumber = executionNumber;
         allocator = &slot->allocator;
-    }
-
-    TextureManager &CommandExecutor::AcquireTextureManager() {
-        if (!textureManagerLock)
-            textureManagerLock.emplace(gpu.texture);
-        return gpu.texture;
-    }
-
-    BufferManager &CommandExecutor::AcquireBufferManager() {
-        if (!bufferManagerLock)
-            bufferManagerLock.emplace(gpu.buffer);
-        return gpu.buffer;
-    }
-
-    MegaBufferAllocator &CommandExecutor::AcquireMegaBufferAllocator() {
-        if (!megaBufferAllocatorLock)
-            megaBufferAllocatorLock.emplace(gpu.megaBufferAllocator);
-        return gpu.megaBufferAllocator;
     }
 
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool noSubpassCreation) {
@@ -230,10 +215,6 @@ namespace skyline::gpu::interconnect {
     }
 
     bool CommandExecutor::AttachTexture(TextureView *view) {
-        if (!textureManagerLock)
-            // Avoids a potential deadlock with this resource being locked while acquiring the TextureManager lock while the thread owning it tries to acquire a lock on this texture
-            textureManagerLock.emplace(gpu.texture);
-
         bool didLock{view->LockWithTag(tag)};
         if (didLock) {
             if (view->texture->FrequentlyLocked())
@@ -259,10 +240,6 @@ namespace skyline::gpu::interconnect {
     }
 
     bool CommandExecutor::AttachBuffer(BufferView &view) {
-        if (!bufferManagerLock)
-            // See AttachTexture(...)
-            bufferManagerLock.emplace(gpu.buffer);
-
         bool didLock{view.LockWithTag(tag)};
         if (didLock) {
             if (view.GetBuffer()->FrequentlyLocked())
@@ -274,10 +251,6 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandExecutor::AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &&lock) {
-        if (!bufferManagerLock)
-            // See AttachTexture(...)
-            bufferManagerLock.emplace(gpu.buffer);
-
         if (lock.OwnsLock()) {
             // Transfer ownership to executor so that the resource will stay locked for the period it is used on the GPU
             if (view.GetBuffer()->FrequentlyLocked())
@@ -423,10 +396,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::ResetInternal() {
         attachedTextures.clear();
-        textureManagerLock.reset();
         attachedBuffers.clear();
-        bufferManagerLock.reset();
-        megaBufferAllocatorLock.reset();
         allocator->Reset();
 
         // Periodically clear preserve attachments just in case there are new waiters which would otherwise end up waiting forever

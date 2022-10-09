@@ -40,7 +40,6 @@ namespace skyline::gpu {
     class MegaBufferAllocator {
       private:
         GPU &gpu;
-        std::mutex mutex;
         std::list<MegaBufferChunk> chunks; //!< A pool of all allocated megabuffer chunks, these are dynamically utilized
         decltype(chunks)::iterator activeChunk; //!< Currently active chunk of the megabuffer which is being allocated into
 
@@ -59,24 +58,6 @@ namespace skyline::gpu {
         };
 
         MegaBufferAllocator(GPU &gpu);
-
-        /**
-         * @brief Acquires an exclusive lock on the allocator for the calling thread
-         * @note Naming is in accordance to the BasicLockable named requirement
-         */
-        void lock();
-
-        /**
-         * @brief Relinquishes an existing lock on the allocator by the calling thread
-         * @note Naming is in accordance to the BasicLockable named requirement
-         */
-        void unlock();
-
-        /**
-         * @brief Attempts to acquire an exclusive lock but returns immediately if it's captured by another thread
-         * @note Naming is in accordance to the Lockable named requirement
-         */
-        bool try_lock();
 
         /**
           * @brief Allocates data in a megabuffer chunk and returns an structure describing the allocation

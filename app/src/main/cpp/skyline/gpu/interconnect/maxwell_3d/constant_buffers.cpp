@@ -39,7 +39,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void ConstantBuffer::Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset) {
-        executor.AcquireBufferManager();
         ContextLock lock{executor.tag, view};
         view.Read(lock.IsFirstUsage(), FlushHostCallback, dstBuffer, srcOffset);
     }
@@ -54,7 +53,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto &view{*selectorState.UpdateGet(ctx, data.size_bytes()).view};
         auto srcCpuBuf{data.cast<u8>()};
 
-        ctx.executor.AcquireBufferManager();
         ContextLock lock{ctx.executor.tag, view};
 
         // First attempt the write without setting up the gpu copy callback as a fast path
@@ -73,7 +71,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 // This will prevent any CPU accesses to backing for the duration of the usage
                 callbackData.view.GetBuffer()->BlockAllCpuBackingWrites();
 
-                auto srcGpuAllocation{callbackData.ctx.executor.AcquireMegaBufferAllocator().Push(callbackData.ctx.executor.cycle, callbackData.srcCpuBuf)};
+                auto srcGpuAllocation{callbackData.ctx.gpu.megaBufferAllocator.Push(callbackData.ctx.executor.cycle, callbackData.srcCpuBuf)};
                 callbackData.ctx.executor.AddOutsideRpCommand([=, srcCpuBuf = callbackData.srcCpuBuf, view = callbackData.view, offset = callbackData.offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                     vk::BufferCopy copyRegion{
                         .size = srcCpuBuf.size_bytes(),

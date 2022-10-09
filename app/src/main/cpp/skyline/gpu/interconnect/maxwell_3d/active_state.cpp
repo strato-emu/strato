@@ -29,7 +29,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (*view) {
                 ctx.executor.AttachBuffer(*view);
 
-                if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
+                if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber);
                     megaBufferBinding)
                     builder.SetVertexBuffer(index, megaBufferBinding);
                 else
@@ -43,12 +43,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         // TODO: null descriptor
         megaBufferBinding = {};
-        builder.SetVertexBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
+        builder.SetVertexBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer});
     }
 
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         if (megaBufferBinding) {
-            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)};
                 newMegaBufferBinding != megaBufferBinding) {
 
                 megaBufferBinding = newMegaBufferBinding;
@@ -101,7 +101,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         size_t indexSize{1U << static_cast<u32>(indexType)};
         vk::DeviceSize indexBufferSize{conversion::quads::GetRequiredBufferSize(elementCount, indexSize)};
-        auto quadConversionAllocation{ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, indexBufferSize)};
+        auto quadConversionAllocation{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, indexBufferSize)};
 
         conversion::quads::GenerateIndexedQuadConversionBuffer(quadConversionAllocation.region.data(), viewSpan.data(), elementCount, ConvertIndexType(indexType));
 
@@ -133,7 +133,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (quadConversion)
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, elementCount);
         else
-            megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber);
+            megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber);
 
         if (megaBufferBinding)
             builder.SetIndexBuffer(megaBufferBinding, indexType);
@@ -153,7 +153,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, elementCount);
             builder.SetIndexBuffer(megaBufferBinding, indexType);
         } else if (megaBufferBinding) {
-            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)};
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)};
                 newMegaBufferBinding != megaBufferBinding) {
 
                 megaBufferBinding = newMegaBufferBinding;
@@ -196,7 +196,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
 
             // Bind an empty buffer ourselves since Vulkan doesn't support passing a VK_NULL_HANDLE xfb buffer
-            builder.SetTransformFeedbackBuffer(index, {ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer});
+            builder.SetTransformFeedbackBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer});
         }
     }
 

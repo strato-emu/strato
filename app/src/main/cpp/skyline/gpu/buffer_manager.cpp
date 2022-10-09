@@ -11,18 +11,6 @@ namespace skyline::gpu {
         return it->guest->begin().base() < pointer;
     }
 
-    void BufferManager::lock() {
-        mutex.lock();
-    }
-
-    void BufferManager::unlock() {
-        mutex.unlock();
-    }
-
-    bool BufferManager::try_lock() {
-        return mutex.try_lock();
-    }
-
     BufferManager::LockedBuffer::LockedBuffer(std::shared_ptr<Buffer> pBuffer, ContextTag tag) : buffer{std::move(pBuffer)}, lock{tag, *buffer}, stateLock(buffer->stateMutex) {}
 
     Buffer *BufferManager::LockedBuffer::operator->() const {

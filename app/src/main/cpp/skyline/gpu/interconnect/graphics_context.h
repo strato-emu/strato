@@ -745,7 +745,7 @@ namespace skyline::gpu::interconnect {
         void ConstantBufferUpdate(span<u32> data, u32 offset) {
             auto constantBuffer{GetConstantBufferSelector()};
             if (constantBuffer)
-                constantBuffer->Write<u32>(executor, executor.AcquireMegaBufferAllocator(), data, offset);
+                constantBuffer->Write<u32>(executor, gpu.megaBufferAllocator, data, offset);
             else
                 throw exception("Attempting to write to invalid constant buffer!");
         }
@@ -1148,7 +1148,7 @@ namespace skyline::gpu::interconnect {
 
                         auto &view{*pipelineStage.constantBuffers[constantBuffer.index].view};
                         executor.AttachBuffer(view);
-                        if (auto megaBufferAllocation{view.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
+                        if (auto megaBufferAllocation{view.AcquireMegaBuffer(executor.cycle, gpu.megaBufferAllocator)}) {
                             // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
                             bufferDescriptors[bufferIndex] = vk::DescriptorBufferInfo{
                                 .buffer = megaBufferAllocation.buffer,
@@ -1741,7 +1741,7 @@ namespace skyline::gpu::interconnect {
          */
         MegaBufferAllocator::Allocation GetIndexedQuadConversionBuffer(u32 count, u32 first) {
             vk::DeviceSize size{conversion::quads::GetRequiredBufferSize(count, indexBuffer.GetIndexSize())};
-            auto allocation{executor.AcquireMegaBufferAllocator().Allocate(executor.cycle, size)};
+            auto allocation{gpu.megaBufferAllocator.Allocate(executor.cycle, size)};
 
             ContextLock lock{executor.tag, indexBuffer.view};
             auto guestIndexBuffer{indexBuffer.view.GetReadOnlyBackingSpan(lock.IsFirstUsage(), []() {
@@ -3045,7 +3045,7 @@ namespace skyline::gpu::interconnect {
                     executor.AttachBuffer(indexBufferView);
 
                     boundIndexBuffer->type = indexBuffer.type;
-                    if (auto megaBufferAllocation{indexBufferView.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
+                    if (auto megaBufferAllocation{indexBufferView.AcquireMegaBuffer(executor.cycle, gpu.megaBufferAllocator)}) {
                         // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
                         boundIndexBuffer->handle = megaBufferAllocation.buffer;
                         boundIndexBuffer->offset = megaBufferAllocation.offset;
@@ -3088,7 +3088,7 @@ namespace skyline::gpu::interconnect {
 
                     auto &vertexBufferView{vertexBuffer->view};
                     executor.AttachBuffer(vertexBufferView);
-                    if (auto megaBufferAllocation{vertexBufferView.AcquireMegaBuffer(executor.cycle, executor.AcquireMegaBufferAllocator())}) {
+                    if (auto megaBufferAllocation{vertexBufferView.AcquireMegaBuffer(executor.cycle, gpu.megaBufferAllocator)}) {
                         // If the buffer is megabuffered then since we don't get out data from the underlying buffer, rather the megabuffer which stays consistent throughout a single execution, we can skip registering usage
                         boundVertexBuffers->handles[index] = megaBufferAllocation.buffer;
                         boundVertexBuffers->offsets[index] = megaBufferAllocation.offset;

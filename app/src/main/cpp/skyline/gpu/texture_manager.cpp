@@ -6,18 +6,6 @@
 namespace skyline::gpu {
     TextureManager::TextureManager(GPU &gpu) : gpu(gpu) {}
 
-    void TextureManager::lock() {
-        mutex.lock();
-    }
-
-    void TextureManager::unlock() {
-        mutex.unlock();
-    }
-
-    bool TextureManager::try_lock() {
-        return mutex.try_lock();
-    }
-
     std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture, ContextTag tag) {
         auto guestMapping{guestTexture.mappings.front()};
 

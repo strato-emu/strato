@@ -15,7 +15,6 @@ namespace skyline::gpu {
     class BufferManager {
       private:
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes access to the buffer mappings
         std::vector<std::shared_ptr<Buffer>> bufferMappings; //!< A sorted vector of all buffer mappings
         LinearAllocatorState<> delegateAllocatorState; //!< Linear allocator used to allocate buffer delegates
         size_t nextBufferId{}; //!< The next unique buffer id to be assigned

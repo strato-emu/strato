@@ -74,9 +74,6 @@ namespace skyline::gpu::interconnect {
         CommandRecordThread::Slot *slot{};
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
-        std::optional<std::scoped_lock<TextureManager>> textureManagerLock; //!< The lock on the texture manager, this is locked for the duration of the command execution from the first usage inside an execution to the submission
-        std::optional<std::scoped_lock<BufferManager>> bufferManagerLock; //!< The lock on the buffer manager, see above for details
-        std::optional<std::scoped_lock<MegaBufferAllocator>> megaBufferAllocatorLock; //!< The lock on the megabuffer allocator, see above for details
         bool preserveLocked{};
 
         /**
@@ -160,16 +157,11 @@ namespace skyline::gpu::interconnect {
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
         size_t submissionNumber{};
         u32 executionNumber{};
+        bool capt{};
 
         CommandExecutor(const DeviceState &state);
 
         ~CommandExecutor();
-
-        /**
-         * @return A reference to an instance of the Texture Manager which will be locked till execution
-         * @note Any access to the texture manager while recording commands **must** be done via this
-         */
-        TextureManager &AcquireTextureManager();
 
         /**
          * @brief Attach the lifetime of the texture to the command buffer
@@ -180,24 +172,12 @@ namespace skyline::gpu::interconnect {
         bool AttachTexture(TextureView *view);
 
         /**
-         * @return A reference to an instance of the Buffer Manager which will be locked till execution
-         * @note Any access to the buffer manager while recording commands **must** be done via this
-         */
-        BufferManager &AcquireBufferManager();
-
-        /**
          * @brief Attach the lifetime of a buffer view to the command buffer
          * @return If this is the first usage of the backing of this resource within this execution
          * @note The supplied buffer will be locked automatically until the command buffer is submitted and must **not** be locked by the caller
          * @note This'll automatically handle syncing of the buffer in the most optimal way possible
          */
         bool AttachBuffer(BufferView &view);
-
-        /**
-         * @return A reference to an instance of the megabuffer allocator which will be locked till execution
-         * @note Any access to the megabuffer allocator while recording commands **must** be done via this
-         */
-        MegaBufferAllocator &AcquireMegaBufferAllocator();
 
         /**
          * @brief Attach the lifetime of a buffer view that's already locked to the command buffer

@@ -617,12 +617,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
         if (!view) // Return a dummy buffer if the constant buffer isn't bound
-            return BufferBinding{ctx.executor.AcquireMegaBufferAllocator().Allocate(ctx.executor.cycle, 0).buffer, 0, PAGE_SIZE};
+            return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer, 0, PAGE_SIZE};
 
         ctx.executor.AttachBuffer(view);
 
         size_t sizeOverride{std::min<size_t>(info.constant_buffer_used_sizes[idx], view.size)};
-        if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber, sizeOverride)}) {
+        if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber, sizeOverride)}) {
             return megaBufferBinding;
         } else {
             view.GetBuffer()->BlockSequencedCpuBackingWrites();
@@ -645,7 +645,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (desc.is_written) {
             view.GetBuffer()->MarkGpuDirty();
         } else {
-            if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.executor.AcquireMegaBufferAllocator(), ctx.executor.executionNumber)})
+            if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)})
                 return megaBufferBinding;
         }
 

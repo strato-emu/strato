@@ -49,18 +49,6 @@ namespace skyline::gpu {
 
     MegaBufferAllocator::MegaBufferAllocator(GPU &gpu) : gpu{gpu}, activeChunk{chunks.emplace(chunks.end(), gpu)} {}
 
-    void MegaBufferAllocator::lock() {
-        mutex.lock();
-    }
-
-    void MegaBufferAllocator::unlock() {
-        mutex.unlock();
-    }
-
-    bool MegaBufferAllocator::try_lock() {
-        return mutex.try_lock();
-    }
-
     MegaBufferAllocator::Allocation MegaBufferAllocator::Allocate(const std::shared_ptr<FenceCycle> &cycle, vk::DeviceSize size, bool pageAlign) {
         if (auto allocation{activeChunk->Allocate(cycle, size, pageAlign)}; allocation.first)
             return {activeChunk->GetBacking(), allocation.first, allocation.second};

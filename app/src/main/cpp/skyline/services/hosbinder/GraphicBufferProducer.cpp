@@ -345,7 +345,7 @@ namespace skyline::service::hosbinder {
             gpu::GuestTexture guestTexture(span<u8>{}, dimensions, format, tileConfig, vk::ImageViewType::e2D);
             guestTexture.mappings[0] = span<u8>(nvMapHandleObj->GetPointer() + surface.offset, guestTexture.GetLayerStride());
 
-            std::scoped_lock textureLock{state.gpu->texture};
+            std::scoped_lock channelLock{state.gpu->channelLock};
             buffer.texture = state.gpu->texture.FindOrCreate(guestTexture);
         }
 

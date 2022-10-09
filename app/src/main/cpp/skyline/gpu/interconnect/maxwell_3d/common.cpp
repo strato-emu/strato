@@ -37,7 +37,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return;
 
         // Otherwise perform a full lookup
-        view = ctx.executor.AcquireBufferManager().FindOrCreate(viewMapping, ctx.executor.tag, [&ctx](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+        view = ctx.gpu.buffer.FindOrCreate(viewMapping, ctx.executor.tag, [&ctx](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
             ctx.executor.AttachLockedBuffer(buffer, std::move(lock));
         });
     }

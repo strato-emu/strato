@@ -312,7 +312,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(textureHeader.Iova(), guest.GetSize())};
             guest.mappings.assign(mappings.begin(), mappings.end());
 
-            texture = ctx.executor.AcquireTextureManager().FindOrCreate(guest, ctx.executor.tag);
+            texture = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
         }
 
         textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionNumber};
