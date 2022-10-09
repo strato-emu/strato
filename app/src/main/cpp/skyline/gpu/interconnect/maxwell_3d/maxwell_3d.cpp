@@ -93,7 +93,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             });
         }
 
-        if (clearSurfaceControl.useScissor0) {
+        if (clearSurfaceControl.useScissor0 && clearEngineRegisters.scissor0.enable) {
             const auto &scissor0{clearEngineRegisters.scissor0};
             scissor = rectIntersection(scissor, {
                 {scissor0.horizontal.xMin, scissor0.vertical.yMin},
