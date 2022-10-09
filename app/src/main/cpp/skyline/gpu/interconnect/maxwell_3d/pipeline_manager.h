@@ -103,7 +103,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         PackedPipelineState sourcePackedState;
 
-        Pipeline(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment);
+        Pipeline(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment);
 
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 
@@ -118,15 +118,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     class PipelineManager {
       private:
-        tsl::robin_map<PackedPipelineState, std::unique_ptr<Pipeline>, util::ObjectHash<PackedPipelineState>> map;
+        tsl::robin_map<PackedPipelineState, std::unique_ptr<Pipeline>, PackedPipelineStateHash> map;
 
       public:
-        Pipeline *FindOrCreate(InterconnectContext &ctx, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment) {
+        Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment) {
             auto it{map.find(packedState)};
             if (it != map.end())
                 return it->second.get();
 
-            return map.emplace(packedState, std::make_unique<Pipeline>(ctx, packedState, shaderBinaries, colorAttachments, depthAttachment)).first->second.get();
+            return map.emplace(packedState, std::make_unique<Pipeline>(ctx, textures, constantBuffers, packedState, shaderBinaries, colorAttachments, depthAttachment)).first->second.get();
         }
     };
 }

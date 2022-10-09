@@ -256,7 +256,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /**
          * @brief Updates the active state for a given draw operation, removing the dirtiness of all member states
          */
-        void Update(InterconnectContext &ctx, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount);
+        void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount);
 
         Pipeline *GetPipeline();
 

@@ -343,7 +343,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         PipelineState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder);
+        void Flush(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder);
 
         void PurgeCaches();
 

@@ -386,7 +386,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirtyFunc(stencilValues);
     }
 
-    void ActiveState::Update(InterconnectContext &ctx, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount) {
+    void ActiveState::Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount) {
         if (topology != directState.inputAssembly.GetPrimitiveTopology()) {
             directState.inputAssembly.SetPrimitiveTopology(topology);
             pipeline.MarkDirty(false);
@@ -394,7 +394,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         // TODO non-indexed quads
 
         auto updateFunc{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, builder, args...); }};
-        updateFunc(pipeline);
+        pipeline.Update(ctx, textures, constantBuffers, builder);
         ranges::for_each(vertexBuffers, updateFunc);
         if (indexed)
             updateFunc(indexBuffer, directState.inputAssembly.NeedsQuadConversion(), drawElementCount);
@@ -411,7 +411,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     Pipeline *ActiveState::GetPipeline() {
         return pipeline.Get().pipeline;
     }
-
 
     span<TextureView *> ActiveState::GetColorAttachments() {
         return pipeline.Get().colorAttachments;

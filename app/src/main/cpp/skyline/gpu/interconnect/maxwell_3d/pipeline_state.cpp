@@ -544,7 +544,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
           globalShaderConfig{engine.globalShaderConfigRegisters},
           ctSelect{engine.ctSelect} {}
 
-    void PipelineState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+    void PipelineState::Flush(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder) {
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
         for (size_t i{}; i < engine::PipelineCount; i++) {
             const auto &stage{pipelineStages[i].UpdateGet(ctx)};
@@ -581,9 +581,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 pipeline = newPipeline;
                 return;
             }
-       }
+        }
 
-        auto newPipeline{pipelineManager.FindOrCreate(ctx, packedState, shaderBinaries, colorAttachments, depthAttachment)};
+        auto newPipeline{pipelineManager.FindOrCreate(ctx, textures, constantBuffers, packedState, shaderBinaries, colorAttachments, depthAttachment)};
         if (pipeline)
             pipeline->AddTransition(newPipeline);
         pipeline = newPipeline;
