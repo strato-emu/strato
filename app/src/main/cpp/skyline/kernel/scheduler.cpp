@@ -167,7 +167,7 @@ namespace skyline::kernel {
         }};
 
         TRACE_EVENT("scheduler", "WaitSchedule");
-        if (loadBalance && thread->affinityMask.count() > 1) {
+        if (loadBalance) {
             std::chrono::milliseconds loadBalanceThreshold{PreemptiveTimeslice * 2}; //!< The amount of time that needs to pass unscheduled for a thread to attempt load balancing
             while (!thread->scheduleCondition.wait_for(lock, loadBalanceThreshold, wakeFunction)) {
                 lock.unlock(); // We cannot call GetOptimalCoreForThread without relinquishing the core mutex
