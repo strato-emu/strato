@@ -329,7 +329,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     /* Vertex Input State */
-    // TODO: check if better individually
     void VertexInputState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         ranges::for_each(vertexStreams, [&](const auto &regs) { manager.Bind(handle, regs.format, regs.frequency); });
 
@@ -344,10 +343,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         for (u32 i{}; i < engine::VertexStreamCount; i++)
             packedState.SetVertexBinding(i, engine->vertexStreams[i], engine->vertexStreamInstance[i]);
 
-        for (u32 i{}; i < engine::VertexAttributeCount; i++)
-            packedState.vertexAttributes[i] = engine->vertexAttributes[i];
+        for (u32 i{}; i < engine::VertexAttributeCount; i++) {
+            if (engine->vertexAttributes[i].source == engine::VertexAttribute::Source::Active)
+                packedState.vertexAttributes[i] = engine->vertexAttributes[i];
+            else
+                packedState.vertexAttributes[i] = { .source = engine::VertexAttribute::Source::Inactive };
+        }
     }
-    
+
     /* Input Assembly State */
     void InputAssemblyState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, primitiveRestartEnable);
