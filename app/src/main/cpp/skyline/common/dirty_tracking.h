@@ -178,6 +178,10 @@ namespace skyline::dirty {
         const T *operator->() const {
             return &subresource;
         }
+
+        const T &operator*() const {
+            return subresource;
+        }
     };
 
     class ManualDirty {};
