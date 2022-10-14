@@ -47,6 +47,7 @@
     <string name="username">Username</string>
     <string name="username_default">@string/app_name</string>
     <string name="system_language">System language</string>
+    <string name="system_region">System region</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys</string>
     <string name="prod_keys">Production Keys</string>

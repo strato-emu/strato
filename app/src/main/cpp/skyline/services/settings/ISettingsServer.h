@@ -25,6 +25,11 @@ namespace skyline::service::settings {
         Result MakeLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns the user-selected region's code
+         */
+        Result GetRegionCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Reads the available language codes that an application can use (post 4.0.0)
          */
         Result GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -32,6 +37,7 @@ namespace skyline::service::settings {
         SERVICE_DECL(
             SFUNC(0x1, ISettingsServer, GetAvailableLanguageCodes),
             SFUNC(0x2, ISettingsServer, MakeLanguageCode),
+            SFUNC(0x4, ISettingsServer, GetRegionCode),
             SFUNC(0x5, ISettingsServer, GetAvailableLanguageCodes2)
         )
     };

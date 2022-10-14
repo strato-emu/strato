@@ -62,6 +62,7 @@ namespace skyline {
         Setting<bool> isDocked; //!< If the emulated Switch should be handheld or docked
         Setting<std::string> usernameValue; //!< The user name to be supplied to the guest
         Setting<language::SystemLanguage> systemLanguage; //!< The system language
+        Setting<region::RegionCode> systemRegion; //!< The system region
 
         // Display
         Setting<bool> forceTripleBuffering; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering

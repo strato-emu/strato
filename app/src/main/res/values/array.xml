@@ -38,24 +38,42 @@
         <item>臺語 (Taiwanese)</item>
     </string-array>
     <integer-array name="system_languages_val">
-        <item>1</item>
-        <item>12</item>
-        <item>2</item>
-        <item>13</item>
-        <item>3</item>
-        <item>5</item>
-        <item>14</item>
-        <item>4</item>
-        <item>8</item>
-        <item>9</item>
-        <item>17</item>
-        <item>10</item>
-        <item>0</item>
-        <item>6</item>
-        <item>16</item>
-        <item>15</item>
-        <item>7</item>
-        <item>11</item>
+        <item>1</item>  <!-- American English -->
+        <item>12</item> <!-- British English -->
+        <item>2</item>  <!-- French -->
+        <item>13</item> <!-- Canadian French -->
+        <item>3</item>  <!-- German -->
+        <item>5</item>  <!-- Spanish -->
+        <item>14</item> <!-- Latin American Spanish -->
+        <item>4</item>  <!-- Italian -->
+        <item>8</item>  <!-- Dutch -->
+        <item>9</item>  <!-- Portuguese -->
+        <item>17</item> <!-- Brazilian Portuguese -->
+        <item>10</item> <!-- Russian -->
+        <item>0</item>  <!-- Japanese -->
+        <item>6</item>  <!-- Chinese -->
+        <item>16</item> <!-- Traditional Chinese -->
+        <item>15</item> <!-- Simplified Chinese -->
+        <item>7</item>  <!-- Korean -->
+        <item>11</item> <!-- Taiwanese -->
+    </integer-array>
+    <string-array name="system_region">
+        <item>Auto</item>
+        <item>Japan</item>
+        <item>The Americas</item>
+        <item>Europe</item>
+        <item>Australia / New Zealand</item>
+        <item>Hong Kong / Taiwan / South Korea</item>
+        <item>China</item>
+    </string-array>
+    <integer-array name="system_region_val">
+        <item>-1</item> <!-- Auto -->
+        <item>0</item>  <!-- Japan -->
+        <item>1</item>  <!-- The Americas -->
+        <item>2</item>  <!-- Europe -->
+        <item>3</item>  <!-- Australia / New Zealand -->
+        <item>4</item>  <!-- Hong Kong / Taiwan / South Korea -->
+        <item>5</item>  <!-- China -->
     </integer-array>
     <string-array name="aspect_ratios">
         <item>16:9 (Switch, Recommended)</item>

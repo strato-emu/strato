@@ -106,4 +106,53 @@ namespace skyline {
 
         #undef LANGUAGES
     }
+
+    namespace region {
+        /**
+         * @brief The list of all regions
+         * @url https://switchbrew.org/wiki/Settings_services#RegionCode_2
+         */
+        enum class RegionCode : i32 {
+            Auto = -1, // Automatically determine region based on the selected language
+            Japan = 0,
+            Usa = 1,
+            Europe = 2,
+            Australia = 3,
+            HongKongTaiwanKorea = 4,
+            China = 5,
+        };
+
+        /**
+         * @brief Returns the region code for the given system language
+         */
+        constexpr region::RegionCode GetRegionCodeForSystemLanguage(language::SystemLanguage systemLanguage) {
+            switch (systemLanguage) {
+                case language::SystemLanguage::Japanese:
+                    return region::RegionCode::Japan;
+                case language::SystemLanguage::AmericanEnglish:
+                case language::SystemLanguage::CanadianFrench:
+                case language::SystemLanguage::LatinAmericanSpanish:
+                case language::SystemLanguage::BrazilianPortuguese:
+                    return region::RegionCode::Usa;
+                case language::SystemLanguage::French:
+                case language::SystemLanguage::German:
+                case language::SystemLanguage::Italian:
+                case language::SystemLanguage::Spanish:
+                case language::SystemLanguage::Dutch:
+                case language::SystemLanguage::Portuguese:
+                case language::SystemLanguage::Russian:
+                case language::SystemLanguage::BritishEnglish:
+                    return region::RegionCode::Europe;
+                case language::SystemLanguage::Chinese:
+                case language::SystemLanguage::SimplifiedChinese:
+                case language::SystemLanguage::TraditionalChinese:
+                    return region::RegionCode::China;
+                case language::SystemLanguage::Taiwanese:
+                case language::SystemLanguage::Korean:
+                    return region::RegionCode::HongKongTaiwanKorea;
+                default:
+                    throw exception("Invalid system language: {}", systemLanguage);
+            }
+        }
+    }
 }

@@ -16,6 +16,7 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
     var isDocked : Boolean = pref.isDocked
     var usernameValue : String = pref.usernameValue
     var systemLanguage : Int = pref.systemLanguage
+    var systemRegion : Int = pref.systemRegion
 
     // Display
     var forceTripleBuffering : Boolean = pref.forceTripleBuffering

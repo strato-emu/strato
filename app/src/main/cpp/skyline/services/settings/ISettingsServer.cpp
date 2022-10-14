@@ -3,6 +3,7 @@
 
 #include <common/language.h>
 #include "ISettingsServer.h"
+#include <common/settings.h>
 
 namespace skyline::service::settings {
     ISettingsServer::ISettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
@@ -21,6 +22,16 @@ namespace skyline::service::settings {
     Result ISettingsServer::GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.outputBuf.at(0).copy_from(language::LanguageCodeList);
         response.Push<i32>(constant::NewLanguageCodeListSize);
+        return {};
+    }
+
+    Result ISettingsServer::GetRegionCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        region::RegionCode regionCode{*state.settings->systemRegion};
+
+        if (regionCode == region::RegionCode::Auto)
+            regionCode = region::GetRegionCodeForSystemLanguage(*state.settings->systemLanguage);
+
+        response.Push(regionCode);
         return {};
     }
 }

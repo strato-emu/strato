@@ -78,6 +78,13 @@
             app:refreshRequired="true"
             app:title="@string/system_language"
             app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="-1"
+            android:entries="@array/system_region"
+            android:entryValues="@array/system_region_val"
+            app:key="system_region"
+            app:title="@string/system_region"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_presentation"
