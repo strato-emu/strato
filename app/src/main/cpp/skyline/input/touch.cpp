@@ -74,15 +74,15 @@ namespace skyline::input {
             return;
 
         const auto &lastEntry{section.entries[section.header.currentEntry]};
-        auto entryIndex{(section.header.currentEntry != constant::HidEntryCount - 1) ? section.header.currentEntry + 1 : 0};
-        auto &entry{section.entries[entryIndex]};
-        entry = screenState;
-        entry.globalTimestamp = lastEntry.globalTimestamp + 1;
-        entry.localTimestamp = lastEntry.localTimestamp + 1;
 
         section.header.timestamp = util::GetTimeTicks();
         section.header.entryCount = std::min(static_cast<u8>(section.header.entryCount + 1), constant::HidEntryCount);
-        section.header.maxEntry = section.header.entryCount;
-        section.header.currentEntry = entryIndex;
+        section.header.maxEntry = section.header.entryCount - 1;
+        section.header.currentEntry = (section.header.currentEntry < section.header.maxEntry) ? section.header.currentEntry + 1 : 0;
+
+        auto &entry{section.entries[section.header.currentEntry]};
+        entry = screenState;
+        entry.globalTimestamp = lastEntry.globalTimestamp + 1;
+        entry.localTimestamp = lastEntry.localTimestamp + 1;
     }
 }

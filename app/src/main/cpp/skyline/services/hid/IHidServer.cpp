@@ -79,6 +79,8 @@ namespace skyline::service::hid {
         auto id{request.Pop<NpadId>()};
         auto handle{state.process->InsertItem(state.input->npad.at(id).updateEvent)};
 
+        state.input->npad.at(id).updateEvent->Signal();
+
         Logger::Debug("Npad {} Style Set Update Event Handle: 0x{:X}", id, handle);
         response.copyHandles.push_back(handle);
         return {};
