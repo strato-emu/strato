@@ -35,12 +35,15 @@ namespace skyline::gpu {
         vk::SurfaceCapabilitiesKHR vkSurfaceCapabilities{}; //!< The capabilities of the current Vulkan Surface
 
         std::optional<vk::raii::SwapchainKHR> vkSwapchain; //!< The Vulkan swapchain and the properties associated with it
-        vk::raii::Fence acquireFence; //!< A fence for acquiring an image from the swapchain
         texture::Format swapchainFormat{}; //!< The image format of the textures in the current swapchain
         texture::Dimensions swapchainExtent{}; //!< The extent of images in the current swapchain
 
         static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
         std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
+        std::array<vk::raii::Semaphore, MaxSwapchainImageCount> presentSemaphores; //!< Array of semaphores used to signal that swapchain images are ready to be completed, indexed by Vulkan swapchain index
+        std::array<vk::raii::Semaphore, MaxSwapchainImageCount> acquireSemaphores; //!< Array of semaphores used to wait on the GPU for swapchain images to be acquired, indexed by `acquireSemaphoreIndex`
+        size_t acquireSemaphoreIndex{}; //!< The index of the next semaphore to be used for acquiring swapchain images
+        size_t swapchainImageCount{}; //!< The number of images in the current swapchain
 
         i64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds
         i64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds

@@ -839,13 +839,15 @@ namespace skyline::gpu {
         return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
 
-    void Texture::CopyFrom(std::shared_ptr<Texture> source, const vk::ImageSubresourceRange &subresource) {
-        WaitOnBacking();
-        source->WaitOnBacking();
+    void Texture::CopyFrom(std::shared_ptr<Texture> source, vk::Semaphore waitSemaphore, vk::Semaphore signalSemaphore, const vk::ImageSubresourceRange &subresource) {
         if (cycle)
             cycle->WaitSubmit();
         if (source->cycle)
             source->cycle->WaitSubmit();
+
+        WaitOnBacking();
+        source->WaitOnBacking();
+        WaitOnFence();
 
         if (source->layout == vk::ImageLayout::eUndefined)
             throw exception("Cannot copy from image with undefined layout");
@@ -854,78 +856,92 @@ namespace skyline::gpu {
 
         TRACE_EVENT("gpu", "Texture::CopyFrom");
 
-        auto lCycle{gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
-            auto sourceBacking{source->GetBacking()};
-            if (source->layout != vk::ImageLayout::eTransferSrcOptimal) {
-                commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = sourceBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-                    .oldLayout = source->layout,
-                    .newLayout = vk::ImageLayout::eTransferSrcOptimal,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = subresource,
-                });
-            }
+        auto submitFunc{[&](vk::Semaphore extraWaitSemaphore){
+            boost::container::small_vector<vk::Semaphore, 2> waitSemaphores;
+            if (waitSemaphore)
+                waitSemaphores.push_back(waitSemaphore);
 
-            auto destinationBacking{GetBacking()};
-            if (layout != vk::ImageLayout::eTransferDstOptimal) {
-                commandBuffer.pipelineBarrier(layout != vk::ImageLayout::eUndefined ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = destinationBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
-                    .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .oldLayout = layout,
-                    .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = subresource,
-                });
+            if (extraWaitSemaphore)
+                waitSemaphores.push_back(extraWaitSemaphore);
 
-                if (layout == vk::ImageLayout::eUndefined)
-                    layout = vk::ImageLayout::eTransferDstOptimal;
-            }
+            return gpu.scheduler.Submit([&](vk::raii::CommandBuffer &commandBuffer) {
+                auto sourceBacking{source->GetBacking()};
+                if (source->layout != vk::ImageLayout::eTransferSrcOptimal) {
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = sourceBacking,
+                        .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                        .oldLayout = source->layout,
+                        .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = subresource,
+                        });
+                }
 
-            vk::ImageSubresourceLayers subresourceLayers{
-                .aspectMask = subresource.aspectMask,
-                .mipLevel = subresource.baseMipLevel,
-                .baseArrayLayer = subresource.baseArrayLayer,
-                .layerCount = subresource.layerCount == VK_REMAINING_ARRAY_LAYERS ? layerCount - subresource.baseArrayLayer : subresource.layerCount,
-            };
-            for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? levelCount - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
-                commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
-                    .srcSubresource = subresourceLayers,
-                    .dstSubresource = subresourceLayers,
-                    .extent = dimensions,
-                });
+                auto destinationBacking{GetBacking()};
+                if (layout != vk::ImageLayout::eTransferDstOptimal) {
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = destinationBacking,
+                        .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
+                        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                        .oldLayout = layout,
+                        .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = subresource,
+                        });
 
-            if (layout != vk::ImageLayout::eTransferDstOptimal)
-                commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = destinationBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
-                    .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .newLayout = layout,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = subresource,
-                });
+                    if (layout == vk::ImageLayout::eUndefined)
+                        layout = vk::ImageLayout::eTransferDstOptimal;
+                }
 
-            if (source->layout != vk::ImageLayout::eTransferSrcOptimal)
-                commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier{
-                    .image = sourceBacking,
-                    .srcAccessMask = vk::AccessFlagBits::eTransferRead,
-                    .dstAccessMask = vk::AccessFlagBits::eMemoryWrite,
-                    .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
-                    .newLayout = source->layout,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .subresourceRange = subresource,
-                });
-        })};
-        lCycle->AttachObjects(std::move(source), shared_from_this());
-        lCycle->ChainCycle(cycle);
-        lCycle->ChainCycle(source->cycle);
-        cycle = lCycle;
+                vk::ImageSubresourceLayers subresourceLayers{
+                    .aspectMask = subresource.aspectMask,
+                    .mipLevel = subresource.baseMipLevel,
+                    .baseArrayLayer = subresource.baseArrayLayer,
+                    .layerCount = subresource.layerCount == VK_REMAINING_ARRAY_LAYERS ? layerCount - subresource.baseArrayLayer : subresource.layerCount,
+                    };
+                for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? levelCount - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
+                    commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
+                        .srcSubresource = subresourceLayers,
+                        .dstSubresource = subresourceLayers,
+                        .extent = dimensions,
+                        });
+
+                if (layout != vk::ImageLayout::eTransferDstOptimal)
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = destinationBacking,
+                        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+                        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                        .newLayout = layout,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = subresource,
+                        });
+
+                if (source->layout != vk::ImageLayout::eTransferSrcOptimal)
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, {}, {}, vk::ImageMemoryBarrier{
+                        .image = sourceBacking,
+                        .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+                        .dstAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                        .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+                        .newLayout = source->layout,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .subresourceRange = subresource,
+                        });
+            }, waitSemaphores, span<vk::Semaphore>{signalSemaphore});
+        }};
+
+        auto newCycle{[&]{
+            if (source->cycle)
+                return source->cycle->RecordSemaphoreWaitUsage(std::move(submitFunc));
+            else
+                return submitFunc({});
+        }()};
+        newCycle->AttachObjects(std::move(source), shared_from_this());
+        cycle = newCycle;
     }
 }
