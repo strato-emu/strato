@@ -4,7 +4,7 @@
 #pragma once
 
 #include <boost/container/stable_vector.hpp>
-#include <unordered_set>
+#include <renderdoc_app.h>
 #include <common/linear_allocator.h>
 #include <gpu/megabuffer.h>
 #include "command_nodes.h"
@@ -15,7 +15,6 @@ namespace skyline::gpu::interconnect {
      */
     class CommandRecordThread {
       public:
-
         /**
          * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
          */
@@ -28,6 +27,7 @@ namespace skyline::gpu::interconnect {
             boost::container::stable_vector<node::NodeVariant> nodes;
             LinearAllocatorState<> allocator;
             u32 executionNumber;
+            bool capture{}; //!< If this slot's Vulkan commands should be captured using the renderdoc API
 
             Slot(GPU &gpu);
 
@@ -160,7 +160,7 @@ namespace skyline::gpu::interconnect {
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
         size_t submissionNumber{};
         u32 executionNumber{};
-        bool capt{};
+        bool captureNextExecution{};
 
         CommandExecutor(const DeviceState &state);
 

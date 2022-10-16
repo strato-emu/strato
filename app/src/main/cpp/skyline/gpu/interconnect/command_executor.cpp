@@ -5,6 +5,7 @@
 #include <common/settings.h>
 #include <loader/loader.h>
 #include <gpu.h>
+#include <dlfcn.h>
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
@@ -92,6 +93,13 @@ namespace skyline::gpu::interconnect {
     void CommandRecordThread::Run() {
         auto &gpu{*state.gpu};
 
+        RENDERDOC_API_1_4_2 *renderDocApi{};
+        if (void *mod{dlopen("libVkLayer_GLES_RenderDoc.so", RTLD_NOW | RTLD_NOLOAD)}) {
+            auto *pfnGetApi{reinterpret_cast<pRENDERDOC_GetAPI>(dlsym(mod, "RENDERDOC_GetAPI"))};
+            if (int ret{pfnGetApi(eRENDERDOC_API_Version_1_4_2, (void **)&renderDocApi)}; ret != 1)
+                Logger::Warn("Failed to intialise RenderDoc API: {}", ret);
+        }
+
         std::vector<Slot> slots{};
         std::generate_n(std::back_inserter(slots), *state.settings->executorSlotCount, [&] () -> Slot { return gpu; });
 
@@ -103,8 +111,17 @@ namespace skyline::gpu::interconnect {
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
 
-            incoming.Process([this](Slot *slot) {
+            incoming.Process([this, renderDocApi, &gpu](Slot *slot) {
+                VkInstance instance{*gpu.vkInstance};
+                if (renderDocApi && slot->capture)
+                    renderDocApi->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
+
                 ProcessSlot(slot);
+
+                if (renderDocApi && slot->capture)
+                    renderDocApi->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
+                slot->capture = false;
+
                 outgoing.Push(slot);
             }, [] {});
         } catch (const signal::SignalException &e) {
@@ -144,11 +161,11 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::RotateRecordSlot() {
         if (slot) {
-            slot->capt = capt;
+            slot->capture = captureNextExecution;
             recordThread.ReleaseSlot(slot);
         }
 
-        capt = false;
+        captureNextExecution = false;
         slot = recordThread.AcquireSlot();
         cycle = slot->Reset(gpu);
         slot->executionNumber = executionNumber;

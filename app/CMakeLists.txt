@@ -112,6 +112,9 @@ add_subdirectory("libraries/adrenotools")
 # Tessil Robin Map
 add_subdirectory("libraries/robin-map")
 
+# Renderdoc in-app API
+include_directories("libraries/renderdoc")
+
 # Build Skyline with full debugging data and -Og for debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer")
 # Build Skyline with full debugging data and some optimizations for reldebug builds, build speed is pioritised
