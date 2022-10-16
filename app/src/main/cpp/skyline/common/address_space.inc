@@ -253,7 +253,11 @@ namespace skyline {
                 if (cpuAccessCallback)
                     cpuAccessCallback(cpuBlock);
 
-                ranges.push_back(cpuBlock);
+                // Batch contiguous ranges into one
+                if (!ranges.empty() && ranges.back().data() + ranges.back().size() == cpuBlock.data())
+                    ranges.back() = {ranges.back().data(), ranges.back().size() + cpuBlock.size()};
+                else
+                    ranges.push_back(cpuBlock);
             } else {
                 ranges.push_back(span<u8>{static_cast<u8*>(nullptr), blockSize});
             }
