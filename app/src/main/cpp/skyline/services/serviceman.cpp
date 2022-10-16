@@ -34,6 +34,7 @@
 #include "aocsrv/IAddOnContentManager.h"
 #include "pctl/IParentalControlServiceFactory.h"
 #include "lm/ILogService.h"
+#include "ldn/IUserServiceCreator.h"
 #include "account/IAccountServiceForApplication.h"
 #include "friends/IServiceCreator.h"
 #include "nfp/IUserManager.h"
@@ -106,6 +107,7 @@ namespace skyline::service {
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:s")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:r")
             SERVICE_CASE(lm::ILogService, "lm")
+            SERVICE_CASE(ldn::IUserServiceCreator, "ldn:u")
             SERVICE_CASE(account::IAccountServiceForApplication, "acc:u0")
             SERVICE_CASE(friends::IServiceCreator, "friend:u")
             SERVICE_CASE(nfp::IUserManager, "nfp:user")
