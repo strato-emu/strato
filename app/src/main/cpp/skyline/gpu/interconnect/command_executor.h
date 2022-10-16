@@ -24,6 +24,7 @@ namespace skyline::gpu::interconnect {
             vk::raii::CommandPool commandPool; //!< Use one command pool per slot since command buffers from different slots may be recorded into on multiple threads at the same time
             vk::raii::CommandBuffer commandBuffer;
             vk::raii::Fence fence;
+            vk::raii::Semaphore semaphore;
             std::shared_ptr<FenceCycle> cycle;
             boost::container::stable_vector<node::NodeVariant> nodes;
             LinearAllocatorState<> allocator;

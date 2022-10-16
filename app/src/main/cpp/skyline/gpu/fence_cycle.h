@@ -25,6 +25,10 @@ namespace skyline::gpu {
         std::condition_variable_any submitCondition;
         bool submitted{}; //!< If the fence has been submitted to the GPU
         vk::Fence fence;
+        vk::Semaphore semaphore; //!< Semaphore that will be signalled upon GPU completion of the fence
+        bool semaphoreSubmitWait{}; //!< If the semaphore needs to be waited on (on GPU) before the fence's command buffer begins. Used to ensure fences that wouldn't otherwise be unsignalled are unsignalled
+        bool nextSemaphoreSubmitWait{true}; //!< If the next fence cycle created from this one after it's signalled should wait on the semaphore to unsignal it
+        std::shared_ptr<FenceCycle> semaphoreUnsignalCycle{}; //!< If the semaphore is used on the GPU, the cycle for the submission that uses it, so it can be waited on before the fence is signalled to ensure the semaphore is unsignalled
 
         friend CommandScheduler;
 
@@ -41,9 +45,13 @@ namespace skyline::gpu {
         }
 
       public:
-        FenceCycle(const vk::raii::Device &device, vk::Fence fence, bool signalled = false) : signalled{signalled}, device{device}, fence{fence} {
+        FenceCycle(const vk::raii::Device &device, vk::Fence fence, vk::Semaphore semaphore, bool signalled = false) : signalled{signalled}, device{device}, fence{fence}, semaphore{semaphore}, nextSemaphoreSubmitWait{!signalled} {
             if (!signalled)
                 device.resetFences(fence);
+        }
+
+        explicit FenceCycle(const FenceCycle &cycle) : signalled{false}, device{cycle.device}, fence{cycle.fence}, semaphore{cycle.semaphore}, semaphoreSubmitWait{cycle.nextSemaphoreSubmitWait} {
+            device.resetFences(fence);
         }
 
         ~FenceCycle() {
@@ -59,17 +67,54 @@ namespace skyline::gpu {
         }
 
         /**
+         * @brief Executes a function with the fence locked to record a usage of its semaphore, if no semaphore can be provided then a CPU-side wait will be performed instead
+         */
+        std::shared_ptr<FenceCycle> RecordSemaphoreWaitUsage(std::function<std::shared_ptr<FenceCycle>(vk::Semaphore sema)> &&func) {
+            // We can't submit any semaphore waits until the signal has been submitted, so do that first
+            WaitSubmit();
+
+            std::unique_lock lock{mutex};
+
+            // If we already have a semaphore usage, just wait on the fence since we can't wait on it twice and have no way to add one after the fact
+            if (semaphoreUnsignalCycle) {
+                // Safe to unlock since semaphoreUnsignalCycle can never be reset
+                lock.unlock();
+
+                Wait();
+                return func({});
+            }
+
+            // If we're already signalled then there's no need to wait on the semaphore
+            if (signalled.test(std::memory_order_relaxed))
+                return func({});
+
+            semaphoreUnsignalCycle = func(semaphore);
+            nextSemaphoreSubmitWait = false; // We don't need a semaphore wait on the next fence cycle to unsignal the semaphore anymore as the usage will do that
+            return semaphoreUnsignalCycle;
+        }
+
+        /**
          * @brief Waits for submission of the command buffer associated with this cycle to the GPU
          */
         void WaitSubmit() {
             if (signalled.test(std::memory_order_consume))
                 return;
 
+            std::unique_lock lock{mutex};
+            if (submitted)
+                return;
+
+            if (signalled.test(std::memory_order_consume))
+                return;
+
+            lock.unlock();
             chainedCycles.Iterate([&](const auto &cycle) {
+                if (!cycle->Find(this))
+                    raise(SIGTRAP);
                 cycle->WaitSubmit();
             });
+            lock.lock();
 
-            std::unique_lock lock{mutex};
             submitCondition.wait(lock, [this] { return submitted; });
         }
 
@@ -84,18 +129,18 @@ namespace skyline::gpu {
                 return;
             }
 
-            chainedCycles.Iterate([shouldDestroy](auto &cycle) {
+            chainedCycles.Iterate([shouldDestroy, this](auto &cycle) {
                 cycle->Wait(shouldDestroy);
             });
 
             std::unique_lock lock{mutex};
-            submitCondition.wait(lock, [&] { return submitted; });
-
-            if (signalled.test(std::memory_order_consume)) {
+            if (signalled.test(std::memory_order_relaxed)) {
                 if (shouldDestroy)
                     DestroyDependencies();
                 return;
             }
+
+            submitCondition.wait(lock, [&] { return submitted; });
 
             vk::Result waitResult;
             while ((waitResult = (*device).waitForFences(1, &fence, false, std::numeric_limits<u64>::max(), *device.getDispatcher())) != vk::Result::eSuccess) {
@@ -110,66 +155,12 @@ namespace skyline::gpu {
                 throw exception("An error occurred while waiting for fence 0x{:X}: {}", static_cast<VkFence>(fence), vk::to_string(waitResult));
             }
 
-            signalled.test_and_set(std::memory_order_release);
+            if (semaphoreUnsignalCycle)
+                semaphoreUnsignalCycle->Wait();
+
+            signalled.test_and_set(std::memory_order_relaxed);
             if (shouldDestroy)
                 DestroyDependencies();
-        }
-
-        /**
-         * @brief Wait on a fence cycle with a timeout in nanoseconds
-         * @param shouldDestroy If true, the dependencies of this cycle will be destroyed after the fence is signalled
-         * @return If the wait was successful or timed out
-         */
-        bool Wait(i64 timeoutNs, bool shouldDestroy = false) {
-            if (signalled.test(std::memory_order_consume)) {
-                if (shouldDestroy)
-                    DestroyDependencies();
-                return true;
-            }
-
-            i64 startTime{util::GetTimeNs()}, initialTimeout{timeoutNs};
-            if (!chainedCycles.AllOf([&](auto &cycle) {
-                if (!cycle->Wait(timeoutNs, shouldDestroy))
-                    return false;
-                timeoutNs = std::max<i64>(0, initialTimeout - (util::GetTimeNs() - startTime));
-                return true;
-            }))
-                return false;
-
-            std::unique_lock lock{mutex, std::defer_lock};
-            if (!lock.try_lock_for(std::chrono::nanoseconds{timeoutNs}))
-                return false;
-
-            if (!submitCondition.wait_for(lock, std::chrono::nanoseconds(timeoutNs), [&] { return submitted; }))
-                return false;
-
-            timeoutNs = std::max<i64>(0, initialTimeout - (util::GetTimeNs() - startTime));
-
-            vk::Result waitResult;
-            while ((waitResult = (*device).waitForFences(1, &fence, false, static_cast<u64>(timeoutNs), *device.getDispatcher())) != vk::Result::eSuccess) {
-                if (waitResult == vk::Result::eTimeout)
-                    break;
-
-                if (waitResult == vk::Result::eErrorInitializationFailed) {
-                    timeoutNs = std::max<i64>(0, initialTimeout - (util::GetTimeNs() - startTime));
-                    continue;
-                }
-
-                throw exception("An error occurred while waiting for fence 0x{:X}: {}", static_cast<VkFence>(fence), vk::to_string(waitResult));
-            }
-
-            if (waitResult == vk::Result::eSuccess) {
-                signalled.test_and_set(std::memory_order_release);
-                if (shouldDestroy)
-                    DestroyDependencies();
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        bool Wait(std::chrono::duration<i64, std::nano> timeout, bool shouldDestroy = false) {
-            return Wait(timeout.count(), shouldDestroy);
         }
 
         /**
@@ -193,12 +184,21 @@ namespace skyline::gpu {
             if (!lock)
                 return false;
 
+            if (signalled.test(std::memory_order_relaxed)) {
+                if (shouldDestroy)
+                    DestroyDependencies();
+                return true;
+            }
+
             if (!submitted)
                 return false;
 
             auto status{(*device).getFenceStatus(fence, *device.getDispatcher())};
             if (status == vk::Result::eSuccess) {
-                signalled.test_and_set(std::memory_order_release);
+                if (semaphoreUnsignalCycle && !semaphoreUnsignalCycle->Poll())
+                    return false;
+
+                signalled.test_and_set(std::memory_order_relaxed);
                 if (shouldDestroy)
                     DestroyDependencies();
                 return true;

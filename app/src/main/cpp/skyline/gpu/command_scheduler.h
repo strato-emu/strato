@@ -21,6 +21,7 @@ namespace skyline::gpu {
             const vk::raii::Device &device;
             vk::raii::CommandBuffer commandBuffer;
             vk::raii::Fence fence; //!< A fence used for tracking all submits of a buffer
+            vk::raii::Semaphore semaphore; //!< A semaphore used for tracking work status on the GPU
             std::shared_ptr<FenceCycle> cycle; //!< The latest cycle on the fence, all waits must be performed through this
 
             CommandBufferSlot(vk::raii::Device &device, vk::CommandBuffer commandBuffer, vk::raii::CommandPool &pool);
@@ -94,7 +95,7 @@ namespace skyline::gpu {
              */
             std::shared_ptr<FenceCycle> Reset() {
                 slot->cycle->Wait();
-                slot->cycle = std::make_shared<FenceCycle>(slot->device, *slot->fence);
+                slot->cycle = std::make_shared<FenceCycle>(*slot->cycle);
                 slot->commandBuffer.reset();
                 return slot->cycle;
             }
@@ -114,13 +115,15 @@ namespace skyline::gpu {
          * @note The supplied command buffer and cycle **must** be from AllocateCommandBuffer()
          * @note Any cycle submitted via this method does not need to destroy dependencies manually, the waiter thread will handle this
          */
-        void SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, std::shared_ptr<FenceCycle> cycle);
+        void SubmitCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, std::shared_ptr<FenceCycle> cycle, span<vk::Semaphore> waitSemaphores = {}, span<vk::Semaphore> signalSemaphore = {});
 
         /**
          * @brief Submits a command buffer recorded with the supplied function synchronously
+         * @param waitSemaphores A span of all (excl fence cycle) semaphores that should be waited on by the GPU before executing the command buffer
+         * @param signalSemaphore A span of all semaphores that should be signalled by the GPU after executing the command buffer
          */
         template<typename RecordFunction>
-        std::shared_ptr<FenceCycle> Submit(RecordFunction recordFunction) {
+        std::shared_ptr<FenceCycle> Submit(RecordFunction recordFunction, span<vk::Semaphore> waitSemaphores = {}, span<vk::Semaphore> signalSemaphores = {}) {
             auto commandBuffer{AllocateCommandBuffer()};
             try {
                 commandBuffer->begin(vk::CommandBufferBeginInfo{
@@ -130,29 +133,7 @@ namespace skyline::gpu {
                 commandBuffer->end();
 
                 auto cycle{commandBuffer.GetFenceCycle()};
-                SubmitCommandBuffer(*commandBuffer, cycle);
-                return cycle;
-            } catch (...) {
-                commandBuffer.GetFenceCycle()->Cancel();
-                std::rethrow_exception(std::current_exception());
-            }
-        }
-
-        /**
-         * @note Same as Submit but with FenceCycle as an argument rather than return value
-         */
-        template<typename RecordFunction>
-        std::shared_ptr<FenceCycle> SubmitWithCycle(RecordFunction recordFunction) {
-            auto commandBuffer{AllocateCommandBuffer()};
-            auto cycle{commandBuffer.GetFenceCycle()};
-            try {
-                commandBuffer->begin(vk::CommandBufferBeginInfo{
-                    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-                });
-                recordFunction(*commandBuffer, cycle);
-                commandBuffer->end();
-
-                SubmitCommandBuffer(*commandBuffer, cycle);
+                SubmitCommandBuffer(*commandBuffer, cycle, waitSemaphores, signalSemaphores);
                 return cycle;
             } catch (...) {
                 commandBuffer.GetFenceCycle()->Cancel();

@@ -28,11 +28,12 @@ namespace skyline::gpu::interconnect {
           },
           commandBuffer{AllocateRaiiCommandBuffer(gpu, commandPool)},
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
-          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, true)} {}
+          semaphore{gpu.vkDevice, vk::SemaphoreCreateInfo{}},
+          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)} {}
 
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
         cycle->Wait();
-        cycle = std::make_shared<FenceCycle>(gpu.vkDevice, *fence);
+        cycle = std::make_shared<FenceCycle>(*cycle);
         // Command buffer doesn't need to be reset since that's done implicitly by begin
         return cycle;
     }
