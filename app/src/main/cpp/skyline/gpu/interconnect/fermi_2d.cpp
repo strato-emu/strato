@@ -114,9 +114,11 @@ namespace skyline::gpu::interconnect {
         auto dstGuestTexture{GetGuestTexture(dstSurface)};
 
         auto srcTextureView{gpu.texture.FindOrCreate(srcGuestTexture, executor.tag)};
+        executor.AttachDependency(srcTextureView);
         executor.AttachTexture(srcTextureView.get());
 
         auto dstTextureView{gpu.texture.FindOrCreate(dstGuestTexture, executor.tag)};
+        executor.AttachDependency(dstTextureView);
         executor.AttachTexture(dstTextureView.get());
 
         // Blit shader always samples from centre so adjust if necessary
