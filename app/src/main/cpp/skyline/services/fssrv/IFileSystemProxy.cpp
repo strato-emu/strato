@@ -69,6 +69,17 @@ namespace skyline::service::fssrv {
         return {};
     }
 
+    Result IFileSystemProxy::OpenDataStorageByDataId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto storageId{request.Pop<StorageId>()};
+        request.Skip<std::array<u8, 7>>(); // 7-bytes padding
+        auto titleId{request.Pop<u64>()};
+
+        auto romFs{std::make_shared<IStorage>(state.os->assetFileSystem->OpenFile(fmt::format("romfs/{:016X}", titleId)), state, manager)};
+
+        manager.RegisterService(romFs, session, response);
+        return {};
+    }
+
     Result IFileSystemProxy::GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);
         return {};

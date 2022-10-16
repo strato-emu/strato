@@ -42,6 +42,15 @@ namespace skyline::service::fssrv {
     };
     static_assert(sizeof(SaveDataAttribute) == 0x40);
 
+    enum class StorageId : u8 {
+        None = 0,
+        Host = 1,
+        GameCard = 2,
+        NandSystem = 3,
+        NandUser = 4,
+        SdCard = 5,
+    };
+
     /**
      * @brief IFileSystemProxy or fsp-srv is responsible for providing handles to file systems
      * @url https://switchbrew.org/wiki/Filesystem_services#fsp-srv
@@ -78,6 +87,12 @@ namespace skyline::service::fssrv {
         Result OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns a handle to an instance of #IStorage
+         * @url https://switchbrew.org/wiki/Filesystem_services#OpenDataStorageByDataId
+         */
+        Result OpenDataStorageByDataId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
           * @brief Returns the filesystem log access mode
           * @url https://switchbrew.org/wiki/Filesystem_services#GetGlobalAccessLogMode
           */
@@ -88,6 +103,7 @@ namespace skyline::service::fssrv {
             SFUNC(0x12, IFileSystemProxy, OpenSdCardFileSystem),
             SFUNC(0x33, IFileSystemProxy, OpenSaveDataFileSystem),
             SFUNC(0xC8, IFileSystemProxy, OpenDataStorageByCurrentProcess),
+            SFUNC(0xCA, IFileSystemProxy, OpenDataStorageByDataId),
             SFUNC(0x3ED, IFileSystemProxy, GetGlobalAccessLogMode)
         )
     };
