@@ -109,8 +109,6 @@ namespace skyline::gpu {
 
             lock.unlock();
             chainedCycles.Iterate([&](const auto &cycle) {
-                if (!cycle->Find(this))
-                    raise(SIGTRAP);
                 cycle->WaitSubmit();
             });
             lock.lock();
@@ -129,7 +127,7 @@ namespace skyline::gpu {
                 return;
             }
 
-            chainedCycles.Iterate([shouldDestroy, this](auto &cycle) {
+            chainedCycles.Iterate([shouldDestroy](auto &cycle) {
                 cycle->Wait(shouldDestroy);
             });
 

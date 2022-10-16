@@ -127,6 +127,14 @@
             android:summaryOn="@string/respect_display_cutout_enabled"
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
+        <SeekBarPreference
+            android:min="1"
+            android:defaultValue="6"
+            android:max="16"
+            android:summary="@string/executor_slot_count_desc"
+            app:key="executor_slot_count"
+            app:title="@string/executor_slot_count"
+            app:showSeekBarValue="true" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_debug"

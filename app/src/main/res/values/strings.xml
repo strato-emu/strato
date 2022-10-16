@@ -70,6 +70,8 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <string name="executor_slot_count">Executor Slot Count</string>
+    <string name="executor_slot_count_desc">Maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
     <!-- Settings - Debug -->
     <string name="debug">Debug</string>
     <string name="validation_layer">Enable validation layer</string>

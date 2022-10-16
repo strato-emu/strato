@@ -2,12 +2,17 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <range/v3/view.hpp>
+#include <common/settings.h>
 #include <loader/loader.h>
 #include <gpu.h>
 #include "command_executor.h"
 
 namespace skyline::gpu::interconnect {
-    CommandRecordThread::CommandRecordThread(const DeviceState &state) : state{state}, thread{&CommandRecordThread::Run, this} {}
+    CommandRecordThread::CommandRecordThread(const DeviceState &state)
+        : state{state},
+          incoming{*state.settings->executorSlotCount},
+          outgoing{*state.settings->executorSlotCount},
+          thread{&CommandRecordThread::Run, this} {}
 
     static vk::raii::CommandBuffer AllocateRaiiCommandBuffer(GPU &gpu, vk::raii::CommandPool &pool) {
         return {gpu.vkDevice, (*gpu.vkDevice).allocateCommandBuffers(
@@ -30,6 +35,13 @@ namespace skyline::gpu::interconnect {
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
           semaphore{gpu.vkDevice, vk::SemaphoreCreateInfo{}},
           cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)} {}
+
+    CommandRecordThread::Slot::Slot(Slot &&other)
+        : commandPool{std::move(other.commandPool)},
+          commandBuffer{std::move(other.commandBuffer)},
+          fence{std::move(other.fence)},
+          semaphore{std::move(other.semaphore)},
+          cycle{std::move(other.cycle)} {}
 
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
         cycle->Wait();
@@ -79,7 +91,10 @@ namespace skyline::gpu::interconnect {
 
     void CommandRecordThread::Run() {
         auto &gpu{*state.gpu};
-        std::array<Slot, ActiveRecordSlots> slots{{gpu, gpu, gpu, gpu, gpu, gpu}};
+
+        std::vector<Slot> slots{};
+        std::generate_n(std::back_inserter(slots), *state.settings->executorSlotCount, [&] () -> Slot { return gpu; });
+
         outgoing.AppendTranform(span<Slot>(slots), [](auto &slot) { return &slot; });
 
         if (int result{pthread_setname_np(pthread_self(), "Sky-CmdRecord")})
@@ -116,7 +131,8 @@ namespace skyline::gpu::interconnect {
     }
 
     CommandExecutor::CommandExecutor(const DeviceState &state)
-        : gpu{*state.gpu},
+        : state{state},
+          gpu{*state.gpu},
           recordThread{state},
           tag{AllocateTag()} {
         RotateRecordSlot();
@@ -401,7 +417,7 @@ namespace skyline::gpu::interconnect {
         allocator->Reset();
 
         // Periodically clear preserve attachments just in case there are new waiters which would otherwise end up waiting forever
-        if ((submissionNumber % CommandRecordThread::ActiveRecordSlots * 2) == 0) {
+        if ((submissionNumber % (*state.settings->executorSlotCount * 2)) == 0) {
             preserveAttachedBuffers.clear();
             preserveAttachedTextures.clear();
         }

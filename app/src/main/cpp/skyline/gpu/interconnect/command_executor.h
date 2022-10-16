@@ -15,7 +15,6 @@ namespace skyline::gpu::interconnect {
      */
     class CommandRecordThread {
       public:
-        static constexpr size_t ActiveRecordSlots{6}; //!< Maximum number of simultaneously active slots
 
         /**
          * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
@@ -32,6 +31,8 @@ namespace skyline::gpu::interconnect {
 
             Slot(GPU &gpu);
 
+            Slot(Slot &&other);
+
             /**
              * @brief Waits on the fence and resets the command buffer
              * @note A new fence cycle for the reset command buffer
@@ -41,10 +42,10 @@ namespace skyline::gpu::interconnect {
 
       private:
         const DeviceState &state;
-        std::thread thread;
+        CircularQueue<Slot *> incoming; //!< Slots pending recording
+        CircularQueue<Slot *> outgoing; //!< Slots that have been submitted, may still be active on the GPU
 
-        CircularQueue<Slot *> incoming{ActiveRecordSlots}; //!< Slots pending recording
-        CircularQueue<Slot *> outgoing{ActiveRecordSlots}; //!< Slots that have been submitted, may still be active on the GPU
+        std::thread thread;
 
         void ProcessSlot(Slot *slot);
 
@@ -70,6 +71,7 @@ namespace skyline::gpu::interconnect {
      */
     class CommandExecutor {
       private:
+        const DeviceState &state;
         GPU &gpu;
         CommandRecordThread recordThread;
         CommandRecordThread::Slot *slot{};
