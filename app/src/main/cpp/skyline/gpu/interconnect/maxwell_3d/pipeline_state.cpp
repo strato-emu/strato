@@ -305,8 +305,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return;
         }
 
+        // entry->mirror may not be a direct mirror of blockMapping and may just contain it as a subregion, so we need to explicitly calculate the offset
+        span<u8> blockMappingMirror{blockMapping.data() - mirrorBlock.data() + entry->mirror.data(), blockMapping.size()};
+
         // If nothing was in the cache then do a full shader parse
-        auto guest{[](span<u8> mapping) {
+        binary.binary = [](span<u8> mapping) {
             // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
             // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
             constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
@@ -320,12 +323,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
 
             return span<u8>{};
-        }(blockMapping.subspan(blockOffset))};
+        }(blockMappingMirror.subspan(blockOffset));
 
         binary.baseOffset = engine->pipeline.programOffset;
-        hash = XXH64(guest.data(), guest.size_bytes(), 0);
-
-        binary.binary = {guest.data() - mirrorBlock.data() + entry->mirror.data(), guest.size()};
+        hash = XXH64(binary.binary.data(), binary.binary.size_bytes(), 0);
 
         entry->cache.insert({blockMapping.data() + blockOffset, CacheEntry{binary, hash}});
     }
