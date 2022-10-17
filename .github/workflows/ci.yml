@@ -79,8 +79,8 @@ jobs:
       - name: Rename APKs (Unsigned)
         if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
         run: |
-          mv app/build/outputs/apk/debug/app-debug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-debug.apk
-          mv app/build/outputs/apk/release/app-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
+          mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-debug.apk
+          mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
 
       - name: Upload Unsigned Debug APK
         if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
