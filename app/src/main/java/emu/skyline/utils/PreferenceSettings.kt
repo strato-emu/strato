@@ -38,6 +38,9 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER)
 
+    // Debug
+    var validationLayer by sharedPreferences(context, false)
+
     // Input
     var onScreenControl by sharedPreferences(context, true)
     var onScreenControlRecenterSticks by sharedPreferences(context, true)

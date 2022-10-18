@@ -71,6 +71,9 @@ namespace skyline {
         Setting<std::string> gpuDriver; //!< The label of the GPU driver to use
         Setting<std::string> gpuDriverLibraryName; //!< The name of the GPU driver library to use
 
+        // Debug
+        Setting<bool> validationLayer; //!< If the vulkan validation layer is enabled
+
         Settings() = default;
 
         virtual ~Settings() = default;

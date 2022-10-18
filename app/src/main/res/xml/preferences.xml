@@ -8,8 +8,8 @@
             app:title="@string/search_location" />
         <emu.skyline.preference.DocumentsProviderPreference
             app:key="document_provider"
-            app:title="@string/open_data_directory"
-            app:summary="@string/open_data_directory_summary"/>
+            app:summary="@string/open_data_directory_summary"
+            app:title="@string/open_data_directory" />
         <emu.skyline.preference.ThemePreference
             android:defaultValue="2"
             android:entries="@array/app_theme"
@@ -120,6 +120,17 @@
             android:summaryOn="@string/respect_display_cutout_enabled"
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_debug"
+        android:title="@string/debug"
+        app:isPreferenceVisible="false">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/validation_layer_disabled"
+            android:summaryOn="@string/validation_layer_enabled"
+            app:key="validation_layer"
+            app:title="@string/validation_layer" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_input"

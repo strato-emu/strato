@@ -91,6 +91,11 @@ class SettingsActivity : AppCompatActivity() {
                     disableFrameThrottlingPref.isChecked = false
                 true
             }
+
+            // Only show debug settings in debug builds
+            @Suppress("SENSELESS_COMPARISON")
+            if (BuildConfig.BUILD_TYPE != "release")
+                findPreference<Preference>("category_debug")?.isVisible = true
         }
 
         override fun onDisplayPreferenceDialog(preference : Preference) {

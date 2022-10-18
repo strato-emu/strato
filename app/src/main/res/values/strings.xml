@@ -69,6 +69,11 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <!-- Settings - Debug -->
+    <string name="debug">Debug</string>
+    <string name="validation_layer">Enable validation layer</string>
+    <string name="validation_layer_enabled">The Vulkan validation layer is enabled, major slowdowns are to be expected</string>
+    <string name="validation_layer_disabled">The Vulkan validation layer is disabled</string>
     <!-- Gpu Driver Activity -->
     <string name="gpu_driver">GPU Driver</string>
     <string name="add_gpu_driver">Add a GPU driver</string>

@@ -6,18 +6,27 @@
 package emu.skyline.utils
 
 import android.content.Context
+import emu.skyline.BuildConfig
 
 /**
  * The settings that will be passed to libskyline when running and executable
  */
 class NativeSettings(context : Context, pref : PreferenceSettings) {
+    // System
     var isDocked : Boolean = pref.isDocked
     var usernameValue : String = pref.usernameValue
     var systemLanguage : Int = pref.systemLanguage
+
+    // Display
     var forceTripleBuffering : Boolean = pref.forceTripleBuffering
     var disableFrameThrottling : Boolean = pref.disableFrameThrottling
+
+    // GPU
     var gpuDriver : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver
     var gpuDriverLibraryName : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver)
+
+    // Debug
+    var validationLayer : Boolean = BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
 
     /**
      * Updates settings in libskyline during emulation
