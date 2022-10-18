@@ -7,10 +7,10 @@ package emu.skyline
 
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
@@ -37,7 +37,7 @@ class SettingsActivity : AppCompatActivity() {
 
         var layoutDone = false // Tracks if the layout is complete to avoid retrieving invalid attributes
         binding.coordinatorLayout.viewTreeObserver.addOnTouchModeChangeListener { isTouchMode ->
-            val layoutUpdate = { ->
+            val layoutUpdate = {
                 val params = binding.settings.layoutParams as CoordinatorLayout.LayoutParams
                 if (!isTouchMode) {
                     binding.titlebar.appBarLayout.setExpanded(true)
@@ -83,6 +83,14 @@ class SettingsActivity : AppCompatActivity() {
          */
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
+
+            // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled
+            val disableFrameThrottlingPref = findPreference<CheckBoxPreference>("disable_frame_throttling")!!
+            findPreference<CheckBoxPreference>("force_triple_buffering")?.setOnPreferenceChangeListener { _, newValue ->
+                if (newValue == false)
+                    disableFrameThrottlingPref.isChecked = false
+                true
+            }
         }
 
         override fun onDisplayPreferenceDialog(preference : Preference) {
