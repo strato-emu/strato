@@ -154,6 +154,8 @@ namespace skyline::gpu::interconnect {
          */
         void ResetInternal();
 
+        void AttachBufferBase(std::shared_ptr<Buffer> buffer);
+
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
         LinearAllocatorState<> *allocator;

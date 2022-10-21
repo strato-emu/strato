@@ -251,10 +251,11 @@ namespace skyline::gpu::interconnect {
     bool CommandExecutor::AttachTexture(TextureView *view) {
         bool didLock{view->LockWithTag(tag)};
         if (didLock) {
-            if (view->texture->FrequentlyLocked())
-                attachedTextures.emplace_back(view->texture);
-            else
-                preserveAttachedTextures.emplace_back(view->texture);
+            // TODO: fixup remaining bugs with this and add better heuristics to avoid pauses
+            // if (view->texture->FrequentlyLocked())
+            attachedTextures.emplace_back(view->texture);
+            // else
+            //    preserveAttachedTextures.emplace_back(view->texture);
         }
 
         return didLock;
@@ -273,34 +274,33 @@ namespace skyline::gpu::interconnect {
             buffer->unlock();
     }
 
+    void CommandExecutor::AttachBufferBase(std::shared_ptr<Buffer> buffer) {
+        // TODO: fixup remaining bugs with this and add better heuristics to avoid pauses
+        // if (buffer->FrequentlyLocked())
+        attachedBuffers.emplace_back(std::move(buffer));
+        // else
+        //    preserveAttachedBuffers.emplace_back(std::move(buffer));
+    }
+
     bool CommandExecutor::AttachBuffer(BufferView &view) {
         bool didLock{view.LockWithTag(tag)};
-        if (didLock) {
-            if (view.GetBuffer()->FrequentlyLocked())
-                attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
-            else
-                preserveAttachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
-        }
+        if (didLock)
+            AttachBufferBase(view.GetBuffer()->shared_from_this());
+
         return didLock;
     }
 
     void CommandExecutor::AttachLockedBufferView(BufferView &view, ContextLock<BufferView> &&lock) {
         if (lock.OwnsLock()) {
             // Transfer ownership to executor so that the resource will stay locked for the period it is used on the GPU
-            if (view.GetBuffer()->FrequentlyLocked())
-                attachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
-            else
-                preserveAttachedBuffers.emplace_back(view.GetBuffer()->shared_from_this());
+            AttachBufferBase(view.GetBuffer()->shared_from_this());
             lock.Release(); // The executor will handle unlocking the lock so it doesn't need to be handled here
         }
     }
 
     void CommandExecutor::AttachLockedBuffer(std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
         if (lock.OwnsLock()) {
-            if (buffer->FrequentlyLocked())
-                attachedBuffers.emplace_back(std::move(buffer));
-            else
-                preserveAttachedBuffers.emplace_back(std::move(buffer));
+            AttachBufferBase(std::move(buffer));
             lock.Release(); // See AttachLockedBufferView(...)
         }
     }
