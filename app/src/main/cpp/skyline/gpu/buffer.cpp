@@ -8,6 +8,15 @@
 #include "buffer.h"
 
 namespace skyline::gpu {
+    void Buffer::ResetMegabufferState() {
+        if (megaBufferTableUsed)
+            megaBufferTableValidity.reset();
+
+        megaBufferTableUsed = false;
+        megaBufferViewAccumulatedSize = 0;
+        unifiedMegaBuffer = {};
+    }
+
     void Buffer::SetupGuestMappings() {
         u8 *alignedData{util::AlignDown(guest->data(), constant::PageSize)};
         size_t alignedSize{static_cast<size_t>(util::AlignUp(guest->data() + guest->size(), constant::PageSize) - alignedData)};
@@ -285,13 +294,10 @@ namespace skyline::gpu {
             return {};
     }
 
-    BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber,
+    BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber,
                                             vk::DeviceSize offset, vk::DeviceSize size) {
         if (!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold)
             // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
-            return {};
-
-        if (size > MegaBufferingDisableThreshold)
             return {};
 
         // We are safe to check dirty state here since it will only ever be set GPU dirty with the buffer locked and from the active GPFIFO thread. This helps with perf since the lock ends up being slightly expensive
@@ -299,25 +305,47 @@ namespace skyline::gpu {
             // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
+        // If the active execution has changed all previous allocations are now invalid
+        if (executionNumber != lastExecutionNumber) [[unlikely]]
+            ResetMegabufferState();
+
+        // If more than half the buffer has been megabuffered in chunks within the same execution assume this will generally be the case for this buffer and just megabuffer the whole thing without chunking
+        if (unifiedMegaBufferEnabled || megaBufferViewAccumulatedSize > (backing.size() / 2)) {
+            if (!unifiedMegaBuffer) {
+                unifiedMegaBuffer = allocator.Push(pCycle, mirror, true);
+                unifiedMegaBufferEnabled = true;
+            }
+
+            return BufferBinding{unifiedMegaBuffer.buffer, unifiedMegaBuffer.offset + offset, size};
+        }
+
+        if (size > MegaBufferingDisableThreshold && sequenceNumber < FrequentlySyncedThresholdHigh)
+            return {};
+
         size_t entryIdx{offset >> megaBufferTableShift};
         size_t bufferEntryOffset{entryIdx << megaBufferTableShift};
         size_t entryViewOffset{offset - bufferEntryOffset};
-        auto &entry{megaBufferTable[entryIdx]};
 
-        // If the cached allocation is invalid or not up to date, allocate a new one
-        if (!entry.allocation || entry.executionNumber != executionNumber ||
-              entry.sequenceNumber != sequenceNumber || entry.allocation.region.size() + entryViewOffset < size) {
+        if (entryIdx >= megaBufferTable.size())
+            return {};
+
+        auto &allocation{megaBufferTable[entryIdx]};
+
+        // If the cached allocation is invalid or too small, allocate a new one
+        if (!megaBufferTableValidity.test(entryIdx) || allocation.region.size() < (size + entryViewOffset)) {
             // Use max(oldSize, newSize) to avoid redundant reallocations within an execution if a larger allocation comes along later
-            auto mirrorAllocationRegion{mirror.subspan(bufferEntryOffset, std::max(entryViewOffset + size, entry.allocation.region.size()))};
-            entry.allocation = allocator.Push(pCycle, mirrorAllocationRegion, true);
-            entry.executionNumber = executionNumber;
-            entry.sequenceNumber = sequenceNumber;
+            auto mirrorAllocationRegion{mirror.subspan(bufferEntryOffset, std::max(entryViewOffset + size, allocation.region.size()))};
+            allocation = allocator.Push(pCycle, mirrorAllocationRegion, true);
+            megaBufferTableValidity.set(entryIdx);
+            megaBufferViewAccumulatedSize += mirrorAllocationRegion.size();
+            megaBufferTableUsed = true;
         }
 
-        return {entry.allocation.buffer, entry.allocation.offset + entryViewOffset, size};
+        return {allocation.buffer, allocation.offset + entryViewOffset, size};
     }
 
     void Buffer::AdvanceSequence() {
+        ResetMegabufferState();
         sequenceNumber++;
     }
 
@@ -408,7 +436,7 @@ namespace skyline::gpu {
         return GetBuffer()->Write(isFirstUsage, flushHostCallback, data, writeOffset + GetOffset(), gpuCopyCallback);
     }
 
-    BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber, size_t sizeOverride) const {
+    BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber, size_t sizeOverride) const {
         return GetBuffer()->TryMegaBufferView(pCycle, allocator, executionNumber, GetOffset(), sizeOverride ? sizeOverride : size);
     }
 

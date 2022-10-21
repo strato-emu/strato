@@ -67,30 +67,34 @@ namespace skyline::gpu {
         } backingImmutability{}; //!< Describes how the buffer backing should be accessed by the current context
         RecursiveSpinLock stateMutex; //!< Synchronizes access to the dirty state and backing immutability
 
-        bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
+        static constexpr u32 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
+        static constexpr u32 FrequentlySyncedThreshold{6}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering
+        static constexpr u32 FrequentlySyncedThresholdHigh{16}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering irrespective of view size
+        u32 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
 
-        static constexpr u64 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
-        static constexpr u64 FrequentlySyncedThreshold{15}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering
-        u64 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
+        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 256}; //!< The threshold at which a view is considered to be too large to be megabuffered (256KiB)
 
-        constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 128}; //!< The threshold at which a view is considered to be too large to be megabuffered (128KiB)
-
-        /**
-         * @brief Holds a single megabuffer copy with sequencing information for an offset within the buffer
-         */
-        struct MegaBufferTableEntry {
-            MegaBufferAllocator::Allocation allocation{}; //!< The allocation in the megabuffer for the entry, can be any size
-            size_t executionNumber; //!< Execution number of when the allocation was made
-            size_t sequenceNumber; //!< Sequence number of when the allocation was made
-        };
-
-        static constexpr int MegaBufferTableShiftMin{std::countr_zero(0x80U)}; //!< The minimum shift for megabuffer table entries, giving an alignment of at least 128 bytes
+        static constexpr int MegaBufferTableShiftMin{std::countr_zero(0x100U)}; //!< The minimum shift for megabuffer table entries, giving an alignment of at least 256 bytes
         static constexpr size_t MegaBufferTableMaxEntries{0x500U}; //!< Maximum number of entries in the megabuffer table, `megaBufferTableShift` is set based on this and the total buffer size
         int megaBufferTableShift; //!< Shift to apply to buffer offsets to get their megabuffer table index
-        std::vector<MegaBufferTableEntry> megaBufferTable; //!< Table of megabuffer allocations for regions of the buffer
+        std::vector<MegaBufferAllocator::Allocation> megaBufferTable; //!< Table of megabuffer allocations for regions of the buffer
+        std::bitset<MegaBufferTableMaxEntries> megaBufferTableValidity{}; //!< Bitset keeping track of which entries in the megabuffer table are valid
+        bool megaBufferTableUsed{}; //!< If the megabuffer table has been used at all since the last time it was cleared
+        bool unifiedMegaBufferEnabled{}; //!< If the unified megabuffer is enabled for this buffer and should be used instead of the table
+        bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
+
+        u32 lastExecutionNumber{}; //!< The execution number of the last time megabuffer data was updated
+
+        size_t megaBufferViewAccumulatedSize{};
+        MegaBufferAllocator::Allocation unifiedMegaBuffer{}; //!< An optional full-size mirror of the buffer in the megabuffer for use when the buffer is frequently updated and *all* of the buffer is frequently used. Replaces all uses of the table when active
 
         static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a buffer can be locked (not from context locks, only normal) before it should be considered frequently locked
         size_t accumulatedCpuLockCounter{}; //!< Number of times buffer has been locked through non-ContextLocks
+
+        /**
+         * @brief Resets all megabuffer tracking state
+         */
+        void ResetMegabufferState();
 
       private:
         BufferDelegate *delegate;
@@ -307,7 +311,7 @@ namespace skyline::gpu {
          * @return A binding to the megabuffer allocation for the view, may be invalid if megabuffering is not beneficial
          * @note The buffer **must** be locked prior to calling this
          */
-        BufferBinding TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber,
+        BufferBinding TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber,
                                         vk::DeviceSize offset, vk::DeviceSize size);
 
         /**
@@ -436,14 +440,13 @@ namespace skyline::gpu {
         bool Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback,
                    span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
 
-
         /*
          * @brief If megabuffering is determined to be beneficial for the underlying buffer, allocates and copies this view into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region
          * @param sizeOverride If non-zero, specifies the size of the megabuffer region to allocate and copy to, *MUST* be smaller than the size of the view
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::TryMegaBufferView
          */
-        BufferBinding TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, size_t executionNumber, size_t sizeOverride = 0) const;
+        BufferBinding TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber, size_t sizeOverride = 0) const;
 
         /**
          * @return A span of the backing buffer contents
