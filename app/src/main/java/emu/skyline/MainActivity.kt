@@ -245,7 +245,7 @@ class MainActivity : AppCompatActivity() {
         if (preferenceSettings.selectAction) {
             AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
         } else if (appItem.loaderResult == LoaderResult.Success) {
-            startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri; putExtra(EmulationActivity.ReturnToMainTag, true) })
+            startActivity(Intent(this, EmulationActivity::class.java).apply { data = appItem.uri; putExtra(EmulationActivity.ReturnToMainTag, true); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) })
         }
     }
 
