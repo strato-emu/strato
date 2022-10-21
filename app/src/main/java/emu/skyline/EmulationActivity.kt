@@ -219,7 +219,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     shouldFinish = false
                     if (returnToMain)
                         startActivity(Intent(applicationContext, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
-                    finishAffinity()
+                    Process.killProcess(Process.myPid())
                 }
             }
         }
