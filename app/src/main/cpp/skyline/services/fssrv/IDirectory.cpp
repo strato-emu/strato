@@ -28,7 +28,7 @@ namespace skyline::service::fssrv {
         auto outputEntries{request.outputBuf.at(0).cast<DirectoryEntry, std::dynamic_extent, true>()};
         size_t i{};
 
-        for (; i < std::min(entries.size(), outputEntries.size()); i++) {
+        for (; i < std::min(entries.size() - remainingReadCount, outputEntries.size()); i++) {
             auto &entry{entries.at(i)};
 
             outputEntries[i] = {
