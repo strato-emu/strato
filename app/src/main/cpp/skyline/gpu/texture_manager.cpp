@@ -46,9 +46,9 @@ namespace skyline::gpu {
                 // We've gotten a perfect 1:1 match for *all* mappings from the start to end, we just need to check for compatibility aside from this
                 auto &matchGuestTexture{*hostMapping->texture->guest};
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) &&
-                     ((matchGuestTexture.dimensions.width == guestTexture.dimensions.width &&
-                       matchGuestTexture.dimensions.height == guestTexture.dimensions.height &&
-                       matchGuestTexture.GetViewDepth() == guestTexture.GetViewDepth())
+                    ((((matchGuestTexture.dimensions.width == guestTexture.dimensions.width &&
+                       matchGuestTexture.dimensions.height == guestTexture.dimensions.height) || matchGuestTexture.CalculateLayerSize() == guestTexture.CalculateLayerSize()) &&
+                       matchGuestTexture.GetViewDepth() <= guestTexture.GetViewDepth())
                       || matchGuestTexture.viewMipBase > 0)
                      && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
                     auto &texture{hostMapping->texture};

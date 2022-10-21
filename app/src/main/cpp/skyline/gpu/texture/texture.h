@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <range/v3/view.hpp>
+#include <range/v3/algorithm.hpp>
 #include <common/spin_lock.h>
 #include <common/lockable_shared_ptr.h>
 #include <nce.h>
@@ -111,7 +113,13 @@ namespace skyline::gpu {
              * @return If the supplied format is texel-layout compatible with the current format
              */
             constexpr bool IsCompatible(const FormatBase &other) const {
-                return bpb == other.bpb && blockHeight == other.blockHeight && blockWidth == other.blockWidth;
+                return vkFormat == other.vkFormat
+                    || (vkFormat == vk::Format::eD32Sfloat && other.vkFormat == vk::Format::eR32Sfloat)
+                    || (vkFormat == vk::Format::eR32Sfloat && other.vkFormat == vk::Format::eD32Sfloat)
+                    || (componentCount(vkFormat) == componentCount(other.vkFormat) &&
+                        ranges::all_of(ranges::views::iota(u8{0}, componentCount(vkFormat)), [this, other](auto i) {
+                            return componentBits(vkFormat, i) == componentBits(other.vkFormat, i);
+                        }) && (vkAspect & other.vkAspect) != vk::ImageAspectFlags{});
             }
 
             /**
@@ -279,7 +287,7 @@ namespace skyline::gpu {
         /**
          * @brief Calculates the size of a single layer in bytes, unlike `GetLayerStride` the returned layer size is always calculated and may not be equal to the actual layer stride
          */
-        u32 CalculateLayerSize();
+        u32 CalculateLayerSize() const;
 
         /**
          * @return The most appropriate backing image type for this texture

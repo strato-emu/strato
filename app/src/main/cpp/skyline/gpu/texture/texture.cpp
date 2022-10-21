@@ -3,8 +3,9 @@
 
 #include <gpu.h>
 #include <kernel/memory.h>
-#include <common/trace.h>
 #include <kernel/types/KProcess.h>
+#include <common/trace.h>
+#include <common/settings.h>
 #include "texture.h"
 #include "layout.h"
 #include "adreno_aliasing.h"
@@ -20,7 +21,7 @@ namespace skyline::gpu {
         return layerStride;
     }
 
-    u32 GuestTexture::CalculateLayerSize() {
+    u32 GuestTexture::CalculateLayerSize() const {
         switch (tileConfig.mode) {
             case texture::TileMode::Linear:
                 return static_cast<u32>(format->GetSize(dimensions));
