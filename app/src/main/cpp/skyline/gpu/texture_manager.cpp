@@ -57,6 +57,7 @@ namespace skyline::gpu {
                         .aspectMask = guestTexture.aspect,
                         .baseMipLevel = guestTexture.viewMipBase,
                         .levelCount = guestTexture.viewMipCount,
+                        .baseArrayLayer = guestTexture.baseArrayLayer,
                         .layerCount = guestTexture.GetViewLayerCount(),
                     }, guestTexture.format, guestTexture.swizzle);
                 } else {
@@ -96,6 +97,7 @@ namespace skyline::gpu {
             .aspectMask = guestTexture.aspect,
             .baseMipLevel = guestTexture.viewMipBase,
             .levelCount = guestTexture.viewMipCount,
+            .baseArrayLayer = guestTexture.baseArrayLayer,
             .layerCount = guestTexture.GetViewLayerCount(),
         }, guestTexture.format, guestTexture.swizzle);
     }
