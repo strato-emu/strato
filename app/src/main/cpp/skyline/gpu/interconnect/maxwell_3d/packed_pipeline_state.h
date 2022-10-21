@@ -57,6 +57,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bool transformFeedbackEnable : 1;
             u8 alphaFunc : 3; //!< Use {Set,Get}AlphaFunc
             bool alphaTestEnable : 1;
+            bool depthClampEnable : 1; // Use SetDepthClampEnable
         };
 
         u32 patchSize;
@@ -140,6 +141,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SetAlphaFunc(engine::CompareFunc func);
 
         Shader::CompareFunction GetAlphaFunc() const;
+
+        void SetDepthClampEnable(engine::ViewportClipControl::GeometryClip clip);
 
         bool operator==(const PackedPipelineState &other) const {
             // Only hash transform feedback state if it's enabled

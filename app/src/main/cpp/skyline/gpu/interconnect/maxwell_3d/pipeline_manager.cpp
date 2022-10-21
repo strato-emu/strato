@@ -493,6 +493,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterizationCreateInfo.cullMode = vk::CullModeFlags{packedState.cullMode};
         rasterizationCreateInfo.frontFace = packedState.frontFaceClockwise ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
         rasterizationCreateInfo.depthBiasEnable = packedState.depthBiasEnable;
+        rasterizationCreateInfo.depthClampEnable = packedState.depthClampEnable;
         rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(packedState.provokingVertex);
 
         constexpr vk::PipelineMultisampleStateCreateInfo multisampleState{
@@ -650,7 +651,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         view.GetBuffer()->BlockSequencedCpuBackingWrites();
-
 
         return view;
     }

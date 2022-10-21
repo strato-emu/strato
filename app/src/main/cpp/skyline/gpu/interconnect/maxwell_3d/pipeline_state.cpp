@@ -446,6 +446,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.provokingVertex = engine->provokingVertex.value;
         packedState.pointSize = engine->pointSize;
         packedState.openGlNdc = engine->zClipRange == engine::ZClipRange::NegativeWToPositiveW;
+        packedState.SetDepthClampEnable(engine->viewportClipControl.geometryClip);
     }
 
     /* Depth Stencil State */

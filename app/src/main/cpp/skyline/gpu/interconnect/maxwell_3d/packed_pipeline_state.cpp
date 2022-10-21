@@ -340,6 +340,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         // Vulkan enum values match 1-1 with hades
         return static_cast<Shader::CompareFunction>(alphaFunc);
     }
+
+    void PackedPipelineState::SetDepthClampEnable(engine::ViewportClipControl::GeometryClip clip) {
+        depthClampEnable = (clip != engine::ViewportClipControl::GeometryClip::Passthru) && (clip != engine::ViewportClipControl::GeometryClip::FrustrumXYZClip) && (clip != engine::ViewportClipControl::GeometryClip::FrustrumZClip);
+    }
 }
 
 #pragma clang diagnostic pop
