@@ -41,8 +41,9 @@ namespace skyline::gpu {
         static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
         std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
         std::array<vk::raii::Semaphore, MaxSwapchainImageCount> presentSemaphores; //!< Array of semaphores used to signal that swapchain images are ready to be completed, indexed by Vulkan swapchain index
-        std::array<vk::raii::Semaphore, MaxSwapchainImageCount> acquireSemaphores; //!< Array of semaphores used to wait on the GPU for swapchain images to be acquired, indexed by `acquireSemaphoreIndex`
-        size_t acquireSemaphoreIndex{}; //!< The index of the next semaphore to be used for acquiring swapchain images
+        std::array<vk::raii::Semaphore, MaxSwapchainImageCount> acquireSemaphores; //!< Array of semaphores used to wait on the GPU for swapchain images to be acquired, indexed by `frameIndex`
+        std::array<std::shared_ptr<FenceCycle>, MaxSwapchainImageCount> frameFences{}; //!< Array of fences used to wait on the GPU for copying of swapchain images to be completed, indexed by `frameIndex`
+        size_t frameIndex{}; //!< The index of the next semaphore/fence to be used for acquiring swapchain images
         size_t swapchainImageCount{}; //!< The number of images in the current swapchain
 
         i64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds

@@ -121,8 +121,12 @@ namespace skyline::gpu {
             throw exception("Setting the buffer transform to '{}' failed with {}", ToString(frame.transform), result);
         windowTransform = frame.transform;
 
-        auto &acquireSemaphore{acquireSemaphores[acquireSemaphoreIndex]};
-        acquireSemaphoreIndex = (acquireSemaphoreIndex + 1) % swapchainImageCount;
+        auto &acquireSemaphore{acquireSemaphores[frameIndex]};
+        auto &frameFence{frameFences[frameIndex]};
+        if (frameFence)
+            frameFence->Wait();
+
+        frameIndex = (frameIndex + 1) % swapchainImageCount;
 
         std::pair<vk::Result, u32> nextImage;
         while (nextImage = vkSwapchain->acquireNextImage(std::numeric_limits<u64>::max(), *acquireSemaphore, {}), nextImage.first != vk::Result::eSuccess) [[unlikely]] {
@@ -141,6 +145,8 @@ namespace skyline::gpu {
             .levelCount = 1,
             .layerCount = 1,
         });
+
+        frameFence = nextImageTexture->cycle;
 
         auto getMonotonicNsNow{[]() -> i64 {
             timespec time;
