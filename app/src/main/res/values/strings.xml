@@ -72,6 +72,9 @@
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
     <string name="executor_slot_count">Executor Slot Count</string>
     <string name="executor_slot_count_desc">Maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
+    <string name="enable_texture_readback_hack">Enable Texture Readback Hack</string>
+    <string name="enable_texture_readback_hack_enabled">Texture readback hack is enabled (Will break some games but others will have higher performance)</string>
+    <string name="enable_texture_readback_hack_disabled">Texture readback hack is disabled (Ensures highest accuracy)</string>
     <!-- Settings - Debug -->
     <string name="debug">Debug</string>
     <string name="validation_layer">Enable validation layer</string>

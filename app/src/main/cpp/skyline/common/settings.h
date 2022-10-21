@@ -72,6 +72,7 @@ namespace skyline {
         Setting<std::string> gpuDriver; //!< The label of the GPU driver to use
         Setting<std::string> gpuDriverLibraryName; //!< The name of the GPU driver library to use
         Setting<u32> executorSlotCount; //!< Number of GPU executor slots that can be used concurrently
+        Setting<bool> enableTextureReadbackHack; //!< If the CPU texture readback skipping hack should be used
 
         // Debug
         Setting<bool> validationLayer; //!< If the vulkan validation layer is enabled

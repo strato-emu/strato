@@ -167,8 +167,15 @@ namespace skyline::gpu {
                 // If this mutex would cause other callbacks to be blocked then we should block on this mutex in advance
                 std::shared_ptr<FenceCycle> waitCycle{};
                 do {
-                    if (waitCycle)
+                    // We need to do a loop here since we can't wait with the texture locked but not doing so means that the texture could have it's cycle changed which we wouldn't wait on, loop until we are sure the cycle hasn't changed to avoid that
+                    if (waitCycle) {
+                        i64 startNs{texture->accumulatedGuestWaitCounter > SkipReadbackHackWaitCountThreshold ? util::GetTimeNs() : 0};
                         waitCycle->Wait();
+                        if (startNs)
+                            texture->accumulatedGuestWaitTime += std::chrono::nanoseconds(util::GetTimeNs() - startNs);
+
+                        texture->accumulatedGuestWaitCounter++;
+                    }
 
                     std::scoped_lock lock{*texture};
                     if (waitCycle && texture->cycle == waitCycle) {
@@ -216,6 +223,11 @@ namespace skyline::gpu {
             if (texture->dirtyState != DirtyState::GpuDirty) {
                 texture->dirtyState = DirtyState::CpuDirty;
                 return true; // If the texture is already CPU dirty or we can transition it to being CPU dirty then we don't need to do anything
+            }
+
+            if (texture->accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *texture->gpu.state.settings->enableTextureReadbackHack) {
+                texture->dirtyState = DirtyState::Clean;
+                return true;
             }
 
             std::unique_lock lock{*texture, std::try_to_lock};

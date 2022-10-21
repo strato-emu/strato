@@ -135,6 +135,12 @@
             app:key="executor_slot_count"
             app:title="@string/executor_slot_count"
             app:showSeekBarValue="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/enable_texture_readback_hack_disabled"
+            android:summaryOn="@string/enable_texture_readback_hack_enabled"
+            app:key="enable_texture_readback_hack"
+            app:title="@string/enable_texture_readback_hack" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_debug"
