@@ -95,7 +95,7 @@ namespace skyline::gpu {
             gpu.vkQueue.submit(vk::SubmitInfo{
                 .commandBufferCount = 1,
                 .pCommandBuffers = &*commandBuffer,
-                .waitSemaphoreCount = static_cast<u32>(waitSemaphores.size()),
+                .waitSemaphoreCount = static_cast<u32>(fullWaitSemaphores.size()),
                 .pWaitSemaphores = fullWaitSemaphores.data(),
                 .pWaitDstStageMask = fullWaitStages.data(),
                 .signalSemaphoreCount = static_cast<u32>(fullSignalSemaphores.size()),
