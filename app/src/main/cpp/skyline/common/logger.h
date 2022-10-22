@@ -134,38 +134,50 @@ namespace skyline {
 
         template<typename... Args>
         static void Debug(FunctionString<const char *> formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Debug <= configLevel)
                 Write(LogLevel::Debug, util::Format(*formatString, args...));
+            #endif
         }
 
         template<typename... Args>
         static void Debug(FunctionString<std::string> formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Debug <= configLevel)
                 Write(LogLevel::Debug, util::Format(*formatString, args...));
+            #endif
         }
 
         template<typename S, typename... Args>
         static void DebugNoPrefix(S formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Debug <= configLevel)
                 Write(LogLevel::Debug, util::Format(formatString, args...));
+            #endif
         }
 
         template<typename... Args>
         static void Verbose(FunctionString<const char *> formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Verbose <= configLevel)
                 Write(LogLevel::Verbose, util::Format(*formatString, args...));
+            #endif
         }
 
         template<typename... Args>
         static void Verbose(FunctionString<std::string> formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Verbose <= configLevel)
                 Write(LogLevel::Verbose, util::Format(*formatString, args...));
+            #endif
         }
 
         template<typename S, typename... Args>
         static void VerboseNoPrefix(S formatString, Args &&... args) {
+            #ifndef NDEBUG
             if (LogLevel::Verbose <= configLevel)
                 Write(LogLevel::Verbose, util::Format(formatString, args...));
+            #endif
         }
     };
 }
