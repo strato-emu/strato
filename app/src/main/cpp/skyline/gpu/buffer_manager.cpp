@@ -52,6 +52,16 @@ namespace skyline::gpu {
     }
 
     BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
+        std::shared_ptr<FenceCycle> newBufferCycle{};
+        for (auto &srcBuffer : srcBuffers) {
+            // Wait on all source buffers before we lock the recreation mutex as locking it may prevent submissions of the cycles and introduce a deadlock
+            // We can't chain cycles here as that may also introduce a deadlock since we have no way to determine what order to chain them in right now
+            if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty || srcBuffer->AllCpuBackingWritesBlocked() || (newBufferCycle && srcBuffer->cycle != newBufferCycle))
+                srcBuffer->WaitOnFence();
+            else if (srcBuffer->cycle)
+                newBufferCycle = srcBuffer->cycle;
+        }
+
         std::scoped_lock lock{recreationMutex};
         if (!range.valid())
             range = span<u8>{srcBuffers.front().buffer->guest->begin(), srcBuffers.back().buffer->guest->end()};
@@ -70,6 +80,7 @@ namespace skyline::gpu {
 
         newBuffer->SetupGuestMappings();
         newBuffer->SynchronizeHost(false); // Overlaps don't necessarily fully cover the buffer so we have to perform a sync here to prevent any gaps
+        newBuffer->cycle = newBufferCycle;
 
         auto copyBuffer{[](auto dstGuest, auto srcGuest, auto dstPtr, auto srcPtr) {
             if (dstGuest.begin().base() <= srcGuest.begin().base()) {
@@ -92,17 +103,7 @@ namespace skyline::gpu {
 
             newBuffer->everHadInlineUpdate |= srcBuffer->everHadInlineUpdate;
 
-            // LockedBuffer also holds `stateMutex` so we can freely access this
-            if (srcBuffer->cycle && newBuffer->cycle != srcBuffer->cycle) {
-                if (newBuffer->cycle)
-                    srcBuffer->WaitOnFence();
-                else
-                    newBuffer->cycle = srcBuffer->cycle;
-            }
-
             if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
-                srcBuffer->WaitOnFence();
-
                 if (srcBuffer.lock.IsFirstUsage() && newBuffer->dirtyState != Buffer::DirtyState::GpuDirty)
                     copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->mirror.data(), srcBuffer->backing.data());
                 else
@@ -115,7 +116,6 @@ namespace skyline::gpu {
                     Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while CPU backing writes are blocked, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
 
                 // We need the backing to be stable so that any writes within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
-                srcBuffer->WaitOnFence();
                 copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing.data(), srcBuffer->backing.data());
             }
 
