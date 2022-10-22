@@ -15,12 +15,15 @@ namespace skyline::kernel {
     void Scheduler::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
         if (*tls) {
             TRACE_EVENT_END("guest");
-            const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
-            if (signal == PreemptionSignal)
-                state.thread->isPreempted = false;
-            state.scheduler->Rotate(false);
-            YieldPending = false;
-            state.scheduler->WaitSchedule();
+            {
+                TRACE_EVENT_FMT("scheduler", "{} Signal", signal == PreemptionSignal ? "Preemption" : "Yield");
+                const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
+                if (signal == PreemptionSignal)
+                    state.thread->isPreempted = false;
+                state.scheduler->Rotate(false);
+                YieldPending = false;
+                state.scheduler->WaitSchedule();
+            }
             TRACE_EVENT_BEGIN("guest", "Guest");
         } else {
             YieldPending = true;
