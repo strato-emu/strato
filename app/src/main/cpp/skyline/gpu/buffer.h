@@ -109,7 +109,6 @@ namespace skyline::gpu {
 
       public:
         void UpdateCycle(const std::shared_ptr<FenceCycle> &newCycle) {
-            std::scoped_lock lock{stateMutex};
             newCycle->ChainCycle(cycle);
             cycle = newCycle;
         }
