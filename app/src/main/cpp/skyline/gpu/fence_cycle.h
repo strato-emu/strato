@@ -132,13 +132,14 @@ namespace skyline::gpu {
             });
 
             std::unique_lock lock{mutex};
+
+            submitCondition.wait(lock, [&] { return submitted; });
+
             if (signalled.test(std::memory_order_relaxed)) {
                 if (shouldDestroy)
                     DestroyDependencies();
                 return;
             }
-
-            submitCondition.wait(lock, [&] { return submitted; });
 
             vk::Result waitResult;
             while ((waitResult = (*device).waitForFences(1, &fence, false, std::numeric_limits<u64>::max(), *device.getDispatcher())) != vk::Result::eSuccess) {
@@ -227,7 +228,7 @@ namespace skyline::gpu {
          * @param cycle The cycle to chain to this one, this is nullable and this function will be a no-op if this is nullptr
          */
         void ChainCycle(const std::shared_ptr<FenceCycle> &cycle) {
-            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this)
+            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this && !cycle->Poll())
                 chainedCycles.Append(cycle); // If the cycle isn't the current cycle or already signalled, we need to chain it
         }
 
