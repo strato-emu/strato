@@ -26,6 +26,9 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::Kill(bool join, bool all, bool disableCreation) {
+        Logger::Warn("Killing {}{}KProcess{}", join ? "and joining " : "", all ? "all threads in " : "HOS-0 in ", disableCreation ? " with new thread creation disabled" : "");
+        Logger::EmulationContext.Flush();
+
         bool expected{false};
         if (!join && !alreadyKilled.compare_exchange_strong(expected, true))
             // If the process has already been killed and we don't want to wait for it to join then just instantly return rather than waiting on the mutex
