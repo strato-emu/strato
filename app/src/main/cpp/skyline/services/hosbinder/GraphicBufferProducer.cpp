@@ -92,38 +92,36 @@ namespace skyline::service::hosbinder {
         constexpr i32 InvalidGraphicBufferSlot{-1}; //!< https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h;l=61
         slot = InvalidGraphicBufferSlot;
 
-        std::scoped_lock lock(mutex);
-        // We don't need a loop here since the consumer is blocking and instantly frees all buffers
-        // If a valid slot is not found on the first iteration then it would be stuck in an infinite loop
-        // As a result of this, we simply warn and return InvalidOperation to the guest
+        std::unique_lock lock{mutex};
         auto buffer{queue.end()};
-        size_t dequeuedSlotCount{};
-        for (auto it{queue.begin()}; it != std::min(queue.begin() + activeSlotCount, queue.end()); it++) {
-            // We want to select the oldest slot that's free to use as we'd want all slots to be used
-            // If we go linearly then we have a higher preference for selecting the former slots and being out of order
-            if (it->state == BufferState::Free) {
-                if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
-                    buffer = it;
-            } else if (it->state == BufferState::Dequeued) {
-                dequeuedSlotCount++;
+        freeCondition.wait(lock, [&]() {
+            size_t dequeuedSlotCount{};
+            for (auto it{queue.begin()}; it != std::min(queue.begin() + activeSlotCount, queue.end()); it++) {
+                // We want to select the oldest slot that's free to use as we'd want all slots to be used
+                // If we go linearly then we have a higher preference for selecting the former slots and being out of order
+                if (it->state == BufferState::Free) {
+                    if (buffer == queue.end() || it->frameNumber < buffer->frameNumber)
+                        buffer = it;
+                } else if (it->state == BufferState::Dequeued) {
+                    dequeuedSlotCount++;
+                }
             }
-        }
 
-        if (buffer != queue.end()) {
-            slot = static_cast<i32>(std::distance(queue.begin(), buffer));
-        } else if (async) {
-            return AndroidStatus::WouldBlock;
-        } else if (dequeuedSlotCount == queue.size()) {
-            Logger::Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+            if (buffer != queue.end()) {
+                slot = static_cast<i32>(std::distance(queue.begin(), buffer));
+                return true;
+            } else if (dequeuedSlotCount == queue.size()) {
+                Logger::Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+                slot = InvalidGraphicBufferSlot;
+                return true;
+            }
+
+            buffer = queue.end();
+            return false;
+        });
+
+        if (slot == InvalidGraphicBufferSlot) [[unlikely]]
             return AndroidStatus::InvalidOperation;
-        } else {
-            size_t index{};
-            std::string bufferString;
-            for (auto &bufferSlot : queue)
-                bufferString += util::Format("\n#{} - State: {}, Has Graphic Buffer: {}, Frame Number: {}", ++index, ToString(bufferSlot.state), bufferSlot.graphicBuffer != nullptr, bufferSlot.frameNumber);
-            Logger::Warn("Cannot find any free buffers to dequeue:{}", bufferString);
-            return AndroidStatus::InvalidOperation;
-        }
 
         width = width ? width : defaultWidth;
         height = height ? height : defaultHeight;
@@ -386,10 +384,12 @@ namespace skyline::service::hosbinder {
         }
 
         state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, fence, [this, &buffer] {
-            std::scoped_lock lock(mutex);
+            std::unique_lock lock{mutex};
 
             buffer.state = BufferState::Free;
             bufferEvent->Signal();
+
+            freeCondition.notify_all();
         });
 
         buffer.state = BufferState::Queued;

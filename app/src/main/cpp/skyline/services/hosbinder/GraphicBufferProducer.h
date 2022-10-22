@@ -61,6 +61,7 @@ namespace skyline::service::hosbinder {
       private:
         const DeviceState &state;
         std::mutex mutex; //!< Synchronizes access to the buffer queue
+        std::condition_variable freeCondition; //!< Used to wait for a free buffer slot
         constexpr static u8 MaxSlotCount{16}; //!< The maximum amount of buffer slots that a buffer queue can hold, Android supports 64 but they go unused for applications like games so we've lowered this to 16 (https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueDefs.h;l=29)
         std::array<BufferSlot, MaxSlotCount> queue;
         u8 activeSlotCount{}; //!< The amount of slots in the queue that can be dequeued
