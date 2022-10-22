@@ -95,7 +95,7 @@ namespace skyline::gpu {
             // LockedBuffer also holds `stateMutex` so we can freely access this
             if (srcBuffer->cycle && newBuffer->cycle != srcBuffer->cycle) {
                 if (newBuffer->cycle)
-                    newBuffer->cycle->ChainCycle(srcBuffer->cycle);
+                    srcBuffer->WaitOnFence();
                 else
                     newBuffer->cycle = srcBuffer->cycle;
             }
