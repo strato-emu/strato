@@ -52,11 +52,23 @@ namespace skyline::kernel {
 
         auto &process{state.process};
         process = std::make_shared<kernel::type::KProcess>(state);
+
         auto entry{state.loader->LoadProcessData(process, state)};
+        auto &nacp{state.loader->nacp};
+        if (nacp) {
+            std::string name{nacp->GetApplicationName(language::ApplicationLanguage::AmericanEnglish)}, publisher{nacp->GetApplicationPublisher(language::ApplicationLanguage::AmericanEnglish)};
+            if (name.empty())
+                name = nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage());
+            if (publisher.empty())
+                publisher = nacp->GetApplicationPublisher(nacp->GetFirstSupportedTitleLanguage());
+            Logger::InfoNoPrefix(R"(Starting "{}" v{} by "{}")", name, nacp->GetApplicationVersion(), publisher);
+        }
+
         process->InitializeHeapTls();
         auto thread{process->CreateThread(entry)};
         if (thread) {
-            Logger::Debug("Starting main HOS thread");
+            Logger::Info("Starting main HOS thread");
+            Logger::EmulationContext.Flush();
             thread->Start(true);
             process->Kill(true, true, true);
         }
