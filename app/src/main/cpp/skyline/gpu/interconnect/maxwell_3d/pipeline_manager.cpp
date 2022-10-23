@@ -494,6 +494,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterizationCreateInfo.frontFace = packedState.frontFaceClockwise ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
         rasterizationCreateInfo.depthBiasEnable = packedState.depthBiasEnable;
         rasterizationCreateInfo.depthClampEnable = packedState.depthClampEnable;
+        if (!ctx.gpu.traits.supportsDepthClamp)
+            Logger::Warn("Depth clamp used on guest without host support");
         rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(packedState.provokingVertex);
 
         constexpr vk::PipelineMultisampleStateCreateInfo multisampleState{

@@ -45,6 +45,7 @@ namespace skyline::gpu {
         bool supportsShaderStorageImageWriteWithoutFormat{}; //!< If the device supports the 'shaderStorageImageWriteWithoutFormat' Vulkan feature
         bool supportsSubgroupVote{}; //!< If subgroup votes are supported in shaders with SPV_KHR_subgroup_vote
         bool supportsWideLines{}; //!< If the device supports the 'wideLines' Vulkan feature
+        bool supportsDepthClamp{}; //!< If the device supports the 'depthClamp' Vulkan feature
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
 
         std::bitset<7> bcnSupport{}; //!< Bitmask of BCn texture formats supported, it is ordered as BC1, BC2, BC3, BC4, BC5, BC6H and BC7

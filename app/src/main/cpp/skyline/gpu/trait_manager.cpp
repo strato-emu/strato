@@ -161,6 +161,7 @@ namespace skyline::gpu {
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.fragmentStoresAndAtomics, supportsFragmentStoresAndAtomics)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderStorageImageWriteWithoutFormat, supportsShaderStorageImageWriteWithoutFormat)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.wideLines, supportsWideLines)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.depthClamp, supportsDepthClamp)
 
         #undef FEAT_SET
 
