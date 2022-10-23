@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.preference.IntegerListPreference
@@ -96,6 +97,13 @@ class SettingsActivity : AppCompatActivity() {
             @Suppress("SENSELESS_COMPARISON")
             if (BuildConfig.BUILD_TYPE != "release")
                 findPreference<Preference>("category_debug")?.isVisible = true
+
+
+            resources.getStringArray(R.array.credits_entries).asIterable().shuffled().forEach {
+                findPreference<PreferenceCategory>("category_credits")?.addPreference(Preference(context!!).apply {
+                    title = it
+                })
+            }
         }
 
         override fun onDisplayPreferenceDialog(preference : Preference) {

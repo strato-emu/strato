@@ -90,4 +90,11 @@
         <item>0</item>
         <item>8</item>
     </integer-array>
+    <string-array name="credits_entries">
+        <item>j0hnnybrav0</item>
+        <item>Ell Jensen</item>
+        <item>Pete y los Androides</item>
+        <item>ArkSource</item>
+        <item>程家小将</item>
+    </string-array>
 </resources>
