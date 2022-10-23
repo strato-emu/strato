@@ -4,6 +4,7 @@ on: [ push, pull_request ]
 
 jobs:
   build:
+    if: github.event.type != 'PullRequestEvent' || contains(github.event.pull_request.labels.*.name, 'ci')
     runs-on: ubuntu-latest
     env:
       JVM_OPTS: -Xmx6G
