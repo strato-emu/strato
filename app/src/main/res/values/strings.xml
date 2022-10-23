@@ -189,8 +189,8 @@
     <string name="ktstd_description">Kotlin Standard Library provides convenience functions in Kotlin</string>
     <string name="dagger_description">Dagger provides a framework for compile-time dependency injection</string>
     <string name="mtico_description">Material Design Icons provides consistent iconography throughout the application</string>
-    <string name="noto_sans_description">Noto Sans is used as our FOSS shared font replacement for Latin, Japanese, Korean and (Traditional) Chinese</string>
-    <string name="roboto_description">Roboto is used as our FOSS shared font replacement for Nintendo\'s extended character set</string>
+    <string name="noto_sans_description">Noto Sans is used as our FOSS shared font replacement for Latin, Japanese and (Traditional) Chinese</string>
+    <string name="roboto_description">Roboto is used as our FOSS shared font replacement for Korean and Nintendo\'s extended character set</string>
     <!-- Software Keyboard -->
     <string name="input_hint">Input Text</string>
     <!-- Misc -->
