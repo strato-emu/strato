@@ -187,7 +187,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 if (*view) {
                     ctx.executor.AttachBuffer(*view);
 
-                    //    view.GetBuffer()->MarkGpuDirty();
+                    view->GetBuffer()->MarkGpuDirty();
                     builder.SetTransformFeedbackBuffer(index, *view);
                     return;
                 } else {
