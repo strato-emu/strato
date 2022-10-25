@@ -3,6 +3,7 @@
 // Copyright © 2022 yuzu Team and Contributors (https://github.com/yuzu-emu/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <range/v3/algorithm.hpp>
 #include "packed_pipeline_state.h"
 
 #pragma clang diagnostic push
@@ -312,22 +313,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
             transformFeedbackVaryings[attributeIndex] = {
                 .buffer = static_cast<u8>(buffer),
                 .offsetWords = static_cast<u8>(i),
-                .stride = static_cast<u16>(control.strideBytes)
+                .stride = static_cast<u16>(control.strideBytes),
+                .valid = true
             };
         }
     }
 
     std::vector<Shader::TransformFeedbackVarying> PackedPipelineState::GetTransformFeedbackVaryings() const {
         std::vector<Shader::TransformFeedbackVarying> convertedVaryings;
-        convertedVaryings.reserve(0x100);
-        for (const auto &varying : transformFeedbackVaryings)
-            convertedVaryings.push_back(
-                {
+        convertedVaryings.resize(0x100);
+        ranges::transform(transformFeedbackVaryings, convertedVaryings.begin(), [](auto &varying) {
+            if (varying.valid) {
+                return Shader::TransformFeedbackVarying{
                     .buffer = varying.buffer,
                     .stride = varying.stride,
                     .offset = varying.offsetWords * 4U,
                     .components = 1,
-                });
+                };
+            } else {
+                return Shader::TransformFeedbackVarying{};
+            }
+        });
 
         return convertedVaryings;
     }

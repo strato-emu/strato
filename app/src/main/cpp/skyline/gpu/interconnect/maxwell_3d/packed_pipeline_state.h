@@ -98,7 +98,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         struct TransformFeedbackVarying {
             u16 stride;
             u8 offsetWords;
-            u8 buffer;
+            u8 buffer : 7;
+            bool valid : 1;
         };
         std::array<TransformFeedbackVarying, 0x100> transformFeedbackVaryings{};
 
