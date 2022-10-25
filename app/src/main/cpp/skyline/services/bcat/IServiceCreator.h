@@ -5,6 +5,7 @@
 
 #include <services/serviceman.h>
 #include "IBcatService.h"
+#include "IDeliveryCacheStorageService.h"
 
 namespace skyline::service::bcat {
     /**
@@ -21,8 +22,15 @@ namespace skyline::service::bcat {
          */
         Result CreateBcatService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @brief Takes an input u64 ProcessId, returns an #IDeliveryCacheStorageService
+         * @url https://switchbrew.org/wiki/BCAT_services#bcat:a.2C_bcat:m.2C_bcat:u.2C_bcat:s
+         */
+        Result CreateDeliveryCacheStorageService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x0, IServiceCreator, CreateBcatService)
+            SFUNC(0x0, IServiceCreator, CreateBcatService),
+            SFUNC(0x1, IServiceCreator, CreateDeliveryCacheStorageService)
         )
     };
 }
