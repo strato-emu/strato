@@ -230,14 +230,15 @@ namespace skyline::kernel::type {
         }
 
         if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
-            std::unique_lock lock(syncWaiterMutex);
-            auto queue{syncWaiters.equal_range(key)};
-            auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{key, state.thread})};
-            if (iterator != queue.second)
-                if (syncWaiters.erase(iterator) == queue.second)
-                    __atomic_store_n(key, false, __ATOMIC_SEQ_CST);
+            {
+                std::unique_lock lock(syncWaiterMutex);
+                auto queue{syncWaiters.equal_range(key)};
+                auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{key, state.thread})};
+                if (iterator != queue.second)
+                    if (syncWaiters.erase(iterator) == queue.second)
+                        __atomic_store_n(key, false, __ATOMIC_SEQ_CST);
 
-            lock.unlock();
+            }
             state.scheduler->InsertThread(state.thread);
             state.scheduler->WaitSchedule();
 
@@ -259,15 +260,25 @@ namespace skyline::kernel::type {
     void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
         TRACE_EVENT_FMT("kernel", "ConditionalVariableSignal 0x{:X}", key);
 
-        std::scoped_lock lock{syncWaiterMutex};
-        auto queue{syncWaiters.equal_range(key)};
+        i32 waiterCount{amount};
+        std::shared_ptr<type::KThread> thread;
+        do {
+            if (thread) {
+                state.scheduler->InsertThread(thread);
+                thread = {};
+            }
 
-        auto it{queue.first};
-        for (i32 waiterCount{amount}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
-            state.scheduler->InsertThread(it->second);
+            std::scoped_lock lock{syncWaiterMutex};
+            auto queue{syncWaiters.equal_range(key)};
 
-        if (it == queue.second)
-            __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
+            if (queue.first != queue.second && (amount <= 0 || waiterCount)) {
+                thread = queue.first->second;
+                syncWaiters.erase(queue.first);
+                waiterCount--;
+            } else if (queue.first == queue.second) {
+                __atomic_store_n(key, false, __ATOMIC_SEQ_CST); // We need to update the boolean flag denoting that there are no more threads waiting on this conditional variable
+            }
+        } while (thread);
     }
 
     Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, ArbitrationType type) {
