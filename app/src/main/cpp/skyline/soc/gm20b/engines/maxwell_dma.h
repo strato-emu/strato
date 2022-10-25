@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpu/interconnect/maxwell_dma.h>
 #include "engine.h"
 
 namespace skyline::gpu::interconnect {
@@ -21,7 +22,7 @@ namespace skyline::soc::gm20b::engine {
       private:
         host1x::SyncpointSet &syncpoints;
         ChannelContext &channelCtx;
-        gpu::interconnect::CommandExecutor &executor;
+        gpu::interconnect::MaxwellDma interconnect;
 
         void HandleMethod(u32 method, u32 argument);
 
@@ -253,7 +254,7 @@ namespace skyline::soc::gm20b::engine {
         static_assert(sizeof(Registers) == (EngineMethodsEnd * 0x4));
         #pragma pack(pop)
 
-        MaxwellDma(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
+        MaxwellDma(const DeviceState &state, ChannelContext &channelCtx);
 
         void CallMethod(u32 method, u32 argument);
 

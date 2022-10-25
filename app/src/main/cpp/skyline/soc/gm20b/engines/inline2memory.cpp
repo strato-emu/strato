@@ -5,7 +5,9 @@
 #include "inline2memory.h"
 
 namespace skyline::soc::gm20b::engine {
-    Inline2MemoryBackend::Inline2MemoryBackend(ChannelContext &channelCtx) : channelCtx(channelCtx) {}
+    Inline2MemoryBackend::Inline2MemoryBackend(const DeviceState &state, ChannelContext &channelCtx)
+        : interconnect{*state.gpu, channelCtx},
+          channelCtx{channelCtx} {}
 
     void Inline2MemoryBackend::LaunchDma(Inline2MemoryBackend::RegisterState &state) {
         writeOffset = 0;
@@ -17,13 +19,11 @@ namespace skyline::soc::gm20b::engine {
         if (state.launchDma.completion == RegisterState::DmaCompletionType::ReleaseSemaphore)
             throw exception("Semaphore release on I2M completion is not supported!");
 
-        channelCtx.executor.Submit();
-
         if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch && state.lineCount == 1) {
-            // TODO: we can do this with the buffer manager to avoid some overhead in the future
             Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
-            channelCtx.asCtx->gmmu.Write(state.offsetOut, span(buffer));
+            interconnect.Upload(u64{state.offsetOut}, span{buffer});
         } else {
+            channelCtx.executor.Submit();
             Logger::Warn("Non-linear I2M uploads are not supported!");
         }
     }
@@ -49,7 +49,7 @@ namespace skyline::soc::gm20b::engine {
             CompleteDma(state);
     }
 
-    Inline2Memory::Inline2Memory(ChannelContext &channelCtx) : backend(channelCtx) {}
+    Inline2Memory::Inline2Memory(const DeviceState &state, ChannelContext &channelCtx) : backend{state, channelCtx} {}
 
     __attribute__((always_inline)) void Inline2Memory::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in I2M: 0x{:X} args: 0x{:X}", method, argument);

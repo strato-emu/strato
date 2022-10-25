@@ -8,7 +8,7 @@
 
 namespace skyline::soc::gm20b::engine {
     KeplerCompute::KeplerCompute(const DeviceState &state, ChannelContext &channelCtx)
-        : syncpoints(state.soc->host1x.syncpoints), i2m(channelCtx) {}
+        : syncpoints{state.soc->host1x.syncpoints}, i2m{state, channelCtx} {}
 
     __attribute__((always_inline)) void KeplerCompute::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in Kepler compute: 0x{:X} args: 0x{:X}", method, argument);

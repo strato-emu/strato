@@ -11,8 +11,10 @@
 #include "maxwell_dma.h"
 
 namespace skyline::soc::gm20b::engine {
-    MaxwellDma::MaxwellDma(const DeviceState &state, ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor)
-        : channelCtx(channelCtx), syncpoints(state.soc->host1x.syncpoints), executor(executor) {}
+    MaxwellDma::MaxwellDma(const DeviceState &state, ChannelContext &channelCtx)
+        : channelCtx{channelCtx},
+          syncpoints{state.soc->host1x.syncpoints},
+          interconnect{*state.gpu, channelCtx} {}
 
     __attribute__((always_inline)) void MaxwellDma::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in Maxwell DMA: 0x{:X} args: 0x{:X}", method, argument);
@@ -36,8 +38,8 @@ namespace skyline::soc::gm20b::engine {
             return;
         }
 
-        executor.Submit();
         if (registers.launchDma->multiLineEnable) {
+            channelCtx.executor.Submit();
             if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch &&
                 registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)
                 CopyPitchToBlockLinear();
@@ -51,7 +53,7 @@ namespace skyline::soc::gm20b::engine {
             // 1D buffer copy
             // TODO: implement swizzled 1D copies based on VMM 'kind'
             Logger::Debug("src: 0x{:X} dst: 0x{:X} size: 0x{:X}", u64{*registers.offsetIn}, u64{*registers.offsetOut}, *registers.lineLengthIn);
-            channelCtx.asCtx->gmmu.Copy(*registers.offsetOut, *registers.offsetIn, *registers.lineLengthIn);
+            interconnect.Copy(u64{*registers.offsetOut}, u64{*registers.offsetIn}, u64{*registers.lineLengthIn});
         }
 
         ReleaseSemaphore();
