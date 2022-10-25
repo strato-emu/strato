@@ -153,6 +153,10 @@
         <emu.skyline.preference.ControllerPreference index="7" />
     </PreferenceCategory>
     <PreferenceCategory
+        android:key="category_credits"
+        android:title="@string/credits">
+    </PreferenceCategory>
+    <PreferenceCategory
         android:key="category_licenses"
         android:title="@string/licenses"
         app:initialExpandedChildrenCount="5">
