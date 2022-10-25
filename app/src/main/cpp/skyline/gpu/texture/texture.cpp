@@ -755,7 +755,7 @@ namespace skyline::gpu {
         {
             std::scoped_lock lock{stateMutex};
 
-            if (dirtyState == DirtyState::Clean && gpuDirty)
+            if (dirtyState != DirtyState::CpuDirty && gpuDirty)
                 gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
         }
     }
@@ -792,7 +792,7 @@ namespace skyline::gpu {
         {
             std::scoped_lock lock{stateMutex};
 
-            if (dirtyState == DirtyState::Clean && gpuDirty)
+            if (dirtyState != DirtyState::CpuDirty && gpuDirty)
                 gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
         }
     }
