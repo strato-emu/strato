@@ -79,6 +79,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                         .dstOffset = view.GetOffset() + offset
                     };
                     commandBuffer.copyBuffer(srcGpuAllocation.buffer, view.GetBuffer()->GetBacking(), copyRegion);
+                    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
+                        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite
+                    }, {}, {});
                 });
             });
         }
