@@ -291,6 +291,12 @@ namespace skyline::gpu {
         bool Write(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
 
         /**
+         * @brief Copies a region of the src buffer into a region of this buffer
+         * @note The src/dst buffers **must** be locked prior to calling this
+         */
+        void CopyFrom(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+
+        /**
          * @return A view into this buffer with the supplied attributes
          * @note The buffer **must** be locked prior to calling this
          */
@@ -450,6 +456,12 @@ namespace skyline::gpu {
          * @note See Buffer::GetReadOnlyBackingSpan
          */
         span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
+
+        /**
+         * @brief Copies the contents of one view into this one
+         * @note The src/dst views **must** be locked prior to calling this
+         */
+        void CopyFrom(BufferView src, const std::function<void()> &gpuCopyCallback);
 
         constexpr operator bool() {
             return delegate != nullptr;

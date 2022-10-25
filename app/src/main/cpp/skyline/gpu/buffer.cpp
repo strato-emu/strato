@@ -287,6 +287,37 @@ namespace skyline::gpu {
         return false;
     }
 
+    void Buffer::CopyFrom(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback) {
+        AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
+        everHadInlineUpdate = true;
+
+        std::scoped_lock dstLock{stateMutex};
+        std::scoped_lock srcLock{src->stateMutex}; // Fine even if src and dst are same since recursive mutex
+
+        if (dirtyState == DirtyState::CpuDirty && SequencedCpuBackingWritesBlocked())
+            // If the buffer is used in sequence directly on the GPU, SynchronizeHost before modifying the mirror contents to ensure proper sequencing. This write will then be sequenced on the GPU instead (the buffer will be kept clean for the rest of the execution due to gpuCopyCallback blocking all writes)
+            SynchronizeHost();
+
+        if (dirtyState != DirtyState::GpuDirty && src->dirtyState != DirtyState::GpuDirty) {
+            std::memcpy(mirror.data() + dstOffset, src->mirror.data() + srcOffset, size);
+
+            if (dirtyState == DirtyState::CpuDirty && !SequencedCpuBackingWritesBlocked())
+                // Skip updating backing if the changes are gonna be updated later by SynchroniseHost in executor anyway
+                return;
+
+            if (!SequencedCpuBackingWritesBlocked() && PollFence()) {
+                // We can write directly to the backing as long as this resource isn't being actively used by a past workload (in the current context or another)
+                std::memcpy(backing.data() + dstOffset, src->mirror.data() + srcOffset, size);
+            } else {
+                gpuCopyCallback();
+            }
+        } else {
+            MarkGpuDirty();
+            gpuCopyCallback();
+        }
+    }
+
+
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size) {
         return BufferView{delegate, offset, size};
     }
@@ -447,4 +478,11 @@ namespace skyline::gpu {
         auto backing{delegate->GetBuffer()->GetReadOnlyBackingSpan(isFirstUsage, flushHostCallback)};
         return backing.subspan(GetOffset(), size);
     }
+
+    void BufferView::CopyFrom(BufferView src, const std::function<void()> &gpuCopyCallback) {
+        if (src.size != size)
+            throw exception("Copy size mismatch!");
+        return GetBuffer()->CopyFrom(GetOffset(), src.GetBuffer(), src.GetOffset(), size, gpuCopyCallback);
+    }
+
 }
