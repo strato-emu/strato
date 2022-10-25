@@ -103,6 +103,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             base.buffer = view.GetBuffer()->GetBacking();
             base.offset = view.GetOffset();
+            base.size = view.size;
             base.Record(gpu, commandBuffer);
         }
 
@@ -362,6 +363,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                     .binding = index,
                     .buffer = binding.buffer,
                     .offset = binding.offset,
+                    .size = binding.size
                 });
         }
 
