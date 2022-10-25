@@ -314,7 +314,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #define FORMAT_NORM_INT_SCALED_CASE(size, vkFormat, ...) \
             FORMAT_INT_CASE(size, vkFormat, ##__VA_ARGS__);               \
             FORMAT_CASE(size, Unorm, Unorm, vkFormat, ##__VA_ARGS__);     \
-            FORMAT_CASE(size, Snorm, Unorm, vkFormat, ##__VA_ARGS__);     \
+            FORMAT_CASE(size, Snorm, Snorm, vkFormat, ##__VA_ARGS__);     \
             FORMAT_CASE(size, Uscaled, Uscaled, vkFormat, ##__VA_ARGS__); \
             FORMAT_CASE(size, Sscaled, Sscaled, vkFormat, ##__VA_ARGS__)
 
