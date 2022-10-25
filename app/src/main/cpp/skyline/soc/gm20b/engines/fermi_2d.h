@@ -86,7 +86,7 @@ namespace skyline::soc::gm20b::engine::fermi2d {
 
         Registers registers{};
 
-        Fermi2D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor);
+        Fermi2D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState);
 
         void CallMethodFromMacro(u32 method, u32 argument) override;
 

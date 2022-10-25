@@ -61,14 +61,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.begin->op : type::ConvertPrimitiveTopologyToDrawTopology(*registers.primitiveTopology);
     }
 
-    Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor)
+    Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState)
         : MacroEngineBase{macroState},
           syncpoints{state.soc->host1x.syncpoints},
-          i2m{channelCtx},
+          i2m{state, channelCtx},
           dirtyManager{registers},
-          interconnect{*state.gpu, channelCtx, executor, *state.nce, state.process->memory, dirtyManager, MakeEngineRegisters(registers)},
+          interconnect{*state.gpu, channelCtx, *state.nce, state.process->memory, dirtyManager, MakeEngineRegisters(registers)},
           channelCtx{channelCtx} {
-        executor.AddFlushCallback([this]() { FlushEngineState(); });
+        channelCtx.executor.AddFlushCallback([this]() { FlushEngineState(); });
         InitializeRegisters();
     }
 

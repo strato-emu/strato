@@ -4,7 +4,7 @@
 
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/conversion/quads.h>
-#include <vulkan/vulkan_structs.hpp>
+#include <soc/gm20b/channel.h>
 #include "common/utils.h"
 #include "maxwell_3d.h"
 #include "common.h"
@@ -13,19 +13,18 @@
 namespace skyline::gpu::interconnect::maxwell3d {
     Maxwell3D::Maxwell3D(GPU &gpu,
                          soc::gm20b::ChannelContext &channelCtx,
-                         gpu::interconnect::CommandExecutor &executor,
                          nce::NCE &nce,
                          skyline::kernel::MemoryManager &memoryManager,
                          DirtyManager &manager,
                          const EngineRegisterBundle &registerBundle)
-        : ctx{channelCtx, executor, gpu, nce, memoryManager},
+        : ctx{channelCtx, channelCtx.executor, gpu, nce, memoryManager},
           activeState{manager, registerBundle.activeStateRegisters},
           clearEngineRegisters{registerBundle.clearRegisters},
           constantBuffers{manager, registerBundle.constantBufferSelectorRegisters},
           samplers{manager, registerBundle.samplerPoolRegisters},
           textures{manager, registerBundle.texturePoolRegisters},
           directState{activeState.directState} {
-        executor.AddFlushCallback([this] {
+        ctx.executor.AddFlushCallback([this] {
             if (attachedDescriptorSets) {
                 ctx.executor.AttachDependency(attachedDescriptorSets);
                 attachedDescriptorSets = nullptr;
@@ -40,7 +39,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             constantBuffers.DisableQuickBind();
         });
 
-        executor.AddPipelineChangeCallback([this] {
+        ctx.executor.AddPipelineChangeCallback([this] {
             activeState.MarkAllDirty();
             activeDescriptorSet = nullptr;
         });

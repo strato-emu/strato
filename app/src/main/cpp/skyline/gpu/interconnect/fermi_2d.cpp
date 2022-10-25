@@ -106,7 +106,10 @@ namespace skyline::gpu::interconnect {
         return texture;
     }
 
-    Fermi2D::Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor) : gpu(gpu), channelCtx(channelCtx), executor(executor) {}
+    Fermi2D::Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx)
+        : gpu{gpu},
+          channelCtx{channelCtx},
+          executor{channelCtx.executor} {}
 
     void Fermi2D::Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter) {
         // TODO: When we support MSAA perform a resolve operation rather than blit when the `resolve` flag is set.

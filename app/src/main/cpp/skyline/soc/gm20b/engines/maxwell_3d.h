@@ -364,7 +364,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         ChannelContext &channelCtx;
 
-        Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor);
+        Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState);
 
         /**
          * @brief Initializes Maxwell 3D registers to their default values

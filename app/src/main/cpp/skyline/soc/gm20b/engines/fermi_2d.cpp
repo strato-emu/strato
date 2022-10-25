@@ -6,11 +6,11 @@
 #include "fermi_2d.h"
 
 namespace skyline::soc::gm20b::engine::fermi2d {
-    Fermi2D::Fermi2D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState, gpu::interconnect::CommandExecutor &executor)
-        : MacroEngineBase(macroState),
-          syncpoints(state.soc->host1x.syncpoints),
-          interconnect(*state.gpu, channelCtx, executor),
-          channelCtx(channelCtx) {}
+    Fermi2D::Fermi2D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState)
+        : MacroEngineBase{macroState},
+          syncpoints{state.soc->host1x.syncpoints},
+          interconnect{*state.gpu, channelCtx},
+          channelCtx{channelCtx} {}
 
     void Fermi2D::HandleMethod(u32 method, u32 argument) {
         registers.raw[method] = argument;

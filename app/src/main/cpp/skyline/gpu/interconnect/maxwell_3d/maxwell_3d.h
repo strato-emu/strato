@@ -61,7 +61,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         Maxwell3D(GPU &gpu,
                   soc::gm20b::ChannelContext &channelCtx,
-                  gpu::interconnect::CommandExecutor &executor,
                   nce::NCE &nce,
                   kernel::MemoryManager &memoryManager,
                   DirtyManager &manager,

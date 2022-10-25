@@ -36,7 +36,7 @@ namespace skyline::gpu::interconnect {
         gpu::GuestTexture GetGuestTexture(const Surface &surface);
 
       public:
-        Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx, gpu::interconnect::CommandExecutor &executor);
+        Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx);
 
         void Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter);
     };

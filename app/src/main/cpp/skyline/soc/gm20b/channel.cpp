@@ -5,13 +5,13 @@
 
 namespace skyline::soc::gm20b {
     ChannelContext::ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> pAsCtx, size_t numEntries)
-        : asCtx(std::move(pAsCtx)),
-          executor(state),
-          maxwell3D(state, *this, macroState, executor),
-          fermi2D(state, *this, macroState, executor),
-          maxwellDma(state, *this, executor),
-          keplerCompute(state, *this),
-          inline2Memory(*this),
-          gpfifo(state, *this, numEntries),
+        : asCtx{std::move(pAsCtx)},
+          executor{state},
+          maxwell3D{state, *this, macroState},
+          fermi2D{state, *this, macroState},
+          maxwellDma{state, *this},
+          keplerCompute{state, *this},
+          inline2Memory{state, *this},
+          gpfifo{state, *this, numEntries},
           globalChannelLock{state.gpu->channelLock} {}
 }
