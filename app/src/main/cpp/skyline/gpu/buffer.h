@@ -285,12 +285,10 @@ namespace skyline::gpu {
 
         /**
          * @brief Writes data at the specified offset in the buffer, falling back to GPU side copies if the buffer is host immutable
-         * @param isFirstUsage If this is the first usage of this resource in the context as returned from LockWithTag(...)
-         * @param flushHostCallback Callback to flush and execute all pending GPU work to allow for synchronisation of GPU dirty buffers
          * @param gpuCopyCallback Optional callback to perform a GPU-side copy for this Write if necessary, if such a copy is needed and this is not supplied `true` will be returned to indicate that the write needs to be repeated with the callback present
          * @return Whether the write needs to be repeated with `gpuCopyCallback` provided, always false if `gpuCopyCallback` is provided
          */
-        bool Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
+        bool Write(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
 
         /**
          * @return A view into this buffer with the supplied attributes
@@ -303,7 +301,6 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         BufferView TryGetView(span<u8> mapping);
-
 
         /*
          * @brief If megabuffering is determined to be beneficial for this buffer, allocates and copies the given view of buffer into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region
@@ -436,8 +433,7 @@ namespace skyline::gpu {
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Write
          */
-        bool Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &cycle, const std::function<void()> &flushHostCallback,
-                   span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
+        bool Write(span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
 
         /*
          * @brief If megabuffering is determined to be beneficial for the underlying buffer, allocates and copies this view into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region

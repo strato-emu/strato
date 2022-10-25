@@ -247,16 +247,20 @@ namespace skyline::gpu {
         std::memcpy(data.data(), mirror.data() + offset, data.size());
     }
 
-    bool Buffer::Write(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback) {
+    bool Buffer::Write(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback) {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
         // We cannot have *ANY* state changes for the duration of this function, if the buffer became CPU dirty partway through the GPU writes would mismatch the CPU writes
         std::scoped_lock lock{stateMutex};
 
-        // Syncs in both directions to ensure correct ordering of writes
-        if (dirtyState == DirtyState::GpuDirty)
-            SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
+        // If the buffer is GPU dirty do the write on the GPU and we're done
+        if (dirtyState == DirtyState::GpuDirty) {
+            if (gpuCopyCallback)
+                gpuCopyCallback();
+            else
+                return true;
+        }
 
         if (dirtyState == DirtyState::CpuDirty && SequencedCpuBackingWritesBlocked())
             // If the buffer is used in sequence directly on the GPU, SynchronizeHost before modifying the mirror contents to ensure proper sequencing. This write will then be sequenced on the GPU instead (the buffer will be kept clean for the rest of the execution due to gpuCopyCallback blocking all writes)
@@ -301,7 +305,7 @@ namespace skyline::gpu {
             return {};
 
         // We are safe to check dirty state here since it will only ever be set GPU dirty with the buffer locked and from the active GPFIFO thread. This helps with perf since the lock ends up being slightly expensive
-        if (dirtyState == DirtyState::GpuDirty && !SynchronizeGuest(false, true))
+        if (dirtyState == DirtyState::GpuDirty)
             // Bail out if buffer cannot be synced, we don't know the contents ahead of time so the sequence is indeterminate
             return {};
 
@@ -431,9 +435,8 @@ namespace skyline::gpu {
         GetBuffer()->Read(isFirstUsage, flushHostCallback, data, readOffset + GetOffset());
     }
 
-    bool BufferView::Write(bool isFirstUsage, const std::shared_ptr<FenceCycle> &pCycle, const std::function<void()> &flushHostCallback,
-                           span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
-        return GetBuffer()->Write(isFirstUsage, flushHostCallback, data, writeOffset + GetOffset(), gpuCopyCallback);
+    bool BufferView::Write(span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
+        return GetBuffer()->Write(data, writeOffset + GetOffset(), gpuCopyCallback);
     }
 
     BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber, size_t sizeOverride) const {
