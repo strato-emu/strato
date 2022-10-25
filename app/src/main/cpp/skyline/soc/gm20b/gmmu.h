@@ -36,6 +36,8 @@ namespace skyline::soc::gm20b {
             u32 high;
         };
 
+        IOVA(u64 iova) : iova{iova} {}
+
         operator u64 &() {
             return iova;
         }
