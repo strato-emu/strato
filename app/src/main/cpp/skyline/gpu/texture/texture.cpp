@@ -752,8 +752,12 @@ namespace skyline::gpu {
             cycle = lCycle;
         }
 
-        if (gpuDirty)
-            gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+        {
+            std::scoped_lock lock{stateMutex};
+
+            if (dirtyState == DirtyState::Clean && gpuDirty)
+                gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+        }
     }
 
     void Texture::SynchronizeHostInline(const vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &pCycle, bool gpuDirty) {
@@ -785,8 +789,12 @@ namespace skyline::gpu {
             cycle = pCycle;
         }
 
-        if (gpuDirty)
-            gpu.state.nce->PageOutRegions(*trapHandle);
+        {
+            std::scoped_lock lock{stateMutex};
+
+            if (dirtyState == DirtyState::Clean && gpuDirty)
+                gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+        }
     }
 
     void Texture::SynchronizeGuest(bool cpuDirty, bool skipTrap) {
