@@ -146,6 +146,16 @@ namespace skyline::input {
         void WriteNextEntry(NpadControllerInfo &info, NpadControllerState entry);
 
         /**
+         * @brief Writes on all ring lifo buffers a new empty entry in HID Shared Memory
+         */
+        void WriteEmptyEntries();
+
+        /**
+         * @brief Reverts all device properties to the default state
+         */
+        void ResetDeviceProperties();
+
+        /**
          * @return The NpadControllerInfo for this controller based on its type
          */
         NpadControllerInfo &GetControllerInfo();
