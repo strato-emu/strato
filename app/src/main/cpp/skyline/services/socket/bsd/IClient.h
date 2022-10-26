@@ -25,9 +25,15 @@ namespace skyline::service::socket {
          */
         Result StartMonitoring(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @brief Polls the socket for events
+         */
+        Result Poll(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IClient, RegisterClient),
-            SFUNC(0x1, IClient, StartMonitoring)
+            SFUNC(0x1, IClient, StartMonitoring),
+            SFUNC(0x6, IClient, Poll),
         )
     };
 }
